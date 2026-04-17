@@ -13,7 +13,6 @@ body {
   color: var(--foreground);
   background: var(--background);
   scroll-behavior: smooth;
-  font-family: var(--font-inter), sans-serif;
   overflow-x: hidden;
 }
 
@@ -30,4 +29,3 @@ body {
     @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)];
   }
 }
-
