@@ -39,4 +39,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           # Cloudflare dynamically detects the branch. If it's not 'main', it issues a Preview URL.
-          command: pages deploy --project-name aresweb --commit-dirty=true --branch ${{ github.head_ref || github.ref_name }} --compatibility-date=2024-09-23 --compatibility-flags=nodejs_compat
+          command: pages deploy --project-name aresweb --commit-dirty=true --branch ${{ github.head_ref || github.ref_name }}
