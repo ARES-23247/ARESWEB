@@ -74,7 +74,7 @@ export default function Events() {
   };
 
   return (
-    <div className="w-full flex-grow flex flex-col bg-background">
+    <div className="w-full flex-grow flex flex-col bg-obsidian min-h-screen">
       {/* ─── HEADER ─── */}
       <section className="relative w-full py-24 px-6 overflow-hidden flex flex-col items-center text-center">
         <div className="absolute inset-0 w-full h-full">

@@ -6,7 +6,8 @@ const photos = [
 
 export default function Gallery() {
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
+    <div className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
       <div className="mb-12">
         <h3 className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-2">Build Season &amp; Comps</h3>
         <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter shadow-sm">
@@ -29,6 +30,7 @@ export default function Gallery() {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );
