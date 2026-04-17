@@ -46,7 +46,7 @@ export default function BlogEditor() {
       } else {
         setErrorMsg(data.error || "Failed to publish");
       }
-    } catch (err) {
+    } catch {
       setErrorMsg("Network error — could not reach the API.");
     } finally {
       setIsPending(false);
@@ -60,8 +60,9 @@ export default function BlogEditor() {
       {/* Settings Grid */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
-          <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Post Title</label>
+          <label htmlFor="post-title" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Post Title</label>
           <input
+            id="post-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -70,8 +71,9 @@ export default function BlogEditor() {
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Author Name</label>
+          <label htmlFor="author-name" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Author Name</label>
           <input
+            id="author-name"
             type="text"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
@@ -80,8 +82,9 @@ export default function BlogEditor() {
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Cover Asset URL</label>
+          <label htmlFor="cover-asset" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Cover Asset URL</label>
           <input
+            id="cover-asset"
             type="text"
             value={coverImageUrl}
             onChange={(e) => setCoverImageUrl(e.target.value)}

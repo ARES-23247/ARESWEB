@@ -42,13 +42,13 @@ export default function Home() {
           </div>
           <div className="space-y-6 text-lg leading-relaxed">
             <p>
-              We are a community-based <em>FIRST</em> Tech Challenge (FTC) team that represents <em>FIRST</em>'s impact in our state and how West Virginia's students can work across educational backgrounds to achieve something great.
+              We are a community-based <em>FIRST</em> Tech Challenge (FTC) team that represents <em>FIRST</em>&apos;s impact in our state and how West Virginia&apos;s students can work across educational backgrounds to achieve something great.
             </p>
             <p>
-              ARES is the most recent chapter in North Central West Virginia's strong legacy in <em>FIRST</em> robotics. As part of the Mountaineer Area RoboticS (<em>MARS</em>) #2614 family, ARES is building on MARS's Hall of Fame legacy as West Virginia's flagship FIRST Robotics Competition program.
+              ARES is the most recent chapter in North Central West Virginia&apos;s strong legacy in <em>FIRST</em> robotics. As part of the Mountaineer Area RoboticS (<em>MARS</em>) #2614 family, ARES is building on MARS&apos;s Hall of Fame legacy as West Virginia&apos;s flagship FIRST Robotics Competition program.
             </p>
             <p>
-              2025 is <em>ARES</em>'s rookie year, but we are backed by a history that represents the summit of what teams can achieve in <em>FIRST</em>.
+              2025 is <em>ARES</em>&apos;s rookie year, but we are backed by a history that represents the summit of what teams can achieve in <em>FIRST</em>.
             </p>
           </div>
         </div>
@@ -66,13 +66,13 @@ export default function Home() {
             {[
               {
                 title: "Future Team Members",
-                body: "Learn more about our team and what to expect as a team member in FIRST Tech Challenge and then if it looks like a fit, reach out. We can't wait to meet you.",
+                body: "Learn more about our team and what to expect as a team member in FIRST Tech Challenge and then if it looks like a fit, reach out. We can&apos;t wait to meet you.",
                 link: "/about",
                 linkText: "Learn More →",
               },
               {
                 title: "Local Community",
-                body: "We're looking for opportunities to connect in north-central West Virginia. If you have a volunteer need or idea for our team, get in touch.",
+                body: "We&apos;re looking for opportunities to connect in north-central West Virginia. If you have a volunteer need or idea for our team, get in touch.",
                 link: "/contact",
                 linkText: "Contact Us →",
               },

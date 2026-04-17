@@ -85,12 +85,13 @@ app.post("/posts", async (c) => {
     // Build a plain-text snippet from the AST for previews
     let snippet = "";
     try {
-      const extractText = (node: any): string => {
+      type ASTNode = { text?: string; content?: ASTNode[] };
+      const extractText = (node: ASTNode): string => {
         if (node.text) return node.text;
         if (node.content) return node.content.map(extractText).join(" ");
         return "";
       };
-      snippet = extractText(body.ast).slice(0, 200);
+      snippet = extractText(body.ast as ASTNode).slice(0, 200);
     } catch {
       snippet = "";
     }
@@ -112,9 +113,9 @@ app.post("/posts", async (c) => {
       .run();
 
     return c.json({ success: true, slug });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("D1 write error:", err);
-    return c.json({ success: false, error: err?.message || "Database write failed" }, 500);
+    return c.json({ success: false, error: (err as Error)?.message || "Database write failed" }, 500);
   }
 });
 

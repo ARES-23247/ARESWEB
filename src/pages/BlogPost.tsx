@@ -81,7 +81,7 @@ export default function BlogPost() {
   if (notFound || !post) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/50">Post not found.</div>;
 
   let parsedAst: ASTNode = { type: "doc", content: [] };
-  try { parsedAst = JSON.parse(post.ast); } catch {}
+  try { parsedAst = JSON.parse(post.ast); } catch { /* Ignore parse error */ }
 
   return (
     <div className="w-full max-w-4xl mx-auto px-6 py-12 md:py-24">

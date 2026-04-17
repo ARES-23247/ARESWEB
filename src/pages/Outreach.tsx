@@ -5,7 +5,7 @@ export default function Outreach() {
       <section className="py-24 bg-background">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4">
-            We're passionate about <br/>STEAM in our local <span className="text-ares-gold">Community</span>.
+            We&apos;re passionate about <br/>STEAM in our local <span className="text-ares-gold">Community</span>.
           </h1>
           <p className="text-white/60 text-xl mt-4">
             If you have a volunteer need or idea for our team to be a part of, <a href="/contact" className="text-ares-gold underline hover:text-white transition-colors">get in touch</a>.
@@ -18,10 +18,10 @@ export default function Outreach() {
         <div className="max-w-4xl mx-auto px-6">
           <h2 className="text-3xl font-black text-ares-red mb-4">Learn more about Spark!</h2>
           <p className="text-lg leading-relaxed mb-6">
-            Spark! Imagination and Science Center is a non-profit children's museum in Morgantown, West Virginia. Spark! works to inspire people of all ages to explore art and science through various hands-on activities and programs that may spark a lifelong love for learning.
+            Spark! Imagination and Science Center is a non-profit children&apos;s museum in Morgantown, West Virginia. Spark! works to inspire people of all ages to explore art and science through various hands-on activities and programs that may spark a lifelong love for learning.
           </p>
           <p className="text-lg leading-relaxed">
-            ARES is partnering with <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="text-ares-red underline font-semibold">Spark!</a> Imagination and Science Center to expand its capacity and develop new exhibits. We're conducting an informal needs assessment to help Spark! with strategic planning. Then, onto using the Engineering Design Process to develop a rotating exhibit structure to highlight STEM stories unique to West Virginia. Our first exhibit is planned to be a WV Bridge Exhibit.
+            ARES is partnering with <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="text-ares-red underline font-semibold">Spark!</a> Imagination and Science Center to expand its capacity and develop new exhibits. We&apos;re conducting an informal needs assessment to help Spark! with strategic planning. Then, onto using the Engineering Design Process to develop a rotating exhibit structure to highlight STEM stories unique to West Virginia. Our first exhibit is planned to be a WV Bridge Exhibit.
           </p>
         </div>
       </section>
@@ -44,7 +44,7 @@ export default function Outreach() {
             <div className="bg-background/30 rounded-2xl p-6 border border-white/10">
               <h3 className="text-white text-xl font-bold mb-3">Sponsor Us</h3>
               <p className="text-white/70 text-base leading-relaxed">
-                Robot parts, equipment, competitions, travel, and training cost money. We rely on sponsors. Please get in touch if you'd like to collaborate.
+                Robot parts, equipment, competitions, travel, and training cost money. We rely on sponsors. Please get in touch if you&apos;d like to collaborate.
               </p>
             </div>
             <div className="bg-background/30 rounded-2xl p-6 border border-white/10">
