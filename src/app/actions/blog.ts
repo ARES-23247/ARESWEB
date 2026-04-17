@@ -2,6 +2,7 @@
 
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 interface ASTContent {
   type: string;
@@ -25,6 +26,14 @@ export async function publishPostAction({
   coverImageUrl: string;
   ast: ASTType;
 }) {
+  if (process.env.NODE_ENV !== "development") {
+    const h = headers();
+    const cfAccessEmail = h.get("cf-access-authenticated-user-email");
+    if (!cfAccessEmail) {
+      return { success: false, error: "Unauthorized: Cloudflare Zero Trust authentication failed. Route is protected by Cloudflare Access." };
+    }
+  }
+
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
   const date = new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' });
   
