@@ -3,10 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --background: #050508;
-  --foreground: #e4e4e7;
-  --ares-red: #dc2626;
-  --ares-cyan: #06b6d4;
+  --background: #050404;
+  --foreground: #edf0f2;
+  --ares-red: #8e1d0f;
+  --ares-red-bright: #b12318;
+  --ares-gold: #ebdca0;
+  --ares-green: #77dca5;
+  --ares-orange: #f24e16;
+  --ares-peach: #f1d5ba;
+  --ares-gray: #535353;
 }
 
 body {
@@ -18,14 +23,14 @@ body {
 
 ::selection {
   background: var(--ares-red);
-  color: white;
+  color: var(--ares-gold);
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
+    @apply bg-black/40 backdrop-blur-md border border-white/10;
   }
   .glass-card {
-    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)];
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.03)];
   }
 }

@@ -11,7 +11,12 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         "ares-red": "var(--ares-red)",
-        "ares-cyan": "var(--ares-cyan)",
+        "ares-red-bright": "var(--ares-red-bright)",
+        "ares-gold": "var(--ares-gold)",
+        "ares-green": "var(--ares-green)",
+        "ares-orange": "var(--ares-orange)",
+        "ares-peach": "var(--ares-peach)",
+        "ares-gray": "var(--ares-gray)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
