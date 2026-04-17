@@ -6,7 +6,7 @@ export default function Home() {
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[95vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background */}
-        <div 
+        <div
           className="absolute inset-0 z-0 opacity-40 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('/hero_motif.png')" }}
         ></div>
@@ -19,11 +19,11 @@ export default function Home() {
 
           <h1 className="text-6xl md:text-[8rem] lg:text-[10rem] font-black text-white leading-[0.9] uppercase mb-6 font-heading">
             Engineered <br />
-            <span className="text-ares-red">For Victory</span>
+            <span className="text-ares-red">To Inspire</span>
           </h1>
 
           <p className="text-marble/80 text-xl md:text-2xl font-medium max-w-2xl mb-10 leading-relaxed border-l-4 border-ares-bronze pl-6">
-            Building the future of West Virginia robotics with the <span className="text-white font-bold">Mountaineer Mindset</span>. 
+            Building the future of West Virginia robotics with the <span className="text-white font-bold">Mountaineer Mindset</span>.
             FIRST Tech Challenge Team #23247.
           </p>
 
