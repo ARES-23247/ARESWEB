@@ -50,10 +50,10 @@ export default function Home() {
             </h2>
             <div className="space-y-6 text-lg text-obsidian/80 leading-relaxed">
               <p>
-                ARES 23247 isn&apos;t just another rookie team. We are the direct result of a decade of excellence in West Virginia robotics, serving as the official <em>FRC sibling team</em> to the Hall of Fame program, <strong>MARS 2614</strong>.
+                ARES 23247 isn&apos;t just another rookie team. We are the direct result of a decade of excellence in West Virginia robotics, serving as the <em>FTC sibling team</em> to the Hall of Fame program, <strong>MARS 2614</strong>.
               </p>
               <p>
-                While our brothers and sisters on MARS tackle the giants of the <em>FIRST</em> Robotics Competition, we bring that same Mountaineer intensity to the <em>FIRST</em> Tech Challenge.
+                While our siblings on MARS tackle the giants of the <em>FIRST</em> Robotics Competition, we bring that same Mountaineer intensity to the <em>FIRST</em> Tech Challenge.
               </p>
               <div className="pt-4">
                 <a href="https://www.marsfirst.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-ares-red font-bold hover:translate-x-2 transition-transform">
@@ -114,7 +114,7 @@ export default function Home() {
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-ares-bronze to-transparent opacity-50"></div>
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-black mb-8 font-heading">
-            Join the <span className="text-ares-red">Society</span>
+            Join <span className="text-ares-red">ARES</span>
           </h2>
           <p className="text-marble/80 text-xl mb-12 leading-relaxed">
             Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future of WV technology, there is a place for you at the table.
@@ -143,7 +143,7 @@ export default function Home() {
             rel="noopener noreferrer"
             className="clipped-button bg-obsidian text-marble hover:bg-ares-bronze transition-all shadow-2xl"
           >
-            Open Deployment Map
+            Open Event Calendar
           </a>
         </div>
       </section>
