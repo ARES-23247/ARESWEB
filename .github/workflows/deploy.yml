@@ -28,7 +28,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Execute Edge Compilation
-        run: npx @cloudflare/next-on-pages@1
+        run: npx --no-install @cloudflare/next-on-pages
         env:
           NODE_ENV: production
 
