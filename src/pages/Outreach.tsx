@@ -2,7 +2,7 @@ export default function Outreach() {
   return (
     <div className="flex flex-col w-full">
       {/* Hero */}
-      <section className="py-24 bg-background">
+      <section className="py-24 bg-obsidian">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4">
             We&apos;re passionate about <br/>STEAM in our local <span className="text-ares-gold">Community</span>.
@@ -35,19 +35,19 @@ export default function Outreach() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div className="bg-background/30 rounded-2xl p-6 border border-white/10">
+            <div className="bg-obsidian/30 rounded-2xl p-6 border border-white/10">
               <h3 className="text-white text-xl font-bold mb-3">Become a Mentor</h3>
               <p className="text-white/70 text-base leading-relaxed">
                 Mentors with FIRST are building more than robots. Engineering, animation, design, communications &amp; business planning — we need mentors of all kinds.
               </p>
             </div>
-            <div className="bg-background/30 rounded-2xl p-6 border border-white/10">
+            <div className="bg-obsidian/30 rounded-2xl p-6 border border-white/10">
               <h3 className="text-white text-xl font-bold mb-3">Sponsor Us</h3>
               <p className="text-white/70 text-base leading-relaxed">
                 Robot parts, equipment, competitions, travel, and training cost money. We rely on sponsors. Please get in touch if you&apos;d like to collaborate.
               </p>
             </div>
-            <div className="bg-background/30 rounded-2xl p-6 border border-white/10">
+            <div className="bg-obsidian/30 rounded-2xl p-6 border border-white/10">
               <h3 className="text-white text-xl font-bold mb-3">Give Us a Tour</h3>
               <p className="text-white/70 text-base leading-relaxed">
                 Help us experience robotics in the workforce. We would love to see how key aspects like sensors or coding influence your robots!
