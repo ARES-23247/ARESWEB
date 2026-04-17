@@ -24,11 +24,11 @@ export default function Footer() {
         <div>
           <h4 className="text-white font-black uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">The Vault</h4>
           <ul className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest text-marble/60">
-            <li><Link to="/" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>//</span> Home</Link></li>
-            <li><Link to="/about" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>//</span> Who We Are</Link></li>
-            <li><Link to="/seasons" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>//</span> Seasons</Link></li>
-            <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>//</span> Outreach</Link></li>
-            <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>//</span> Team Blog</Link></li>
+            <li><Link to="/" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Home</Link></li>
+            <li><Link to="/about" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Who We Are</Link></li>
+            <li><Link to="/seasons" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Seasons</Link></li>
+            <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Outreach</Link></li>
+            <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
           </ul>
         </div>
 
