@@ -37,7 +37,7 @@ export async function publishPostAction({
   } catch {}
 
   if (!isDev) {
-    const h = headers();
+    const h = await headers();
     
     // Prevent bypass via the unprotected .pages.dev default domain
     const host = h.get("host");

@@ -79,13 +79,14 @@ function ASTRenderer({ ast }: { ast: ASTNode | ASTNode[] }) {
   return <TiptapRenderer node={rootNode} />;
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   let post: PostRow | null = null;
 
   try {
     const { env } = getRequestContext();
     const db = env.DB;
-    post = await db.prepare("SELECT slug, title, date, ast FROM posts WHERE slug = ?").bind(params.slug).first<PostRow>();
+    post = await db.prepare("SELECT slug, title, date, ast FROM posts WHERE slug = ?").bind(slug).first<PostRow>();
   } catch (err) {
     console.error("Local D1 might not be instantiated during build", err);
   }
