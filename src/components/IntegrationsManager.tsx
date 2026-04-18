@@ -13,7 +13,7 @@ export default function IntegrationsManager() {
   const { data, isLoading, isError, error } = useQuery<{ settings: SettingsData }, Error>({
     queryKey: ["admin_settings"],
     queryFn: async () => {
-      const res = await fetch("/dashboard/api/admin/settings");
+      const res = await fetch("/dashboard/api/admin/settings", { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       return res.json();
     }
@@ -32,6 +32,7 @@ export default function IntegrationsManager() {
       const res = await fetch("/dashboard/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(settings),
       });
       if (!res.ok) throw new Error("Failed to save settings");

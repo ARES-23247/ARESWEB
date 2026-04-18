@@ -26,7 +26,7 @@ export default function AssetPickerModal({
   const { data: mediaResponse, isLoading } = useQuery<{ media: R2Asset[] }>({
     queryKey: ["assets"],
     queryFn: async () => {
-      const res = await fetch("/dashboard/api/admin/media");
+      const res = await fetch("/dashboard/api/admin/media", { credentials: "include" });
       return res.json();
     },
     enabled: isOpen,

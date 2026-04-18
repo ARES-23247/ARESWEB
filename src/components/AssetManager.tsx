@@ -21,7 +21,7 @@ export default function AssetManager() {
   const { data, isLoading } = useQuery<{ media: (R2Asset & { folder: string; tags: string; })[] }>({
     queryKey: ['media'],
     queryFn: async () => {
-      const res = await fetch("/dashboard/api/admin/media");
+      const res = await fetch("/dashboard/api/admin/media", { credentials: "include" });
       const data: { media: (R2Asset & { folder: string; tags: string; })[] } = await res.json();
       return data;
     }
@@ -37,7 +37,7 @@ export default function AssetManager() {
         const formData = new FormData();
         formData.append("file", compressed, file.name.replace(/\.[^/.]+$/, ".webp"));
         formData.append("folder", activeFolder);
-        const res = await fetch("/dashboard/api/admin/upload", { method: "POST", body: formData });
+        const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
         if (!res.ok) throw new Error("Upload failed");
         setUploadProgress({ current: i + 1, total: files.length });
       }
@@ -51,7 +51,7 @@ export default function AssetManager() {
 
   const deleteMutation = useMutation({
     mutationFn: async (key: string) => {
-      const res = await fetch(`/dashboard/api/admin/media/${key}`, { method: "DELETE" });
+      const res = await fetch(`/dashboard/api/admin/media/${key}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error("Delete failed");
       return key;
     },
@@ -66,6 +66,7 @@ export default function AssetManager() {
       const res = await fetch(`/dashboard/api/admin/media/syndicate`, { 
         method: "POST", 
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ key, caption }) 
       });
       if (!res.ok) throw new Error("Syndication failed");

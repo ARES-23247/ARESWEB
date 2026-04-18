@@ -36,7 +36,7 @@ export default function Dashboard() {
     const checkAuth = async () => {
       try {
         const res = await fetch("/dashboard/api/auth-check", {
-          credentials: "same-origin",
+          credentials: "include"
         });
         if (res.ok) {
           setAuthState("authenticated");

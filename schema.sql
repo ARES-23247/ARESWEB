@@ -46,10 +46,32 @@ CREATE TABLE docs (
     sort_order INTEGER DEFAULT 0,
     description TEXT,
     content TEXT NOT NULL,
+    cf_email TEXT,
     updated_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE docs_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL,
+    title TEXT,
+    category TEXT,
+    description TEXT,
+    content TEXT,
+    author_email TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE docs_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL,
+    is_helpful INTEGER,
+    comment TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_docs_category ON docs(category);
+CREATE INDEX IF NOT EXISTS idx_docs_history_slug ON docs_history(slug);
+CREATE INDEX IF NOT EXISTS idx_docs_feedback_slug ON docs_feedback(slug);
 
 DROP TABLE IF EXISTS settings;
 CREATE TABLE settings (

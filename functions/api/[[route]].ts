@@ -38,6 +38,8 @@ const ensureAdmin = async (c: Context, next: Next) => {
   const hasAuthCookie = /CF_Authorization=/.test(cookieHeader);
 
   if (!email && !jwt && !hasAuthCookie && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    console.warn(`[Auth Check] Access Denied for ${url.pathname}. 
+Headers: ${JSON.stringify(Object.fromEntries(c.req.header()))}`);
     return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
   await next();

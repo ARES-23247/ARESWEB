@@ -185,7 +185,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
     const formData = new FormData();
     formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ".webp"));
     
-    const res = await fetch("/dashboard/api/admin/upload", { method: "POST", body: formData });
+    const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
     const data = await res.json();
       // @ts-expect-error -- D1 untyped response
     if (!data.url) throw new Error(data.error || "Upload failed");
@@ -214,6 +214,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
