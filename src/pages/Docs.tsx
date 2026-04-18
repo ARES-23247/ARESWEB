@@ -9,6 +9,8 @@ import SOTMSimulator from "../components/SOTMSimulator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, BookOpen, ExternalLink, Edit2 } from "lucide-react";
 import SEO from "../components/SEO";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface DocRecord {
   slug: string;
@@ -421,17 +423,25 @@ export default function Docs() {
                       <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white/70 italic rounded-r-lg">{children}</blockquote>
                     ),
                     code: ({ className, children, ...props }) => {
-                      const isInline = !className;
+                      const match = /language-(\w+)/.exec(className || '');
+                      const isInline = !match;
                       if (isInline) {
                         return <code className="bg-ares-red/10 text-ares-gold px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
                       }
                       return (
-                        <code className={`${className} block bg-[#161b22] border border-white/8 rounded-lg p-4 text-sm font-mono overflow-x-auto my-4 leading-relaxed`} {...props}>
-                          {children}
-                        </code>
+                        <SyntaxHighlighter
+                          style={vscDarkPlus as any}
+                          language={match[1]}
+                          PreTag="div"
+                          className="rounded-lg text-sm font-mono overflow-x-auto my-4 !bg-[#161b22] border border-white/8 shadow-lg"
+                          showLineNumbers={true}
+                          {...props}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
                       );
                     },
-                    pre: ({ children }) => <pre className="bg-[#161b22] border border-white/8 rounded-lg p-4 text-sm font-mono overflow-x-auto my-4 leading-relaxed">{children}</pre>,
+                    pre: ({ children }) => <>{children}</>,
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-4">
                         <table className="w-full border-collapse border border-white/10 text-sm">{children}</table>
