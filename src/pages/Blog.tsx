@@ -42,7 +42,7 @@ export default function Blog() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                 </div>
                 <div className="p-6 flex-grow flex flex-col">
-                  <p className="text-xs text-white/50 mb-2">{post.date}</p>
+                  <p className="text-xs text-white/80 mb-2">{post.date}</p>
                   <h4 className="text-xl font-bold text-white mb-3 group-hover:text-ares-red transition-colors">{post.title}</h4>
                   <p className="text-sm text-white/60 line-clamp-3">{post.snippet}</p>
                 </div>
@@ -50,12 +50,12 @@ export default function Blog() {
             </Link>
           ))}
           {!loading && posts.length === 0 && (
-            <div className="text-white/50 p-6 glass-card rounded-2xl col-span-full border-dashed">
+            <div className="text-white/80 p-6 glass-card rounded-2xl col-span-full border-dashed">
               No posts published yet. Head to the <Link to="/dashboard" className="text-ares-gold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">Dashboard</Link> to create one.
             </div>
           )}
           {loading && (
-            <div className="text-white/50 p-6 glass-card rounded-2xl col-span-full animate-pulse">
+            <div className="text-white/80 p-6 glass-card rounded-2xl col-span-full animate-pulse">
               Loading posts from D1...
             </div>
           )}

@@ -47,7 +47,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
           <div className="relative w-full aspect-video">
             <img src={srcStr} alt={altStr} className="w-full h-full object-cover" />
           </div>
-          {altStr && <figcaption className="text-center text-sm text-white/50 mt-2 p-2">{altStr}</figcaption>}
+          {altStr && <figcaption className="text-center text-sm text-white/80 mt-2 p-2">{altStr}</figcaption>}
         </figure>
       );
     }

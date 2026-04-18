@@ -97,7 +97,7 @@ export default function ContentManager({
 
     if (isDeleting) {
       return (
-        <button disabled className="text-xs font-bold text-zinc-500 bg-zinc-800 px-3 py-1 rounded-md opacity-50 cursor-not-allowed">
+        <button disabled className="text-xs font-bold text-zinc-300 bg-zinc-800 px-3 py-1 rounded-md opacity-50 cursor-not-allowed">
           DELETING...
         </button>
       );
@@ -128,7 +128,7 @@ export default function ContentManager({
     <div className="w-full h-full flex flex-col">
       <div className="mb-6">
         <h2 className="text-2xl font-black text-white tracking-tighter">Manage Content</h2>
-        <p className="text-zinc-500 text-sm mt-1">Review and delete explicitly verified Database entries.</p>
+        <p className="text-zinc-300 text-sm mt-1">Review and delete explicitly verified Database entries.</p>
       </div>
 
       {loading ? (
@@ -143,14 +143,14 @@ export default function ContentManager({
             <h3 className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">Active Events</h3>
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
               {events.length === 0 ? (
-                <div className="text-zinc-600/50 text-sm italic py-4">No events found.</div>
+                <div className="text-zinc-400 text-sm italic py-4">No events found.</div>
               ) : (
                 events.map((event) => (
                   <div key={event.id} className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-zinc-700 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-zinc-200 truncate">{event.title}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-md">{new Date(event.date_start).toLocaleDateString()}</span>
+                        <span className="text-xs text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded-md">{new Date(event.date_start).toLocaleDateString()}</span>
                         {event.cf_email && (
                           <span className="text-[10px] text-ares-gold/70 bg-ares-gold/10 px-2 py-0.5 rounded-md truncate max-w-[150px]">
                             {event.cf_email}
@@ -178,14 +178,14 @@ export default function ContentManager({
             <h3 className="text-ares-red font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">Published Blog Posts</h3>
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
               {posts.length === 0 ? (
-                <div className="text-zinc-600/50 text-sm italic py-4">No posts found.</div>
+                <div className="text-zinc-400 text-sm italic py-4">No posts found.</div>
               ) : (
                 posts.map((post) => (
                   <div key={post.slug} className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-zinc-700 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-zinc-200 truncate">{post.title}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-md">{new Date(post.date).toLocaleDateString()}</span>
+                        <span className="text-xs text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded-md">{new Date(post.date).toLocaleDateString()}</span>
                         {post.cf_email && (
                           <span className="text-[10px] text-ares-gold/70 bg-ares-gold/10 px-2 py-0.5 rounded-md truncate max-w-[150px]">
                             {post.cf_email}

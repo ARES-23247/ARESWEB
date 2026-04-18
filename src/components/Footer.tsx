@@ -12,7 +12,7 @@ export default function Footer() {
           <Link to="/" className="block mb-6 group">
             <h3 className="text-4xl font-black text-white font-heading tracking-tight group-hover:text-ares-red transition-colors">ARES</h3>
             <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">Appalachian Robotics & Engineering Society</p>
-            <p className="text-marble/40 text-xs font-medium uppercase tracking-[0.2em]">FIRST Tech Challenge Team #23247</p>
+            <p className="text-marble/70 text-xs font-medium uppercase tracking-[0.2em]">FIRST Tech Challenge Team #23247</p>
           </Link>
           <p className="text-marble/70 text-base leading-relaxed max-w-md border-l-2 border-ares-bronze/30 pl-6">
             We are the official <span className="text-white font-bold italic">sibling team</span> to <strong>MARS 2614</strong>. 
@@ -46,7 +46,7 @@ export default function Footer() {
               <i className="fas fa-envelope"></i>
             </a>
           </div>
-          <p className="text-marble/40 text-xs font-bold uppercase tracking-widest">Ares HQ</p>
+          <p className="text-marble/70 text-xs font-bold uppercase tracking-widest">Ares HQ</p>
           <a href="mailto:ares23247wv@gmail.com" className="text-marble/80 hover:text-ares-red text-sm font-bold transition-colors">
             ares23247wv@gmail.com
           </a>
@@ -54,10 +54,10 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col md:flex-row justify-between items-center gap-6">
-        <p className="text-marble/30 text-[10px] font-bold uppercase tracking-[0.3em]">
+        <p className="text-marble/60 text-[10px] font-bold uppercase tracking-[0.3em]">
           © {new Date().getFullYear()} ARES 23247. A member of the MARS 2614 Family.
         </p>
-        <div className="flex gap-8 text-[10px] font-bold uppercase tracking-[0.3em] text-marble/30">
+        <div className="flex gap-8 text-[10px] font-bold uppercase tracking-[0.3em] text-marble/60">
           <Link to="/privacy" className="hover:text-white transition-colors">Privacy Privacy</Link>
           <Link to="/sponsors" className="hover:text-white transition-colors">Support Us</Link>
         </div>

@@ -27,7 +27,7 @@ export default function EventDetail() {
   }, [id]);
 
   if (loading) return <div className="w-full min-h-[50vh] flex items-center justify-center text-ares-gold animate-pulse font-heading tracking-widest">Consulting the Oracle...</div>;
-  if (notFound || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/50 font-mono text-center">Event Record Erased or Unfound.</div>;
+  if (notFound || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80 font-mono text-center">Event Record Erased or Unfound.</div>;
 
   // Try to parse description as Tiptap AST. If it fails, treat as a legacy plain-text description.
   let parsedAst: ASTNode | null = null;
@@ -69,11 +69,11 @@ export default function EventDetail() {
           </h1>
           <div className="mt-8 flex flex-col md:flex-row gap-6 text-ares-bronze font-medium text-lg lg:text-xl">
             <p className="flex items-center gap-2">
-              <span className="text-white/40">Date:</span> {startDate.toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              <span className="text-white/70">Date:</span> {startDate.toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
             {event.location && (
               <p className="flex items-center gap-2">
-                <span className="text-white/40">Location:</span> {event.location}
+                <span className="text-white/70">Location:</span> {event.location}
               </p>
             )}
           </div>

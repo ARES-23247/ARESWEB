@@ -127,7 +127,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
     }
   };
 
-  if (!editor) return <div className="text-zinc-500 animate-pulse font-mono tracking-widest text-sm">Booting Editor System...</div>;
+  if (!editor) return <div className="text-zinc-300 animate-pulse font-mono tracking-widest text-sm">Booting Editor System...</div>;
 
   return (
     <div className="flex flex-col gap-6 w-full relative">
@@ -148,7 +148,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all shadow-inner lg:text-lg"
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all shadow-inner lg:text-lg"
             placeholder='e.g. Our Road to State'
           />
         </div>
@@ -159,7 +159,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
             type="text"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-ares-gold focus:border-ares-gold transition-all shadow-inner lg:text-lg"
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-ares-gold focus:border-ares-gold transition-all shadow-inner lg:text-lg"
             placeholder="e.g. Software Team"
           />
         </div>
@@ -171,11 +171,11 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
               type="text"
               value={coverImageUrl}
               onChange={(e) => setCoverImageUrl(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600 transition-all shadow-inner lg:text-lg"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600 transition-all shadow-inner lg:text-lg"
               placeholder="https://..."
             />
             <button 
-              className={`px-4 py-3 rounded-lg text-sm font-bold border border-zinc-700 transition-all focus:outline-none focus:ring-2 focus:ring-ares-red ${isUploadingCover ? "bg-zinc-800 text-zinc-500 animate-pulse" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}
+              className={`px-4 py-3 rounded-lg text-sm font-bold border border-zinc-700 transition-all focus:outline-none focus:ring-2 focus:ring-ares-red ${isUploadingCover ? "bg-zinc-800 text-zinc-300 animate-pulse" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}
               onClick={() => document.getElementById('cover-upload')?.click()}
             >
               UPL
@@ -215,7 +215,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
         <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-4 py-2 rounded-lg text-sm transition-all ${editor.isActive("bulletList") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Bullet List</button>
         <div className="w-px h-6 bg-zinc-800 mx-2"></div>
         <button 
-          className={`px-4 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ${isUploadingInline ? "bg-zinc-800 text-zinc-500 animate-pulse" : "text-ares-gold hover:bg-zinc-800 hover:text-ares-gold"}`}
+          className={`px-4 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ${isUploadingInline ? "bg-zinc-800 text-zinc-300 animate-pulse" : "text-ares-gold hover:bg-zinc-800 hover:text-ares-gold"}`}
           onClick={() => document.getElementById('inline-img-upload')?.click()}
         >
           Add Image
@@ -253,7 +253,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
           onClick={handlePublish}
           disabled={isPending}
           className={`flex items-center justify-center min-w-[200px] px-8 py-3.5 rounded-full font-black tracking-wide transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
-            ${isPending ? "bg-zinc-800 text-zinc-500 animate-pulse" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-0.5"}`}
+            ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-0.5"}`}
         >
           {isPending ? "COMMITTING..." : editSlug ? "UPDATE ENTRY" : "PUBLISH ENTRY"}
         </button>

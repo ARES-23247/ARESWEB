@@ -24,8 +24,8 @@ export default function BlogPost() {
       .catch(() => { setNotFound(true); setLoading(false); });
   }, [slug]);
 
-  if (loading) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/50 animate-pulse">Loading post...</div>;
-  if (notFound || !post) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/50">Post not found.</div>;
+  if (loading) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80 animate-pulse">Loading post...</div>;
+  if (notFound || !post) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80">Post not found.</div>;
 
   let parsedAst: ASTNode = { type: "doc", content: [] };
   try { parsedAst = JSON.parse(post.ast); } catch { /* Ignore parse error */ }

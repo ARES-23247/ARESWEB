@@ -53,7 +53,7 @@ export default function Home() {
           <div className="relative">
             <div className="absolute -top-10 -left-10 w-40 h-40 border-t-8 border-l-8 border-ares-bronze/20"></div>
             <p className="text-ares-red uppercase tracking-[0.2em] text-sm font-black mb-4 font-heading">The Sibling Connection</p>
-            <h2 className="text-4xl md:text-6xl font-black leading-tight mb-8 font-heading monumental-text">
+            <h2 className="text-4xl md:text-6xl font-black leading-tight mb-8 font-heading">
               Built on a <br />
               <span className="text-ares-bronze">Championship Legacy</span>
             </h2>
@@ -79,7 +79,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-4xl md:text-5xl font-black mb-4 font-heading monumental-text">Our Objectives</h2>
+              <h2 className="text-4xl md:text-5xl font-black mb-4 font-heading">Our Objectives</h2>
               <p className="text-ares-gray text-lg">Engineering precision meets community impact in our quest for the 2026 season.</p>
             </div>
             <div className="h-1 flex-grow bg-ares-bronze/10 mx-8 mb-4 hidden md:block"></div>

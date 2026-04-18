@@ -55,7 +55,7 @@ export default function Events() {
           )}
           <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 text-center">
             <div className={`text-2xl font-black ${isPast ? 'text-white/80' : 'text-ares-gold'}`}>{startDate.getDate()}</div>
-            <div className={`text-xs font-bold uppercase tracking-widest ${isPast ? 'text-white/50' : 'text-ares-red'}`}>{startDate.toLocaleDateString('en-US', { month: 'short' })}</div>
+            <div className={`text-xs font-bold uppercase tracking-widest ${isPast ? 'text-white/80' : 'text-ares-red'}`}>{startDate.toLocaleDateString('en-US', { month: 'short' })}</div>
           </div>
         </div>
 
@@ -126,7 +126,7 @@ export default function Events() {
             {pastEvents.length > 0 && (
               <div className="flex flex-col gap-8 mt-8">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-3xl font-black text-white/50">Past Events</h2>
+                  <h2 className="text-3xl font-black text-white/80">Past Events</h2>
                   <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
                 </div>
                 
