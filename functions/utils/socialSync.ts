@@ -149,6 +149,7 @@ export async function dispatchSocials(
         try {
           const agent = new BskyAgent({ service: 'https://bsky.social' });
           await agent.login({
+
             identifier: config.BLUESKY_HANDLE as string,
             password: config.BLUESKY_APP_PASSWORD as string,
           });

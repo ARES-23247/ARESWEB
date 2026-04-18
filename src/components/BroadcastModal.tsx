@@ -64,11 +64,16 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
         ? `/dashboard/api/admin/posts/${id}/repush` 
         : `/dashboard/api/admin/events/${id}/repush`;
         
+      const payloadSocials: Record<string, boolean> = {};
+      selected.forEach(platform => {
+        payloadSocials[platform] = true;
+      });
+
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ socials: selectedsocials }),
+        body: JSON.stringify({ socials: payloadSocials }),
       });
       
       const data = await res.json();
