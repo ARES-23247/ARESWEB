@@ -15,7 +15,11 @@ interface CommandsListProps {
   items: CommandItem[];
 }
 
-export const CommandsList = forwardRef<unknown, CommandsListProps>((props, ref) => {
+export interface CommandsListRef {
+  onKeyDown: (props: { event: KeyboardEvent }) => boolean;
+}
+
+export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>((props, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const items: CommandItem[] = [

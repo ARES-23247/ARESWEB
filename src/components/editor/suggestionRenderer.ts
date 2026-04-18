@@ -1,8 +1,13 @@
 import { ReactRenderer } from '@tiptap/react';
-import tippy, { Instance } from 'tippy.js';
+import tippy, { Instance, GetReferenceClientRect } from 'tippy.js';
 import { SuggestionProps } from '@tiptap/suggestion';
+import { ComponentType } from 'react';
 
-export const suggestionRenderer = (component: any) => {
+interface SuggestionComponentRef {
+  onKeyDown: (props: SuggestionProps) => boolean;
+}
+
+export const suggestionRenderer = (component: ComponentType<SuggestionProps>) => {
   return {
     onStart: (props: SuggestionProps & { renderer: ReactRenderer, popup: Instance[] }) => {
       props.renderer = new ReactRenderer(component, {
@@ -15,7 +20,7 @@ export const suggestionRenderer = (component: any) => {
       }
 
       props.popup = tippy('body', {
-        getReferenceClientRect: props.clientRect as any,
+        getReferenceClientRect: props.clientRect as GetReferenceClientRect,
         appendTo: () => document.body,
         content: props.renderer.element,
         showOnCreate: true,
@@ -32,22 +37,31 @@ export const suggestionRenderer = (component: any) => {
         return;
       }
 
-      props.popup[0].setProps({
-        getReferenceClientRect: props.clientRect as any,
-      });
+      const tippyInstance = props.popup[0];
+      if (tippyInstance) {
+        tippyInstance.setProps({
+          getReferenceClientRect: props.clientRect as GetReferenceClientRect,
+        });
+      }
     },
 
     onKeyDown(props: SuggestionProps & { renderer: ReactRenderer, popup: Instance[] }) {
       if (props.event.key === 'Escape') {
-        props.popup[0].hide();
+        const tippyInstance = props.popup[0];
+        if (tippyInstance) {
+          tippyInstance.hide();
+        }
         return true;
       }
 
-      return (props.renderer.ref as any)?.onKeyDown(props);
+      return (props.renderer.ref as SuggestionComponentRef)?.onKeyDown(props);
     },
 
     onExit(props: SuggestionProps & { renderer: ReactRenderer, popup: Instance[] }) {
-      props.popup[0].destroy();
+      const tippyInstance = props.popup[0];
+      if (tippyInstance) {
+        tippyInstance.destroy();
+      }
       props.renderer.destroy();
     },
   };
