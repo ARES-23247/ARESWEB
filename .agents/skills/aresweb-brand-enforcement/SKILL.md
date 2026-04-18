@@ -34,5 +34,15 @@ You must **NEVER** use bracket-syntax arbitrary hex codes in the JSX.
 
 Additionally, you ensure that if you use `-bright`, `-dark`, or opacities (e.g., `text-marble/70`), the base class *actually exists* in the tailwind configuration. "Ghost classes" like `ares-red-bright` that don't exist default to nothing and destroy the UI. If you need a variation, either add it to the tailwind config or use native tailwind opacity dividers (e.g., `bg-ares-red/80`).
 
-## 5. Execution
-Whenever you encounter UI files that violate these protocols, treat it as a critical architectural defect. You must proactively sweep the file and replace the banned properties with their ARES equivalents before declaring the task complete.
+## 5. Geometric UI Constraints (The Hero Card)
+In addition to color, structural geometry must be globally consistent across all modular components.
+
+You must **NEVER** use `clip-path` polygon cuts to achieve diagonal corners on dynamic cards. `clip-path` mathematically destroys the CSS Box Model, completely nullifying native CSS shadows (`hover:shadow-2xl`) and CSS border bounds. 
+- ❌ **BANNED**: `clip-path: polygon(...)` for dynamic hover interaction containers.
+
+Instead, you must utilize the global `.hero-card` class defined in `index.css`. This class organically simulates the geometric "cut corner" aesthetic across the portal using extremely heavy, asymmetrical border-radiuses (a "leaf-shape").
+- ✅ **AUTHORIZED**: `<div className="hero-card group">`
+- The intrinsic padding, geometric radiuses, and dynamic "bubble" hover behaviors (upward translation, massive drop shadows, and glowing red borders) are all built centrally into `.hero-card`. 
+
+## 6. Execution
+Whenever you encounter UI files that violate these protocols, treat it as a critical architectural defect. You must proactively sweep the file and replace the banned colors or fractured geometry containers with their authorized ARES equivalents before declaring the task complete.
