@@ -47,7 +47,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
     });
   };
 
-  const uploadFile = async (file: File): Promise<string> => {
+  const uploadFile = async (file: File): Promise<{url: string, altText?: string}> => {
     const compressedBlob = await compressImage(file);
     const formData = new FormData();
     formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ".webp"));
@@ -55,7 +55,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
     const res = await fetch("/api/upload", { method: "POST", body: formData });
     const data = await res.json();
     if (!data.url) throw new Error(data.error || "Upload failed");
-    return data.url;
+    return { url: data.url, altText: data.altText };
   };
 
   const editor = useEditor({
@@ -190,7 +190,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
                 if (!file) return;
                 setIsUploadingCover(true);
                 try {
-                  const url = await uploadFile(file);
+                  const { url } = await uploadFile(file);
                   setCoverImageUrl(url);
                 } catch(err) {
                   setErrorMsg(String(err));
@@ -230,8 +230,8 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
             if (!file) return;
             setIsUploadingInline(true);
             try {
-              const url = await uploadFile(file);
-              editor.chain().focus().setImage({ src: url }).run();
+              const { url, altText } = await uploadFile(file);
+              editor.chain().focus().setImage({ src: url, alt: altText || "ARES Media Input" }).run();
             } catch(err) {
               setErrorMsg(String(err));
             } finally {

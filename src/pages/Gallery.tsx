@@ -1,3 +1,6 @@
+import SEO from "../components/SEO";
+import LazyImage from "../components/LazyImage";
+
 const photos = [
   { src: "/gallery_2.png", alt: "FTC competition arena action shot", aspect: "aspect-video" },
   { src: "/gallery_3.png", alt: "Machining robotic joints with sparks", aspect: "aspect-[3/4]" },
@@ -7,6 +10,7 @@ const photos = [
 export default function Gallery() {
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <SEO title="Team Gallery" description="Explore behind the scenes of ARES 23247. From raw CAD prototypes and machining directly to the qualification arenas." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
       <div className="mb-12">
         <h3 className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-2">Build Season &amp; Comps</h3>
@@ -24,8 +28,13 @@ export default function Gallery() {
             key={index}
             className={`relative w-full overflow-hidden rounded-2xl glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${photo.aspect}`}
           >
-            <img src={photo.src} alt={photo.alt} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading={index < 2 ? "eager" : "lazy"} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+            <LazyImage 
+               src={photo.src} 
+               alt={photo.alt} 
+               className="absolute inset-0 w-full h-full"
+               imgClassName="transition-transform duration-700 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
               <p className="text-white font-medium text-sm drop-shadow-md">{photo.alt}</p>
             </div>
           </div>

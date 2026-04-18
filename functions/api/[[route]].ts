@@ -4,6 +4,7 @@ import { handle } from "hono/cloudflare-pages";
 type Bindings = {
   DB: D1Database;
   ARES_STORAGE: R2Bucket;
+  AI: any;
 };
 
 const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
@@ -147,7 +148,25 @@ app.post("/posts", async (c) => {
         if (node.content) return node.content.map(extractText).join(" ");
         return "";
       };
-      snippet = extractText(body.ast as ASTNode).slice(0, 200);
+      const rawText = extractText(body.ast as ASTNode);
+      if (rawText) {
+        try {
+          if (c.env.AI) {
+            const aiResponse = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+              messages: [
+                { role: "system", content: "You are an expert SEO assistant. Summarize the provided blog text into an engaging, keyword-optimized meta-description of exactly 1-2 sentences. Max 150 chars. Return only the summary text without quotes." },
+                { role: "user", content: rawText.slice(0, 2000) }
+              ]
+            });
+            snippet = (aiResponse as any).response?.trim() || rawText.slice(0, 200);
+          } else {
+            snippet = rawText.slice(0, 200);
+          }
+        } catch (aiErr) {
+          console.error("AI summarization failed:", aiErr);
+          snippet = rawText.slice(0, 200);
+        }
+      }
     } catch {
       snippet = "";
     }
@@ -205,7 +224,25 @@ app.put("/posts/:slug", async (c) => {
         if (node.content) return node.content.map(extractText).join(" ");
         return "";
       };
-      snippet = extractText(body.ast as ASTNode).slice(0, 200);
+      const rawText = extractText(body.ast as ASTNode);
+      if (rawText) {
+        try {
+          if (c.env.AI) {
+            const aiResponse = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+              messages: [
+                { role: "system", content: "You are an expert SEO assistant. Summarize the provided blog text into an engaging, keyword-optimized meta-description of exactly 1-2 sentences. Max 150 chars. Return only the summary text without quotes." },
+                { role: "user", content: rawText.slice(0, 2000) }
+              ]
+            });
+            snippet = (aiResponse as any).response?.trim() || rawText.slice(0, 200);
+          } else {
+            snippet = rawText.slice(0, 200);
+          }
+        } catch (aiErr) {
+          console.error("AI summarization failed:", aiErr);
+          snippet = rawText.slice(0, 200);
+        }
+      }
     } catch {
       snippet = "";
     }
@@ -230,9 +267,8 @@ app.put("/posts/:slug", async (c) => {
   }
 });
 
-// ── File Upload via R2 ───────────────────────────────────────────────
+// ── File Upload via R2 & AI Image Accessibility Generation ───────────
 app.post("/upload", async (c) => {
-  // Validate host header
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -250,14 +286,95 @@ app.post("/upload", async (c) => {
     const key = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
     const arrayBuffer = await file.arrayBuffer();
 
-    await c.env.ARES_STORAGE.put(key, arrayBuffer, {
+    // 1. Storage Upload
+    const uploadTask = c.env.ARES_STORAGE.put(key, arrayBuffer, {
       httpMetadata: { contentType: file.type },
     });
 
-    return c.json({ success: true, url: `/api/media/${key}` });
+    // 2. Automated AI Accessibility Tagging (LLava Vision)
+    let altText = "ARES 23247 Team Media Image";
+    try {
+      if (c.env.AI) {
+        const uint8 = [...new Uint8Array(arrayBuffer)];
+        const aiResponse = await c.env.AI.run('@cf/llava-1.5-7b-hf', {
+          prompt: 'Describe this image for screen readers in 1 sentence. Make it helpful, concise, and focused on robotics if applicable.',
+          image: uint8
+        });
+        if ((aiResponse as any)?.description) {
+          altText = String((aiResponse as any).description).trim();
+        }
+      }
+    } catch (aiErr) {
+      console.error("AI Vision generation failed, utilizing fallback alt text:", aiErr);
+    }
+
+    await uploadTask;
+
+    return c.json({ success: true, url: `/api/media/${key}`, altText });
   } catch (err) {
     console.error("R2 upload error:", err);
     return c.json({ error: "Storage upload failed" }, 500);
+  }
+});
+
+// ── Dynamic XML Sitemap Generation ─────────────────────────────────
+app.get("/sitemap.xml", async (c) => {
+  try {
+    const { results: posts } = await c.env.DB.prepare(`SELECT slug, date FROM posts ORDER BY id DESC`).all();
+    const { results: events } = await c.env.DB.prepare(`SELECT id, date FROM events ORDER BY id DESC`).all();
+
+    const baseUrl = "https://ares23247.com";
+    
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/events</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/gallery</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/accessibility</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/blog</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>`;
+
+    for (const post of (posts as any)) {
+      xml += `
+  <url>
+    <loc>${baseUrl}/blog/${post.slug}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+    }
+
+    // Dynamic rendering complete
+    xml += `\n</urlset>`;
+
+    return new Response(xml, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/xml; charset=utf-8",
+        "Cache-Control": "public, max-age=3600"
+      }
+    });
+  } catch (err) {
+    console.error("Sitemap generation error:", err);
+    return new Response("Internal Server Error", { status: 500 });
   }
 });
 
@@ -358,6 +475,86 @@ app.put("/events/:id", async (c) => {
   } catch (err: unknown) {
     console.error("D1 write error (events):", err);
     return c.json({ success: false, error: (err as Error)?.message || "Event update failed" }, 500);
+  }
+});
+
+// ── POST /api/events/sync — Google Calendar Sync (admin) ──────────────
+app.post("/events/sync", async (c) => {
+  const url = new URL(c.req.url);
+  const email = c.req.header("cf-access-authenticated-user-email");
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
+  }
+
+  const CALENDAR_ID = "af2d297c3425adaeafc13ddd48a582056404cbf16a6156d3925bb8f3b4affaa0@group.calendar.google.com";
+  const ICS_URL = `https://calendar.google.com/calendar/ical/${encodeURIComponent(CALENDAR_ID)}/public/basic.ics`;
+
+  try {
+    const icsResponse = await fetch(ICS_URL);
+    if (!icsResponse.ok) throw new Error("Failed to fetch Google Calendar ICS");
+    const icsText = await icsResponse.text();
+
+    const parseICSDate = (icsDate: string) => {
+      // Basic ics date conversion: "20240417T183459Z" -> ISO 8601
+      if (!icsDate) return null;
+      const clean = icsDate.replace(/[^0-9TZ]/g, "");
+      if (clean.length === 8) { // YYYYMMDD
+        return `${clean.substring(0,4)}-${clean.substring(4,6)}-${clean.substring(6,8)}T00:00:00Z`;
+      }
+      if (clean.length >= 15) {
+        return `${clean.substring(0,4)}-${clean.substring(4,6)}-${clean.substring(6,8)}T${clean.substring(9,11)}:${clean.substring(11,13)}:${clean.substring(13,15)}Z`;
+      }
+      return null;
+    };
+
+    const extractField = (block: string, field: string) => {
+      // match FIELD:value or FIELD;TZID=...:value
+      const regex = new RegExp(`^${field}(?:;[^:]+)?:(.*)$`, "m");
+      const match = block.match(regex);
+      return match ? match[1].trim().replace(/\\,/g, ",").replace(/\\n/g, "\n") : null;
+    };
+
+    const blocks = icsText.split("BEGIN:VEVENT");
+    blocks.shift(); // Remove header
+
+    let newCount = 0;
+    let upCount = 0;
+
+    for (const block of blocks) {
+      const uid = extractField(block, "UID");
+      if (!uid) continue;
+
+      const title = extractField(block, "SUMMARY") || "Untitled Event";
+      const start = extractField(block, "DTSTART");
+      const end = extractField(block, "DTEND");
+      const location = extractField(block, "LOCATION") || "";
+      const description = extractField(block, "DESCRIPTION") || "";
+
+      const parsedStart = parseICSDate(start || "");
+      const parsedEnd = parseICSDate(end || "");
+
+      if (!parsedStart) continue;
+
+      const existing = await c.env.DB.prepare("SELECT id FROM events WHERE gcal_event_id = ?").bind(uid).first();
+
+      if (existing) {
+        await c.env.DB.prepare(
+          "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ? WHERE gcal_event_id = ?"
+        ).bind(title, parsedStart, parsedEnd, location, description, uid).run();
+        upCount++;
+      } else {
+        const genId = crypto.randomUUID();
+        await c.env.DB.prepare(
+          "INSERT INTO events (id, title, date_start, date_end, location, description, gcal_event_id, cf_email, cover_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(genId, title, parsedStart, parsedEnd, location, description, uid, email || "sync", null).run();
+        newCount++;
+      }
+    }
+
+    return c.json({ success: true, synced: newCount + upCount, newEvents: newCount, updatedEvents: upCount });
+  } catch (err: unknown) {
+    console.error("GCal sync error:", err);
+    return c.json({ success: false, error: (err as Error)?.message || "Calendar sync failed" }, 500);
   }
 });
 

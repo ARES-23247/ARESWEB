@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format, isAfter, subDays } from "date-fns";
 import { motion } from "framer-motion";
+import SEO from "../components/SEO";
 
 interface EventItem {
   id: string;
@@ -78,6 +79,7 @@ export default function Events() {
       exit={{ opacity: 0 }}
       className="w-full flex-grow flex flex-col bg-obsidian min-h-screen"
     >
+      <SEO title="Event Schedule" description="Upcoming competitions, outreach demos, and build sessions for ARES 23247." />
       {/* ─── HEADER ─── */}
       <section className="relative w-full py-24 px-6 overflow-hidden flex flex-col items-center text-center">
         <div className="absolute inset-0 w-full h-full">

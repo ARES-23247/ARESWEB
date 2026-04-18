@@ -14,6 +14,7 @@ import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Dashboard from "./pages/Dashboard";
 import TechStack from "./pages/TechStack";
+import Accessibility from "./pages/Accessibility";
 
 export default function App() {
   const location = useLocation();
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tech-stack" element={<TechStack />} />
+            <Route path="/accessibility" element={<Accessibility />} />
           </Routes>
         </AnimatePresence>
       </main>

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import SEO from "../components/SEO";
 
 interface PostRecord {
   slug: string;
@@ -28,6 +29,7 @@ export default function Blog() {
       exit={{ opacity: 0 }}
       className="w-full min-h-screen bg-obsidian text-marble py-8"
     >
+      <SEO title="Team Blog" description="Latest updates, engineering insights, and outreach recaps from ARES 23247." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
         <motion.div 
           initial={{ y: 20, opacity: 0 }}

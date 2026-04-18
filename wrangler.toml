@@ -17,3 +17,6 @@ bucket_name = "ares-media"
 binding = "DB"
 database_name = "ares-db-preview"
 database_id = "09c4aafb-89fd-4735-930e-3ff8e2289c34"
+
+[ai]
+binding = "AI"

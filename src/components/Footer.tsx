@@ -59,9 +59,24 @@ export default function Footer() {
         <p className="text-marble/60 text-xs font-bold uppercase tracking-[0.3em]">
           © {new Date().getFullYear()} ARES 23247. A member of the MARS 2614 Family.
         </p>
-        <div className="flex gap-8 text-xs font-bold uppercase tracking-[0.3em] text-marble/60">
-          <Link to="/privacy" className="hover:text-white transition-colors">Privacy Privacy</Link>
-          <Link to="/sponsors" className="hover:text-white transition-colors">Support Us</Link>
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-center text-xs font-bold uppercase tracking-[0.3em] text-marble/60">
+          <div className="flex gap-4 border-b md:border-b-0 md:border-r border-marble/20 pb-4 md:pb-0 pr-0 md:pr-8">
+            <Link to="/accessibility" className="hover:text-white transition-colors flex items-center gap-2 group">
+              <svg className="w-4 h-4 text-ares-red group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Accessibility
+            </Link>
+            <div className="flex gap-2">
+              <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded flex items-center" title="WAVE 10.0 AA Compliant">WAVE</span>
+              <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded flex items-center" title="pa11y Analyzed">PA11Y</span>
+            </div>
+          </div>
+          <div className="flex gap-8">
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <Link to="/sponsors" className="hover:text-white transition-colors">Support Us</Link>
+          </div>
         </div>
       </div>
     </footer>

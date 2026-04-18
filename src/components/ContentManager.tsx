@@ -59,6 +59,21 @@ export default function ContentManager({
     }
   });
 
+  const syncGcalMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/events/sync`, { method: "POST" });
+      if (!res.ok) throw new Error("Sync failed. Check permissions.");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      alert(`Sync Complete! Fetched ${data.synced} events. (${data.newEvents} new, ${data.updatedEvents} updated)`);
+    },
+    onError: (err) => {
+      alert(err.message);
+    }
+  });
+
   const deletePostMutation = useMutation({
     mutationFn: async (slug: string) => {
       const res = await fetch(`/api/posts/${slug}`, { method: "DELETE" });
@@ -132,7 +147,16 @@ export default function ContentManager({
           
           {/* Active Events Column */}
           <div className="flex flex-col">
-            <h3 className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">Active Events</h3>
+            <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+              <h3 className="text-ares-gold font-bold uppercase tracking-widest text-xs">Active Events</h3>
+              <button 
+                onClick={() => syncGcalMutation.mutate()}
+                disabled={syncGcalMutation.isPending}
+                className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                {syncGcalMutation.isPending ? "SYNCING..." : "SYNC GCAL"}
+              </button>
+            </div>
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
               {events.length === 0 ? (
                 <div className="text-zinc-400 text-sm italic py-4">No events found.</div>
