@@ -17,7 +17,7 @@ export default function AssetManager() {
   const { data: assets = [], isLoading } = useQuery<R2Asset[]>({
     queryKey: ["assets"],
     queryFn: async () => {
-      const res = await fetch("/api/media");
+      const res = await fetch("/api/admin/media");
       const data = await res.json();
       return data.assets ?? [];
     },
@@ -28,7 +28,7 @@ export default function AssetManager() {
       const compressed = await compressImage(file);
       const formData = new FormData();
       formData.append("file", compressed, file.name.replace(/\.[^/.]+$/, ".webp"));
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
       return res.json();
     },
     onSuccess: () => {
@@ -38,7 +38,7 @@ export default function AssetManager() {
 
   const deleteMutation = useMutation({
     mutationFn: async (key: string) => {
-      const res = await fetch(`/api/media/${key}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/media/${key}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
       return key;
     },

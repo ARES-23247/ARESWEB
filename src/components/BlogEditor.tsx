@@ -52,7 +52,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
     const formData = new FormData();
     formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ".webp"));
     
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
     const data = await res.json();
     if (!data.url) throw new Error(data.error || "Upload failed");
     return { url: data.url, altText: data.altText };
@@ -104,7 +104,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
       const ast = editor.getJSON();
 
       const method = editSlug ? "PUT" : "POST";
-      const url = editSlug ? `/api/posts/${editSlug}` : "/api/posts";
+      const url = editSlug ? `/api/admin/posts/${editSlug}` : "/api/admin/posts";
 
       const res = await fetch(url, {
         method,

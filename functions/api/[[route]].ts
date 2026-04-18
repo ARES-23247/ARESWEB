@@ -82,7 +82,7 @@ app.get("/events/:id", async (c) => {
 });
 
 // ── POST /api/events — create a new event (admin) ────────────────────
-app.post("/events", ensureAdmin, async (c) => {
+app.post("/admin/events", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -110,7 +110,7 @@ app.post("/events", ensureAdmin, async (c) => {
 });
 
 // ── POST /api/posts — create a new blog post (admin) ────────────────
-app.post("/posts", ensureAdmin, async (c) => {
+app.post("/admin/posts", ensureAdmin, async (c) => {
   // Validate host header to prevent Zero Trust bypass via .pages.dev
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
@@ -199,7 +199,7 @@ app.post("/posts", ensureAdmin, async (c) => {
 });
 
 // ── PUT /api/posts/:slug — edit a blog post (admin) ────────────────────
-app.put("/posts/:slug", ensureAdmin, async (c) => {
+app.put("/admin/posts/:slug", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -272,7 +272,7 @@ app.put("/posts/:slug", ensureAdmin, async (c) => {
 });
 
 // ── File Upload via R2 & AI Image Accessibility Generation ───────────
-app.post("/upload", ensureAdmin, async (c) => {
+app.post("/admin/upload", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -420,7 +420,7 @@ app.get("/media", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/media/:key — delete R2 object (admin) ─────────────────
-app.delete("/media/:key", ensureAdmin, async (c) => {
+app.delete("/admin/media/:key", ensureAdmin, async (c) => {
   try {
     const key = c.req.param("key") as string;
     await c.env.ARES_STORAGE.delete(key);
@@ -433,7 +433,7 @@ app.delete("/media/:key", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/events/:id — delete an event (admin) ────────────────────
-app.delete("/events/:id", ensureAdmin, async (c) => {
+app.delete("/admin/events/:id", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -451,7 +451,7 @@ app.delete("/events/:id", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/posts/:slug — delete a blog post (admin) ────────────────
-app.delete("/posts/:slug", ensureAdmin, async (c) => {
+app.delete("/admin/posts/:slug", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -469,7 +469,7 @@ app.delete("/posts/:slug", ensureAdmin, async (c) => {
 });
 
 // ── PUT /api/events/:id — edit an event (admin) ────────────────────────
-app.put("/events/:id", ensureAdmin, async (c) => {
+app.put("/admin/events/:id", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -498,7 +498,7 @@ app.put("/events/:id", ensureAdmin, async (c) => {
 });
 
 // ── POST /api/events/sync — Google Calendar Sync (admin) ──────────────
-app.post("/events/sync", ensureAdmin, async (c) => {
+app.post("/admin/events/sync", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
