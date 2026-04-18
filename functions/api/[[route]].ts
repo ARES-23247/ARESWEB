@@ -667,3 +667,4 @@ app.delete("/admin/docs/:slug", async (c) => {
 });
 
 export const onRequest = handle(app);
+export default app;
