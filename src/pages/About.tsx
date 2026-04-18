@@ -31,7 +31,7 @@ export default function About() {
               <p>
                 In the <em>FIRST</em> Tech Challenge, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
               </p>
-              <div className="bg-white border-l-4 border-ares-red p-8 shadow-sm">
+              <div className="bg-white border-l-4 border-ares-red hero-card p-8 shadow-sm group hover:border-ares-red">
                 <h3 className="text-ares-red font-bold text-xs tracking-widest uppercase mb-6 font-heading">Disciplinary Units</h3>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-bold uppercase tracking-wider text-obsidian/60">
                   {[
@@ -71,7 +71,7 @@ export default function About() {
               { q: "Deployment Site?", a: "ARES HQ is located within the dedicated MARS RoboticS facility at Mountaineer Middle School." },
               { q: "Is it enjoyable?", a: "Radical fun is a core directive of the ARES mission." },
             ].map((faq) => (
-              <div key={faq.q} className="marble-card p-8 group hover:-translate-y-1 transition-transform">
+              <div key={faq.q} className="marble-card hero-card p-8 group">
                 <h3 className="text-ares-red font-bold text-lg mb-4 font-heading group-hover:text-ares-bronze transition-colors uppercase italic">{faq.q}</h3>
                 <p className="text-obsidian/70 text-base leading-relaxed">{faq.a}</p>
               </div>
@@ -87,7 +87,7 @@ export default function About() {
             <h2 className="text-4xl md:text-5xl font-bold mb-4 font-heading uppercase">The Command</h2>
             <div className="w-24 h-1 bg-ares-red mx-auto"></div>
           </div>
-          <div className="bg-marble/5 border border-ares-bronze/20 p-12 text-center group">
+          <div className="bg-marble/5 border border-ares-bronze/20 hero-card p-12 text-center group hover:border-ares-red/50">
             <h3 className="text-4xl font-bold text-ares-bronze mb-6 font-heading group-hover:text-white transition-colors">Dave Huss & Kelley Burd-Huss</h3>
             <div className="space-y-6 text-lg text-marble/60 leading-relaxed max-w-2xl mx-auto italic">
               <p>
