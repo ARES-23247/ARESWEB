@@ -49,10 +49,25 @@ const res = await fetch("/dashboard/api/admin/settings");
 grep -rn 'fetch("/api/admin/' src/
 ```
 
+### Rule E: Never Use `@ts-ignore` — Use `@ts-expect-error` with Descriptions
+The ESLint config enforces `@typescript-eslint/ban-ts-comment`. Using `// @ts-ignore` will fail the lint check. Always use the form:
+
+```ts
+// @ts-expect-error -- D1 untyped response
+const data = json.results;
+```
+
+The description after `--` must be **3+ characters** explaining why the suppression is necessary. Never place `@ts-expect-error` inside JSX children (it becomes literal text) — place it on the line *before* the offending expression.
+
+### Rule F: Always Commit Before Ending a Session
+If you modify files, you **MUST** run `npm run lint` and `npm run build`, then `git add -A && git commit && git push` before your session ends. Uncommitted local changes that break lint will block the Cloudflare CI pipeline for the next session, causing cascading failures. Never leave dirty working trees.
+
 ## 3. Resolving Common Build Errors
-- **"Calling setState synchronously within an effect"**: Do not call functions that execute `setState` immediately during render or inside the body of a `useEffect` loop without an explicit trigger. If the initial state depends on a runtime condition (e.g., `window.location.hostname === "localhost"`), compute it as a **module-level constant** and pass it directly to `useState()` as the initial value. This is the enforced pattern for the Zero Trust auth gate — see the `aresweb-zero-trust-security` skill, Section 6. Never wrap the workaround in `setTimeout()` — that suppresses the lint warning but introduces a flash of loading state on every localhost render.
+- **"Calling setState synchronously within an effect"**: Do not call functions that execute `setState` immediately during render or inside the body of a `useEffect` loop without an explicit trigger. If the initial state depends on a runtime condition (e.g., `window.location.hostname === "localhost"`), compute it as a **module-level constant** and pass it directly to `useState()` as the initial value. This is the enforced pattern for the Zero Trust auth gate — see the `aresweb-zero-trust-security` skill, Section 6. Never wrap the workaround in `setTimeout()` — that suppresses the lint warning but introduces a flash of loading state on every localhost render. For modal cleanup, use conditional rendering (`{isOpen && <Modal />}`) so React unmounts the component and resets state naturally — never use `useEffect` to reset state on prop changes.
+- **"Cannot access refs during render" (react-hooks/refs)**: Never read or write `ref.current` in the component body. Access refs only inside `useEffect`, event handlers, or callbacks. The `useRef` + render-time check pattern that works in React 18 is banned under the React 19 strict lint rules.
 - **"@typescript-eslint/no-unused-vars"**: Remove unused variables immediately. Do not leave dead state variables (e.g., `authEmail`) from refactors. If a variable was used for debugging, delete it before committing.
 - **"@typescript-eslint/no-explicit-any"**: Do not cast JSON or AI responses to `any`. Construct deterministic inline destructured types like `(aiResponse as { response?: string })` when validating Cloudflare `env.AI` objects.
+- **"@typescript-eslint/ban-ts-comment"**: Never use `@ts-ignore`. Use `@ts-expect-error -- description` (3+ char description required). See Rule E.
 - **"JSX element 'label' has no corresponding control"**: Replace `for=` with `htmlFor=`, and verify the `id=` attribute matches the `<input>` element immediately adjacent. 
 - **"Cannot call impure function Date.now() during render"**: Move pure-computation randomizers or time checks into a React `useEffect` hook, or evaluate them server-side before hydration.
 - **"'ComponentName' is not defined" (react/jsx-no-undef)**: Verify the component is properly imported. If lucide-react icons report as undefined, check the installed version (`npm ls lucide-react`) — some icons were added in later versions. Always use named imports from `lucide-react`.
