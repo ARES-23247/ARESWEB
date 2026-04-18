@@ -118,6 +118,95 @@ apiRouter.delete("/admin/posts/:slug", async (c) => {
 
 **Rule:** When adding a new `/admin/*` route, do NOT pass `ensureAdmin` as an inline middleware parameter and do NOT add auth checks inside the handler body. The global `apiRouter.use("/admin/*", ensureAdmin)` handles all authentication automatically.
 
-## Action Summary
-Whenever you are operating within `functions/api/` or writing backend logic, you are to assume the posture of a strict Security Auditor. Assume all traffic is malicious unless cryptographically verified by Cloudflare JWTs. Never implicitly trust internal Edge networking routes without explicit definitions in `_routes.json`. Never duplicate auth logic — the `ensureAdmin` middleware is the single source of truth.
+## 6. SPA Frontend Auth Gate (CRITICAL)
 
+**Cloudflare Zero Trust only protects paths that hit the Functions runtime.** The ARESWEB portal is a single-page React application — client-side routes like `/dashboard` are served as static `index.html` by Cloudflare's CDN, which **completely bypasses Zero Trust**. This means an unauthenticated visitor can see the full admin dashboard UI rendered in their browser, even though API mutations correctly fail with 401.
+
+This is both an **information exposure vulnerability** and a **UX failure**. Every protected SPA route MUST implement a frontend auth gate.
+
+### The Auth-Check Probe Pattern
+
+The backend exposes a lightweight probe endpoint at `/api/admin/auth-check` that is automatically protected by the `ensureAdmin` middleware:
+
+```typescript
+// Backend: functions/api/[[route]].ts
+// This endpoint inherits protection from apiRouter.use("/admin/*", ensureAdmin)
+apiRouter.get("/admin/auth-check", async (c) => {
+  const email = c.req.header("cf-access-authenticated-user-email") || "authenticated-user";
+  return c.json({ authenticated: true, email });
+});
+```
+
+### Frontend Auth Gate Implementation
+
+Every protected page component (e.g., `Dashboard.tsx`) MUST probe the auth-check endpoint on mount and render a locked screen if the probe fails.
+
+**The localhost bypass MUST be computed at module scope** and used as the initial `useState` value. This avoids calling `setState` synchronously inside a `useEffect` body, which violates the `react-hooks/set-state-in-effect` ESLint rule.
+
+```tsx
+// CORRECT: Module-level constant avoids setState-in-effect lint violation
+const isLocalDev =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+export default function Dashboard() {
+  const [authState, setAuthState] = useState<AuthState>(
+    isLocalDev ? "authenticated" : "checking"
+  );
+
+  useEffect(() => {
+    if (isLocalDev) return; // Already authenticated via initial state
+
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/dashboard/api/admin/auth-check", {
+          credentials: "same-origin",
+        });
+        setAuthState(res.ok ? "authenticated" : "unauthorized");
+      } catch {
+        setAuthState("unauthorized");
+      }
+    };
+    checkAuth();
+  }, []);
+
+  if (authState === "checking") return <LoadingSpinner />;
+  if (authState === "unauthorized") return <AuthRequiredScreen />;
+
+  return <ActualDashboardUI />;
+}
+```
+
+### ❌ FORBIDDEN: Localhost Bypass Inside useEffect
+
+```tsx
+// BAD — Triggers react-hooks/set-state-in-effect lint error
+useEffect(() => {
+  const isLocal = window.location.hostname === "localhost";
+  if (isLocal) {
+    setAuthState("authenticated"); // ← VIOLATION: synchronous setState in effect body
+    return;
+  }
+  // ...
+}, []);
+```
+
+### ❌ FORBIDDEN: Rendering Protected UI Without Auth Gate
+
+```tsx
+// BAD — Dashboard renders fully to unauthenticated visitors
+export default function Dashboard() {
+  // No auth check at all — anyone who visits /dashboard sees the full admin UI
+  return <AdminDashboardUI />;
+}
+```
+
+### Rule
+When creating or modifying any page component that should only be visible to authenticated users:
+1. The component MUST probe `/dashboard/api/admin/auth-check` on mount.
+2. The component MUST render a locked/login screen when the probe returns non-200.
+3. The localhost bypass MUST be a module-level `const`, NOT computed inside a `useEffect`.
+4. The auth-check endpoint MUST live under `/admin/*` to inherit `ensureAdmin` middleware protection automatically.
+
+## Action Summary
+Whenever you are operating within `functions/api/` or writing backend logic, you are to assume the posture of a strict Security Auditor. Assume all traffic is malicious unless cryptographically verified by Cloudflare JWTs. Never implicitly trust internal Edge networking routes without explicit definitions in `_routes.json`. Never duplicate auth logic — the `ensureAdmin` middleware is the single source of truth. When building or modifying protected SPA frontend pages, always implement the auth-check probe gate pattern from Section 6 — Cloudflare Zero Trust does NOT protect static page loads.
