@@ -3,6 +3,9 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import SwerveSimulator from "../components/SwerveSimulator";
+import SOTMSimulator from "../components/SOTMSimulator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, BookOpen, ExternalLink } from "lucide-react";
 import SEO from "../components/SEO";
@@ -37,6 +40,12 @@ const SIDEBAR_ORDER = [
   "Reliability Track",
   "HMI & Control",
 ];
+
+const Placeholder = ({ name }: { name: string }) => (
+  <div className="p-4 my-6 border border-red-500/30 rounded-lg text-red-400 text-sm bg-red-500/10 flex justify-center items-center">
+    Interactive component `{name}` is not yet ported to this environment.
+  </div>
+);
 
 export default function Docs() {
   const { slug } = useParams<{ slug: string }>();
@@ -327,7 +336,13 @@ export default function Docs() {
               <div className="ares-docs-content">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
                   components={{
+                    swervesimulator: () => <SwerveSimulator />,
+                    sotmsimulator: () => <SOTMSimulator />,
+                    configvisualizer: () => <Placeholder name="<ConfigVisualizer />" />,
+                    codeplayground: () => <Placeholder name="<CodePlayground />" />,
+                    screenshotgallery: () => <Placeholder name="<ScreenshotGallery />" />,
                     h1: ({ children }) => <h1 className="text-3xl font-bold font-heading mt-10 mb-4 text-white border-b border-white/10 pb-2">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-2xl font-bold font-heading mt-8 mb-3 text-ares-gold">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-xl font-bold font-heading mt-6 mb-2 text-ares-red">{children}</h3>,
