@@ -26,7 +26,12 @@ const ensureAdmin = async (c: Context, next: Next) => {
 
   const email = c.req.header("cf-access-authenticated-user-email");
   const jwt = c.req.header("cf-access-jwt-assertion");
-  if (!email && !jwt && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+  
+  // Cloudflare occasionally strips Access headers on API subpaths, fallback to checking the JWT cookie
+  const cookieHeader = c.req.header("cookie") || "";
+  const hasAuthCookie = /CF_Authorization=/.test(cookieHeader);
+
+  if (!email && !jwt && !hasAuthCookie && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
     return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
   await next();
