@@ -67,11 +67,7 @@ app.post("/events", async (c) => {
     return c.json({ error: "Forbidden host" }, 403);
   }
 
-  const email = c.req.header("cf-access-authenticated-user-email");
-  // We only strictly require email if it's not localhost for development
-  if (!email && !host.startsWith("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
+  const email = c.req.header("cf-access-authenticated-user-email") || "anonymous";
 
   try {
     const { id, title, dateStart, dateEnd, location, description, coverImage } = await c.req.json();
@@ -176,10 +172,7 @@ app.post("/upload", async (c) => {
   }
 
   // Check auth
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && !host.startsWith("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
+  const email = c.req.header("cf-access-authenticated-user-email") || "anonymous";
 
   try {
     const body = await c.req.parseBody();
