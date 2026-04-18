@@ -13,7 +13,8 @@ const apiRouter = new Hono<{ Bindings: Bindings }>();
 // ── Zero Trust Auth Middleware ────────────────────────────────────────
 const ensureAdmin = async (c: Context, next: Next) => {
   const url = new URL(c.req.url);
-  
+
+  // Block raw .pages.dev alias to prevent Zero Trust bypass via header spoofing
   if (url.hostname.endsWith(".pages.dev")) {
     return c.json({ error: "Strict Context: Direct invocation of .pages.dev alias is forbidden." }, 403);
   }
@@ -21,10 +22,7 @@ const ensureAdmin = async (c: Context, next: Next) => {
   const email = c.req.header("cf-access-authenticated-user-email");
   const jwt = c.req.header("cf-access-jwt-assertion");
   if (!email && !jwt && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    const allHeaders = Object.fromEntries(c.req.raw.headers.entries());
-    return c.json({ 
-      error: `Strict Context: Unauthorized. Cloudflare Zero Trust authentication required. DEBUG HEADERS: ${JSON.stringify(allHeaders)}` 
-    }, 401);
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
   await next();
 };
@@ -93,13 +91,7 @@ apiRouter.get("/events/:id", async (c) => {
 });
 
 // ── POST /api/events — create a new event (admin) ────────────────────
-apiRouter.post("/admin/events", ensureAdmin, async (c) => {
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
-
+apiRouter.post("/admin/events", async (c) => {
   try {
     const { id, title, dateStart, dateEnd, location, description, coverImage } = await c.req.json();
 
@@ -121,14 +113,7 @@ apiRouter.post("/admin/events", ensureAdmin, async (c) => {
 });
 
 // ── POST /api/posts — create a new blog post (admin) ────────────────
-apiRouter.post("/admin/posts", ensureAdmin, async (c) => {
-  // Validate host header to prevent Zero Trust bypass via .pages.dev
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
-
+apiRouter.post("/admin/posts", async (c) => {
   try {
     const body = await c.req.json<{
       title: string;
@@ -210,13 +195,7 @@ apiRouter.post("/admin/posts", ensureAdmin, async (c) => {
 });
 
 // ── PUT /api/posts/:slug — edit a blog post (admin) ────────────────────
-apiRouter.put("/admin/posts/:slug", ensureAdmin, async (c) => {
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
-
+apiRouter.put("/admin/posts/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
     const body = await c.req.json<{
@@ -283,13 +262,7 @@ apiRouter.put("/admin/posts/:slug", ensureAdmin, async (c) => {
 });
 
 // ── File Upload via R2 & AI Image Accessibility Generation ───────────
-apiRouter.post("/admin/upload", ensureAdmin, async (c) => {
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
-
+apiRouter.post("/admin/upload", async (c) => {
   try {
     const body = await c.req.parseBody();
     const file = body["file"] as File;
@@ -444,13 +417,7 @@ apiRouter.delete("/admin/media/:key", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/events/:id — delete an event (admin) ────────────────────
-apiRouter.delete("/admin/events/:id", ensureAdmin, async (c) => {
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
-
+apiRouter.delete("/admin/events/:id", async (c) => {
   try {
     const id = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
@@ -462,13 +429,7 @@ apiRouter.delete("/admin/events/:id", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/posts/:slug — delete a blog post (admin) ────────────────
-apiRouter.delete("/admin/posts/:slug", ensureAdmin, async (c) => {
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
-
+apiRouter.delete("/admin/posts/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
     await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
@@ -480,13 +441,7 @@ apiRouter.delete("/admin/posts/:slug", ensureAdmin, async (c) => {
 });
 
 // ── PUT /api/events/:id — edit an event (admin) ────────────────────────
-apiRouter.put("/admin/events/:id", ensureAdmin, async (c) => {
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
-
+apiRouter.put("/admin/events/:id", async (c) => {
   try {
     const paramId = c.req.param("id");
     const { title, dateStart, dateEnd, location, description, coverImage } = await c.req.json();
@@ -509,12 +464,7 @@ apiRouter.put("/admin/events/:id", ensureAdmin, async (c) => {
 });
 
 // ── POST /api/events/sync — Google Calendar Sync (admin) ──────────────
-apiRouter.post("/admin/events/sync", ensureAdmin, async (c) => {
-  const url = new URL(c.req.url);
-  const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
-  }
+apiRouter.post("/admin/events/sync", async (c) => {
 
   const CALENDAR_ID = "af2d297c3425adaeafc13ddd48a582056404cbf16a6156d3925bb8f3b4affaa0@group.calendar.google.com";
   const ICS_URL = `https://calendar.google.com/calendar/ical/${encodeURIComponent(CALENDAR_ID)}/public/basic.ics`;
