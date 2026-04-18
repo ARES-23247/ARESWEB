@@ -4,6 +4,8 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
 
+import ScrollToTop from "./components/ScrollToTop";
+
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Seasons from "./pages/Seasons";
@@ -24,6 +26,7 @@ export default function App() {
   
   return (
     <ErrorBoundary>
+      <ScrollToTop />
       <Navbar />
       <main className="flex-1 flex flex-col pt-16">
         <AnimatePresence mode="wait">
