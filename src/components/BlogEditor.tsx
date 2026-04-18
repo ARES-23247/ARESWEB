@@ -1,17 +1,31 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
-import Youtube from '@tiptap/extension-youtube';
-import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
+import { Youtube } from '@tiptap/extension-youtube';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TaskList } from '@tiptap/extension-task-list';
+import { TaskItem } from '@tiptap/extension-task-item';
 import Mathematics from '@tiptap/extension-mathematics';
-import Link from '@tiptap/extension-link';
-import Mermaid from 'tiptap-extension-mermaid';
+import { Link } from '@tiptap/extension-link';
+import { CodeBlockLowlightMermaid as Mermaid } from 'tiptap-extension-mermaid';
+import Typography from '@tiptap/extension-typography';
+import Highlight from '@tiptap/extension-highlight';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import CharacterCount from '@tiptap/extension-character-count';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
+import Mention from '@tiptap/extension-mention';
+import SlashCommands, { slashCommandsSuggestion } from './tiptap/SlashCommands';
+import { mentionsSuggestionOptions } from './tiptap/MentionsList';
+import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import 'katex/dist/katex.min.css';
+
+const lowlight = createLowlight(common);
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AssetPickerModal from "./AssetPickerModal";
@@ -77,7 +91,29 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      GlobalDragHandle.configure({
+        dragHandleWidth: 20,
+        scrollTreshold: 100,
+      }),
+      SlashCommands.configure({
+        suggestion: slashCommandsSuggestion,
+      }),
+      StarterKit.configure({
+        codeBlock: false,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: { class: 'bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 my-4 font-mono text-sm shadow-inner overflow-x-auto' }
+      }),
+      Mention.configure({
+        HTMLAttributes: { class: 'bg-ares-red/20 text-ares-red font-bold px-1 rounded-sm' },
+        suggestion: mentionsSuggestionOptions,
+      }),
+      Typography,
+      Highlight.configure({ HTMLAttributes: { class: 'bg-ares-gold/30 text-black rounded-sm px-1' } }),
+      Subscript,
+      Superscript,
+      CharacterCount,
       Image.configure({ inline: true, HTMLAttributes: { class: 'rounded-xl max-w-full my-4 border border-zinc-800 shadow-lg' } }),
       Youtube.configure({ HTMLAttributes: { class: 'w-full aspect-video rounded-xl my-4 overflow-hidden border border-zinc-800 shadow-lg' } }),
       Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-zinc-800 my-4' } }),
@@ -88,7 +124,8 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
       TaskItem.configure({ nested: true, HTMLAttributes: { class: 'flex items-start gap-2 mb-1' } }),
       Mathematics,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-ares-cyan underline hover:text-white transition-colors' } }),
-      Mermaid.configure({ HTMLAttributes: { class: 'bg-zinc-900 p-4 rounded-xl border border-zinc-800 my-4 overflow-x-auto min-h-[100px] shadow-lg text-white' } })
+      // @ts-expect-error -- tiptap mermaid typing mismatch
+      Mermaid
     ],
     content: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>",
     editorProps: {
@@ -259,8 +296,12 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
           }
         }} className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-ares-cyan hover:bg-zinc-800 hover:text-white">🔗 / YT</button>
         <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white">Table</button>
-        <button onClick={() => editor.chain().focus().toggleMathInline().run()} className={`px-4 py-2 rounded-lg text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
+        <button onClick={() => { const chain = editor.chain().focus() as unknown as { toggleMathInline?: () => { run: () => void }, insertContent: (c: string) => { run: () => void } }; if (chain.toggleMathInline) chain.toggleMathInline().run(); else chain.insertContent('$\\Sigma$').run(); }} className={`px-4 py-2 rounded-lg text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
         <button onClick={() => editor.chain().focus().insertContent(`<pre><code class="language-mermaid">graph TD;\nA-->B;</code></pre>`).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700">Mermaid</button>
+        <div className="w-px h-6 bg-zinc-800 mx-2"></div>
+        <button onClick={() => editor.chain().focus().toggleHighlight().run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("highlight") ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>HL</button>
+        <button onClick={() => editor.chain().focus().toggleSubscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("subscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Sub</button>
+        <button onClick={() => editor.chain().focus().toggleSuperscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("superscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Super</button>
         <div className="w-px h-6 bg-zinc-800 mx-2"></div>
         <button 
           className={`px-4 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ${isUploadingInline ? "bg-zinc-800 text-zinc-300 animate-pulse" : "text-ares-gold hover:bg-zinc-800 hover:text-ares-gold"}`}

@@ -18,15 +18,15 @@ export default function AssetManager() {
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
   const [uploadProgress, setUploadProgress] = useState<{current: number, total: number} | null>(null);
 
-  const { data: mediaResponse, isLoading } = useQuery<{media: (R2Asset & { folder: string, tags: string })[]}>({
-    queryKey: ["assets"],
+  const { data, isLoading } = useQuery<{ media: (R2Asset & { folder: string; tags: string; })[] }>({
+    queryKey: ['media'],
     queryFn: async () => {
       const res = await fetch("/dashboard/api/admin/media");
-      const data = await res.json();
+      const data: { media: (R2Asset & { folder: string; tags: string; })[] } = await res.json();
       return data;
-    },
+    }
   });
-  const assets = mediaResponse?.media ?? [];
+  const assets = data?.media ?? [];
 
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
@@ -43,7 +43,7 @@ export default function AssetManager() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["media"] });
       setTimeout(() => setUploadProgress(null), 1000);
     },
     onError: () => setUploadProgress(null)
@@ -56,7 +56,7 @@ export default function AssetManager() {
       return key;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["media"] });
       setConfirmKey(null);
     },
   });
@@ -126,7 +126,7 @@ export default function AssetManager() {
   };
 
   const uniqueFolders = Array.from(new Set(assets.map(a => a.folder))).filter(Boolean);
-  const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter(a => a.folder === selectedFolderFilter);
+  const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter((a: R2Asset & { folder: string; tags: string; }) => a.folder === selectedFolderFilter);
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -192,7 +192,7 @@ export default function AssetManager() {
             ))}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto max-h-[600px] pr-2">
-            {filteredAssets.map((asset) => (
+            {filteredAssets.map((asset: R2Asset & { folder: string; tags: string; }) => (
             <div
               key={asset.key}
               className="group relative bg-black/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-zinc-700 transition-colors flex flex-col"

@@ -1,5 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import { Youtube } from '@tiptap/extension-youtube';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TaskList } from '@tiptap/extension-task-list';
+import { TaskItem } from '@tiptap/extension-task-item';
+import Mathematics from '@tiptap/extension-mathematics';
+import { Link } from '@tiptap/extension-link';
+import { CodeBlockLowlightMermaid as Mermaid } from 'tiptap-extension-mermaid';
+import 'katex/dist/katex.min.css';
 import AssetPickerModal from "./AssetPickerModal";
 import SimPickerModal from "./SimPickerModal";
 
@@ -13,11 +27,37 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
   const [category, setCategory] = useState("Getting Started");
   const [sortOrder, setSortOrder] = useState<number>(10);
   const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        codeBlock: { HTMLAttributes: { class: 'bg-black border border-white/10 rounded-xl p-4 my-4 font-mono text-sm shadow-inner' } },
+        blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white/70 italic rounded-r-lg' } }
+      }),
+      Image.configure({ inline: false, HTMLAttributes: { class: 'rounded-xl border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
+      Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video rounded-xl shadow-lg my-6 glass-card' } }),
+      Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-zinc-800 rounded-lg hidden-border-corners shadow-lg table-auto my-6' } }),
+      TableRow.configure({ HTMLAttributes: { class: 'border-b border-zinc-800 hover:bg-zinc-900/50 transition-colors odd:bg-black/20 even:bg-black/40' } }),
+      TableHeader.configure({ HTMLAttributes: { class: 'bg-zinc-900 border border-zinc-800 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm' } }),
+      TableCell.configure({ HTMLAttributes: { class: 'border border-zinc-800 p-3 text-zinc-300 align-top' } }),
+      TaskList.configure({ HTMLAttributes: { class: 'list-none pl-0 space-y-2 my-4 text-[#e6edf3]/80' } }),
+      TaskItem.configure({ nested: true, HTMLAttributes: { class: 'flex items-start gap-2 mb-1' } }),
+      Mathematics,
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-ares-cyan underline hover:text-white transition-colors' } }),
+      // @ts-expect-error -- tiptap mermaid typing mismatch
+      Mermaid
+    ],
+    content: "<p>Start writing documentation here...</p>",
+    editorProps: {
+      attributes: {
+        class: "prose prose-invert max-w-none focus:outline-none min-h-[400px] text-[#e6edf3] font-mono",
+      },
+    },
+  });
 
   useEffect(() => {
     if (!editSlug) return;
@@ -37,8 +77,18 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
           setSortOrder(data.doc.sort_order || 10);
       // @ts-expect-error -- D1 untyped response
           setDescription(data.doc.description || "");
+          
       // @ts-expect-error -- D1 untyped response
-          setContent(data.doc.content || "");
+          const loadedContent = data.doc.content || "";
+          if (editor) {
+            try {
+              const parsed = JSON.parse(loadedContent);
+              editor.commands.setContent(parsed);
+            } catch {
+              // Not JSON, assume HTML or legacy Markdown (fallback)
+              editor.commands.setContent(loadedContent);
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to load doc for editing", err);
@@ -46,22 +96,25 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
       }
     };
     fetchDoc();
-  }, [editSlug]);
+  }, [editSlug, editor]);
 
   const handlePublish = async () => {
-    if (!slug || !title || !category || !content) {
-      setErrorMsg("Slug, title, category, and content are required.");
+    if (!editor) return;
+    if (!slug || !title || !category) {
+      setErrorMsg("Slug, title, and category are required.");
       return;
     }
 
     setIsPending(true);
     setErrorMsg("");
 
+    const jsonAST = JSON.stringify(editor.getJSON());
+
     try {
       const res = await fetch("/dashboard/api/admin/docs", {
         method: "POST", // API does an INSERT OR REPLACE
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, title, category, sortOrder, description, content }),
+        body: JSON.stringify({ slug, title, category, sortOrder, description, content: jsonAST }),
       });
 
       const data = await res.json();
@@ -89,7 +142,7 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
           {editSlug ? "Edit Document" : "Publish Document"}
         </h2>
         <p className="text-white/50 text-sm">
-          {editSlug ? "Modify an existing ARESLib documentation page." : "Draft a new Markdown documentation page for the hub."}
+          {editSlug ? "Modify an existing ARESLib documentation page." : "Draft a new Markdown/Tiptap documentation page for the hub."}
         </p>
       </div>
 
@@ -155,50 +208,54 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
         />
       </div>
 
-      <div className="flex-1 flex flex-col relative">
-        <div className="flex items-center justify-between mb-2">
-          <label htmlFor="doc-content" className="block text-xs font-bold text-ares-gold uppercase tracking-wider">Markdown Content</label>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setIsPickerOpen(true)}
-              className="px-3 py-1.5 text-xs font-bold bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-lg hover:bg-ares-gold/30 transition-all font-mono"
-            >
-              Insert Image
-            </button>
-            <button 
-              onClick={() => setIsSimPickerOpen(true)}
-              className="px-3 py-1.5 text-xs font-bold bg-ares-red/20 text-ares-red border border-ares-red/30 rounded-lg hover:bg-ares-red/30 transition-all font-mono"
-            >
-              Insert Simulator
-            </button>
+      <div className="flex-1 flex flex-col relative min-h-[500px]">
+        {editor && (
+          <div className="flex flex-wrap items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-t-xl p-2 z-10 w-full mb-0 sticky top-0 overflow-x-auto shadow-md">
+            <button onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("heading", { level: 1 }) ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>H1</button>
+            <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>H2</button>
+            <button onClick={() => editor.chain().focus().toggleBold().run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("bold") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>B</button>
+            <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-3 py-2 rounded-lg text-sm font-bold italic transition-all ${editor.isActive("italic") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>I</button>
+            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
+            <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("bulletList") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>• List</button>
+            <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("orderedList") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>1. List</button>
+            <button onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("taskList") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>☑ Tasks</button>
+            <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("blockquote") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>&quot; Quote</button>
+            <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-3 py-2 rounded-lg text-sm font-mono transition-all ${editor.isActive("codeBlock") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>{"< >"}</button>
+            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
+            <button onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
+            <button onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
+            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
+            
+            <button onClick={() => {
+              const url = window.prompt('URL:');
+              if (url === null) return;
+              if (url === '') { editor.chain().focus().extendMarkRange('link').unsetLink().run(); return; }
+              const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
+              if (isYoutube && window.confirm('Embed as YouTube player?')) {
+                editor.chain().focus().setYoutubeVideo({ src: url }).run();
+              } else {
+                editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+              }
+            }} className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-ares-cyan hover:bg-zinc-800 hover:text-white">🔗 / YT</button>
+            <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white">Table</button>
+            <button onClick={() => { const chain = editor.chain().focus() as unknown as { toggleMathInline?: () => { run: () => void }, insertContent: (c: string) => { run: () => void } }; if (chain.toggleMathInline) chain.toggleMathInline().run(); else chain.insertContent('$\\Sigma$').run(); }} className={`px-4 py-2 rounded-lg text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
+            <button onClick={() => editor.chain().focus().insertContent(`<pre><code class="language-mermaid">graph TD;\nA-->B;</code></pre>`).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700">Mermaid</button>
           </div>
+        )}
+        <div className="flex-1 bg-[#0e0e0e] border-x border-b border-zinc-800 rounded-b-xl overflow-hidden shadow-inner w-full min-h-[400px]">
+          <EditorContent 
+            editor={editor} 
+            className="h-full p-4 md:p-6"
+          />
         </div>
-        <textarea
-          ref={textareaRef}
-          id="doc-content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="w-full bg-[#0e0e0e] border border-white/10 text-[#e6edf3] p-4 rounded-xl min-h-[400px] font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors resize-y shadow-inner"
-          placeholder="Write your Markdown and HTML here..."
-        />
       </div>
 
       <AssetPickerModal 
         isOpen={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
         onSelect={(url, altText) => {
-          const textarea = textareaRef.current;
-          if (!textarea) return;
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          const markdownImg = `\n![${altText || "ARES Media"}](${url})\n`;
-          const newContent = content.substring(0, start) + markdownImg + content.substring(end);
-          setContent(newContent);
+          if (editor) editor.chain().focus().setImage({ src: url, alt: altText || "ARES Media" }).run();
           setIsPickerOpen(false);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + markdownImg.length, start + markdownImg.length);
-          }, 0);
         }}
       />
 
@@ -206,18 +263,11 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
         isOpen={isSimPickerOpen}
         onClose={() => setIsSimPickerOpen(false)}
         onSelect={(simId) => {
-          const textarea = textareaRef.current;
-          if (!textarea) return;
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          const markdownSim = `\n<${simId} />\n`;
-          const newContent = content.substring(0, start) + markdownSim + content.substring(end);
-          setContent(newContent);
+          if (editor) editor.chain().focus().insertContent({
+            type: 'interactiveComponent',
+            attrs: { componentName: simId }
+          }).run();
           setIsSimPickerOpen(false);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + markdownSim.length, start + markdownSim.length);
-          }, 0);
         }}
       />
 

@@ -1,4 +1,4 @@
-import { ReactNode, lazy, Suspense, LazyExoticComponent, ComponentType } from "react";
+import { ReactNode, lazy, Suspense } from "react";
 import { CodeBlock } from "./docs/CodeBlock";
 
 const CodePlayground = lazy(() => import('./docs/CodePlayground').catch(() => ({ default: () => <div className="text-red-500">Failed to load CodePlayground</div> })));
@@ -24,7 +24,7 @@ const FlywheelKvSim = lazy(() => import('../sims/FlywheelKvSim'));
 const PowerSheddingSim = lazy(() => import('../sims/PowerSheddingSim'));
 const StateMachineSim = lazy(() => import('../sims/StateMachineSim'));
 
-const ComponentMap: Record<string, LazyExoticComponent<ComponentType<{ className?: string }>>> = {
+const ComponentMap = {
   CodePlayground,
   InteractiveTutorial,
   CoreValueCallout,
@@ -46,9 +46,11 @@ const ComponentMap: Record<string, LazyExoticComponent<ComponentType<{ className
   FlywheelKvSim,
   PowerSheddingSim,
   StateMachineSim,
+  // @ts-expect-error -- D1 untyped response and tiptap custom component typing match
   Mermaid: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-zinc-800 bg-zinc-900 rounded text-zinc-400 text-sm font-mono">[Mermaid Diagram]</div> })),
   HomeCoreValues: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-zinc-800 bg-zinc-900 rounded text-zinc-400 text-sm font-mono">[Core Values Component]</div> }))
-};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as Record<string, any>;
 
 export interface ASTMark { type: string; }
 export interface ASTNode {
@@ -59,7 +61,7 @@ export interface ASTNode {
   marks?: ASTMark[];
   src?: string;
   alt?: string;
-  attrs?: Record<string, string | number>;
+  attrs?: Record<string, string | number | boolean>;
 }
 
 export default function TiptapRenderer({ node }: { node: ASTNode }) {
@@ -140,6 +142,35 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white/70 italic rounded-r-lg">
         {children}
       </blockquote>
+    );
+    case "table": return (
+      <div className="overflow-x-auto my-6">
+        <table className="w-full text-left border-collapse border border-zinc-800 rounded-lg hidden-border-corners shadow-lg table-auto">
+          <tbody>{children}</tbody>
+        </table>
+      </div>
+    );
+    case "tableRow": return <tr className="border-b border-zinc-800 hover:bg-zinc-900/50 transition-colors odd:bg-black/20 even:bg-black/40">{children}</tr>;
+    case "tableHeader": return <th className="bg-zinc-900 border border-zinc-800 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
+    case "tableCell": return <td className="border border-zinc-800 p-3 text-zinc-300 align-top">{children}</td>;
+    case "youtube": return (
+      <div className="my-8 w-full aspect-video rounded-xl overflow-hidden glass-card shadow-lg flex items-center justify-center">
+        <iframe title="YouTube Video Component" src={node.attrs?.src as string} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      </div>
+    );
+    case "taskList": return <ul className="list-none pl-0 space-y-2 my-4 text-[#e6edf3]/80">{children}</ul>;
+    case "taskItem": return (
+      <li className="flex items-start gap-3">
+        <div className="mt-1 flex-shrink-0">
+          <input 
+            type="checkbox" 
+            checked={node.attrs?.checked as boolean} 
+            readOnly 
+            className="w-4 h-4 rounded appearance-none border border-zinc-600 bg-zinc-950 checked:bg-ares-cyan checked:border-ares-cyan relative after:content-[''] after:hidden checked:after:block after:absolute after:left-[4px] after:top-[1px] after:w-[6px] after:h-[10px] after:border-solid after:border-zinc-950 after:border-r-[2px] after:border-b-[2px] after:rotate-45 transition-colors cursor-default" 
+          />
+        </div>
+        <div className={node.attrs?.checked ? "text-zinc-500 line-through" : ""}>{children}</div>
+      </li>
     );
     case "codeBlock": return (
         <div className="my-4"><CodeBlock value={node.content?.[0]?.text || ""} language={node.attrs?.language as string} /></div>
