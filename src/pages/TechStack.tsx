@@ -1,5 +1,6 @@
 import { Cloud, Zap, Database, GlobeLock, DollarSign, HardDrive } from "lucide-react";
 import { motion } from "framer-motion";
+import GitHubHeatmap from "../components/GitHubHeatmap";
 
 export default function TechStack() {
   return (
@@ -92,6 +93,11 @@ export default function TechStack() {
             </p>
             <div className="text-xs font-bold uppercase tracking-widest text-green-500 mt-auto">Cost: Open Source</div>
           </div>
+        </div>
+
+        {/* GitHub Activity Heatmap */}
+        <div className="mb-24">
+          <GitHubHeatmap />
         </div>
 
         {/* Sustainability Deep Dive */}
