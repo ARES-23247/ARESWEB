@@ -5,7 +5,7 @@ export default function Outreach() {
       <section className="py-24 bg-obsidian">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-4">
-            We&apos;re passionate about <br/>STEAM in our local <span className="text-ares-gold">Community</span>.
+            We&apos;re passionate about <br/>STEAM in our local <span className="text-ares-gold">community</span>.
           </h1>
           <p className="text-white/60 text-xl mt-4">
             If you have a volunteer need or idea for our team to be a part of, <a href="/contact" className="text-ares-gold underline hover:text-white transition-colors">get in touch</a>.
@@ -30,7 +30,7 @@ export default function Outreach() {
       <section className="py-20 bg-ares-red">
         <div className="max-w-4xl mx-auto px-6">
           <h2 className="text-4xl font-bold text-ares-gold mb-8">Support Our Team</h2>
-          <p className="text-ares-gold/80 text-xl mb-8">
+          <p className="text-white text-xl mb-8 leading-relaxed">
             Our success as a team relies on support from the STEAM community. You can mentor, donate financially, or help teach us about robotics by giving us a tour of your facilities.
           </p>
 
@@ -38,7 +38,7 @@ export default function Outreach() {
             <a href="/contact" className="bg-obsidian/30 hero-card p-6 border border-white/10 group block">
               <h3 className="text-white text-xl font-bold mb-3 group-hover:text-ares-gold transition-colors">Become a Mentor</h3>
               <p className="text-white/70 text-base leading-relaxed mb-4">
-                Mentors with FIRST are building more than robots. Engineering, animation, design, communications &amp; business planning — we need mentors of all kinds.
+                Mentors with <em>FIRST</em>® are building more than robots. Engineering, animation, design, communications &amp; business planning — we need mentors of all kinds.
               </p>
               <span className="text-ares-gold text-sm font-bold uppercase tracking-wider group-hover:tracking-widest transition-all">Get In Touch →</span>
             </a>

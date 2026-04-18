@@ -21,7 +21,7 @@ export default function About() {
             <div className="md:col-span-1">
               <h2 className="text-3xl md:text-4xl font-bold text-ares-red mb-6 font-heading uppercase leading-tight">
                 Who Joins <br />
-                <span className="text-ares-bronze">Our Community?</span>
+                <span className="text-ares-red">Our Community?</span>
               </h2>
               <p className="text-obsidian/70 text-lg">
                 We recruit students from 6th–12th grade who possess grit, determination, and a hunger for innovation.
@@ -29,7 +29,7 @@ export default function About() {
             </div>
             <div className="md:col-span-2 space-y-8 text-lg leading-relaxed">
               <p>
-                In the <em>FIRST</em> Tech Challenge, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
+                In the <em>FIRST</em>® Tech Challenge, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
               </p>
               <div className="bg-white border-l-4 border-ares-red hero-card p-8 shadow-sm group hover:border-ares-red">
                 <h3 className="text-ares-red font-bold text-xs tracking-widest uppercase mb-6 font-heading">What You&apos;ll Learn</h3>
@@ -107,10 +107,10 @@ export default function About() {
             <h3 className="text-4xl font-bold text-ares-bronze mb-6 font-heading group-hover:text-white transition-colors">Dave Huss & Kelley Burd-Huss</h3>
             <div className="space-y-6 text-lg text-marble/60 leading-relaxed max-w-2xl mx-auto italic">
               <p>
-                Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <em>FIRST</em> ecosystem, and robotics has since redefined their community impact.
+                Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <em>FIRST</em>® ecosystem, and robotics has since redefined their community impact.
               </p>
               <p>
-                Active across <em>FIRST</em> LEGO League and <em>FIRST</em> Robotics Challenge, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
+                Active across <em>FIRST</em>® LEGO League and <em>FIRST</em>® Robotics Challenge, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
               </p>
             </div>
           </div>

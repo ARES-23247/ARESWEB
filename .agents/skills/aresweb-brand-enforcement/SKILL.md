@@ -44,5 +44,14 @@ Instead, you must utilize the global `.hero-card` class defined in `index.css`. 
 - ✅ **AUTHORIZED**: `<div className="hero-card group">`
 - The intrinsic padding, geometric radiuses, and dynamic "bubble" hover behaviors (upward translation, massive drop shadows, and glowing red borders) are all built centrally into `.hero-card`. 
 
-## 6. Execution
-Whenever you encounter UI files that violate these protocols, treat it as a critical architectural defect. You must proactively sweep the file and replace the banned colors or fractured geometry containers with their authorized ARES equivalents before declaring the task complete.
+## 7. Nomenclature & Corporate Branding
+To maintain championship-level professionalism, specific organizations and technologies must be referred to using precise nomenclature:
+
+- **FIRST® Branding**: Always refer to the organization as *FIRST*® (italicized with the registered trademark symbol `®`). This applies to every mention in body text, headers, and metadata.
+- **AI Model Consistency**: Use consistent and technically accurate casing for standard models:
+  - ✅ **AUTHORIZED**: `Llama` (Meta's Large Language Model)
+  - ✅ **AUTHORIZED**: `LLaVA` (Large Language-and-Vision Assistant)
+  - ❌ **BANNED**: `LLaMa`, `LLava`, `llama`
+
+## 8. Execution
+Whenever you encounter UI files that violate these protocols, treat it as a critical architectural defect. You must proactively sweep the file and replace the banned colors, nomenclature, or fractured geometry containers with their authorized ARES equivalents before declaring the task complete.

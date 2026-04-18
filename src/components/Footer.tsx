@@ -14,11 +14,11 @@ export default function Footer() {
           <button onClick={() => navigate("/")} className="block text-left mb-6 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
             <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-red transition-colors">ARES</h3>
             <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">Appalachian Robotics & Engineering Society</p>
-            <p className="text-marble/70 text-xs font-medium uppercase tracking-[0.2em]">FIRST Tech Challenge Team #23247</p>
+            <p className="text-marble/70 text-xs font-medium uppercase tracking-[0.2em]"><em>FIRST</em>® Tech Challenge Team #23247</p>
           </button>
           <p className="text-marble/70 text-base leading-relaxed max-w-md border-l-2 border-ares-bronze/30 pl-6">
             We are the official <span className="text-white font-bold italic">sibling team</span> to <strong>MARS 2614</strong>. 
-            Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <em>FIRST</em>.
+            Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <em>FIRST</em>®.
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default function Footer() {
               <i className="fas fa-envelope"></i>
             </a>
           </div>
-          <p className="text-marble/70 text-xs font-bold uppercase tracking-widest">Ares HQ</p>
+          <p className="text-marble/70 text-xs font-bold uppercase tracking-widest">ARES HQ</p>
           <a href="mailto:ares23247wv@gmail.com" className="text-marble/80 hover:text-ares-red text-sm font-bold transition-colors">
             ares23247wv@gmail.com
           </a>

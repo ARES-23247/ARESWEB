@@ -11,17 +11,20 @@ export default function TechStack() {
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-obsidian text-white pt-24 pb-16"
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 overflow-x-hidden">
         
         {/* Header Section */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl lg:text-6xl font-bold font-heading mb-6 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-ares-gold to-ares-red">
+        <div className="text-center max-w-3xl mx-auto mb-16 px-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold font-heading mb-6 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-ares-gold to-ares-red leading-tight">
             Built for the Future.
           </h1>
-          <p className="text-xl text-marble/80">
+          <p className="text-lg md:text-xl text-marble/80 leading-relaxed">
             ARES 23247&apos;s digital portal isn&apos;t just a website; it&apos;s a statement on <strong>Sustainability</strong>. 
-            By leveraging entirely free, serverless Edge architecture, we&apos;ve brought our operating costs down to <strong>$0.00</strong>, ensuring our team&apos;s digital presence survives forever.
+            By leveraging entirely free, serverless Edge architecture, we&apos;ve brought our operating costs down to <strong>$0.00</strong>.
           </p>
+          <div className="mt-4 p-4 bg-white/5 border-l-2 border-ares-gold text-sm text-marble/60 italic">
+            <strong>What this means:</strong> We host our site on a global network of servers that only run when needed. This keeps the site online forever without any monthly bills.
+          </div>
         </div>
 
         {/* Highlight Architecture */}
@@ -45,7 +48,7 @@ export default function TechStack() {
             </div>
             <h3 className="text-2xl font-bold font-heading mb-4">Edge AI Vision</h3>
             <p className="text-marble/70 leading-relaxed mb-4 flex-1">
-              We natively bound LLaMa 3.1 & LLava 1.5 models directly into our Cloudflare router. Whenever an image is uploaded, AI runs structural analysis to auto-generate ARIA labels for visually impaired screen-readers with 0 server costs.
+              We natively bind <strong>Llama</strong> 3.1 & <strong>LLaVA</strong> 1.5 models directly into our Cloudflare router. Whenever an image is uploaded, AI runs structural analysis to auto-generate ARIA labels for visually impaired screen-readers with 0 server costs.
             </p>
             <div className="text-xs font-bold uppercase tracking-widest text-purple-500 mt-auto">Cost: Free Tier</div>
           </div>
@@ -127,8 +130,11 @@ export default function TechStack() {
               <p className="text-marble/70 text-lg leading-relaxed mb-4">
                 We didn&apos;t just build it free; we built it secure. Our custom internal Content Management System (CMS) is protected by <strong>Cloudflare Zero Trust</strong>.
               </p>
+              <div className="mb-6 p-4 bg-white/5 border-l-2 border-purple-500 text-sm text-marble/60 italic">
+                <strong>What this means:</strong> We don&apos;t just use passwords. We verify the identity of every team member through secure email codes before they can change any content.
+              </div>
               <p className="text-marble/70 leading-relaxed">
-                Rather than building a vulnerable password-login system, we rely on Cloudflare Access to authenticate our team mentors and captains via email pin codes BEFORE they ever reach our backend API. Our Hono web server then intercepts and validates the immutable `cf-access-authenticated-user-email` header, making our CMS entirely immune to spoofing or brute-force attacks.
+                Rather than building a vulnerable password-login system, we rely on Cloudflare Access to authenticate our team mentors and captains via email pin codes BEFORE they ever reach our backend API.
               </p>
             </div>
           </div>
@@ -141,7 +147,7 @@ export default function TechStack() {
               &quot;We expand our skillset and create reliable infrastructure so that our team and outreach efforts are sustained for generations.&quot;
             </p>
             <p className="mt-4 text-marble/60">
-              Our website infrastructure is a direct reflection of our dedication to the core values of FIRST Robotics. We don&apos;t just build robots; we engineer lasting digital legacies.
+              Our website infrastructure is a direct reflection of our dedication to the core values of <em>FIRST</em>® Robotics. We don&apos;t just build robots; we engineer lasting digital legacies.
             </p>
           </div>
 

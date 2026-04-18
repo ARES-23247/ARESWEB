@@ -35,13 +35,13 @@ export default function Navbar() {
 
         <button 
           onClick={() => setOpen(!open)} 
-          className="md:hidden text-white w-8 h-8 flex flex-col justify-center items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+          className="md:hidden text-ares-gold w-10 h-10 flex flex-col justify-center items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded transition-colors group"
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={open}
         >
-          <span className={`w-6 h-0.5 bg-current block transition-transform duration-300 ${open ? "rotate-45 translate-y-2" : ""}`}></span>
-          <span className={`w-6 h-0.5 bg-current block transition-opacity duration-300 ${open ? "opacity-0" : ""}`}></span>
-          <span className={`w-6 h-0.5 bg-current block transition-transform duration-300 ${open ? "-rotate-45 -translate-y-2" : ""}`}></span>
+          <span className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "rotate-45 translate-y-2.5" : "group-hover:w-8"}`}></span>
+          <span className={`w-7 h-1 bg-current block rounded-full transition-opacity duration-300 ${open ? "opacity-0" : "group-hover:w-5"}`}></span>
+          <span className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "-rotate-45 -translate-y-2.5" : "group-hover:w-8"}`}></span>
         </button>
       </div>
 

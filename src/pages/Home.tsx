@@ -34,7 +34,7 @@ export default function Home() {
 
           <p className="text-marble/80 text-xl md:text-2xl font-medium max-w-2xl mb-10 leading-relaxed border-l-4 border-ares-bronze pl-6">
             Building the future of West Virginia robotics with the <span className="text-white font-bold">Mountaineer Mindset</span>.
-            FIRST Tech Challenge Team #23247.
+            <em>FIRST</em>® Tech Challenge Team #23247.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 mt-4">
@@ -64,7 +64,7 @@ export default function Home() {
                 ARES 23247 isn&apos;t just another rookie team. We are the direct result of a decade of excellence in West Virginia robotics, serving as the <em>FTC sibling team</em> to the Hall of Fame program, <strong>MARS 2614</strong>.
               </p>
               <p>
-                While our siblings on MARS tackle the giants of the <em>FIRST</em> Robotics Competition, we bring that same Mountaineer intensity to the <em>FIRST</em> Tech Challenge.
+                While our siblings on MARS tackle the giants of the <em>FIRST</em>® Robotics Competition, we bring that same Mountaineer intensity to the <em>FIRST</em>® Tech Challenge.
               </p>
               <div className="pt-4">
                 <a href="https://www.marsfirst.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-ares-red font-bold hover:translate-x-2 transition-transform">
@@ -97,7 +97,7 @@ export default function Home() {
               },
               {
                 title: "Outreach & Impact",
-                body: "We share our mission with everyone. From the Spark! Center to local labs, we bring FIRST to all of West Virginia.",
+                body: "We share our mission with everyone. From the Spark! Center to local labs, we bring <em>FIRST</em>® to all of West Virginia.",
                 link: "/outreach",
                 linkText: "Our Impact",
               },
@@ -131,7 +131,7 @@ export default function Home() {
             Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future of WV technology, there is a place for you at the table.
           </p>
           <div className="flex flex-wrap justify-center gap-6">
-            <Link to="/contact" className="clipped-button bg-ares-bronze text-white hover:bg-white hover:text-ares-red transition-all">
+            <Link to="/contact" className="clipped-button bg-ares-bronze text-obsidian hover:bg-white hover:text-ares-red transition-all">
               Become a Sponsor
             </Link>
             <Link to="/about" className="clipped-button bg-transparent border-2 border-white text-white hover:bg-white hover:text-obsidian transition-all">

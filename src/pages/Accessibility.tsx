@@ -24,7 +24,7 @@ export default function Accessibility() {
             Championship-Grade <span className="text-ares-red">Accessibility</span>
           </h1>
           <p className="text-zinc-400 text-lg md:text-xl leading-relaxed">
-            As part of our commitment to the FIRST® Robotics core values, ARES 23247 architects our digital infrastructure to exceed inclusive design standards, ensuring our engineering resources are available to everyone.
+            As part of our commitment to the <em>FIRST</em>® Robotics core values, ARES 23247 architects our digital infrastructure to exceed inclusive design standards, ensuring our engineering resources are available to everyone.
           </p>
         </motion.div>
 
