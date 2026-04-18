@@ -124,7 +124,6 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
       TaskItem.configure({ nested: true, HTMLAttributes: { class: 'flex items-start gap-2 mb-1' } }),
       Mathematics,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-ares-cyan underline hover:text-white transition-colors' } }),
-      // @ts-expect-error -- tiptap mermaid typing mismatch
       Mermaid
     ],
     content: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>",

@@ -13,7 +13,21 @@ import { TaskItem } from '@tiptap/extension-task-item';
 import Mathematics from '@tiptap/extension-mathematics';
 import { Link } from '@tiptap/extension-link';
 import { CodeBlockLowlightMermaid as Mermaid } from 'tiptap-extension-mermaid';
+import Typography from '@tiptap/extension-typography';
+import Highlight from '@tiptap/extension-highlight';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import CharacterCount from '@tiptap/extension-character-count';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
+import Mention from '@tiptap/extension-mention';
+import SlashCommands, { slashCommandsSuggestion } from './tiptap/SlashCommands';
+import { mentionsSuggestionOptions } from './tiptap/MentionsList';
+import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import 'katex/dist/katex.min.css';
+
+const lowlight = createLowlight(common);
+
 import AssetPickerModal from "./AssetPickerModal";
 import SimPickerModal from "./SimPickerModal";
 
@@ -33,11 +47,31 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
 
   const editor = useEditor({
     extensions: [
+      GlobalDragHandle.configure({
+        dragHandleWidth: 20,
+        scrollTreshold: 100,
+      }),
+      SlashCommands.configure({
+        suggestion: slashCommandsSuggestion,
+      }),
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
-        codeBlock: { HTMLAttributes: { class: 'bg-black border border-white/10 rounded-xl p-4 my-4 font-mono text-sm shadow-inner' } },
+        codeBlock: false,
         blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white/70 italic rounded-r-lg' } }
       }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: { class: 'bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 my-4 font-mono text-sm shadow-inner overflow-x-auto' }
+      }),
+      Mention.configure({
+        HTMLAttributes: { class: 'bg-ares-red/20 text-ares-red font-bold px-1 rounded-sm' },
+        suggestion: mentionsSuggestionOptions,
+      }),
+      Typography,
+      Highlight.configure({ HTMLAttributes: { class: 'bg-ares-gold/30 text-black rounded-sm px-1' } }),
+      Subscript,
+      Superscript,
+      CharacterCount,
       Image.configure({ inline: false, HTMLAttributes: { class: 'rounded-xl border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
       Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video rounded-xl shadow-lg my-6 glass-card' } }),
       Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-zinc-800 rounded-lg hidden-border-corners shadow-lg table-auto my-6' } }),
@@ -48,7 +82,6 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
       TaskItem.configure({ nested: true, HTMLAttributes: { class: 'flex items-start gap-2 mb-1' } }),
       Mathematics,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-ares-cyan underline hover:text-white transition-colors' } }),
-      // @ts-expect-error -- tiptap mermaid typing mismatch
       Mermaid
     ],
     content: "<p>Start writing documentation here...</p>",
@@ -240,13 +273,22 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
             <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white">Table</button>
             <button onClick={() => { const chain = editor.chain().focus() as unknown as { toggleMathInline?: () => { run: () => void }, insertContent: (c: string) => { run: () => void } }; if (chain.toggleMathInline) chain.toggleMathInline().run(); else chain.insertContent('$\\Sigma$').run(); }} className={`px-4 py-2 rounded-lg text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
             <button onClick={() => editor.chain().focus().insertContent(`<pre><code class="language-mermaid">graph TD;\nA-->B;</code></pre>`).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700">Mermaid</button>
+            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
+            <button onClick={() => editor.chain().focus().toggleHighlight().run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("highlight") ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>HL</button>
+            <button onClick={() => editor.chain().focus().toggleSubscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("subscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Sub</button>
+            <button onClick={() => editor.chain().focus().toggleSuperscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("superscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Super</button>
           </div>
         )}
-        <div className="flex-1 bg-[#0e0e0e] border-x border-b border-zinc-800 rounded-b-xl overflow-hidden shadow-inner w-full min-h-[400px]">
+        <div className="flex-1 bg-[#0e0e0e] border-x border-b border-zinc-800 rounded-b-xl overflow-hidden shadow-inner w-full min-h-[400px] relative">
           <EditorContent 
             editor={editor} 
-            className="h-full p-4 md:p-6"
+            className="h-full p-4 md:p-6 pb-12"
           />
+          {editor && (
+            <div className="absolute bottom-4 right-6 text-xs text-zinc-500 font-mono">
+              {editor.storage.characterCount.words()} words | {editor.storage.characterCount.characters()} chars
+            </div>
+          )}
         </div>
       </div>
 

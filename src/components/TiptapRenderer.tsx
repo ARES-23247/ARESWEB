@@ -46,7 +46,6 @@ const ComponentMap = {
   FlywheelKvSim,
   PowerSheddingSim,
   StateMachineSim,
-  // @ts-expect-error -- D1 untyped response and tiptap custom component typing match
   Mermaid: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-zinc-800 bg-zinc-900 rounded text-zinc-400 text-sm font-mono">[Mermaid Diagram]</div> })),
   HomeCoreValues: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-zinc-800 bg-zinc-900 rounded text-zinc-400 text-sm font-mono">[Core Values Component]</div> }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

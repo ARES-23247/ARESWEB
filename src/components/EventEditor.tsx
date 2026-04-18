@@ -74,7 +74,6 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
       TaskItem.configure({ nested: true, HTMLAttributes: { class: 'flex items-start gap-2 mb-1' } }),
       Mathematics,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-ares-cyan underline hover:text-white transition-colors' } }),
-      // @ts-expect-error -- tiptap mermaid typing mismatch
       Mermaid
     ],
     content: "<p>Describe your upcoming event or write a full recap here...</p>",
