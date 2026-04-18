@@ -32,6 +32,7 @@ Always run `npm run build` to verify the module chunking and frontend compilatio
 If a build or lint fails in the terminal, you must autonomously read the terminal output, identify the specific TypeScript/React error causing the failure, modify the source code to resolve it, and re-run the build until SUCCESS. Do not halt to ask the user for permission to fix a syntax error.
 
 ## 3. Resolving Common Build Errors
-- **"Calling setState synchronously within an effect"**: Do not call functions that execute `setState` immediately during render or inside the body of a `useEffect` loop without an explicit trigger.
+- **"Calling setState synchronously within an effect"**: Do not call functions that execute `setState` immediately during render or inside the body of a `useEffect` loop without an explicit trigger. If possible, remove the hook entirely and use synchronous derived variables.
+- **"@typescript-eslint/no-explicit-any"**: Do not cast JSON or AI responses to `any`. Construct deterministic inline destructured types like `(aiResponse as { response?: string })` when validating Cloudflare `env.AI` objects.
 - **"JSX element 'label' has no corresponding control"**: Replace `for=` with `htmlFor=`, and verify the `id=` attribute matches the `<input>` element immediately adjacent. 
 - **"Cannot call impure function Date.now() during render"**: Move pure-computation randomizers or time checks into a React `useEffect` hook, or evaluate them server-side before hydration.

@@ -24,7 +24,7 @@ export default function TechStack() {
         </div>
 
         {/* Highlight Architecture */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
           <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl">
             <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan mb-6">
               <Cloud size={24} />
@@ -36,37 +36,61 @@ export default function TechStack() {
             <div className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Cost: Free Tier</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl">
+          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl flex flex-col">
+            <div className="w-12 h-12 rounded-full border border-purple-500/30 flex items-center justify-center bg-purple-500/10 text-purple-500 mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold font-heading mb-4">Edge AI Vision</h3>
+            <p className="text-marble/70 leading-relaxed mb-4 flex-1">
+              We natively bound LLaMa 3.1 & LLava 1.5 models directly into our Cloudflare router. Whenever an image is uploaded, AI runs structural analysis to auto-generate ARIA labels for visually impaired screen-readers with 0 server costs.
+            </p>
+            <div className="text-xs font-bold uppercase tracking-widest text-purple-500 mt-auto">Cost: Free Tier</div>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl flex flex-col">
             <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold mb-6">
               <Database size={24} />
             </div>
             <h3 className="text-2xl font-bold font-heading mb-4">Cloudflare D1 SQL</h3>
-            <p className="text-marble/70 leading-relaxed mb-4">
+            <p className="text-marble/70 leading-relaxed mb-4 flex-1">
               We ditched expensive MongoDB and AWS RDS databases. Our entire blog, events, and asset metadata are stored in Cloudflare D1—a serverless SQLite database native to the Edge.
             </p>
-            <div className="text-xs font-bold uppercase tracking-widest text-ares-gold">Cost: Free Tier</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-ares-gold mt-auto">Cost: Free Tier</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl">
+          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl flex flex-col">
             <div className="w-12 h-12 rounded-full border border-orange-500/30 flex items-center justify-center bg-orange-500/10 text-orange-500 mb-6">
               <HardDrive size={24} />
             </div>
             <h3 className="text-2xl font-bold font-heading mb-4">Cloudflare R2 Storage</h3>
-            <p className="text-marble/70 leading-relaxed mb-4">
+            <p className="text-marble/70 leading-relaxed mb-4 flex-1">
               We host all of our high-resolution imagery securely in Cloudflare R2 Object Storage. This acts identically to Amazon S3, powering our WebP conversion pipeline without the crippling egress bandwidth fees.
             </p>
-            <div className="text-xs font-bold uppercase tracking-widest text-orange-500">Cost: Free Tier</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-orange-500 mt-auto">Cost: Free Tier</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl">
+          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl flex flex-col">
             <div className="w-12 h-12 rounded-full border border-ares-red/30 flex items-center justify-center bg-ares-red/10 text-ares-red mb-6">
               <Zap size={24} />
             </div>
             <h3 className="text-2xl font-bold font-heading mb-4">Vite + React</h3>
-            <p className="text-marble/70 leading-relaxed mb-4">
+            <p className="text-marble/70 leading-relaxed mb-4 flex-1">
               Our UI is built with React 18 and Vite. Using pure React without heavy SSR frameworks keeps our codebase incredibly lean, teachable to new students, and statically compilable.
             </p>
-            <div className="text-xs font-bold uppercase tracking-widest text-ares-red">Cost: Open Source</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-ares-red mt-auto">Cost: Open Source</div>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 p-8 rounded-xl backdrop-blur-sm shadow-xl flex flex-col">
+            <div className="w-12 h-12 rounded-full border border-green-500/30 flex items-center justify-center bg-green-500/10 text-green-500 mb-6">
+              <GlobeLock size={24} />
+            </div>
+            <h3 className="text-2xl font-bold font-heading mb-4">Progressive App Mode</h3>
+            <p className="text-marble/70 leading-relaxed mb-4 flex-1">
+              To support robotics pits entirely devoid of WiFi, we employ native PWA Service Workers routing `NetworkFirst`. The site silently caches React ASTs & D1 Payloads—launching perfectly offline anywhere in the world.
+            </p>
+            <div className="text-xs font-bold uppercase tracking-widest text-green-500 mt-auto">Cost: Open Source</div>
           </div>
         </div>
 
