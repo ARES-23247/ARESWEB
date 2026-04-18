@@ -13,7 +13,7 @@ export default function IntegrationsManager() {
   const { data, isLoading, isError } = useQuery<{ settings: SettingsData }>({
     queryKey: ["admin_settings"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings");
+      const res = await fetch("/dashboard/api/admin/settings");
       if (!res.ok) throw new Error("Failed to load settings");
       return res.json();
     }
@@ -29,7 +29,7 @@ export default function IntegrationsManager() {
 
   const saveMutation = useMutation({
     mutationFn: async (settings: SettingsData) => {
-      const res = await fetch("/api/admin/settings", {
+      const res = await fetch("/dashboard/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
