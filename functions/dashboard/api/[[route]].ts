@@ -1,5 +1,6 @@
 import originalApp from "../../api/[[route]]";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const onRequest = (context: any) => {
   const url = new URL(context.request.url);
   // Rewrite /dashboard/api/* to /api/* so the original Hono router (.basePath("/api")) matches it perfectly.
