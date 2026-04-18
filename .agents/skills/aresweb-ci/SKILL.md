@@ -31,6 +31,24 @@ Always run `npm run build` to verify the module chunking and frontend compilatio
 ### Rule C: Self-Healing Builds
 If a build or lint fails in the terminal, you must autonomously read the terminal output, identify the specific TypeScript/React error causing the failure, modify the source code to resolve it, and re-run the build until SUCCESS. Do not halt to ask the user for permission to fix a syntax error.
 
+### Rule D: Dashboard API Prefix Convention (CRITICAL)
+All `fetch()` calls from dashboard components (`src/components/` and `src/pages/Dashboard.tsx`) MUST use the `/dashboard/api/` prefix — never bare `/api/`. This is a **mandatory routing convention**, not optional.
+
+**Why:** The Cloudflare Access Application protects `/dashboard*`. Requests to `/dashboard/api/*` inherit the `CF_Authorization` cookie scope and trigger Cloudflare to inject `cf-access-*` headers into the Functions runtime. Requests to bare `/api/*` bypass this entirely, causing `ensureAdmin` to reject authenticated users with 401.
+
+```tsx
+// ❌ FORBIDDEN — breaks on production, returns "Access denied or network error"
+const res = await fetch("/api/admin/settings");
+
+// ✅ CORRECT — routes through the Access-protected path
+const res = await fetch("/dashboard/api/admin/settings");
+```
+
+**Audit rule:** Before committing any new frontend `fetch()` call that targets an `/admin/*` endpoint, verify it starts with `/dashboard/api/`. Run this grep to find violations:
+```bash
+grep -rn 'fetch("/api/admin/' src/
+```
+
 ## 3. Resolving Common Build Errors
 - **"Calling setState synchronously within an effect"**: Do not call functions that execute `setState` immediately during render or inside the body of a `useEffect` loop without an explicit trigger. If the initial state depends on a runtime condition (e.g., `window.location.hostname === "localhost"`), compute it as a **module-level constant** and pass it directly to `useState()` as the initial value. This is the enforced pattern for the Zero Trust auth gate — see the `aresweb-zero-trust-security` skill, Section 6. Never wrap the workaround in `setTimeout()` — that suppresses the lint warning but introduces a flash of loading state on every localhost render.
 - **"@typescript-eslint/no-unused-vars"**: Remove unused variables immediately. Do not leave dead state variables (e.g., `authEmail`) from refactors. If a variable was used for debugging, delete it before committing.
@@ -38,3 +56,4 @@ If a build or lint fails in the terminal, you must autonomously read the termina
 - **"JSX element 'label' has no corresponding control"**: Replace `for=` with `htmlFor=`, and verify the `id=` attribute matches the `<input>` element immediately adjacent. 
 - **"Cannot call impure function Date.now() during render"**: Move pure-computation randomizers or time checks into a React `useEffect` hook, or evaluate them server-side before hydration.
 - **"'ComponentName' is not defined" (react/jsx-no-undef)**: Verify the component is properly imported. If lucide-react icons report as undefined, check the installed version (`npm ls lucide-react`) — some icons were added in later versions. Always use named imports from `lucide-react`.
+- **"Failed to load integrations. Access denied or network error."**: The dashboard component is using `/api/admin/*` instead of `/dashboard/api/admin/*`. Add the `/dashboard` prefix. See Rule D above.

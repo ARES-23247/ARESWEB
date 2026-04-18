@@ -24,7 +24,7 @@ export default function ZeroAllocationSim() {
     const hCtx = hCanvas.getContext('2d');
     if (!lCtx || !hCtx) return;
 
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const resize = () => {
         if (lCanvas.parentElement) {

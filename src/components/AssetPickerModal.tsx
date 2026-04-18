@@ -46,7 +46,7 @@ export default function AssetPickerModal({
         <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-black/40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-ares-gold/20 flex items-center justify-center rounded-xl border border-ares-gold/30">
-              <ImagePlus className="text-ares-gold" size={20} />
+              <ImagePlus className="text-ares-gold" size={20} aria-hidden="true" />
             </div>
             <div>
               <h2 className="text-xl font-black text-white tracking-widest uppercase">Select Asset</h2>
@@ -55,9 +55,10 @@ export default function AssetPickerModal({
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors"
+            aria-label="Close modal"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -86,7 +87,7 @@ export default function AssetPickerModal({
             </div>
           ) : assets.length === 0 ? (
             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 gap-2">
-              <ImagePlus size={48} className="opacity-50" />
+              <ImagePlus size={48} className="opacity-50" aria-hidden="true" />
               <p className="font-mono text-sm">No assets available in the ARES vault.</p>
             </div>
           ) : (
@@ -95,7 +96,8 @@ export default function AssetPickerModal({
                 <button
                   key={asset.key}
                   onClick={() => onSelect(asset.url, asset.tags || "ARES Media")}
-                  className="group relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-ares-gold transition-colors flex flex-col text-left focus:outline-none focus:ring-2 focus:ring-ares-gold"
+                  aria-label={`Select asset ${asset.key}`}
+                  className="group relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-ares-gold transition-colors flex flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
                   <div className="relative aspect-square w-full">
                     <img src={asset.url} alt={asset.key} className="w-full h-full object-cover" loading="lazy" />

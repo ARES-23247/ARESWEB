@@ -66,6 +66,7 @@ export default function SwerveSim() {
     }
 
     function draw(curVx: number, curVy: number, curOmega: number) {
+      if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
 
       // Draw Grid / Field

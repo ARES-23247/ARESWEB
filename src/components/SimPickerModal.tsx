@@ -28,7 +28,7 @@ export default function SimPickerModal({
         <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-black/40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-ares-red/20 flex items-center justify-center rounded-xl border border-ares-red/30">
-              <TerminalSquare className="text-ares-red" size={20} />
+              <TerminalSquare className="text-ares-red" size={20} aria-hidden="true" />
             </div>
             <div>
               <h2 className="text-xl font-black text-white tracking-widest uppercase">Inject Simulator</h2>
@@ -37,21 +37,24 @@ export default function SimPickerModal({
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors"
+            aria-label="Close modal"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
         {/* Search Bar */}
         <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800 flex items-center gap-3 shadow-inner">
-           <Search size={18} className="text-zinc-500" />
+           <Search size={18} className="text-zinc-500" aria-hidden="true" />
+           <label htmlFor="simSearch" className="sr-only">Search active simulators</label>
            <input
+             id="simSearch"
              type="text"
              placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
              value={searchQuery}
              onChange={e => setSearchQuery(e.target.value)}
-             className="w-full bg-transparent border-none text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-0 font-mono text-sm"
+             className="w-full bg-transparent border-none text-zinc-100 placeholder-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
            />
         </div>
 
@@ -59,19 +62,20 @@ export default function SimPickerModal({
         <div className="flex-1 overflow-y-auto p-6 bg-zinc-950">
           {sims.length === 0 ? (
             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 gap-4">
-              <TerminalSquare size={48} className="opacity-50" />
+              <TerminalSquare size={48} className="opacity-50" aria-hidden="true" />
               <p className="font-mono text-sm">No simulator matched the query &ldquo;{searchQuery}&rdquo;.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {sims.map(sim => (
-                <button
-                  key={sim.id}
-                  onClick={() => onSelect(sim.id)}
-                  className="group relative bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-ares-red transition-all flex flex-col text-left focus:outline-none focus:ring-2 focus:ring-ares-red shadow-lg"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                     <TerminalSquare size={16} className="text-ares-red" />
+                  <button
+                    key={sim.id}
+                    onClick={() => onSelect(sim.id)}
+                    aria-label={`Inject ${sim.name} simulator`}
+                    className="group relative bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-ares-red transition-all flex flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan shadow-lg"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                       <TerminalSquare size={16} className="text-ares-red" aria-hidden="true" />
                      <p className="text-white text-sm font-black tracking-wider uppercase">{sim.name}</p>
                   </div>
                   <div className="mt-auto pt-3 border-t border-zinc-800/80 w-full flex justify-between items-center">
