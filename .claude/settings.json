@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(.agents/skills/**)"
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "ares-local-skills": {
+      "source": {
+        "source": "directory",
+        "path": ".agents/skills"
+      }
+    }
+  }
+}
