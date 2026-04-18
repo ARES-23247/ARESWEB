@@ -6,7 +6,7 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 py-4 transition-all duration-500 overflow-hidden meander-border clipped-header">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 py-4 transition-all duration-500 overflow-hidden meander-border rounded-bl-xl rounded-br-[2.5rem]">
       <div className="flex items-center justify-between">
         <button 
           onClick={() => navigate("/")} 

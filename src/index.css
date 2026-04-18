@@ -46,9 +46,6 @@ h1, h2, h3, h4, .font-heading {
     clip-path: polygon(8% 0%, 100% 0%, 100% 75%, 92% 100%, 0% 100%, 0% 25%);
   }
 
-  .clipped-header {
-    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px));
-  }
 
   .marble-card {
     @apply bg-marble border border-ares-bronze/20 shadow-sm transition-all duration-300 hover:shadow-md;
