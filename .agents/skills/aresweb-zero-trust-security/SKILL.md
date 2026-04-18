@@ -47,6 +47,7 @@ Before committing any new API endpoint (`POST`, `PUT`, `DELETE`, or sensitive `G
 2. **Localhost Isolation:** `url.hostname === "localhost"` is the *only* acceptable bypass, and it must validate the parsed URL hostname, NOT the `Host` header.
 3. **D1 SQL Injection Protection:** All database parameters are safely bound using `.bind()` rather than raw string interpolation.
 4. **Environment Isolation:** Ensure `.pages.dev` environments (which circumvent DNS-level Access Application rules) require strict header validation to protect against lateral bypasses.
+5. **No Inline Auth Duplication:** The route handler MUST NOT contain its own auth check. Auth is handled exclusively by the centralized `ensureAdmin` middleware. See Section 5.
 
 ## 3. SQL Binding Standards
 Never inject user-controlled input directly into a D1 query string.
@@ -83,5 +84,40 @@ Always verify `public/_routes.json` captures your proxy mounts:
 }
 ```
 
+## 5. Single Source of Truth for Authentication (CRITICAL)
+**Auth logic MUST exist in exactly ONE place: the `ensureAdmin` middleware registered via `apiRouter.use("/admin/*", ensureAdmin)`.**
+
+Never duplicate auth checks inside individual route handlers. This caused a **production outage** where the centralized middleware was updated to accept JWT tokens, but 8 stale inline copies inside route handlers still only checked for the email header — silently rejecting authenticated users.
+
+### ❌ FORBIDDEN: Inline Auth Duplication
+```typescript
+// BAD — This duplicates ensureAdmin and WILL desync when the middleware is updated
+apiRouter.delete("/admin/posts/:slug", ensureAdmin, async (c) => {
+  const email = c.req.header("cf-access-authenticated-user-email");
+  if (!email && url.hostname !== "localhost") {
+    return c.json({ error: "Unauthorized" }, 401);  // STALE — ignores JWT!
+  }
+  // ...
+});
+```
+
+### ✅ ENFORCED: Middleware-Only Auth
+```typescript
+// CORRECT — Auth is handled by apiRouter.use("/admin/*", ensureAdmin) on line 35
+// Individual handlers trust that they only execute if ensureAdmin passed.
+apiRouter.delete("/admin/posts/:slug", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ error: "Delete failed" }, 500);
+  }
+});
+```
+
+**Rule:** When adding a new `/admin/*` route, do NOT pass `ensureAdmin` as an inline middleware parameter and do NOT add auth checks inside the handler body. The global `apiRouter.use("/admin/*", ensureAdmin)` handles all authentication automatically.
+
 ## Action Summary
-Whenever you are operating within `functions/api/` or writing backend logic, you are to assume the posture of a strict Security Auditor. Assume all traffic is malicious unless cryptographically verified by Cloudflare JWTs. Never implicitly trust internal Edge networking routes without explicit definitions in `_routes.json`.
+Whenever you are operating within `functions/api/` or writing backend logic, you are to assume the posture of a strict Security Auditor. Assume all traffic is malicious unless cryptographically verified by Cloudflare JWTs. Never implicitly trust internal Edge networking routes without explicit definitions in `_routes.json`. Never duplicate auth logic — the `ensureAdmin` middleware is the single source of truth.
+
