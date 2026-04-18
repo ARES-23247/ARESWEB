@@ -154,20 +154,31 @@ export async function dispatchSocials(
             password: config.BLUESKY_APP_PASSWORD as string,
           });
 
+          // AT Protocol mandates a strict 300 character limit for `rt.text`
+          const prefix = `🚀 New Update: ${payload.title}\n\n`;
+          const suffix = `\n\nRead more: ${payload.url}`;
+          const maxSnippetLen = 295 - (prefix.length + suffix.length);
+          
+          let safeSnippet = payload.snippet || "";
+          if (maxSnippetLen > 0 && safeSnippet.length > maxSnippetLen) {
+            safeSnippet = safeSnippet.substring(0, maxSnippetLen - 3) + "...";
+          } else if (maxSnippetLen <= 0) {
+            safeSnippet = "";
+          }
+
           const rt = new RichText({
-            text: `🚀 New Update: ${payload.title}\n\n${payload.snippet}\n\nRead more: ${payload.url}`
+            text: `${prefix}${safeSnippet}${suffix}`
           });
           
           await rt.detectFacets(agent);
 
           let embed = undefined;
           if (payload.coverImageUrl) {
-            const imageUrl = payload.coverImageUrl.startsWith('http') 
-              ? payload.coverImageUrl 
-              : `https://ares23247.com${payload.coverImageUrl.startsWith('/') ? '' : '/'}${payload.coverImageUrl}`;
+            const resolvedImageUrl = payload.coverImageUrl.startsWith('http') ? payload.coverImageUrl
+            : `https://aresfirst.org${payload.coverImageUrl.startsWith('/') ? '' : '/'}${payload.coverImageUrl}`;
             
             try {
-              const imgRes = await fetch(imageUrl);
+              const imgRes = await fetch(resolvedImageUrl);
               if (imgRes.ok) {
                 const imgBuffer = await imgRes.arrayBuffer();
                 const mimeType = imgRes.headers.get("content-type") || "image/jpeg";

@@ -307,7 +307,7 @@ apiRouter.post("/admin/posts", async (c) => {
       c.executionCtx.waitUntil(
          dispatchSocials({
            title: body.title,
-           url: `https://ares23247.com/blog/${slug}`,
+           url: `https://aresfirst.org/blog/${slug}`,
            snippet: snippet || "Read the latest engineering update from ARES 23247!",
            coverImageUrl: body.coverImageUrl || "/gallery_1.png"
          }, socialConfig, socialsFilter).catch(err => console.error("Social dispatch returned top-level rejection:", err))
@@ -450,7 +450,7 @@ apiRouter.get("/sitemap.xml", async (c) => {
     const { results: posts } = await c.env.DB.prepare(`SELECT slug, date FROM posts ORDER BY id DESC`).all();
     const { results: events } = await c.env.DB.prepare(`SELECT id, date FROM events ORDER BY id DESC`).all();
 
-    const baseUrl = "https://ares23247.com";
+    const baseUrl = "https://aresfirst.org";
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -616,7 +616,7 @@ apiRouter.post("/admin/media/syndicate", async (c) => {
       config[row.key] = row.value;
     }
     
-    const imageUrl = `https://ares23247.com/api/media/${key}`;
+    const imageUrl = `https://aresfirst.org/api/media/${key}`;
     const { dispatchPhotoSocials } = await import("../utils/socialSync");
     
     // Offload the slow, heavily cryptographic dispatches to edge context background
@@ -722,7 +722,7 @@ apiRouter.post("/admin/events/:id/repush", async (c) => {
     c.executionCtx.waitUntil(
       dispatchSocials({
         title: event.title,
-        url: `https://ares23247.com/events`, // Link to events page
+        url: `https://aresfirst.org/events`, // Link to events page
         snippet: event.description || "Join us for our upcoming event!",
         coverImageUrl: event.cover_image || "/gallery_1.png"
       }, socialConfig, socials).catch(err => console.error("Event repush failed:", err))
@@ -764,7 +764,7 @@ apiRouter.post("/admin/posts/:slug/repush", async (c) => {
     c.executionCtx.waitUntil(
       dispatchSocials({
         title: post.title,
-        url: `https://ares23247.com/blog/${slug}`,
+        url: `https://aresfirst.org/blog/${slug}`,
         snippet: post.snippet || "Read the latest update from ARES 23247!",
         coverImageUrl: post.thumbnail || "/gallery_1.png"
       }, socialConfig, socials).catch(err => console.error("Post repush failed:", err))
@@ -818,7 +818,7 @@ apiRouter.put("/admin/events/:id", async (c) => {
        c.executionCtx.waitUntil(
           dispatchSocials({
             title: title,
-            url: `https://ares23247.com/events`,
+            url: `https://aresfirst.org/events`,
             snippet: description || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png"
           }, socialConfig, socials).catch(err => console.error("Event update social dispatch failed:", err))
@@ -1118,7 +1118,7 @@ apiRouter.post("/admin/events", async (c) => {
        c.executionCtx.waitUntil(
           dispatchSocials({
             title: title,
-            url: `https://ares23247.com/events`,
+            url: `https://aresfirst.org/events`,
             snippet: description || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png"
           }, socialConfig, socials).catch(err => console.error("Event social dispatch failed:", err))
