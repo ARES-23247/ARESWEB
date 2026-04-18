@@ -307,5 +307,81 @@ export async function dispatchPhotoSocials(imageUrl: string, caption: string, co
     );
   }
 
+  // 5. SLACK
+  if (config.SLACK_WEBHOOK_URL && config.SLACK_WEBHOOK_URL.trim() !== '') {
+    promises.push(
+      fetch(config.SLACK_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blocks: [
+            {
+              type: "image",
+              title: { type: "plain_text", text: caption || "ARES Media" },
+              image_url: imageUrl,
+              alt_text: "ARES 23247 Broadcast"
+            }
+          ]
+        })
+      }).catch(err => console.error("Slack Photo push failed:", err))
+    );
+  }
+
+  // 6. TEAMS
+  if (config.TEAMS_WEBHOOK_URL && config.TEAMS_WEBHOOK_URL.trim() !== '') {
+    promises.push(
+      fetch(config.TEAMS_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "message",
+          attachments: [
+            {
+              contentType: "application/vnd.microsoft.card.adaptive",
+              content: {
+                $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+                type: "AdaptiveCard",
+                version: "1.2",
+                body: [
+                  { type: "TextBlock", text: "📸 New ARES Gallery Media", weight: "Bolder", size: "Medium" },
+                  { type: "Image", url: imageUrl },
+                  { type: "TextBlock", text: caption, wrap: true }
+                ]
+              }
+            }
+          ]
+        })
+      }).catch(err => console.error("Teams Photo push failed:", err))
+    );
+  }
+
+  // 7. GOOGLE CHAT
+  if (config.GCHAT_WEBHOOK_URL && config.GCHAT_WEBHOOK_URL.trim() !== '') {
+    promises.push(
+      fetch(config.GCHAT_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cardsV2: [
+            {
+              cardId: "photoCard",
+              card: {
+                header: { title: "📸 New ARES Gallery Media" },
+                sections: [
+                  {
+                    widgets: [
+                      { image: { imageUrl: imageUrl } },
+                      { textParagraph: { text: caption } }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        })
+      }).catch(err => console.error("GChat Photo push failed:", err))
+    );
+  }
+
   await Promise.allSettled(promises);
 }

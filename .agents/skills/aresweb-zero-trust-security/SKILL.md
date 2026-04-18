@@ -126,13 +126,56 @@ This is both an **information exposure vulnerability** and a **UX failure**. Eve
 
 ### The Auth-Check Probe Pattern
 
-The backend exposes a lightweight probe endpoint at `/api/admin/auth-check` that is automatically protected by the `ensureAdmin` middleware:
+**CRITICAL: The auth-check endpoint MUST live OUTSIDE `/admin/*`.**
+
+Cloudflare Access only injects `cf-access-*` headers for the exact path the Access Application protects (e.g., `/dashboard`), **NOT** for subpaths like `/dashboard/api/admin/auth-check`. If the probe endpoint is mounted under `/admin/*`, the `ensureAdmin` middleware will reject it because the `cf-access-*` headers are absent — even though the user IS authenticated via Cloudflare Access. This caused a production bug where authenticated users were permanently locked out of the dashboard.
+
+The fix: mount the probe at `/api/auth-check` (no `/admin/` prefix) and manually check for authentication signals including the `CF_Authorization` cookie, which Cloudflare Access sets domain-wide after login.
 
 ```typescript
 // Backend: functions/api/[[route]].ts
-// This endpoint inherits protection from apiRouter.use("/admin/*", ensureAdmin)
+// This lives OUTSIDE /admin/* — it does NOT go through ensureAdmin.
+// It checks headers AND the CF_Authorization cookie as a fallback.
+apiRouter.get("/auth-check", async (c) => {
+  const url = new URL(c.req.url);
+
+  // Block .pages.dev alias
+  if (url.hostname.endsWith(".pages.dev")) {
+    return c.json({ authenticated: false }, 403);
+  }
+
+  // Localhost always passes
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+    return c.json({ authenticated: true, email: "local-dev@localhost" });
+  }
+
+  // Check Cloudflare Access injected headers (works if Access covers this path)
+  const email = c.req.header("cf-access-authenticated-user-email");
+  const jwt = c.req.header("cf-access-jwt-assertion");
+  if (email || jwt) {
+    return c.json({ authenticated: true, email: email || "authenticated-user" });
+  }
+
+  // Fallback: Check CF_Authorization cookie set by Cloudflare Access login flow.
+  // This cookie is present for ANY path on the domain after Access authentication.
+  const cookieHeader = c.req.header("cookie") || "";
+  const cfAuthMatch = cookieHeader.match(/CF_Authorization=([^;]+)/);
+  if (cfAuthMatch && cfAuthMatch[1]) {
+    return c.json({ authenticated: true, email: "authenticated-user" });
+  }
+
+  return c.json({ authenticated: false }, 401);
+});
+```
+
+### ❌ FORBIDDEN: Auth-Check Under /admin/*
+
+```typescript
+// BAD — ensureAdmin blocks this because Cloudflare Access doesn't inject
+// cf-access-* headers for /dashboard/api/admin/* subpaths.
+// Authenticated users see "Authentication Required" permanently.
 apiRouter.get("/admin/auth-check", async (c) => {
-  const email = c.req.header("cf-access-authenticated-user-email") || "authenticated-user";
+  const email = c.req.header("cf-access-authenticated-user-email");
   return c.json({ authenticated: true, email });
 });
 ```
@@ -159,7 +202,7 @@ export default function Dashboard() {
 
     const checkAuth = async () => {
       try {
-        const res = await fetch("/dashboard/api/admin/auth-check", {
+        const res = await fetch("/dashboard/api/auth-check", {
           credentials: "same-origin",
         });
         setAuthState(res.ok ? "authenticated" : "unauthorized");
@@ -203,10 +246,10 @@ export default function Dashboard() {
 
 ### Rule
 When creating or modifying any page component that should only be visible to authenticated users:
-1. The component MUST probe `/dashboard/api/admin/auth-check` on mount.
+1. The component MUST probe `/dashboard/api/auth-check` on mount (NOT `/dashboard/api/admin/auth-check`).
 2. The component MUST render a locked/login screen when the probe returns non-200.
 3. The localhost bypass MUST be a module-level `const`, NOT computed inside a `useEffect`.
-4. The auth-check endpoint MUST live under `/admin/*` to inherit `ensureAdmin` middleware protection automatically.
+4. The auth-check endpoint MUST live OUTSIDE `/admin/*` because Cloudflare Access header injection is path-scoped.
 
 ## Action Summary
-Whenever you are operating within `functions/api/` or writing backend logic, you are to assume the posture of a strict Security Auditor. Assume all traffic is malicious unless cryptographically verified by Cloudflare JWTs. Never implicitly trust internal Edge networking routes without explicit definitions in `_routes.json`. Never duplicate auth logic — the `ensureAdmin` middleware is the single source of truth. When building or modifying protected SPA frontend pages, always implement the auth-check probe gate pattern from Section 6 — Cloudflare Zero Trust does NOT protect static page loads.
+Whenever you are operating within `functions/api/` or writing backend logic, you are to assume the posture of a strict Security Auditor. Assume all traffic is malicious unless cryptographically verified by Cloudflare JWTs. Never implicitly trust internal Edge networking routes without explicit definitions in `_routes.json`. Never duplicate auth logic — the `ensureAdmin` middleware is the single source of truth for mutations. The auth-check UI probe is the sole exception: it lives outside `/admin/*` and validates via headers OR the `CF_Authorization` cookie. When building or modifying protected SPA frontend pages, always implement the auth-check probe gate pattern from Section 6 — Cloudflare Zero Trust does NOT protect static page loads.
