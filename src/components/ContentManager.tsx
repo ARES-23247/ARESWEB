@@ -26,11 +26,13 @@ interface DocItem {
 export default function ContentManager({ 
   onEditPost, 
   onEditEvent,
-  onEditDoc 
+  onEditDoc,
+  mode = "all"
 }: { 
   onEditPost?: (slug: string) => void;
   onEditEvent?: (id: string) => void;
   onEditDoc?: (slug: string) => void;
+  mode?: "all" | "blog" | "event" | "docs";
 }) {
   const queryClient = useQueryClient();
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -166,19 +168,22 @@ export default function ContentManager({
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white tracking-tighter">Manage Content</h2>
-        <p className="text-zinc-300 text-sm mt-1">Review and delete explicitly verified Database entries.</p>
-      </div>
+      {mode === "all" && (
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white tracking-tighter">Manage Content</h2>
+          <p className="text-zinc-300 text-sm mt-1">Review and delete explicitly verified Database entries.</p>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center min-h-[300px]">
           <div className="w-8 h-8 md:w-12 md:h-12 border-4 border-zinc-800 border-t-ares-red rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+        <div className={`grid gap-6 flex-1 ${mode === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
           
           {/* Active Events Column */}
+          {(mode === "all" || mode === "event") && (
           <div className="flex flex-col">
             <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
               <h3 className="text-ares-gold font-bold uppercase tracking-widest text-xs">Active Events</h3>
@@ -225,8 +230,10 @@ export default function ContentManager({
               )}
             </div>
           </div>
+          )}
 
           {/* Published Blog Posts Column */}
+          {(mode === "all" || mode === "blog") && (
           <div className="flex flex-col">
             <h3 className="text-ares-red font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">Published Blog Posts</h3>
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
@@ -264,8 +271,10 @@ export default function ContentManager({
               )}
             </div>
           </div>
+          )}
 
           {/* Documentation Column */}
+          {(mode === "all" || mode === "docs") && (
           <div className="flex flex-col">
             <h3 className="text-ares-cyan font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">ARESLib Docs</h3>
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
@@ -303,6 +312,7 @@ export default function ContentManager({
               )}
             </div>
           </div>
+          )}
 
         </div>
       )}
