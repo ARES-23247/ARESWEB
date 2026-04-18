@@ -10,9 +10,10 @@ const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 
 // ── Auth middleware for admin routes ──────────────────────────────────
 app.use("/admin/*", async (c, next) => {
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  if (!email) {
-    return c.json({ error: "Unauthorized — Cloudflare Access required" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
   await next();
 });
@@ -77,17 +78,10 @@ app.get("/events/:id", async (c) => {
 
 // ── POST /api/events — create a new event (admin) ────────────────────
 app.post("/events", async (c) => {
-  const host = c.req.header("host") || "";
-  const allowedHosts = ["aresfirst.org", "localhost"];
-  if (!allowedHosts.some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
@@ -113,18 +107,10 @@ app.post("/events", async (c) => {
 // ── POST /api/posts — create a new blog post (admin) ────────────────
 app.post("/posts", async (c) => {
   // Validate host header to prevent Zero Trust bypass via .pages.dev
-  const host = c.req.header("host") || "";
-  const allowedHosts = ["aresfirst.org", "localhost"];
-  const isAllowed = allowedHosts.some((h) => host.includes(h));
-  if (!isAllowed) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
@@ -191,17 +177,10 @@ app.post("/posts", async (c) => {
 
 // ── PUT /api/posts/:slug — edit a blog post (admin) ────────────────────
 app.put("/posts/:slug", async (c) => {
-  const host = c.req.header("host") || "";
-  const allowedHosts = ["aresfirst.org", "localhost"];
-  if (!allowedHosts.some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
@@ -254,16 +233,10 @@ app.put("/posts/:slug", async (c) => {
 // ── File Upload via R2 ───────────────────────────────────────────────
 app.post("/upload", async (c) => {
   // Validate host header
-  const host = c.req.header("host") || "";
-  if (!["aresfirst.org", "localhost"].some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
@@ -307,38 +280,10 @@ app.get("/media/:key", async (c) => {
 
 // ── GET /api/media — list all R2 objects ──────────────────────────────
 app.get("/media", async (c) => {
-  const host = c.req.header("host") || "";
-  if (!["aresfirst.org", "localhost"].some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
-  try {
-    const listed = await c.env.ARES_STORAGE.list({ limit: 500 });
-    const assets = listed.objects.map((obj) => ({
-      key: obj.key,
-      size: obj.size,
-      uploaded: obj.uploaded.toISOString(),
-      url: `/api/media/${obj.key}`,
-    }));
-    return c.json({ assets });
-  } catch (err) {
-    console.error("R2 list error:", err);
-    return c.json({ assets: [] });
-  }
-});
-
-// ── DELETE /api/media/:key — remove an R2 object ──────────────────────
-app.delete("/media/:key", async (c) => {
-  const host = c.req.header("host") || "";
-  if (!["aresfirst.org", "localhost"].some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
@@ -353,17 +298,10 @@ app.delete("/media/:key", async (c) => {
 
 // ── DELETE /api/events/:id — delete an event (admin) ────────────────────
 app.delete("/events/:id", async (c) => {
-  const host = c.req.header("host") || "";
-  const allowedHosts = ["aresfirst.org", "localhost"];
-  if (!allowedHosts.some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
@@ -378,17 +316,10 @@ app.delete("/events/:id", async (c) => {
 
 // ── DELETE /api/posts/:slug — delete a blog post (admin) ────────────────
 app.delete("/posts/:slug", async (c) => {
-  const host = c.req.header("host") || "";
-  const allowedHosts = ["aresfirst.org", "localhost"];
-  if (!allowedHosts.some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
@@ -403,17 +334,10 @@ app.delete("/posts/:slug", async (c) => {
 
 // ── PUT /api/events/:id — edit an event (admin) ────────────────────────
 app.put("/events/:id", async (c) => {
-  const host = c.req.header("host") || "";
-  const allowedHosts = ["aresfirst.org", "localhost"];
-  if (!allowedHosts.some((h) => host.includes(h))) {
-    return c.json({ error: "Forbidden host" }, 403);
-  }
-
+  const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
-  const referer = c.req.header("referer") || "";
-  const isDashboard = referer.includes("aresfirst.org");
-  if (!email && !isDashboard && !host.includes("localhost")) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+    return c.json({ error: "Strict Context: Unauthorized. Cloudflare Zero Trust authentication required." }, 401);
   }
 
   try {
