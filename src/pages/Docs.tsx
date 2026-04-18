@@ -29,7 +29,6 @@ import PowerSheddingSim from "../sims/PowerSheddingSim";
 import StateMachineSim from "../sims/StateMachineSim";
 import TiptapRenderer from "../components/TiptapRenderer";
 import { CodeBlock } from "../components/docs/CodeBlock";
-import CoreValueCallout from "../components/CoreValueCallout";
 
 interface DocRecord {
   slug: string;

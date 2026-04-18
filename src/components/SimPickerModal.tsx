@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { X, TerminalSquare, Search } from "lucide-react";
 import registry from "../sims/simRegistry.json";
 
@@ -60,7 +60,7 @@ export default function SimPickerModal({
           {sims.length === 0 ? (
             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 gap-4">
               <TerminalSquare size={48} className="opacity-50" />
-              <p className="font-mono text-sm">No simulator matched the query "{searchQuery}".</p>
+              <p className="font-mono text-sm">No simulator matched the query &ldquo;{searchQuery}&rdquo;.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
