@@ -29,7 +29,7 @@ import 'katex/dist/katex.min.css';
 
 
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AssetPickerModal from "./AssetPickerModal";
 import SimPickerModal from "./SimPickerModal";
