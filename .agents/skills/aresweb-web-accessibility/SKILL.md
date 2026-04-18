@@ -12,12 +12,14 @@ You are an expert accessibility engineer enforcing the championship-grade standa
 * **Screen Reader Context (ARIA):**
   * Use `aria-hidden="true"` on purely decorative icons or background graphical flourishes.
   * Ensure functional icons without text have descriptive `aria-label`s or visually hidden Tailwind `.sr-only` text.
+  * Explicitly denote interactive graphical simulations (like robot odometry `<canvas>`) with `<canvas role="img" aria-label="Interactive simulation of...">`.
 * **Color Contrast Validation:** Text and interactive elements must have a minimum contrast ratio of **4.5:1** against their background for standard text. Default to high-contrast cyan (`text-ares-cyan`) or red (`text-ares-red`) against our dark theme.
 * **Forms & DOM Hygiene:** Every `<input>`, `<textarea>`, and `<select>` MUST have an explicitly associated `<label>` using the `htmlFor`/`id` pattern in React.
 
 ## Testing Protocol
 1. Ensure components render cleanly on the Cloudflare Edge.
 2. Fix "Orphaned form labels" or "Unlabeled form controls" immediately. Use semantic form controls inside Next.js Server Components or Client-side actions safely.
+3. **Hierarchy Traversal:** Whenever rendering dynamic pages or complex layouts, ensure a visually-hidden `Skip to content` link exists in the header layout to allow keyboard users to bypass the Navigation bar.
 
 ## Next.js / React Theming Fixes
 Because ARESWEB uses a futuristic dark theme via Tailwind CSS:
