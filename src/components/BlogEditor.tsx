@@ -534,6 +534,34 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
         <EditorContent editor={editor} />
       </div>
 
+      {/* Social Syndication Controls */}
+      {availableSocials.length > 0 && (
+        <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-4 shadow-inner mt-6">
+          <div className="flex items-center gap-2 mb-3">
+             <div className="w-2 h-2 rounded-full bg-ares-cyan animate-pulse"></div>
+             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Broadcast & Social Syndication</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {availableSocials.map(platform => (
+              <label key={platform} className="flex items-center gap-2 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={socials[platform] || false}
+                  onChange={(e) => setSocials(prev => ({ ...prev, [platform]: e.target.checked }))}
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-ares-red focus:ring-ares-red transition-all cursor-pointer"
+                />
+                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors capitalize">
+                  {platform}
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="text-[10px] text-zinc-500 mt-2 italic font-mono uppercase tracking-tighter">
+            * Selected platforms will receive a preview card and link immediately upon {editSlug ? "updating" : "publication"}.
+          </p>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-800">
         <span className="text-ares-red text-sm font-medium">{errorMsg}</span>
