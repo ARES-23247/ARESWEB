@@ -53,8 +53,8 @@ export default function Blog() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {posts.map((post) => (
-            <Link to={`/blog/${post.slug}`} key={post.slug} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded-2xl">
-              <div className="glass-card rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(220,38,38,0.15)] flex flex-col h-full border border-white/10 group-hover:border-ares-red/30">
+            <Link to={`/blog/${post.slug}`} key={post.slug} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+              <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
                 <div className="relative h-56 w-full overflow-hidden">
                   <img src={post.thumbnail} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
@@ -68,7 +68,7 @@ export default function Blog() {
             </Link>
           ))}
           {!isLoading && posts.length === 0 && (
-            <div className="text-white/80 p-6 glass-card rounded-2xl col-span-full border-dashed">
+            <div className="text-white/80 p-6 glass-card hero-card col-span-full border-dashed">
               No posts published yet. Head to the <Link to="/dashboard" className="text-ares-gold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">Dashboard</Link> to create one.
             </div>
           )}

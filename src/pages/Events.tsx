@@ -38,7 +38,7 @@ export default function Events() {
     const startDate = new Date(event.date_start);
 
     return (
-      <Link to={`/events/${event.id}`} className={`flex flex-col md:flex-row gap-6 bg-black/40 border ${isPast ? 'border-white/5 opacity-80' : 'border-ares-gold/30 shadow-lg shadow-ares-gold/10'} rounded-2xl overflow-hidden group hover:border-ares-gold/60 transition-all duration-300 block cursor-pointer`}>
+      <Link to={`/events/${event.id}`} className={`flex flex-col md:flex-row gap-6 bg-black/40 border ${isPast ? 'border-white/5 opacity-80' : 'border-ares-gold/30 shadow-lg shadow-ares-gold/10'} hero-card overflow-hidden group block cursor-pointer`}>
         {/* Date / Image Block */}
         <div className="md:w-1/3 relative overflow-hidden bg-ares-red/20 min-h-[200px] flex-shrink-0">
           {event.cover_image ? (
@@ -122,7 +122,7 @@ export default function Events() {
               </div>
               
               {upcomingEvents.length === 0 ? (
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
+                <div className="bg-white/5 border border-white/10 hero-card p-12 text-center">
                   <p className="text-marble/70 text-lg">No upcoming events are currently scheduled. Check back soon!</p>
                 </div>
               ) : (
