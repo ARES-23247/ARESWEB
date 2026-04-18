@@ -108,7 +108,7 @@ export default function Dashboard() {
                 className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${activeTab === "manage_docs" ? "bg-white/10 border border-white/20 text-white shadow-lg" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
               >
                 <Book size={16} />
-                Docs
+                <span className="flex items-center"><span className="text-ares-red normal-case">ARES</span><span className="text-white normal-case">lib</span></span>
               </button>
               <button
                 onClick={() => setActiveTab("assets")}

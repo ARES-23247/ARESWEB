@@ -31,6 +31,7 @@ export default function Footer() {
             <li><Link to="/seasons" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Seasons</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Outreach</Link></li>
             <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
+            <li><Link to="/docs" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">lib</span></span></Link></li>
           </ul>
         </div>
 
@@ -82,6 +83,7 @@ export default function Footer() {
           </div>
           <div className="flex gap-8">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <Link to="/docs" className="hover:text-white transition-colors flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">lib</span></Link>
             <Link to="/sponsors" className="hover:text-white transition-colors">Support Us</Link>
           </div>
         </div>

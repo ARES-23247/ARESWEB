@@ -48,6 +48,9 @@ Instead, you must utilize the global `.hero-card` class defined in `index.css`. 
 To maintain championship-level professionalism, specific organizations and technologies must be referred to using precise nomenclature:
 
 - **FIRST® Branding**: Always refer to the organization as *FIRST*® (italicized with the registered trademark symbol `®`). This applies to every mention in body text, headers, and metadata.
+- **ARESlib Branding**: The team's software library MUST be referred to as **ARESLib** (one word, lowercase "ib").
+  - **UI Styling**: In headers and primary navigation, "ARES" must be `text-ares-red` and "Lib" must be `text-white` or `text-marble`.
+  - ❌ **BANNED**: `ARESlib`, `ARES Lib`, `areslib`
 - **AI Model Consistency**: Use consistent and technically accurate casing for standard models:
   - ✅ **AUTHORIZED**: `Llama` (Meta's Large Language Model)
   - ✅ **AUTHORIZED**: `LLaVA` (Large Language-and-Vision Assistant)
