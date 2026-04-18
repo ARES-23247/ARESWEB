@@ -1,15 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 py-4 transition-all duration-500 overflow-hidden meander-border clipped-header">
       <div className="flex items-center justify-between">
-        <Link to="/" className="text-2xl font-bold tracking-tighter text-white flex items-center gap-2 font-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+        <button 
+          onClick={() => navigate("/")} 
+          className="text-2xl font-bold tracking-tighter text-white flex items-center gap-2 font-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
+          aria-label="ARES 23247 Home"
+        >
           ARES <span className="text-ares-red font-bold">23247</span>
-        </Link>
+        </button>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-bold uppercase tracking-widest">
           <Link to="/" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Home</Link>
@@ -27,7 +32,12 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <button onClick={() => setOpen(!open)} className="md:hidden text-white w-8 h-8 flex flex-col justify-center items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded">
+        <button 
+          onClick={() => setOpen(!open)} 
+          className="md:hidden text-white w-8 h-8 flex flex-col justify-center items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={open}
+        >
           <span className={`w-6 h-0.5 bg-current block transition-transform duration-300 ${open ? "rotate-45 translate-y-2" : ""}`}></span>
           <span className={`w-6 h-0.5 bg-current block transition-opacity duration-300 ${open ? "opacity-0" : ""}`}></span>
           <span className={`w-6 h-0.5 bg-current block transition-transform duration-300 ${open ? "-rotate-45 -translate-y-2" : ""}`}></span>
