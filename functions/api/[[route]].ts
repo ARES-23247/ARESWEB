@@ -62,7 +62,7 @@ app.get("/events", async (c) => {
 // ── POST /api/events — create a new event (admin) ────────────────────
 app.post("/events", async (c) => {
   const host = c.req.header("host") || "";
-  const allowedHosts = ["aresweb.pages.dev", "aresfirst.org", "localhost"];
+  const allowedHosts = ["aresfirst.org", "localhost"];
   if (!allowedHosts.some((h) => host.includes(h))) {
     return c.json({ error: "Forbidden host" }, 403);
   }
@@ -174,7 +174,7 @@ app.post("/posts", async (c) => {
 app.post("/upload", async (c) => {
   // Validate host header
   const host = c.req.header("host") || "";
-  if (!["aresweb.pages.dev", "aresfirst.org", "localhost"].some((h) => host.includes(h))) {
+  if (!["aresfirst.org", "localhost"].some((h) => host.includes(h))) {
     return c.json({ error: "Forbidden host" }, 403);
   }
 
