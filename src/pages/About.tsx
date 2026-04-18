@@ -51,6 +51,22 @@ export default function About() {
         </div>
       </section>
 
+      {/* ─── JOIN CTA ─── */}
+      <section className="py-16 bg-ares-red">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-heading uppercase">Ready to Join ARES?</h2>
+          <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
+            We welcome students from 6th–12th grade across Monongalia and Harrison counties. No experience needed — just bring your curiosity.
+          </p>
+          <a
+            href="/contact"
+            className="clipped-button bg-white text-ares-red hover:scale-105 hover:bg-marble transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] font-heading text-lg"
+          >
+            Apply to Join Our Team
+          </a>
+        </div>
+      </section>
+
       {/* ─── QUICK ANSWERS (FAQS) ─── */}
       <section className="py-24 bg-white border-t border-ares-bronze/10">
         <div className="max-w-7xl mx-auto px-6">
