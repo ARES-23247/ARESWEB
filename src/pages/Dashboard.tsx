@@ -1,5 +1,6 @@
 import BlogEditor from "@/components/BlogEditor";
 import EventEditor from "@/components/EventEditor";
+import ContentManager from "@/components/ContentManager";
 
 export default function Dashboard() {
   return (
@@ -15,7 +16,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
           <div className="glass-card rounded-3xl p-6 md:p-8 border border-zinc-800 flex flex-col h-full bg-zinc-900 shadow-2xl">
             <BlogEditor />
           </div>
@@ -26,6 +27,11 @@ export default function Dashboard() {
               <EventEditor />
             </div>
           </div>
+        </div>
+
+        {/* Content Manager Full Width Row */}
+        <div className="w-full glass-card rounded-3xl p-6 md:p-8 border border-zinc-800 flex flex-col bg-zinc-900 shadow-2xl mt-8">
+          <ContentManager />
         </div>
       </div>
     </div>

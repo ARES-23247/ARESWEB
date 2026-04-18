@@ -21,7 +21,7 @@ app.use("/admin/*", async (c, next) => {
 app.get("/posts", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT slug, title, date, snippet, thumbnail FROM posts ORDER BY date DESC"
+      "SELECT slug, title, date, snippet, thumbnail, cf_email FROM posts ORDER BY date DESC"
     ).all();
     return c.json({ posts: results ?? [] });
   } catch (err) {
@@ -50,7 +50,7 @@ app.get("/posts/:slug", async (c) => {
 app.get("/events", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id FROM events ORDER BY date_start ASC"
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email FROM events ORDER BY date_start ASC"
     ).all();
     return c.json({ events: results ?? [] });
   } catch (err) {
@@ -82,9 +82,9 @@ app.post("/events", async (c) => {
     }
 
     await c.env.DB.prepare(
-      "INSERT INTO events (id, title, date_start, date_end, location, description, cover_image) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO events (id, title, date_start, date_end, location, description, cover_image, cf_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     )
-      .bind(id, title, dateStart, dateEnd || null, location || "", description || "", coverImage || "")
+      .bind(id, title, dateStart, dateEnd || null, location || "", description || "", coverImage || "", email || "anonymous_dashboard_user")
       .run();
 
     return c.json({ success: true, id });
@@ -225,6 +225,56 @@ app.get("/media/:key", async (c) => {
   headers.set("Cache-Control", "public, max-age=31536000, immutable");
 
   return new Response(object.body, { headers });
+});
+
+// ── DELETE /api/events/:id — delete an event (admin) ────────────────────
+app.delete("/events/:id", async (c) => {
+  const host = c.req.header("host") || "";
+  const allowedHosts = ["aresfirst.org", "localhost"];
+  if (!allowedHosts.some((h) => host.includes(h))) {
+    return c.json({ error: "Forbidden host" }, 403);
+  }
+
+  const email = c.req.header("cf-access-authenticated-user-email");
+  const referer = c.req.header("referer") || "";
+  const isDashboard = referer.includes("aresfirst.org");
+  if (!email && !isDashboard && !host.includes("localhost")) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  try {
+    const id = c.req.param("id");
+    await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 delete error (events):", err);
+    return c.json({ error: "Delete failed" }, 500);
+  }
+});
+
+// ── DELETE /api/posts/:slug — delete a blog post (admin) ────────────────
+app.delete("/posts/:slug", async (c) => {
+  const host = c.req.header("host") || "";
+  const allowedHosts = ["aresfirst.org", "localhost"];
+  if (!allowedHosts.some((h) => host.includes(h))) {
+    return c.json({ error: "Forbidden host" }, 403);
+  }
+
+  const email = c.req.header("cf-access-authenticated-user-email");
+  const referer = c.req.header("referer") || "";
+  const isDashboard = referer.includes("aresfirst.org");
+  if (!email && !isDashboard && !host.includes("localhost")) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  try {
+    const slug = c.req.param("slug");
+    await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 delete error (posts):", err);
+    return c.json({ error: "Delete failed" }, 500);
+  }
 });
 
 export const onRequest = handle(app);
