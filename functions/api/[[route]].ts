@@ -67,7 +67,11 @@ app.post("/events", async (c) => {
     return c.json({ error: "Forbidden host" }, 403);
   }
 
-  const email = c.req.header("cf-access-authenticated-user-email") || "anonymous";
+  const email = c.req.header("cf-access-authenticated-user-email");
+  // We only strictly require email if it's not localhost for development
+  if (!email && !host.includes("localhost")) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
 
   try {
     const { id, title, dateStart, dateEnd, location, description, coverImage } = await c.req.json();
@@ -99,7 +103,10 @@ app.post("/posts", async (c) => {
     return c.json({ error: "Forbidden host" }, 403);
   }
 
-  const email = c.req.header("cf-access-authenticated-user-email") || "anonymous";
+  const email = c.req.header("cf-access-authenticated-user-email");
+  if (!email && !host.includes("localhost")) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
 
   try {
     const body = await c.req.json<{
@@ -171,8 +178,10 @@ app.post("/upload", async (c) => {
     return c.json({ error: "Forbidden host" }, 403);
   }
 
-  // Check auth
-  const email = c.req.header("cf-access-authenticated-user-email") || "anonymous";
+  const email = c.req.header("cf-access-authenticated-user-email");
+  if (!email && !host.includes("localhost")) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
 
   try {
     const body = await c.req.parseBody();
