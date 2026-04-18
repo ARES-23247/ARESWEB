@@ -24,20 +24,20 @@ export default function Footer() {
 
         {/* Quick Links */}
         <div>
-          <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">The Vault</h4>
+          <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">Navigation</h4>
           <ul className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest text-marble/60">
             <li><Link to="/" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Home</Link></li>
             <li><Link to="/about" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Who We Are</Link></li>
             <li><Link to="/seasons" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Seasons</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Outreach</Link></li>
             <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
-            <li><Link to="/docs" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">lib</span></span></Link></li>
+            <li><Link to="/docs" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></span></Link></li>
           </ul>
         </div>
 
         {/* Intelligence / Contact */}
         <div>
-          <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">Intelligence</h4>
+          <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">Connect</h4>
           <div className="flex flex-wrap gap-4 mb-8">
             <a href="https://instagram.com/ares23247" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-red transition-colors text-white" aria-label="Instagram">
               <i className="fab fa-instagram"></i>
@@ -83,7 +83,7 @@ export default function Footer() {
           </div>
           <div className="flex gap-8">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link to="/docs" className="hover:text-white transition-colors flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">lib</span></Link>
+            <Link to="/docs" className="hover:text-white transition-colors flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></Link>
             <Link to="/sponsors" className="hover:text-white transition-colors">Support Us</Link>
           </div>
         </div>

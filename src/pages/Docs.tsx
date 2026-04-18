@@ -161,7 +161,7 @@ export default function Docs() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex flex-col">
-      <SEO title={currentDoc?.title ? `${currentDoc.title} — ARESlib` : "ARESlib Documentation"} description={currentDoc?.description || "ARESlib documentation for the ARES 23247 FTC framework."} />
+      <SEO title={currentDoc?.title ? `${currentDoc.title} — ARESLib` : "ARESLib Documentation"} description={currentDoc?.description || "ARESLib documentation for the ARES 23247 FTC framework."} />
 
       {/* ── Search Overlay ─────────────────────────────────────────── */}
       <AnimatePresence>
@@ -241,7 +241,7 @@ export default function Docs() {
             <Link to="/docs" className="flex items-center gap-2 group">
               <BookOpen size={20} className="text-ares-red" />
               <span className="font-heading font-bold text-lg group-hover:text-ares-gold transition-colors flex items-center">
-                <span className="text-ares-red normal-case">ARES</span><span className="text-white normal-case">lib</span>
+                <span className="text-ares-red normal-case">ARES</span><span className="text-white normal-case">Lib</span>
               </span>
             </Link>
           </div>
@@ -337,7 +337,7 @@ export default function Docs() {
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2 text-xs text-white/30">
                   <Link to="/docs" className="hover:text-ares-gold transition-colors flex items-center">
-                    <span className="text-ares-red normal-case">ARES</span><span className="text-white normal-case">lib</span>
+                    <span className="text-ares-red normal-case">ARES</span><span className="text-white normal-case">Lib</span>
                   </Link>
                   <ChevronRight size={12} />
                   <span className="text-ares-gold/60">{currentDoc.category}</span>

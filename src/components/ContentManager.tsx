@@ -286,7 +286,7 @@ export default function ContentManager({
           {(mode === "all" || mode === "docs") && (
           <div className="flex flex-col">
             <h3 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">
-              <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">lib</span></span> Documentation
+              <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></span> Documentation
             </h3>
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
               {docs.length === 0 ? (
