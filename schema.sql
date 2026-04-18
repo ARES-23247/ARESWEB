@@ -5,6 +5,8 @@ CREATE TABLE posts (
     date TEXT,
     snippet TEXT,
     thumbnail TEXT,
+    author TEXT,
+    cf_email TEXT,
     ast TEXT
 );
 
@@ -35,7 +37,8 @@ CREATE TABLE events (
     location TEXT,
     description TEXT,
     cover_image TEXT,
-    gcal_event_id TEXT
+    gcal_event_id TEXT,
+    cf_email TEXT
 );
 
 DROP TABLE IF EXISTS docs;
@@ -78,4 +81,11 @@ CREATE TABLE settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,
     updated_at TEXT DEFAULT (datetime('now'))
+);
+
+DROP TABLE IF EXISTS media_tags;
+CREATE TABLE media_tags (
+    key TEXT PRIMARY KEY,
+    folder TEXT DEFAULT 'Library',
+    tags TEXT
 );

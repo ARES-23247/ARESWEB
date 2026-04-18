@@ -562,12 +562,13 @@ apiRouter.get("/media", async (c) => {
     ]);
 
     const metaMap = new Map();
-    for (const row of dbRes.results as { key: string, folder: string, tags: string }[]) {
+    for (const row of (dbRes.results || []) as { key: string, folder: string, tags: string }[]) {
       metaMap.set(row.key, { folder: row.folder, tags: row.tags });
     }
 
     const merged = objects.objects.map(obj => ({
       ...obj,
+      url: `/api/media/${obj.key}`,
       folder: metaMap.get(obj.key)?.folder || "Library",
       tags: metaMap.get(obj.key)?.tags || ""
     }));

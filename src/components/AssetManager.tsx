@@ -21,7 +21,7 @@ export default function AssetManager() {
   const { data, isLoading } = useQuery<{ media: (R2Asset & { folder: string; tags: string; })[] }>({
     queryKey: ['media'],
     queryFn: async () => {
-      const res = await fetch("/dashboard/api/admin/media", { credentials: "include" });
+      const res = await fetch("/api/media", { credentials: "include" });
       const data: { media: (R2Asset & { folder: string; tags: string; })[] } = await res.json();
       return data;
     }
