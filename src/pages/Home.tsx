@@ -145,7 +145,7 @@ export default function Home() {
       <section className="py-20 bg-ares-red text-white">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="text-center md:text-left">
-            <h3 className="text-3xl md:text-4xl font-bold mb-2 font-heading">Campaign Schedule</h3>
+            <h3 className="text-3xl md:text-4xl font-bold mb-2 font-heading">Event Calendar</h3>
             <p className="text-white/80 text-lg">Tracks our upcoming demos, qualifiers, and community workshops.</p>
           </div>
           <a
