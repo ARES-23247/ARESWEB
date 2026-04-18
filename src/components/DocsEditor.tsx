@@ -46,7 +46,7 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
     setErrorMsg("");
 
     try {
-      const res = await fetch("/api/admin/docs", {
+      const res = await fetch("/dashboard/api/admin/docs", {
         method: "POST", // API does an INSERT OR REPLACE
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, title, category, sortOrder, description, content }),

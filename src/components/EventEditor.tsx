@@ -100,7 +100,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
     const formData = new FormData();
     formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ".webp"));
     
-    const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+    const res = await fetch("/dashboard/api/admin/upload", { method: "POST", body: formData });
     const data = await res.json();
     if (!data.url) throw new Error(data.error || "Upload failed");
     return data.url;
@@ -122,7 +122,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
       const payload = { ...form, id, description: finalDescription };
 
       const method = editId ? "PUT" : "POST";
-      const url = editId ? `/api/admin/events/${editId}` : "/api/admin/events";
+      const url = editId ? `/dashboard/api/admin/events/${editId}` : "/dashboard/api/admin/events";
 
       const res = await fetch(url, {
         method,

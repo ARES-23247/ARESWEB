@@ -66,7 +66,7 @@ export default function ContentManager({
 
   const deleteEventMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/events/${id}`, { method: "DELETE" });
+      const res = await fetch(`/dashboard/api/admin/events/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Failed to delete event. Status: ${res.status}`);
@@ -84,7 +84,7 @@ export default function ContentManager({
 
   const syncGcalMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/admin/events/sync`, { method: "POST" });
+      const res = await fetch(`/dashboard/api/admin/events/sync`, { method: "POST" });
       if (!res.ok) throw new Error("Sync failed. Check permissions.");
       return res.json();
     },
@@ -99,7 +99,7 @@ export default function ContentManager({
 
   const deletePostMutation = useMutation({
     mutationFn: async (slug: string) => {
-      const res = await fetch(`/api/admin/posts/${slug}`, { method: "DELETE" });
+      const res = await fetch(`/dashboard/api/admin/posts/${slug}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Failed to delete post. Status: ${res.status}`);
@@ -117,7 +117,7 @@ export default function ContentManager({
 
   const deleteDocMutation = useMutation({
     mutationFn: async (slug: string) => {
-      const res = await fetch(`/api/admin/docs/${slug}`, { method: "DELETE" });
+      const res = await fetch(`/dashboard/api/admin/docs/${slug}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Failed to delete doc. Status: ${res.status}`);
