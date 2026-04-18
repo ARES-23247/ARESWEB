@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import mammoth from "mammoth";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -39,6 +40,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
   const [successMsg, setSuccessMsg] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingInline, setIsUploadingInline] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
 
@@ -194,6 +196,37 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
     return { url: data.url, altText: data.altText };
   };
 
+  const handleDocImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+    setIsImporting(true);
+    setErrorMsg("");
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer }, {
+        convertImage: mammoth.images.inline(async (element) => {
+          const buffer = await element.read();
+          const blob = new Blob([buffer], { type: element.contentType });
+          const imageFile = new File([blob], `imported_image_${Date.now()}.${element.contentType.split('/')[1]}`, { type: element.contentType });
+          try {
+            const { url } = await uploadFile(imageFile);
+            return { src: url };
+          } catch (err) {
+            console.error("Failed to upload imported image", err);
+            return { src: "" };
+          }
+        })
+      });
+      editor.commands.setContent(result.value);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Failed to import document.");
+    } finally {
+      setIsImporting(false);
+      e.target.value = "";
+    }
+  };
+
   const handlePublish = async () => {
     if (!form.title || !form.dateStart) {
       setErrorMsg("Title and Start Date are required.");
@@ -296,8 +329,12 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
         {/* Editor Toolbar */}
         {editor && (
           <div className="bg-zinc-900 border border-zinc-800 p-2 rounded-xl flex flex-wrap gap-2 items-center backdrop-blur-md sticky top-4 z-10 shadow-lg mb-2">
+            <button type="button" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} className="px-2 py-2 rounded-lg text-sm font-bold transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30">↶</button>
+            <button type="button" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} className="px-2 py-2 rounded-lg text-sm font-bold transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30">↷</button>
+            <div className="w-px h-6 bg-zinc-800 mx-1"></div>
             <button onClick={() => editor.chain().focus().toggleBold().run()} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("bold") ? "bg-ares-red text-white shadow-md" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>B</button>
             <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-4 py-2 rounded-lg text-sm italic transition-all ${editor.isActive("italic") ? "bg-ares-gold text-white shadow-md" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>I</button>
+            <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-3 py-2 rounded-lg text-sm font-bold line-through transition-all ${editor.isActive("strike") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>S</button>
             <div className="w-px h-6 bg-zinc-800 mx-2"></div>
             <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>H2</button>
             <button onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${editor.isActive("heading", { level: 3 }) ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>H3</button>
@@ -314,11 +351,31 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
             }} className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-ares-cyan hover:bg-zinc-800 hover:text-white">🔗 / YT</button>
             <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white">Table</button>
             <button onClick={() => { const chain = editor.chain().focus() as unknown as { toggleMathInline?: () => { run: () => void }, insertContent: (c: string) => { run: () => void } }; if (chain.toggleMathInline) chain.toggleMathInline().run(); else chain.insertContent('$\\Sigma$').run(); }} className={`px-4 py-2 rounded-lg text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
-            <button onClick={() => editor.chain().focus().insertContent(`<pre><code class="language-mermaid">graph TD;\nA-->B;</code></pre>`).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700">Mermaid</button>
+            <button type="button" onClick={() => editor.chain().focus().insertContent({ type: 'mermaidBlock', attrs: { language: 'mermaid' } }).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700">Mermaid</button>
             <div className="w-px h-6 bg-zinc-800 mx-2"></div>
             <button onClick={() => editor.chain().focus().toggleHighlight().run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("highlight") ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>HL</button>
             <button onClick={() => editor.chain().focus().toggleSubscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("subscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Sub</button>
             <button onClick={() => editor.chain().focus().toggleSuperscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("superscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Super</button>
+            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
+            <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-2 rounded-lg text-sm font-bold transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white">―――</button>
+            <button type="button" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} className="px-2 py-2 rounded-lg text-sm transition-all text-ares-red/70 hover:bg-ares-red hover:text-white">Clear</button>
+            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
+            <button 
+              type="button" 
+              onClick={() => document.getElementById('doc-import-upload')?.click()} 
+              disabled={isImporting}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all border border-ares-cyan/30 ${isImporting ? "bg-zinc-800 text-zinc-500 animate-pulse" : "text-ares-cyan hover:bg-ares-cyan hover:text-white shadow-sm"}`}
+            >
+              {isImporting ? "IMPORTING..." : "Import .DOCX"}
+            </button>
+            <input 
+              id="doc-import-upload" 
+              type="file" 
+              accept=".docx" 
+              className="hidden" 
+              onChange={handleDocImport} 
+            />
+            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
             <div className="w-px h-6 bg-zinc-800 mx-2"></div>
             <button onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()} className="px-3 py-2 border border-ares-cyan/30 text-ares-cyan hover:bg-ares-cyan hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm">Info</button>
             <button onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm">Warn</button>
@@ -359,6 +416,24 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
                 }
               }} 
             />
+          </div>
+        )}
+        {editor && editor.isActive('table') && (
+          <div className="flex flex-wrap items-center gap-2 bg-ares-cyan/10 border border-t-0 border-ares-cyan/30 px-3 py-2 w-full text-xs shadow-sm rounded-b-xl mb-4">
+            <span className="text-ares-cyan font-bold mr-2 tracking-wider">TABLE</span>
+            <button type="button" onClick={() => editor.chain().focus().addColumnBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Col Before</button>
+            <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Col After</button>
+            <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">- Col</button>
+            <div className="w-px h-4 bg-ares-cyan/30 mx-1"></div>
+            <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Row Before</button>
+            <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Row After</button>
+            <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">- Row</button>
+            <div className="w-px h-4 bg-ares-cyan/30 mx-1"></div>
+            <button type="button" onClick={() => editor.chain().focus().mergeCells().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">Merge</button>
+            <button type="button" onClick={() => editor.chain().focus().splitCell().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">Split</button>
+            <div className="w-px h-4 bg-ares-cyan/30 mx-1"></div>
+            <button type="button" onClick={() => editor.chain().focus().toggleHeaderRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">Toggle Header</button>
+            <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} className="px-2 py-1 rounded bg-ares-red/10 hover:bg-ares-red hover:text-white transition-colors text-ares-red ml-auto border border-ares-red/30">Delete Table</button>
           </div>
         )}
 
