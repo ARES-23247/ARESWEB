@@ -7,7 +7,8 @@ type Bindings = {
   AI: { run: (model: string, input: unknown) => Promise<unknown> };
 };
 
-const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
+const app = new Hono<{ Bindings: Bindings }>();
+const apiRouter = new Hono<{ Bindings: Bindings }>();
 
 // ── Zero Trust Auth Middleware ────────────────────────────────────────
 const ensureAdmin = async (c: Context, next: Next) => {
@@ -21,10 +22,10 @@ const ensureAdmin = async (c: Context, next: Next) => {
 
 
 // ── Auth middleware for admin routes ──────────────────────────────────
-app.use("/admin/*", ensureAdmin);
+apiRouter.use("/admin/*", ensureAdmin);
 
 // ── GET /api/posts — list all blog posts ─────────────────────────────
-app.get("/posts", async (c) => {
+apiRouter.get("/posts", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
       "SELECT slug, title, date, snippet, thumbnail, cf_email FROM posts ORDER BY date DESC"
@@ -37,7 +38,7 @@ app.get("/posts", async (c) => {
 });
 
 // ── GET /api/posts/:slug — single blog post ──────────────────────────
-app.get("/posts/:slug", async (c) => {
+apiRouter.get("/posts/:slug", async (c) => {
   const slug = c.req.param("slug");
   try {
     const row = await c.env.DB.prepare(
@@ -53,7 +54,7 @@ app.get("/posts/:slug", async (c) => {
 });
 
 // ── GET /api/events — list all events ──────────────────────────────────
-app.get("/events", async (c) => {
+apiRouter.get("/events", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
       "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email FROM events ORDER BY date_start ASC"
@@ -66,7 +67,7 @@ app.get("/events", async (c) => {
 });
 
 // ── GET /api/events/:id — single event ─────────────────────────────────
-app.get("/events/:id", async (c) => {
+apiRouter.get("/events/:id", async (c) => {
   const id = c.req.param("id");
   try {
     const row = await c.env.DB.prepare(
@@ -82,7 +83,7 @@ app.get("/events/:id", async (c) => {
 });
 
 // ── POST /api/events — create a new event (admin) ────────────────────
-app.post("/admin/events", ensureAdmin, async (c) => {
+apiRouter.post("/admin/events", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -110,7 +111,7 @@ app.post("/admin/events", ensureAdmin, async (c) => {
 });
 
 // ── POST /api/posts — create a new blog post (admin) ────────────────
-app.post("/admin/posts", ensureAdmin, async (c) => {
+apiRouter.post("/admin/posts", ensureAdmin, async (c) => {
   // Validate host header to prevent Zero Trust bypass via .pages.dev
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
@@ -199,7 +200,7 @@ app.post("/admin/posts", ensureAdmin, async (c) => {
 });
 
 // ── PUT /api/posts/:slug — edit a blog post (admin) ────────────────────
-app.put("/admin/posts/:slug", ensureAdmin, async (c) => {
+apiRouter.put("/admin/posts/:slug", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -272,7 +273,7 @@ app.put("/admin/posts/:slug", ensureAdmin, async (c) => {
 });
 
 // ── File Upload via R2 & AI Image Accessibility Generation ───────────
-app.post("/admin/upload", ensureAdmin, async (c) => {
+apiRouter.post("/admin/upload", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -322,7 +323,7 @@ app.post("/admin/upload", ensureAdmin, async (c) => {
 });
 
 // ── Dynamic XML Sitemap Generation ─────────────────────────────────
-app.get("/sitemap.xml", async (c) => {
+apiRouter.get("/sitemap.xml", async (c) => {
   try {
     const { results: posts } = await c.env.DB.prepare(`SELECT slug, date FROM posts ORDER BY id DESC`).all();
     const { results: events } = await c.env.DB.prepare(`SELECT id, date FROM events ORDER BY id DESC`).all();
@@ -392,7 +393,7 @@ app.get("/sitemap.xml", async (c) => {
 });
 
 // ── GET /api/media/:key — proxy R2 images ─────────────────────────────
-app.get("/media/:key", async (c) => {
+apiRouter.get("/media/:key", async (c) => {
   const key = c.req.param("key");
   const object = await c.env.ARES_STORAGE.get(key);
 
@@ -409,7 +410,7 @@ app.get("/media/:key", async (c) => {
 });
 
 // ── GET /api/media — list all R2 objects ──────────────────────────────
-app.get("/media", ensureAdmin, async (c) => {
+apiRouter.get("/media", ensureAdmin, async (c) => {
   try {
     const objects = await c.env.ARES_STORAGE.list();
     return c.json({ media: objects.objects });
@@ -420,7 +421,7 @@ app.get("/media", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/media/:key — delete R2 object (admin) ─────────────────
-app.delete("/admin/media/:key", ensureAdmin, async (c) => {
+apiRouter.delete("/admin/media/:key", ensureAdmin, async (c) => {
   try {
     const key = c.req.param("key") as string;
     await c.env.ARES_STORAGE.delete(key);
@@ -433,7 +434,7 @@ app.delete("/admin/media/:key", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/events/:id — delete an event (admin) ────────────────────
-app.delete("/admin/events/:id", ensureAdmin, async (c) => {
+apiRouter.delete("/admin/events/:id", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -451,7 +452,7 @@ app.delete("/admin/events/:id", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /api/posts/:slug — delete a blog post (admin) ────────────────
-app.delete("/admin/posts/:slug", ensureAdmin, async (c) => {
+apiRouter.delete("/admin/posts/:slug", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -469,7 +470,7 @@ app.delete("/admin/posts/:slug", ensureAdmin, async (c) => {
 });
 
 // ── PUT /api/events/:id — edit an event (admin) ────────────────────────
-app.put("/admin/events/:id", ensureAdmin, async (c) => {
+apiRouter.put("/admin/events/:id", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -498,7 +499,7 @@ app.put("/admin/events/:id", ensureAdmin, async (c) => {
 });
 
 // ── POST /api/events/sync — Google Calendar Sync (admin) ──────────────
-app.post("/admin/events/sync", ensureAdmin, async (c) => {
+apiRouter.post("/admin/events/sync", ensureAdmin, async (c) => {
   const url = new URL(c.req.url);
   const email = c.req.header("cf-access-authenticated-user-email");
   if (!email && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
@@ -580,7 +581,7 @@ app.post("/admin/events/sync", ensureAdmin, async (c) => {
 // ── DOCUMENTATION SYSTEM ──────────────────────────────────────────────
 
 // ── GET /api/docs — list all docs grouped by category ─────────────────
-app.get("/docs", async (c) => {
+apiRouter.get("/docs", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
       "SELECT slug, title, category, sort_order, description FROM docs ORDER BY category, sort_order ASC"
@@ -593,7 +594,7 @@ app.get("/docs", async (c) => {
 });
 
 // ── GET /api/docs/search?q=keyword — full-text search ─────────────────
-app.get("/docs/search", async (c) => {
+apiRouter.get("/docs/search", async (c) => {
   const q = c.req.query("q");
   if (!q || q.length < 2) return c.json({ results: [] });
   try {
@@ -623,7 +624,7 @@ app.get("/docs/search", async (c) => {
 });
 
 // ── GET /api/docs/:slug — single doc page ─────────────────────────────
-app.get("/docs/:slug", async (c) => {
+apiRouter.get("/docs/:slug", async (c) => {
   const slug = c.req.param("slug");
   try {
     const row = await c.env.DB.prepare(
@@ -638,7 +639,7 @@ app.get("/docs/:slug", async (c) => {
 });
 
 // ── POST /api/admin/docs — create/update a doc (admin) ────────────────
-app.post("/admin/docs", async (c) => {
+apiRouter.post("/admin/docs", async (c) => {
   try {
     const { slug, title, category, sortOrder, description, content } = await c.req.json();
     if (!slug || !title || !category || !content) {
@@ -655,7 +656,7 @@ app.post("/admin/docs", async (c) => {
 });
 
 // ── DELETE /api/admin/docs/:slug — delete a doc (admin) ───────────────
-app.delete("/admin/docs/:slug", async (c) => {
+apiRouter.delete("/admin/docs/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
     await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
@@ -666,5 +667,9 @@ app.delete("/admin/docs/:slug", async (c) => {
   }
 });
 
+app.route("/api", apiRouter);
+app.route("/dashboard/api", apiRouter);
+
 export const onRequest = handle(app);
+
 export default app;
