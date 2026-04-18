@@ -13,6 +13,14 @@ const apiRouter = new Hono<{ Bindings: Bindings }>();
 // ── Zero Trust Auth Middleware ────────────────────────────────────────
 const ensureAdmin = async (c: Context, next: Next) => {
   const url = new URL(c.req.url);
+  
+  // SECURE CATASTROPHIC BYPASS:
+  // If attackers hit the raw `.pages.dev` alias, they bypass the DNS-level Cloudflare Access 
+  // protection on `aresfirst.org` and can spoof the zero trust headers. We MUST hard-block it.
+  if (url.hostname.endsWith(".pages.dev")) {
+    return c.json({ error: "Strict Context: Direct invocation of .pages.dev alias is forbidden." }, 403);
+  }
+
   const email = c.req.header("cf-access-authenticated-user-email");
   const jwt = c.req.header("cf-access-jwt-assertion");
   if (!email && !jwt && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
