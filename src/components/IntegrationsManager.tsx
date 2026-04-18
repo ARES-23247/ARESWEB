@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Settings, Key, Share2, Save, CloudLightning, MessageSquare } from "lucide-react";
+import { Calendar, Settings, Key, Share2, Save, CloudLightning, MessageSquare, Slack, Facebook, Users } from "lucide-react";
 
 type SettingsData = Record<string, string>;
 
@@ -222,6 +222,83 @@ export default function IntegrationsManager() {
                 onChange={(e) => handleChange("GCAL_PRIVATE_KEY", e.target.value)}
                 rows={4}
                 className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors resize-none font-mono text-xs"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Team Communications Setup */}
+        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full pointer-events-none" />
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Users size={20} className="text-yellow-500" /> Team Communications
+          </h3>
+          <p className="text-xs text-zinc-500 mb-4 block">Standard webhooks for instant PR updates inside your team workspaces.</p>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="slack_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Slack size={12}/> Slack</label>
+              <input
+                id="slack_webhook"
+                type="text"
+                placeholder="https://hooks.slack.com/services/..."
+                value={localSettings["SLACK_WEBHOOK_URL"] || ""}
+                onChange={(e) => handleChange("SLACK_WEBHOOK_URL", e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="teams_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Users size={12}/> Microsoft Teams</label>
+              <input
+                id="teams_webhook"
+                type="text"
+                placeholder="https://ares-robotics.webhook.office.com/webhookb2/..."
+                value={localSettings["TEAMS_WEBHOOK_URL"] || ""}
+                onChange={(e) => handleChange("TEAMS_WEBHOOK_URL", e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="gchat_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1"><MessageSquare size={12}/> Google Chat</label>
+              <input
+                id="gchat_webhook"
+                type="text"
+                placeholder="https://chat.googleapis.com/v1/spaces/..."
+                value={localSettings["GCHAT_WEBHOOK_URL"] || ""}
+                onChange={(e) => handleChange("GCHAT_WEBHOOK_URL", e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Facebook Setup */}
+        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#1877F2]/10 blur-3xl rounded-full pointer-events-none" />
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Facebook size={20} className="text-[#1877F2]" /> Facebook Platform
+          </h3>
+          <p className="text-xs text-zinc-500 mb-4 block">Requires a Page ID and an active Graph API Page Access Token.</p>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="facebook_page_id" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Page ID</label>
+              <input
+                id="facebook_page_id"
+                type="text"
+                placeholder="1000XXXXXXXXXXX"
+                value={localSettings["FACEBOOK_PAGE_ID"] || ""}
+                onChange={(e) => handleChange("FACEBOOK_PAGE_ID", e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="facebook_access_token" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Page Access Token</label>
+              <input
+                id="facebook_access_token"
+                type="text"
+                placeholder="EAABXXXXXXXXXXXXXXXX..."
+                value={localSettings["FACEBOOK_ACCESS_TOKEN"] || ""}
+                onChange={(e) => handleChange("FACEBOOK_ACCESS_TOKEN", e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
               />
             </div>
           </div>

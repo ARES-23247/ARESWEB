@@ -125,26 +125,38 @@ export default function Docs() {
     return ordered;
   }, [allDocs]);
 
+  // Helper to remove HTML tags from strings
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
+
   const tableOfContents = useMemo(() => {
     if (!currentDoc?.content) return [];
     
     // Check if it's Tiptap JSON
     try {
-      const parsed = JSON.parse(currentDoc.content);
-      if (parsed.type === "doc" && parsed.content) {
-        const headings: { level: number; text: string; id: string }[] = [];
-        const findHeadings = (node: { type?: string; attrs?: { level?: number }; content?: { text?: string }[] }) => {
-          if (node.type === "heading" && (node.attrs?.level === 2 || node.attrs?.level === 3)) {
-            const text = node.content?.map((c) => c.text || "").join("") || "";
-            const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            headings.push({ level: node.attrs.level, text, id });
-          }
-          if (node.content && Array.isArray(node.content)) {
-            node.content.forEach(c => findHeadings(c as typeof node));
-          }
-        };
-        findHeadings(parsed as never);
-        return headings;
+      // Robust JSON check: must start with { and contain type: doc
+      const trimmed = currentDoc.content.trim();
+      if (trimmed.startsWith("{")) {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.type === "doc" && parsed.content) {
+          const headings: { level: number; text: string; id: string }[] = [];
+          const findHeadings = (node: { type?: string; attrs?: { level?: number }; content?: { text?: string }[] }) => {
+            if (node.type === "heading" && (node.attrs?.level === 2 || node.attrs?.level === 3)) {
+              const text = node.content?.map((c) => c.text || "").join("") || "";
+              const cleanText = stripHtml(text);
+              const id = cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+              headings.push({ level: node.attrs.level, text: cleanText, id });
+            }
+            if (node.content && Array.isArray(node.content)) {
+              node.content.forEach(c => findHeadings(c));
+            }
+          };
+          findHeadings(parsed);
+          return headings;
+        }
       }
     } catch (_) { // eslint-disable-line @typescript-eslint/no-unused-vars
       // Not JSON, treat as Markdown
@@ -153,7 +165,7 @@ export default function Docs() {
     const headings = Array.from(currentDoc.content.matchAll(/^(#{2,3})\s+(.+)$/gm));
     return headings.map((match) => {
       const level = match[1].length;
-      const text = match[2].trim();
+      const text = stripHtml(match[2].trim());
       const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       return { level, text, id };
     });

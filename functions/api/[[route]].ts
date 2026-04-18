@@ -218,7 +218,12 @@ apiRouter.post("/admin/posts", async (c) => {
          DISCORD_WEBHOOK_URL: c.env.DISCORD_WEBHOOK_URL || dbSettings["DISCORD_WEBHOOK_URL"],
          MAKE_WEBHOOK_URL: dbSettings["MAKE_WEBHOOK_URL"],
          BLUESKY_HANDLE: dbSettings["BLUESKY_HANDLE"],
-         BLUESKY_APP_PASSWORD: dbSettings["BLUESKY_APP_PASSWORD"]
+         BLUESKY_APP_PASSWORD: dbSettings["BLUESKY_APP_PASSWORD"],
+         SLACK_WEBHOOK_URL: dbSettings["SLACK_WEBHOOK_URL"],
+         TEAMS_WEBHOOK_URL: dbSettings["TEAMS_WEBHOOK_URL"],
+         GCHAT_WEBHOOK_URL: dbSettings["GCHAT_WEBHOOK_URL"],
+         FACEBOOK_PAGE_ID: dbSettings["FACEBOOK_PAGE_ID"],
+         FACEBOOK_ACCESS_TOKEN: dbSettings["FACEBOOK_ACCESS_TOKEN"]
       };
 
       c.executionCtx.waitUntil(
