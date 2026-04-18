@@ -36,13 +36,11 @@ h1, h2, h3, h4, .font-heading {
   }
 
   .clipped-button {
-    @apply relative inline-flex items-center justify-center px-8 py-3 font-bold uppercase tracking-wider transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red;
-    clip-path: polygon(10% 0%, 100% 0%, 100% 70%, 90% 100%, 0% 100%, 0% 30%);
+    @apply relative inline-flex items-center justify-center px-8 py-3 font-bold uppercase tracking-wider transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red rounded-tl-[1.5rem] rounded-br-[1.5rem] rounded-tr-lg rounded-bl-lg;
   }
 
   .clipped-button-sm {
-    @apply relative inline-flex items-center justify-center px-6 py-2 font-bold uppercase tracking-wider transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red;
-    clip-path: polygon(8% 0%, 100% 0%, 100% 75%, 92% 100%, 0% 100%, 0% 25%);
+    @apply relative inline-flex items-center justify-center px-6 py-2 font-bold uppercase tracking-wider transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red rounded-tl-[1rem] rounded-br-[1rem] rounded-tr-md rounded-bl-md;
   }
 
 
