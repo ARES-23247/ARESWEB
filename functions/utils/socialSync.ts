@@ -1,4 +1,4 @@
-import { BskyAgent } from '@atproto/api';
+import { BskyAgent, RichText } from '@atproto/api';
 
 export interface SocialConfig {
   DISCORD_WEBHOOK_URL?: string;
@@ -153,20 +153,65 @@ export async function dispatchSocials(
             password: config.BLUESKY_APP_PASSWORD as string,
           });
 
-          // @ts-expect-error -- D1 untyped response
-          const rt = new agent.rtText.RichText({
-            text: `🚀 New Blog Post: ${payload.title}\n\n${payload.snippet}\n\nRead more: ${payload.url}`
+          const rt = new RichText({
+            text: `🚀 New Update: ${payload.title}\n\n${payload.snippet}\n\nRead more: ${payload.url}`
           });
           
           await rt.detectFacets(agent);
 
+          let embed = undefined;
+          if (payload.coverImageUrl) {
+            const imageUrl = payload.coverImageUrl.startsWith('http') 
+              ? payload.coverImageUrl 
+              : `https://ares23247.com${payload.coverImageUrl.startsWith('/') ? '' : '/'}${payload.coverImageUrl}`;
+            
+            try {
+              const imgRes = await fetch(imageUrl);
+              if (imgRes.ok) {
+                const imgBuffer = await imgRes.arrayBuffer();
+                const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+                
+                const { data } = await agent.uploadBlob(new Uint8Array(imgBuffer), {
+                    encoding: mimeType
+                });
+                
+                if (data && data.blob) {
+                  embed = {
+                      $type: 'app.bsky.embed.external',
+                      external: {
+                          uri: payload.url,
+                          title: payload.title,
+                          description: payload.snippet,
+                          thumb: data.blob
+                      }
+                  };
+                }
+              }
+            } catch (imgErr) {
+              console.error("Bluesky image upload failed, proceeding without embed:", imgErr);
+            }
+          }
+
+          if (!embed) {
+            // Text-only link card fallback
+            embed = {
+                $type: 'app.bsky.embed.external',
+                external: {
+                    uri: payload.url,
+                    title: payload.title,
+                    description: payload.snippet,
+                }
+            };
+          }
+
           await agent.post({
             text: rt.text,
             facets: rt.facets,
+            embed: embed,
             createdAt: new Date().toISOString()
           });
-        } catch (err) {
-          console.error("Bluesky post failed:", err);
+        } catch (err: unknown) {
+          console.error("Bluesky post failed:", (err as Error)?.message || err);
         }
       })()
     );

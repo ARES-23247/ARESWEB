@@ -18,9 +18,11 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
 
   useEffect(() => {
     if (!isOpen) {
-      setStatus("idle");
-      setErrorMsg("");
-      return;
+      const timer = setTimeout(() => {
+        setStatus("idle");
+        setErrorMsg("");
+      }, 300);
+      return () => clearTimeout(timer);
     }
 
     const fetchSettings = async () => {
@@ -77,7 +79,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
         setStatus("error");
         setErrorMsg(data.error || "Broadcast failed");
       }
-    } catch (err) {
+    } catch {
       setStatus("error");
       setErrorMsg("Network error — broadcast failed");
     } finally {

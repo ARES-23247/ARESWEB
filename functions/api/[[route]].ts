@@ -185,7 +185,7 @@ apiRouter.get("/events/:id", async (c) => {
   }
 });
 
-async function getSocialConfig(c: any): Promise<any> {
+async function getSocialConfig(c: Context<{ Bindings: Bindings }>): Promise<Record<string, string | undefined>> {
   try {
     const { results: settingsRows } = await c.env.DB.prepare("SELECT key, value FROM settings").all();
     const dbSettings: Record<string, string> = {};
@@ -302,7 +302,7 @@ apiRouter.post("/admin/posts", async (c) => {
     // ── Phase 3: Omnichannel Social Media Integration ──
     try {
       const socialConfig = await getSocialConfig(c);
-      const socialsFilter = (body as any).socials || null;
+      const socialsFilter = (body as { socials?: Record<string, boolean> }).socials || null;
 
       c.executionCtx.waitUntil(
          dispatchSocials({
@@ -539,7 +539,8 @@ apiRouter.get("/media", async (c) => {
       c.env.DB.prepare("SELECT key, folder, tags FROM media_tags WHERE folder = 'Gallery'").all().catch(() => ({ results: [] }))
     ]);
 
-    const publicKeys = new Set((dbRes.results || []).map((r: any) => r.key));
+    const results = (dbRes.results || []) as { key: string, folder: string, tags: string }[];
+    const publicKeys = new Set(results.map(r => r.key));
 
     const merged = objects.objects
       .filter(obj => publicKeys.has(obj.key))
@@ -547,7 +548,7 @@ apiRouter.get("/media", async (c) => {
         ...obj,
         url: `/api/media/${obj.key}`,
         folder: "Gallery",
-        tags: (dbRes.results || []).find((r: any) => r.key === obj.key)?.tags || ""
+        tags: results.find(r => r.key === obj.key)?.tags || ""
       }));
 
     return c.json({ media: merged });
