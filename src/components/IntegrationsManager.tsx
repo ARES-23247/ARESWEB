@@ -10,11 +10,11 @@ export default function IntegrationsManager() {
   const [isDirty, setIsDirty] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const { data, isLoading, isError } = useQuery<{ settings: SettingsData }>({
+  const { data, isLoading, isError, error } = useQuery<{ settings: SettingsData }, Error>({
     queryKey: ["admin_settings"],
     queryFn: async () => {
       const res = await fetch("/dashboard/api/admin/settings");
-      if (!res.ok) throw new Error("Failed to load settings");
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       return res.json();
     }
   });
@@ -66,6 +66,7 @@ export default function IntegrationsManager() {
     return (
       <div className="text-ares-red bg-ares-red/10 border border-ares-red rounded-xl p-4 font-bold text-center">
         Failed to load integrations. Access denied or network error.
+        <div className="text-sm font-mono mt-2 opcaity-80">{error?.message || "Unknown Error"}</div>
       </div>
     );
   }
