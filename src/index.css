@@ -1,3 +1,4 @@
+@import 'highlight.js/styles/github-dark.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -70,4 +71,35 @@ h1, h2, h3, h4, .font-heading {
     background-repeat: repeat-x;
     background-position: center;
   }
+}
+/* --- TIPTAP EDITOR PROSE STYLING --- */
+.callout-block {
+  @apply p-4 my-6 rounded-xl border flex gap-4 transition-colors duration-300;
+}
+.callout-block p {
+  @apply m-0 inline;
+}
+.callout-block::before {
+  @apply text-xl flex-shrink-0 mr-2;
+}
+
+.callout-block[data-type="info"] {
+  @apply bg-ares-cyan/10 border-ares-cyan/30 text-[#e6edf3];
+}
+.callout-block[data-type="info"]::before {
+  content: "ℹ️";
+}
+
+.callout-block[data-type="warning"] {
+  @apply bg-ares-red/10 border-ares-red/30 text-[#e6edf3];
+}
+.callout-block[data-type="warning"]::before {
+  content: "⚠️";
+}
+
+.callout-block[data-type="tip"] {
+  @apply bg-ares-gold/10 border-ares-gold/30 text-[#e6edf3];
+}
+.callout-block[data-type="tip"]::before {
+  content: "💡";
 }

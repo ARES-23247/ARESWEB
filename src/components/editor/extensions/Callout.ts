@@ -44,12 +44,12 @@ export const Callout = Node.create({
       setCallout:
         attributes =>
         ({ commands }) => {
-          return commands.setNode(this.name, attributes);
+          return commands.wrapIn(this.name, attributes);
         },
       toggleCallout:
         attributes =>
         ({ commands }) => {
-          return commands.toggleNode(this.name, 'paragraph', attributes);
+          return commands.toggleWrap(this.name, attributes);
         },
     };
   },
