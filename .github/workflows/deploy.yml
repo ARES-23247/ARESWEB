@@ -41,3 +41,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name aresweb --commit-dirty=true --branch ${{ github.head_ref || github.ref_name }}
+          packageManager: npm
