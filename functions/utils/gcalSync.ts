@@ -173,7 +173,12 @@ export async function deleteEventFromGcal(gcal_id: string, config: GCalConfig) {
  */
 export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event[]> {
   const token = await getGcalAccessToken(config);
-  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events?maxResults=100&orderBy=startTime&singleEvents=true`;
+  
+  // Fetch up to 2500 events starting from 2 years ago to avoid truncating current events
+  const timeMin = new Date();
+  timeMin.setFullYear(timeMin.getFullYear() - 2);
+  
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events?maxResults=2500&orderBy=startTime&singleEvents=true&timeMin=${encodeURIComponent(timeMin.toISOString())}`;
 
   const res = await fetch(url, {
     method: "GET",
