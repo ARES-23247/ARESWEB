@@ -33,6 +33,7 @@ import { useNavigate } from "react-router-dom";
 import mammoth from "mammoth";
 import AssetPickerModal from "./AssetPickerModal";
 import SimPickerModal from "./SimPickerModal";
+import heic2any from "heic2any";
 
 export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: string | null; onClearEdit?: () => void }) {
   const queryClient = useQueryClient();
@@ -60,10 +61,20 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
   });
   const [availableSocials, setAvailableSocials] = useState<string[]>([]);
 
-  const compressImage = (file: File): Promise<Blob> => {
+  const compressImage = async (file: File): Promise<Blob> => {
+    let processBlob: Blob = file;
+    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic")) {
+      try {
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+        processBlob = Array.isArray(converted) ? converted[0] : converted;
+      } catch (err) {
+        console.error("HEIC decoding failed:", err);
+        throw new Error("HEIC processing failed. Image may be corrupted.");
+      }
+    }
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processBlob);
       reader.onload = (event) => {
         const img = new window.Image();
         img.src = event.target?.result as string;

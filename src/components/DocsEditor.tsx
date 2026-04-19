@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import mammoth from "mammoth";
+import heic2any from "heic2any";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -54,10 +55,20 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
 
-  const compressImage = (file: File): Promise<Blob> => {
+  const compressImage = async (file: File): Promise<Blob> => {
+    let processBlob: Blob = file;
+    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic")) {
+      try {
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+        processBlob = Array.isArray(converted) ? converted[0] : converted;
+      } catch (err) {
+        console.error("HEIC decoding failed:", err);
+        throw new Error("HEIC processing failed. Image may be corrupted.");
+      }
+    }
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processBlob);
       reader.onload = (event) => {
         const img = new window.Image();
         img.src = event.target?.result as string;
