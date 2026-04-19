@@ -894,6 +894,7 @@ apiRouter.put("/admin/events/:id", async (c) => {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
+    const warnings: string[] = [];
     const socialConfig = await getSocialConfig(c);
     const gcalEmail = socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"];
     const gcalKey = socialConfig["GCAL_PRIVATE_KEY"];
@@ -910,7 +911,7 @@ apiRouter.put("/admin/events/:id", async (c) => {
         );
       } catch (err: unknown) {
         console.error("GCal PUT update error:", err);
-        return c.json({ error: `Google Calendar Auth Failed: ${(err as Error)?.message || "Unknown GCal Error"}` }, 502);
+        warnings.push(`Google Calendar Auth Failed: ${(err as Error)?.message || "Unknown GCal Error"}`);
       }
     }
 
@@ -921,7 +922,7 @@ apiRouter.put("/admin/events/:id", async (c) => {
       .run();
 
     // ── Optional Social Syndication ──
-    if (socials) {
+     if (socials) {
        try {
          await dispatchSocials({
             title: title,
@@ -932,11 +933,12 @@ apiRouter.put("/admin/events/:id", async (c) => {
          }, socialConfig, socials);
        } catch (err: unknown) {
          console.error("Event update social dispatch failed:", err);
-         return c.json({ error: `Network Syndication Failed: ${(err as Error)?.message || String(err)}` }, 502);
+         warnings.push(`Network Syndication Failed: ${(err as Error)?.message || String(err)}`);
        }
     }
 
-    return c.json({ success: true, id: paramId });
+    const finalStatus = warnings.length > 0 ? 207 : 200;
+    return c.json({ success: true, id: paramId, warning: warnings.length > 0 ? warnings.join(" | ") : undefined }, finalStatus as 200 | 207);
   } catch (err: unknown) {
     console.error("D1 write error (events):", err);
     return c.json({ success: false, error: (err as Error)?.message || "Event update failed" }, 500);
@@ -1211,6 +1213,7 @@ apiRouter.post("/admin/events", async (c) => {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
+    const warnings: string[] = [];
     const genId = crypto.randomUUID();
     
     // Sync to GCal if enabled
@@ -1228,7 +1231,7 @@ apiRouter.post("/admin/events", async (c) => {
         );
       } catch (err: unknown) {
         console.error("GCal manual POST error:", err);
-        return c.json({ error: `Google Calendar Auth Failed: ${(err as Error)?.message || "Unknown GCal Error"}` }, 502);
+        warnings.push(`Google Calendar Auth Failed: ${(err as Error)?.message || "Unknown GCal Error"}`);
       }
     }
 
@@ -1248,11 +1251,12 @@ apiRouter.post("/admin/events", async (c) => {
          }, socialConfig, socials);
        } catch (err: unknown) {
          console.error("Event social dispatch failed:", err);
-         return c.json({ error: `Network Syndication Failed: ${(err as Error)?.message || String(err)}` }, 502);
+         warnings.push(`Network Syndication Failed: ${(err as Error)?.message || String(err)}`);
        }
     }
 
-    return c.json({ success: true, id: genId });
+    const finalStatus = warnings.length > 0 ? 207 : 200;
+    return c.json({ success: true, id: genId, warning: warnings.length > 0 ? warnings.join(" | ") : undefined }, finalStatus as 200 | 207);
   } catch (err: unknown) {
     console.error("D1 manual event creation error:", err);
     return c.json({ error: "Write failed" }, 500);

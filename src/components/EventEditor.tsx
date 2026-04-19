@@ -301,6 +301,13 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
         queryClient.invalidateQueries({ queryKey: ["events"] });
         queryClient.invalidateQueries({ queryKey: ["admin_events"] });
         if (onClearEdit) onClearEdit();
+        
+      // @ts-expect-error -- D1 untyped response
+        if (data.warning) {
+      // @ts-expect-error -- D1 untyped response
+          alert("Event saved to the ARES database, but external syndication had issues:\n\n" + data.warning);
+        }
+
         if (!editId) {
           setForm({ title: "", dateStart: "", dateEnd: "", location: "", description: "", coverImage: "/gallery_2.png" });
         }
