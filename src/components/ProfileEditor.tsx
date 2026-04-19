@@ -17,6 +17,7 @@ interface CollegeEntry { name: string; domain: string; years: string; degree: st
 interface EmployerEntry { name: string; domain: string; title: string; current: boolean; years: string; }
 
 interface ProfileData {
+  email: string; // Internal/Read-only
   first_name: string;
   last_name: string;
   nickname: string;
@@ -42,9 +43,11 @@ interface ProfileData {
   tshirt_size: string;
   emergency_contact_name: string;
   emergency_contact_phone: string;
+  show_on_about: boolean;
 }
 
 const DEFAULT_PROFILE: ProfileData = {
+  email: "",
   first_name: "", last_name: "", nickname: "", phone: "", contact_email: "", show_email: false, show_phone: false,
   pronouns: "", grade_year: "", subteams: [], member_type: "student",
   bio: "", favorite_food: "", dietary_restrictions: [],
@@ -54,7 +57,7 @@ const DEFAULT_PROFILE: ProfileData = {
   tshirt_size: "", emergency_contact_name: "", emergency_contact_phone: "",
 };
 
-export default function ProfileEditor() {
+export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: string }) {
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,8 +65,10 @@ export default function ProfileEditor() {
 
   const isMinor = profile.member_type === "student"; // Only students get PII-hidden treatment
 
+  const fetchUrl = adminEditUserId ? `/dashboard/api/admin/users/${adminEditUserId}/profile` : "/api/profile/me";
+
   useEffect(() => {
-    fetch("/api/profile/me", { credentials: "include" })
+    fetch(fetchUrl, { credentials: "include" })
       .then(r => r.json())
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((data: any) => {
@@ -71,6 +76,7 @@ export default function ProfileEditor() {
           setProfile({
             ...DEFAULT_PROFILE,
             ...data,
+            email: data.email || "",
             first_name: data.first_name || "",
             last_name: data.last_name || "",
             subteams: typeof data.subteams === "string" ? JSON.parse(data.subteams as string) : (data.subteams as string[]) || [],
@@ -93,13 +99,13 @@ export default function ProfileEditor() {
         setIsLoading(false);
       })
       .catch(() => setIsLoading(false));
-  }, []);
+  }, [fetchUrl]);
 
   const handleSave = async () => {
     setIsSaving(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/profile/me", {
+      const res = await fetch(fetchUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

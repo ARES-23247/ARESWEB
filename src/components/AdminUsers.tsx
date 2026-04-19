@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Shield, Trash2, ChevronDown } from "lucide-react";
+import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X } from "lucide-react";
+import ProfileEditor from "./ProfileEditor";
 
 interface UserRow {
   id: string;
@@ -21,6 +22,7 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(() => {
     fetch("/api/admin/users", { credentials: "include" })
@@ -151,6 +153,10 @@ export default function AdminUsers() {
                 </td>
                 <td className="py-3 px-2 text-xs text-zinc-500">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
                 <td className="py-3 px-2 text-right">
+                  <button onClick={() => setEditUserId(user.id)}
+                    className="p-1.5 mr-1 text-zinc-600 hover:text-ares-gold transition-colors rounded-lg hover:bg-ares-gold/10">
+                    <Edit3 size={14} />
+                  </button>
                   <button onClick={() => removeUser(user.id, user.nickname || user.name || "user")}
                     className="p-1.5 text-zinc-600 hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10">
                     <Trash2 size={14} />
@@ -161,6 +167,31 @@ export default function AdminUsers() {
           </tbody>
         </table>
       </div>
+
+      {editUserId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4 sm:p-8 overflow-y-auto">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <div className="sticky top-0 right-0 z-10 flex justify-end p-4 pointer-events-none">
+              <button 
+                onClick={() => setEditUserId(null)} 
+                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white pointer-events-auto shadow-xl"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="px-6 pb-6 pt-2">
+              <div className="mb-4 pb-4 border-b border-zinc-800/50">
+                <h3 className="text-xl font-black text-ares-red flex items-center gap-2">
+                  <Shield size={20} />
+                  Admin Override: Managing Profile
+                </h3>
+                <p className="text-zinc-500 text-sm">You are editing another user's personal profile data.</p>
+              </div>
+              <ProfileEditor adminEditUserId={editUserId} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

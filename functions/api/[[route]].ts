@@ -1,6 +1,6 @@
 import { Hono, Context, Next } from "hono";
 import { handle } from "hono/cloudflare-pages";
-import { pushEventToGcal, deleteEventFromGcal, pullEventsFromGcal } from "../utils/gcalSync";
+import { pushEventToGcal, deleteEventFromGcal, pullEventsFromGcal, parseAstToText } from "../utils/gcalSync";
 import { dispatchSocials } from "../utils/socialSync";
 import { getAuth } from "../utils/auth";
 
@@ -214,22 +214,7 @@ apiRouter.get("/events/:id", async (c) => {
 });
 
 function extractAstText(jsonStr: string | undefined | null): string {
-  if (!jsonStr) return "";
-  try {
-    const ast = JSON.parse(jsonStr);
-    if (ast && ast.type === "doc") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const extract = (node: any): string => {
-        if (node.text) return node.text;
-        if (node.content) return node.content.map(extract).join(" ");
-        return "";
-      };
-      return extract(ast).trim();
-    }
-  } catch {
-    // Ignore JSON parse errors for raw text bodies
-  }
-  return String(jsonStr);
+  return parseAstToText(jsonStr);
 }
 
 async function getSocialConfig(c: Context<{ Bindings: Bindings }>): Promise<Record<string, string | undefined>> {
@@ -713,11 +698,94 @@ apiRouter.post("/admin/settings", async (c) => {
   }
 });
 
-// ── DELETE /api/events/:id — delete an event (admin) ────────────────────
+// ── GET /admin/posts — list all blog posts (admin) ──────────────────────
+apiRouter.get("/admin/posts", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT slug, title, date, snippet, thumbnail, cf_email, is_deleted FROM posts ORDER BY date DESC"
+    ).all();
+    return c.json({ posts: results ?? [] });
+  } catch (err) {
+    console.error("D1 admin list error (posts):", err);
+    return c.json({ posts: [] });
+  }
+});
+
+// ── GET /admin/posts/:slug — single blog post (admin) ─────────────────
+apiRouter.get("/admin/posts/:slug", async (c) => {
+  const slug = c.req.param("slug");
+  try {
+    const row = await c.env.DB.prepare(
+      "SELECT slug, title, date, snippet, thumbnail, content, is_deleted FROM posts WHERE slug = ?"
+    ).bind(slug).first();
+
+    if (!row) return c.json({ error: "Post not found" }, 404);
+    return c.json({ post: row });
+  } catch (err) {
+    console.error("D1 read error:", err);
+    return c.json({ error: "Database error" }, 500);
+  }
+});
+
+// ── GET /admin/events — list all events (admin) ─────────────────────────
+apiRouter.get("/admin/events", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted FROM events ORDER BY date_start ASC"
+    ).all();
+    return c.json({ events: results ?? [] });
+  } catch (err) {
+    console.error("D1 admin list error (events):", err);
+    return c.json({ events: [] });
+  }
+});
+
+// ── GET /admin/events/:id — single event (admin) ────────────────────────
+apiRouter.get("/admin/events/:id", async (c) => {
+  const id = c.req.param("id");
+  try {
+    const row = await c.env.DB.prepare(
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted FROM events WHERE id = ?"
+    ).bind(id).first();
+
+    if (!row) return c.json({ error: "Event not found" }, 404);
+    return c.json({ event: row });
+  } catch (err) {
+    console.error("D1 read error:", err);
+    return c.json({ error: "Database error" }, 500);
+  }
+});
+
+// ── DELETE /api/events/:id — soft-delete an event (admin) ────────────────
 apiRouter.delete("/admin/events/:id", async (c) => {
   try {
     const id = c.req.param("id");
+    await c.env.DB.prepare("UPDATE events SET is_deleted = 1 WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 soft-delete error (events):", err);
+    return c.json({ error: "Soft-delete failed" }, 500);
+  }
+});
+
+// ── PATCH /api/events/:id/undelete — restore a soft-deleted event (admin) ─────
+apiRouter.patch("/admin/events/:id/undelete", async (c) => {
+  try {
+    const id = c.req.param("id");
+    await c.env.DB.prepare("UPDATE events SET is_deleted = 0 WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 undelete error (events):", err);
+    return c.json({ error: "Undelete failed" }, 500);
+  }
+});
+
+// ── DELETE /api/events/:id/purge — PERMANENTLY delete an event (admin) ────────
+apiRouter.delete("/admin/events/:id/purge", async (c) => {
+  try {
+    const id = c.req.param("id");
     
+    // GCal cleanup if possible
     const { results: settingsRows } = await c.env.DB.prepare("SELECT key, value FROM settings").all();
     const dbSettings: Record<string, string> = {};
     for (const row of settingsRows as { key: string, value: string }[]) {
@@ -727,7 +795,6 @@ apiRouter.delete("/admin/events/:id", async (c) => {
     const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
     const calId = dbSettings["CALENDAR_ID"];
     
-    // Attempt GCal deletion
     if (gcalEmail && gcalKey && calId) {
       const row = await c.env.DB.prepare("SELECT gcal_event_id FROM events WHERE id = ?").bind(id).first<{gcal_event_id: string}>();
       if (row && row.gcal_event_id) {
@@ -738,27 +805,16 @@ apiRouter.delete("/admin/events/:id", async (c) => {
             calendarId: calId
           });
         } catch (err: unknown) {
-          console.error("GCal delete error:", err);
-          return c.json({ error: `Google Calendar Auth Failed: ${(err as Error)?.message || "Unknown GCal Error"}` }, 502);
+          console.warn("GCal purge cleanup failed (ignoring for DB purge):", err);
         }
       }
     }
 
-    const auth = getAuth(c.env.DB, c.env);
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    // @ts-expect-error - Better Auth session type lacks role but D1 query adds it
-    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
-
-    if (role === "admin") {
-      await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
-    } else {
-      await c.env.DB.prepare("UPDATE events SET is_deleted = 1 WHERE id = ?").bind(id).run();
-    }
+    await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
     return c.json({ success: true });
   } catch (err) {
-    console.error("D1 delete error (events):", err);
-    return c.json({ error: "Delete failed" }, 500);
+    console.error("D1 purge error (events):", err);
+    return c.json({ error: "Purge failed" }, 500);
   }
 });
 
@@ -796,26 +852,39 @@ apiRouter.post("/admin/events/:id/repush", async (c) => {
   }
 });
 
-// ── DELETE /api/posts/:slug — delete a blog post (admin) ────────────────
+// ── DELETE /api/posts/:slug — soft-delete a blog post (admin) ────────────────
 apiRouter.delete("/admin/posts/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
-
-    const auth = getAuth(c.env.DB, c.env);
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    // @ts-expect-error - Better Auth session type lacks role but D1 query adds it
-    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
-
-    if (role === "admin") {
-      await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
-    } else {
-      await c.env.DB.prepare("UPDATE posts SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
-    }
+    await c.env.DB.prepare("UPDATE posts SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
-    console.error("D1 delete error (posts):", err);
-    return c.json({ error: "Delete failed" }, 500);
+    console.error("D1 soft-delete error (posts):", err);
+    return c.json({ error: "Soft-delete failed" }, 500);
+  }
+});
+
+// ── PATCH /api/posts/:slug/undelete — restore a soft-deleted post (admin) ─────
+apiRouter.patch("/admin/posts/:slug/undelete", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    await c.env.DB.prepare("UPDATE posts SET is_deleted = 0 WHERE slug = ?").bind(slug).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 undelete error (posts):", err);
+    return c.json({ error: "Undelete failed" }, 500);
+  }
+});
+
+// ── DELETE /api/posts/:slug/purge — PERMANENTLY delete a post (admin) ─────────
+apiRouter.delete("/admin/posts/:slug/purge", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 purge error (posts):", err);
+    return c.json({ error: "Purge failed" }, 500);
   }
 });
 
@@ -1133,26 +1202,39 @@ apiRouter.post("/admin/docs", async (c) => {
   }
 });
 
-// ── DELETE /api/admin/docs/:slug — delete a doc (admin) ───────────────
+// ── DELETE /api/admin/docs/:slug — soft-delete a doc (admin) ───────────────
 apiRouter.delete("/admin/docs/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
-
-    const auth = getAuth(c.env.DB, c.env);
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    // @ts-expect-error - Better Auth session type lacks role but D1 query adds it
-    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
-
-    if (role === "admin") {
-      await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
-    } else {
-      await c.env.DB.prepare("UPDATE docs SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
-    }
+    await c.env.DB.prepare("UPDATE docs SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
-    console.error("D1 doc delete error:", err);
-    return c.json({ error: "Delete failed" }, 500);
+    console.error("D1 soft-delete error (docs):", err);
+    return c.json({ error: "Soft-delete failed" }, 500);
+  }
+});
+
+// ── PATCH /api/admin/docs/:slug/undelete — restore a soft-deleted doc (admin) ────
+apiRouter.patch("/admin/docs/:slug/undelete", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    await c.env.DB.prepare("UPDATE docs SET is_deleted = 0 WHERE slug = ?").bind(slug).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 undelete error (docs):", err);
+    return c.json({ error: "Undelete failed" }, 500);
+  }
+});
+
+// ── DELETE /api/admin/docs/:slug/purge — PERMANENTLY delete a doc (admin) ────────
+apiRouter.delete("/admin/docs/:slug/purge", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 purge error (docs):", err);
+    return c.json({ error: "Purge failed" }, 500);
   }
 });
 
@@ -1467,6 +1549,67 @@ apiRouter.delete("/admin/users/:id", async (c) => {
   } catch (err) {
     console.error("[Admin User Delete]", err);
     return c.json({ error: "Failed" }, 500);
+  }
+});
+
+// ── GET /admin/users/:id/profile — Admin override profile fetch ─────────
+apiRouter.get("/admin/users/:id/profile", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const profile = await c.env.DB.prepare("SELECT * FROM user_profiles WHERE user_id = ?").bind(id).first();
+    const user = await c.env.DB.prepare("SELECT email FROM user WHERE id = ?").bind(id).first();
+    
+    if (!profile) {
+      return c.json({ ...(user || {}), error: "Profile not configured yet" });
+    }
+    return c.json({ ...profile, contact_email: profile.contact_email || (user as {email?: string})?.email || "" });
+  } catch (err) {
+    console.error("[Admin Profile Override Fetch]", err);
+    return c.json({ error: "Failed to fetch user profile" }, 500);
+  }
+});
+
+// ── PUT /admin/users/:id/profile — Admin override profile save ──────────
+apiRouter.put("/admin/users/:id/profile", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    
+    await c.env.DB.prepare(
+      `INSERT INTO user_profiles (
+        user_id, first_name, last_name, nickname, phone, contact_email, show_email, show_phone,
+        pronouns, grade_year, subteams, member_type, bio, favorite_food, dietary_restrictions,
+        favorite_first_thing, fun_fact, colleges, employers, favorite_robot_mechanism,
+        pre_match_superstition, leadership_role, rookie_year, tshirt_size, emergency_contact_name,
+        emergency_contact_phone, show_on_about, updated_at
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now')
+      ) ON CONFLICT(user_id) DO UPDATE SET
+        first_name=excluded.first_name, last_name=excluded.last_name, nickname=excluded.nickname,
+        phone=excluded.phone, contact_email=excluded.contact_email, show_email=excluded.show_email,
+        show_phone=excluded.show_phone, pronouns=excluded.pronouns, grade_year=excluded.grade_year,
+        subteams=excluded.subteams, member_type=excluded.member_type, bio=excluded.bio,
+        favorite_food=excluded.favorite_food, dietary_restrictions=excluded.dietary_restrictions,
+        favorite_first_thing=excluded.favorite_first_thing, fun_fact=excluded.fun_fact,
+        colleges=excluded.colleges, employers=excluded.employers, favorite_robot_mechanism=excluded.favorite_robot_mechanism,
+        pre_match_superstition=excluded.pre_match_superstition, leadership_role=excluded.leadership_role,
+        rookie_year=excluded.rookie_year, tshirt_size=excluded.tshirt_size,
+        emergency_contact_name=excluded.emergency_contact_name, emergency_contact_phone=excluded.emergency_contact_phone,
+        show_on_about=excluded.show_on_about, updated_at=datetime('now')`
+    ).bind(
+      id, body.first_name || null, body.last_name || null, body.nickname || null, body.phone || null, body.contact_email || null,
+      body.show_email ? 1 : 0, body.show_phone ? 1 : 0, body.pronouns || null, body.grade_year || null,
+      body.subteams || '[]', body.member_type || 'student', body.bio || null, body.favorite_food || null,
+      body.dietary_restrictions || '[]', body.favorite_first_thing || null, body.fun_fact || null,
+      body.colleges || '[]', body.employers || '[]', body.favorite_robot_mechanism || null,
+      body.pre_match_superstition || null, body.leadership_role || null, body.rookie_year || null, body.tshirt_size || null,
+      body.emergency_contact_name || null, body.emergency_contact_phone || null, body.show_on_about ? 1 : 0
+    ).run();
+
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    console.error("[Admin Profile Override Error]", err);
+    return c.json({ error: "Failed to update member profile", pii_context: (err as Error)?.message }, 500);
   }
 });
 

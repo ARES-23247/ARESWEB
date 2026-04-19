@@ -9,6 +9,7 @@ interface EventItem {
   title: string;
   date_start: string;
   cf_email?: string;
+  is_deleted?: number;
 }
 
 interface PostItem {
@@ -16,6 +17,7 @@ interface PostItem {
   title: string;
   date: string;
   cf_email?: string;
+  is_deleted?: number;
 }
 
 interface DocItem {
@@ -23,6 +25,7 @@ interface DocItem {
   title: string;
   category: string;
   sort_order: number;
+  is_deleted?: number;
 }
 
 export default function ContentManager({ 
@@ -38,6 +41,7 @@ export default function ContentManager({
 }) {
   const queryClient = useQueryClient();
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [view, setView] = useState<"active" | "trash">("active");
   const [broadcastData, setBroadcastData] = useState<{ isOpen: boolean, type: "blog" | "event", id: string, title: string }>({
     isOpen: false,
     type: "blog",
@@ -48,7 +52,7 @@ export default function ContentManager({
   const { data: events = [], isLoading: loadingEvents } = useQuery<EventItem[]>({
     queryKey: ["events"],
     queryFn: async () => {
-      const res = await fetch("/api/events");
+      const res = await fetch("/dashboard/api/admin/events", { credentials: "include" });
       const data = await res.json();
       // @ts-expect-error -- D1 untyped response
       return data.events ?? [];
@@ -58,7 +62,7 @@ export default function ContentManager({
   const { data: posts = [], isLoading: loadingPosts } = useQuery<PostItem[]>({
     queryKey: ["posts"],
     queryFn: async () => {
-      const res = await fetch("/api/posts");
+      const res = await fetch("/dashboard/api/admin/posts", { credentials: "include" });
       const data = await res.json();
       // @ts-expect-error -- D1 untyped response
       return data.posts ?? [];
@@ -148,6 +152,33 @@ export default function ContentManager({
     }
   });
 
+  const restoreMutation = useMutation({
+    mutationFn: async ({ type, id }: { type: "event" | "post" | "doc", id: string }) => {
+      const endpoint = type === "event" ? `/dashboard/api/admin/events/${id}/undelete` : type === "post" ? `/dashboard/api/admin/posts/${id}/undelete` : `/dashboard/api/admin/docs/${id}/undelete`;
+      const res = await fetch(endpoint, { method: "PATCH", credentials: "include" });
+      if (!res.ok) throw new Error("Failed to restore item.");
+      return { type, id };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [data.type === "event" ? "events" : data.type === "post" ? "posts" : "docs"] });
+    },
+    onError: (err) => alert(err.message)
+  });
+
+  const purgeMutation = useMutation({
+    mutationFn: async ({ type, id }: { type: "event" | "post" | "doc", id: string }) => {
+      const endpoint = type === "event" ? `/dashboard/api/admin/events/${id}/purge` : type === "post" ? `/dashboard/api/admin/posts/${id}/purge` : `/dashboard/api/admin/docs/${id}/purge`;
+      const res = await fetch(endpoint, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Failed to purge item.");
+      return { type, id };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [data.type === "event" ? "events" : data.type === "post" ? "posts" : "docs"] });
+      setConfirmId(null);
+    },
+    onError: (err) => alert(err.message)
+  });
+
   const sortDocMutation = useMutation({
     mutationFn: async ({ slug, sortOrder }: { slug: string, sortOrder: number }) => {
       const res = await fetch(`/dashboard/api/admin/docs/${slug}/sort`, {
@@ -216,9 +247,26 @@ export default function ContentManager({
   return (
     <div className="w-full h-full flex flex-col">
       {mode === "all" && (
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white tracking-tighter">Manage Content</h2>
-          <p className="text-zinc-300 text-sm mt-1">Review and delete explicitly verified Database entries.</p>
+        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white tracking-tighter">Manage Content</h2>
+            <p className="text-zinc-400 text-sm mt-1">Review and manage the lifecycle of Database entries.</p>
+          </div>
+          
+          <div className="flex bg-zinc-900/50 p-1 rounded-lg border border-zinc-800">
+            <button 
+              onClick={() => setView("active")}
+              className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${view === "active" ? 'bg-zinc-800 text-ares-cyan border border-zinc-700 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              ACTIVE
+            </button>
+            <button 
+              onClick={() => setView("trash")}
+              className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${view === "trash" ? 'bg-ares-red/10 text-ares-red border border-ares-red/20 shadow-sm' : 'text-zinc-500 hover:text-ares-red/60'}`}
+            >
+              TRASH
+            </button>
+          </div>
         </div>
       )}
 
@@ -233,51 +281,72 @@ export default function ContentManager({
           {(mode === "all" || mode === "event") && (
           <div className="flex flex-col">
             <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-              <h3 className="text-ares-gold font-bold uppercase tracking-widest text-xs">Active Events</h3>
-              <button 
-                onClick={() => syncGcalMutation.mutate()}
-                disabled={syncGcalMutation.isPending}
-                className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              >
-                {syncGcalMutation.isPending ? "SYNCING..." : "SYNC GCAL"}
-              </button>
+              <h3 className={`font-bold uppercase tracking-widest text-xs ${view === 'trash' ? 'text-ares-red' : 'text-ares-gold'}`}>
+                {view === 'active' ? 'Active Events' : 'Trashed Events'}
+              </h3>
+              {view === 'active' && (
+                <button 
+                  onClick={() => syncGcalMutation.mutate()}
+                  disabled={syncGcalMutation.isPending}
+                  className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  {syncGcalMutation.isPending ? "SYNCING..." : "SYNC GCAL"}
+                </button>
+              )}
             </div>
-            <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-              {events.length === 0 ? (
-                <div className="text-zinc-400 text-sm italic py-4">No events found.</div>
+            <div className="flex flex-col gap-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
+              {events.filter(ev => view === 'active' ? ev.is_deleted !== 1 : ev.is_deleted === 1).length === 0 ? (
+                <div className="text-zinc-500 text-xs italic py-4 text-center border border-dashed border-zinc-800/50 rounded-xl">No {view} events found.</div>
               ) : (
-                events.map((event) => (
-                  <div key={event.id} className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-zinc-700 transition-colors">
+                events.filter(ev => view === 'active' ? ev.is_deleted !== 1 : ev.is_deleted === 1).map((event) => (
+                  <div key={event.id} className={`bg-black/40 border ${event.is_deleted === 1 ? 'border-ares-red/30 bg-ares-red/[0.02]' : 'border-zinc-800/60'} rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-zinc-700 transition-colors`}>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-zinc-200 truncate">{event.title}</div>
+                      <div className="font-bold text-zinc-200 truncate flex items-center gap-2">
+                        {event.title}
+                        {event.is_deleted === 1 && <span className="text-[9px] font-bold text-ares-red bg-ares-red/10 border border-ares-red/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Deleted</span>}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded-md">{format(new Date(event.date_start), 'MMM do, yyyy')}</span>
-                        {event.cf_email && (
-                          <span className="text-[10px] text-ares-gold/70 bg-ares-gold/10 px-2 py-0.5 rounded-md truncate max-w-[150px]">
-                            {event.cf_email}
-                          </span>
-                        )}
+                        <span className="text-xs text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md">{format(new Date(event.date_start), 'MMM do, yyyy')}</span>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex items-center gap-2">
-                      <button
-                        onClick={() => onEditEvent && onEditEvent(event.id)}
-                        className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                      >
-                        EDIT
-                      </button>
-                      <button
-                        onClick={() => setBroadcastData({ isOpen: true, type: "event", id: event.id, title: event.title })}
-                        className="text-xs font-bold text-ares-gold/80 hover:text-ares-gold border border-ares-gold/20 hover:bg-ares-gold/10 px-3 py-1 rounded-md transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
-                      >
-                        <Radio size={12} className={broadcastData.isOpen && broadcastData.id === event.id ? "animate-pulse" : ""} />
-                        BROADCAST
-                      </button>
-                      <ClickToDeleteButton 
-                        id={event.id} 
-                        onDelete={() => deleteEventMutation.mutate(event.id)} 
-                        isDeleting={deleteEventMutation.isPending && deleteEventMutation.variables === event.id} 
-                      />
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/50">
+                      {view === 'active' ? (
+                        <>
+                          <button
+                            onClick={() => onEditEvent && onEditEvent(event.id)}
+                            className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors"
+                          >
+                            EDIT
+                          </button>
+                          <button
+                            onClick={() => setBroadcastData({ isOpen: true, type: "event", id: event.id, title: event.title })}
+                            className="text-xs font-bold text-ares-gold/80 hover:text-ares-gold border border-ares-gold/20 hover:bg-ares-gold/10 px-3 py-1 rounded-md transition-all flex items-center gap-1.5"
+                          >
+                            <Radio size={12} className={broadcastData.isOpen && broadcastData.id === event.id ? "animate-pulse" : ""} />
+                            SEND
+                          </button>
+                          <ClickToDeleteButton 
+                            id={event.id} 
+                            onDelete={() => deleteEventMutation.mutate(event.id)} 
+                            isDeleting={deleteEventMutation.isPending && deleteEventMutation.variables === event.id} 
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => restoreMutation.mutate({ type: 'event', id: event.id })}
+                            disabled={restoreMutation.isPending}
+                            className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors"
+                          >
+                            {restoreMutation.isPending && restoreMutation.variables?.id === event.id ? "RESTORING..." : "RESTORE"}
+                          </button>
+                          <ClickToDeleteButton 
+                            id={`purge-${event.id}`} 
+                            onDelete={() => purgeMutation.mutate({ type: 'event', id: event.id })} 
+                            isDeleting={purgeMutation.isPending && purgeMutation.variables?.id === event.id} 
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 ))
@@ -289,43 +358,62 @@ export default function ContentManager({
           {/* Published Blog Posts Column */}
           {(mode === "all" || mode === "blog") && (
           <div className="flex flex-col">
-            <h3 className="text-ares-red font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">Published Blog Posts</h3>
-            <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-              {posts.length === 0 ? (
-                <div className="text-zinc-400 text-sm italic py-4">No posts found.</div>
+            <h3 className={`font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2 ${view === 'trash' ? 'text-ares-red' : 'text-zinc-100'}`}>
+               {view === 'active' ? 'Published Blog Posts' : 'Trashed Posts'}
+            </h3>
+            <div className="flex flex-col gap-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
+              {posts.filter(p => view === 'active' ? p.is_deleted !== 1 : p.is_deleted === 1).length === 0 ? (
+                <div className="text-zinc-500 text-xs italic py-4 text-center border border-dashed border-zinc-800/50 rounded-xl">No {view} posts found.</div>
               ) : (
-                posts.map((post) => (
-                  <div key={post.slug} className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-zinc-700 transition-colors">
+                posts.filter(p => view === 'active' ? p.is_deleted !== 1 : p.is_deleted === 1).map((post) => (
+                  <div key={post.slug} className={`bg-black/40 border ${post.is_deleted === 1 ? 'border-ares-red/30 bg-ares-red/[0.02]' : 'border-zinc-800/60'} rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-zinc-700 transition-colors`}>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-zinc-200 truncate">{post.title}</div>
+                      <div className="font-bold text-zinc-200 truncate flex items-center gap-2">
+                        {post.title}
+                        {post.is_deleted === 1 && <span className="text-[9px] font-bold text-ares-red bg-ares-red/10 border border-ares-red/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Deleted</span>}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded-md">{format(new Date(post.date), 'MMM do, yyyy')}</span>
-                        {post.cf_email && (
-                          <span className="text-[10px] text-ares-gold/70 bg-ares-gold/10 px-2 py-0.5 rounded-md truncate max-w-[150px]">
-                            {post.cf_email}
-                          </span>
-                        )}
+                        <span className="text-xs text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md">{format(new Date(post.date), 'MMM do, yyyy')}</span>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex items-center gap-2">
-                      <button
-                        onClick={() => onEditPost && onEditPost(post.slug)}
-                        className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                      >
-                        EDIT
-                      </button>
-                      <button
-                        onClick={() => setBroadcastData({ isOpen: true, type: "blog", id: post.slug, title: post.title })}
-                        className="text-xs font-bold text-ares-gold/80 hover:text-ares-gold border border-ares-gold/20 hover:bg-ares-gold/10 px-3 py-1 rounded-md transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
-                      >
-                        <Radio size={12} className={broadcastData.isOpen && broadcastData.id === post.slug ? "animate-pulse" : ""} />
-                        BROADCAST
-                      </button>
-                      <ClickToDeleteButton 
-                        id={post.slug} 
-                        onDelete={() => deletePostMutation.mutate(post.slug)} 
-                        isDeleting={deletePostMutation.isPending && deletePostMutation.variables === post.slug} 
-                      />
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/50">
+                      {view === 'active' ? (
+                        <>
+                          <button
+                            onClick={() => onEditPost && onEditPost(post.slug)}
+                            className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors"
+                          >
+                            EDIT
+                          </button>
+                          <button
+                            onClick={() => setBroadcastData({ isOpen: true, type: "blog", id: post.slug, title: post.title })}
+                            className="text-xs font-bold text-ares-gold/80 hover:text-ares-gold border border-ares-gold/20 hover:bg-ares-gold/10 px-3 py-1 rounded-md transition-all flex items-center gap-1.5"
+                          >
+                            <Radio size={12} className={broadcastData.isOpen && broadcastData.id === post.slug ? "animate-pulse" : ""} />
+                            SEND
+                          </button>
+                          <ClickToDeleteButton 
+                            id={post.slug} 
+                            onDelete={() => deletePostMutation.mutate(post.slug)} 
+                            isDeleting={deletePostMutation.isPending && deletePostMutation.variables === post.slug} 
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => restoreMutation.mutate({ type: 'post', id: post.slug })}
+                            disabled={restoreMutation.isPending}
+                            className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors"
+                          >
+                           {restoreMutation.isPending && restoreMutation.variables?.id === post.slug ? "RESTORING..." : "RESTORE"}
+                          </button>
+                          <ClickToDeleteButton 
+                            id={`purge-${post.slug}`} 
+                            onDelete={() => purgeMutation.mutate({ type: 'post', id: post.slug })} 
+                            isDeleting={purgeMutation.isPending && purgeMutation.variables?.id === post.slug} 
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 ))
@@ -337,54 +425,82 @@ export default function ContentManager({
           {/* Documentation Column */}
           {(mode === "all" || mode === "docs") && (
           <div className="flex flex-col">
-            <h3 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2">
-              <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></span> Documentation
+            <h3 className={`font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2 ${view === 'trash' ? 'text-ares-red' : 'text-zinc-500'}`}>
+              <span className="flex items-center">
+                {view === 'active' ? (
+                  <><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span>&nbsp;Documentation</>
+                ) : 'Trashed Docs'}
+              </span>
             </h3>
-            <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-              {docs.length === 0 ? (
-                <div className="text-zinc-400 text-sm italic py-4">No documentation found.</div>
+            <div className="flex flex-col gap-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
+              {docs.filter(d => view === 'active' ? d.is_deleted !== 1 : d.is_deleted === 1).length === 0 ? (
+                <div className="text-zinc-500 text-xs italic py-4 text-center border border-dashed border-zinc-800/50 rounded-xl">No {view} docs found.</div>
               ) : (
-                docs.map((doc) => (
-                  <div key={doc.slug} className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-zinc-700 transition-colors">
+                docs.filter(d => view === 'active' ? d.is_deleted !== 1 : d.is_deleted === 1).map((doc) => (
+                  <div key={doc.slug} className={`bg-black/40 border ${doc.is_deleted === 1 ? 'border-ares-red/30 bg-ares-red/[0.02]' : 'border-zinc-800/60'} rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-zinc-700 transition-colors`}>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-zinc-200 truncate">{doc.title}</div>
+                      <div className="font-bold text-zinc-200 truncate flex items-center gap-2">
+                        {doc.title}
+                        {doc.is_deleted === 1 && <span className="text-[9px] font-bold text-ares-red bg-ares-red/10 border border-ares-red/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Deleted</span>}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-ares-cyan/70 bg-ares-cyan/10 px-2 py-0.5 rounded-md truncate max-w-[120px]">
+                        <span className="text-[10px] text-ares-cyan/70 bg-ares-cyan/10 border border-ares-cyan/20 px-2 py-0.5 rounded-md truncate max-w-[120px]">
                           {doc.category}
                         </span>
-                        <span className="flex items-center text-[10px] text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
-                          <button 
-                            onClick={() => sortDocMutation.mutate({ slug: doc.slug, sortOrder: doc.sort_order - 1 })}
-                            disabled={sortDocMutation.isPending}
-                            className="px-1 py-0.5 hover:bg-zinc-800 hover:text-ares-cyan transition-colors disabled:opacity-50"
-                            aria-label="Move Up"
-                          >
-                            <ChevronUp size={12} />
-                          </button>
-                          <span className="px-2 border-x border-zinc-800">Order: {doc.sort_order}</span>
-                          <button 
-                            onClick={() => sortDocMutation.mutate({ slug: doc.slug, sortOrder: doc.sort_order + 1 })}
-                            disabled={sortDocMutation.isPending}
-                            className="px-1 py-0.5 hover:bg-zinc-800 hover:text-ares-red transition-colors disabled:opacity-50"
-                            aria-label="Move Down"
-                          >
-                            <ChevronDown size={12} />
-                          </button>
-                        </span>
+                        {view === 'active' && (
+                          <span className="flex items-center text-[10px] text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
+                            <button 
+                              onClick={() => sortDocMutation.mutate({ slug: doc.slug, sortOrder: doc.sort_order - 1 })}
+                              disabled={sortDocMutation.isPending}
+                              className="px-1 py-0.5 hover:bg-zinc-800 hover:text-ares-cyan transition-colors disabled:opacity-50"
+                              aria-label="Move Up"
+                            >
+                              <ChevronUp size={12} />
+                            </button>
+                            <span className="px-2 border-x border-zinc-800">Order: {doc.sort_order}</span>
+                            <button 
+                              onClick={() => sortDocMutation.mutate({ slug: doc.slug, sortOrder: doc.sort_order + 1 })}
+                              disabled={sortDocMutation.isPending}
+                              className="px-1 py-0.5 hover:bg-zinc-800 hover:text-ares-red transition-colors disabled:opacity-50"
+                              aria-label="Move Down"
+                            >
+                              <ChevronDown size={12} />
+                            </button>
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex items-center gap-2">
-                      <button
-                        onClick={() => onEditDoc && onEditDoc(doc.slug)}
-                        className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                      >
-                        EDIT
-                      </button>
-                      <ClickToDeleteButton 
-                        id={doc.slug} 
-                        onDelete={() => deleteDocMutation.mutate(doc.slug)} 
-                        isDeleting={deleteDocMutation.isPending && deleteDocMutation.variables === doc.slug} 
-                      />
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/50">
+                      {view === 'active' ? (
+                        <>
+                          <button
+                            onClick={() => onEditDoc && onEditDoc(doc.slug)}
+                            className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors"
+                          >
+                            EDIT
+                          </button>
+                          <ClickToDeleteButton 
+                            id={doc.slug} 
+                            onDelete={() => deleteDocMutation.mutate(doc.slug)} 
+                            isDeleting={deleteDocMutation.isPending && deleteDocMutation.variables === doc.slug} 
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => restoreMutation.mutate({ type: 'doc', id: doc.slug })}
+                            disabled={restoreMutation.isPending}
+                            className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors"
+                          >
+                            {restoreMutation.isPending && restoreMutation.variables?.id === doc.slug ? "RESTORING..." : "RESTORE"}
+                          </button>
+                          <ClickToDeleteButton 
+                            id={`purge-${doc.slug}`} 
+                            onDelete={() => purgeMutation.mutate({ type: 'doc', id: doc.slug })} 
+                            isDeleting={purgeMutation.isPending && purgeMutation.variables?.id === doc.slug} 
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 ))

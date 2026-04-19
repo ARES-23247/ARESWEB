@@ -39,6 +39,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [warningMsg, setWarningMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingInline, setIsUploadingInline] = useState(false);
@@ -116,6 +117,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
     },
   });
 
+  const [isDeleted, setIsDeleted] = useState(false);
   const [form, setForm] = useState({
     title: "",
     dateStart: "",
@@ -129,10 +131,10 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
     if (!editId) return;
     const fetchEvent = async () => {
       try {
-        const res = await fetch(`/api/events/${editId}`);
+        const res = await fetch(`/api/admin/events/${editId}`);
         const data = await res.json();
-      // @ts-expect-error -- D1 untyped response
         if (data.event) {
+          setIsDeleted(data.event.is_deleted === 1);
           setForm({
       // @ts-expect-error -- D1 untyped response
             title: data.event.title || "",
@@ -276,6 +278,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
 
     setIsPending(true);
     setErrorMsg("");
+    setWarningMsg("");
     setSuccessMsg("");
 
     try {
@@ -304,8 +307,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
         
       // @ts-expect-error -- D1 untyped response
         if (data.warning) {
-      // @ts-expect-error -- D1 untyped response
-          alert("Event saved to the ARES database, but external syndication had issues:\n\n" + data.warning);
+          setWarningMsg(data.warning);
         }
 
         if (!editId) {
@@ -332,6 +334,16 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
           {editId ? "Update existing competition or outreach details." : "Add upcoming competitions or outreach events to the portal."}
         </p>
       </div>
+      
+      {isDeleted && (
+        <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg mb-6 flex items-start gap-3">
+          <div className="text-red-500 mt-0.5">⚠️</div>
+          <div>
+            <h4 className="text-red-500 font-bold text-sm tracking-wide uppercase">Ghost Event</h4>
+            <p className="text-red-400/80 text-sm mt-1">This event is currently soft-deleted and is hidden from the public API and Google Calendar. Modifying and saving it will not undelete it.</p>
+          </div>
+        </div>
+      )}
       
       <div className="flex flex-col md:flex-row gap-4 mt-2">
         <div className="flex-[2]">
@@ -578,19 +590,47 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-800">
-        <div className="flex flex-col">
-          <span className="text-ares-red text-sm font-medium">{errorMsg}</span>
-          <span className="text-emerald-500 text-sm font-medium">{successMsg}</span>
+      <div className="mt-6 flex flex-col gap-4">
+        {errorMsg && (
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+            <div className="text-red-500 mt-0.5">❌</div>
+            <div>
+              <h4 className="text-red-500 font-bold text-xs tracking-wide uppercase">Critical Error</h4>
+              <p className="text-red-400/90 text-sm mt-1">{errorMsg}</p>
+            </div>
+          </div>
+        )}
+
+        {warningMsg && (
+          <div className="p-4 bg-ares-gold/10 border border-ares-gold/20 rounded-2xl flex items-start gap-3">
+            <div className="text-ares-gold mt-0.5">⚠️</div>
+            <div>
+              <h4 className="text-ares-gold font-bold text-xs tracking-wide uppercase">Syndication Warning</h4>
+              <p className="text-zinc-300 text-sm mt-1">Event saved, but: {warningMsg}</p>
+            </div>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start gap-3">
+            <div className="text-emerald-500 mt-0.5">✅</div>
+            <div>
+              <h4 className="text-emerald-500 font-bold text-xs tracking-wide uppercase">Success</h4>
+              <p className="text-emerald-400/90 text-sm mt-1">{successMsg}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end pt-4 border-t border-zinc-800/50">
+          <button
+            onClick={handlePublish}
+            disabled={isPending}
+            className={`px-10 py-4 rounded-2xl font-black tracking-widest transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
+              ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse cursor-wait" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-1 active:translate-y-0"}`}
+          >
+            {isPending ? "COMMITTING..." : editId ? "UPDATE EVENT" : "PUBLISH EVENT"}
+          </button>
         </div>
-        <button
-          onClick={handlePublish}
-          disabled={isPending}
-          className={`px-8 py-3.5 rounded-full font-bold tracking-wide transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
-            ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-0.5"}`}
-        >
-          {isPending ? "COMMITTING..." : editId ? "UPDATE EVENT" : "PUBLISH EVENT"}
-        </button>
       </div>
 
       <AssetPickerModal 

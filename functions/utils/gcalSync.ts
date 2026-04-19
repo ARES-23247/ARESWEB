@@ -50,21 +50,39 @@ export async function getGcalAccessToken(config: GCalConfig): Promise<string> {
   return data.access_token as string;
 }
 
-function parseAstToText(jsonStr: string): string {
-  if (!jsonStr) return "";
+function parseAstToText(ast: unknown): string {
+  if (!ast) return "";
+  
+  // If it's already a string, we assume it's legacy content or needs parsing
+  if (typeof ast === 'string') {
+    try {
+      const parsed = JSON.parse(ast);
+      return parseAstToText(parsed);
+    } catch {
+      return ast;
+    }
+  }
+
+  // Handle recursion for the ProseMirror JSON object
+  const extract = (node: any): string => {
+    if (!node) return "";
+    if (typeof node.text === 'string') return node.text;
+    
+    if (node.content && Array.isArray(node.content)) {
+      return node.content
+        .map((item: any) => extract(item))
+        .filter((t: string) => t.length > 0)
+        .join(" ");
+    }
+    
+    return "";
+  };
+
   try {
-    const ast = JSON.parse(jsonStr);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const extractText = (node: any): string => {
-      if (node.text) return node.text;
-      if (node.content && Array.isArray(node.content)) {
-        return node.content.map(extractText).join(" ");
-      }
-      return "";
-    };
-    return extractText(ast) || jsonStr;
-  } catch {
-    return jsonStr;
+    return extract(ast).trim();
+  } catch (err) {
+    console.warn("AST Extraction failed:", err);
+    return "";
   }
 }
 
@@ -77,9 +95,15 @@ function prepareGcalPayload(event: ARES_Event) {
   const baseStart = hasTime ? event.date_start : `${event.date_start.split("T")[0]}T00:00:00Z`;
 
   const getNyOffset = (dateStr: string) => {
-    const d = new Date(dateStr + "Z");
-    const str = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", timeZoneName: "short" }).format(d);
-    return str.includes("EDT") ? "-04:00" : "-05:00";
+    const d = new Date(dateStr.includes("T") ? dateStr + (dateStr.endsWith("Z") ? "" : "Z") : dateStr + "T12:00:00Z");
+    const parts = new Intl.DateTimeFormat("en-US", { 
+      timeZone: "America/New_York", 
+      timeZoneName: "longOffset" 
+    }).formatToParts(d);
+    
+    const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value || "GMT-05:00";
+    const match = offsetPart.match(/[+-]\d\d:\d\d/);
+    return match ? match[0] : "-05:00";
   };
 
   const formatFloatingDateTime = (dt: string) => {
