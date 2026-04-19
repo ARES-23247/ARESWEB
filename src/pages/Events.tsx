@@ -43,15 +43,27 @@ export default function Events() {
     },
   });
 
+  const { data: calendarData } = useQuery<{ calendarId: string }>({
+    queryKey: ["calendarConfig"],
+    queryFn: async () => {
+      const res = await fetch("/api/calendar");
+      if (!res.ok) return { calendarId: "" };
+      return res.json();
+    },
+  });
+
   const now = new Date();
   
   // Consider an event "past" if its date_start is before yesterday
   const bufferTime = subDays(now, 1);
   
-  const sortedEvents = [...events].sort((a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime());
+  // Filter out routine practices so they only appear on the Google Calendar iframe, not as major event cards.
+  const majorEvents = [...events]
+    .filter((e) => !e.title.toLowerCase().includes("practice"))
+    .sort((a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime());
   
-  const upcomingEvents = sortedEvents.filter((e) => isAfter(new Date(e.date_start), bufferTime));
-  const pastEvents = sortedEvents.filter((e) => !isAfter(new Date(e.date_start), bufferTime)).reverse();
+  const upcomingEvents = majorEvents.filter((e) => isAfter(new Date(e.date_start), bufferTime));
+  const pastEvents = majorEvents.filter((e) => !isAfter(new Date(e.date_start), bufferTime)).reverse();
 
   const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean }) => {
     const startDate = new Date(event.date_start);
@@ -133,6 +145,23 @@ export default function Events() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
+            {/* Google Calendar Embed */}
+            {calendarData?.calendarId && (
+              <div className="flex flex-col gap-8 mb-16">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-3xl font-bold text-white">Full Calendar</h2>
+                  <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent"></div>
+                </div>
+                <div className="w-full bg-black/40 border border-ares-gold/30 rounded-xl overflow-hidden shadow-lg p-2 aspect-[4/3] md:aspect-[2/1] lg:aspect-video">
+                  <iframe 
+                    src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&bgcolor=%23ffffff&ctz=America%2FNew_York&showTitle=0&showPrint=0&color=%23D50000&src=${encodeURIComponent(calendarData.calendarId)}`}
+                    className="w-full h-full border-0 bg-white rounded-lg"
+                    title="ARES Google Calendar"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Upcoming Events */}
             <div className="flex flex-col gap-8">
               <div className="flex items-center gap-4">

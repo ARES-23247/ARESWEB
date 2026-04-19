@@ -156,6 +156,17 @@ apiRouter.get("/posts/:slug", async (c) => {
   }
 });
 
+// ── GET /api/calendar — public calendar configuration ──────────────────
+apiRouter.get("/calendar", async (c) => {
+  try {
+    const row = await c.env.DB.prepare("SELECT value FROM settings WHERE key = 'CALENDAR_ID'").first<{value: string}>();
+    return c.json({ calendarId: row?.value || "" });
+  } catch (err) {
+    console.error("D1 read error:", err);
+    return c.json({ error: "Database error" }, 500);
+  }
+});
+
 // ── GET /api/events — list all events ──────────────────────────────────
 apiRouter.get("/events", async (c) => {
   try {
