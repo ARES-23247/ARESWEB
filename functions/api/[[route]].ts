@@ -71,12 +71,13 @@ apiRouter.on(["POST", "GET"], "/auth/*", async (c) => {
   try {
     const auth = getAuth(c.env.DB, c.env);
     return await auth.handler(c.req.raw);
-  } catch (error: any) {
-    console.error("[Auth Handler] Internal Exception:", error);
+  } catch (error: unknown) {
+    const err = error as Error & { status?: number };
+    console.error("[Auth Handler] Internal Exception:", err);
     return c.json({ 
       error: "Internal Server Error during Authentication", 
-      message: error?.message || String(error),
-      stack: error?.stack
+      message: err.message || String(error),
+      stack: err.stack
     }, 500);
   }
 });
@@ -641,7 +642,7 @@ apiRouter.delete("/admin/media/:key", ensureAdmin, async (c) => {
     const auth = getAuth(c.env.DB, c.env);
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    // @ts-expect-error
+    // @ts-expect-error - Better Auth session type lacks role but D1 query adds it
     const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
 
     if (role === "admin") {
@@ -772,7 +773,7 @@ apiRouter.delete("/admin/events/:id", async (c) => {
     const auth = getAuth(c.env.DB, c.env);
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    // @ts-expect-error
+    // @ts-expect-error - Better Auth session type lacks role but D1 query adds it
     const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
 
     if (role === "admin") {
@@ -829,7 +830,7 @@ apiRouter.delete("/admin/posts/:slug", async (c) => {
     const auth = getAuth(c.env.DB, c.env);
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    // @ts-expect-error
+    // @ts-expect-error - Better Auth session type lacks role but D1 query adds it
     const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
 
     if (role === "admin") {
@@ -1164,7 +1165,7 @@ apiRouter.delete("/admin/docs/:slug", async (c) => {
     const auth = getAuth(c.env.DB, c.env);
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    // @ts-expect-error
+    // @ts-expect-error - Better Auth session type lacks role but D1 query adds it
     const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
 
     if (role === "admin") {
