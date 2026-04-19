@@ -236,15 +236,15 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[95vh] md:max-h-[85vh]"
+          className="w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[95vh] md:max-h-[85vh]"
         >
           {/* Left Panel: Preview */}
-          <div className="w-full md:w-2/5 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden">
+          <div className="w-full md:w-2/5 p-6 md:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden shrink-0">
             <div className="absolute inset-0 bg-gradient-to-br from-ares-red/10 to-transparent pointer-events-none" />
             
-            <div className="relative group w-44 h-44 md:w-56 md:h-56 mb-6">
+            <div className="relative group w-32 h-32 md:w-56 md:h-56 mb-4 md:mb-6">
               <div className="absolute inset-0 bg-gradient-to-br from-ares-red/30 to-ares-gold/30 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative w-full h-full rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-4 z-10 backdrop-blur-xl">
+              <div className="relative w-full h-full rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
                 <img
                   src={currentUrl}
                   alt="Avatar Preview"

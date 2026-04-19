@@ -217,6 +217,10 @@ export default function ProfileEditor() {
           </div>
         </div>
         <div>
+          <label htmlFor="pe-email" className={labelClass}>Email Address</label>
+          <input id="pe-email" className={`${inputClass} opacity-50 cursor-not-allowed`} value={profile.email || ""} disabled placeholder="Synced from your login" title="Email is synced from your login account automatically." />
+        </div>
+        <div>
           <label htmlFor="pe-bio" className={labelClass}>Bio</label>
           <textarea id="pe-bio" className={`${inputClass} min-h-[80px] resize-none`} placeholder="Tell us about yourself (keep it PII-free!)" value={profile.bio} onChange={e => setProfile({...profile, bio: e.target.value})} />
         </div>
