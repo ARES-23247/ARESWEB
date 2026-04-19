@@ -49,7 +49,7 @@ const ensureAdmin = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
   }
 
   // RBAC: Check for admin role
-  // @ts-ignore - Better Auth additional fields
+  // @ts-expect-error - Better Auth additional fields
   if (session.user.role !== "admin") {
      console.warn(`[Auth Check] Access Denied for ${session.user.email}. Role: ${session.user.role}`);
      return c.json({ error: "Forbidden: Administrator privileges required." }, 403);
@@ -87,7 +87,7 @@ apiRouter.get("/auth-check", async (c) => {
     return c.json({ 
       authenticated: true, 
       email: session.user.email,
-      // @ts-ignore
+      // @ts-expect-error - Better Auth role type extension
       role: session.user.role 
     });
   }

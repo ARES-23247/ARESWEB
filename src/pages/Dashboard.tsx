@@ -11,7 +11,6 @@ import { PenTool, Calendar, Book, Image, LayoutGrid, PlusCircle, Edit3, Settings
 import { useSession, signOut } from "../utils/auth-client";
 
 type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations";
-type AuthState = "checking" | "authenticated" | "unauthorized";
 
 /* Compute localhost bypass at module level so it can seed initial state
    without triggering a synchronous setState inside an effect body. */
@@ -24,7 +23,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const initialDoc = searchParams.get("editDoc");
 
-  const { data: session, isPending, error } = useSession();
+  const { data: session, isPending } = useSession();
   const [activeTab, setActiveTab] = useState<TabState>(initialDoc ? "docs" : "blog");
   const [editPostSlug, setEditPostSlug] = useState<string | null>(null);
   const [editEventId, setEditEventId] = useState<string | null>(null);
@@ -62,7 +61,7 @@ export default function Dashboard() {
   }
 
   // ── Unauthorized Gate ──────────────────────────────────────────────
-  // @ts-ignore
+  // @ts-expect-error - Better Auth session type overrides
   if (!session || !session.user || (session.user.role !== "admin" && !isLocalDev)) {
     return (
       <div className="w-full min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center relative overflow-hidden">

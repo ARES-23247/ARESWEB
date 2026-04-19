@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { d1Adapter } from "better-auth/adapters/d1";
 import { genericOAuth } from "better-auth/plugins";
 
-export const getAuth = (db: D1Database, env: any) => {
+export const getAuth = (db: D1Database, env: Record<string, string>) => {
     return betterAuth({
         database: d1Adapter(db, {
             provider: "sqlite",
@@ -31,7 +31,7 @@ export const getAuth = (db: D1Database, env: any) => {
                             Authorization: `Bearer ${token.accessToken}`,
                         },
                     });
-                    const user = await response.json() as any;
+                    const user = await response.json() as { user_id: string; email: string; full_name: string; avatar_url: string };
                     return {
                         id: String(user.user_id),
                         email: user.email,
