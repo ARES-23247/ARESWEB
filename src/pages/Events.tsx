@@ -18,6 +18,7 @@ const extractPlainText = (jsonStr: string) => {
   try {
     const ast = JSON.parse(jsonStr);
     if (ast && ast.type === "doc") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const extract = (node: any): string => {
         if (node.text) return node.text;
         if (node.content) return node.content.map(extract).join(" ");
@@ -25,7 +26,9 @@ const extractPlainText = (jsonStr: string) => {
       };
       return extract(ast);
     }
-  } catch {}
+  } catch (err) {
+    // Ignore parse errors to return raw string
+  }
   return jsonStr;
 };
 
