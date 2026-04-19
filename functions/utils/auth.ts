@@ -30,26 +30,30 @@ export const getAuth = (db: D1Database, env: Record<string, string>) => {
         },
         plugins: [
             genericOAuth({
-                id: "zulip",
-                name: "Zulip",
-                authorizeUrl: "https://aresfirst.zulipchat.com/o/authorize/",
-                tokenUrl: "https://aresfirst.zulipchat.com/o/token/",
-                getUserInfo: async (token) => {
-                    const response = await fetch("https://aresfirst.zulipchat.com/api/v1/users/me", {
-                        headers: {
-                            Authorization: `Bearer ${token.accessToken}`,
-                        },
-                    });
-                    const user = await response.json() as { user_id: string; email: string; full_name: string; avatar_url: string };
-                    return {
-                        id: String(user.user_id),
-                        email: user.email,
-                        name: user.full_name,
-                        image: user.avatar_url,
-                    };
-                },
-                clientId: env.ZULIP_CLIENT_ID || "",
-                clientSecret: env.ZULIP_CLIENT_SECRET || "",
+                config: [{
+                    providerId: "zulip",
+                    discoveryUrl: "https://aresfirst.zulipchat.com/.well-known/openid-configuration",
+                    authorizationUrl: "https://aresfirst.zulipchat.com/o/authorize/",
+                    tokenUrl: "https://aresfirst.zulipchat.com/o/token/",
+                    userInfoUrl: "https://aresfirst.zulipchat.com/api/v1/users/me",
+                    clientId: env.ZULIP_CLIENT_ID || "",
+                    clientSecret: env.ZULIP_CLIENT_SECRET || "",
+                    scopes: ["read"],
+                    getUserInfo: async (tokens) => {
+                        const response = await fetch("https://aresfirst.zulipchat.com/api/v1/users/me", {
+                            headers: {
+                                Authorization: `Bearer ${tokens.accessToken}`,
+                            },
+                        });
+                        const user = await response.json() as { user_id: string; email: string; full_name: string; avatar_url: string };
+                        return {
+                            id: String(user.user_id),
+                            email: user.email,
+                            name: user.full_name,
+                            image: user.avatar_url,
+                        };
+                    }
+                }]
             })
         ],
         user: {
