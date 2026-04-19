@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import mammoth from "mammoth";
-import heic2any from "heic2any";
+import { compressImage } from "../utils/imageProcessor";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -55,46 +55,10 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
 
-  const compressImage = async (file: File): Promise<Blob> => {
-    let processBlob: Blob = file;
-    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic")) {
-      try {
-        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
-        processBlob = Array.isArray(converted) ? converted[0] : converted;
-      } catch (err) {
-        console.error("HEIC decoding failed:", err);
-        throw new Error("HEIC processing failed. Image may be corrupted.");
-      }
-    }
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(processBlob);
-      reader.onload = (event) => {
-        const img = new window.Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 1920;
-          let width = img.width;
-          let height = img.height;
-          if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return reject("Canvas ctx error");
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => blob ? resolve(blob) : reject("Blob error"), "image/webp", 0.8);
-        };
-        img.onerror = () => reject("Image load error");
-      };
-      reader.onerror = () => reject("Reader error");
-    });
-  };
-
   const uploadFile = async (file: File): Promise<{url: string, altText?: string}> => {
-    const compressedBlob = await compressImage(file);
+    const { blob: compressedBlob, ext } = await compressImage(file);
     const formData = new FormData();
-    formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ".webp"));
+    formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ext));
     const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
     const data = await res.json();
     // @ts-expect-error -- D1 untyped response

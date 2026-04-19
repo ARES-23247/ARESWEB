@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import heic2any from "heic2any";
+import { compressImage } from "../utils/imageProcessor";
 
 interface R2Asset {
   key: string;
@@ -34,9 +34,9 @@ export default function AssetManager() {
       setUploadProgress({ current: 0, total: files.length });
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const compressed = await compressImage(file);
+        const { blob: compressed, ext } = await compressImage(file);
         const formData = new FormData();
-        formData.append("file", compressed, file.name.replace(/\.[^/.]+$/, ".webp"));
+        formData.append("file", compressed, file.name.replace(/\.[^/.]+$/, ext));
         formData.append("folder", activeFolder);
         const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
         if (!res.ok) throw new Error("Upload failed");
@@ -80,39 +80,7 @@ export default function AssetManager() {
     },
   });
 
-  const compressImage = async (file: File): Promise<Blob> => {
-    let processBlob: Blob = file;
-    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic")) {
-      try {
-        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
-        processBlob = Array.isArray(converted) ? converted[0] : converted;
-      } catch (err) {
-        console.error("HEIC decoding failed:", err);
-        throw new Error("HEIC processing failed. Image may be corrupted.");
-      }
-    }
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(processBlob);
-      reader.onload = (event) => {
-        const img = new window.Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const MAX_W = 1920;
-          let w = img.width, h = img.height;
-          if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return reject("Canvas ctx error");
-          ctx.drawImage(img, 0, 0, w, h);
-          canvas.toBlob((blob) => blob ? resolve(blob) : reject("Blob error"), "image/webp", 0.8);
-        };
-        img.onerror = () => reject("Image load error");
-      };
-      reader.onerror = () => reject("Reader error");
-    });
-  };
+
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
