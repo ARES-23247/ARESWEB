@@ -113,7 +113,7 @@ export default function BugReport() {
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2 tracking-wide uppercase">GitHub Account Required</h3>
                   <p className="text-marble/70 text-sm leading-relaxed">
-                    This button will forward your draft to our public GitHub issue tracker. You will need to click "Submit New Issue" on the final page.
+                    This button will forward your draft to our public GitHub issue tracker. You will need to click &quot;Submit New Issue&quot; on the final page.
                   </p>
                 </div>
               </div>
@@ -125,7 +125,7 @@ export default function BugReport() {
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2 tracking-wide uppercase">No Account? No Problem</h3>
                   <p className="text-marble/70 text-sm leading-relaxed mb-3">
-                    If you don't have a GitHub account, you can email us your bug report securely.
+                    If you don&apos;t have a GitHub account, you can email us your bug report securely.
                   </p>
                   <a href="mailto:ares@aresfirst.org?subject=ARES%20Bug%20Report" className="text-ares-cyan hover:text-white font-bold text-sm tracking-wider uppercase inline-flex items-center gap-2 transition-colors">
                     Report via Email <span className="text-lg">→</span>
