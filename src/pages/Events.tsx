@@ -70,6 +70,7 @@ export default function Events() {
   const upcomingEvents = majorEvents.filter((e) => isAfter(parseISO(e.date_start), bufferTime));
   const upcomingPractices = practices.filter((e) => isAfter(parseISO(e.date_start), bufferTime));
   const pastEvents = majorEvents.filter((e) => !isAfter(parseISO(e.date_start), bufferTime)).reverse();
+  const pastPractices = practices.filter((e) => !isAfter(parseISO(e.date_start), bufferTime)).reverse();
 
   const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean }) => {
     const startDate = parseISO(event.date_start);
@@ -206,17 +207,34 @@ export default function Events() {
               </div>
             )}
 
-            {/* Past Events */}
-            {pastEvents.length > 0 && (
-              <div className="flex flex-col gap-8 mt-8">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-3xl font-bold text-white/80">Past Events</h2>
-                  <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
-                </div>
+            {/* Archival - Past Events */}
+            {(pastEvents.length > 0 || pastPractices.length > 0) && (
+              <div className="mt-16 bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+                <h2 className="text-4xl font-black text-white/80 tracking-tight mb-8">Event Archive</h2>
                 
-                <div className="flex flex-col gap-6">
-                  {pastEvents.map(evt => <EventCard key={evt.id} event={evt} isPast={true} />)}
-                </div>
+                {pastEvents.length > 0 && (
+                  <div className="flex flex-col gap-6 mb-12">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-xl font-bold text-ares-gold uppercase tracking-widest">Past Major Events</h3>
+                      <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/30 to-transparent"></div>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      {pastEvents.map(evt => <EventCard key={evt.id} event={evt} isPast={true} />)}
+                    </div>
+                  </div>
+                )}
+
+                {pastPractices.length > 0 && (
+                  <div className="flex flex-col gap-6">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-xl font-bold text-ares-red uppercase tracking-widest">Past Practices</h3>
+                      <div className="h-px flex-1 bg-gradient-to-r from-ares-red/30 to-transparent"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {pastPractices.map(evt => <EventCard key={evt.id} event={evt} isPast={true} />)}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
