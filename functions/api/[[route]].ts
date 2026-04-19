@@ -1343,12 +1343,12 @@ apiRouter.put("/profile/me", async (c) => {
     const body = await c.req.json() as Record<string, unknown>;
     await c.env.DB.prepare(`
       INSERT INTO user_profiles (
-        user_id, nickname, phone, contact_email, show_email, show_phone, pronouns, grade_year, subteams, member_type, bio, favorite_food, dietary_restrictions, favorite_first_thing, fun_fact, colleges, employers, show_on_about,
+        user_id, first_name, last_name, nickname, phone, contact_email, show_email, show_phone, pronouns, grade_year, subteams, member_type, bio, favorite_food, dietary_restrictions, favorite_first_thing, fun_fact, colleges, employers, show_on_about,
         favorite_robot_mechanism, pre_match_superstition, leadership_role, rookie_year, tshirt_size, emergency_contact_name, emergency_contact_phone, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       ON CONFLICT(user_id) DO UPDATE SET
-        nickname=excluded.nickname, phone=excluded.phone, contact_email=excluded.contact_email, show_email=excluded.show_email, show_phone=excluded.show_phone,
+        first_name=excluded.first_name, last_name=excluded.last_name, nickname=excluded.nickname, phone=excluded.phone, contact_email=excluded.contact_email, show_email=excluded.show_email, show_phone=excluded.show_phone,
         pronouns=excluded.pronouns, grade_year=excluded.grade_year, subteams=excluded.subteams, member_type=excluded.member_type,
         bio=excluded.bio, favorite_food=excluded.favorite_food, dietary_restrictions=excluded.dietary_restrictions,
         favorite_first_thing=excluded.favorite_first_thing, fun_fact=excluded.fun_fact,
@@ -1359,6 +1359,8 @@ apiRouter.put("/profile/me", async (c) => {
         updated_at=datetime('now')
     `).bind(
       user.id,
+      (body.first_name as string) || null,
+      (body.last_name as string) || null,
       (body.nickname as string) || null,
       (body.phone as string) || null,
       (body.contact_email as string) || null,
@@ -1426,7 +1428,7 @@ apiRouter.get("/team-roster", async (c) => {
 apiRouter.get("/admin/users", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT u.id, u.name, u.email, u.image, u.role, u.createdAt, p.nickname, p.member_type FROM user u LEFT JOIN user_profiles p ON u.id = p.user_id ORDER BY u.createdAt DESC"
+      "SELECT u.id, u.name, u.email, u.image, u.role, u.createdAt, p.first_name, p.last_name, p.nickname, p.member_type FROM user u LEFT JOIN user_profiles p ON u.id = p.user_id ORDER BY u.createdAt DESC"
     ).all();
     return c.json({ users: results || [] });
   } catch (err) {
@@ -1444,6 +1446,23 @@ apiRouter.put("/admin/users/:id/role", async (c) => {
     return c.json({ success: true });
   } catch (err) {
     console.error("[Admin Role Update]", err);
+    return c.json({ error: "Failed" }, 500);
+  }
+});
+
+apiRouter.put("/admin/users/:id/member_type", async (c) => {
+  const id = c.req.param("id");
+  const { member_type } = await c.req.json() as { member_type: string };
+  try {
+    // Upsert the profile with the new member_type
+    await c.env.DB.prepare(`
+      INSERT INTO user_profiles (user_id, member_type, updated_at) 
+      VALUES (?, ?, datetime('now'))
+      ON CONFLICT(user_id) DO UPDATE SET member_type = excluded.member_type, updated_at = datetime('now')
+    `).bind(id, member_type).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("[Admin Member Type Update]", err);
     return c.json({ error: "Failed" }, 500);
   }
 });

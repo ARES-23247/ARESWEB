@@ -9,10 +9,13 @@ interface UserRow {
   role: string;
   member_type?: string;
   nickname?: string;
+  first_name?: string;
+  last_name?: string;
   createdAt: string;
 }
 
 const ROLES = ["user", "author", "admin"];
+const MEMBER_TYPES = ["student", "alumni", "parent", "coach", "mentor", "sponsor"];
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -34,6 +37,16 @@ export default function AdminUsers() {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ role: newRole }),
+    });
+    fetchUsers();
+  };
+
+  const changeMemberType = async (userId: string, newType: string) => {
+    await fetch(`/api/admin/users/${userId}/member_type`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ member_type: newType }),
     });
     fetchUsers();
   };
@@ -83,7 +96,12 @@ export default function AdminUsers() {
                   <div className="flex items-center gap-3">
                     <img src={user.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.id}`}
                       alt="" className="w-8 h-8 rounded-xl bg-zinc-800" />
-                    <span className="text-sm font-bold text-white">{user.nickname || user.name || "ARES Member"}</span>
+                    <div>
+                      <span className="text-sm font-bold text-white block">{user.nickname || user.name || "ARES Member"}</span>
+                      {(user.first_name || user.last_name) && (
+                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="py-3 px-2 text-sm text-zinc-400">{user.email}</td>
@@ -103,7 +121,22 @@ export default function AdminUsers() {
                     <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" />
                   </div>
                 </td>
-                <td className="py-3 px-2 text-xs font-bold text-zinc-500 capitalize">{user.member_type || "—"}</td>
+                <td className="py-3 px-2">
+                  <div className="relative inline-block">
+                    <select
+                      value={user.member_type || "student"}
+                      onChange={e => changeMemberType(user.id, e.target.value)}
+                      className={`appearance-none bg-transparent border rounded-lg px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
+                        user.member_type === "alumni" ? "border-ares-gold/50 text-ares-gold" :
+                        ["parent", "coach", "mentor", "sponsor"].includes(user.member_type || "") ? "border-indigo-500/50 text-indigo-400" :
+                        "border-zinc-700 text-zinc-400"
+                      }`}
+                    >
+                      {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" />
+                  </div>
+                </td>
                 <td className="py-3 px-2 text-xs text-zinc-500">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
                 <td className="py-3 px-2 text-right">
                   <button onClick={() => removeUser(user.id, user.nickname || user.name || "user")}

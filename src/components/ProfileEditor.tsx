@@ -17,6 +17,8 @@ interface CollegeEntry { name: string; domain: string; years: string; degree: st
 interface EmployerEntry { name: string; domain: string; title: string; current: boolean; years: string; }
 
 interface ProfileData {
+  first_name: string;
+  last_name: string;
   nickname: string;
   phone: string;
   contact_email: string;
@@ -43,7 +45,7 @@ interface ProfileData {
 }
 
 const DEFAULT_PROFILE: ProfileData = {
-  nickname: "", phone: "", contact_email: "", show_email: false, show_phone: false,
+  first_name: "", last_name: "", nickname: "", phone: "", contact_email: "", show_email: false, show_phone: false,
   pronouns: "", grade_year: "", subteams: [], member_type: "student",
   bio: "", favorite_food: "", dietary_restrictions: [],
   favorite_first_thing: "", fun_fact: "",
@@ -69,6 +71,8 @@ export default function ProfileEditor() {
           setProfile({
             ...DEFAULT_PROFILE,
             ...data,
+            first_name: data.first_name || "",
+            last_name: data.last_name || "",
             subteams: typeof data.subteams === "string" ? JSON.parse(data.subteams as string) : (data.subteams as string[]) || [],
             dietary_restrictions: typeof data.dietary_restrictions === "string" ? JSON.parse((data.dietary_restrictions as string) || "[]") : (data.dietary_restrictions as string[]) || [],
             colleges: typeof data.colleges === "string" ? JSON.parse(data.colleges as string) : (data.colleges as CollegeEntry[]) || [],
@@ -195,6 +199,14 @@ export default function ProfileEditor() {
       <div className={sectionClass}>
         <h3 className="text-sm font-black uppercase tracking-wider text-ares-red flex items-center gap-2"><User size={16} /> Identity</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="pe-first-name" className={labelClass}>First Name (Hidden)</label>
+            <input id="pe-first-name" className={inputClass} placeholder="e.g. John" value={profile.first_name} onChange={e => setProfile({...profile, first_name: e.target.value})} />
+          </div>
+          <div>
+            <label htmlFor="pe-last-name" className={labelClass}>Last Name (Hidden)</label>
+            <input id="pe-last-name" className={inputClass} placeholder="e.g. Doe" value={profile.last_name} onChange={e => setProfile({...profile, last_name: e.target.value})} />
+          </div>
           <div>
             <label htmlFor="pe-nickname" className={labelClass}>Nickname (Public Display Name)</label>
             <input id="pe-nickname" className={inputClass} placeholder="e.g. Sparky, RoboKid42" value={profile.nickname} onChange={e => setProfile({...profile, nickname: e.target.value})} />

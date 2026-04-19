@@ -96,6 +96,8 @@ CREATE TABLE media_tags (
 DROP TABLE IF EXISTS user_profiles;
 CREATE TABLE user_profiles (
     user_id TEXT PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT,
     nickname TEXT,
     phone TEXT,
     contact_email TEXT,
