@@ -73,26 +73,34 @@ function parseAstToText(jsonStr: string): string {
  */
 function prepareGcalPayload(event: ARES_Event) {
   // If there's no end date, make it a 1 hour event from start, or all day.
-  // We'll standardize to using dateTime if there's a time, or date for all-day.
   const hasTime = event.date_start.includes("T");
   const baseStart = hasTime ? event.date_start : `${event.date_start.split("T")[0]}T00:00:00Z`;
-  
+
+  // Format dates manually so Cloudflare UTC offsets don't skew local floating time
+  const formatFloatingDateTime = (dt: string) => {
+    if (dt.endsWith("Z") || dt.includes("+") || dt.split("T")[1]?.includes("-")) {
+      return new Date(dt).toISOString();
+    }
+    return dt.length === 16 ? `${dt}:00` : dt;
+  };
+
   const startObj = hasTime
-    ? { dateTime: new Date(baseStart).toISOString() }
+    ? { dateTime: formatFloatingDateTime(baseStart), timeZone: "America/New_York" }
     : { date: baseStart.split("T")[0] };
 
   let endObj = startObj;
   if (event.date_end) {
     const endHasTime = event.date_end.includes("T");
     endObj = endHasTime
-      ? { dateTime: new Date(event.date_end).toISOString() }
+      ? { dateTime: formatFloatingDateTime(event.date_end), timeZone: "America/New_York" }
       : { date: event.date_end.split("T")[0] };
   } else {
     // If no end date, make it a 1 hour event from start, or all day.
     if (hasTime) {
-      const d = new Date(baseStart);
-      d.setHours(d.getHours() + 1);
-      endObj = { dateTime: d.toISOString() };
+      const d = new Date(baseStart + "Z"); // Parse as UTC to prevent timezone skew during math
+      d.setUTCHours(d.getUTCHours() + 1);
+      const tzLess = d.toISOString().replace(".000Z", ":00");
+      endObj = { dateTime: tzLess, timeZone: "America/New_York" };
     } else {
       endObj = startObj;
     }

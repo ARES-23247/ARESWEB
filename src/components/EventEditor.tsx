@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import mammoth from "mammoth";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -35,6 +36,7 @@ import AssetPickerModal from "./AssetPickerModal";
 import SimPickerModal from "./SimPickerModal";
 
 export default function EventEditor({ editId, onClearEdit }: { editId?: string | null; onClearEdit?: () => void }) {
+  const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -296,6 +298,8 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
       // @ts-expect-error -- D1 untyped response
       if (data.success) {
         setSuccessMsg(editId ? "Event updated successfully!" : "Event published successfully!");
+        queryClient.invalidateQueries({ queryKey: ["events"] });
+        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
         if (onClearEdit) onClearEdit();
         if (!editId) {
           setForm({ title: "", dateStart: "", dateEnd: "", location: "", description: "", coverImage: "/gallery_2.png" });
