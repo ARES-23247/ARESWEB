@@ -745,7 +745,7 @@ apiRouter.post("/admin/events/:id/repush", async (c) => {
       await dispatchSocials({
         title: event.title,
         url: `https://aresfirst.org/events`, // Link to events page
-        snippet: extractAstText(event.description).substring(0, 250) || "Join us for our upcoming event!",
+        snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!",
         coverImageUrl: event.cover_image || "/gallery_1.png",
         baseUrl: new URL(c.req.url).origin
       }, socialConfig, socials);
@@ -791,7 +791,7 @@ apiRouter.post("/admin/posts/:slug/repush", async (c) => {
       await dispatchSocials({
         title: post.title,
         url: `https://aresfirst.org/blog/${slug}`,
-        snippet: post.snippet || "Read the latest update from ARES 23247!",
+        snippet: extractAstText(post.snippet || "").substring(0, 250) || "Read the latest update from ARES 23247!",
         coverImageUrl: post.thumbnail || "/gallery_1.png",
         baseUrl: new URL(c.req.url).origin
       }, socialConfig, socials);

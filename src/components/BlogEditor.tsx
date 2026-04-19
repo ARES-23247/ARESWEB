@@ -46,6 +46,7 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
   const [isUploadingInline, setIsUploadingInline] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
   const [socials, setSocials] = useState<Record<string, boolean>>({
     discord: true,
@@ -348,6 +349,12 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
             >
               UPL
             </button>
+            <button 
+              className="px-6 py-3 rounded-lg text-sm font-bold border border-ares-gold/30 transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-zinc-900 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold hover:text-black whitespace-nowrap"
+              onClick={() => setIsCoverPickerOpen(true)}
+            >
+              Library
+            </button>
             <input 
               id="cover-upload" 
               type="file" 
@@ -517,6 +524,15 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
         onSelect={(url, altText) => {
           editor.chain().focus().setImage({ src: url, alt: altText }).run();
           setIsPickerOpen(false);
+        }}
+      />
+
+      <AssetPickerModal 
+        isOpen={isCoverPickerOpen}
+        onClose={() => setIsCoverPickerOpen(false)}
+        onSelect={(url) => {
+          setCoverImageUrl(url);
+          setIsCoverPickerOpen(false);
         }}
       />
 

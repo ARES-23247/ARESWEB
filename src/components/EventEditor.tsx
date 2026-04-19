@@ -42,6 +42,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
   const [isUploadingInline, setIsUploadingInline] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
   const [socials, setSocials] = useState<Record<string, boolean>>({
     discord: true,
@@ -511,6 +512,12 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
           >
             UPL
           </button>
+          <button 
+            className="px-6 py-3 rounded-lg text-sm font-bold border border-ares-gold/30 transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-zinc-900 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold hover:text-black whitespace-nowrap"
+            onClick={() => setIsCoverPickerOpen(true)}
+          >
+            Library
+          </button>
           <input 
             id="event-img-upload" type="file" accept="image/*" className="hidden" 
             onChange={async (e) => {
@@ -572,6 +579,15 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
           {isPending ? "COMMITTING..." : editId ? "UPDATE EVENT" : "PUBLISH EVENT"}
         </button>
       </div>
+
+      <AssetPickerModal 
+        isOpen={isCoverPickerOpen}
+        onClose={() => setIsCoverPickerOpen(false)}
+        onSelect={(url) => {
+          setForm({ ...form, coverImage: url });
+          setIsCoverPickerOpen(false);
+        }}
+      />
     </div>
   );
 }
