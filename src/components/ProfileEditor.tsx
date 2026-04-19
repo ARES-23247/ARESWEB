@@ -110,10 +110,11 @@ export default function ProfileEditor() {
           show_on_about: profile.show_on_about ? 1 : 0,
         }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      const data = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(data.error || "Save failed");
       setMessage({ type: "success", text: "Profile saved!" });
-    } catch {
-      setMessage({ type: "error", text: "Failed to save profile." });
+    } catch (err) {
+      setMessage({ type: "error", text: (err as Error).message || "Failed to save profile." });
     }
     setIsSaving(false);
   };

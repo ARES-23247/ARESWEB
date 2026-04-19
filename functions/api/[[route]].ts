@@ -1387,7 +1387,7 @@ apiRouter.put("/profile/me", async (c) => {
     return c.json({ success: true });
   } catch (err) {
     console.error("[Profile PUT me]", err);
-    return c.json({ error: "Save failed" }, 500);
+    return c.json({ error: "Save failed: " + ((err as Error).message || String(err)) }, 500);
   }
 });
 
