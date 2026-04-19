@@ -48,13 +48,13 @@ export default function Footer() {
             <a href="https://www.youtube.com/@ARESFTC" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-red transition-colors text-white" aria-label="YouTube">
               <i className="fab fa-youtube"></i>
             </a>
-            <a href="mailto:ares23247wv@gmail.com" tabIndex={-1} aria-hidden="true" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-bronze transition-colors text-white">
+            <a href="mailto:ares@aresfirst.org" tabIndex={-1} aria-hidden="true" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-bronze transition-colors text-white">
               <i className="fas fa-envelope"></i>
             </a>
           </div>
           <p className="text-marble/70 text-xs font-bold uppercase tracking-widest">ARES HQ</p>
-          <a href="mailto:ares23247wv@gmail.com" className="text-marble/80 hover:text-ares-red text-sm font-bold transition-colors">
-            ares23247wv@gmail.com
+          <a href="mailto:ares@aresfirst.org" className="text-marble/80 hover:text-ares-red text-sm font-bold transition-colors">
+            ares@aresfirst.org
           </a>
         </div>
       </div>

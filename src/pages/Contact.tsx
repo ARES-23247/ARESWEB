@@ -43,8 +43,8 @@ export default function Contact() {
 
           <div className="text-center text-ares-gray">
             <p className="font-bold">Or email us directly:</p>
-            <a href="mailto:ares23247wv@gmail.com" className="text-ares-red text-lg font-bold underline hover:text-ares-gold transition-colors">
-              ares23247wv@gmail.com
+            <a href="mailto:ares@aresfirst.org" className="text-ares-red text-lg font-bold underline hover:text-ares-gold transition-colors">
+              ares@aresfirst.org
             </a>
           </div>
         </div>
