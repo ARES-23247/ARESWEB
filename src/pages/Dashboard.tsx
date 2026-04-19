@@ -7,13 +7,14 @@ import IntegrationsManager from "@/components/IntegrationsManager";
 import AvatarEditor from "@/components/AvatarEditor";
 import ProfileEditor from "@/components/ProfileEditor";
 import AdminUsers from "@/components/AdminUsers";
+import DietarySummary from "@/components/DietarySummary";
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { PenTool, Calendar, Book, Image, LayoutGrid, PlusCircle, Edit3, Settings, ShieldAlert, Lock, RefreshCw, LogOut, User, Users } from "lucide-react";
+import { PenTool, Calendar, Book, Image, LayoutGrid, PlusCircle, Edit3, Settings, ShieldAlert, Lock, RefreshCw, LogOut, User, Users, Utensils } from "lucide-react";
 import { useSession, signOut } from "../utils/auth-client";
 
-type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users";
+type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics";
 
 /* Compute localhost bypass at module level so it can seed initial state
    without triggering a synchronous setState inside an effect body. */
@@ -282,6 +283,13 @@ export default function Dashboard() {
                   Users
                 </button>
               )}
+              <button
+                onClick={() => setActiveTab("logistics")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red ${activeTab === "logistics" ? "bg-gradient-to-b from-ares-red/20 to-ares-red/5 border border-ares-red/50 text-ares-red shadow-[0_0_20px_rgba(220,38,38,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Utensils size={16} />
+                Logistics
+              </button>
             </div>
           </div>
         </div>
@@ -404,6 +412,26 @@ export default function Dashboard() {
                 className="w-full glass-card rounded-3xl p-6 md:p-10 border border-orange-500/30 flex flex-col bg-zinc-900 shadow-2xl"
               >
                 <AdminUsers />
+              </motion.div>
+            )}
+
+            {activeTab === "logistics" && (
+              <motion.div 
+                key="logistics"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                className="w-full glass-card rounded-3xl p-6 md:p-10 border border-ares-red/30 flex flex-col bg-zinc-900 shadow-2xl"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                    <Utensils className="text-ares-red" />
+                    Team Logistics Summary
+                  </h2>
+                  <p className="text-zinc-500 text-sm mt-1">Aggregated data for event planning and team management.</p>
+                </div>
+                <DietarySummary />
               </motion.div>
             )}
           </AnimatePresence>

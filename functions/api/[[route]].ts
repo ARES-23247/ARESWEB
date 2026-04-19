@@ -1400,6 +1400,50 @@ apiRouter.get("/profile/me", async (c) => {
   }
 });
 
+// ── GET /api/logistics/summary — Aggregated dietary & gear info (auth required) ──
+apiRouter.get("/logistics/summary", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT dietary_restrictions, tshirt_size FROM user_profiles"
+    ).all();
+
+    const dietCounts: Record<string, number> = {};
+    const tshirtCounts: Record<string, number> = {};
+    let totalProfiles = 0;
+
+    for (const row of (results || []) as { dietary_restrictions: string; tshirt_size: string }[]) {
+      totalProfiles++;
+      
+      // Aggregate T-shirts
+      if (row.tshirt_size) {
+        tshirtCounts[row.tshirt_size] = (tshirtCounts[row.tshirt_size] || 0) + 1;
+      }
+
+      // Aggregate Dietary
+      try {
+        const restrictions = JSON.parse(row.dietary_restrictions || "[]") as string[];
+        for (const r of restrictions) {
+          dietCounts[r] = (dietCounts[r] || 0) + 1;
+        }
+      } catch (e) {
+        console.error("Failed to parse dietary restrictions for a user:", e);
+      }
+    }
+
+    return c.json({
+      dietary: dietCounts,
+      tshirts: tshirtCounts,
+      totalCount: totalProfiles
+    });
+  } catch (err) {
+    console.error("[Logistics Summary GET]", err);
+    return c.json({ error: "Failed to fetch logistics summary" }, 500);
+  }
+});
+
 // ── PUT /api/profile/me — update own profile ──────────────────────────
 apiRouter.put("/profile/me", async (c) => {
   const user = await getSessionUser(c);
