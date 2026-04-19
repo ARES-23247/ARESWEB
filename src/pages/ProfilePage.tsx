@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GraduationCap, Briefcase, ArrowLeft, Shield } from "lucide-react";
+import { GraduationCap, Briefcase, ArrowLeft, Shield, Globe } from "lucide-react";
+import { BrandLogo } from "../components/BrandLogo";
 
 interface ProfilePublic {
   first_name?: string;
@@ -159,7 +160,7 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 {colleges.map((col: { domain: string, name: string, degree: string, years: string }, i: number) => (
                   <div key={i} className="flex items-center gap-3">
-                    <img src={`https://logo.clearbit.com/${col.domain}`} alt="" className="w-8 h-8 rounded-lg bg-white p-0.5" onError={e => { (e.target as HTMLImageElement).src = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>"; }} />
+                    <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-8 h-8" />
                     <div>
                       <p className="text-white text-sm font-bold">{col.name}</p>
                       <p className="text-zinc-400 text-xs">{[col.degree, col.years].filter(Boolean).join(" · ")}</p>
@@ -177,7 +178,7 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 {employers.map((emp: { domain: string, name: string, current: boolean, title: string, years: string }, i: number) => (
                   <div key={i} className="flex items-center gap-3">
-                    <img src={`https://logo.clearbit.com/${emp.domain}`} alt="" className="w-8 h-8 rounded-lg bg-white p-0.5" onError={e => { (e.target as HTMLImageElement).src = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>"; }} />
+                    <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-8 h-8" />
                     <div>
                       <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-green-400 text-[10px] ml-1">● Current</span>}</p>
                       <p className="text-zinc-400 text-xs">{[emp.title, emp.years].filter(Boolean).join(" · ")}</p>

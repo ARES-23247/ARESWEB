@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { User, Save, RefreshCw, Shield, Plus, Trash2, GraduationCap, Briefcase } from "lucide-react";
+import { User, Save, RefreshCw, Shield, Plus, Trash2, GraduationCap, Briefcase, Mail, Globe } from "lucide-react";
+import { BrandLogo } from "./BrandLogo";
+import { extractDomain } from "../utils/logoResolvers";
 
 const SUBTEAM_OPTIONS = ["Build", "Programming", "Design/CAD", "Outreach", "Marketing", "Documentation", "Drive Team", "Scouting", "Strategy"];
 const MEMBER_TYPES = [
@@ -164,11 +166,12 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
   const removeCollege = (i: number) => setProfile(prev => ({ ...prev, colleges: prev.colleges.filter((_, idx) => idx !== i) }));
   const updateCollege = (i: number, field: keyof CollegeEntry, val: string) => {
     const updated = [...profile.colleges];
-    updated[i] = { ...updated[i], [field]: val };
-    if (field === "name" && val.length > 2) {
-      // Auto-derive domain for Clearbit logo
-      const domain = val.toLowerCase().replace(/\s+/g, "").replace(/university|college|of|the/gi, "");
-      updated[i].domain = updated[i].domain || `${domain}.edu`;
+    const sanitizedVal = field === "domain" ? extractDomain(val as string) : val;
+    updated[i] = { ...updated[i], [field]: sanitizedVal };
+    if (field === "name" && (val as string).length > 2 && !updated[i].domain) {
+      // Auto-derive domain IF empty
+      const domain = (val as string).toLowerCase().replace(/\s+/g, "").replace(/university|college|of|the/gi, "");
+      updated[i].domain = `${domain}.edu`;
     }
     setProfile(prev => ({ ...prev, colleges: updated }));
   };
@@ -177,7 +180,8 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
   const removeEmployer = (i: number) => setProfile(prev => ({ ...prev, employers: prev.employers.filter((_, idx) => idx !== i) }));
   const updateEmployer = (i: number, field: keyof EmployerEntry, val: string | boolean) => {
     const updated = [...profile.employers];
-    updated[i] = { ...updated[i], [field]: val };
+    const sanitizedVal = field === "domain" ? extractDomain(val as string) : val;
+    updated[i] = { ...updated[i], [field]: sanitizedVal };
     setProfile(prev => ({ ...prev, employers: updated }));
   };
 
@@ -398,11 +402,8 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
             </button>
           </div>
           {profile.colleges.map((col, i) => (
-            <div key={i} className="flex gap-3 items-start bg-black/30 p-4 rounded-xl border border-zinc-800">
-              {col.domain && (
-                <img src={`https://logo.clearbit.com/${col.domain}`} alt="" className="w-10 h-10 rounded-lg bg-white p-1 flex-shrink-0"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              )}
+            <div key={i} className="flex gap-4 items-start bg-black/30 p-4 rounded-2xl border border-white/5 group hover:border-ares-gold/30 transition-all">
+              <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-12 h-12" />
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <input className={inputClass} placeholder="University name" value={col.name} onChange={e => updateCollege(i, "name", e.target.value)} />
                 <input className={inputClass} placeholder="Domain (rice.edu)" value={col.domain} onChange={e => updateCollege(i, "domain", e.target.value)} />
@@ -425,11 +426,8 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
             </button>
           </div>
           {profile.employers.map((emp, i) => (
-            <div key={i} className="flex gap-3 items-start bg-black/30 p-4 rounded-xl border border-zinc-800">
-              {emp.domain && (
-                <img src={`https://logo.clearbit.com/${emp.domain}`} alt="" className="w-10 h-10 rounded-lg bg-white p-1 flex-shrink-0"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              )}
+            <div key={i} className="flex gap-4 items-start bg-black/30 p-4 rounded-2xl border border-white/5 group hover:border-ares-gold/30 transition-all">
+              <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-12 h-12" />
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <input className={inputClass} placeholder="Company name" value={emp.name} onChange={e => updateEmployer(i, "name", e.target.value)} />
                 <input className={inputClass} placeholder="Domain (spacex.com)" value={emp.domain} onChange={e => updateEmployer(i, "domain", e.target.value)} />

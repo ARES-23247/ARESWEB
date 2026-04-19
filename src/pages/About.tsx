@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { GraduationCap } from "lucide-react";
+import { BrandLogo } from "../components/BrandLogo";
 
 interface TeamMember {
   user_id: string;
@@ -54,7 +55,7 @@ function MemberCard({ member }: { member: TeamMember }) {
         {member.member_type === "alumni" && colleges.length > 0 && (
           <div className="flex justify-center gap-1.5 mt-2">
             {(colleges as { domain: string }[]).slice(0, 3).map((col: { domain: string }, i: number) => (
-              col.domain && <img key={i} src={`https://logo.clearbit.com/${col.domain}`} alt="" className="w-5 h-5 rounded bg-white" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <BrandLogo key={i} domain={col.domain} fallbackIcon={GraduationCap} className="w-5 h-5" />
             ))}
           </div>
         )}

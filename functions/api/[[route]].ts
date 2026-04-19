@@ -1562,7 +1562,11 @@ apiRouter.get("/admin/users/:id/profile", async (c) => {
     if (!profile) {
       return c.json({ ...(user || {}), error: "Profile not configured yet" });
     }
-    return c.json({ ...profile, contact_email: profile.contact_email || (user as {email?: string})?.email || "" });
+    return c.json({ 
+      ...profile, 
+      email: (user as { email?: string })?.email || "",
+      contact_email: profile.contact_email || (user as { email?: string })?.email || "" 
+    });
   } catch (err) {
     console.error("[Admin Profile Override Fetch]", err);
     return c.json({ error: "Failed to fetch user profile" }, 500);

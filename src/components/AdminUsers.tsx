@@ -88,13 +88,13 @@ export default function AdminUsers() {
         <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
           <Shield size={20} className="text-ares-red" /> User Management
         </h2>
-        <span className="text-zinc-500 text-sm font-bold">{users.length} registered</span>
+        <span className="text-white/40 text-sm font-bold">{users.length} registered</span>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-zinc-800 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+            <tr className="border-b border-white/10 text-[10px] font-bold text-white/40 uppercase tracking-wider">
               <th className="text-left py-3 px-2">User</th>
               <th className="text-left py-3 px-2">Email</th>
               <th className="text-left py-3 px-2">Role</th>
@@ -105,7 +105,7 @@ export default function AdminUsers() {
           </thead>
           <tbody>
             {users.map(user => (
-              <tr key={user.id} className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors">
+              <tr key={user.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                 <td className="py-3 px-2">
                   <a href={`/profile/${user.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <img src={user.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.id}`}
@@ -113,12 +113,12 @@ export default function AdminUsers() {
                     <div>
                       <span className="text-sm font-bold text-white block hover:text-ares-red">{user.nickname || user.name || "ARES Member"}</span>
                       {(user.first_name || user.last_name) && (
-                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-white/30 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
                       )}
                     </div>
                   </a>
                 </td>
-                <td className="py-3 px-2 text-sm text-zinc-400">{user.email}</td>
+                <td className="py-3 px-2 text-sm text-white/60">{user.email}</td>
                 <td className="py-3 px-2">
                   <div className="relative inline-block">
                     <select
@@ -127,12 +127,12 @@ export default function AdminUsers() {
                       className={`appearance-none bg-transparent border rounded-lg px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none ${
                         user.role === "admin" ? "border-ares-red/50 text-ares-red" :
                         user.role === "author" ? "border-ares-gold/50 text-ares-gold" :
-                        "border-zinc-700 text-zinc-400"
+                        "border-white/20 text-white/60"
                       }`}
                     >
                       {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
                     </select>
-                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" />
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" />
                   </div>
                 </td>
                 <td className="py-3 px-2">
@@ -148,18 +148,20 @@ export default function AdminUsers() {
                     >
                       {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" />
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" />
                   </div>
                 </td>
-                <td className="py-3 px-2 text-xs text-zinc-500">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
+                <td className="py-3 px-2 text-xs text-white/40">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
                 <td className="py-3 px-2 text-right">
                   <button onClick={() => setEditUserId(user.id)}
-                    className="p-1.5 mr-1 text-zinc-600 hover:text-ares-gold transition-colors rounded-lg hover:bg-ares-gold/10">
-                    <Edit3 size={14} />
+                    title="Edit Member Profile"
+                    className="p-2 mr-1 text-white/60 hover:text-ares-gold transition-all rounded-lg hover:bg-ares-gold/10 hover:scale-110">
+                    <Edit3 size={18} />
                   </button>
                   <button onClick={() => removeUser(user.id, user.nickname || user.name || "user")}
-                    className="p-1.5 text-zinc-600 hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10">
-                    <Trash2 size={14} />
+                    title="Delete User"
+                    className="p-2 text-white/60 hover:text-ares-red transition-all rounded-lg hover:bg-ares-red/10 hover:scale-110">
+                    <Trash2 size={18} />
                   </button>
                 </td>
               </tr>
@@ -170,22 +172,22 @@ export default function AdminUsers() {
 
       {editUserId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4 sm:p-8 overflow-y-auto">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+          <div className="bg-obsidian border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
             <div className="sticky top-0 right-0 z-10 flex justify-end p-4 pointer-events-none">
               <button 
                 onClick={() => setEditUserId(null)} 
-                className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white pointer-events-auto shadow-xl"
+                className="p-2 bg-obsidian border border-white/10 rounded-lg text-white/40 hover:text-white pointer-events-auto shadow-xl"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="px-6 pb-6 pt-2">
-              <div className="mb-4 pb-4 border-b border-zinc-800/50">
+              <div className="mb-4 pb-4 border-b border-white/10">
                 <h3 className="text-xl font-black text-ares-red flex items-center gap-2">
                   <Shield size={20} />
                   Admin Override: Managing Profile
                 </h3>
-                <p className="text-zinc-500 text-sm">You are editing another user's personal profile data.</p>
+                <p className="text-white/40 text-sm">You are editing another user's personal profile data.</p>
               </div>
               <ProfileEditor adminEditUserId={editUserId} />
             </div>
