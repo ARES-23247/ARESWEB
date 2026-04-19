@@ -285,6 +285,13 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
         queryClient.invalidateQueries({ queryKey: ["posts"] });
         queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
         if (onClearEdit) onClearEdit();
+        
+      // @ts-expect-error -- D1 untyped response
+        if (data.warning) {
+      // @ts-expect-error -- D1 untyped response
+          alert("Post saved successfully, but social syndication had issues:\n\n" + data.warning);
+        }
+
       // @ts-expect-error -- D1 untyped response
         navigate(`/blog/${data.slug}`);
       } else {

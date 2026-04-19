@@ -213,7 +213,8 @@ apiRouter.get("/events/:id", async (c) => {
   }
 });
 
-function extractAstText(jsonStr: string): string {
+function extractAstText(jsonStr: string | undefined | null): string {
+  if (!jsonStr) return "";
   try {
     const ast = JSON.parse(jsonStr);
     if (ast && ast.type === "doc") {
@@ -228,7 +229,7 @@ function extractAstText(jsonStr: string): string {
   } catch {
     // Ignore JSON parse errors for raw text bodies
   }
-  return jsonStr;
+  return String(jsonStr);
 }
 
 async function getSocialConfig(c: Context<{ Bindings: Bindings }>): Promise<Record<string, string | undefined>> {
@@ -363,7 +364,7 @@ apiRouter.post("/admin/posts", async (c) => {
         }, socialConfig, socialsFilter);
       } catch (err: unknown) {
         console.error("Social dispatch returned top-level rejection:", err);
-        return c.json({ error: `Network Syndication Failed: ${(err as Error)?.message || String(err)}` }, 502);
+        return c.json({ success: true, slug, warning: `Network Syndication Failed: ${(err as Error)?.message || String(err)}` }, 207);
       }
     } catch(err) {
       console.error("Critical Social Dispatch Failure:", err);
