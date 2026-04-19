@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { format, isAfter, subDays } from "date-fns";
+import { format, isAfter, subDays, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import SEO from "../components/SEO";
 
@@ -61,13 +61,13 @@ export default function Events() {
   // Filter out routine practices so they only appear on the Google Calendar iframe, not as major event cards.
   const majorEvents = [...events]
     .filter((e) => !e.title.toLowerCase().includes("practice"))
-    .sort((a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime());
+    .sort((a, b) => parseISO(a.date_start).getTime() - parseISO(b.date_start).getTime());
   
-  const upcomingEvents = majorEvents.filter((e) => isAfter(new Date(e.date_start), bufferTime));
-  const pastEvents = majorEvents.filter((e) => !isAfter(new Date(e.date_start), bufferTime)).reverse();
+  const upcomingEvents = majorEvents.filter((e) => isAfter(parseISO(e.date_start), bufferTime));
+  const pastEvents = majorEvents.filter((e) => !isAfter(parseISO(e.date_start), bufferTime)).reverse();
 
   const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean }) => {
-    const startDate = new Date(event.date_start);
+    const startDate = parseISO(event.date_start);
 
     return (
       <Link to={`/events/${event.id}`} className={`flex flex-col md:flex-row gap-6 bg-black/40 border ${isPast ? 'border-white/5 opacity-80' : 'border-ares-gold/30 shadow-lg shadow-ares-gold/10'} hero-card overflow-hidden group block cursor-pointer`}>
