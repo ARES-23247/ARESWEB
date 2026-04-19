@@ -3,7 +3,7 @@ import { Key, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Login() {
-  const handleLogin = async (provider: "google" | "github" | "zulip") => {
+  const handleLogin = async (provider: "google" | "github") => {
     try {
       const { data, error } = await signIn.social({
         provider,

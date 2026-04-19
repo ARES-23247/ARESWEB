@@ -2,7 +2,6 @@ import { betterAuth } from "better-auth";
 import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
-import { genericOAuth } from "better-auth/plugins";
 
 export const getAuth = (db: D1Database, env: Record<string, string>) => {
     const kyselyDb = new Kysely({
@@ -28,34 +27,6 @@ export const getAuth = (db: D1Database, env: Record<string, string>) => {
                 scope: ["read:user", "user:email", "read:org"],
             },
         },
-        plugins: [
-            genericOAuth({
-                config: [{
-                    providerId: "zulip",
-                    discoveryUrl: "https://aresfirst.zulipchat.com/.well-known/openid-configuration",
-                    authorizationUrl: "https://aresfirst.zulipchat.com/o/authorize/",
-                    tokenUrl: "https://aresfirst.zulipchat.com/o/token/",
-                    userInfoUrl: "https://aresfirst.zulipchat.com/api/v1/users/me",
-                    clientId: env.ZULIP_CLIENT_ID || "",
-                    clientSecret: env.ZULIP_CLIENT_SECRET || "",
-                    scopes: ["read"],
-                    getUserInfo: async (tokens) => {
-                        const response = await fetch("https://aresfirst.zulipchat.com/api/v1/users/me", {
-                            headers: {
-                                Authorization: `Bearer ${tokens.accessToken}`,
-                            },
-                        });
-                        const user = await response.json() as { user_id: string; email: string; full_name: string; avatar_url: string };
-                        return {
-                            id: String(user.user_id),
-                            email: user.email,
-                            name: user.full_name,
-                            image: user.avatar_url,
-                        };
-                    }
-                }]
-            })
-        ],
         user: {
             additionalFields: {
                 role: {
