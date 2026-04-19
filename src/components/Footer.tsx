@@ -84,11 +84,14 @@ export default function Footer() {
               </a>
             </div>
           </div>
-          <div className="flex gap-8">
+          <div className="flex flex-wrap gap-6 md:gap-8 items-center">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link to="/bug-report" className="hover:text-ares-red transition-colors text-ares-red/80 font-bold uppercase tracking-widest text-[10px]">Report Bug</Link>
             <Link to="/docs" className="hover:text-white transition-colors flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></Link>
             <Link to="/sponsors" className="hover:text-white transition-colors">Support Us</Link>
+            <Link to="/bug-report" className="bg-ares-red text-white hover:bg-white hover:text-ares-red px-4 py-2 rounded-lg transition-all font-bold uppercase tracking-widest text-xs flex items-center gap-2 shadow-lg shadow-ares-red/20 ml-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              Report Bug
+            </Link>
           </div>
         </div>
       </div>
