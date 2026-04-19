@@ -93,16 +93,16 @@ export default function AdminUsers() {
             {users.map(user => (
               <tr key={user.id} className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors">
                 <td className="py-3 px-2">
-                  <div className="flex items-center gap-3">
+                  <a href={`/profile/${user.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <img src={user.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.id}`}
                       alt="" className="w-8 h-8 rounded-xl bg-zinc-800" />
                     <div>
-                      <span className="text-sm font-bold text-white block">{user.nickname || user.name || "ARES Member"}</span>
+                      <span className="text-sm font-bold text-white block hover:text-ares-red">{user.nickname || user.name || "ARES Member"}</span>
                       {(user.first_name || user.last_name) && (
                         <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
                       )}
                     </div>
-                  </div>
+                  </a>
                 </td>
                 <td className="py-3 px-2 text-sm text-zinc-400">{user.email}</td>
                 <td className="py-3 px-2">

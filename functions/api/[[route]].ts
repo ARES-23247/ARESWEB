@@ -1287,7 +1287,15 @@ async function getSessionUser(c: Context<{ Bindings: Bindings }>) {
 }
 
 /* Helper: Server-side PII stripping per FIRST YPP */
-function sanitizeProfileForPublic(profile: Record<string, unknown>, memberType: string) {
+function sanitizeProfileForPublic(profile: Record<string, unknown>, memberType: string, bypassSecurity = false) {
+  if (bypassSecurity) {
+    return {
+      ...profile,
+      email: profile.contact_email || profile.email,
+      nickname: profile.nickname || profile.first_name || "ARES Member",
+    };
+  }
+
   const safe: Record<string, unknown> = {
     user_id: profile.user_id,
     nickname: profile.nickname || "ARES Member",
@@ -1393,7 +1401,7 @@ apiRouter.put("/profile/me", async (c) => {
   }
 });
 
-// ── GET /api/profile/:userId — public profile ─────────────────────────
+// ── GET /api/profile/:userId — public profile (full if admin) ─────────
 apiRouter.get("/profile/:userId", async (c) => {
   const userId = c.req.param("userId");
   try {
@@ -1401,7 +1409,11 @@ apiRouter.get("/profile/:userId", async (c) => {
       "SELECT p.*, u.email, u.image as avatar FROM user_profiles p LEFT JOIN user u ON p.user_id = u.id WHERE p.user_id = ?"
     ).bind(userId).first() as Record<string, unknown> | null;
     if (!row) return c.json({ error: "Not found" }, 404);
-    return c.json(sanitizeProfileForPublic(row, (row.member_type as string) || "student"));
+
+    const currentUser = await getSessionUser(c);
+    const isAdmin = currentUser?.role === "admin";
+    
+    return c.json(sanitizeProfileForPublic(row, (row.member_type as string) || "student", isAdmin));
   } catch (err) {
     console.error("[Profile GET public]", err);
     return c.json({ error: "Failed" }, 500);

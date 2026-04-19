@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { GraduationCap, Briefcase, ArrowLeft, Shield } from "lucide-react";
 
 interface ProfilePublic {
+  first_name?: string;
+  last_name?: string;
   nickname: string;
   avatar: string;
   pronouns: string;
@@ -17,6 +19,11 @@ interface ProfilePublic {
   phone?: string;
   colleges?: { name: string; domain: string; years: string; degree: string }[];
   employers?: { name: string; domain: string; title: string; current: boolean; years: string }[];
+  dietary_restrictions?: string;
+  favorite_food?: string;
+  tshirt_size?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
 }
 
 export default function ProfilePage() {
@@ -68,7 +75,9 @@ export default function ProfilePage() {
               <img src={profile.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${userId}`} alt="Avatar" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-black text-white mb-1">{profile.nickname || "ARES Member"}</h1>
+              <h1 className="text-3xl font-black text-white mb-1">
+                {profile.first_name && profile.last_name ? `${profile.first_name} "${profile.nickname}" ${profile.last_name}` : (profile.nickname || "ARES Member")}
+              </h1>
               {profile.pronouns && <p className="text-zinc-400 text-sm mb-3">{profile.pronouns}</p>}
               <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-4">
                 <span className="px-3 py-1 bg-ares-red/20 border border-ares-red/30 rounded-full text-xs font-bold text-ares-red">
@@ -83,6 +92,36 @@ export default function ProfilePage() {
               {profile.bio && <p className="text-zinc-300 text-sm leading-relaxed">{profile.bio}</p>}
             </div>
           </div>
+
+          {/* Admin / Private Details */}
+          {(profile.emergency_contact_name || profile.dietary_restrictions || profile.tshirt_size) && (
+             <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 mb-8 relative overflow-hidden">
+               <div className="absolute top-0 right-0 bg-red-500/20 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-bl-lg">Private / Admin Only</div>
+               <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Shield size={14} /> Internal Records</h3>
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                 {(profile.emergency_contact_name || profile.emergency_contact_phone) && (
+                   <div>
+                     <p className="text-[10px] font-bold text-zinc-500 uppercase">Emergency Contact</p>
+                     <p className="text-zinc-300 text-sm">{profile.emergency_contact_name || "Unknown"}</p>
+                     <p className="text-zinc-400 text-xs">{profile.emergency_contact_phone}</p>
+                   </div>
+                 )}
+                 {(profile.dietary_restrictions || profile.favorite_food) && (
+                   <div>
+                     <p className="text-[10px] font-bold text-zinc-500 uppercase">Dietary Info</p>
+                     {profile.dietary_restrictions && <p className="text-zinc-300 text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>}
+                     <p className="text-zinc-400 text-xs">{profile.favorite_food}</p>
+                   </div>
+                 )}
+                 {profile.tshirt_size && (
+                   <div>
+                     <p className="text-[10px] font-bold text-zinc-500 uppercase">T-Shirt Size</p>
+                     <p className="text-zinc-300 text-sm uppercase">{profile.tshirt_size}</p>
+                   </div>
+                 )}
+               </div>
+             </div>
+          )}
 
           {/* Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
