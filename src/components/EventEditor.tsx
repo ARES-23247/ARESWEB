@@ -240,8 +240,8 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
     setErrorMsg("");
     try {
       const arrayBuffer = await file.arrayBuffer();
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const result = await mammoth.convertToHtml({ arrayBuffer }, {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         convertImage: (mammoth as any).images.inline(async (element: any) => {
           const buffer = await element.read();
           const blob = new Blob([buffer], { type: element.contentType });
@@ -255,6 +255,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
           }
         })
       });
+      /* eslint-enable @typescript-eslint/no-explicit-any */
       editor.commands.setContent(result.value);
     } catch (err) {
       console.error(err);
