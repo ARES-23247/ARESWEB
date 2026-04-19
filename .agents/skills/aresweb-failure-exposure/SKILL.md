@@ -38,3 +38,10 @@ Every error returned to the client must also be logged on the edge using `consol
 
 ## 6. Execution
 Whenever you are building or refactoring API-connected components, you must verify that the error states satisfy these requirements. If you find a component with a "lazy" error state, rewrite it to include a diagnostic breakdown before finalizing your work.
+
+## 7. Banning Asynchronous Execution Hooks (waitUntil)
+Relying on Cloudflare's `c.executionCtx.waitUntil()` for crucial API mutations (e.g., social syndication or Google Calendar syncing) is strictly prohibited.
+- `waitUntil` causes background execution that cannot bubble errors back to the caller. If the worker crashes or the API fails, it happens completely *silently* relative to the user interface.
+- ❌ **BANNED**: `c.executionCtx.waitUntil( dispatchSocials(...) )`
+- ✅ **AUTHORIZED**: `try { await dispatchSocials(...); } catch(err) { return c.json({ error }, 502); }`
+- Always wait for the Promise to evaluate natively, catch the exception, and return it directly as a `502 Bad Gateway` schema so the Dashboard displays the network rejection string.
