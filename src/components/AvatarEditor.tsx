@@ -4,6 +4,7 @@ import { X, RefreshCw, Save, Image as ImageIcon, Shuffle, ToggleLeft, ToggleRigh
 import { authClient } from "../utils/auth-client";
 
 interface AvatarEditorProps {
+  currentImage?: string | null;
   onClose: () => void;
 }
 
@@ -38,36 +39,55 @@ function getRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export default function AvatarEditor({ onClose }: AvatarEditorProps) {
-  const [styleMode, setStyleMode] = useState<"bottts" | "avataaars">("avataaars");
+export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProps) {
+  const getParams = () => {
+    try {
+      if (!currentImage) return new URLSearchParams();
+      const url = new URL(currentImage);
+      return new URLSearchParams(url.search);
+    } catch {
+      return new URLSearchParams();
+    }
+  };
+
+  const parsedParams = getParams();
+  const isBottts = currentImage?.includes("bottts");
+
+  const [styleMode, setStyleMode] = useState<"bottts" | "avataaars">(isBottts ? "bottts" : "avataaars");
+
+  const getParam = (key: string, options: string[]) => {
+    const val = parsedParams.get(key);
+    if (val && options.includes(val)) return val;
+    return getRandom(options);
+  };
 
   // Avataaar State
   const [avaState, setAvaState] = useState({
-    top: getRandom(AVATAAARS_OPTIONS.top),
-    eyes: getRandom(AVATAAARS_OPTIONS.eyes),
-    eyebrows: getRandom(AVATAAARS_OPTIONS.eyebrows),
-    mouth: getRandom(AVATAAARS_OPTIONS.mouth),
-    hairColor: getRandom(AVATAAARS_OPTIONS.hairColor),
-    clothing: getRandom(AVATAAARS_OPTIONS.clothing),
-    clothesColor: getRandom(AVATAAARS_OPTIONS.clothesColor),
-    skinColor: getRandom(AVATAAARS_OPTIONS.skinColor),
-    facialHair: getRandom(AVATAAARS_OPTIONS.facialHair),
-    facialHairColor: getRandom(AVATAAARS_OPTIONS.facialHairColor),
-    accessories: getRandom(AVATAAARS_OPTIONS.accessories),
-    accessoriesColor: getRandom(AVATAAARS_OPTIONS.accessoriesColor),
-    showFacialHair: false,
-    showAccessories: true,
+    top: !isBottts ? getParam("top", AVATAAARS_OPTIONS.top) : getRandom(AVATAAARS_OPTIONS.top),
+    eyes: !isBottts ? getParam("eyes", AVATAAARS_OPTIONS.eyes) : getRandom(AVATAAARS_OPTIONS.eyes),
+    eyebrows: !isBottts ? getParam("eyebrows", AVATAAARS_OPTIONS.eyebrows) : getRandom(AVATAAARS_OPTIONS.eyebrows),
+    mouth: !isBottts ? getParam("mouth", AVATAAARS_OPTIONS.mouth) : getRandom(AVATAAARS_OPTIONS.mouth),
+    hairColor: !isBottts ? getParam("hairColor", AVATAAARS_OPTIONS.hairColor) : getRandom(AVATAAARS_OPTIONS.hairColor),
+    clothing: !isBottts ? getParam("clothing", AVATAAARS_OPTIONS.clothing) : getRandom(AVATAAARS_OPTIONS.clothing),
+    clothesColor: !isBottts ? getParam("clothesColor", AVATAAARS_OPTIONS.clothesColor) : getRandom(AVATAAARS_OPTIONS.clothesColor),
+    skinColor: !isBottts ? getParam("skinColor", AVATAAARS_OPTIONS.skinColor) : getRandom(AVATAAARS_OPTIONS.skinColor),
+    facialHair: !isBottts ? getParam("facialHair", AVATAAARS_OPTIONS.facialHair) : getRandom(AVATAAARS_OPTIONS.facialHair),
+    facialHairColor: !isBottts ? getParam("facialHairColor", AVATAAARS_OPTIONS.facialHairColor) : getRandom(AVATAAARS_OPTIONS.facialHairColor),
+    accessories: !isBottts ? getParam("accessories", AVATAAARS_OPTIONS.accessories) : getRandom(AVATAAARS_OPTIONS.accessories),
+    accessoriesColor: !isBottts ? getParam("accessoriesColor", AVATAAARS_OPTIONS.accessoriesColor) : getRandom(AVATAAARS_OPTIONS.accessoriesColor),
+    showFacialHair: !isBottts ? parsedParams.get("facialHairProbability") === "100" : false,
+    showAccessories: !isBottts ? parsedParams.get("accessoriesProbability") === "100" : true,
   });
 
   // Bottt State
   const [botState, setBotState] = useState({
-    face: getRandom(BOTTTS_OPTIONS.face),
-    eyes: getRandom(BOTTTS_OPTIONS.eyes),
-    mouth: getRandom(BOTTTS_OPTIONS.mouth),
-    top: getRandom(BOTTTS_OPTIONS.top),
-    sides: getRandom(BOTTTS_OPTIONS.sides),
-    texture: getRandom(BOTTTS_OPTIONS.texture),
-    baseColor: getRandom(BOTTTS_OPTIONS.baseColor),
+    face: isBottts ? getParam("face", BOTTTS_OPTIONS.face) : getRandom(BOTTTS_OPTIONS.face),
+    eyes: isBottts ? getParam("eyes", BOTTTS_OPTIONS.eyes) : getRandom(BOTTTS_OPTIONS.eyes),
+    mouth: isBottts ? getParam("mouth", BOTTTS_OPTIONS.mouth) : getRandom(BOTTTS_OPTIONS.mouth),
+    top: isBottts ? getParam("top", BOTTTS_OPTIONS.top) : getRandom(BOTTTS_OPTIONS.top),
+    sides: isBottts ? getParam("sides", BOTTTS_OPTIONS.sides) : getRandom(BOTTTS_OPTIONS.sides),
+    texture: isBottts ? getParam("texture", BOTTTS_OPTIONS.texture) : getRandom(BOTTTS_OPTIONS.texture),
+    baseColor: isBottts ? getParam("baseColor", BOTTTS_OPTIONS.baseColor) : getRandom(BOTTTS_OPTIONS.baseColor),
   });
 
   const [isSaving, setIsSaving] = useState(false);

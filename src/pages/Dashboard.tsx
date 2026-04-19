@@ -127,7 +127,7 @@ export default function Dashboard() {
 
   return (
     <div className="w-full min-h-screen bg-zinc-950 text-zinc-100 py-8 relative overflow-hidden">
-      {isAvatarEditorOpen && <AvatarEditor onClose={() => setIsAvatarEditorOpen(false)} />}
+      {isAvatarEditorOpen && <AvatarEditor currentImage={session?.user?.image as string | null} onClose={() => setIsAvatarEditorOpen(false)} />}
       
       {/* Background glow effects */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-ares-red/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
