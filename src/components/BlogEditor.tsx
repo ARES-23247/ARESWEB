@@ -283,6 +283,8 @@ export default function BlogEditor({ editSlug, onClearEdit }: { editSlug?: strin
       // @ts-expect-error -- D1 untyped response
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["posts"] });
+        setTimeout(() => queryClient.invalidateQueries({ queryKey: ["posts"] }), 1500);
+        setTimeout(() => queryClient.invalidateQueries({ queryKey: ["posts"] }), 3000);
         queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
         if (onClearEdit) onClearEdit();
         

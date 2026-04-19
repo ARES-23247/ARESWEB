@@ -1,6 +1,9 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
+import DietarySummary from "../components/DietarySummary";
+import { useSession } from "../utils/auth-client";
 
 interface TeamMember {
   user_id: string;
@@ -65,6 +68,7 @@ function MemberCard({ member }: { member: TeamMember }) {
 }
 
 export default function About() {
+  const { data: session } = useSession();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -147,6 +151,22 @@ export default function About() {
           </a>
         </div>
       </section>
+
+      {/* ─── DIETARY / LOGISTICS SUMMARY (AUTH-GATED) ─── */}
+      {session && (
+        <section className="py-24 bg-zinc-900 border-y border-zinc-800">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 font-heading uppercase">Team Logistics</h2>
+              <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
+                Internal summary of dietary restrictions and gear sizes. Visible only to authenticated members.
+              </p>
+              <div className="w-24 h-1 bg-ares-red mx-auto mt-6"></div>
+            </div>
+            <DietarySummary />
+          </div>
+        </section>
+      )}
 
       {/* ─── DYNAMIC TEAM ROSTER ─── */}
       {grouped.length > 0 && grouped.map(section => (

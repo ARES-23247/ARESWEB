@@ -301,7 +301,12 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
       // @ts-expect-error -- D1 untyped response
       if (data.success) {
         setSuccessMsg(editId ? "Event updated successfully!" : "Event published successfully!");
+        // Cloudflare D1 uses asynchronous replication to edge read-nodes. 
+        // If social syndication resolves instantly (e.g. Bluesky is omitted),
+        // we must wait for the D1 write to propagate before invalidating the React Query cache.
         queryClient.invalidateQueries({ queryKey: ["events"] });
+        setTimeout(() => queryClient.invalidateQueries({ queryKey: ["events"] }), 1500);
+        setTimeout(() => queryClient.invalidateQueries({ queryKey: ["events"] }), 3000);
         queryClient.invalidateQueries({ queryKey: ["admin_events"] });
         if (onClearEdit) onClearEdit();
         
