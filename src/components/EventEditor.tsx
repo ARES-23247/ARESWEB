@@ -134,7 +134,9 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
       try {
         const res = await fetch(`/api/admin/events/${editId}`);
         const data = await res.json();
+      // @ts-expect-error -- D1 untyped response
         if (data.event) {
+      // @ts-expect-error -- D1 untyped response
           setIsDeleted(data.event.is_deleted === 1);
           setForm({
       // @ts-expect-error -- D1 untyped response
@@ -323,6 +325,7 @@ export default function EventEditor({ editId, onClearEdit }: { editId?: string |
         
       // @ts-expect-error -- D1 untyped response
         if (data.warning) {
+      // @ts-expect-error -- D1 untyped response
           setWarningMsg(data.warning);
         }
 
