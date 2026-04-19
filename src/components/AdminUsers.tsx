@@ -187,7 +187,7 @@ export default function AdminUsers() {
                   <Shield size={20} />
                   Admin Override: Managing Profile
                 </h3>
-                <p className="text-white/40 text-sm">You are editing another user's personal profile data.</p>
+                <p className="text-white/40 text-sm">You are editing another user&apos;s personal profile data.</p>
               </div>
               <ProfileEditor adminEditUserId={editUserId} />
             </div>

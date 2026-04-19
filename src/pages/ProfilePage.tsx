@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GraduationCap, Briefcase, ArrowLeft, Shield, Globe } from "lucide-react";
+import { GraduationCap, Briefcase, ArrowLeft, Shield } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 
 interface ProfilePublic {

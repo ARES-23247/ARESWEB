@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LucideIcon, Globe } from 'lucide-react';
 import { getLogoUrl, extractDomain } from '../utils/logoResolvers';
 
@@ -21,14 +21,16 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const cleanDomain = extractDomain(domain);
-  const logoUrl = getLogoUrl(cleanDomain);
+  const [prevDomain, setPrevDomain] = useState(domain);
 
-  // Reset error/loading when domain changes
-  useEffect(() => {
+  if (domain !== prevDomain) {
+    setPrevDomain(domain);
     setError(false);
     setLoading(true);
-  }, [cleanDomain]);
+  }
+
+  const cleanDomain = extractDomain(domain);
+  const logoUrl = getLogoUrl(cleanDomain);
 
   if (!cleanDomain || error) {
     return (

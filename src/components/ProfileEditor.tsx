@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Save, RefreshCw, Shield, Plus, Trash2, GraduationCap, Briefcase, Mail, Globe } from "lucide-react";
+import { User, Save, RefreshCw, Shield, Plus, Trash2, GraduationCap, Briefcase } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { extractDomain } from "../utils/logoResolvers";
 

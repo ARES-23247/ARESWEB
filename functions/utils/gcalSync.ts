@@ -64,13 +64,14 @@ function parseAstToText(ast: unknown): string {
   }
 
   // Handle recursion for the ProseMirror JSON object
-  const extract = (node: any): string => {
+  const extract = (node: unknown): string => {
     if (!node) return "";
-    if (typeof node.text === 'string') return node.text;
+    const n = node as Record<string, unknown>;
+    if (typeof n.text === 'string') return n.text;
     
-    if (node.content && Array.isArray(node.content)) {
-      return node.content
-        .map((item: any) => extract(item))
+    if (n.content && Array.isArray(n.content)) {
+      return n.content
+        .map((item: unknown) => extract(item))
         .filter((t: string) => t.length > 0)
         .join(" ");
     }
