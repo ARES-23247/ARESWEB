@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { signIn } from "@/utils/auth-client";
-import { Key, LogIn } from "lucide-react";
+import { Key, LogIn, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Login() {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleLogin = async (provider: "google" | "github") => {
+    setErrorMessage(null);
     try {
       const { data, error } = await signIn.social({
         provider,
@@ -11,13 +15,14 @@ export default function Login() {
       });
       if (error) {
         console.error("Login Error:", error);
-        alert(`Login failed: ${error.message} (${error.status})`);
+        setErrorMessage(`Login failed: ${error.message} (${error.status})`);
       } else {
         console.log("Login initiated:", data);
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Critical Login Exception:", e);
-      alert("Registration system unreachable.");
+      const err = e as Error;
+      setErrorMessage(err.message || "Authentication system unreachable.");
     }
   };
 
@@ -61,7 +66,20 @@ export default function Login() {
 
         </div>
 
-        <p className="mt-10 text-center text-zinc-500 text-xs">
+        {errorMessage && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-200 leading-relaxed font-medium">
+              {errorMessage}
+            </p>
+          </motion.div>
+        )}
+
+        <p className="mt-10 text-center text-zinc-500 text-xs text-balance">
           Protected by ARES Zero-Trust Architecture. <br/>
           By signing in, you agree to our Code of Conduct.
         </p>

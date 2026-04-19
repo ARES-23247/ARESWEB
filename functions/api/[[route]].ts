@@ -51,14 +51,10 @@ const ensureAdmin = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
   // RBAC: Granular path-based role checks
   // @ts-expect-error - Better Auth additional fields
   const role = (session.user.role as string) || "user";
-  let allowedRoles = ["admin"];
 
-  // Authors can manage posts and media
-  if (url.pathname.includes("/admin/posts") || 
-      url.pathname.includes("/admin/upload") || 
-      url.pathname.includes("/admin/media")) {
-    allowedRoles = ["admin", "author"];
-  }
+  // Authors can do everything EXCEPT manage users
+  const isSuperAdminRoute = url.pathname.includes("/admin/users") || url.pathname.includes("/admin/roles");
+  const allowedRoles = isSuperAdminRoute ? ["admin"] : ["admin", "author"];
 
   if (!allowedRoles.includes(role)) {
      console.warn(`[Auth Check] Access Denied for ${session.user.email}. Role: ${role}. Path: ${url.pathname}`);
@@ -71,9 +67,18 @@ const ensureAdmin = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
 
 
 // ── Better Auth Routes ────────────────────────────────────────────────
-apiRouter.on(["POST", "GET"], "/auth/*", (c) => {
-  const auth = getAuth(c.env.DB, c.env);
-  return auth.handler(c.req.raw);
+apiRouter.on(["POST", "GET"], "/auth/*", async (c) => {
+  try {
+    const auth = getAuth(c.env.DB, c.env);
+    return await auth.handler(c.req.raw);
+  } catch (error: any) {
+    console.error("[Auth Handler] Internal Exception:", error);
+    return c.json({ 
+      error: "Internal Server Error during Authentication", 
+      message: error?.message || String(error),
+      stack: error?.stack
+    }, 500);
+  }
 });
 
 // ── Auth middleware for admin routes ──────────────────────────────────
@@ -139,7 +144,7 @@ apiRouter.get("/search", async (c) => {
 apiRouter.get("/posts", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT slug, title, date, snippet, thumbnail, cf_email FROM posts ORDER BY date DESC"
+      "SELECT slug, title, date, snippet, thumbnail, cf_email FROM posts WHERE is_deleted = 0 ORDER BY date DESC"
     ).all();
     return c.json({ posts: results ?? [] });
   } catch (err) {
@@ -153,7 +158,7 @@ apiRouter.get("/posts/:slug", async (c) => {
   const slug = c.req.param("slug");
   try {
     const row = await c.env.DB.prepare(
-      "SELECT slug, title, date, ast FROM posts WHERE slug = ?"
+      "SELECT slug, title, date, ast FROM posts WHERE slug = ? AND is_deleted = 0"
     ).bind(slug).first();
 
     if (!row) return c.json({ error: "Post not found" }, 404);
@@ -179,7 +184,7 @@ apiRouter.get("/calendar", async (c) => {
 apiRouter.get("/events", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email FROM events ORDER BY date_start ASC"
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email FROM events WHERE is_deleted = 0 ORDER BY date_start ASC"
     ).all();
     return c.json({ events: results ?? [] });
   } catch (err) {
@@ -193,7 +198,7 @@ apiRouter.get("/events/:id", async (c) => {
   const id = c.req.param("id");
   try {
     const row = await c.env.DB.prepare(
-      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email FROM events WHERE id = ?"
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email FROM events WHERE id = ? AND is_deleted = 0"
     ).bind(id).first();
 
     if (!row) return c.json({ error: "Event not found" }, 404);
@@ -633,10 +638,28 @@ apiRouter.get("/admin/media", async (c) => {
 apiRouter.delete("/admin/media/:key", ensureAdmin, async (c) => {
   try {
     const key = c.req.param("key") as string;
-    await Promise.all([
-      c.env.ARES_STORAGE.delete(key),
-      c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(key).run().catch(() => {})
-    ]);
+    const auth = getAuth(c.env.DB, c.env);
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
+    // @ts-expect-error
+    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
+
+    if (role === "admin") {
+      await Promise.all([
+        c.env.ARES_STORAGE.delete(key),
+        c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(key).run().catch(() => {})
+      ]);
+    } else {
+      // Authors trigger soft-deletion mechanism for photos (archived/ prefix)
+      if (!isLocalDev) {
+        const obj = await c.env.ARES_STORAGE.get(key);
+        if (obj) {
+          await c.env.ARES_STORAGE.put(`archived/${key}`, obj.body, { httpMetadata: obj.httpMetadata });
+          await c.env.ARES_STORAGE.delete(key);
+        }
+      }
+      await c.env.DB.prepare("UPDATE media_tags SET folder = 'Archived', key = ? WHERE key = ?").bind(`archived/${key}`, key).run().catch(() => {});
+    }
     return c.json({ success: true });
 
   } catch (err) {
@@ -746,7 +769,17 @@ apiRouter.delete("/admin/events/:id", async (c) => {
       }
     }
 
-    await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
+    const auth = getAuth(c.env.DB, c.env);
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
+    // @ts-expect-error
+    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
+
+    if (role === "admin") {
+      await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
+    } else {
+      await c.env.DB.prepare("UPDATE events SET is_deleted = 1 WHERE id = ?").bind(id).run();
+    }
     return c.json({ success: true });
   } catch (err) {
     console.error("D1 delete error (events):", err);
@@ -792,7 +825,18 @@ apiRouter.post("/admin/events/:id/repush", async (c) => {
 apiRouter.delete("/admin/posts/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
-    await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
+
+    const auth = getAuth(c.env.DB, c.env);
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
+    // @ts-expect-error
+    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
+
+    if (role === "admin") {
+      await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
+    } else {
+      await c.env.DB.prepare("UPDATE posts SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
+    }
     return c.json({ success: true });
   } catch (err) {
     console.error("D1 delete error (posts):", err);
@@ -1006,7 +1050,7 @@ apiRouter.post("/admin/events/sync", async (c) => {
 apiRouter.get("/docs", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT slug, title, category, sort_order, description FROM docs ORDER BY category, sort_order ASC"
+      "SELECT slug, title, category, sort_order, description FROM docs WHERE is_deleted = 0 ORDER BY category, sort_order ASC"
     ).all();
     return c.json({ docs: results ?? [] });
   } catch (err) {
@@ -1021,7 +1065,7 @@ apiRouter.get("/docs/search", async (c) => {
   if (!q || q.length < 2) return c.json({ results: [] });
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT slug, title, category, description, content FROM docs WHERE title LIKE ? OR content LIKE ? OR description LIKE ? ORDER BY category, sort_order ASC LIMIT 20"
+      "SELECT slug, title, category, description, content FROM docs WHERE is_deleted = 0 AND (title LIKE ? OR content LIKE ? OR description LIKE ?) ORDER BY category, sort_order ASC LIMIT 20"
     ).bind(`%${q}%`, `%${q}%`, `%${q}%`).all();
 
     // Return snippets, not full content
@@ -1072,7 +1116,7 @@ apiRouter.get("/docs/:slug", async (c) => {
   const slug = c.req.param("slug");
   try {
     const row = await c.env.DB.prepare(
-      "SELECT slug, title, category, description, content, updated_at FROM docs WHERE slug = ?"
+      "SELECT slug, title, category, description, content, updated_at FROM docs WHERE slug = ? AND is_deleted = 0"
     ).bind(slug).first();
     if (!row) return c.json({ error: "Doc not found" }, 404);
     return c.json({ doc: row });
@@ -1116,7 +1160,18 @@ apiRouter.post("/admin/docs", async (c) => {
 apiRouter.delete("/admin/docs/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
-    await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
+
+    const auth = getAuth(c.env.DB, c.env);
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
+    // @ts-expect-error
+    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
+
+    if (role === "admin") {
+      await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
+    } else {
+      await c.env.DB.prepare("UPDATE docs SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
+    }
     return c.json({ success: true });
   } catch (err) {
     console.error("D1 doc delete error:", err);

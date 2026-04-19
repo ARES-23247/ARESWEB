@@ -14,18 +14,25 @@ export const getAuth = (db: D1Database, env: Record<string, string>) => {
         database: kyselyAdapter(kyselyDb, {
             provider: "sqlite",
         }),
+        onAPIError: {
+            throw: true,
+        },
         secret: env.BETTER_AUTH_SECRET,
         baseURL: env.BETTER_AUTH_URL || "http://localhost:5173",
         socialProviders: {
-            google: {
-                clientId: env.GOOGLE_CLIENT_ID || "",
-                clientSecret: env.GOOGLE_CLIENT_SECRET || "",
-            },
-            github: {
-                clientId: env.GITHUB_CLIENT_ID || "",
-                clientSecret: env.GITHUB_CLIENT_SECRET || "",
-                scope: ["read:user", "user:email", "read:org"],
-            },
+            ...(env.GOOGLE_CLIENT_ID ? {
+                google: {
+                    clientId: env.GOOGLE_CLIENT_ID,
+                    clientSecret: env.GOOGLE_CLIENT_SECRET || "",
+                }
+            } : {}),
+            ...(env.GITHUB_CLIENT_ID ? {
+                github: {
+                    clientId: env.GITHUB_CLIENT_ID,
+                    clientSecret: env.GITHUB_CLIENT_SECRET || "",
+                    scope: ["read:user", "user:email", "read:org"],
+                }
+            } : {}),
         },
         user: {
             additionalFields: {
