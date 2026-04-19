@@ -4,6 +4,7 @@ import ContentManager from "@/components/ContentManager";
 import AssetManager from "@/components/AssetManager";
 import DocsEditor from "@/components/DocsEditor";
 import IntegrationsManager from "@/components/IntegrationsManager";
+import AvatarEditor from "@/components/AvatarEditor";
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [editPostSlug, setEditPostSlug] = useState<string | null>(null);
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [editDocSlug, setEditDocSlug] = useState<string | null>(initialDoc);
+  const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
 
   useEffect(() => {
     if (initialDoc) {
@@ -123,6 +125,8 @@ export default function Dashboard() {
 
   return (
     <div className="w-full min-h-screen bg-zinc-950 text-zinc-100 py-8 relative overflow-hidden">
+      {isAvatarEditorOpen && <AvatarEditor onClose={() => setIsAvatarEditorOpen(false)} />}
+      
       {/* Background glow effects */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-ares-red/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
       <div className="absolute top-40 -left-64 w-96 h-96 bg-ares-gold/10 blur-[120px] rounded-full pointer-events-none opacity-40" />
@@ -141,8 +145,27 @@ export default function Dashboard() {
               Manage D1 Database content natively at the Cloudflare Edge. Draft engineering blogs, schedule events, and maintain team documentation.
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <span className="text-zinc-500 text-xs font-medium">Logged in as {session?.user?.email}</span>
+          <div className="flex flex-col items-end gap-3">
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 pr-3 pl-1 py-1 rounded-full shadow-lg backdrop-blur-sm">
+              <button 
+                onClick={() => setIsAvatarEditorOpen(true)}
+                className="relative group block w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-ares-gold transition-colors focus:outline-none"
+                title="Customize Identity"
+              >
+                <img 
+                  src={session?.user?.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${session?.user?.id}`} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Edit3 size={12} className="text-white" />
+                </div>
+              </button>
+              <div className="flex flex-col">
+                <span className="text-zinc-300 text-xs font-bold leading-tight">{session?.user?.name || "ARES User"}</span>
+                <span className="text-zinc-500 text-[10px] font-medium leading-tight">{session?.user?.email}</span>
+              </div>
+            </div>
             <button 
               onClick={() => signOut({ fetchOptions: { onSuccess: () => navigate("/") } })}
               className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-zinc-400 hover:text-red-400 text-xs font-bold rounded-xl transition-all"
@@ -168,24 +191,20 @@ export default function Dashboard() {
                 <PenTool size={16} />
                 {editPostSlug ? "Edit Blog" : "Blog Post"}
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab("event")}
-                  className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red ${activeTab === "event" ? "bg-gradient-to-b from-ares-red/20 to-ares-red/5 border border-ares-red/50 text-ares-red shadow-[0_0_20px_rgba(192,0,0,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
-                >
-                  <Calendar size={16} />
-                  {editEventId ? "Edit Event" : "Event"}
-                </button>
-              )}
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab("docs")}
-                  className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${activeTab === "docs" ? "bg-gradient-to-b from-ares-cyan/20 to-ares-cyan/5 border border-ares-cyan/50 text-ares-cyan shadow-[0_0_20px_rgba(0,183,235,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
-                >
-                  <Book size={16} />
-                  {editDocSlug ? "Edit Doc" : "Document"}
-                </button>
-              )}
+              <button
+                onClick={() => setActiveTab("event")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red ${activeTab === "event" ? "bg-gradient-to-b from-ares-red/20 to-ares-red/5 border border-ares-red/50 text-ares-red shadow-[0_0_20px_rgba(192,0,0,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Calendar size={16} />
+                {editEventId ? "Edit Event" : "Event"}
+              </button>
+              <button
+                onClick={() => setActiveTab("docs")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${activeTab === "docs" ? "bg-gradient-to-b from-ares-cyan/20 to-ares-cyan/5 border border-ares-cyan/50 text-ares-cyan shadow-[0_0_20px_rgba(0,183,235,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Book size={16} />
+                {editDocSlug ? "Edit Doc" : "Document"}
+              </button>
             </div>
           </div>
 
@@ -203,24 +222,20 @@ export default function Dashboard() {
                 <PenTool size={16} />
                 Blogs
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab("manage_event")}
-                  className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${activeTab === "manage_event" ? "bg-white/10 border border-white/20 text-white shadow-lg" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
-                >
-                  <Calendar size={16} />
-                  Events
-                </button>
-              )}
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab("manage_docs")}
-                  className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${activeTab === "manage_docs" ? "bg-white/10 border border-white/20 text-white shadow-lg" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
-                >
-                  <Book size={16} />
-                  <span className="flex items-center"><span className="text-ares-red normal-case">ARES</span><span className="text-white normal-case">Lib</span></span>
-                </button>
-              )}
+              <button
+                onClick={() => setActiveTab("manage_event")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${activeTab === "manage_event" ? "bg-white/10 border border-white/20 text-white shadow-lg" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Calendar size={16} />
+                Events
+              </button>
+              <button
+                onClick={() => setActiveTab("manage_docs")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${activeTab === "manage_docs" ? "bg-white/10 border border-white/20 text-white shadow-lg" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Book size={16} />
+                <span className="flex items-center"><span className="text-ares-red normal-case">ARES</span><span className="text-white normal-case">Lib</span></span>
+              </button>
               <button
                 onClick={() => setActiveTab("assets")}
                 className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-bronze ${activeTab === "assets" ? "bg-gradient-to-b from-ares-bronze/20 to-ares-bronze/5 border border-ares-bronze/50 text-ares-bronze shadow-[0_0_20px_rgba(205,127,50,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
@@ -228,15 +243,13 @@ export default function Dashboard() {
                 <Image size={16} />
                 Gallery
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab("integrations")}
-                  className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${activeTab === "integrations" ? "bg-gradient-to-b from-purple-500/20 to-purple-500/5 border border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
-                >
-                  <Settings size={16} />
-                  Integrations
-                </button>
-              )}
+              <button
+                onClick={() => setActiveTab("integrations")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${activeTab === "integrations" ? "bg-gradient-to-b from-purple-500/20 to-purple-500/5 border border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Settings size={16} />
+                Integrations
+              </button>
             </div>
           </div>
         </div>
