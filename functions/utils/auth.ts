@@ -1,10 +1,18 @@
 import { betterAuth } from "better-auth";
-import { d1Adapter } from "better-auth/adapters/d1";
+import { kyselyAdapter } from "@better-auth/kysely-adapter";
+import { Kysely } from "kysely";
+import { D1Dialect } from "kysely-d1";
 import { genericOAuth } from "better-auth/plugins";
 
 export const getAuth = (db: D1Database, env: Record<string, string>) => {
+    const kyselyDb = new Kysely({
+        dialect: new D1Dialect({
+            database: db,
+        }),
+    });
+
     return betterAuth({
-        database: d1Adapter(db, {
+        database: kyselyAdapter(kyselyDb, {
             provider: "sqlite",
         }),
         secret: env.BETTER_AUTH_SECRET,
