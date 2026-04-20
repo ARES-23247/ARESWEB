@@ -21,6 +21,7 @@ import inquiriesRouter from "./routes/inquiries";
 import badgesRouter from "./routes/badges";
 import { locationsRouter } from "./routes/locations";
 import sitemapRouter from "./routes/sitemap";
+import githubRouter from "./routes/github";
 const app = new Hono<{ Bindings: Bindings }>();
 const apiRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -58,6 +59,7 @@ apiRouter.route("/", awardsRouter);
 
 // External Integrations
 apiRouter.route("/", tbaRouter);
+apiRouter.route("/github", githubRouter);
 apiRouter.route("/", settingsRouter);
 apiRouter.route("/", judgesRouter);
 

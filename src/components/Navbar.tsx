@@ -15,8 +15,8 @@ export default function Navbar() {
   const userImage = session?.user?.image;
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-hidden rounded-bl-xl rounded-br-[2.5rem] border-b border-ares-bronze/10">
-      <GreekMeander variant="thin" opacity="opacity-60" className="absolute bottom-0 left-0" />
+    <nav className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-hidden rounded-bl-xl rounded-br-[2.5rem] border-t-4 border-ares-bronze">
+      <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
       <div className="flex items-center justify-between">
         <button 
           onClick={() => navigate("/")} 

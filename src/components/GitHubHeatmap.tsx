@@ -23,7 +23,7 @@ const LEVEL_COLORS = [
   "bg-ares-red",          // max
 ];
 
-export default function GitHubHeatmap({ org = "ARES-23247" }: { org?: string }) {
+export default function GitHubHeatmap() {
   const [grid, setGrid] = useState<DayCell[][]>([]);
   const [totalCommits, setTotalCommits] = useState(0);
   const [repoCount, setRepoCount] = useState(0);
@@ -34,79 +34,19 @@ export default function GitHubHeatmap({ org = "ARES-23247" }: { org?: string }) 
   useEffect(() => {
     async function fetchData() {
       try {
-        // 1. Get all public repos for the org
-        const repoRes = await fetch(`https://api.github.com/orgs/${org}/repos?per_page=100&type=public`);
-        if (!repoRes.ok) throw new Error("Failed to fetch repos");
-        const repos = await repoRes.json();
-      // @ts-expect-error -- D1 untyped response
-        setRepoCount(repos.length);
-
-        // 2. Fetch commit activity for each repo (returns 52 weeks of data)
-      // @ts-expect-error -- D1 untyped response
-        const activityPromises = repos.map((repo: { name: string }) =>
-          fetch(`https://api.github.com/repos/${org}/${repo.name}/stats/commit_activity`)
-            .then((r) => (r.ok ? r.json() : []))
-            .catch(() => [])
-        );
-        const allActivity: WeekData[][] = await Promise.all(activityPromises);
-
-        // 3. Aggregate daily commits across all repos
-        const dailyMap = new Map<string, number>();
+        const res = await fetch("/api/github/activity");
+        if (!res.ok) throw new Error("Failed to load activity");
         
-        for (const repoWeeks of allActivity) {
-          if (!Array.isArray(repoWeeks)) continue;
-          for (const week of repoWeeks) {
-            if (!week.days || !week.week) continue;
-            const weekStart = new Date(week.week * 1000);
-            for (let d = 0; d < 7; d++) {
-              const day = new Date(weekStart);
-              day.setDate(day.getDate() + d);
-              const key = day.toISOString().split("T")[0];
-              dailyMap.set(key, (dailyMap.get(key) || 0) + (week.days[d] || 0));
-            }
-          }
-        }
+        const data = await res.json();
+        // @ts-expect-error - Expected API shape
+        if (data.error) throw new Error(data.error);
 
-        // 4. Build the grid (52 weeks × 7 days)
-        const today = new Date();
-        const oneYearAgo = new Date(today);
-        oneYearAgo.setFullYear(today.getFullYear() - 1);
-
-        // Align to start of week (Sunday)
-        const startDate = new Date(oneYearAgo);
-        startDate.setDate(startDate.getDate() - startDate.getDay());
-
-        const maxCount = Math.max(1, ...dailyMap.values());
-        let total = 0;
-        const weeks: DayCell[][] = [];
-
-        const cursor = new Date(startDate);
-        while (cursor <= today) {
-          const week: DayCell[] = [];
-          for (let d = 0; d < 7; d++) {
-            const key = cursor.toISOString().split("T")[0];
-            const count = dailyMap.get(key) || 0;
-            total += count;
-
-            let level = 0;
-            if (count > 0) level = 1;
-            if (count >= maxCount * 0.25) level = 2;
-            if (count >= maxCount * 0.5) level = 3;
-            if (count >= maxCount * 0.75) level = 4;
-
-            // Don't show future dates
-            if (cursor > today) {
-              week.push({ date: key, count: 0, level: -1 });
-            } else {
-              week.push({ date: key, count, level });
-            }
-            cursor.setDate(cursor.getDate() + 1);
-          }
-          weeks.push(week);
-        }
-
-        setGrid(weeks);
-        setTotalCommits(total);
+        // @ts-expect-error - Expected API shape
+        setGrid(data.grid);
+        // @ts-expect-error - Expected API shape
+        setTotalCommits(data.totalCommits);
+        // @ts-expect-error - Expected API shape
+        setRepoCount(data.repoCount);
         setLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load activity");
@@ -115,7 +55,7 @@ export default function GitHubHeatmap({ org = "ARES-23247" }: { org?: string }) 
     }
 
     fetchData();
-  }, [org]);
+  }, []);
 
   // Determine which month labels to show
   const monthLabels: { label: string; col: number }[] = [];
@@ -161,7 +101,7 @@ export default function GitHubHeatmap({ org = "ARES-23247" }: { org?: string }) 
           </p>
         </div>
         <a
-          href={`https://github.com/${org}`}
+          href={`https://github.com/ARES-23247`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-ares-gold text-sm font-bold uppercase tracking-wider hover:text-white transition-colors shrink-0"
