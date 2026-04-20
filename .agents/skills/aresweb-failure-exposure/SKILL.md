@@ -25,15 +25,15 @@ Diagnostic data (error codes, internal messages, stack traces) must be clearly s
 - **Opacity**: Use subtle opacities (e.g., `/80`) for diagnostic text to keep the primary UI clean while still providing detail.
 - **Color**: Diagnostic errors must use `ares-red` backgrounds (`bg-ares-red/10`) and borders to signal urgency.
 
-## 4. Zero Trust Failure Context
-Because the ARES Dashboard is protected by Cloudflare Zero Trust, many failures are actually authentication rejections (401/403). 
+## 4. Protected Route Failure Context
+Because the ARES Dashboard is protected by rigorous Better Auth session validation, many failures are actually authentication rejections (401/403). 
 
-- If an error is an `HTTP 401`, the UI should explicitly suggest checking the Zero Trust session or logging in again.
-- Backend middleware (`ensureAdmin`) must return structured JSON errors describing *why* access was denied (e.g., "Direct invocation of .pages.dev alias is forbidden").
+- If an error is an `HTTP 401`, the UI should explicitly suggest checking their session and logging in again.
+- Backend middleware (`ensureAdmin`) must return structured JSON errors describing *why* access was denied (e.g., "Forbidden: Requires author privileges").
 
 ## 5. Backend Logging Parity
 Every error returned to the client must also be logged on the edge using `console.error`. 
-- Include the request path, the user email (if available via CF headers), and the specific error message.
+- Include the request path, the user email (if available via the active session object), and the specific error message.
 - This ensures that Cloudflare Logpush or real-time logs capture the failure for remote debugging.
 
 ## 6. Execution

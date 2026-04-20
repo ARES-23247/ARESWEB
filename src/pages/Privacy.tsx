@@ -84,7 +84,7 @@ export default function Privacy() {
               <h2 className="text-2xl font-bold font-heading">4. Secure Administration</h2>
             </div>
             <p className="text-marble/70 leading-relaxed">
-              Our internal content management system and API bounds are strictly locked behind Cloudflare Access. We do not maintain unencrypted login portals or traditional session limits. Access requires direct verification through authorized ARES 23247 / MARS 2614 email payloads intercepted at the proxy edge layer.
+              Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized FIRST Robotics team identity providers.
             </p>
           </section>
         </div>
