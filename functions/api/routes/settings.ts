@@ -11,7 +11,7 @@ settingsRouter.get("/admin/settings", ensureAdmin, async (c) => {
     for (const row of results as { key: string; value: string }[]) {
       settings[row.key] = row.value;
     }
-    return c.json({ settings });
+    return c.json({ success: true, settings });
   } catch (err) {
     console.error("D1 settings read error:", err);
     return c.json({ settings: {} }, 500);
