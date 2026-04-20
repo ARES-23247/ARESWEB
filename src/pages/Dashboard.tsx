@@ -22,8 +22,28 @@ const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"))
 const SponsorEditor = lazy(() => import("@/components/SponsorEditor"));
 const OutreachTracker = lazy(() => import("@/components/OutreachTracker"));
 const AwardEditor = lazy(() => import("@/components/AwardEditor"));
+const MemberImpactOverview = lazy(() => import("@/components/MemberImpactOverview"));
 
-type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy";
+type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy" | "impact_roster";
+
+// ── NavButton Component ────────────────────────────────────────────
+const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false, activeTab, onNavigate }: { tab: TabState, icon?: React.ElementType, label: string, disabled?: boolean, sub?: boolean, activeTab: TabState, onNavigate: (tab: TabState) => void }) => {
+  const isActive = activeTab === tab;
+  return (
+    <button
+      onClick={() => onNavigate(tab)}
+      disabled={disabled}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-semibold ${
+        isActive 
+          ? "bg-ares-red/10 text-white border border-ares-red/30 shadow-[0_0_15px_rgba(192,0,0,0.1)]" 
+          : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200 border border-transparent"
+      } ${sub ? "pl-11 text-sm font-bold" : "text-sm"} ${disabled ? "opacity-30 cursor-not-allowed" : ""}`}
+    >
+      {Icon && <Icon size={18} className={isActive ? "text-ares-red" : "text-zinc-500"} />}
+      <span className="truncate">{label}</span>
+    </button>
+  );
+};
 
 /* Compute localhost bypass at module level so it can seed initial state
    without triggering a synchronous setState inside an effect body. */
@@ -67,7 +87,7 @@ export default function Dashboard() {
         if (!res.ok) throw new Error("Not Authenticated");
         return res.json();
       })
-      .then((data: any) => {
+      .then((data: {user: Record<string, unknown>, authenticated: boolean}) => {
         setEnrichedSession(data);
         setIsPending(false);
       })
@@ -177,6 +197,8 @@ export default function Dashboard() {
         return <ProfileEditor />;
       case "users":
         return isAdmin ? <AdminUsers /> : null;
+      case "impact_roster":
+        return isAdmin ? <MemberImpactOverview /> : null;
       case "logistics":
         return (
           <>
@@ -232,32 +254,12 @@ export default function Dashboard() {
     }
   };
 
-  // ── NavButton Component ────────────────────────────────────────────
-  const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false }: { tab: TabState, icon?: any, label: string, disabled?: boolean, sub?: boolean }) => {
-    const isActive = activeTab === tab;
-    return (
-      <button
-        onClick={() => { 
-          if (!disabled) { 
-            setActiveTab(tab); 
-            setIsSidebarOpen(false); // Close mobile sidebar
-            // Clear any edit IDs if navigating to a "new" tab
-            if (tab === "blog") setEditPostSlug(null);
-            if (tab === "event") setEditEventId(null);
-            if (tab === "docs") setEditDocSlug(null);
-          } 
-        }}
-        disabled={disabled}
-        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-semibold ${
-          isActive 
-            ? "bg-ares-red/10 text-white border border-ares-red/30 shadow-[0_0_15px_rgba(192,0,0,0.1)]" 
-            : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200 border border-transparent"
-        } ${sub ? "pl-11 text-sm font-bold" : "text-sm"} ${disabled ? "opacity-30 cursor-not-allowed" : ""}`}
-      >
-        {Icon && <Icon size={18} className={isActive ? "text-ares-red" : "text-zinc-500"} />}
-        <span className="truncate">{label}</span>
-      </button>
-    );
+  const handleNavigate = (tab: TabState) => {
+    setActiveTab(tab); 
+    setIsSidebarOpen(false); 
+    if (tab === "blog") setEditPostSlug(null);
+    if (tab === "event") setEditEventId(null);
+    if (tab === "docs") setEditDocSlug(null);
   };
 
   return (
@@ -283,7 +285,7 @@ export default function Dashboard() {
 
       {/* Overlay for mobile sidebar */}
       {isSidebarOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)} />
+        <div role="presentation" className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Sidebar Navigation */}
@@ -320,7 +322,7 @@ export default function Dashboard() {
           <div>
             <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6">Personal</h4>
             <div className="space-y-1 px-3">
-              <NavButton tab="profile" icon={User} label="My Profile" />
+              <NavButton tab="profile" icon={User} label="My Profile" activeTab={activeTab} onNavigate={handleNavigate} />
             </div>
           </div>
 
@@ -329,9 +331,9 @@ export default function Dashboard() {
             <div>
               <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6 flex items-center gap-2"><PlusCircle size={12} className="text-ares-red" /> Quick Create</h4>
               <div className="space-y-1 px-3">
-                <NavButton tab="blog" icon={PenTool} label={editPostSlug ? "Edit Post (Active)" : "New Blog Post"} />
-                <NavButton tab="event" icon={Calendar} label={editEventId ? "Edit Event (Active)" : "New Event"} />
-                <NavButton tab="docs" icon={Book} label={editDocSlug ? "Edit Doc (Active)" : "New Document"} />
+                <NavButton tab="blog" icon={PenTool} label={editPostSlug ? "Edit Post (Active)" : "New Blog Post"} activeTab={activeTab} onNavigate={handleNavigate} />
+                <NavButton tab="event" icon={Calendar} label={editEventId ? "Edit Event (Active)" : "New Event"} activeTab={activeTab} onNavigate={handleNavigate} />
+                <NavButton tab="docs" icon={Book} label={editDocSlug ? "Edit Doc (Active)" : "New Document"} activeTab={activeTab} onNavigate={handleNavigate} />
               </div>
             </div>
           )}
@@ -344,13 +346,13 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3 px-4 py-2 mt-1 mb-1 text-[11px] font-black uppercase tracking-wider text-zinc-500">
                   <Folders size={14} className="text-zinc-600" /> Database Manager
                 </div>
-                <NavButton tab="manage_blog" label="1. Blogs / News" sub={true} />
-                <NavButton tab="manage_event" label="2. Calendar Events" sub={true} />
-                <NavButton tab="manage_docs" label="3. ARESLib Docs" sub={true} />
+                <NavButton tab="manage_blog" label="1. Blogs / News" sub={true} activeTab={activeTab} onNavigate={handleNavigate} />
+                <NavButton tab="manage_event" label="2. Calendar Events" sub={true} activeTab={activeTab} onNavigate={handleNavigate} />
+                <NavButton tab="manage_docs" label="3. ARESLib Docs" sub={true} activeTab={activeTab} onNavigate={handleNavigate} />
                 
                 <div className="h-px bg-white/5 my-3 mx-4" />
-                <NavButton tab="assets" icon={Image} label="Media Gallery" />
-                <NavButton tab="legacy" icon={Trophy} label="Trophy Case Archive" />
+                <NavButton tab="assets" icon={Image} label="Media Gallery" activeTab={activeTab} onNavigate={handleNavigate} />
+                <NavButton tab="legacy" icon={Trophy} label="Trophy Case Archive" activeTab={activeTab} onNavigate={handleNavigate} />
               </div>
             </div>
           )}
@@ -360,9 +362,9 @@ export default function Dashboard() {
             <div>
               <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6">Operations</h4>
               <div className="space-y-1 px-3">
-                <NavButton tab="outreach" icon={Target} label="Outreach Tracker" />
-                <NavButton tab="sponsors" icon={Gem} label="Sponsors & Funding" />
-                <NavButton tab="analytics" icon={BarChart3} label="Analytics" />
+                <NavButton tab="outreach" icon={Target} label="Outreach Tracker" activeTab={activeTab} onNavigate={handleNavigate} />
+                <NavButton tab="sponsors" icon={Gem} label="Sponsors & Funding" activeTab={activeTab} onNavigate={handleNavigate} />
+                <NavButton tab="analytics" icon={BarChart3} label="Analytics" activeTab={activeTab} onNavigate={handleNavigate} />
               </div>
             </div>
           )}
@@ -372,9 +374,10 @@ export default function Dashboard() {
             <div>
               <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-red/80 mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
-                {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" />}
-                {isAdmin && <NavButton tab="integrations" icon={Settings} label="System Integrations" />}
-                {canSeeLogistics && <NavButton tab="logistics" icon={Utensils} label="Dietary / Logistics" />}
+                {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" activeTab={activeTab} onNavigate={handleNavigate} />}
+                {isAdmin && <NavButton tab="impact_roster" icon={Trophy} label="Impact & Roster" activeTab={activeTab} onNavigate={handleNavigate} />}
+                {isAdmin && <NavButton tab="integrations" icon={Settings} label="System Integrations" activeTab={activeTab} onNavigate={handleNavigate} />}
+                {canSeeLogistics && <NavButton tab="logistics" icon={Utensils} label="Dietary / Logistics" activeTab={activeTab} onNavigate={handleNavigate} />}
               </div>
             </div>
           )}

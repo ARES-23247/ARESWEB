@@ -95,6 +95,26 @@ function exportAsJson(editor: Editor, title: string) {
   URL.revokeObjectURL(url);
 }
 
+/* ---- Button helper ---- */
+const Btn = ({ active, onClick, children, className = "", disabled = false }: {
+  active?: boolean; onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+      active
+        ? "bg-zinc-800 text-white"
+        : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+    } disabled:opacity-30 ${className}`}
+  >
+    {children}
+  </button>
+);
+
+const Sep = () => <div className="w-px h-6 bg-zinc-800 mx-1" />;
+
 /* ---------- Component ---------- */
 export default function RichEditorToolbar({ editor, documentTitle }: RichEditorToolbarProps) {
   const [isImporting, setIsImporting] = useState(false);
@@ -110,6 +130,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
     try {
       const arrayBuffer = await file.arrayBuffer();
       const result = await mammoth.convertToHtml({ arrayBuffer }, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         convertImage: (mammoth as any).images.inline(async (element: any) => {
           const buffer = await element.read();
           const blob = new Blob([buffer], { type: element.contentType });
@@ -149,25 +170,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
     }
   }, [editor]);
 
-  /* ---- Button helper ---- */
-  const Btn = ({ active, onClick, children, className = "", disabled = false }: {
-    active?: boolean; onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
-        active
-          ? "bg-zinc-800 text-white"
-          : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-      } disabled:opacity-30 ${className}`}
-    >
-      {children}
-    </button>
-  );
-
-  const Sep = () => <div className="w-px h-6 bg-zinc-800 mx-1" />;
+  // Components Btn and Sep moved outside.
 
   return (
     <>

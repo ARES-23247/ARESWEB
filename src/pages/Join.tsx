@@ -5,6 +5,40 @@ import SEO from "../components/SEO";
 
 export default function Join() {
   const [role, setRole] = useState<"student" | "mentor">("student");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [school, setSchool] = useState("");
+  const [grade, setGrade] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [interests, setInterests] = useState<string[]>([]);
+  const [additional, setAdditional] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    try {
+      const metadata = role === "student" 
+        ? { school, grade, interests, additional }
+        : { occupation, interests, additional };
+
+      const response = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: role, name, email, metadata }),
+      });
+
+      if (!response.ok) throw new Error("Failed");
+      setSubmitStatus("success");
+      setName(""); setEmail(""); setSchool(""); setGrade(""); setOccupation(""); setInterests([]); setAdditional("");
+    } catch {
+      setSubmitStatus("error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
@@ -107,28 +141,39 @@ export default function Join() {
                 </button>
               </div>
 
-              <form className="space-y-6 relative z-10">
+              {submitStatus === "success" && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl mb-6 flex gap-3 text-sm font-bold">
+                  <CheckCircle size={20} /> Application submitted successfully! We&apos;ll be in touch soon.
+                </div>
+              )}
+              {submitStatus === "error" && (
+                <div className="bg-ares-red/10 border border-ares-red/20 text-ares-red p-4 rounded-xl mb-6 text-sm font-bold">
+                  Something went wrong. Please try again.
+                </div>
+              )}
+
+              <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Full Name *</label>
-                    <input type="text" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="Jane Doe" required />
+                    <label htmlFor="join-name" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Full Name *</label>
+                    <input id="join-name" type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="Jane Doe" required />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Email Address *</label>
-                    <input type="email" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="jane@example.com" required />
+                    <label htmlFor="join-email" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Email Address *</label>
+                    <input id="join-email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="jane@example.com" required />
                   </div>
                 </div>
 
                 {role === "student" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">School *</label>
-                      <input type="text" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="High School Name" required />
+                      <label htmlFor="join-school" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">School *</label>
+                      <input id="join-school" type="text" value={school} onChange={e => setSchool(e.target.value)} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="High School Name" required />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Grade *</label>
-                      <select className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm appearance-none cursor-pointer" required>
-                        <option value="" disabled selected>Select Grade</option>
+                      <label htmlFor="join-grade" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Grade *</label>
+                      <select id="join-grade" value={grade} onChange={e => setGrade(e.target.value)} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm appearance-none cursor-pointer" required>
+                        <option value="" disabled>Select Grade</option>
                         <option value="6">6th Grade</option>
                         <option value="7">7th Grade</option>
                         <option value="8">8th Grade</option>
@@ -141,18 +186,18 @@ export default function Join() {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Occupation / Company</label>
-                    <input type="text" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="Mechanical Engineer at NASA" />
+                    <label htmlFor="join-occupation" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Occupation / Company</label>
+                    <input id="join-occupation" type="text" value={occupation} onChange={e => setOccupation(e.target.value)} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="Mechanical Engineer at NASA" />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Interests / Expertise *</label>
+                  <p id="join-interests-label" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Interests / Expertise *</p>
                   <p className="text-xs text-obsidian/50 mb-3 ml-1 leading-relaxed">What areas are you most interested in pursuing with ARES?</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {["Mechanical / CAD", "Programming", "Electrical", "Business", "Outreach", "Media / Video"].map((item) => (
                       <label key={item} className="flex items-center gap-3 p-3 border border-obsidian/10 rounded-lg cursor-pointer hover:bg-obsidian/5 transition-colors">
-                        <input type="checkbox" className="accent-ares-red w-4 h-4 cursor-pointer" />
+                        <input type="checkbox" checked={interests.includes(item)} onChange={(e) => setInterests(e.target.checked ? [...interests, item] : interests.filter(i => i !== item))} className="accent-ares-red w-4 h-4 cursor-pointer" />
                         <span className="text-sm font-medium text-obsidian/80">{item}</span>
                       </label>
                     ))}
@@ -160,13 +205,13 @@ export default function Join() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Additional Information</label>
-                  <textarea rows={4} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-sm" placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : "How would you like to support the team?"}></textarea>
+                  <label htmlFor="join-additional" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Additional Information</label>
+                  <textarea id="join-additional" value={additional} onChange={e => setAdditional(e.target.value)} rows={4} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-sm" placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : "How would you like to support the team?"}></textarea>
                 </div>
                 
                 <div className="pt-4">
-                  <button onClick={(e) => { e.preventDefault(); alert("Thanks for applying! We'll be in touch shortly."); }} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest rounded-xl hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-red-600" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
-                    Submit {role === "student" ? "Student" : "Mentor"} Application
+                  <button type="submit" disabled={isSubmitting} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest rounded-xl hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-red-600" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
+                    {isSubmitting ? "Submitting..." : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
                   </button>
                   <p className="text-center text-[11px] text-obsidian/40 font-bold uppercase tracking-widest mt-4">
                     Your personal information is protected under the FIRST Youth Protection Program guidelines.
@@ -181,8 +226,9 @@ export default function Join() {
   );
 }
 
+import React from "react";
 // Ensure the icon is imported
-function GraduationCap(props: any) {
+function GraduationCap(props: { size?: number | string } & React.SVGProps<SVGSVGElement>) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21.44 11.05-9.19 5.64a1.98 1.98 0 0 1-1.92 0L1.14 11.05a1.98 1.98 0 0 1 0-3.38l9.19-5.64a1.98 1.98 0 0 1 1.92 0l9.19 5.64a1.98 1.98 0 0 1 0 3.38Z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
   );

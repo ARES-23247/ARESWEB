@@ -10,14 +10,16 @@ interface SignupEntry {
   notes: string;
   is_own: boolean;
   attended: boolean;
+  prep_hours?: number;
 }
 
 interface EventSignupsProps {
   eventId: string;
   isPotluck: boolean;
+  isVolunteer?: boolean;
 }
 
-export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) {
+export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventSignupsProps) {
   const [signups, setSignups] = useState<SignupEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,7 +27,7 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
   const [canManage, setCanManage] = useState(false);
   const [dietarySummary, setDietarySummary] = useState<Record<string, number> | null>(null);
   const [teamDietarySummary, setTeamDietarySummary] = useState<Record<string, number> | null>(null);
-  const [mySignup, setMySignup] = useState<{ bringing: string; notes: string } | null>(null);
+  const [mySignup, setMySignup] = useState<{ bringing: string; notes: string; prep_hours?: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchSignups = useCallback(() => {
@@ -48,7 +50,7 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
         setTeamDietarySummary(typed.team_dietary_summary);
         
         const own = (typed.signups || []).find((s: SignupEntry) => s.is_own);
-        if (own) setMySignup({ bringing: own.bringing, notes: own.notes });
+        if (own) setMySignup({ bringing: own.bringing, notes: own.notes, prep_hours: own.prep_hours || 0 });
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -62,7 +64,7 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(mySignup || { bringing: "", notes: "" }),
+      body: JSON.stringify(mySignup || { bringing: "", notes: "", prep_hours: 0 }),
     });
     setIsSaving(false);
     fetchSignups();
@@ -96,6 +98,7 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
 
   const myEntry = signups.find(s => s.is_own);
   const totalAttending = signups.filter(s => s.attended).length;
+  const totalPrep = signups.reduce((sum, s) => sum + (s.prep_hours || 0), 0);
 
   return (
     <div className="mt-10 border-t border-zinc-800 pt-8 space-y-8">
@@ -109,6 +112,12 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
             <span className="text-3xl font-black text-white">{totalAttending}</span>
             <span className="text-zinc-500 text-sm font-bold">/ {signups.length} present</span>
           </div>
+          {isVolunteer && (
+            <div className="mt-4 pt-4 border-t border-zinc-800 flex justify-between items-center text-sm font-bold">
+              <span className="text-zinc-500 uppercase tracking-widest text-[10px]">Volunteer Prep Time</span>
+              <span className="text-ares-gold">{totalPrep} hrs</span>
+            </div>
+          )}
         </div>
         
         {dietarySummary && (
@@ -118,7 +127,7 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
             </h4>
             <div className="flex flex-col gap-4">
               <div>
-                <span className="text-xs text-white/50 block mb-2 font-bold uppercase tracking-widest">RSVP'd Members</span>
+                <span className="text-xs text-white/50 block mb-2 font-bold uppercase tracking-widest">RSVP&apos;d Members</span>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(dietarySummary).length > 0 ? (
                     Object.entries(dietarySummary).map(([restriction, count]) => (
@@ -181,6 +190,7 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
                 <th className="text-left py-3 px-4">Status</th>
                 <th className="text-left py-3 px-4">Who</th>
                 {isPotluck && <th className="text-left py-3 px-4">Bringing</th>}
+                {isVolunteer && <th className="text-left py-3 px-4">Prep Hrs</th>}
                 <th className="text-left py-3 px-4">Notes</th>
               </tr>
             </thead>
@@ -209,6 +219,7 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
                     </div>
                   </td>
                   {isPotluck && <td className="py-3 px-4 text-sm text-zinc-300">{entry.bringing || "—"}</td>}
+                  {isVolunteer && <td className="py-3 px-4 text-sm text-zinc-300">{entry.prep_hours || 0}</td>}
                   <td className="py-3 px-4 text-sm text-zinc-400">{entry.notes || "—"}</td>
                 </tr>
               ))}
@@ -240,17 +251,28 @@ export default function EventSignups({ eventId, isPotluck }: EventSignupsProps) 
                 <input
                   placeholder="What are you bringing? (e.g. chips & salsa)"
                   value={mySignup?.bringing || ""}
-                  onChange={e => setMySignup(prev => ({ bringing: e.target.value, notes: prev?.notes || "" }))}
+                  onChange={e => setMySignup(prev => ({ bringing: e.target.value, notes: prev?.notes || "", prep_hours: prev?.prep_hours || 0 }))}
                   className="w-full bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
                 />
               )}
               <input
                 placeholder={isPotluck ? "Notes (dietary info, arrival time...)" : "Notes (arrival time, etc...)"}
                 value={mySignup?.notes || ""}
-                onChange={e => setMySignup(prev => ({ bringing: prev?.bringing || "", notes: e.target.value }))}
-                className="w-full md:col-span-1 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
-                style={!isPotluck ? { gridColumn: 'span 2' } : {}}
+                onChange={e => setMySignup(prev => ({ bringing: prev?.bringing || "", notes: e.target.value, prep_hours: prev?.prep_hours || 0 }))}
+                className={`w-full ${isPotluck && isVolunteer ? 'md:col-span-2' : ''} bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all`}
+                style={(!isPotluck && !isVolunteer) ? { gridColumn: 'span 2' } : {}}
               />
+              {isVolunteer && (
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-500 uppercase tracking-widest text-[10px] font-bold shrink-0">Prep Hrs</span>
+                  <input
+                    type="number" step="0.5" min="0" placeholder="0"
+                    value={mySignup?.prep_hours || 0}
+                    onChange={e => setMySignup(prev => ({ bringing: prev?.bringing || "", notes: prev?.notes || "", prep_hours: parseFloat(e.target.value) || 0 }))}
+                    className="w-full md:w-32 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
+                  />
+                </div>
+              )}
             </div>
             <div className="flex gap-3">
               <button onClick={handleSignUp} disabled={isSaving}

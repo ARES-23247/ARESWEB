@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, useEffect } from "react";
+import { memo, useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, BookOpen, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
@@ -22,31 +22,29 @@ interface DocsSidebarProps {
 function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [prevSlugs, setPrevSlugs] = useState(groupedDocs.map(([cat]) => cat).join(","));
+  const currSlugs = groupedDocs.map(([cat]) => cat).join(",");
+  if (currSlugs !== prevSlugs && groupedDocs.length > 0) {
+    setPrevSlugs(currSlugs);
+    setExpandedCats(new Set(groupedDocs.map(([cat]) => cat)));
+  }
 
-  // Initialize all categories as expanded
-  useEffect(() => {
-    if (groupedDocs.length > 0 && !hasInitialized) {
-      setHasInitialized(true);
-      setExpandedCats(new Set(groupedDocs.map(([cat]) => cat)));
-    }
-  }, [groupedDocs, hasInitialized]);
-
-  // Auto-expand category for current doc
-  useEffect(() => {
+  const [prevCurrentSlug, setPrevCurrentSlug] = useState(currentSlug);
+  if (currentSlug !== prevCurrentSlug) {
+    setPrevCurrentSlug(currentSlug);
+    setSidebarOpen(false);
     if (currentSlug) {
+      const newCats = new Set(expandedCats);
+      let changed = false;
       for (const [cat, docs] of groupedDocs) {
-        if (docs.some(d => d.slug === currentSlug) && !expandedCats.has(cat)) {
-          setExpandedCats(prev => new Set([...prev, cat]));
+        if (docs.some(d => d.slug === currentSlug) && !newCats.has(cat)) {
+          newCats.add(cat);
+          changed = true;
         }
       }
+      if (changed) setExpandedCats(newCats);
     }
-  }, [currentSlug, groupedDocs, expandedCats]);
-
-  // Close mobile sidebar on navigation
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [currentSlug]);
+  }
 
   const toggleCat = useCallback((cat: string) => {
     setExpandedCats(prev => {

@@ -3,7 +3,7 @@ import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
 
-export const getAuth = (db: D1Database, env: Record<string, any>, requestUrl?: string) => {
+export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl?: string) => {
     const kyselyDb = new Kysely({
         dialect: new D1Dialect({
             database: db,

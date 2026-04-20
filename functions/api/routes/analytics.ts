@@ -52,4 +52,33 @@ analyticsRouter.get("/admin/analytics/summary", ensureAdmin, async (c) => {
   }
 });
 
+// ── GET /admin/roster-stats — Member Impact Roster ──────────────────
+analyticsRouter.get("/admin/roster-stats", ensureAdmin, async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      `SELECT 
+          u.user_id,
+          u.first_name,
+          u.last_name,
+          u.nickname,
+          u.member_type,
+          SUM(CASE WHEN s.attended = 1 THEN 1 ELSE 0 END) as attended_events,
+          COALESCE(SUM(CASE WHEN s.attended = 1 THEN s.prep_hours ELSE 0 END), 0) as manual_prep_hours,
+          COALESCE(SUM(CASE WHEN s.attended = 1 AND e.is_volunteer = 1 THEN 
+              (strftime('%s', e.date_end) - strftime('%s', e.date_start)) / 3600.0
+          ELSE 0 END), 0) as event_volunteer_hours
+       FROM user_profiles u
+       LEFT JOIN event_signups s ON u.user_id = s.user_id
+       LEFT JOIN events e ON s.event_id = e.id AND e.status = 'published' AND e.is_deleted = 0
+       GROUP BY u.user_id
+       ORDER BY MAX(u.first_name) ASC`
+    ).all();
+
+    return c.json({ roster: results || [] });
+  } catch (err) {
+    console.error("Roster stats error:", err);
+    return c.json({ roster: [] }, 500);
+  }
+});
+
 export default analyticsRouter;

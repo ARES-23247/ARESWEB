@@ -28,8 +28,8 @@ export default function AdminUsers() {
     fetch("/api/admin/users", { credentials: "include" })
       .then(async (r) => {
         if (!r.ok) {
-          const body = await r.json().catch(() => ({})) as any;
-          throw new Error(body.error || `HTTP ${r.status}`);
+          const body = await r.json().catch(() => ({})) as Record<string, unknown>;
+          throw new Error((body.error as string) || `HTTP ${r.status}`);
         }
         return r.json();
       })

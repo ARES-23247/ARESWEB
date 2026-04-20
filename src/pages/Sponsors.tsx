@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Gem, Award, ShieldCheck, Zap, ExternalLink, Heart } from "lucide-react";
@@ -59,6 +60,40 @@ export default function Sponsors() {
   }, {} as Record<string, Sponsor[]>);
 
   const tiersOrdered = ["Titanium", "Gold", "Silver", "Bronze"];
+  const existingTiers = Array.from(new Set(sponsors.map(s => s.tier))).filter(Boolean);
+  const dropdownTiers = existingTiers.length > 0 ? existingTiers : tiersOrdered;
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [level, setLevel] = useState("Interested in Details");
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    try {
+      const response = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "sponsor",
+          name,
+          email,
+          metadata: { level, message }
+        }),
+      });
+      if (!response.ok) throw new Error("Failed");
+      setSubmitStatus("success");
+      setName(""); setEmail(""); setLevel("Interested in Details"); setMessage("");
+    } catch {
+      setSubmitStatus("error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 py-24 relative overflow-hidden">
@@ -170,27 +205,37 @@ export default function Sponsors() {
             <h4 className="text-xl font-black text-white mb-6 uppercase tracking-widest flex items-center gap-3">
               <Heart size={20} className="text-ares-red fill-ares-red/20" /> Become a Sponsor
             </h4>
-            <form className="space-y-5">
+            {submitStatus === "success" && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl mb-6 text-sm font-bold flex items-center gap-2">
+                <ShieldCheck size={16} /> Request sent successfully. We will follow up soon!
+              </div>
+            )}
+            {submitStatus === "error" && (
+              <div className="bg-ares-red/10 border border-ares-red/20 text-ares-red p-4 rounded-xl mb-6 text-sm font-bold">
+                Something went wrong. Please try again or email us directly.
+              </div>
+            )}
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="name-input" className="block text-xs font-bold text-ares-red uppercase tracking-widest mb-1.5 ml-1">Company / Name</label>
-                  <input id="name-input" type="text" className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
+                  <label htmlFor="name-input" className="block text-xs font-bold text-ares-red uppercase tracking-widest mb-1.5 ml-1">Company / Name *</label>
+                  <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
                 </div>
                 <div>
-                  <label htmlFor="email-input" className="block text-xs font-bold text-ares-red uppercase tracking-widest mb-1.5 ml-1">Email</label>
-                  <input id="email-input" type="email" className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
+                  <label htmlFor="email-input" className="block text-xs font-bold text-ares-red uppercase tracking-widest mb-1.5 ml-1">Email *</label>
+                  <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
                 </div>
               </div>
               <div>
                 <label htmlFor="subject-select" className="block text-xs font-bold text-ares-red uppercase tracking-widest mb-1.5 ml-1">Sponsorship Level</label>
                 <div className="relative">
-                  <select id="subject-select" className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none">
+                  <select id="subject-select" value={level} onChange={e => setLevel(e.target.value)} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer">
                     <option>Interested in Details</option>
-                    <option>Titanium Tier ($5000+)</option>
-                    <option>Gold Tier ($2500+)</option>
-                    <option>Silver Tier ($1000+)</option>
-                    <option>Bronze Tier (Other)</option>
-                    <option>In-Kind Donation / Mentorship</option>
+                    {dropdownTiers.map(t => (
+                      <option key={t}>{t} Tier Sponsor</option>
+                    ))}
+                    <option>In-Kind Donation / Material</option>
+                    <option>Mentorship / Engineering Support</option>
                   </select>
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-zinc-600">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -199,11 +244,11 @@ export default function Sponsors() {
               </div>
               <div>
                 <label htmlFor="message-textarea" className="block text-xs font-bold text-ares-red uppercase tracking-widest mb-1.5 ml-1">Message</label>
-                <textarea id="message-textarea" rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
+                <textarea id="message-textarea" value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
               </div>
               <div className="pt-2">
-                <button onClick={(e) => { e.preventDefault(); alert("Thanks for your interest! A student or mentor will email you shortly."); }} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest rounded-xl hover:bg-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3">
-                  Submit Interest Request <ArrowRight size={18} />
+                <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest rounded-xl hover:bg-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
+                  {isSubmitting ? "Sending..." : <><span className="flex items-center gap-2">Submit Interest Request <ArrowRight size={18} /></span></>}
                 </button>
                 <p className="text-center text-[10px] text-zinc-600 font-mono uppercase tracking-tighter mt-4">
                   ARES 23247 operates under a 501(c)(3) nonprofit umbrella. All donations are tax-deductible.

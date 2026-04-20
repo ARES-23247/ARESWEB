@@ -12,6 +12,7 @@ interface OutreachLog {
   hours_logged: number;
   reach_count: number;
   description: string | null;
+  is_dynamic?: boolean;
 }
 
 export default function OutreachTracker() {
@@ -219,14 +220,21 @@ export default function OutreachTracker() {
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 rounded-2xl min-w-[80px]">
                 <span className="text-[10px] font-black text-ares-cyan uppercase tracking-tighter">Hours</span>
-                <span className="text-lg font-black text-white">{log.hours_logged}</span>
+                <span className="text-lg font-black text-white">{log.hours_logged.toFixed(1)}</span>
               </div>
-              <button
-                onClick={() => { if(confirm("Purge this impact record?")) deleteMutation.mutate(log.id); }}
-                className="p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 size={18} />
-              </button>
+              
+              {log.is_dynamic ? (
+                <div className="flex items-center px-3 py-1 bg-ares-gold/10 border border-ares-gold/20 rounded-xl">
+                  <span className="text-[10px] font-bold text-ares-gold uppercase tracking-widest text-center leading-tight">Synced<br/>Event</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { if(confirm("Purge this impact record?")) deleteMutation.mutate(log.id); }}
+                  className="p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
             </div>
           </div>
         ))}

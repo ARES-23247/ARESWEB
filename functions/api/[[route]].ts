@@ -17,6 +17,7 @@ import settingsRouter from "./routes/settings";
 import judgesRouter from "./routes/judges";
 import profilesRouter from "./routes/profiles";
 import commentsRouter from "./routes/comments";
+import inquiriesRouter from "./routes/inquiries";
 
 const app = new Hono<{ Bindings: Bindings }>();
 const apiRouter = new Hono<{ Bindings: Bindings }>();
@@ -39,6 +40,7 @@ apiRouter.route("/", postsRouter);
 apiRouter.route("/", eventsRouter);
 apiRouter.route("/", docsRouter);
 apiRouter.route("/", commentsRouter);
+apiRouter.route("/", inquiriesRouter);
 
 // Media & Assets
 apiRouter.route("/", mediaRouter);

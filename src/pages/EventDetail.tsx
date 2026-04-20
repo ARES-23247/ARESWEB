@@ -119,7 +119,7 @@ export default function EventDetail() {
           )}
 
           {/* Sign-Up Sheet & Comments (auth-gated) */}
-          {id && <EventSignups eventId={id} isPotluck={event.is_potluck === 1} />}
+          {id && <EventSignups eventId={id} isPotluck={event.is_potluck === 1} isVolunteer={event.is_volunteer === 1} />}
           {id && <CommentSection targetType="event" targetId={id} />}
         </motion.article>
       </section>

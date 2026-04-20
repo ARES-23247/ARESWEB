@@ -3,8 +3,8 @@ import tippy, { Instance, GetReferenceClientRect } from 'tippy.js';
 import { SuggestionProps } from '@tiptap/suggestion';
 import { ComponentType } from 'react';
 
-interface SuggestionComponentRef {
-  onKeyDown: (props: SuggestionProps) => boolean;
+export interface SuggestionComponentRef {
+  onKeyDown: (props: { event: KeyboardEvent }) => boolean;
 }
 
 export const suggestionRenderer = (component: ComponentType<SuggestionProps>) => {
@@ -48,7 +48,7 @@ export const suggestionRenderer = (component: ComponentType<SuggestionProps>) =>
       }
     },
 
-    onKeyDown(props: any) {
+    onKeyDown(props: { event: KeyboardEvent }) {
       if (props.event.key === 'Escape') {
         const tippyInstance = popup?.[0];
         if (tippyInstance) {
@@ -57,7 +57,7 @@ export const suggestionRenderer = (component: ComponentType<SuggestionProps>) =>
         return true;
       }
 
-      return (renderer?.ref as any)?.onKeyDown(props);
+      return (renderer?.ref as SuggestionComponentRef)?.onKeyDown(props);
     },
 
     onExit() {

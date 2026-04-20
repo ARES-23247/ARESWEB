@@ -46,17 +46,22 @@ interface DocsMarkdownRendererProps {
 }
 
 function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
+  let tiptapNode = null;
   // Check if it's Tiptap JSON
   try {
     const trimmed = content.trim();
     if (trimmed.startsWith("{")) {
       const parsed = JSON.parse(trimmed);
       if (parsed.type === "doc") {
-        return <TiptapRenderer node={parsed} />;
+        tiptapNode = parsed;
       }
     }
   } catch {
     // Not JSON, treat as Markdown
+  }
+
+  if (tiptapNode) {
+    return <TiptapRenderer node={tiptapNode} />;
   }
 
   return (

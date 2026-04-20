@@ -462,7 +462,7 @@ export default function ContentManager({
                           if (code !== null) {
                             fetch("/dashboard/api/admin/judges/codes", { method: "POST", credentials: "include" })
                               .then(res => res.json())
-                              .then((data: any) => alert(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
+                              .then((data: { code: string; expiresAt: string }) => alert(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
                           }
                         }}
                         className="text-[10px] font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-2 py-1 rounded-md transition-colors border border-ares-gold/20"

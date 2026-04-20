@@ -37,6 +37,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
     description: "",
     coverImage: DEFAULT_COVER_IMAGE,
     isPotluck: false,
+    isVolunteer: false,
   });
 
   const uploadFile = async (file: File): Promise<{url: string, altText?: string}> => {
@@ -76,6 +77,8 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
             coverImage: data.event.cover_image || DEFAULT_COVER_IMAGE,
       // @ts-expect-error -- D1 untyped response
             isPotluck: data.event.is_potluck === 1,
+      // @ts-expect-error -- D1 untyped response
+            isVolunteer: data.event.is_volunteer === 1,
           });
           if (editor) {
             try {
@@ -166,7 +169,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
         }
 
         if (!editId) {
-          setForm({ title: "", dateStart: "", dateEnd: "", location: "", description: "", coverImage: DEFAULT_COVER_IMAGE, isPotluck: false });
+          setForm({ title: "", dateStart: "", dateEnd: "", location: "", description: "", coverImage: DEFAULT_COVER_IMAGE, isPotluck: false, isVolunteer: false });
         }
       } else {
       // @ts-expect-error -- D1 untyped response
@@ -240,21 +243,40 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input 
-            type="checkbox" 
-            checked={form.isPotluck}
-            onChange={(e) => setForm({ ...form, isPotluck: e.target.checked })}
-            className="w-5 h-5 rounded border-zinc-700 bg-zinc-950 text-ares-red focus:ring-ares-red transition-all cursor-pointer"
-          />
-          <span className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors uppercase tracking-wider">
-            Potluck Event
-          </span>
-        </label>
-        <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-tighter">
-          Check this to enable the food sign-up sheet and dietary restriction tracking for this event.
-        </p>
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+        <div className="flex flex-col gap-1">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input 
+              type="checkbox" 
+              checked={form.isPotluck}
+              onChange={(e) => setForm({ ...form, isPotluck: e.target.checked })}
+              className="w-5 h-5 rounded border-zinc-700 bg-zinc-950 text-ares-red focus:ring-ares-red transition-all cursor-pointer"
+            />
+            <span className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors uppercase tracking-wider">
+              Potluck Event
+            </span>
+          </label>
+          <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-tighter ml-7">
+            Enable food sign-up sheet and dietary tracking.
+          </p>
+        </div>
+        
+        <div className="flex flex-col gap-1">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input 
+              type="checkbox" 
+              checked={form.isVolunteer}
+              onChange={(e) => setForm({ ...form, isVolunteer: e.target.checked })}
+              className="w-5 h-5 rounded border-zinc-700 bg-zinc-950 text-ares-red focus:ring-ares-red transition-all cursor-pointer"
+            />
+            <span className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors uppercase tracking-wider">
+              Volunteer Opportunity
+            </span>
+          </label>
+          <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-tighter ml-7">
+            Automatically tracks prep and check-in hours for outreach.
+          </p>
+        </div>
       </div>
 
       <div>

@@ -43,7 +43,8 @@ CREATE TABLE events (
     cf_email TEXT,
     is_deleted INTEGER DEFAULT 0,
     status TEXT DEFAULT 'published',
-    is_potluck INTEGER DEFAULT 0
+    is_potluck INTEGER DEFAULT 0,
+    is_volunteer INTEGER DEFAULT 0
 );
 
 DROP TABLE IF EXISTS docs;
@@ -136,8 +137,31 @@ CREATE TABLE IF NOT EXISTS event_signups (
     user_id TEXT NOT NULL,
     bringing TEXT,
     notes TEXT,
+    prep_hours REAL DEFAULT 0,
     attended INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
     UNIQUE(event_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_signups_event ON event_signups(event_id);
+
+-- Badges System
+CREATE TABLE IF NOT EXISTS badges (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    icon TEXT DEFAULT 'Award',
+    color_theme TEXT DEFAULT 'ares-gold',
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS user_badges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    badge_id TEXT NOT NULL,
+    awarded_by TEXT,
+    awarded_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(user_id) REFERENCES user_profiles(user_id) ON DELETE CASCADE,
+    FOREIGN KEY(badge_id) REFERENCES badges(id) ON DELETE CASCADE,
+    UNIQUE(user_id, badge_id)
+);
+CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges(user_id);

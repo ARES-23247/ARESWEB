@@ -28,7 +28,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
     const fetchSettings = async () => {
       try {
         const res = await fetch("/dashboard/api/admin/settings", { credentials: "include" });
-        const data = await res.json() as any;
+        const data = await res.json() as { success: boolean, settings: Record<string, string> };
         if (data.success && data.settings) {
           const config = data.settings;
           const available = [];
@@ -71,7 +71,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
         body: JSON.stringify({ socials: selectedsocials }),
       });
       
-      const data = await res.json() as any;
+      const data = await res.json() as { success: boolean, error?: string };
       if (data.success) {
         setStatus("success");
         setTimeout(onClose, 2000);

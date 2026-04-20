@@ -9,7 +9,7 @@ const eventsRouter = new Hono<{ Bindings: Bindings }>();
 eventsRouter.get("/events", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_potluck FROM events WHERE is_deleted = 0 AND status = 'published' ORDER BY date_start ASC"
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_potluck, is_volunteer FROM events WHERE is_deleted = 0 AND status = 'published' ORDER BY date_start ASC"
     ).all();
     return c.json({ events: results ?? [] });
   } catch (err) {
@@ -23,7 +23,7 @@ eventsRouter.get("/events/:id", async (c) => {
   const id = c.req.param("id");
   try {
     const row = await c.env.DB.prepare(
-      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_potluck FROM events WHERE id = ? AND is_deleted = 0 AND status = 'published'"
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_potluck, is_volunteer FROM events WHERE id = ? AND is_deleted = 0 AND status = 'published'"
     ).bind(id).first();
 
     if (!row) return c.json({ error: "Event not found" }, 404);
@@ -49,7 +49,7 @@ eventsRouter.get("/calendar", async (c) => {
 eventsRouter.get("/admin/events", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted, status, is_potluck, revision_of FROM events ORDER BY date_start ASC"
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted, status, is_potluck, is_volunteer, revision_of FROM events ORDER BY date_start ASC"
     ).all();
     return c.json({ events: results ?? [] });
   } catch (err) {
@@ -63,7 +63,7 @@ eventsRouter.get("/admin/events/:id", async (c) => {
   const id = c.req.param("id");
   try {
     const row = await c.env.DB.prepare(
-      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted, status, is_potluck FROM events WHERE id = ?"
+      "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted, status, is_potluck, is_volunteer FROM events WHERE id = ?"
     ).bind(id).first();
 
     if (!row) return c.json({ error: "Event not found" }, 404);
@@ -79,7 +79,7 @@ eventsRouter.post("/admin/events", async (c) => {
   try {
     const email = c.req.header("cf-access-authenticated-user-email") || "anonymous_admin";
     const body = await c.req.json();
-    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck } = body;
+    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer } = body;
 
     if (!title || !dateStart) {
       return c.json({ error: "Missing required fields" }, 400);
@@ -111,8 +111,8 @@ eventsRouter.post("/admin/events", async (c) => {
     const status = user?.role === "admin" ? "published" : "pending";
 
     await c.env.DB.prepare(
-      "INSERT INTO events (id, title, date_start, date_end, location, description, gcal_event_id, cf_email, cover_image, status, is_potluck) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).bind(genId, title, dateStart, dateEnd || null, location || "", description || "", gcalId, email, coverImage || null, status, isPotluck ? 1 : 0).run();
+      "INSERT INTO events (id, title, date_start, date_end, location, description, gcal_event_id, cf_email, cover_image, status, is_potluck, is_volunteer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).bind(genId, title, dateStart, dateEnd || null, location || "", description || "", gcalId, email, coverImage || null, status, isPotluck ? 1 : 0, isVolunteer ? 1 : 0).run();
 
     // Dispatch Socials
     if (socials) {
@@ -143,7 +143,7 @@ eventsRouter.put("/admin/events/:id", async (c) => {
   try {
     const paramId = c.req.param("id");
     const body = await c.req.json();
-    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck } = body;
+    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer } = body;
 
     if (!title || !dateStart) {
       return c.json({ error: "Missing required fields" }, 400);
@@ -176,11 +176,11 @@ eventsRouter.put("/admin/events/:id", async (c) => {
       // ── Shadow Revision Logic (Student Edits) ──
       const revId = `${paramId}-rev-${Math.random().toString(36).substring(2, 6)}`;
       await c.env.DB.prepare(
-        `INSERT INTO events (id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, status, is_potluck, revision_of)
-         VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, gcal_event_id), ?, 'pending', ?, ?)`
+        `INSERT INTO events (id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, status, is_potluck, is_volunteer, revision_of)
+         VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, gcal_event_id), ?, 'pending', ?, ?, ?)`
       ).bind(
         revId, title, dateStart, dateEnd || null, location || "", description || "", coverImage || "",
-        gcalId || null, user?.email || "anonymous_author", isPotluck ? 1 : 0, paramId
+        gcalId || null, user?.email || "anonymous_author", isPotluck ? 1 : 0, isVolunteer ? 1 : 0, paramId
       ).run();
       
       const finalStatus = warnings.length > 0 ? 207 : 200;
@@ -190,9 +190,9 @@ eventsRouter.put("/admin/events/:id", async (c) => {
     const status = "published";
 
     await c.env.DB.prepare(
-      `UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = ?, is_potluck = ? WHERE id = ?`
+      `UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = ?, is_potluck = ?, is_volunteer = ? WHERE id = ?`
     )
-      .bind(title, dateStart, dateEnd || null, location || "", description || "", coverImage || "", gcalId || null, status, isPotluck ? 1 : 0, paramId)
+      .bind(title, dateStart, dateEnd || null, location || "", description || "", coverImage || "", gcalId || null, status, isPotluck ? 1 : 0, isVolunteer ? 1 : 0, paramId)
       .run();
 
     // ── Optional Social Syndication ──
@@ -288,13 +288,13 @@ eventsRouter.patch("/admin/events/:id/approve", async (c) => {
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
     const id = c.req.param("id");
 
-    type EventRow = { revision_of?: string; title: string; date_start: string; date_end: string; location: string; description: string; cover_image: string; gcal_event_id: string; is_potluck: number };
+    type EventRow = { revision_of?: string; title: string; date_start: string; date_end: string; location: string; description: string; cover_image: string; gcal_event_id: string; is_potluck: number; is_volunteer: number };
     const row = await c.env.DB.prepare("SELECT * FROM events WHERE id = ?").bind(id).first<EventRow>();
 
     if (row && row.revision_of) {
       await c.env.DB.prepare(
-        "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = 'published', is_potluck = ? WHERE id = ?"
-      ).bind(row.title, row.date_start, row.date_end, row.location, row.description, row.cover_image, row.gcal_event_id, row.is_potluck, row.revision_of).run();
+        "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = 'published', is_potluck = ?, is_volunteer = ? WHERE id = ?"
+      ).bind(row.title, row.date_start, row.date_end, row.location, row.description, row.cover_image, row.gcal_event_id, row.is_potluck, row.is_volunteer, row.revision_of).run();
       await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
       return c.json({ success: true });
     }
@@ -462,11 +462,12 @@ eventsRouter.get("/events/:id/signups", async (c) => {
        WHERE s.event_id = ? AND u.role NOT IN ('unverified') ORDER BY s.created_at ASC`
     ).bind(eventId).all();
 
-    const signups = (results || []).map((r: { nickname?: string; user_id?: string; attended?: number; [key: string]: unknown }) => ({
+    const signups = (results || []).map((r: { nickname?: string; user_id?: string; attended?: number; prep_hours?: number; [key: string]: unknown }) => ({
       ...r,
       nickname: r.nickname || "ARES Member",
       is_own: user ? r.user_id === user.id : false,
       attended: !!r.attended,
+      prep_hours: Number(r.prep_hours || 0),
     }));
 
     // Aggregate dietary info for verified users (Anonymous)
@@ -528,12 +529,12 @@ eventsRouter.post("/events/:id/signups", async (c) => {
     return c.json({ error: "Forbidden: Your account is pending team verification." }, 403);
   }
   const eventId = c.req.param("id");
-  const { bringing, notes } = await c.req.json() as { bringing: string; notes: string };
+  const { bringing, notes, prep_hours } = await c.req.json() as { bringing: string; notes: string; prep_hours?: number };
   try {
     await c.env.DB.prepare(
-      `INSERT INTO event_signups (event_id, user_id, bringing, notes) VALUES (?, ?, ?, ?)
-       ON CONFLICT(event_id, user_id) DO UPDATE SET bringing=excluded.bringing, notes=excluded.notes`
-    ).bind(eventId, user.id, bringing || "", notes || "").run();
+      `INSERT INTO event_signups (event_id, user_id, bringing, notes, prep_hours) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(event_id, user_id) DO UPDATE SET bringing=excluded.bringing, notes=excluded.notes, prep_hours=excluded.prep_hours`
+    ).bind(eventId, user.id, bringing || "", notes || "", prep_hours || 0).run();
     return c.json({ success: true });
   } catch (err) {
     console.error("[Signups POST]", err);
