@@ -10,7 +10,7 @@ import tbaRouter from "./routes/tba";
 import outreachRouter from "./routes/outreach";
 import awardsRouter from "./routes/awards";
 import postsRouter from "./routes/posts";
-import eventsRouter from "./routes/events/index";
+import eventsRouter, { adminEventsRouter, syncEventsRouter } from "./routes/events/index";
 import docsRouter from "./routes/docs";
 import mediaRouter from "./routes/media";
 import settingsRouter from "./routes/settings";
@@ -40,6 +40,8 @@ apiRouter.route("/", authRouter);
 // Content
 apiRouter.route("/", postsRouter);
 apiRouter.route("/events", eventsRouter);
+apiRouter.route("/admin/events/sync", syncEventsRouter);
+apiRouter.route("/admin/events", adminEventsRouter);
 apiRouter.route("/", docsRouter);
 apiRouter.route("/", commentsRouter);
 apiRouter.route("/", inquiriesRouter);

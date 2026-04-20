@@ -63,7 +63,8 @@ eventsRouter.get("/:id", async (c) => {
 
 // ── Mount Sub-Routers ────────────────────────────────────────────────
 eventsRouter.route("/", signupsRouter); // handles /:id/signups etc.
-eventsRouter.route("/admin/sync", syncRouter);
-eventsRouter.route("/admin", adminRouter);
+
+export { default as adminEventsRouter } from "./admin";
+export { default as syncEventsRouter } from "./sync";
 
 export default eventsRouter;
