@@ -66,14 +66,25 @@ inquiriesRouter.post("/inquiries", async (c) => {
     // Optional webhook notification
     try {
       const social = await getSocialConfig(c);
-      if (social.DISCORD_WEBHOOK_URL) {
+      const msg = `🔔 *New ${type.toUpperCase()} Inquiry*\n*Name:* ${name}\n*Email:* ${email}\n*Data:* \`${JSON.stringify(metadata)}\``;
+      
+      if (social.SLACK_WEBHOOK_URL) {
         c.executionCtx.waitUntil(
-          fetch(social.DISCORD_WEBHOOK_URL, {
+          fetch(social.SLACK_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: `🔔 **New ${type.toUpperCase()} Inquiry**\n**Name:** ${name}\n**Email:** ${email}\n**Data:** \`${JSON.stringify(metadata)}\``
-            })
+            body: JSON.stringify({ text: msg })
+          }).catch(console.error)
+        );
+      }
+      
+      if (social.TEAMS_WEBHOOK_URL) {
+        c.executionCtx.waitUntil(
+          fetch(social.TEAMS_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // Teams uses text parameter
+            body: JSON.stringify({ text: msg })
           }).catch(console.error)
         );
       }
