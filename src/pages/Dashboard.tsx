@@ -85,6 +85,14 @@ export default function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
+  const session = enrichedSession;
+  const role = (session?.user?.role as string) || "unverified";
+  const memberType = (session?.user?.member_type as string) || "student";
+  const isAdmin = role === "admin" || isLocalDev;
+  const isAuthorized = isAdmin || role === "author";
+  const isUnverified = role === "unverified" && !isLocalDev;
+  const canSeeLogistics = isAdmin || ["parent", "coach", "mentor"].includes(memberType);
+
   useEffect(() => {
     if (session && isAdmin) {
       fetch("/api/admin/inquiries")
@@ -113,7 +121,7 @@ export default function Dashboard() {
       });
   }, []);
 
-  const session = enrichedSession;
+
 
   useEffect(() => {
     if (initialDoc) {
@@ -147,12 +155,6 @@ export default function Dashboard() {
   }
 
   // ── Unauthorized Gate ──────────────────────────────────────────────
-  const role = (session?.user?.role as string) || "unverified";
-  const memberType = (session?.user?.member_type as string) || "student";
-  const isAdmin = role === "admin" || isLocalDev;
-  const isAuthorized = isAdmin || role === "author";
-  const isUnverified = role === "unverified" && !isLocalDev;
-  const canSeeLogistics = isAdmin || ["parent", "coach", "mentor"].includes(memberType);
 
   if (!session || !session.user) {
     return (
