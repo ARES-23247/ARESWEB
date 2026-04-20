@@ -158,7 +158,17 @@ docsRouter.post("/admin/docs", async (c) => {
     const email = user?.email || "anonymous_admin";
 
     // Capture history before update
-    const existing = await c.env.DB.prepare("SELECT slug, title, category, description, content, cf_email, is_portfolio, is_executive_summary FROM docs WHERE slug = ?").bind(slug).first();
+    interface DocsRowLegacy {
+      slug: string;
+      title: string;
+      category: string;
+      description: string;
+      content: string;
+      cf_email: string;
+      is_portfolio: number;
+      is_executive_summary: number;
+    }
+    const existing = await c.env.DB.prepare("SELECT slug, title, category, description, content, cf_email, is_portfolio, is_executive_summary FROM docs WHERE slug = ?").bind(slug).first<DocsRowLegacy>();
     if (existing) {
        await c.env.DB.prepare(
          `INSERT INTO docs_history (slug, title, category, description, content, author_email)

@@ -111,11 +111,20 @@ export const ensureAdmin = async (c: Context<{ Bindings: Bindings }>, next: Next
   await next();
 };
 
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | undefined | null;
+  role: string | "admin" | "author" | "unverified";
+  member_type: string;
+}
+
 // ── Session Helper ───────────────────────────────────────────────────
-export async function getSessionUser(c: Context<{ Bindings: Bindings }>) {
+export async function getSessionUser(c: Context<{ Bindings: Bindings }>): Promise<SessionUser | null> {
   // Check if ensureAdmin already stored session in context
   const cached = c.get("sessionUser");
-  if (cached) return cached;
+  if (cached) return cached as SessionUser;
 
   if (isDevBypassEnabled(c)) {
     return { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", image: null, role: "admin", member_type: "mentor" };

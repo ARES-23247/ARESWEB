@@ -14,8 +14,8 @@ describe('imageProcessor utility', () => {
 
   beforeEach(() => {
     // Mock URL functions
-    global.URL.createObjectURL = vi.fn(() => 'mock-url');
-    global.URL.revokeObjectURL = vi.fn();
+    globalThis.URL.createObjectURL = vi.fn(() => 'mock-url') as any;
+    globalThis.URL.revokeObjectURL = vi.fn();
     
     // Mock the HTMLCanvasElement
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
@@ -75,8 +75,8 @@ describe('imageProcessor utility', () => {
     
     expect(result.ext).toBe('.webp');
     expect(result.blob.size).toBeGreaterThan(1000); // the padded ArrayBuffer
-    expect(global.URL.createObjectURL).toHaveBeenCalledTimes(1);
-    expect(global.URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(globalThis.URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(globalThis.URL.revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
   it('attempts native decode first for HEIC files', async () => {
