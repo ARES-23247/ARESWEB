@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { compressImage } from './imageProcessor';
 
 // Mock heic2any so we don't need real WASM compilation decoding in our JSdom tests

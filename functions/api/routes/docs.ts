@@ -32,6 +32,7 @@ docsRouter.get("/docs/search", async (c) => {
 
     const mapped = (results ?? []).map((r: Record<string, unknown>) => {
       let snippet = String(r.description || "");
+      // eslint-disable-next-line security/detect-non-literal-regexp
       const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
       snippet = snippet.replace(regex, "**$1**");
 

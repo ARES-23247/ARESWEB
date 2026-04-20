@@ -32,6 +32,9 @@ jobs:
       - name: Accessibility & Lint Audit
         run: npm run lint
 
+      - name: Automated Vulnerability & SAST Check
+        run: npm run audit:security
+
       - name: Component Tests (Vitest)
         run: npm run test
 
