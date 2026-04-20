@@ -1,49 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import mammoth from "mammoth";
-import { compressImage } from "../utils/imageProcessor";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
-import { Youtube } from '@tiptap/extension-youtube';
-import { Table } from '@tiptap/extension-table';
-import { TableRow } from '@tiptap/extension-table-row';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { TaskList } from '@tiptap/extension-task-list';
-import { TaskItem } from '@tiptap/extension-task-item';
-import Mathematics from '@tiptap/extension-mathematics';
-import { Link } from '@tiptap/extension-link';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import Typography from '@tiptap/extension-typography';
-import Highlight from '@tiptap/extension-highlight';
-import Subscript from '@tiptap/extension-subscript';
-import Superscript from '@tiptap/extension-superscript';
-import CharacterCount from '@tiptap/extension-character-count';
-import { common, createLowlight } from 'lowlight';
-import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
-import { Callout } from './editor/extensions/Callout';
-import { Reveal } from './editor/extensions/Reveal';
-import { SlashCommands } from './editor/extensions/SlashCommands';
-import Mention from '@tiptap/extension-mention';
-import { MermaidBlock } from './editor/extensions/MermaidBlock';
-import { CommandsList } from './editor/CommandsList';
-import { MentionList } from './editor/MentionList';
-import { suggestionRenderer } from './editor/suggestionRenderer';
-import 'katex/dist/katex.min.css';
-
-
-
-
-import AssetPickerModal from "./AssetPickerModal";
-import SimPickerModal from "./SimPickerModal";
+import { useRichEditor } from "./editor/useRichEditor";
+import RichEditorToolbar from "./editor/RichEditorToolbar";
 
 export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: string | null; onClearEdit?: () => void }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isPending, setIsPending] = useState(false);
-  
+
   // Fields
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
@@ -53,114 +18,8 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
   const [isPortfolio, setIsPortfolio] = useState(false);
   const [isExecutiveSummary, setIsExecutiveSummary] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
 
-  const uploadFile = async (file: File): Promise<{url: string, altText?: string}> => {
-    const { blob: compressedBlob, ext } = await compressImage(file);
-    const formData = new FormData();
-    formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ext));
-    const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
-    const data = await res.json();
-    // @ts-expect-error -- D1 untyped response
-    if (!data.url) throw new Error(data.error || "Upload failed");
-    // @ts-expect-error -- D1 untyped response
-    return { url: data.url, altText: data.altText };
-  };
-
-  const handleDocImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !editor) return;
-    setIsImporting(true);
-    setErrorMsg("");
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.convertToHtml({ arrayBuffer }, {
-        convertImage: mammoth.images.inline(async (element) => {
-          const buffer = await element.read();
-          const blob = new Blob([buffer], { type: element.contentType });
-          const imageFile = new File([blob], `imported_image_${Date.now()}.${element.contentType.split('/')[1]}`, { type: element.contentType });
-          try {
-            const { url } = await uploadFile(imageFile);
-            return { src: url };
-          } catch (err) {
-            console.error("Failed to upload imported image", err);
-            return { src: "" };
-          }
-        })
-      });
-      editor.commands.setContent(result.value);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Failed to import document.");
-    } finally {
-      setIsImporting(false);
-      e.target.value = "";
-    }
-  };
-
-  const lowlight = useMemo(() => createLowlight(common), []);
-
-  const editor = useEditor({
-    extensions: [
-      GlobalDragHandle.configure({
-        dragHandleWidth: 20,
-        scrollTreshold: 100,
-      }),
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-        codeBlock: false,
-        blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white/70 italic rounded-r-lg' } }
-      }),
-      Typography,
-      Highlight.configure({ HTMLAttributes: { class: 'bg-ares-gold/30 text-black rounded-sm px-1' } }),
-      Subscript,
-      Superscript,
-      CharacterCount,
-      Image.configure({ inline: false, HTMLAttributes: { class: 'rounded-xl border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
-      Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video rounded-xl shadow-lg my-6 glass-card' } }),
-      Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-zinc-800 rounded-lg hidden-border-corners shadow-lg table-auto my-6' } }),
-      TableRow.configure({ HTMLAttributes: { class: 'border-b border-zinc-800 hover:bg-zinc-900/50 transition-colors odd:bg-black/20 even:bg-black/40' } }),
-      TableHeader.configure({ HTMLAttributes: { class: 'bg-zinc-900 border border-zinc-800 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm' } }),
-      TableCell.configure({ HTMLAttributes: { class: 'border border-zinc-800 p-3 text-zinc-300 align-top' } }),
-      TaskList.configure({ HTMLAttributes: { class: 'list-none pl-0 space-y-2 my-4 text-[#e6edf3]/80' } }),
-      TaskItem.configure({ nested: true, HTMLAttributes: { class: 'flex items-start gap-2 mb-1' } }),
-      Mathematics,
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-ares-cyan underline hover:text-white transition-colors' } }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        // The HTMLAttributes CSS classes were moved to index.css!
-      }),
-      MermaidBlock.configure({
-        lowlight,
-        HTMLAttributes: { class: 'bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 my-4 font-mono text-sm shadow-inner overflow-x-auto' }
-      }),
-      Callout,
-      Reveal,
-
-      SlashCommands.configure({
-        suggestion: {
-          render: () => suggestionRenderer(CommandsList),
-        },
-      }),
-      Mention.configure({
-        HTMLAttributes: { class: 'bg-ares-red/10 text-ares-red font-bold py-0.5 px-2 rounded-md border border-ares-red/20' },
-        renderLabel({ node }) {
-          return `@${node.attrs.label ?? node.attrs.id}`;
-        },
-        suggestion: {
-          render: () => suggestionRenderer(MentionList),
-        },
-      })
-    ],
-    content: "<p>Start writing documentation here...</p>",
-    editorProps: {
-      attributes: {
-        class: "prose prose-invert max-w-none focus:outline-none min-h-[400px] text-[#e6edf3] font-mono",
-      },
-    },
-  });
+  const editor = useRichEditor({ placeholder: "<p>Start writing documentation here...</p>" });
 
   useEffect(() => {
     if (!editSlug) return;
@@ -357,128 +216,10 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
         </div>
       </div>
 
+      {/* ===== Unified Rich Editor ===== */}
       <div className="flex-1 flex flex-col relative min-h-[500px]">
-        {editor && (
-          <div className="flex flex-wrap items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-t-xl p-2 z-10 w-full mb-0 sticky top-0 overflow-x-auto shadow-md">
-            <button type="button" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} className="px-2 py-2 rounded-lg text-sm font-bold transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30">↶</button>
-            <button type="button" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} className="px-2 py-2 rounded-lg text-sm font-bold transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30">↷</button>
-            <div className="w-px h-6 bg-zinc-800 mx-1"></div>
-            <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("heading", { level: 1 }) ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>H1</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>H2</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("bold") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>B</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-3 py-2 rounded-lg text-sm font-bold italic transition-all ${editor.isActive("italic") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>I</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-3 py-2 rounded-lg text-sm font-bold line-through transition-all ${editor.isActive("strike") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>S</button>
-            <div className="w-px h-6 bg-zinc-800 mx-1"></div>
-            <button type="button" onClick={() => editor.chain().focus().insertContent('<em>FIRST</em>&reg; ').run()} className="px-3 py-2 rounded-lg text-sm font-black italic transition-all text-ares-red hover:bg-ares-red hover:text-white border border-ares-red/30 shadow-sm">FIRST</button>
-            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
-            <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("bulletList") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>• List</button>
-            <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("orderedList") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>1. List</button>
-            <button onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("taskList") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>☑ Tasks</button>
-            <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-3 py-2 rounded-lg text-sm transition-all ${editor.isActive("blockquote") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>&quot; Quote</button>
-            <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-3 py-2 rounded-lg text-sm font-mono transition-all ${editor.isActive("codeBlock") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>{"< >"}</button>
-            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
-            <button onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
-            <button onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
-            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
-            <button onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()} className="px-3 py-2 border border-ares-cyan/30 text-ares-cyan hover:bg-ares-cyan hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm">Info</button>
-            <button onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm">Warn</button>
-            <button onClick={() => editor.chain().focus().toggleCallout({ type: 'tip' }).run()} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black rounded-lg text-sm font-bold transition-all shadow-sm">Tip</button>
-            <button onClick={() => {
-              const summary = window.prompt("Expand Button Label:", "Show Answer");
-              if (summary !== null) editor.chain().focus().toggleReveal({ summary }).run();
-            }} className="px-3 py-2 border border-white/20 text-white hover:bg-white hover:text-black rounded-lg text-sm font-bold transition-all shadow-sm">Reveal</button>
-            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
-            
-            <button onClick={() => {
-              const url = window.prompt('URL:');
-              if (url === null) return;
-              if (url === '') { editor.chain().focus().extendMarkRange('link').unsetLink().run(); return; }
-              const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
-              if (isYoutube && window.confirm('Embed as YouTube player?')) {
-                editor.chain().focus().setYoutubeVideo({ src: url }).run();
-              } else {
-                editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-              }
-            }} className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-ares-cyan hover:bg-zinc-800 hover:text-white">🔗 / YT</button>
-            <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white">Table</button>
-            <button onClick={() => { const chain = editor.chain().focus() as unknown as { toggleMathInline?: () => { run: () => void }, insertContent: (c: string) => { run: () => void } }; if (chain.toggleMathInline) chain.toggleMathInline().run(); else chain.insertContent('$\\Sigma$').run(); }} className={`px-4 py-2 rounded-lg text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
-            <button type="button" onClick={() => editor.chain().focus().insertContent({ type: 'mermaidBlock', attrs: { language: 'mermaid' } }).run()} className="px-4 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700">Mermaid</button>
-            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
-            <button onClick={() => editor.chain().focus().toggleHighlight().run()} className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${editor.isActive("highlight") ? "bg-ares-gold text-black" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>HL</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleSubscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("subscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Sub</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleSuperscript().run()} className={`px-2 py-2 rounded-lg text-sm transition-all ${editor.isActive("superscript") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}>Super</button>
-            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
-            <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-2 rounded-lg text-sm font-bold transition-all text-zinc-400 hover:bg-zinc-800 hover:text-white">―――</button>
-            <button type="button" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} className="px-2 py-2 rounded-lg text-sm transition-all text-ares-red/70 hover:bg-ares-red hover:text-white">Clear</button>
-            <div className="w-px h-6 bg-zinc-800 mx-2"></div>
-            <button 
-              type="button" 
-              onClick={() => document.getElementById('doc-import-upload')?.click()} 
-              disabled={isImporting}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all border border-ares-cyan/30 ${isImporting ? "bg-zinc-800 text-zinc-500 animate-pulse" : "text-ares-cyan hover:bg-ares-cyan hover:text-white shadow-sm"}`}
-            >
-              {isImporting ? "IMPORTING..." : "Import .DOCX"}
-            </button>
-            <input 
-              id="doc-import-upload" 
-              type="file" 
-              accept=".docx" 
-              className="hidden" 
-              onChange={handleDocImport} 
-            />
-          </div>
-        )}
-        {editor && editor.isActive('table') && (
-          <div className="flex flex-wrap items-center gap-2 bg-ares-cyan/10 border-x border-b border-ares-cyan/30 px-3 py-2 w-full text-xs shadow-sm">
-            <span className="text-ares-cyan font-bold mr-2 tracking-wider">TABLE</span>
-            <button type="button" onClick={() => editor.chain().focus().addColumnBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Col Before</button>
-            <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Col After</button>
-            <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">- Col</button>
-            <div className="w-px h-4 bg-ares-cyan/30 mx-1"></div>
-            <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Row Before</button>
-            <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">+ Row After</button>
-            <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">- Row</button>
-            <div className="w-px h-4 bg-ares-cyan/30 mx-1"></div>
-            <button type="button" onClick={() => editor.chain().focus().mergeCells().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">Merge</button>
-            <button type="button" onClick={() => editor.chain().focus().splitCell().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">Split</button>
-            <div className="w-px h-4 bg-ares-cyan/30 mx-1"></div>
-            <button type="button" onClick={() => editor.chain().focus().toggleHeaderRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-zinc-300 border border-zinc-700/50">Toggle Header</button>
-            <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} className="px-2 py-1 rounded bg-ares-red/10 hover:bg-ares-red hover:text-white transition-colors text-ares-red ml-auto border border-ares-red/30">Delete Table</button>
-          </div>
-        )}
-        <div className="flex-1 bg-[#0e0e0e] border-x border-b border-zinc-800 rounded-b-xl overflow-hidden shadow-inner w-full min-h-[400px] relative">
-          <EditorContent 
-            editor={editor} 
-            className="h-full p-4 md:p-6 pb-12"
-          />
-          {editor && (
-            <div className="absolute bottom-4 right-6 text-xs text-zinc-500 font-mono">
-              {editor.storage.characterCount.words()} words | {editor.storage.characterCount.characters()} chars
-            </div>
-          )}
-        </div>
+        {editor && <RichEditorToolbar editor={editor} documentTitle={title} />}
       </div>
-
-      <AssetPickerModal 
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        onSelect={(url, altText) => {
-          if (editor) editor.chain().focus().setImage({ src: url, alt: altText || "ARES Media" }).run();
-          setIsPickerOpen(false);
-        }}
-      />
-
-      <SimPickerModal 
-        isOpen={isSimPickerOpen}
-        onClose={() => setIsSimPickerOpen(false)}
-        onSelect={(simId) => {
-          if (editor) editor.chain().focus().insertContent({
-            type: 'interactiveComponent',
-            attrs: { componentName: simId }
-          }).run();
-          setIsSimPickerOpen(false);
-        }}
-      />
 
       {errorMsg && (
         <div className="p-4 rounded-xl bg-ares-red/10 border border-ares-red/30 text-red-200 text-sm">
