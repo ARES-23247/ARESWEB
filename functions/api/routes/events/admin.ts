@@ -61,8 +61,8 @@ adminRouter.post("/", async (c) => {
            { id: genId, title, date_start: dateStart, date_end: dateEnd, location, description, cover_image: coverImage ?? null },
            { email: gcalEmail, privateKey: gcalKey, calendarId: calId as string }
         )) || null;
-      } catch (err: any) {
-        warnings.push(`Google Calendar Auth Failed: ${err.message || "Unknown GCal Error"}`);
+      } catch (err: unknown) {
+        warnings.push(`Google Calendar Auth Failed: ${(err as Error).message || "Unknown GCal Error"}`);
       }
     }
 
@@ -87,13 +87,13 @@ adminRouter.post("/", async (c) => {
             coverImageUrl: coverImage || "/gallery_1.png",
             baseUrl: new URL(c.req.url).origin
          }, socialConfig, socials);
-       } catch (err: any) {
-         warnings.push(`Network Syndication Failed: ${err.message || String(err)}`);
+       } catch (err: unknown) {
+         warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
        }
     }
 
     return c.json({ success: true, id: genId, warning: warnings.length > 0 ? warnings.join(" | ") : undefined }, warnings.length > 0 ? 207 : 200);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("D1 manual event creation error:", err);
     return c.json({ error: "Write failed" }, 500);
   }
@@ -123,8 +123,8 @@ adminRouter.put("/:id", async (c) => {
           { id: paramId, title, date_start: dateStart, date_end: dateEnd, location, description, cover_image: coverImage, gcal_event_id: row?.gcal_event_id },
           { email: gcalEmail, privateKey: gcalKey, calendarId: calId as string }
         )) || null;
-      } catch (err: any) {
-        warnings.push(`Google Calendar Auth Failed: ${err.message || "Unknown GCal Error"}`);
+      } catch (err: unknown) {
+        warnings.push(`Google Calendar Auth Failed: ${(err as Error).message || "Unknown GCal Error"}`);
       }
     }
 
@@ -153,15 +153,15 @@ adminRouter.put("/:id", async (c) => {
             coverImageUrl: coverImage || "/gallery_1.png",
             baseUrl: new URL(c.req.url).origin
          }, socialConfig, socials);
-       } catch (err: any) {
-         warnings.push(`Network Syndication Failed: ${err.message || String(err)}`);
+       } catch (err: unknown) {
+         warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
        }
     }
 
     return c.json({ success: true, id: paramId, warning: warnings.length > 0 ? warnings.join(" | ") : undefined }, warnings.length > 0 ? 207 : 200);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("D1 write error (events):", err);
-    return c.json({ success: false, error: err.message || "Event update failed" }, 500);
+    return c.json({ success: false, error: (err as Error).message || "Event update failed" }, 500);
   }
 });
 
@@ -202,7 +202,7 @@ adminRouter.delete("/:id/purge", async (c) => {
 
     if (gcalEmail && gcalKey && calId && row?.gcal_event_id) {
       try {
-        await deleteEventFromGcal(row.gcal_event_id, { email: gcalEmail, privateKey: gcalKey, calendarId: calId });
+        await deleteEventFromGcal(row.gcal_event_id, { email: gcalEmail, privateKey: gcalKey, calendarId: calId as string });
       } catch (err) { console.warn("GCal purge cleanup failed:", err); }
     }
 
@@ -221,7 +221,19 @@ adminRouter.patch("/:id/approve", async (c) => {
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
     const id = c.req.param("id");
 
-    const row = await c.env.DB.prepare("SELECT revision_of, title, date_start, date_end, location, description, cover_image, gcal_event_id, is_potluck, is_volunteer FROM events WHERE id = ?").bind(id).first<any>();
+    interface EventRevisionRow { 
+      revision_of: string; 
+      title: string; 
+      date_start: string; 
+      date_end: string; 
+      location: string; 
+      description: string; 
+      cover_image: string; 
+      gcal_event_id: string; 
+      is_potluck: number; 
+      is_volunteer: number; 
+    }
+    const row = await c.env.DB.prepare("SELECT revision_of, title, date_start, date_end, location, description, cover_image, gcal_event_id, is_potluck, is_volunteer FROM events WHERE id = ?").bind(id).first<EventRevisionRow>();
 
     if (row && row.revision_of) {
       await c.env.DB.prepare(
@@ -245,7 +257,7 @@ adminRouter.patch("/:id/reject", async (c) => {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
     const id = c.req.param("id");
-    const body = await c.req.json().catch(() => ({})) as { reason?: string };
+    const body = (await c.req.json().catch(() => ({}))) as { reason?: string };
     await c.env.DB.prepare("UPDATE events SET status = 'rejected' WHERE id = ?").bind(id).run();
     return c.json({ success: true, reason: body.reason || "No reason provided" });
   } catch (err) {
@@ -259,12 +271,12 @@ adminRouter.post("/:id/repush", async (c) => {
   try {
     const id = c.req.param("id");
     const { socials } = await c.req.json<{ socials: Record<string, boolean> }>();
-    const event = await c.env.DB.prepare("SELECT title, description, cover_image FROM events WHERE id = ?").bind(id).first<any>();
+    const event = await c.env.DB.prepare("SELECT title, description, cover_image FROM events WHERE id = ?").bind(id).first<{title: string, description: string, cover_image: string}>();
     if (!event) return c.json({ error: "Event not found" }, 404);
     const socialConfig = await getSocialConfig(c);
     try {
       await dispatchSocials({ title: event.title, url: `https://aresfirst.org/events`, snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", coverImageUrl: event.cover_image || "/gallery_1.png", baseUrl: new URL(c.req.url).origin }, socialConfig, socials);
-    } catch (err: any) { return c.json({ error: `Network Repush Failed: ${err.message || String(err)}` }, 502); }
+    } catch (err: unknown) { return c.json({ error: `Network Repush Failed: ${(err as Error).message || String(err)}` }, 502); }
     return c.json({ success: true });
   } catch (err) {
     console.error("Event repush error:", err);

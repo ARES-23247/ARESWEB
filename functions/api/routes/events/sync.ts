@@ -36,7 +36,7 @@ syncRouter.post("/", async (c) => {
 
       // Build batch statements
       const BATCH_SIZE = 50;
-      const stmts: any[] = [];
+      const stmts: D1PreparedStatement[] = [];
       for (const ev of events) {
         if (existingMap.has(ev.gcal_event_id)) {
           stmts.push(

@@ -307,9 +307,15 @@ docsRouter.patch("/admin/docs/:slug/history/:id/restore", ensureAdmin, async (c)
     const slug = c.req.param("slug");
     const id = c.req.param("id");
     
+    interface DocHistoryRestoreRow {
+      title: string;
+      category: string;
+      description: string;
+      content: string;
+    }
     const row = await c.env.DB.prepare(
       "SELECT title, category, description, content FROM docs_history WHERE id = ? AND slug = ?"
-    ).bind(id, slug).first<any>();
+    ).bind(id, slug).first<DocHistoryRestoreRow>();
 
     if (!row) return c.json({ error: "Version not found" }, 404);
 
@@ -317,7 +323,15 @@ docsRouter.patch("/admin/docs/:slug/history/:id/restore", ensureAdmin, async (c)
     const email = user?.email || "anonymous_admin";
 
     // Capture CURRENT as history before restoring
-    const current = await c.env.DB.prepare("SELECT slug, title, category, description, content, cf_email FROM docs WHERE slug = ?").bind(slug).first<any>();
+    interface DocCurrentRow {
+      slug: string;
+      title: string;
+      category: string;
+      description: string;
+      content: string;
+      cf_email: string;
+    }
+    const current = await c.env.DB.prepare("SELECT slug, title, category, description, content, cf_email FROM docs WHERE slug = ?").bind(slug).first<DocCurrentRow>();
     if (current) {
         await c.env.DB.prepare(
           "INSERT INTO docs_history (slug, title, category, description, content, author_email) VALUES (?, ?, ?, ?, ?, ?)"

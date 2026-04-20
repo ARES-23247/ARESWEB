@@ -17,7 +17,7 @@ export default function Footer() {
             <p className="text-marble/70 text-xs font-medium uppercase tracking-[0.2em]"><em>FIRST</em>® Tech Challenge Team #23247</p>
           </button>
           <p className="text-marble/70 text-base leading-relaxed max-w-md border-l-2 border-ares-bronze/30 pl-6">
-            We are the official <span className="text-white font-bold italic">sibling team</span> to <strong>MARS 2614</strong>. 
+            We are proud members of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:text-ares-red transition-colors italic">MARS Family</a>. 
             Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <em>FIRST</em>®.
           </p>
         </div>
@@ -66,7 +66,7 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col md:flex-row justify-between items-center gap-6">
         <p className="text-marble/60 text-xs font-bold uppercase tracking-[0.3em]">
-          © {new Date().getFullYear()} ARES 23247. A member of the MARS 2614 Family.
+          © {new Date().getFullYear()} ARES 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
         </p>
         <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-center text-xs font-bold uppercase tracking-[0.3em] text-marble/60">
           <div className="flex gap-4 border-b md:border-b-0 md:border-r border-marble/20 pb-4 md:pb-0 pr-0 md:pr-8">

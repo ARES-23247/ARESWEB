@@ -166,7 +166,7 @@ postsRouter.post("/admin/posts", async (c) => {
         console.error("Social dispatch returned top-level rejection:", err);
         return c.json({ success: true, slug, warning: `Network Syndication Failed: ${(err as Error)?.message || String(err)}` }, 207);
       }
-    } catch(err) {
+    } catch(err: unknown) {
       console.error("Critical Social Dispatch Failure:", err);
     }
 
@@ -382,9 +382,16 @@ postsRouter.patch("/admin/posts/:slug/history/:id/restore", ensureAdmin, async (
     const slug = c.req.param("slug");
     const id = c.req.param("id");
     
+    interface PostHistoryRestoreRow {
+      title: string;
+      author: string;
+      thumbnail: string;
+      snippet: string;
+      ast: string;
+    }
     const row = await c.env.DB.prepare(
       "SELECT title, author, thumbnail, snippet, ast FROM posts_history WHERE id = ? AND slug = ?"
-    ).bind(id, slug).first<any>();
+    ).bind(id, slug).first<PostHistoryRestoreRow>();
 
     if (!row) return c.json({ error: "Version not found" }, 404);
 
@@ -392,7 +399,16 @@ postsRouter.patch("/admin/posts/:slug/history/:id/restore", ensureAdmin, async (
     const email = user?.email || "anonymous_admin";
 
     // Capture CURRENT as history before restoring
-    const current = await c.env.DB.prepare("SELECT slug, title, author, thumbnail, snippet, ast, cf_email FROM posts WHERE slug = ?").bind(slug).first<any>();
+    interface PostCurrentRow {
+      slug: string;
+      title: string;
+      author: string;
+      thumbnail: string;
+      snippet: string;
+      ast: string;
+      cf_email: string;
+    }
+    const current = await c.env.DB.prepare("SELECT slug, title, author, thumbnail, snippet, ast, cf_email FROM posts WHERE slug = ?").bind(slug).first<PostCurrentRow>();
     if (current) {
         await c.env.DB.prepare(
           "INSERT INTO posts_history (slug, title, author, thumbnail, snippet, ast, author_email) VALUES (?, ?, ?, ?, ?, ?, ?)"

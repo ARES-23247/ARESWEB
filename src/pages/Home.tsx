@@ -48,34 +48,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── THE PEDESTAL: LEGACY SECTION ─── */}
-      <div className="meander-divider bg-obsidian opacity-50 relative top-[1px] z-10 w-full drop-shadow-lg"></div>
-      <section className="py-24 bg-marble text-obsidian overflow-hidden relative">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="relative">
-            <div className="absolute -top-10 -left-10 w-40 h-40 border-t-8 border-l-8 border-ares-bronze/20"></div>
-            <p className="text-ares-red uppercase tracking-[0.2em] text-sm font-bold mb-4 font-heading">The Sibling Connection</p>
-            <h2 className="text-4xl md:text-6xl font-bold leading-tight mb-8 font-heading">
-              Built on a <br />
-              <span className="text-ares-bronze">Championship Legacy</span>
-            </h2>
-            <div className="space-y-6 text-lg text-obsidian/80 leading-relaxed">
-              <p>
-                ARES 23247 isn&apos;t just another rookie team. We are the direct result of a decade of excellence in West Virginia robotics, serving as the <em>FTC sibling team</em> to the Hall of Fame program, <strong>MARS 2614</strong>.
-              </p>
-              <p>
-                While our siblings on MARS tackle the giants of the <em>FIRST</em>® Robotics Competition, we bring that same Mountaineer intensity to the <em>FIRST</em>® Tech Challenge.
-              </p>
-              <div className="pt-4">
-                <a href="https://www.marsfirst.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-ares-red font-bold hover:translate-x-2 transition-transform">
-                  EXPLORE THE MARS LEGACY <span className="text-xl">→</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ─── TECHNICAL SPECS (MARBLE CARDS) ─── */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
