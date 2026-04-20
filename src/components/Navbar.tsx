@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, LayoutDashboard, LogIn } from "lucide-react";
 import GlobalSearchModal from "./GlobalSearchModal";
 import { useSession } from "../utils/auth-client";
@@ -13,6 +13,21 @@ export default function Navbar() {
 
   const isSignedIn = !isPending && session?.user;
   const userImage = session?.user?.image;
+  const isAdmin = session?.user?.role === "admin";
+  
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetch("/api/admin/inquiries")
+        .then(res => res.json())
+        .then((data: any) => {
+          if (data.inquiries) {
+            setPendingCount(data.inquiries.filter((i: any) => i.status === "pending").length);
+          }
+        }).catch(() => {});
+    }
+  }, [isAdmin]);
 
   return (
     <nav role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-hidden rounded-bl-xl rounded-br-[2.5rem] border-t-4 border-ares-bronze">
@@ -54,13 +69,19 @@ export default function Navbar() {
             <Search size={18} aria-hidden="true" />
           </button>
           {isSignedIn && (
-            <Link to="/dashboard" className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all group" aria-label="Dashboard">
+            <Link to="/dashboard" className="relative flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all group" aria-label="Dashboard">
               <img 
                 src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${session?.user?.id}`} 
                 alt="" 
                 className="w-6 h-6 rounded-full bg-zinc-800" 
               />
               <span className="text-xs font-bold text-zinc-300 group-hover:text-white uppercase tracking-wider">Dashboard</span>
+              {pendingCount > 0 && (
+                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                 </span>
+              )}
             </Link>
           )}
           {!isPending && !isSignedIn && (
@@ -102,8 +123,14 @@ export default function Navbar() {
           </Link>
           <Link to="/blog" onClick={() => setOpen(false)} className="text-marble/70 hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Blog</Link>
           {isSignedIn && (
-            <Link to="/dashboard" onClick={() => setOpen(false)} className="text-ares-gold hover:text-white flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">
+            <Link to="/dashboard" onClick={() => setOpen(false)} className="text-ares-gold hover:text-white flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1 w-max">
               <LayoutDashboard size={16} /> Dashboard
+              {pendingCount > 0 && (
+                <span className="ml-1 flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+              )}
             </Link>
           )}
           {!isPending && !isSignedIn && (
