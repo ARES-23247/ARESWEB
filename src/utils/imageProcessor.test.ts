@@ -91,13 +91,19 @@ describe('imageProcessor utility', () => {
 
   it('falls back to heic2any software decode if native native canvas decoding fails', async () => {
     // We override our mock Image to simulate a native failure:
+    let attempts = 0;
     vi.stubGlobal('Image', function() {
         const img = new MockImage();
         return new Proxy(img, {
           set(target, prop, value) {
             target[prop] = value;
             if (prop === 'src') {
-              setTimeout(() => target.onerror?.(), 0); // Fail immediately
+              attempts++;
+              if (attempts === 1) {
+                setTimeout(() => target.onerror?.(), 0); // Fail first attempt (HEIC)
+              } else {
+                setTimeout(() => target.onload?.(), 0); // Succeed next attempt (JPEG)
+              }
             }
             return true;
           }

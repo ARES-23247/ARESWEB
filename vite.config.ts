@@ -14,10 +14,10 @@ export default defineConfig({
       provider: "v8",
       include: ['src/utils/**'],
       thresholds: {
-        lines: 70,
-        functions: 50,
-        branches: 70,
-        statements: 70
+        lines: 85,
+        functions: 100,
+        branches: 80,
+        statements: 85
       }
     }
   },
