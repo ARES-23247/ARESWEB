@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Rocket, Wrench, Code, PenTool, CheckCircle } from "lucide-react";
 import SEO from "../components/SEO";
+import { GreekMeander } from "../components/GreekMeander";
 
 export default function Join() {
   const [role, setRole] = useState<"student" | "mentor">("student");
@@ -65,7 +66,7 @@ export default function Join() {
       </section>
 
       <section className="py-20 bg-zinc-950 relative">
-        <div className="absolute top-0 left-0 w-full h-1 meander-border opacity-30"></div>
+        <GreekMeander variant="thin" opacity="opacity-30" className="absolute top-0 left-0" />
         
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16">
           <motion.div 

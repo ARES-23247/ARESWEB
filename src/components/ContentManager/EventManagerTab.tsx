@@ -29,14 +29,20 @@ export default function EventManagerTab({
   restoreMutation,
   purgeMutation
 }: EventManagerTabProps) {
-  const { data: events = [], isLoading } = useQuery<EventItem[]>({
+  const { data: eventsResult, isLoading } = useQuery<{ events: EventItem[], lastSyncedAt: string | null }>({
     queryKey: ["events"],
     queryFn: async () => {
       const res = await fetch("/dashboard/api/admin/events", { credentials: "include" });
-      const data = await res.json() as { events?: EventItem[] };
-      return data.events ?? [];
+      const data = await res.json() as { events?: EventItem[], lastSyncedAt?: string | null };
+      return { 
+        events: data.events ?? [], 
+        lastSyncedAt: data.lastSyncedAt ?? null 
+      };
     },
   });
+
+  const events = eventsResult?.events ?? [];
+  const lastSyncedAt = eventsResult?.lastSyncedAt;
 
   const deleteEventMutation = useContentMutation<string>({
     endpoint: (id) => `/dashboard/api/admin/events/${id}`,
@@ -50,7 +56,7 @@ export default function EventManagerTab({
     invalidateKeys: ["events"],
     clearConfirm: false,
     onSuccess: (data: unknown) => {
-      const res = data as { synced: number; newEvents: number; updatedEvents: number };
+      const res = data as { synced: number; newEvents: number; updatedEvents: number; lastSyncedAt: string };
       alert(`Sync Complete! Fetched ${res.synced} events. (${res.newEvents} new, ${res.updatedEvents} updated)`);
     },
   });
@@ -62,9 +68,16 @@ export default function EventManagerTab({
   return (
     <div className="flex flex-col">
       <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-        <h3 className={`font-bold uppercase tracking-widest text-xs ${view === 'trash' ? 'text-ares-red' : view === 'pending' ? 'text-ares-gold' : 'text-ares-gold'}`}>
-          {view === 'active' ? 'Active Events' : view === 'pending' ? 'Pending Events' : 'Trashed Events'}
-        </h3>
+        <div className="flex items-center gap-4">
+          <h3 className={`font-bold uppercase tracking-widest text-xs ${view === 'trash' ? 'text-ares-red' : view === 'pending' ? 'text-ares-gold' : 'text-ares-gold'}`}>
+            {view === 'active' ? 'Active Events' : view === 'pending' ? 'Pending Events' : 'Trashed Events'}
+          </h3>
+          {view === 'active' && lastSyncedAt && (
+            <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-tight bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md">
+              Last Sync: {format(new Date(lastSyncedAt), 'MMM do, h:mm a')}
+            </span>
+          )}
+        </div>
         {view === 'active' && (
           <button 
             onClick={() => syncGcalMutation.mutate(undefined as unknown as void)}
@@ -114,7 +127,7 @@ export default function EventManagerTab({
                       <button
                         onClick={() => rejectMutation.mutate({ type: 'event', id: event.id })}
                         disabled={rejectMutation.isPending}
-                        className="text-xs font-bold text-orange-400 hover:text-white bg-orange-400/10 hover:bg-orange-400/40 border border-orange-400/20 px-3 py-1 rounded-md transition-colors disabled:opacity-50"
+                        className="text-xs font-bold text-ares-gold hover:text-white bg-ares-gold/10 hover:bg-ares-gold/40 border border-ares-gold/20 px-3 py-1 rounded-md transition-colors disabled:opacity-50"
                       >
                         REJECT
                       </button>

@@ -39,7 +39,7 @@ apiRouter.route("/", authRouter);
 
 // Content
 apiRouter.route("/", postsRouter);
-apiRouter.route("/", eventsRouter);
+apiRouter.route("/events", eventsRouter);
 apiRouter.route("/", docsRouter);
 apiRouter.route("/", commentsRouter);
 apiRouter.route("/", inquiriesRouter);

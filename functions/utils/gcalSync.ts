@@ -228,10 +228,19 @@ export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event
   }
 
   const data = (await res.json()) as Record<string, unknown>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items = (data.items as any[]) || [];
+  
+  interface GCalItem {
+    id: string;
+    summary?: string;
+    start?: { dateTime?: string; date?: string };
+    end?: { dateTime?: string; date?: string };
+    location?: string;
+    description?: string;
+  }
+  
+  const items = (data.items as GCalItem[]) || [];
 
-  return items.map((item) => ({
+  return items.map((item: GCalItem) => ({
     id: `gcal-${item.id}`,
     title: item.summary || "Untitled Event",
     date_start: item.start?.dateTime || item.start?.date || "",

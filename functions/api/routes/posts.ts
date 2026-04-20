@@ -11,7 +11,7 @@ postsRouter.get("/posts", async (c) => {
     const offset = Number(c.req.query("offset") || "0");
     const { results } = await c.env.DB.prepare(
       `SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.cf_email,
-              uP.nickname as author_nickname, COALESCE(uP.avatar, u.image) as author_avatar
+              uP.nickname as author_nickname, u.image as author_avatar
        FROM posts p
        LEFT JOIN user u ON p.cf_email = u.email
        LEFT JOIN user_profiles uP ON u.id = uP.user_id
@@ -30,7 +30,7 @@ postsRouter.get("/posts/:slug", async (c) => {
   try {
     const row = await c.env.DB.prepare(
       `SELECT p.slug, p.title, p.date, p.ast, p.cf_email,
-              uP.nickname as author_nickname, COALESCE(uP.avatar, u.image) as author_avatar
+              uP.nickname as author_nickname, u.image as author_avatar
        FROM posts p
        LEFT JOIN user u ON p.cf_email = u.email
        LEFT JOIN user_profiles uP ON u.id = uP.user_id

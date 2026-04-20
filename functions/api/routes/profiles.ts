@@ -11,7 +11,7 @@ profilesRouter.get("/profile/me", async (c) => {
 
   try {
     const profile = await c.env.DB.prepare(
-      "SELECT user_id, first_name, last_name, nickname, phone, contact_email, show_email, show_phone, pronouns, grade_year, subteams, member_type, bio, favorite_food, dietary_restrictions, favorite_first_thing, fun_fact, colleges, employers, show_on_about, favorite_robot_mechanism, pre_match_superstition, leadership_role, rookie_year, tshirt_size, emergency_contact_name, emergency_contact_phone, avatar, updated_at FROM user_profiles WHERE user_id = ?"
+      "SELECT p.user_id, p.first_name, p.last_name, p.nickname, p.phone, p.contact_email, p.show_email, p.show_phone, p.pronouns, p.grade_year, p.subteams, p.member_type, p.bio, p.favorite_food, p.dietary_restrictions, p.favorite_first_thing, p.fun_fact, p.colleges, p.employers, p.show_on_about, p.favorite_robot_mechanism, p.pre_match_superstition, p.leadership_role, p.rookie_year, p.tshirt_size, p.emergency_contact_name, p.emergency_contact_phone, u.image as avatar, p.updated_at FROM user_profiles p JOIN user u ON p.user_id = u.id WHERE p.user_id = ?"
     ).bind(user.id).first();
 
     const { results: rawBadges } = await c.env.DB.prepare(
@@ -132,7 +132,7 @@ profilesRouter.get("/profile/:userId", async (c) => {
   const userId = c.req.param("userId");
   try {
     const profile = await c.env.DB.prepare(
-      "SELECT user_id, first_name, last_name, nickname, phone, contact_email, show_email, show_phone, pronouns, grade_year, subteams, member_type, bio, favorite_food, dietary_restrictions, favorite_first_thing, fun_fact, colleges, employers, show_on_about, favorite_robot_mechanism, pre_match_superstition, leadership_role, rookie_year, avatar FROM user_profiles WHERE user_id = ? AND show_on_about = 1"
+      "SELECT p.user_id, p.first_name, p.last_name, p.nickname, p.phone, p.contact_email, p.show_email, p.show_phone, p.pronouns, p.grade_year, p.subteams, p.member_type, p.bio, p.favorite_food, p.dietary_restrictions, p.favorite_first_thing, p.fun_fact, p.colleges, p.employers, p.show_on_about, p.favorite_robot_mechanism, p.pre_match_superstition, p.leadership_role, p.rookie_year, u.image as avatar FROM user_profiles p JOIN user u ON p.user_id = u.id WHERE p.user_id = ? AND p.show_on_about = 1"
     ).bind(userId).first();
 
     if (!profile) return c.json({ error: "Profile not found or private" }, 404);

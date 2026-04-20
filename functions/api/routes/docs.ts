@@ -8,7 +8,7 @@ docsRouter.get("/docs", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
       `SELECT d.slug, d.title, d.category, d.sort_order, d.description, d.is_portfolio, d.is_executive_summary,
-              p.nickname as original_author_nickname, COALESCE(p.avatar, u.image) as original_author_avatar
+              p.nickname as original_author_nickname, u.image as original_author_avatar
        FROM docs d
        LEFT JOIN user u ON d.cf_email = u.email
        LEFT JOIN user_profiles p ON u.id = p.user_id
@@ -78,7 +78,7 @@ docsRouter.get("/docs/:slug", async (c) => {
   try {
     const row = await c.env.DB.prepare(
       `SELECT d.slug, d.title, d.category, d.description, d.content, d.updated_at, d.is_portfolio, d.is_executive_summary,
-              p.nickname as original_author_nickname, COALESCE(p.avatar, u.image) as original_author_avatar
+              p.nickname as original_author_nickname, u.image as original_author_avatar
        FROM docs d
        LEFT JOIN user u ON d.cf_email = u.email
        LEFT JOIN user_profiles p ON u.id = p.user_id
@@ -88,7 +88,7 @@ docsRouter.get("/docs/:slug", async (c) => {
 
     // Fetch contributors from history
     const { results: historyKeys } = await c.env.DB.prepare(
-      `SELECT DISTINCT h.author_email, p.nickname, COALESCE(p.avatar, u.image) as avatar
+      `SELECT DISTINCT h.author_email, p.nickname, u.image as avatar
        FROM docs_history h
        LEFT JOIN user u ON h.author_email = u.email
        LEFT JOIN user_profiles p ON u.id = p.user_id

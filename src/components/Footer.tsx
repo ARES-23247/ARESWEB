@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { GreekMeander } from "./GreekMeander";
 
 export default function Footer() {
   const navigate = useNavigate();
@@ -6,7 +7,7 @@ export default function Footer() {
   return (
     <footer className="w-full bg-obsidian text-marble border-t border-ares-bronze/20 pt-16 pb-8 overflow-hidden relative">
       {/* Meander accent for footer bottom */}
-      <div className="absolute bottom-0 left-0 w-full h-1 meander-border opacity-30"></div>
+      <GreekMeander variant="thin" opacity="opacity-20" className="absolute bottom-0 left-0" />
 
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 relative z-10">
         {/* Brand & Mission */}
@@ -64,34 +65,37 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col md:flex-row justify-between items-center gap-6">
-        <p className="text-marble/60 text-xs font-bold uppercase tracking-[0.3em]">
+      <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col lg:flex-row justify-between items-center gap-8">
+        <p className="text-marble/60 text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap">
           © {new Date().getFullYear()} ARES 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
         </p>
-        <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-center text-xs font-bold uppercase tracking-[0.3em] text-marble/60">
-          <div className="flex gap-4 border-b md:border-b-0 md:border-r border-marble/20 pb-4 md:pb-0 pr-0 md:pr-8">
-            <Link to="/accessibility" className="hover:text-white transition-colors flex items-center gap-2 group">
-              <svg className="w-4 h-4 text-ares-red group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        
+        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-x-8 gap-y-4 text-[10px] font-bold uppercase tracking-[0.2em] text-marble/60">
+          <Link to="/accessibility" className="hover:text-white transition-colors flex items-center gap-2 group whitespace-nowrap">
+            <svg className="w-3.5 h-3.5 text-ares-red group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Accessibility
+          </Link>
+          
+          <div className="flex gap-4 items-center border-l border-marble/10 pl-8 h-4">
+            <a href="https://wave.webaim.org/" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-100 transition-opacity" title="Validated by WAVE Web Accessibility Evaluation Tool">
+              <img src="https://wave.webaim.org/img/wavelogo.svg" alt="WAVE Logo" className="h-3.5" />
+            </a>
+            <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-100 transition-opacity flex items-center font-bold text-[9px] gap-1" title="pa11y CI Integrated">
+              <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
               </svg>
-              Accessibility
-            </Link>
-            <div className="flex gap-3">
-              <a href="https://wave.webaim.org/" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity" title="Validated by WAVE Web Accessibility Evaluation Tool">
-                <img src="https://wave.webaim.org/img/wavelogo.svg" alt="WAVE Logo" className="h-4" />
-              </a>
-              <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity flex items-center font-bold text-xs gap-1" title="pa11y CI Integrated">
-                <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
-                </svg>
-                <span>PA11Y</span>
-              </a>
-            </div>
+              <span>PA11Y</span>
+            </a>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 md:gap-8 mt-2 md:mt-0">
+
+          <div className="flex gap-8 items-center border-l border-marble/10 pl-8 h-4">
             <Link to="/privacy" className="hover:text-white transition-colors whitespace-nowrap">Privacy</Link>
-            <Link to="/docs" className="hover:text-white transition-colors flex items-center whitespace-nowrap"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></Link>
+            <Link to="/docs" className="hover:text-white transition-colors flex items-center whitespace-nowrap">
+              <span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span>
+            </Link>
             <Link to="/sponsors" className="hover:text-white transition-colors whitespace-nowrap">Support Us</Link>
           </div>
         </div>

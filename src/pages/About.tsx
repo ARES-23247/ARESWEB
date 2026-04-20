@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
+import { GreekMeander } from "../components/GreekMeander";
 
 interface TeamMember {
   user_id: string;
@@ -85,7 +86,7 @@ export default function About() {
     <div className="flex flex-col w-full">
       {/* ─── HERO ─── */}
       <section className="py-32 bg-obsidian text-marble relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 meander-border opacity-20"></div>
+        <GreekMeander variant="thin" opacity="opacity-20" className="absolute top-0 left-0" />
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <p className="text-ares-bronze uppercase tracking-[0.4em] text-xs font-bold mb-6 font-heading">Our Community</p>
           <h1 className="text-5xl md:text-8xl font-bold text-white mb-8 font-heading uppercase">About ARES</h1>

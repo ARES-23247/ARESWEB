@@ -19,6 +19,7 @@ interface EventRow {
 }
 
 import { Calendar } from "lucide-react";
+import { GreekMeander } from "../components/GreekMeander";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -97,7 +98,8 @@ export default function EventDetail() {
       className="w-full min-h-screen bg-obsidian text-marble"
     >
       {/* ─── STANDALONE EVENT HERO ─── */}
-      <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-[8px] border-ares-bronze/40 meander-divider">
+      <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-bronze">
+        <GreekMeander variant="thick" opacity="opacity-40" className="absolute bottom-[-1px] left-0 z-10" />
         <img src={event.cover_image || DEFAULT_COVER_IMAGE} alt={event.title} className={`absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity ${event.cover_image ? 'object-cover' : 'object-contain p-16 bg-black/80'}`} />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/70 to-transparent"></div>
         

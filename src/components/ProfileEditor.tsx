@@ -48,6 +48,15 @@ interface ProfileData {
   show_on_about: boolean;
 }
 
+interface ProfileResponse extends Partial<ProfileData> {
+  error?: string;
+  // Database may return JSON strings for these fields
+  subteams?: string | string[];
+  dietary_restrictions?: string | string[];
+  colleges?: string | CollegeEntry[];
+  employers?: string | EmployerEntry[];
+}
+
 const DEFAULT_PROFILE: ProfileData = {
   email: "",
   first_name: "", last_name: "", nickname: "", phone: "", contact_email: "", show_email: false, show_phone: false,
@@ -72,8 +81,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
   useEffect(() => {
     fetch(fetchUrl, { credentials: "include" })
       .then(r => r.json())
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then((data: any) => {
+      .then((data: ProfileResponse) => {
         if (data && !data.error) {
           setProfile({
             ...DEFAULT_PROFILE,

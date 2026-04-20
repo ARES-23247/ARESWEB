@@ -10,13 +10,19 @@ adminRouter.get("/", async (c) => {
   try {
     const limit = Math.min(Number(c.req.query("limit") || "100"), 500);
     const offset = Number(c.req.query("offset") || "0");
-    const { results } = await c.env.DB.prepare(
+    const { results: events } = await c.env.DB.prepare(
       "SELECT id, title, category, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted, status, is_potluck, is_volunteer, revision_of FROM events ORDER BY date_start ASC LIMIT ? OFFSET ?"
     ).bind(limit, offset).all();
-    return c.json({ events: results ?? [] });
+
+    const lastSyncRow = await c.env.DB.prepare("SELECT value FROM settings WHERE key = 'LAST_CALENDAR_SYNC'").first<{value: string}>();
+    
+    return c.json({ 
+      events: events ?? [],
+      lastSyncedAt: lastSyncRow?.value || null 
+    });
   } catch (err) {
     console.error("D1 admin list error (events):", err);
-    return c.json({ events: [] });
+    return c.json({ events: [], lastSyncedAt: null });
   }
 });
 
@@ -117,10 +123,10 @@ adminRouter.put("/:id", async (c) => {
 
     let gcalId: string | null = null;
     if (gcalEmail && gcalKey && calId) {
-      const row = await c.env.DB.prepare("SELECT gcal_event_id FROM events WHERE id = ?").bind(paramId).first<{gcal_event_id: string}>();
+      const row = await c.env.DB.prepare("SELECT gcal_event_id FROM events WHERE id = ?").bind(paramId).first<{gcal_event_id: string | null}>();
       try {
         gcalId = (await pushEventToGcal(
-          { id: paramId, title, date_start: dateStart, date_end: dateEnd, location, description, cover_image: coverImage, gcal_event_id: row?.gcal_event_id },
+          { id: paramId, title, date_start: dateStart, date_end: dateEnd, location, description, cover_image: coverImage, gcal_event_id: row?.gcal_event_id || undefined },
           { email: gcalEmail, privateKey: gcalKey, calendarId: calId as string }
         )) || null;
       } catch (err: unknown) {

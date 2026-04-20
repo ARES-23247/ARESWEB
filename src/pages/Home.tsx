@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import SEO from "../components/SEO";
+import { GreekMeander } from "../components/GreekMeander";
 
 export default function Home() {
   return (
@@ -93,7 +94,7 @@ export default function Home() {
       </section>
 
       {/* ─── CALL TO ACTION SECTION ─── */}
-      <div className="meander-divider bg-marble opacity-70 relative -bottom-[1px] z-10 w-full"></div>
+      <GreekMeander variant="thick" opacity="opacity-40" className="bg-marble relative -bottom-[1px] z-10" />
       <section className="py-24 obsidian-section relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-bold mb-8 font-heading">

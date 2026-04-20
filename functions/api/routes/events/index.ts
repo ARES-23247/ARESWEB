@@ -27,7 +27,7 @@ eventsRouter.get("/:id", async (c) => {
   try {
     const row = await c.env.DB.prepare(
       `SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.gcal_event_id, e.cf_email, e.is_potluck, e.is_volunteer,
-              p.nickname as author_nickname, COALESCE(p.avatar, u.image) as author_avatar
+              p.nickname as author_nickname, u.image as author_avatar
        FROM events e
        LEFT JOIN user u ON e.cf_email = u.email
        LEFT JOIN user_profiles p ON u.id = p.user_id
@@ -46,10 +46,12 @@ eventsRouter.get("/:id", async (c) => {
 // Mounted at /events/calendar
 eventsRouter.get("/calendar", async (c) => {
   try {
-    const { results } = await c.env.DB.prepare("SELECT key, value FROM settings WHERE key IN ('CALENDAR_ID_INTERNAL', 'CALENDAR_ID_OUTREACH', 'CALENDAR_ID_EXTERNAL')").all<{key: string, value: string}>();
+    const { results } = await c.env.DB.prepare(
+      "SELECT key, value FROM settings WHERE key IN ('CALENDAR_ID', 'CALENDAR_ID_INTERNAL', 'CALENDAR_ID_OUTREACH', 'CALENDAR_ID_EXTERNAL')"
+    ).all<{key: string, value: string}>();
     const map = (results || []).reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {} as Record<string, string>);
     return c.json({ 
-      calendarIdInternal: map['CALENDAR_ID_INTERNAL'] || "",
+      calendarIdInternal: map['CALENDAR_ID_INTERNAL'] || map['CALENDAR_ID'] || "",
       calendarIdOutreach: map['CALENDAR_ID_OUTREACH'] || "",
       calendarIdExternal: map['CALENDAR_ID_EXTERNAL'] || "",
     });

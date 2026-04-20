@@ -43,6 +43,7 @@ CREATE TABLE events (
     cf_email TEXT,
     is_deleted INTEGER DEFAULT 0,
     status TEXT DEFAULT 'published',
+    category TEXT DEFAULT 'internal',
     is_potluck INTEGER DEFAULT 0,
     is_volunteer INTEGER DEFAULT 0
 );

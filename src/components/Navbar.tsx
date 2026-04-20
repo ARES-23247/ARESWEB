@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Search, LayoutDashboard, LogIn } from "lucide-react";
 import GlobalSearchModal from "./GlobalSearchModal";
 import { useSession } from "../utils/auth-client";
+import { GreekMeander } from "./GreekMeander";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -14,7 +15,8 @@ export default function Navbar() {
   const userImage = session?.user?.image;
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 py-4 transition-all duration-500 overflow-hidden meander-border rounded-bl-xl rounded-br-[2.5rem]">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-hidden rounded-bl-xl rounded-br-[2.5rem] border-t-4 border-ares-bronze">
+      <GreekMeander variant="thin" opacity="opacity-20" className="absolute top-0 left-0" />
       <div className="flex items-center justify-between">
         <button 
           onClick={() => navigate("/")} 

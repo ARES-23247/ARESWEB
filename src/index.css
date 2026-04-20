@@ -30,8 +30,7 @@ h1, h2, h3, h4, .font-heading {
 
 @layer utilities {
   .meander-border {
-    border-top: 4px solid var(--ares-bronze);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='8' viewBox='0 0 40 8'%3E%3Cpath d='M0 0h6v2H2v4h4v2H0V0zm8 0h6v2h-4v4h4v2H8V0zm8 0h6v2h-4v4h4v2h-6V0zm8 0h6v2h-4v4h4v2h-6V0zm8 0h6v2h-4v4h4v2h-6V0z' fill='%23cd7f32' fill-opacity='0.2'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='8' viewBox='0 0 40 8'%3E%3Cpath d='M0 0h6v2H2v4h4v2H0V0zm8 0h6v2h-4v4h4v2H8V0zm8 0h6v2h-4v4h4v2h-6V0zm8 0h6v2h-4v4h4v2h-6V0zm8 0h6v2h-4v4h4v2h-6V0z' fill='%23cd7f32'/%3E%3C/svg%3E");
     background-repeat: repeat-x;
     background-position: top;
   }
@@ -65,9 +64,7 @@ h1, h2, h3, h4, .font-heading {
   }
 
   .meander-divider {
-    height: 12px;
-    width: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='12' viewBox='0 0 60 12'%3E%3Cpath d='M0 0h9v3H3v6h6v3H0V0zm12 0h9v3H15v6h6v3H12V0zm12 0h9v3H27v6h6v3H24V0zm12 0h9v3H39v6h6v3H36V0zm12 0h9v3H51v6h6v3H48V0z' fill='%23cd7f32' fill-opacity='0.4'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='12' viewBox='0 0 60 12'%3E%3Cpath d='M0 0h9v3H3v6h6v3H0V0zm12 0h9v3H15v6h6v3H12V0zm12 0h9v3H27v6h6v3H24V0zm12 0h9v3H39v6h6v3H36V0zm12 0h9v3H51v6h6v3H48V0z' fill='%23cd7f32'/%3E%3C/svg%3E");
     background-repeat: repeat-x;
     background-position: center;
   }

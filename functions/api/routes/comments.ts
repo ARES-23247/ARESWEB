@@ -14,7 +14,7 @@ commentsRouter.get("/comments/:targetType/:targetId", async (c) => {
     }
     const { results } = await c.env.DB.prepare(
       `SELECT c.id, c.content, c.created_at, c.user_id,
-              p.nickname, COALESCE(p.avatar, u.image) as avatar
+              p.nickname, u.image as avatar
        FROM comments c
        JOIN user u ON c.user_id = u.id
        LEFT JOIN user_profiles p ON c.user_id = p.user_id
