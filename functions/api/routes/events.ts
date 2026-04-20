@@ -79,7 +79,7 @@ eventsRouter.post("/admin/events", async (c) => {
   try {
     const email = c.req.header("cf-access-authenticated-user-email") || "anonymous_admin";
     const body = await c.req.json();
-    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer } = body;
+    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft } = body;
 
     if (!title || !dateStart) {
       return c.json({ error: "Missing required fields" }, 400);
@@ -108,7 +108,7 @@ eventsRouter.post("/admin/events", async (c) => {
     }
 
     const user = await getSessionUser(c);
-    const status = user?.role === "admin" ? "published" : "pending";
+    const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
     await c.env.DB.prepare(
       "INSERT INTO events (id, title, date_start, date_end, location, description, gcal_event_id, cf_email, cover_image, status, is_potluck, is_volunteer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -143,7 +143,7 @@ eventsRouter.put("/admin/events/:id", async (c) => {
   try {
     const paramId = c.req.param("id");
     const body = await c.req.json();
-    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer } = body;
+    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft } = body;
 
     if (!title || !dateStart) {
       return c.json({ error: "Missing required fields" }, 400);
@@ -187,7 +187,7 @@ eventsRouter.put("/admin/events/:id", async (c) => {
       return c.json({ success: true, id: revId, warning: warnings.length > 0 ? warnings.join(" | ") : undefined }, finalStatus as 200 | 207);
     }
 
-    const status = "published";
+    const status = isDraft ? "pending" : "published";
 
     await c.env.DB.prepare(
       `UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = ?, is_potluck = ?, is_volunteer = ? WHERE id = ?`

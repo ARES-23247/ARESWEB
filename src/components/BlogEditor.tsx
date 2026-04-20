@@ -94,7 +94,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
     fetchSettings();
   }, []);
 
-  const handlePublish = async () => {
+  const handlePublish = async (isDraft: boolean = false) => {
     if (!title || !editor) {
       setErrorMsg("Title and content are required.");
       return;
@@ -113,7 +113,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
         method,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ title, author, coverImageUrl, ast, socials: editSlug ? null : socials }),
+        body: JSON.stringify({ title, author, coverImageUrl, ast, socials, isDraft }),
       });
 
       const data = await res.json();
@@ -229,7 +229,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
       </div>
 
       {/* Social Syndication Controls */}
-      {!editSlug && availableSocials.length > 0 && (
+      {availableSocials.length > 0 && (
         <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-4 shadow-inner">
           <div className="flex items-center gap-2 mb-3">
              <div className="w-2 h-2 rounded-full bg-ares-cyan animate-pulse"></div>
@@ -272,14 +272,23 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
       {/* Footer */}
       <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-800">
         <span className="text-ares-red text-sm font-medium">{errorMsg}</span>
-        <button
-          onClick={handlePublish}
-          disabled={isPending}
-          className={`flex items-center justify-center min-w-[200px] px-8 py-3.5 rounded-full font-bold tracking-wide transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
-            ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-0.5"}`}
-        >
-          {isPending ? "COMMITTING..." : editSlug ? "UPDATE ENTRY" : (userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY")}
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={() => handlePublish(true)}
+            disabled={isPending}
+            className={`px-6 py-3.5 rounded-full font-bold transition-all shadow-xl disabled:opacity-50 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800`}
+          >
+            {isPending ? "SAVING..." : "SAVE AS DRAFT"}
+          </button>
+          <button
+            onClick={() => handlePublish(false)}
+            disabled={isPending}
+            className={`flex items-center justify-center min-w-[200px] px-8 py-3.5 rounded-full font-bold tracking-wide transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
+              ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-0.5"}`}
+          >
+            {isPending ? "COMMITTING..." : editSlug ? "UPDATE ENTRY" : (userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY")}
+          </button>
+        </div>
       </div>
     </div>
   );

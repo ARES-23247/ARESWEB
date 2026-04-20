@@ -116,7 +116,7 @@ postsRouter.post("/admin/posts", async (c) => {
     const snippet = buildSnippet(body.ast);
     
     const user = await getSessionUser(c);
-    const status = user?.role === "admin" ? "published" : "pending";
+    const status = body.isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
     await c.env.DB.prepare(
       `INSERT INTO posts (slug, title, author, date, thumbnail, snippet, ast, cf_email, status)
@@ -172,6 +172,7 @@ postsRouter.put("/admin/posts/:slug", async (c) => {
       author?: string;
       coverImageUrl?: string;
       ast: unknown;
+      isDraft?: boolean;
     }>();
 
     if (!body.title) {
@@ -207,7 +208,7 @@ postsRouter.put("/admin/posts/:slug", async (c) => {
     }
 
     // ── Direct Update Logic (Admin Edits) ──
-    const status = "published";
+    const status = body.isDraft ? "pending" : "published";
     await c.env.DB.prepare(
       `UPDATE posts SET title = ?, author = ?, thumbnail = ?, snippet = ?, ast = ?, status = ? WHERE slug = ?`
     )

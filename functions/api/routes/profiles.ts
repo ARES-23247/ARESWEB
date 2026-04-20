@@ -22,12 +22,12 @@ profilesRouter.get("/profile/me", async (c) => {
     ).bind(user.id).all();
 
     return c.json({
-      profile: profile || {
+      ...(profile || {
         user_id: user.id,
         nickname: user.name || "",
         avatar: null,
         member_type: "student",
-      },
+      }),
       badges: rawBadges || [],
       auth: { id: user.id, email: user.email, name: user.name, image: user.image },
     });
@@ -173,10 +173,10 @@ profilesRouter.get("/team-roster", async (c) => {
       return sanitizeProfileForPublic(r, memberType);
     });
 
-    return c.json({ roster: sanitized });
+    return c.json({ members: sanitized });
   } catch (err) {
     console.error("D1 team roster error:", err);
-    return c.json({ roster: [] });
+    return c.json({ members: [] });
   }
 });
 
