@@ -9,6 +9,17 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
     globals: true,
+    exclude: ['node_modules', 'tests/e2e/**'],
+    coverage: {
+      provider: "v8",
+      include: ['src/utils/**'],
+      thresholds: {
+        lines: 70,
+        functions: 50,
+        branches: 70,
+        statements: 70
+      }
+    }
   },
   plugins: [
     react(),
