@@ -6,6 +6,8 @@ const commentsRouter = new Hono<{ Bindings: Bindings }>();
 // ── GET /comments/:targetType/:targetId — list comments ───────────────
 commentsRouter.get("/comments/:targetType/:targetId", async (c) => {
   const { targetType, targetId } = c.req.param();
+  const user = await getSessionUser(c);
+
   try {
     const { results } = await c.env.DB.prepare(
       `SELECT c.id, c.content, c.created_at, c.user_id,
@@ -26,10 +28,18 @@ commentsRouter.get("/comments/:targetType/:targetId", async (c) => {
       avatar: r.avatar,
     }));
 
-    return c.json({ comments: mapped });
+    return c.json({ 
+      comments: mapped,
+      authenticated: !!user,
+      role: user?.role || null
+    });
   } catch (err) {
     console.error("D1 comments list error:", err);
-    return c.json({ comments: [] });
+    return c.json({ 
+      comments: [],
+      authenticated: !!user,
+      role: user?.role || null
+    });
   }
 });
 
