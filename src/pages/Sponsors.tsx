@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Gem, Award, ShieldCheck, Zap, ExternalLink, Heart } from "lucide-react";
+import { Gem, Award, ShieldCheck, Zap, ExternalLink, Heart, Package } from "lucide-react";
 import SEO from "../components/SEO";
 
 interface Sponsor {
@@ -41,13 +41,20 @@ const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; borde
     glow: "",
     text: "text-ares-bronze"
   },
+  "In-Kind": {
+    icon: <Package className="text-emerald-500" size={20} />,
+    glass: "bg-emerald-500/5",
+    border: "border-emerald-500/20",
+    glow: "",
+    text: "text-emerald-500"
+  },
 };
 
 export default function Sponsors() {
   const { data: sponsors = [] } = useQuery<Sponsor[]>({
     queryKey: ["public-sponsors"],
     queryFn: async () => {
-      const r = await fetch("/api/sponsors");
+      const r = await fetch("/api/sponsors", { cache: "no-store" });
       const d = await r.json() as { sponsors?: Sponsor[] };
       return d.sponsors || [];
     }
@@ -59,7 +66,7 @@ export default function Sponsors() {
     return acc;
   }, {} as Record<string, Sponsor[]>);
 
-  const tiersOrdered = ["Titanium", "Gold", "Silver", "Bronze"];
+  const tiersOrdered = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"];
   const existingTiers = Array.from(new Set(sponsors.map(s => s.tier))).filter(Boolean);
   const dropdownTiers = existingTiers.length > 0 ? existingTiers : tiersOrdered;
 
@@ -166,10 +173,17 @@ export default function Sponsors() {
                       `}
                     >
                       {s.logo_url ? (
-                        <img src={s.logo_url} alt={s.name} className="max-w-full max-h-24 object-contain mb-4 filter grayscale group-hover:grayscale-0 transition-all duration-500" />
-                      ) : (
-                        <div className="text-2xl font-black text-white/40 mb-2">{s.name}</div>
-                      )}
+                        <img 
+                          src={s.logo_url} 
+                          alt={s.name} 
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.querySelector('.fallback-text')?.classList.remove('hidden');
+                          }}
+                          className="max-w-full max-h-24 object-contain mb-4 filter grayscale group-hover:grayscale-0 transition-all duration-500" 
+                        />
+                      ) : null}
+                      <div className={`fallback-text text-2xl font-black text-white/40 mb-2 ${s.logo_url ? 'hidden' : ''}`}>{s.name}</div>
                       
                       <div className="flex items-center gap-2 mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400" aria-hidden="true">Visit Website</span>

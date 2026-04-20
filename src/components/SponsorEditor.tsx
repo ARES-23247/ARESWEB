@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2 } from "lucide-react";
+import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Sponsor {
@@ -17,6 +17,7 @@ const TIERS = [
   { name: "Gold", icon: <Award className="text-ares-gold" />, color: "text-ares-gold", border: "border-ares-gold/30" },
   { name: "Silver", icon: <ShieldCheck className="text-zinc-400" />, color: "text-zinc-400", border: "border-zinc-400/30" },
   { name: "Bronze", icon: <Zap className="text-ares-bronze" />, color: "text-ares-bronze", border: "border-ares-bronze/30" },
+  { name: "In-Kind", icon: <Package className="text-emerald-500" />, color: "text-emerald-500", border: "border-emerald-500/30" },
 ];
 
 export default function SponsorEditor() {
@@ -34,7 +35,7 @@ export default function SponsorEditor() {
   const { data: sponsors = [], isLoading } = useQuery<Sponsor[]>({
     queryKey: ["admin-sponsors"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/sponsors");
+      const r = await fetch("/api/admin/sponsors", { cache: "no-store" });
       const d = await r.json() as { sponsors?: Sponsor[] };
       return d.sponsors || [];
     }
