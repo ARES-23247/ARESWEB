@@ -1,0 +1,189 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Rocket, Wrench, Code, PenTool, CheckCircle } from "lucide-react";
+import SEO from "../components/SEO";
+
+export default function Join() {
+  const [role, setRole] = useState<"student" | "mentor">("student");
+
+  return (
+    <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO title="Join the Team — ARES 23247" description="Become a student or mentor for the ARES 23247 robotics team." />
+
+      <section className="relative py-24 overflow-hidden border-b border-white/5">
+        <div className="absolute inset-0 bg-ares-red/5 bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.15)_0,rgba(0,0,0,0)_70%)] opacity-50 blur-[80px]" />
+        
+        <div className="max-w-5xl mx-auto px-6 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <p className="text-ares-red uppercase tracking-[0.3em] font-bold text-sm mb-4">Enrollment Open</p>
+            <h1 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter italic">
+              Join <span className="text-ares-red">ARES.</span>
+            </h1>
+            <p className="text-marble/80 text-xl max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-8">
+              We are actively looking for forward-thinking students and dedicated mentors to expand our operations. No prior experience is required—only the drive to learn and the grit to succeed.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-zinc-950 relative">
+        <div className="absolute top-0 left-0 w-full h-1 meander-border opacity-30"></div>
+        
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16">
+          <motion.div 
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-4"
+          >
+            <h2 className="text-3xl font-black text-white mb-6 uppercase tracking-tight">The ARES <span className="text-ares-red">Advantage</span></h2>
+            
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-red/10 flex items-center justify-center text-ares-red border border-ares-red/20 shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+                  <Wrench size={18} />
+                </div>
+                <div>
+                  <h4 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Industrial Tooling</h4>
+                  <p className="text-marble/60 text-sm leading-relaxed">Operate advanced CNC mills, 3D printers, and CAD software used in top engineering firms.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-cyan/10 flex items-center justify-center text-ares-cyan border border-ares-cyan/20">
+                  <Code size={18} />
+                </div>
+                <div>
+                  <h4 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Autonomous Systems</h4>
+                  <p className="text-marble/60 text-sm leading-relaxed">Learn Java, path planning, computer vision, and machine learning telemetry systems.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-gold/10 flex items-center justify-center text-ares-gold border border-ares-gold/20">
+                  <PenTool size={18} />
+                </div>
+                <div>
+                  <h4 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Business & Logistics</h4>
+                  <p className="text-marble/60 text-sm leading-relaxed">Develop championship-grade portfolios, execute marketing pipelines, and secure sponsorships.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-12 p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
+              <h4 className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2"><CheckCircle size={14} /> Eligibility</h4>
+              <ul className="text-sm text-marble/80 space-y-2">
+                <li>• Students in grades 6-12</li>
+                <li>• Serving Monongalia & Harrison Counties</li>
+                <li>• No cost to join or compete</li>
+              </ul>
+            </div>
+          </motion.div>
+          
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="lg:col-span-8"
+          >
+            <div className="bg-marble text-obsidian rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-obsidian rounded-full blur-[100px] opacity-[0.03] -translate-y-1/2 translate-x-1/3"></div>
+              
+              <div className="flex flex-wrap gap-4 mb-10 relative z-10">
+                <button 
+                  onClick={() => setRole("student")}
+                  className={`flex-1 min-w-[200px] flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold uppercase tracking-widest text-sm transition-all ${role === "student" ? "bg-ares-red text-white shadow-lg shadow-ares-red/20 scale-100" : "bg-obsidian/5 text-obsidian/60 hover:bg-obsidian/10 scale-95"}`}
+                >
+                  <Rocket size={18} /> Student Application
+                </button>
+                <button 
+                  onClick={() => setRole("mentor")}
+                  className={`flex-1 min-w-[200px] flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold uppercase tracking-widest text-sm transition-all ${role === "mentor" ? "bg-obsidian text-white shadow-lg scale-100" : "bg-obsidian/5 text-obsidian/60 hover:bg-obsidian/10 scale-95"}`}
+                >
+                  <GraduationCap size={18} /> Mentor Application
+                </button>
+              </div>
+
+              <form className="space-y-6 relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Full Name *</label>
+                    <input type="text" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="Jane Doe" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Email Address *</label>
+                    <input type="email" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="jane@example.com" required />
+                  </div>
+                </div>
+
+                {role === "student" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">School *</label>
+                      <input type="text" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="High School Name" required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Grade *</label>
+                      <select className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm appearance-none cursor-pointer" required>
+                        <option value="" disabled selected>Select Grade</option>
+                        <option value="6">6th Grade</option>
+                        <option value="7">7th Grade</option>
+                        <option value="8">8th Grade</option>
+                        <option value="9">9th Grade</option>
+                        <option value="10">10th Grade</option>
+                        <option value="11">11th Grade</option>
+                        <option value="12">12th Grade</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Occupation / Company</label>
+                    <input type="text" className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="Mechanical Engineer at NASA" />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Interests / Expertise *</label>
+                  <p className="text-xs text-obsidian/50 mb-3 ml-1 leading-relaxed">What areas are you most interested in pursuing with ARES?</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {["Mechanical / CAD", "Programming", "Electrical", "Business", "Outreach", "Media / Video"].map((item) => (
+                      <label key={item} className="flex items-center gap-3 p-3 border border-obsidian/10 rounded-lg cursor-pointer hover:bg-obsidian/5 transition-colors">
+                        <input type="checkbox" className="accent-ares-red w-4 h-4 cursor-pointer" />
+                        <span className="text-sm font-medium text-obsidian/80">{item}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Additional Information</label>
+                  <textarea rows={4} className="w-full bg-white border border-obsidian/20 rounded-xl px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-sm" placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : "How would you like to support the team?"}></textarea>
+                </div>
+                
+                <div className="pt-4">
+                  <button onClick={(e) => { e.preventDefault(); alert("Thanks for applying! We'll be in touch shortly."); }} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest rounded-xl hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-red-600" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
+                    Submit {role === "student" ? "Student" : "Mentor"} Application
+                  </button>
+                  <p className="text-center text-[11px] text-obsidian/40 font-bold uppercase tracking-widest mt-4">
+                    Your personal information is protected under the FIRST Youth Protection Program guidelines.
+                  </p>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// Ensure the icon is imported
+function GraduationCap(props: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21.44 11.05-9.19 5.64a1.98 1.98 0 0 1-1.92 0L1.14 11.05a1.98 1.98 0 0 1 0-3.38l9.19-5.64a1.98 1.98 0 0 1 1.92 0l9.19 5.64a1.98 1.98 0 0 1 0 3.38Z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+  );
+}

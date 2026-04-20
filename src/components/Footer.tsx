@@ -32,6 +32,7 @@ export default function Footer() {
             <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Outreach</Link></li>
             <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
             <li><Link to="/docs" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></span></Link></li>
+            <li><Link to="/join" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Join Us</Link></li>
           </ul>
         </div>
 

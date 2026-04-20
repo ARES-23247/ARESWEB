@@ -140,12 +140,12 @@ export default function About() {
           <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
             We welcome students from 6th–12th grade across Monongalia and Harrison counties. No experience needed — just bring your curiosity.
           </p>
-          <a
-            href="/contact"
+          <Link
+            to="/join"
             className="clipped-button bg-white text-ares-red hover:scale-105 hover:bg-marble transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] font-heading text-lg"
           >
             Apply to Join Our Team
-          </a>
+          </Link>
         </div>
       </section>
 

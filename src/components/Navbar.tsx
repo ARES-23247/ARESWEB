@@ -103,7 +103,8 @@ export default function Navbar() {
               <LogIn size={16} /> Sign In
             </Link>
           )}
-          <Link to="/contact" onClick={() => setOpen(false)} className="text-marble/70 hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Contact</Link>
+          <Link to="/join" onClick={() => setOpen(false)} className="text-marble/70 hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Join Us</Link>
+          <Link to="/sponsors" onClick={() => setOpen(false)} className="text-marble/70 hover:text-ares-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Support Us</Link>
         </div>
       )}
 

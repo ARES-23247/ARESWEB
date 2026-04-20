@@ -26,6 +26,7 @@ import ProfilePage from "./pages/ProfilePage";
 import BugReport from "./pages/BugReport";
 import Sponsors from "./pages/Sponsors";
 import JudgesHub from "./pages/JudgesHub";
+import Join from "./pages/Join";
 
 export default function App() {
   const location = useLocation();
@@ -58,6 +59,7 @@ export default function App() {
               <Route path="/docs/:slug" element={<Docs />} />
               <Route path="/bug-report" element={<BugReport />} />
               <Route path="/sponsors" element={<Sponsors />} />
+              <Route path="/join" element={<Join />} />
               <Route path="/judges" element={<JudgesHub />} />
             </Routes>
           </ErrorBoundary>
