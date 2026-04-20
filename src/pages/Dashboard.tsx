@@ -89,9 +89,9 @@ export default function Dashboard() {
     if (session && isAdmin) {
       fetch("/api/admin/inquiries")
         .then(res => res.json())
-        .then((data: any) => {
+        .then((data: { inquiries?: { status: string }[] }) => {
           if (data.inquiries) {
-            setPendingCount(data.inquiries.filter((i: any) => i.status === "pending").length);
+            setPendingCount(data.inquiries.filter((i: { status: string }) => i.status === "pending").length);
           }
         }).catch(() => {});
     }
