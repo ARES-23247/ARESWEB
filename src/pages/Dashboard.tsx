@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, 
   ShieldAlert, Lock, RefreshCw, LogOut, User, Users, Utensils, BarChart3, 
-  Gem, Target, Trophy, Menu, X, Folders, Award, MapPin
+  Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare
 } from "lucide-react";
 
 // ── Lazy-loaded Tab Components ───────────────────────────────────────
@@ -25,8 +25,9 @@ const AwardEditor = lazy(() => import("@/components/AwardEditor"));
 const MemberImpactOverview = lazy(() => import("@/components/MemberImpactOverview"));
 const BadgeManager = lazy(() => import("@/components/BadgeManager"));
 const LocationsManager = lazy(() => import("@/components/LocationsManager"));
+const AdminInquiries = lazy(() => import("@/components/AdminInquiries"));
 
-type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "locations" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy" | "impact_roster" | "badges";
+type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "locations" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy" | "impact_roster" | "badges" | "inquiries";
 
 // ── NavButton Component ────────────────────────────────────────────
 const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false, activeTab, onNavigate }: { tab: TabState, icon?: React.ElementType, label: string, disabled?: boolean, sub?: boolean, activeTab: TabState, onNavigate: (tab: TabState) => void }) => {
@@ -199,6 +200,16 @@ export default function Dashboard() {
         return <ProfileEditor />;
       case "users":
         return isAdmin ? <AdminUsers /> : null;
+      case "inquiries":
+        return isAdmin ? (
+          <>
+            <div className="mb-6 pb-6 border-b border-white/5">
+              <h2 className="text-2xl font-black text-white flex items-center gap-3"><MessageSquare className="text-ares-red" /> Team Inquiries</h2>
+              <p className="text-zinc-500 text-sm mt-1">Review student, mentor, and sponsor applications.</p>
+            </div>
+            <AdminInquiries />
+          </>
+        ) : null;
       case "impact_roster":
         return isAdmin ? <MemberImpactOverview /> : null;
       case "badges":
@@ -209,6 +220,16 @@ export default function Dashboard() {
               <p className="text-zinc-500 text-sm mt-1">Define platform-wide awards and distribute them to members.</p>
             </div>
             <BadgeManager />
+          </>
+        ) : null;
+      case "inquiries":
+        return isAdmin ? (
+          <>
+            <div className="mb-6 pb-6 border-b border-white/5">
+              <h2 className="text-2xl font-black text-white flex items-center gap-3"><MessageSquare className="text-ares-cyan" /> Inquiries & Applications</h2>
+              <p className="text-zinc-500 text-sm mt-1">Review student applications, mentor requests, and sponsor inquiries.</p>
+            </div>
+            <AdminInquiries />
           </>
         ) : null;
       case "logistics":
@@ -398,6 +419,7 @@ export default function Dashboard() {
             <div>
               <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-red/80 mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
+                {isAdmin && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" activeTab={activeTab} onNavigate={handleNavigate} />}
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" activeTab={activeTab} onNavigate={handleNavigate} />}
                 {isAdmin && <NavButton tab="impact_roster" icon={Trophy} label="Impact & Roster" activeTab={activeTab} onNavigate={handleNavigate} />}
                 {isAdmin && <NavButton tab="badges" icon={Award} label="Badges & Awards" activeTab={activeTab} onNavigate={handleNavigate} />}
