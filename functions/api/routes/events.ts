@@ -89,7 +89,9 @@ eventsRouter.post("/admin/events", async (c) => {
   try {
     const email = c.req.header("cf-access-authenticated-user-email") || "anonymous_admin";
     const body = await c.req.json();
-    const { title, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft } = body;
+    const { title, category, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft } = body;
+
+    const cat = category || 'internal';
 
     if (!title || !dateStart) {
       return c.json({ error: "Missing required fields" }, 400);
