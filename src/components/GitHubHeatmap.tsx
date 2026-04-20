@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
 
-interface WeekData {
-  total: number;
-  week: number;
-  days: number[];
-}
-
 interface DayCell {
   date: string;
   count: number;
