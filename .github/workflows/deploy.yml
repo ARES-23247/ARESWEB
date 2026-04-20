@@ -43,6 +43,9 @@ jobs:
 
       - name: E2E Accessibility Tests (pa11y-ci)
         run: npx start-server-and-test preview http://localhost:4173 "npm run pa11y"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
