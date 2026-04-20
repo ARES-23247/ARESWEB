@@ -54,10 +54,10 @@ The following fields are safe to display publicly for ALL member types:
 All API endpoints that return user data MUST apply server-side PII stripping:
 
 ```typescript
-function sanitizeProfileForPublic(profile: UserProfile, memberType: string) {
+function sanitizeProfileForPublic(profile: UserProfile, userAuthProfile: { image?: string }, memberType: string) {
   const safe = {
     nickname: profile.nickname || "ARES Member",
-    avatar: profile.avatar,
+    avatar: userAuthProfile.image,
     pronouns: profile.pronouns,
     subteams: profile.subteams,
     member_type: profile.member_type,

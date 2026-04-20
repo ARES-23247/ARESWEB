@@ -133,7 +133,7 @@ Cloudflare Access only injects `cf-access-*` headers for the exact path the Acce
 The fix: mount the probe at `/api/auth-check` (no `/admin/` prefix) and manually check for authentication signals including the `CF_Authorization` cookie, which Cloudflare Access sets domain-wide after login.
 
 ```typescript
-// Backend: functions/api/[[route]].ts
+// Backend: functions/api/routes/auth.ts
 // This lives OUTSIDE /admin/* — it does NOT go through ensureAdmin.
 // It checks headers AND the CF_Authorization cookie as a fallback.
 apiRouter.get("/auth-check", async (c) => {
