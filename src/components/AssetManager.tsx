@@ -62,6 +62,21 @@ export default function AssetManager() {
     },
   });
 
+  const moveMutation = useMutation({
+    mutationFn: async (data: { key: string, newFolder: string }) => {
+      const res = await fetch(`/dashboard/api/admin/media/${data.key}/move`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ folder: data.newFolder })
+      });
+      if (!res.ok) throw new Error("Move failed");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+    }
+  });
+
   const syndicateMutation = useMutation({
     mutationFn: async ({ key, caption }: { key: string, caption: string }) => {
       const res = await fetch(`/dashboard/api/admin/media/syndicate`, { 
@@ -211,12 +226,25 @@ export default function AssetManager() {
                       </button>
                     )}
                   </div>
-                  <button
-                    onClick={() => setSyndicateKey(asset.key)}
-                    className="w-full mt-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-lg hover:from-blue-400 hover:to-purple-500 transition-all text-center shadow-lg"
-                  >
-                    📢 Broadcast
-                  </button>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <button
+                      onClick={() => setSyndicateKey(asset.key)}
+                      className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-lg hover:from-blue-400 hover:to-purple-500 transition-all text-center shadow-lg"
+                    >
+                      📢 Broadcast
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newFolder = window.prompt("Enter new folder name to move this asset:", asset.folder || "Library");
+                        if (newFolder !== null && newFolder.trim() !== "") {
+                          moveMutation.mutate({ key: asset.key, newFolder: newFolder.trim() });
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-zinc-700 text-white text-xs font-bold rounded-lg hover:bg-ares-gold hover:text-black transition-colors text-center"
+                    >
+                      📁 Move
+                    </button>
+                  </div>
                 </div>
               </div>
 

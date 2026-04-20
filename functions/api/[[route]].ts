@@ -634,6 +634,21 @@ apiRouter.delete("/admin/media/:key", ensureAdmin, async (c) => {
   }
 });
 
+// ── PUT /admin/media/:key/move — change folder (admin) ─────────────────
+apiRouter.put("/admin/media/:key/move", ensureAdmin, async (c) => {
+  try {
+    const key = c.req.param("key") as string;
+    const body = await c.req.json();
+    const newFolder = body?.folder || "";
+
+    await c.env.DB.prepare("UPDATE media_tags SET folder = ? WHERE key = ?").bind(newFolder, key).run();
+    return c.json({ success: true, folder: newFolder });
+  } catch (err) {
+    console.error("R2 move error:", err);
+    return c.json({ error: "Move failed" }, 500);
+  }
+});
+
 // ── POST /admin/media/syndicate — Cross-post Asset to Socials (admin) ─
 apiRouter.post("/admin/media/syndicate", async (c) => {
   try {
