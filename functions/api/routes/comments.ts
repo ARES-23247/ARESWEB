@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, getSessionUser } from "./_shared";
+import { Bindings, getSessionUser } from "./_shared";
 
 const commentsRouter = new Hono<{ Bindings: Bindings }>();
 

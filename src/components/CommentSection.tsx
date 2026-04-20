@@ -168,7 +168,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
                 Sign in with ARES ID
               </a>
               <p className="text-xs text-zinc-600 mt-5">
-                Don't have an ARES ID? <a href="/about" className="text-ares-red hover:underline">Contact us</a>
+                Don&apos;t have an ARES ID? <a href="/about" className="text-ares-red hover:underline">Contact us</a>
               </p>
             </div>
           ) : (

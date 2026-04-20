@@ -298,7 +298,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
             <div>
               <a href="/login" className="px-6 py-3 bg-ares-gold hover:bg-yellow-400 text-black rounded-xl font-black text-xs uppercase tracking-widest inline-block transition-all shadow-lg shadow-ares-gold/20">Sign in with ARES ID</a>
               <p className="text-[10px] uppercase tracking-widest text-zinc-600 mt-6 font-bold">
-                Don't have an ARES ID? <a href="/about" className="text-ares-gold hover:underline">Contact us</a>
+                Don&apos;t have an ARES ID? <a href="/about" className="text-ares-gold hover:underline">Contact us</a>
               </p>
             </div>
           ) : (

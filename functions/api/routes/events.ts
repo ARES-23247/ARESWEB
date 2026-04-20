@@ -159,12 +159,10 @@ eventsRouter.put("/admin/events/:id", async (c) => {
     const { title, category, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft } = body;
 
     const cat = category || 'internal';
-    const email = c.req.header("cf-access-authenticated-user-email") || "anonymous_admin";
     
     if (!title || !dateStart) {
       return c.json({ error: "Missing required fields" }, 400);
     }
-    const genId = crypto.randomUUID();
     const warnings: string[] = [];
 
     const socialConfig = await getSocialConfig(c);
