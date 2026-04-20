@@ -226,15 +226,26 @@ export async function dispatchSocials(
             };
           }
 
-          await agent.post({
-            text: rt.text,
-            facets: rt.facets,
-            embed: embed as Record<string, unknown>,
-            createdAt: new Date().toISOString()
-          });
-        } catch (err: unknown) {
-          console.error("Bluesky post failed:", (err as Error)?.message || err);
-          throw new Error(`Bluesky: ${(err as Error)?.message || String(err)}`);
+          const maxRetries = 2;
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              await agent.post({
+                text: rt.text,
+                facets: rt.facets,
+                embed: embed as Record<string, unknown>,
+                createdAt: new Date().toISOString()
+              });
+              break; // Success
+            } catch (err: unknown) {
+              const errMsg = (err as Error)?.message || String(err);
+              if (attempt === maxRetries || !errMsg.includes('UpstreamTimeout')) {
+                  console.error("Bluesky post failed:", errMsg);
+                  throw new Error(`Bluesky: ${errMsg}`);
+              }
+              console.warn(`Bluesky timeout (attempt ${attempt}), retrying...`);
+              await new Promise(r => setTimeout(r, 1500)); // Brief backoff
+            }
+          }
         }
       })()
     );
