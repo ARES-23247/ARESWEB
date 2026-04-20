@@ -246,6 +246,9 @@ export async function dispatchSocials(
               await new Promise(r => setTimeout(r, 1500)); // Brief backoff
             }
           }
+        } catch (err: unknown) {
+          console.error("Bluesky syndication failed:", (err as Error)?.message || err);
+          throw new Error(`Bluesky: ${(err as Error)?.message || String(err)}`);
         }
       })()
     );
