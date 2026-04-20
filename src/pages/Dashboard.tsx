@@ -67,9 +67,10 @@ export default function Dashboard() {
 
   // ── Unauthorized Gate ──────────────────────────────────────────────
   // @ts-expect-error - Better Auth session type overrides
-  const role = (session?.user?.role as string) || "user";
+  const role = (session?.user?.role as string) || "unverified";
   const isAdmin = role === "admin" || isLocalDev;
   const isAuthorized = isAdmin || role === "author";
+  const isUnverified = role === "unverified" && !isLocalDev;
 
   if (!session || !session.user) {
     return (
@@ -178,6 +179,32 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+
+        {isUnverified && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-10 p-6 bg-ares-red/10 border border-ares-red/30 rounded-[2rem] relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-ares-red/5 blur-3xl rounded-full -mr-20 -mt-20 group-hover:bg-ares-red/10 transition-colors duration-500" />
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-ares-red/20 to-red-900/40 border border-ares-red/30 flex items-center justify-center shadow-xl flex-shrink-0">
+                <ShieldAlert size={32} className="text-ares-red" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-black text-white tracking-tight mb-1">Account Verification Pending</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">
+                  Your identity has been registered, but you are currently in a <span className="text-ares-red font-bold">view-only</span> state. 
+                  A team administrator must verify your membership before you can post comments, sign up for events, or appear on the public roster.
+                </p>
+              </div>
+              <div className="flex flex-col items-center md:items-end gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-ares-red/60 px-3 py-1 border border-ares-red/20 rounded-full bg-ares-red/5">Status: Locked</span>
+                <p className="text-[10px] text-zinc-600 font-medium">Auto-refreshing session...</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           {/* Create New Panel (CMS authors/admins only) */}

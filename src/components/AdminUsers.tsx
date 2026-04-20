@@ -15,7 +15,7 @@ interface UserRow {
   createdAt: string;
 }
 
-const ROLES = ["user", "author", "admin"];
+const ROLES = ["unverified", "user", "author", "admin"];
 const MEMBER_TYPES = ["student", "alumni", "parent", "coach", "mentor", "sponsor"];
 
 export default function AdminUsers() {

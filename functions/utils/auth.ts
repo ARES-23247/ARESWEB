@@ -56,7 +56,7 @@ export const getAuth = (db: D1Database, env: Record<string, string>, requestUrl?
             additionalFields: {
                 role: {
                     type: "string",
-                    defaultValue: "user",
+                    defaultValue: "unverified",
                 },
             },
         },

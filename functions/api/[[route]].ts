@@ -50,7 +50,7 @@ const ensureAdmin = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
 
   // RBAC: Granular path-based role checks
   // @ts-expect-error - Better Auth additional fields
-  const role = (session.user.role as string) || "user";
+  const role = (session.user.role as string) || "unverified";
 
   // Authors can do everything EXCEPT manage users
   const isSuperAdminRoute = url.pathname.includes("/admin/users") || url.pathname.includes("/admin/roles");
@@ -1383,7 +1383,7 @@ async function getSessionUser(c: Context<{ Bindings: Bindings }>) {
         name: session.user.name,
         image: session.user.image,
         // @ts-expect-error - Better Auth role extension
-        role: (session.user.role as string) || "user",
+        role: (session.user.role as string) || "unverified",
       };
     }
   } catch { /* ignore */ }
@@ -1572,7 +1572,7 @@ apiRouter.get("/profile/:userId", async (c) => {
 apiRouter.get("/team-roster", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT p.*, u.image as avatar FROM user_profiles p LEFT JOIN user u ON p.user_id = u.id WHERE p.show_on_about = 1 AND p.member_type != 'parent'"
+      "SELECT p.*, u.image as avatar FROM user_profiles p LEFT JOIN user u ON p.user_id = u.id WHERE p.show_on_about = 1 AND p.member_type != 'parent' AND u.role NOT IN ('unverified')"
     ).all();
     const sanitized = (results || []).map((r: Record<string, unknown>) =>
       sanitizeProfileForPublic(r, (r.member_type as string) || "student")
@@ -1600,7 +1600,7 @@ apiRouter.get("/admin/users", async (c) => {
 apiRouter.put("/admin/users/:id/role", async (c) => {
   const id = c.req.param("id");
   const { role } = await c.req.json() as { role: string };
-  if (!["user", "author", "admin"].includes(role)) return c.json({ error: "Invalid role" }, 400);
+  if (!["unverified", "user", "author", "admin"].includes(role)) return c.json({ error: "Invalid role" }, 400);
   try {
     await c.env.DB.prepare("UPDATE user SET role = ? WHERE id = ?").bind(role, id).run();
     return c.json({ success: true });
@@ -1726,7 +1726,7 @@ apiRouter.get("/comments/:targetType/:targetId", async (c) => {
       nickname: r.nickname || "ARES Member",
       is_own: user ? r.user_id === user.id : false,
     }));
-    return c.json({ comments, authenticated: !!user });
+    return c.json({ comments, authenticated: !!user, role: user?.role });
   } catch (err) {
     console.error("[Comments GET]", err);
     return c.json({ comments: [], authenticated: false }, 500);
@@ -1735,7 +1735,9 @@ apiRouter.get("/comments/:targetType/:targetId", async (c) => {
 
 apiRouter.post("/comments/:targetType/:targetId", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  if (!user || user.role === "unverified") {
+    return c.json({ error: "Forbidden: Your account is pending team verification." }, 403);
+  }
   const targetType = c.req.param("targetType");
   const targetId = c.req.param("targetId");
   const { content } = await c.req.json() as { content: string };
@@ -1771,14 +1773,14 @@ apiRouter.get("/events/:id/signups", async (c) => {
       `SELECT s.*, p.nickname, u.image as avatar FROM event_signups s
        LEFT JOIN user_profiles p ON s.user_id = p.user_id
        LEFT JOIN user u ON s.user_id = u.id
-       WHERE s.event_id = ? ORDER BY s.created_at ASC`
+       WHERE s.event_id = ? AND u.role NOT IN ('unverified') ORDER BY s.created_at ASC`
     ).bind(eventId).all();
     const signups = (results || []).map((r: Record<string, unknown>) => ({
       ...r,
       nickname: r.nickname || "ARES Member",
       is_own: user ? r.user_id === user.id : false,
     }));
-    return c.json({ signups, authenticated: !!user });
+    return c.json({ signups, authenticated: !!user, role: user?.role });
   } catch (err) {
     console.error("[Signups GET]", err);
     return c.json({ signups: [], authenticated: false }, 500);
@@ -1787,7 +1789,9 @@ apiRouter.get("/events/:id/signups", async (c) => {
 
 apiRouter.post("/events/:id/signups", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  if (!user || user.role === "unverified") {
+    return c.json({ error: "Forbidden: Your account is pending team verification." }, 403);
+  }
   const eventId = c.req.param("id");
   const { bringing, notes } = await c.req.json() as { bringing: string; notes: string };
   try {
