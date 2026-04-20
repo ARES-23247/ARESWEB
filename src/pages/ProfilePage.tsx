@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GraduationCap, Briefcase, ArrowLeft, Shield } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 
 interface ProfilePublic {
@@ -27,15 +28,29 @@ interface ProfilePublic {
   emergency_contact_phone?: string;
 }
 
+interface BadgeDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color_theme: string;
+  awarded_at?: string;
+}
+
 export default function ProfilePage() {
   const { userId } = useParams();
   const [profile, setProfile] = useState<ProfilePublic | null>(null);
+  const [badges, setBadges] = useState<BadgeDef[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`/api/profile/${userId}`)
       .then(r => r.json())
-      .then((data) => { setProfile(data as ProfilePublic); setLoading(false); })
+      .then((data: { profile: ProfilePublic, badges?: BadgeDef[] }) => { 
+        setProfile(data.profile); 
+        setBadges(data.badges || []);
+        setLoading(false); 
+      })
       .catch(() => setLoading(false));
   }, [userId]);
 
@@ -93,6 +108,39 @@ export default function ProfilePage() {
               {profile.bio && <p className="text-zinc-300 text-sm leading-relaxed">{profile.bio}</p>}
             </div>
           </div>
+
+          {/* Trophy Rack */}
+          {badges && badges.length > 0 && (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 mb-8">
+              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                <LucideIcons.Award className="text-ares-gold" size={16} /> Honors & Badges
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                {badges.map((b) => {
+                  const IconComp = (LucideIcons as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
+                  const colorClass = `text-${b.color_theme.replace("text-", "")}`;
+                  return (
+                    <div key={b.id} className="relative group cursor-help bg-zinc-800 border border-zinc-700/50 hover:border-zinc-500 rounded-2xl p-4 transition-all flex flex-col items-center justify-center w-28 h-28">
+                      <IconComp size={40} className={`mb-2 ${colorClass}`} />
+                      <span className="text-[10px] font-bold text-center text-zinc-300 leading-tight block">{b.name}</span>
+                      
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-black border border-zinc-700 text-white text-xs rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">
+                        <p className="font-bold mb-1">{b.name}</p>
+                        <p className="text-zinc-400 text-[10px] leading-relaxed">{b.description}</p>
+                        {b.awarded_at && (
+                          <p className="text-zinc-500 text-[9px] mt-2 border-t border-white/10 pt-2">
+                            Awarded: {new Date(b.awarded_at).toLocaleDateString()}
+                          </p>
+                        )}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-700"></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Admin / Private Details */}
           {(profile.emergency_contact_name || profile.dietary_restrictions || profile.tshirt_size) && (

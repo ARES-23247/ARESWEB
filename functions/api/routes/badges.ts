@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin } from "./_shared";
+import { Bindings, ensureAdmin, getSessionUser } from "./_shared";
 
 const badgesRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -42,7 +42,8 @@ badgesRouter.post("/admin/users/:userId/badges", ensureAdmin, async (c) => {
   try {
     const userId = c.req.param("userId");
     const { badge_id } = await c.req.json();
-    const sessionId = (c.get as any)("user")?.id || "system";
+    const user = await getSessionUser(c);
+    const sessionId = user?.id || "system";
 
     await c.env.DB.prepare(
       "INSERT INTO user_badges (user_id, badge_id, awarded_by) VALUES (?, ?, ?)"

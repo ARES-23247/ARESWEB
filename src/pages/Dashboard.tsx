@@ -23,8 +23,9 @@ const SponsorEditor = lazy(() => import("@/components/SponsorEditor"));
 const OutreachTracker = lazy(() => import("@/components/OutreachTracker"));
 const AwardEditor = lazy(() => import("@/components/AwardEditor"));
 const MemberImpactOverview = lazy(() => import("@/components/MemberImpactOverview"));
+const BadgeManager = lazy(() => import("@/components/BadgeManager"));
 
-type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy" | "impact_roster";
+type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy" | "impact_roster" | "badges";
 
 // ── NavButton Component ────────────────────────────────────────────
 const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false, activeTab, onNavigate }: { tab: TabState, icon?: React.ElementType, label: string, disabled?: boolean, sub?: boolean, activeTab: TabState, onNavigate: (tab: TabState) => void }) => {
@@ -199,6 +200,16 @@ export default function Dashboard() {
         return isAdmin ? <AdminUsers /> : null;
       case "impact_roster":
         return isAdmin ? <MemberImpactOverview /> : null;
+      case "badges":
+        return isAdmin ? (
+          <>
+            <div className="mb-6 pb-6 border-b border-white/5">
+              <h2 className="text-2xl font-black text-white flex items-center gap-3">Badge Management</h2>
+              <p className="text-zinc-500 text-sm mt-1">Define platform-wide awards and distribute them to members.</p>
+            </div>
+            <BadgeManager />
+          </>
+        ) : null;
       case "logistics":
         return (
           <>
@@ -376,6 +387,7 @@ export default function Dashboard() {
               <div className="space-y-1 px-3">
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" activeTab={activeTab} onNavigate={handleNavigate} />}
                 {isAdmin && <NavButton tab="impact_roster" icon={Trophy} label="Impact & Roster" activeTab={activeTab} onNavigate={handleNavigate} />}
+                {isAdmin && <NavButton tab="badges" icon={Award} label="Badges & Awards" activeTab={activeTab} onNavigate={handleNavigate} />}
                 {isAdmin && <NavButton tab="integrations" icon={Settings} label="System Integrations" activeTab={activeTab} onNavigate={handleNavigate} />}
                 {canSeeLogistics && <NavButton tab="logistics" icon={Utensils} label="Dietary / Logistics" activeTab={activeTab} onNavigate={handleNavigate} />}
               </div>
