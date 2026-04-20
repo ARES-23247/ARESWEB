@@ -83,6 +83,19 @@ export default function Dashboard() {
   const [editDocSlug, setEditDocSlug] = useState<string | null>(initialDoc);
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (session && isAdmin) {
+      fetch("/api/admin/inquiries")
+        .then(res => res.json())
+        .then((data: any) => {
+          if (data.inquiries) {
+            setPendingCount(data.inquiries.filter((i: any) => i.status === "pending").length);
+          }
+        }).catch(() => {});
+    }
+  }, [session, isAdmin]);
 
   useEffect(() => {
     fetch("/api/auth-check")
@@ -310,6 +323,11 @@ export default function Dashboard() {
             <AppWindow size={16} className="text-white" />
           </div>
           <h1 className="text-lg font-black tracking-tighter text-white">ARES<span className="text-zinc-500 font-bold">Workspace</span></h1>
+          {isAdmin && pendingCount > 0 && (
+            <button onClick={() => { setIsSidebarOpen(false); setActiveTab("inquiries"); }} className="ml-2 px-2 py-0.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full animate-bounce shadow-[0_0_15px_rgba(239,68,68,0.6)]">
+              {pendingCount} New
+            </button>
+          )}
         </div>
         <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-zinc-300 transition-colors">
           <Menu size={20} />
@@ -451,12 +469,18 @@ export default function Dashboard() {
                   <p className="text-zinc-500 text-xs font-black uppercase tracking-widest">Internal Systems Portal</p>
                </div>
              </div>
-             
-             {isUnverified && (
-               <span className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold rounded-full uppercase tracking-wider animate-pulse flex items-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                 <ShieldAlert size={14} /> Locked: View Only
-               </span>
-             )}
+             <div className="flex gap-4">
+               {isAdmin && pendingCount > 0 && (
+                 <button onClick={() => setActiveTab("inquiries")} className="px-4 py-2 bg-red-500/20 border border-red-500/40 text-red-100 text-xs font-bold rounded-xl animate-pulse hover:bg-red-500/30 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2 uppercase tracking-wider">
+                   <MessageSquare size={14} /> {pendingCount} Pending Inquiries
+                 </button>
+               )}
+               {isUnverified && (
+                 <span className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold rounded-full uppercase tracking-wider animate-pulse flex items-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                   <ShieldAlert size={14} /> Locked: View Only
+                 </span>
+               )}
+             </div>
           </div>
 
           <div className="flex-1 w-full bg-obsidian border border-white/5 rounded-3xl md:rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col">
