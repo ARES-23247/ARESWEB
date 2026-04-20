@@ -11,7 +11,7 @@ export async function trackPageView(path: string, category: AnalyticsCategory) {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     // Optional: Only track in production to keep dev logs clean
-    // if (isLocal) return;
+    if (isLocal) return;
 
     await fetch('/api/analytics/track', {
       method: 'POST',

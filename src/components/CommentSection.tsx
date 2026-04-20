@@ -76,7 +76,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
               <span className="text-ares-red font-bold">Account Verification Pending</span>
             </p>
             <p className="text-xs text-zinc-500 max-w-md mx-auto">
-              Your account is pending team verification. Once an admin confirms your membership, you'll be able to join the conversation.
+              Your account is pending team verification. Once an admin confirms your membership, you&apos;ll be able to join the conversation.
             </p>
           </div>
         ) : (

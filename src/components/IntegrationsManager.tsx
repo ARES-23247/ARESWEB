@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Settings, Key, Share2, Save, CloudLightning, MessageSquare, Hash, Square, Users, Camera } from "lucide-react";
+import { Calendar, Settings, Key, Share2, Save, CloudLightning, MessageSquare, Hash, Square, Users, Camera, Zap } from "lucide-react";
 
 type SettingsData = Record<string, string>;
 

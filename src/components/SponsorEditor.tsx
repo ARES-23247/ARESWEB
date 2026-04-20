@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Globe, ExternalLink, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Sponsor {
@@ -101,8 +101,9 @@ export default function SponsorEditor() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Partner Name</label>
+                <label htmlFor="sponsor-name" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Partner Name</label>
                 <input
+                  id="sponsor-name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
@@ -111,8 +112,9 @@ export default function SponsorEditor() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tier</label>
+                <label htmlFor="sponsor-tier" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tier</label>
                 <select
+                  id="sponsor-tier"
                   value={formData.tier}
                   onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
@@ -121,8 +123,9 @@ export default function SponsorEditor() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Logo URL</label>
+                <label htmlFor="sponsor-logo" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Logo URL</label>
                 <input
+                  id="sponsor-logo"
                   value={formData.logo_url || ""}
                   onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
@@ -130,8 +133,9 @@ export default function SponsorEditor() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Website URL</label>
+                <label htmlFor="sponsor-link" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Website URL</label>
                 <input
+                  id="sponsor-link"
                   value={formData.website_url || ""}
                   onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"

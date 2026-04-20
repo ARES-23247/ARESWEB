@@ -124,8 +124,9 @@ export default function OutreachTracker() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Event Title</label>
+                <label htmlFor="outreach-title" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Event Title</label>
                 <input
+                  id="outreach-title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
@@ -134,8 +135,9 @@ export default function OutreachTracker() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Date</label>
+                <label htmlFor="outreach-date" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Date</label>
                 <input
+                  id="outreach-date"
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
@@ -144,8 +146,9 @@ export default function OutreachTracker() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Reach Count (Estimated)</label>
+                <label htmlFor="outreach-reach" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Reach Count (Estimated)</label>
                 <input
+                  id="outreach-reach"
                   type="number"
                   value={formData.reach_count || 0}
                   onChange={(e) => setFormData({ ...formData, reach_count: parseInt(e.target.value) })}
@@ -153,8 +156,9 @@ export default function OutreachTracker() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Hours Logged</label>
+                <label htmlFor="outreach-hours" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Hours Logged</label>
                 <input
+                  id="outreach-hours"
                   type="number"
                   step="0.5"
                   value={formData.hours_logged || 0}
@@ -163,8 +167,9 @@ export default function OutreachTracker() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Students Participating</label>
+                <label htmlFor="outreach-students" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Students Participating</label>
                 <input
+                  id="outreach-students"
                   type="number"
                   value={formData.students_count || 0}
                   onChange={(e) => setFormData({ ...formData, students_count: parseInt(e.target.value) })}
@@ -172,8 +177,9 @@ export default function OutreachTracker() {
                 />
               </div>
               <div className="lg:col-span-3 space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Description / Impact Summary</label>
+                <label htmlFor="outreach-desc" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Description / Impact Summary</label>
                 <textarea
+                  id="outreach-desc"
                   value={formData.description || ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors min-h-[100px]"
@@ -226,7 +232,7 @@ export default function OutreachTracker() {
         ))}
         {logs.length === 0 && !isLoading && !isAdding && (
           <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
-             <p className="text-zinc-600 font-medium italic">No outreach records found. Start logging your team's impact.</p>
+             <p className="text-zinc-600 font-medium italic">No outreach records found. Start logging your team&apos;s impact.</p>
           </div>
         )}
       </div>

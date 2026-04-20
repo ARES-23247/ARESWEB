@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { BarChart3, TrendingUp, Users, Clock, ArrowRight, ExternalLink } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Clock, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface AnalyticsSummary {
@@ -31,7 +31,7 @@ export default function AnalyticsDashboard() {
     );
   }
 
-  const categoryIcons: Record<string, any> = {
+  const categoryIcons: Record<string, React.ReactNode> = {
     doc: <BarChart3 className="text-ares-cyan" size={20} />,
     blog: <TrendingUp className="text-ares-gold" size={20} />,
     event: <Users className="text-ares-red" size={20} />,
@@ -105,7 +105,7 @@ export default function AnalyticsDashboard() {
                     {view.category}
                   </span>
                   <span>&middot;</span>
-                  <span className="truncate max-w-[120px]">Ref: {view.referrer.replace(/https?:\/\/[^\/]+/, '') || 'direct'}</span>
+                  <span className="truncate max-w-[120px]">Ref: {view.referrer.replace(/https?:\/\/[^/]+/, '') || 'direct'}</span>
                 </div>
               </div>
             ))}

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Target, Clock, Users, ArrowRight, Activity, MapPin, Heart } from "lucide-react";
+import { Target, Clock, ArrowRight, Activity, MapPin, Heart } from "lucide-react";
 import SEO from "../components/SEO";
 
 interface OutreachLog {
@@ -62,7 +62,7 @@ export default function Outreach() {
             transition={{ delay: 0.1 }}
             className="text-zinc-400 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium"
           >
-            ARES 23247 isn't just about building robots. We're building a community that values curiosity, innovation, and service.
+            ARES 23247 isn&apos;t just about building robots. We&apos;re building a community that values curiosity, innovation, and service.
           </motion.p>
         </div>
       </section>
@@ -174,7 +174,7 @@ export default function Outreach() {
         <div className="max-w-4xl mx-auto rounded-[3.5rem] bg-gradient-to-br from-ares-red/30 to-zinc-900 border border-ares-red/40 p-12 text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-ares-red/20 blur-[100px] rounded-full pointer-events-none" />
           <h2 className="text-4xl md:text-5xl font-black text-white mb-6 italic tracking-tighter">Have a volunteer need?</h2>
-          <p className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto font-medium">Whether it's a elementary school demo, a science fair, or a community workshop—ARES is here to inspire.</p>
+          <p className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto font-medium">Whether it&apos;s a elementary school demo, a science fair, or a community workshop—ARES is here to inspire.</p>
           <a href="/contact" className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black rounded-2xl hover:bg-ares-gold hover:text-black transition-all shadow-2xl">
             Get In Touch <ArrowRight size={20} />
           </a>

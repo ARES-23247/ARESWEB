@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Trophy, Star, History, Calendar, MapPin, ArrowRight, ExternalLink } from "lucide-react";
+import { Trophy, History, MapPin } from "lucide-react";
 import SEO from "../components/SEO";
 
 interface Award {
@@ -21,15 +21,6 @@ export default function Seasons() {
       return d.awards || [];
     }
   });
-
-  const groupedAwards = awards.reduce((acc, a) => {
-    if (!acc[a.year]) acc[a.year] = [];
-    acc[a.year].push(a);
-    return acc;
-  }, {} as Record<number, Award[]>);
-
-  const yearsOrdered = Object.keys(groupedAwards).map(Number).sort((a, b) => b - a);
-
   return (
     <div className="flex flex-col w-full bg-zinc-950 min-h-screen text-zinc-100 relative overflow-hidden">
       <SEO title="Team Legacy" description="A chronicle of ARES 23247's journey through FIRST Robotics. Explore our seasonal achievements, awards, and growth." />

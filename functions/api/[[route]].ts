@@ -245,7 +245,7 @@ apiRouter.delete("/admin/sponsors/:id", async (c) => {
 
 // ── TBA PROXY SYSTEM ──────────────────────────────────────────────────
 
-async function getTBA(path: string, c: any) {
+async function getTBA(path: string, c: Context<{ Bindings: Bindings }>) {
   const { results: settingsRows } = await c.env.DB.prepare("SELECT value FROM settings WHERE key = 'TBA_API_KEY'").all();
   const apiKey = (settingsRows[0] as { value: string })?.value;
   if (!apiKey) throw new Error("TBA_API_KEY not configured");
@@ -273,9 +273,9 @@ apiRouter.get("/tba/rankings/:eventKey", async (c) => {
 apiRouter.get("/tba/matches/:eventKey", async (c) => {
   try {
     const eventKey = c.req.param("eventKey");
-    const data = (await getTBA(`/event/${eventKey}/matches/simple`, c)) as any[];
+    const data = (await getTBA(`/event/${eventKey}/matches/simple`, c)) as Array<{ time?: number; [key: string]: unknown }>;
     // Sort matches by time
-    const sorted = (data || []).sort((a: any, b: any) => (a.time || 0) - (b.time || 0));
+    const sorted = (data || []).sort((a: { time?: number }, b: { time?: number }) => (a.time || 0) - (b.time || 0));
     return c.json({ matches: sorted });
   } catch (err) {
     console.error("TBA matches error:", err);
@@ -2148,7 +2148,7 @@ apiRouter.get("/events/:id/signups", async (c) => {
        WHERE s.event_id = ? AND u.role NOT IN ('unverified') ORDER BY s.created_at ASC`
     ).bind(eventId).all();
 
-    const signups = (results || []).map((r: any) => ({
+    const signups = (results || []).map((r: { nickname?: string; user_id?: string; attended?: number; [key: string]: unknown }) => ({
       ...r,
       nickname: r.nickname || "ARES Member",
       is_own: user ? r.user_id === user.id : false,
@@ -2156,7 +2156,7 @@ apiRouter.get("/events/:id/signups", async (c) => {
     }));
 
     // Aggregate dietary info for verified users (Anonymous)
-    let dietarySummary: Record<string, number> = {};
+    const dietarySummary: Record<string, number> = {};
     if (isVerified) {
       const { results: profiles } = await c.env.DB.prepare(
         `SELECT p.dietary_restrictions FROM event_signups s
@@ -2165,7 +2165,7 @@ apiRouter.get("/events/:id/signups", async (c) => {
          WHERE s.event_id = ? AND u.role NOT IN ('unverified')`
       ).bind(eventId).all();
 
-      for (const p of (profiles || []) as any) {
+      for (const p of (profiles || []) as Array<{ dietary_restrictions?: string }>) {
         try {
           const restrictions = JSON.parse(p.dietary_restrictions || "[]") as string[];
           for (const r of restrictions) {

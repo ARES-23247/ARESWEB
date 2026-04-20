@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Trophy, Star, Calendar, MapPin, Camera, XCircle, Save } from "lucide-react";
+import { Plus, Trash2, Trophy, Star, Calendar, MapPin, XCircle, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Award {
@@ -96,8 +96,9 @@ export default function AwardEditor() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Award Title</label>
+                <label htmlFor="award-title" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Award Title</label>
                 <input
+                  id="award-title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
@@ -106,8 +107,9 @@ export default function AwardEditor() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Year</label>
+                <label htmlFor="award-year" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Year</label>
                 <input
+                  id="award-year"
                   type="number"
                   value={formData.year}
                   onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
@@ -116,8 +118,9 @@ export default function AwardEditor() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Event Name</label>
+                <label htmlFor="award-eventName" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Event Name</label>
                 <input
+                  id="award-eventName"
                   value={formData.event_name || ""}
                   onChange={(e) => setFormData({ ...formData, event_name: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
@@ -125,8 +128,9 @@ export default function AwardEditor() {
                 />
               </div>
               <div className="md:col-span-2 space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Image URL (Optional)</label>
+                <label htmlFor="award-image" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Image URL (Optional)</label>
                 <input
+                  id="award-image"
                   value={formData.image_url || ""}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
@@ -134,8 +138,9 @@ export default function AwardEditor() {
                 />
               </div>
               <div className="lg:col-span-3 space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">Description</label>
+                <label htmlFor="award-desc" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Description</label>
                 <textarea
+                  id="award-desc"
                   value={formData.description || ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors min-h-[100px]"

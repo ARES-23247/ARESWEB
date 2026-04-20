@@ -11,7 +11,7 @@ interface Sponsor {
   website_url: string | null;
 }
 
-const TIER_STYLING: Record<string, { icon: any; glass: string; border: string; glow: string; text: string }> = {
+const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; border: string; glow: string; text: string }> = {
   Titanium: { 
     icon: <Gem className="text-ares-cyan" size={32} />, 
     glass: "bg-ares-cyan/5", 
@@ -43,7 +43,7 @@ const TIER_STYLING: Record<string, { icon: any; glass: string; border: string; g
 };
 
 export default function Sponsors() {
-  const { data: sponsors = [], isLoading } = useQuery<Sponsor[]>({
+  const { data: sponsors = [] } = useQuery<Sponsor[]>({
     queryKey: ["public-sponsors"],
     queryFn: async () => {
       const r = await fetch("/api/sponsors");

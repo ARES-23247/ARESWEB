@@ -328,31 +328,33 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-xl bg-zinc-900/50 border border-white/5">
-        <label className="flex items-center gap-3 cursor-pointer group">
+        <div className="flex items-center gap-3 cursor-pointer group">
           <input 
+            id="isPortfolioToggle"
             type="checkbox" 
             checked={isPortfolio} 
             onChange={(e) => setIsPortfolio(e.target.checked)} 
             className="w-5 h-5 rounded border-zinc-700 bg-black text-ares-cyan focus:ring-ares-cyan"
           />
           <div>
-            <span className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors">Judge's Portfolio Selection</span>
+            <label htmlFor="isPortfolioToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Judge&apos;s Portfolio Selection</label>
             <span className="block text-xs text-zinc-500">Feature this in the Rapid Review dashboard for judges.</span>
           </div>
-        </label>
+        </div>
         
-        <label className="flex items-center gap-3 cursor-pointer group">
+        <div className="flex items-center gap-3 cursor-pointer group">
           <input 
+            id="isExecSummaryToggle"
             type="checkbox" 
             checked={isExecutiveSummary} 
             onChange={(e) => setIsExecutiveSummary(e.target.checked)} 
             className="w-5 h-5 rounded border-zinc-700 bg-black text-ares-gold focus:ring-ares-gold"
           />
           <div>
-            <span className="block text-sm font-bold text-white group-hover:text-ares-gold transition-colors">Executive Summary Flag</span>
+            <label htmlFor="isExecSummaryToggle" className="block text-sm font-bold text-white group-hover:text-ares-gold transition-colors cursor-pointer">Executive Summary Flag</label>
             <span className="block text-xs text-zinc-500">Mark as the primary seasonal overview for rapid judging.</span>
           </div>
-        </label>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col relative min-h-[500px]">

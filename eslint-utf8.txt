@@ -1,0 +1,104 @@
+﻿
+C:\Users\david\dev\robotics\ftc\ARESWEB\functions\api\[[route]].ts
+   248:40  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   276:76  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   278:42  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   278:50  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2151:45  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2159:9   error    'dietarySummary' is never reassigned. Use 'const' instead  prefer-const
+  2168:43  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\AnalyticsDashboard.tsx
+    3:47   warning  'ArrowRight' is defined but never used    @typescript-eslint/no-unused-vars
+   34:39   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:102  error    Unnecessary escape character: \/          no-useless-escape
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\AwardEditor.tsx
+   99:17  error  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  109:17  error  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  119:17  error  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  128:17  error  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  137:17  error  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\CommentSection.tsx
+  79:101  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\CompetitionBanner.tsx
+   2:18  warning  'AnimatePresence' is defined but never used  @typescript-eslint/no-unused-vars
+   3:28  warning  'Users' is defined but never used            @typescript-eslint/no-unused-vars
+   3:47  warning  'ArrowRight' is defined but never used       @typescript-eslint/no-unused-vars
+  12:43  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  22:42  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  31:54  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  32:52  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\DocsEditor.tsx
+  331:9    error  A form label must have accessible text                           jsx-a11y/label-has-associated-control
+  339:116  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  344:9    error  A form label must have accessible text                           jsx-a11y/label-has-associated-control
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\IntegrationsManager.tsx
+  346:14  error  'Zap' is not defined  react/jsx-no-undef
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\OutreachTracker.tsx
+  127:17   error  A form label must be associated with a control                   jsx-a11y/label-has-associated-control
+  137:17   error  A form label must be associated with a control                   jsx-a11y/label-has-associated-control
+  147:17   error  A form label must be associated with a control                   jsx-a11y/label-has-associated-control
+  156:17   error  A form label must be associated with a control                   jsx-a11y/label-has-associated-control
+  166:17   error  A form label must be associated with a control                   jsx-a11y/label-has-associated-control
+  175:17   error  A form label must be associated with a control                   jsx-a11y/label-has-associated-control
+  229:112  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\components\SponsorEditor.tsx
+    3:31  warning  'ExternalLink' is defined but never used        @typescript-eslint/no-unused-vars
+  104:17  error    A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  114:17  error    A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  124:17  error    A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  133:17  error    A form label must be associated with a control  jsx-a11y/label-has-associated-control
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\pages\Dashboard.tsx
+  35:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\pages\JudgesHub.tsx
+    2:18  warning  'AnimatePresence' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+   38:7   error    Error: Cannot access variable before it is declared
+
+`handleLogin` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\pages\JudgesHub.tsx:38:7
+  36 |     const savedCode = localStorage.getItem("ares_judge_code");
+  37 |     if (savedCode) {
+> 38 |       handleLogin(savedCode);
+     |       ^^^^^^^^^^^ `handleLogin` accessed before it is declared
+  39 |     }
+  40 |   }, []);
+  41 |
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\pages\JudgesHub.tsx:42:3
+  40 |   }, []);
+  41 |
+> 42 |   const handleLogin = async (codeToUse?: string) => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |     const code = codeToUse || accessCode;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |     if (!code) return;
+     ΓÇª
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 70 |     }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 71 |   };
+     | ^^^^^ `handleLogin` is declared here
+  72 |
+  73 |   const fetchPortfolio = async (code: string) => {
+  74 |     try {  react-hooks/immutability
+   40:6   warning  React Hook useEffect has a missing dependency: 'handleLogin'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/exhaustive-deps
+   66:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  110:92  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+  171:94  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+
+C:\Users\david\dev\robotics\ftc\ARESWEB\src\pages\Seasons.tsx
+  25:9  warning  'groupedAwards' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 47 problems (26 errors, 21 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

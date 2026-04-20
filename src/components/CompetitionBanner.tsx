@@ -1,15 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Activity, Users, Clock, Zap, ArrowRight, ExternalLink } from "lucide-react";
+import { motion } from "framer-motion";
+import { Trophy, Activity, Clock, Zap, ExternalLink } from "lucide-react";
 
 interface CompetitionBannerProps {
   eventKey: string;
   teamKey?: string;
 }
 
+interface TBARanking {
+  team_key: string;
+  rank: number;
+}
+
+interface TBAMatch {
+  comp_level: string;
+  match_number: number;
+  alliances: {
+    red: { team_keys: string[] };
+    blue: { team_keys: string[] };
+  };
+}
+
 export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: CompetitionBannerProps) {
   // Fetch Rankings
-  const { data: rankingsData } = useQuery<any>({
+  const { data: rankingsData } = useQuery<{ rankings?: TBARanking[] }>({
     queryKey: ["tba-rankings", eventKey],
     queryFn: async () => {
       const r = await fetch(`/api/tba/rankings/${eventKey}`);
@@ -19,7 +33,7 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
   });
 
   // Fetch Matches
-  const { data: matchesData } = useQuery<any>({
+  const { data: matchesData } = useQuery<{ matches?: TBAMatch[] }>({
     queryKey: ["tba-matches", eventKey],
     queryFn: async () => {
       const r = await fetch(`/api/tba/matches/${eventKey}`);
@@ -28,8 +42,8 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
     }
   });
 
-  const myRanking = rankingsData?.rankings?.find((r: any) => r.team_key === teamKey);
-  const nextMatch = matchesData?.matches?.find((m: any) => 
+  const myRanking = rankingsData?.rankings?.find((r: TBARanking) => r.team_key === teamKey);
+  const nextMatch = matchesData?.matches?.find((m: TBAMatch) => 
     m.alliances.red.team_keys.includes(teamKey) || 
     m.alliances.blue.team_keys.includes(teamKey)
   );

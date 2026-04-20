@@ -16,7 +16,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { PenTool, Calendar, Book, Image, LayoutGrid, PlusCircle, Edit3, Settings, ShieldAlert, Lock, RefreshCw, LogOut, User, Users, Utensils, BarChart3, Gem, Target, Trophy } from "lucide-react";
-import { useSession, signOut } from "../utils/auth-client";
+/* Better Auth imports removed since we use /api/auth-check directly */
 
 type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy";
 
@@ -32,7 +32,7 @@ export default function Dashboard() {
   const initialDoc = searchParams.get("editDoc");
 
   // ── Custom Enriched Authentication ─────────────────────────────────
-  const [enrichedSession, setEnrichedSession] = useState<{user: any, authenticated: boolean} | null>(null);
+  const [enrichedSession, setEnrichedSession] = useState<{user: Record<string, unknown>, authenticated: boolean} | null>(null);
   const [isPending, setIsPending] = useState(true);
 
   const [activeTab, setActiveTab] = useState<TabState>(initialDoc ? "docs" : "profile");
@@ -197,7 +197,11 @@ export default function Dashboard() {
               </div>
             </div>
             <button 
-              onClick={() => signOut({ fetchOptions: { onSuccess: () => navigate("/") } })}
+              onClick={() => {
+                fetch('/api/auth/sign-out', { method: 'POST' }).then(() => {
+                  window.location.href = '/';
+                });
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-zinc-400 hover:text-red-400 text-xs font-bold rounded-xl transition-all"
             >
               <LogOut size={14} />

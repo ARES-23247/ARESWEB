@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { ShieldCheck, BookOpen, Trophy, Users, ArrowRight, Lock, AlertCircle, FileText, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 
@@ -32,15 +32,21 @@ export default function JudgesHub() {
   const [error, setError] = useState("");
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
 
-  useEffect(() => {
-    const savedCode = localStorage.getItem("ares_judge_code");
-    if (savedCode) {
-      handleLogin(savedCode);
+  const fetchPortfolio = useCallback(async (code: string) => {
+    try {
+      const res = await fetch("/api/judges/portfolio", {
+        headers: { "Authorization": `Bearer ${code}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPortfolio(data);
+      }
+    } catch {
+      console.error("Failed to fetch portfolio");
     }
   }, []);
 
-  const handleLogin = async (codeToUse?: string) => {
-    const code = codeToUse || accessCode;
+  const handleLogin = useCallback(async (code: string) => {
     if (!code) return;
 
     setIsLoading(true);
@@ -63,26 +69,21 @@ export default function JudgesHub() {
         setError(data.error || "Invalid access code.");
         localStorage.removeItem("ares_judge_code");
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchPortfolio]);
 
-  const fetchPortfolio = async (code: string) => {
-    try {
-      const res = await fetch("/api/judges/portfolio", {
-        headers: { "Authorization": `Bearer ${code}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPortfolio(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch portfolio", err);
+  useEffect(() => {
+    const savedCode = localStorage.getItem("ares_judge_code");
+    if (savedCode) {
+      setTimeout(() => {
+        handleLogin(savedCode);
+      }, 0);
     }
-  };
+  }, [handleLogin]);
 
   const logout = () => {
     localStorage.removeItem("ares_judge_code");
@@ -107,7 +108,7 @@ export default function JudgesHub() {
             <div className="w-20 h-20 bg-gradient-to-br from-ares-cyan to-ares-blue rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,183,235,0.3)]">
               <ShieldCheck className="text-white w-10 h-10" />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight text-center">Judge's Hub</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight text-center">Judge&apos;s Hub</h1>
             <p className="text-zinc-500 text-center text-sm mt-3 leading-relaxed">
               Secure, rapid-review portal for competition judges. <br/>
               Enter your unique access code below.
@@ -121,14 +122,14 @@ export default function JudgesHub() {
                 type="text"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin(accessCode)}
                 className="w-full bg-black/40 border border-zinc-800 focus:border-ares-cyan/50 text-white pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:ring-4 focus:ring-ares-cyan/10 transition-all font-mono tracking-[0.2em] text-center text-lg"
                 placeholder="ARES-XXXX"
               />
             </div>
 
             <button
-              onClick={() => handleLogin()}
+              onClick={() => handleLogin(accessCode)}
               disabled={isLoading || !accessCode}
               className="w-full bg-ares-cyan hover:bg-white text-black font-black py-4 rounded-2xl transition-all duration-500 flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(0,183,235,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -168,7 +169,7 @@ export default function JudgesHub() {
               <ShieldCheck size={20} className="text-black" />
             </div>
             <div>
-              <h2 className="font-black text-sm uppercase tracking-widest leading-none">Judge's Hub</h2>
+              <h2 className="font-black text-sm uppercase tracking-widest leading-none">Judge&apos;s Hub</h2>
               <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">Secure Rapid Review Protocol</span>
             </div>
           </div>
