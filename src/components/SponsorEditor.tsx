@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Sponsor {
@@ -21,7 +21,7 @@ const TIERS = [
 
 export default function SponsorEditor() {
   const queryClient = useQueryClient();
-  const [isAdding, setIsAdding] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Sponsor>>({
     id: "",
     name: "",
@@ -54,7 +54,7 @@ export default function SponsorEditor() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-sponsors"] });
-      setIsAdding(false);
+      setIsFormOpen(false);
       setFormData({ id: "", name: "", tier: "Gold", logo_url: "", website_url: "", is_active: 1 });
     }
   });
@@ -85,16 +85,19 @@ export default function SponsorEditor() {
           <p className="text-zinc-500 text-sm">Recognize the partners who make ARES possible.</p>
         </div>
         <button
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => {
+            if (!isFormOpen) setFormData({ id: "", name: "", tier: "Gold", logo_url: "", website_url: "", is_active: 1 });
+            setIsFormOpen(!isFormOpen);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
         >
-          {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
-          {isAdding ? "Cancel" : "Add Partner"}
+          {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
+          {isFormOpen ? "Cancel" : "Add Partner"}
         </button>
       </div>
 
       <AnimatePresence>
-        {isAdding && (
+        {isFormOpen && (
           <motion.form
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -151,7 +154,7 @@ export default function SponsorEditor() {
               disabled={saveMutation.isPending}
               className="w-full py-3 bg-gradient-to-r from-ares-red to-red-800 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
             >
-              {saveMutation.isPending ? "Syncing..." : "Commit Partner to D1"}
+              {saveMutation.isPending ? "Syncing..." : formData.id ? "Update Partner in D1" : "Commit Partner to D1"}
             </button>
           </motion.form>
         )}
@@ -169,12 +172,23 @@ export default function SponsorEditor() {
                   {s.tier}
                 </span>
               </div>
-              <button
-                onClick={() => { if(confirm("Purge this partner from database?")) deleteMutation.mutate(s.id); }}
-                className="text-zinc-600 hover:text-ares-red transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 size={16} />
-              </button>
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => {
+                    setFormData(s);
+                    setIsFormOpen(true);
+                  }}
+                  className="text-zinc-600 hover:text-ares-cyan transition-colors"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  onClick={() => { if(confirm("Purge this partner from database?")) deleteMutation.mutate(s.id); }}
+                  className="text-zinc-600 hover:text-ares-red transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
             
             <h4 className="text-lg font-bold text-white mb-1">{s.name}</h4>
@@ -196,7 +210,7 @@ export default function SponsorEditor() {
             </div>
           </div>
         ))}
-        {sponsors.length === 0 && !isLoading && !isAdding && (
+        {sponsors.length === 0 && !isLoading && !isFormOpen && (
           <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 rounded-3xl outline-none">
             <p className="text-zinc-600 font-medium italic">No sponsors logged. Start by adding your titanium partners.</p>
           </div>
