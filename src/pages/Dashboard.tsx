@@ -8,13 +8,17 @@ import AvatarEditor from "@/components/AvatarEditor";
 import ProfileEditor from "@/components/ProfileEditor";
 import AdminUsers from "@/components/AdminUsers";
 import DietarySummary from "@/components/DietarySummary";
+import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import SponsorEditor from "@/components/SponsorEditor";
+import OutreachTracker from "@/components/OutreachTracker";
+import AwardEditor from "@/components/AwardEditor";
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { PenTool, Calendar, Book, Image, LayoutGrid, PlusCircle, Edit3, Settings, ShieldAlert, Lock, RefreshCw, LogOut, User, Users, Utensils } from "lucide-react";
+import { PenTool, Calendar, Book, Image, LayoutGrid, PlusCircle, Edit3, Settings, ShieldAlert, Lock, RefreshCw, LogOut, User, Users, Utensils, BarChart3, Gem, Target, Trophy } from "lucide-react";
 import { useSession, signOut } from "../utils/auth-client";
 
-type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics";
+type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy";
 
 /* Compute localhost bypass at module level so it can seed initial state
    without triggering a synchronous setState inside an effect body. */
@@ -27,12 +31,33 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const initialDoc = searchParams.get("editDoc");
 
-  const { data: session, isPending } = useSession();
+  // ── Custom Enriched Authentication ─────────────────────────────────
+  const [enrichedSession, setEnrichedSession] = useState<{user: any, authenticated: boolean} | null>(null);
+  const [isPending, setIsPending] = useState(true);
+
   const [activeTab, setActiveTab] = useState<TabState>(initialDoc ? "docs" : "profile");
   const [editPostSlug, setEditPostSlug] = useState<string | null>(null);
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [editDocSlug, setEditDocSlug] = useState<string | null>(initialDoc);
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth-check")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Not Authenticated");
+        return res.json();
+      })
+      .then((data) => {
+        setEnrichedSession(data);
+        setIsPending(false);
+      })
+      .catch(() => {
+        setEnrichedSession(null);
+        setIsPending(false);
+      });
+  }, []);
+
+  const session = enrichedSession;
 
   useEffect(() => {
     if (initialDoc) {
@@ -66,9 +91,7 @@ export default function Dashboard() {
   }
 
   // ── Unauthorized Gate ──────────────────────────────────────────────
-  // @ts-expect-error - Better Auth session type overrides
   const role = (session?.user?.role as string) || "unverified";
-  // @ts-expect-error - member_type extension
   const memberType = (session?.user?.member_type as string) || "student";
   const isAdmin = role === "admin" || isLocalDev;
   const isAuthorized = isAdmin || role === "author";
@@ -286,6 +309,34 @@ export default function Dashboard() {
                 <Settings size={16} />
                 Integrations
               </button>
+              <button
+                onClick={() => setActiveTab("analytics")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${activeTab === "analytics" ? "bg-gradient-to-b from-ares-cyan/20 to-ares-cyan/5 border border-ares-cyan/50 text-ares-cyan shadow-[0_0_20px_rgba(0,183,235,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <BarChart3 size={16} />
+                Analytics
+              </button>
+              <button
+                onClick={() => setActiveTab("sponsors")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${activeTab === "sponsors" ? "bg-gradient-to-b from-ares-cyan/20 to-ares-cyan/5 border border-ares-cyan/50 text-ares-cyan shadow-[0_0_20px_rgba(0,183,235,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Gem size={16} />
+                Sponsors
+              </button>
+              <button
+                onClick={() => setActiveTab("outreach")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${activeTab === "outreach" ? "bg-gradient-to-b from-ares-cyan/20 to-ares-cyan/5 border border-ares-cyan/50 text-ares-cyan shadow-[0_0_20px_rgba(0,183,235,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Target size={16} />
+                Outreach (Impact)
+              </button>
+              <button
+                onClick={() => setActiveTab("legacy")}
+                className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${activeTab === "legacy" ? "bg-gradient-to-b from-ares-cyan/20 to-ares-cyan/5 border border-ares-cyan/50 text-ares-cyan shadow-[0_0_20px_rgba(0,183,235,0.2)]" : "bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"}`}
+              >
+                <Trophy size={16} />
+                Trophy Case
+              </button>
             </div>
           </div>
           )}
@@ -464,6 +515,86 @@ export default function Dashboard() {
                   <p className="text-zinc-500 text-sm mt-1">Aggregated data for event planning and team management.</p>
                 </div>
                 <DietarySummary />
+              </motion.div>
+            )}
+
+            {activeTab === "analytics" && (
+              <motion.div 
+                key="analytics"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                className="w-full glass-card rounded-3xl p-6 md:p-10 border border-ares-cyan/30 flex flex-col bg-zinc-900 shadow-2xl"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                    <BarChart3 className="text-ares-cyan" />
+                    Community Engagement
+                  </h2>
+                  <p className="text-zinc-500 text-sm mt-1">Real-time data on documentation and blog utility.</p>
+                </div>
+                <AnalyticsDashboard />
+              </motion.div>
+            )}
+
+            {activeTab === "sponsors" && (
+              <motion.div 
+                key="sponsors"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                className="w-full glass-card rounded-3xl p-6 md:p-10 border border-ares-cyan/30 flex flex-col bg-zinc-900 shadow-2xl"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                    <Gem className="text-ares-cyan" />
+                    Sponsor Recognition
+                  </h2>
+                  <p className="text-zinc-500 text-sm mt-1">Manage and showcase our funding partners.</p>
+                </div>
+                <SponsorEditor />
+              </motion.div>
+            )}
+
+            {activeTab === "outreach" && (
+              <motion.div 
+                key="outreach"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                className="w-full glass-card rounded-3xl p-6 md:p-10 border border-ares-cyan/30 flex flex-col bg-zinc-900 shadow-2xl"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                    <Target className="text-ares-cyan" />
+                    Community Impact Tracker
+                  </h2>
+                  <p className="text-zinc-500 text-sm mt-1">Log outreach events and student service hours.</p>
+                </div>
+                <OutreachTracker />
+              </motion.div>
+            )}
+
+            {activeTab === "legacy" && (
+              <motion.div 
+                key="legacy"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                className="w-full glass-card rounded-3xl p-6 md:p-10 border border-ares-cyan/30 flex flex-col bg-zinc-900 shadow-2xl"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                    <Trophy className="text-ares-gold" />
+                    Team Legacy Archive
+                  </h2>
+                  <p className="text-zinc-500 text-sm mt-1">Manage seasonal achievements and awards.</p>
+                </div>
+                <AwardEditor />
               </motion.div>
             )}
           </AnimatePresence>

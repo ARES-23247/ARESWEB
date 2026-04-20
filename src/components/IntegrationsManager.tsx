@@ -339,6 +339,29 @@ export default function IntegrationsManager() {
           </div>
         </div>
 
+        {/* The Blue Alliance Setup */}
+        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-ares-cyan/10 blur-3xl rounded-full pointer-events-none" />
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Zap size={20} className="text-ares-cyan" /> The Blue Alliance (TBA)
+          </h3>
+          <p className="text-xs text-zinc-500 mb-4 block">Enables live event rankings, match predictions, and historical data integration.</p>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="tba_api_key" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">TBA Read API Key</label>
+              <input
+                id="tba_api_key"
+                type="text"
+                placeholder="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                value={localSettings["TBA_API_KEY"] || ""}
+                onChange={(e) => handleChange("TBA_API_KEY", e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-ares-cyan transition-colors"
+                spellCheck="false"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* X / Twitter Setup */}
         <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group lg:col-span-2">
           <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-400/10 blur-3xl rounded-full pointer-events-none" />

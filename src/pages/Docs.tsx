@@ -30,6 +30,7 @@ import PowerSheddingSim from "../sims/PowerSheddingSim";
 import StateMachineSim from "../sims/StateMachineSim";
 import TiptapRenderer from "../components/TiptapRenderer";
 import { CodeBlock } from "../components/docs/CodeBlock";
+import { trackPageView } from "../utils/analytics";
 
 interface DocRecord {
   slug: string;
@@ -227,6 +228,13 @@ export default function Docs() {
     headings.forEach((h) => observer.observe(h));
 
     return () => observer.disconnect();
+  }, [currentDoc]);
+
+  // Track Page view
+  useEffect(() => {
+    if (currentDoc) {
+      trackPageView(`/docs/${currentDoc.slug}`, 'doc');
+    }
   }, [currentDoc]);
 
   // ── 6. Render-Phase State Syncs ─────────────────────────────────────

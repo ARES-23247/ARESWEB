@@ -50,6 +50,8 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
   const [category, setCategory] = useState("Getting Started");
   const [sortOrder, setSortOrder] = useState<number>(10);
   const [description, setDescription] = useState("");
+  const [isPortfolio, setIsPortfolio] = useState(false);
+  const [isExecutiveSummary, setIsExecutiveSummary] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -178,6 +180,10 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
           setSortOrder(data.doc.sort_order || 10);
       // @ts-expect-error -- D1 untyped response
           setDescription(data.doc.description || "");
+      // @ts-expect-error -- D1 untyped response
+          setIsPortfolio(!!data.doc.is_portfolio);
+      // @ts-expect-error -- D1 untyped response
+          setIsExecutiveSummary(!!data.doc.is_executive_summary);
           
       // @ts-expect-error -- D1 untyped response
           const loadedContent = data.doc.content || "";
@@ -216,7 +222,16 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
         method: "POST", // API does an INSERT OR REPLACE
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ slug, title, category, sortOrder, description, content: jsonAST }),
+        body: JSON.stringify({ 
+          slug, 
+          title, 
+          category, 
+          sortOrder, 
+          description, 
+          content: jsonAST,
+          isPortfolio,
+          isExecutiveSummary
+        }),
       });
 
       const data = await res.json();
@@ -310,6 +325,34 @@ export default function DocsEditor({ editSlug, onClearEdit }: { editSlug?: strin
           className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
           placeholder="Brief summary of what this document covers..."
         />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-xl bg-zinc-900/50 border border-white/5">
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <input 
+            type="checkbox" 
+            checked={isPortfolio} 
+            onChange={(e) => setIsPortfolio(e.target.checked)} 
+            className="w-5 h-5 rounded border-zinc-700 bg-black text-ares-cyan focus:ring-ares-cyan"
+          />
+          <div>
+            <span className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors">Judge's Portfolio Selection</span>
+            <span className="block text-xs text-zinc-500">Feature this in the Rapid Review dashboard for judges.</span>
+          </div>
+        </label>
+        
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <input 
+            type="checkbox" 
+            checked={isExecutiveSummary} 
+            onChange={(e) => setIsExecutiveSummary(e.target.checked)} 
+            className="w-5 h-5 rounded border-zinc-700 bg-black text-ares-gold focus:ring-ares-gold"
+          />
+          <div>
+            <span className="block text-sm font-bold text-white group-hover:text-ares-gold transition-colors">Executive Summary Flag</span>
+            <span className="block text-xs text-zinc-500">Mark as the primary seasonal overview for rapid judging.</span>
+          </div>
+        </label>
       </div>
 
       <div className="flex-1 flex flex-col relative min-h-[500px]">

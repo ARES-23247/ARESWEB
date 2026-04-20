@@ -26,6 +26,8 @@ interface DocItem {
   category: string;
   sort_order: number;
   is_deleted?: number;
+  is_portfolio?: number;
+  is_executive_summary?: number;
 }
 
 export default function ContentManager({ 
@@ -462,20 +464,37 @@ export default function ContentManager({
           <div className="flex flex-col">
             <h3 className={`font-bold uppercase tracking-widest text-xs mb-4 border-b border-zinc-800 pb-2 ${view === 'trash' ? 'text-ares-red' : 'text-zinc-500'}`}>
               <span className="flex items-center justify-between">
-                <span className="flex items-center">
+                <span className="flex items-center gap-2">
                   {view === 'active' ? (
                     <><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span>&nbsp;Documentation</>
                   ) : 'Trashed Docs'}
                 </span>
-                {view === 'active' && (
-                  <button
-                    onClick={exportAllDocs}
-                    className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan normal-case tracking-normal"
-                  >
-                    <Download size={12} />
-                    BACKUP ALL
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {view === 'active' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          const code = prompt("Enter a name or purpose for this code (e.g. 'Championship Judge'):");
+                          if (code !== null) {
+                            fetch("/dashboard/api/admin/judges/codes", { method: "POST", credentials: "include" })
+                              .then(res => res.json())
+                              .then(data => alert(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
+                          }
+                        }}
+                        className="text-[10px] font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-2 py-1 rounded-md transition-colors border border-ares-gold/20"
+                      >
+                        GENERATE JUDGE CODE
+                      </button>
+                      <button
+                        onClick={exportAllDocs}
+                        className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan normal-case tracking-normal"
+                      >
+                        <Download size={12} />
+                        BACKUP ALL
+                      </button>
+                    </>
+                  )}
+                </div>
               </span>
             </h3>
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
@@ -488,6 +507,8 @@ export default function ContentManager({
                       <div className="font-bold text-zinc-200 truncate flex items-center gap-2">
                         {doc.title}
                         {doc.is_deleted === 1 && <span className="text-[9px] font-bold text-ares-red bg-ares-red/10 border border-ares-red/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Deleted</span>}
+                        {doc.is_executive_summary === 1 && <span className="text-[9px] font-bold text-ares-gold bg-ares-gold/10 border border-ares-gold/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Exec Summary</span>}
+                        {doc.is_portfolio === 1 && <span className="text-[9px] font-bold text-ares-cyan bg-ares-cyan/10 border border-ares-cyan/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Portfolio</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-ares-cyan/70 bg-ares-cyan/10 border border-ares-cyan/20 px-2 py-0.5 rounded-md truncate max-w-[120px]">

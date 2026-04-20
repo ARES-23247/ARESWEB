@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { trackPageView } from "../utils/analytics";
 
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import CommentSection from "../components/CommentSection";
@@ -30,6 +32,12 @@ export default function BlogPost() {
     enabled: !!slug,
     retry: false, // Don't retry 404s
   });
+
+  useEffect(() => {
+    if (post && slug) {
+      trackPageView(`/blog/${slug}`, 'blog');
+    }
+  }, [post, slug]);
 
   if (isLoading) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80 animate-pulse">Loading post...</div>;
   if (isError || !post) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80">Post not found.</div>;

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { format, isAfter, subDays, parseISO } from "date-fns";
+import { format, isAfter, subDays, addDays, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import SEO from "../components/SEO";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
@@ -13,7 +13,9 @@ interface EventItem {
   location: string | null;
   description: string;
   cover_image: string | null;
+  tba_event_key: string | null;
 }
+import CompetitionBanner from "../components/CompetitionBanner";
 
 const extractPlainText = (jsonStr: string) => {
   try {
@@ -72,6 +74,13 @@ export default function Events() {
   const upcomingPractices = practices.filter((e) => isAfter(parseISO(e.date_start), bufferTime));
   const pastEvents = majorEvents.filter((e) => !isAfter(parseISO(e.date_start), bufferTime)).reverse();
   const pastPractices = practices.filter((e) => !isAfter(parseISO(e.date_start), bufferTime)).reverse();
+
+  const activeCompetition = events.find(e => {
+    if (!e.tba_event_key) return false;
+    const start = parseISO(e.date_start);
+    const end = e.date_end ? parseISO(e.date_end) : addDays(start, 3);
+    return now >= start && now <= end;
+  });
 
   const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean }) => {
     const startDate = parseISO(event.date_start);
@@ -235,6 +244,10 @@ export default function Events() {
           </motion.div>
         )}
       </section>
+
+      {activeCompetition?.tba_event_key && (
+        <CompetitionBanner eventKey={activeCompetition.tba_event_key} />
+      )}
     </motion.div>
   );
 }

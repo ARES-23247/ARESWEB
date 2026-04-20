@@ -125,6 +125,296 @@ apiRouter.get("/search", async (c) => {
   }
 });
 
+// ── ANALYTICS SYSTEM ──────────────────────────────────────────────────
+
+// ── POST /api/analytics/track — log a page view ──────────────────────
+apiRouter.post("/analytics/track", async (c) => {
+  try {
+    const { path, category, referrer } = await c.req.json<{
+      path: string;
+      category: string;
+      referrer?: string;
+    }>();
+
+    if (!path || !category) {
+      return c.json({ error: "Missing path or category" }, 400);
+    }
+
+    const ua = c.req.header("user-agent") || "unknown";
+    const ref = referrer || c.req.header("referrer") || "direct";
+
+    await c.env.DB.prepare(
+      "INSERT INTO page_analytics (path, category, user_agent, referrer) VALUES (?, ?, ?, ?)"
+    ).bind(path, category, ua, ref).run();
+
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("Analytics track error:", err);
+    return c.json({ error: "Tracking failed" }, 500);
+  }
+});
+
+// ── GET /api/admin/analytics/summary — Aggregate view stats (admin) ────
+apiRouter.get("/admin/analytics/summary", async (c) => {
+  try {
+    const [topPages, recentViews, totals] = await Promise.all([
+      // Top 10 Pages
+      c.env.DB.prepare(
+        "SELECT path, category, COUNT(*) as views FROM page_analytics GROUP BY path ORDER BY views DESC LIMIT 10"
+      ).all(),
+      // Last 20 Views
+      c.env.DB.prepare(
+        "SELECT path, category, user_agent, referrer, timestamp FROM page_analytics ORDER BY timestamp DESC LIMIT 20"
+      ).all(),
+      // Totals by Category
+      c.env.DB.prepare(
+        "SELECT category, COUNT(*) as total FROM page_analytics GROUP BY category"
+      ).all()
+    ]);
+
+    return c.json({
+      topPages: topPages.results || [],
+      recentViews: recentViews.results || [],
+      totals: totals.results || []
+    });
+  } catch (err) {
+    console.error("Analytics summary error:", err);
+    return c.json({ error: "Summary failed" }, 500);
+  }
+});
+
+// ── SPONSOR RECOGNITION SYSTEM ────────────────────────────────────────
+
+// ── GET /api/sponsors — list active sponsors for public display ───────
+apiRouter.get("/sponsors", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT id, name, tier, logo_url, website_url FROM sponsors WHERE is_active = 1 ORDER BY CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END"
+    ).all();
+    return c.json({ sponsors: results || [] });
+  } catch (err) {
+    console.error("D1 sponsors list error:", err);
+    return c.json({ sponsors: [] });
+  }
+});
+
+// ── GET /api/admin/sponsors — list all sponsors for management (admin) ─
+apiRouter.get("/admin/sponsors", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare("SELECT * FROM sponsors ORDER BY created_at DESC").all();
+    return c.json({ sponsors: results || [] });
+  } catch (err) {
+    console.error("D1 admin sponsors list error:", err);
+    return c.json({ sponsors: [] }, 500);
+  }
+});
+
+// ── POST /api/admin/sponsors — create or update a sponsor (admin) ──────
+apiRouter.post("/admin/sponsors", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { id, name, tier, logo_url, website_url, is_active } = body;
+    
+    if (!id || !name || !tier) {
+      return c.json({ error: "Missing required fields" }, 400);
+    }
+
+    await c.env.DB.prepare(
+      "INSERT INTO sponsors (id, name, tier, logo_url, website_url, is_active) VALUES (?, ?, ?, ?, ?, ?) " +
+      "ON CONFLICT(id) DO UPDATE SET name=excluded.name, tier=excluded.tier, logo_url=excluded.logo_url, website_url=excluded.website_url, is_active=excluded.is_active"
+    ).bind(id, name, tier, logo_url || null, website_url || null, is_active ?? 1).run();
+
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 sponsor save error:", err);
+    return c.json({ error: "Save failed" }, 500);
+  }
+});
+
+// ── DELETE /api/admin/sponsors/:id — remove a sponsor (admin) ─────────
+apiRouter.delete("/admin/sponsors/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    await c.env.DB.prepare("DELETE FROM sponsors WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 sponsor delete error:", err);
+    return c.json({ error: "Delete failed" }, 500);
+  }
+});
+
+// ── TBA PROXY SYSTEM ──────────────────────────────────────────────────
+
+async function getTBA(path: string, c: any) {
+  const { results: settingsRows } = await c.env.DB.prepare("SELECT value FROM settings WHERE key = 'TBA_API_KEY'").all();
+  const apiKey = (settingsRows[0] as { value: string })?.value;
+  if (!apiKey) throw new Error("TBA_API_KEY not configured");
+
+  const r = await fetch(`https://www.thebluealliance.com/api/v3${path}`, {
+    headers: { "X-TBA-Auth-Key": apiKey }
+  });
+  if (!r.ok) throw new Error(`TBA API error: ${r.status}`);
+  return r.json();
+}
+
+// ── GET /api/tba/rankings/:eventKey — Get rankings for an event ───────
+apiRouter.get("/tba/rankings/:eventKey", async (c) => {
+  try {
+    const eventKey = c.req.param("eventKey");
+    const data = await getTBA(`/event/${eventKey}/rankings`, c);
+    return c.json(data);
+  } catch (err) {
+    console.error("TBA rankings error:", err);
+    return c.json({ error: (err as Error).message }, 500);
+  }
+});
+
+// ── GET /api/tba/matches/:eventKey — Get matches for an event ────────
+apiRouter.get("/tba/matches/:eventKey", async (c) => {
+  try {
+    const eventKey = c.req.param("eventKey");
+    const data = (await getTBA(`/event/${eventKey}/matches/simple`, c)) as any[];
+    // Sort matches by time
+    const sorted = (data || []).sort((a: any, b: any) => (a.time || 0) - (b.time || 0));
+    return c.json({ matches: sorted });
+  } catch (err) {
+    console.error("TBA matches error:", err);
+    return c.json({ error: (err as Error).message }, 500);
+  }
+});
+
+// ── GET /api/tba/team/:teamKey/events/:year — Get team events ─────────
+apiRouter.get("/tba/team/:teamKey/events/:year", async (c) => {
+  try {
+    const { teamKey, year } = c.req.param();
+    const data = await getTBA(`/team/${teamKey}/events/${year}/simple`, c);
+    return c.json({ events: data });
+  } catch (err) {
+    console.error("TBA team events error:", err);
+    return c.json({ error: (err as Error).message }, 500);
+  }
+});
+
+// ── COMMUNITY IMPACT TRACKER ──────────────────────────────────────────
+
+// ── GET /api/outreach — list all outreach logs for public report ──────
+apiRouter.get("/outreach", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT id, title, date, location, students_count, hours_logged, reach_count, description FROM outreach_logs ORDER BY date DESC"
+    ).all();
+    return c.json({ logs: results || [] });
+  } catch (err) {
+    console.error("D1 outreach list error:", err);
+    return c.json({ logs: [] });
+  }
+});
+
+// ── GET /api/admin/outreach — list all outreach logs for management ───
+apiRouter.get("/admin/outreach", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare("SELECT * FROM outreach_logs ORDER BY date DESC").all();
+    return c.json({ logs: results || [] });
+  } catch (err) {
+    console.error("D1 admin outreach list error:", err);
+    return c.json({ logs: [] }, 500);
+  }
+});
+
+// ── POST /api/admin/outreach — create or update an outreach log ───────
+apiRouter.post("/admin/outreach", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { id, title, date, location, students_count, hours_logged, reach_count, description } = body;
+    
+    if (!id || !title || !date) {
+      return c.json({ error: "Missing required fields" }, 400);
+    }
+
+    await c.env.DB.prepare(
+      "INSERT INTO outreach_logs (id, title, date, location, students_count, hours_logged, reach_count, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+      "ON CONFLICT(id) DO UPDATE SET title=excluded.title, date=excluded.date, location=excluded.location, students_count=excluded.students_count, hours_logged=excluded.hours_logged, reach_count=excluded.reach_count, description=excluded.description"
+    ).bind(id, title, date, location || null, students_count || 0, hours_logged || 0, reach_count || 0, description || null).run();
+
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 outreach save error:", err);
+    return c.json({ error: "Save failed" }, 500);
+  }
+});
+
+// ── DELETE /api/admin/outreach/:id — remove an outreach log ────────────
+apiRouter.delete("/admin/outreach/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    await c.env.DB.prepare("DELETE FROM outreach_logs WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 outreach delete error:", err);
+    return c.json({ error: "Delete failed" }, 500);
+  }
+});
+
+// ── TEAM LEGACY (TROPHY CASE) ─────────────────────────────────────────
+
+// ── GET /api/awards — list all awards for public display ──────────────
+apiRouter.get("/awards", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT id, title, year, event_name, image_url, description FROM awards ORDER BY year DESC, title ASC"
+    ).all();
+    return c.json({ awards: results || [] });
+  } catch (err) {
+    console.error("D1 awards list error:", err);
+    return c.json({ awards: [] });
+  }
+});
+
+// ── GET /api/admin/awards — list all awards for management ────────────
+apiRouter.get("/admin/awards", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare("SELECT * FROM awards ORDER BY year DESC, created_at DESC").all();
+    return c.json({ awards: results || [] });
+  } catch (err) {
+    console.error("D1 admin awards list error:", err);
+    return c.json({ awards: [] }, 500);
+  }
+});
+
+// ── POST /api/admin/awards — create or update an award ────────────────
+apiRouter.post("/admin/awards", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { id, title, year, event_name, image_url, description } = body;
+    
+    if (!id || !title || !year) {
+      return c.json({ error: "Missing required fields" }, 400);
+    }
+
+    await c.env.DB.prepare(
+      "INSERT INTO awards (id, title, year, event_name, image_url, description) VALUES (?, ?, ?, ?, ?, ?) " +
+      "ON CONFLICT(id) DO UPDATE SET title=excluded.title, year=excluded.year, event_name=excluded.event_name, image_url=excluded.image_url, description=excluded.description"
+    ).bind(id, title, year, event_name || null, image_url || null, description || null).run();
+
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 award save error:", err);
+    return c.json({ error: "Save failed" }, 500);
+  }
+});
+
+// ── DELETE /api/admin/awards/:id — remove an award ───────────────────
+apiRouter.delete("/api/admin/awards/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    await c.env.DB.prepare("DELETE FROM awards WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("D1 award delete error:", err);
+    return c.json({ error: "Delete failed" }, 500);
+  }
+});
+
 // ── GET /api/posts — list all blog posts ─────────────────────────────
 apiRouter.get("/posts", async (c) => {
   try {
@@ -1098,7 +1388,7 @@ apiRouter.post("/admin/events/sync", async (c) => {
 apiRouter.get("/docs", async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT slug, title, category, sort_order, description FROM docs WHERE is_deleted = 0 ORDER BY category, sort_order ASC"
+      "SELECT slug, title, category, sort_order, description, is_portfolio, is_executive_summary FROM docs WHERE is_deleted = 0 ORDER BY category, sort_order ASC"
     ).all();
     return c.json({ docs: results ?? [] });
   } catch (err) {
@@ -1164,7 +1454,7 @@ apiRouter.get("/docs/:slug", async (c) => {
   const slug = c.req.param("slug");
   try {
     const row = await c.env.DB.prepare(
-      "SELECT slug, title, category, description, content, updated_at FROM docs WHERE slug = ? AND is_deleted = 0"
+      "SELECT slug, title, category, description, content, updated_at, is_portfolio, is_executive_summary FROM docs WHERE slug = ? AND is_deleted = 0"
     ).bind(slug).first();
     if (!row) return c.json({ error: "Doc not found" }, 404);
     return c.json({ doc: row });
@@ -1178,7 +1468,7 @@ apiRouter.get("/docs/:slug", async (c) => {
 apiRouter.get("/admin/docs/export-all", ensureAdmin, async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      `SELECT slug, title, category, sort_order, description, content FROM docs WHERE is_deleted = 0 OR is_deleted IS NULL ORDER BY category, sort_order`
+      `SELECT slug, title, category, sort_order, description, content, is_portfolio, is_executive_summary FROM docs WHERE is_deleted = 0 OR is_deleted IS NULL ORDER BY category, sort_order`
     ).all();
 
     const backup = {
@@ -1204,7 +1494,7 @@ apiRouter.get("/admin/docs/export-all", ensureAdmin, async (c) => {
 apiRouter.post("/admin/docs", async (c) => {
   try {
     const email = c.req.header("cf-access-authenticated-user-email") || "anonymous_admin";
-    const { slug, title, category, sortOrder, description, content } = await c.req.json();
+    const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary } = await c.req.json();
     if (!slug || !title || !category || !content) {
       return c.json({ error: "Missing required fields" }, 400);
     }
@@ -1219,9 +1509,9 @@ apiRouter.post("/admin/docs", async (c) => {
     }
 
     await c.env.DB.prepare(
-      `INSERT OR REPLACE INTO docs (slug, title, category, sort_order, description, content, cf_email, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
-    ).bind(slug, title, category, sortOrder || 0, description || "", content, email).run();
+      `INSERT OR REPLACE INTO docs (slug, title, category, sort_order, description, content, cf_email, updated_at, is_portfolio, is_executive_summary) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?)`
+    ).bind(slug, title, category, sortOrder || 0, description || "", content, email, isPortfolio ? 1 : 0, isExecutiveSummary ? 1 : 0).run();
     
     return c.json({ success: true, slug });
   } catch (err) {
@@ -1279,6 +1569,90 @@ apiRouter.patch("/admin/docs/:slug/sort", async (c) => {
   } catch (err) {
     console.error("D1 doc sort update error:", err);
     return c.json({ error: "Sort update failed" }, 500);
+  }
+});
+
+// ── JUDGE'S HUB ENDPOINTS ───────────────────────────────────────────
+
+// ── GET /api/admin/judges/codes — list active codes (admin) ──────────
+apiRouter.get("/admin/judges/codes", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare("SELECT * FROM judge_access_codes ORDER BY created_at DESC").all();
+    return c.json({ codes: results || [] });
+  } catch (err) {
+    console.error("D1 list codes error:", err);
+    return c.json({ codes: [] });
+  }
+});
+
+// ── POST /api/admin/judges/codes — generate a new code (admin) ───────
+apiRouter.post("/admin/judges/codes", async (c) => {
+  try {
+    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const id = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 1 week
+    
+    await c.env.DB.prepare(
+      "INSERT INTO judge_access_codes (id, code, expires_at) VALUES (?, ?, ?)"
+    ).bind(id, code, expiresAt).run();
+    
+    return c.json({ success: true, code, expiresAt });
+  } catch (err) {
+    console.error("D1 create code error:", err);
+    return c.json({ error: "Failed to create code" }, 500);
+  }
+});
+
+// ── POST /api/judges/login — login with code ─────────────────────────
+apiRouter.post("/judges/login", async (c) => {
+  try {
+    const { code } = await c.req.json();
+    const row = await c.env.DB.prepare(
+      "SELECT * FROM judge_access_codes WHERE code = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"
+    ).bind(code).first();
+    
+    if (!row) {
+      return c.json({ error: "Invalid or expired access code" }, 401);
+    }
+    
+    // In a real app we'd set a cookie, but for now we'll return a token or just success
+    // The Judge's Hub will store this code in localStorage for subsequent requests
+    return c.json({ success: true, token: code }); 
+  } catch (err) {
+    console.error("Judge login error:", err);
+    return c.json({ error: "Login failed" }, 500);
+  }
+});
+
+// ── GET /api/judges/portfolio — fetch curated papers ───────────────────
+apiRouter.get("/judges/portfolio", async (c) => {
+  const code = c.req.header("Authorization")?.replace("Bearer ", "");
+  if (!code) return c.json({ error: "Unauthorized" }, 401);
+  
+  // Verify code
+  const valid = await c.env.DB.prepare(
+    "SELECT 1 FROM judge_access_codes WHERE code = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"
+  ).bind(code).first();
+  
+  if (!valid) return c.json({ error: "Invalid session" }, 401);
+
+  try {
+    const [portfolioDocs, awards, outreach] = await Promise.all([
+      c.env.DB.prepare(
+        "SELECT slug, title, category, description, updated_at, is_portfolio, is_executive_summary FROM docs WHERE is_deleted = 0 AND (is_portfolio = 1 OR is_executive_summary = 1) ORDER BY is_executive_summary DESC, sort_order ASC"
+      ).all(),
+      c.env.DB.prepare("SELECT * FROM awards ORDER BY CASE WHEN year IS NOT NULL THEN year ELSE 0 END DESC").all(),
+      c.env.DB.prepare("SELECT * FROM outreach_logs ORDER BY date DESC LIMIT 5").all()
+    ]);
+
+    return c.json({
+      portfolio: portfolioDocs.results || [],
+      awards: awards.results || [],
+      outreach: outreach.results || []
+    });
+  } catch (err) {
+    console.error("Judge portfolio fetch error:", err);
+    return c.json({ error: "Failed to fetch portfolio" }, 500);
   }
 });
 

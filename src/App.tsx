@@ -24,6 +24,8 @@ import Docs from "./pages/Docs";
 import Login from "./pages/Login";
 import ProfilePage from "./pages/ProfilePage";
 import BugReport from "./pages/BugReport";
+import Sponsors from "./pages/Sponsors";
+import JudgesHub from "./pages/JudgesHub";
 
 export default function App() {
   const location = useLocation();
@@ -55,6 +57,8 @@ export default function App() {
               <Route path="/docs" element={<Docs />} />
               <Route path="/docs/:slug" element={<Docs />} />
               <Route path="/bug-report" element={<BugReport />} />
+              <Route path="/sponsors" element={<Sponsors />} />
+              <Route path="/judges" element={<JudgesHub />} />
             </Routes>
           </ErrorBoundary>
         </AnimatePresence>
