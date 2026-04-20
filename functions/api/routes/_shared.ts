@@ -21,6 +21,15 @@ export type Bindings = {
   DEV_BYPASS?: string;
 };
 
+export type Variables = {
+  sessionUser: SessionUser;
+};
+
+export type AppEnv = {
+  Bindings: Bindings;
+  Variables: Variables;
+};
+
 // ── Content Status Constants ─────────────────────────────────────────
 export const ContentStatus = {
   PUBLISHED: "published",
@@ -58,7 +67,7 @@ export function validateLength(value: string | undefined | null, maxLength: numb
 }
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
-function isDevBypassEnabled(c: Context<{ Bindings: Bindings }>): boolean {
+function isDevBypassEnabled(c: Context<AppEnv>): boolean {
   const url = new URL(c.req.url);
   const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
   // SEC-03: Only bypass auth in local dev when DEV_BYPASS env var is set
@@ -66,7 +75,7 @@ function isDevBypassEnabled(c: Context<{ Bindings: Bindings }>): boolean {
 }
 
 // ── Admin Auth Middleware ─────────────────────────────────────────────
-export const ensureAdmin = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
+export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   if (isDevBypassEnabled(c)) {
     c.set("sessionUser", { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", image: null, role: "admin", member_type: "mentor" });
     return await next();
@@ -83,11 +92,11 @@ export const ensureAdmin = async (c: Context<{ Bindings: Bindings }>, next: Next
 
   // RBAC: Granular path-based role checks
   const url = new URL(c.req.url);
-  const role = (session.user.role as string) || UserRole.UNVERIFIED;
+  const role = (session.user as { role?: string }).role || UserRole.UNVERIFIED;
 
   // Authors can do everything EXCEPT manage users
   const isSuperAdminRoute = url.pathname.includes("/admin/users") || url.pathname.includes("/admin/roles");
-  const allowedRoles = isSuperAdminRoute ? [UserRole.ADMIN] : [UserRole.ADMIN, UserRole.AUTHOR];
+  const allowedRoles: string[] = isSuperAdminRoute ? [UserRole.ADMIN] : [UserRole.ADMIN, UserRole.AUTHOR];
 
   if (!allowedRoles.includes(role)) {
      console.warn(`[Auth Check] Access Denied for ${session.user.email}. Role: ${role}. Path: ${url.pathname}`);
@@ -121,7 +130,7 @@ export interface SessionUser {
 }
 
 // ── Session Helper ───────────────────────────────────────────────────
-export async function getSessionUser(c: Context<{ Bindings: Bindings }>): Promise<SessionUser | null> {
+export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | null> {
   // Check if ensureAdmin already stored session in context
   const cached = c.get("sessionUser");
   if (cached) return cached as SessionUser;
@@ -143,7 +152,7 @@ export async function getSessionUser(c: Context<{ Bindings: Bindings }>): Promis
         email: session.user.email,
         name: session.user.name,
         image: session.user.image,
-        role: (session.user.role as string) || UserRole.UNVERIFIED,
+        role: (session.user as { role?: string }).role || UserRole.UNVERIFIED,
         member_type: profile?.member_type || "student",
       };
     }
@@ -152,7 +161,7 @@ export async function getSessionUser(c: Context<{ Bindings: Bindings }>): Promis
 }
 
 // ── Centralized Settings Fetch (EFF-01) ──────────────────────────────
-export async function getDbSettings(c: Context<{ Bindings: Bindings }>): Promise<Record<string, string>> {
+export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, string>> {
   const { results: settingsRows } = await c.env.DB.prepare("SELECT key, value FROM settings").all();
   const settings: Record<string, string> = {};
   if (settingsRows) {
@@ -164,7 +173,7 @@ export async function getDbSettings(c: Context<{ Bindings: Bindings }>): Promise
 }
 
 // ── Social Config Helper ─────────────────────────────────────────────
-export async function getSocialConfig(c: Context<{ Bindings: Bindings }>): Promise<Record<string, string | undefined>> {
+export async function getSocialConfig(c: Context<AppEnv>): Promise<Record<string, string | undefined>> {
   try {
     const dbSettings = await getDbSettings(c);
 
@@ -242,7 +251,7 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
 
 // ── Audit Log Helper (GAP-01) ────────────────────────────────────────
 export async function logAuditAction(
-  c: Context<{ Bindings: Bindings }>,
+  c: Context<AppEnv>,
   action: string,
   targetType: string,
   targetId: string | null,

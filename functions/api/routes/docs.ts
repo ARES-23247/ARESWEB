@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, getSessionUser } from "./_shared";
+import { AppEnv, ensureAdmin, getSessionUser } from "./_shared";
 
-const docsRouter = new Hono<{ Bindings: Bindings }>();
+const docsRouter = new Hono<AppEnv>();
 
 // ── GET /docs — list all docs grouped by category ─────────────────────
 docsRouter.get("/docs", async (c) => {
