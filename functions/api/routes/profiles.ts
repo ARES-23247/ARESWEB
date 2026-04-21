@@ -139,7 +139,7 @@ profilesRouter.get("/:userId", async (c) => {
     }
 
     const memberType = String(profile.member_type || "student");
-    const sanitized = sanitizeProfileForPublic(profile as Record<string, unknown>, memberType);
+    const sanitized = sanitizeProfileForPublic(profile as Record<string, unknown>, memberType) as Record<string, unknown>;
 
     // If requester is an admin/leader or the user themselves, decrypt and append internal records
     const requester = await getSessionUser(c);
@@ -151,7 +151,6 @@ profilesRouter.get("/:userId", async (c) => {
       sanitized.emergency_contact_name = await decrypt(profile.emergency_contact_name as string, secret);
       sanitized.emergency_contact_phone = await decrypt(profile.emergency_contact_phone as string, secret);
       sanitized.dietary_restrictions = profile.dietary_restrictions;
-      sanitized.favorite_food = profile.favorite_food;
       sanitized.tshirt_size = profile.tshirt_size;
     }
 

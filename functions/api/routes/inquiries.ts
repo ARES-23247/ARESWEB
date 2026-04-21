@@ -3,6 +3,7 @@ import { siteConfig } from "../../utils/site.config";
 import { AppEnv, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination, getSessionUser, ensureAuth, logAuditAction, checkWriteRateLimit, verifyTurnstile } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import { notifyByRole, NotifyAudience } from "../../utils/notifications";
+import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects";
 
 
 const inquiriesRouter = new Hono<AppEnv>();
@@ -207,7 +208,7 @@ inquiriesRouter.post("/", async (c) => {
          const markdownBody = `**Details:**\n\`\`\`json\n${JSON.stringify(metadata, null, 2)}\n\`\`\``;
          c.executionCtx.waitUntil(
            createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry from ${name}`, markdownBody)
-             .catch(err => console.error("[Inquiry] GitHub task creation failed:", err))
+             .catch((err: unknown) => console.error("[Inquiry] GitHub task creation failed:", err))
          );
       }
     } catch { /* ignore GitHub Error */ }

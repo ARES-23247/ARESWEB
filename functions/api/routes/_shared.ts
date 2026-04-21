@@ -380,6 +380,7 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
     pre_match_superstition: profile.pre_match_superstition,
     leadership_role: profile.leadership_role,
     rookie_year: profile.rookie_year,
+    favorite_food: profile.favorite_food,
   };
   // Students & parents: NEVER expose PII or career/education fields
   if (memberType === "student" || memberType === "parent") {

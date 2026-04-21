@@ -193,11 +193,10 @@ export default function ProfilePage() {
                      <p className="text-zinc-400 text-xs">{profile.emergency_contact_phone}</p>
                    </div>
                  )}
-                 {(profile.dietary_restrictions || profile.favorite_food) && (
+                 {profile.dietary_restrictions && (
                    <div>
                      <p className="text-[10px] font-bold text-zinc-500 uppercase">Dietary Info</p>
-                     {profile.dietary_restrictions && <p className="text-zinc-300 text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>}
-                     <p className="text-zinc-400 text-xs">{profile.favorite_food}</p>
+                     <p className="text-zinc-300 text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>
                    </div>
                  )}
                  {profile.tshirt_size && (
@@ -246,6 +245,12 @@ export default function ProfilePage() {
               <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-gold uppercase tracking-wider mb-2">Fun Fact</p>
                 <p className="text-zinc-300 text-sm">{profile.fun_fact}</p>
+              </div>
+            )}
+            {profile.favorite_food && (
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+                <p className="text-[10px] font-bold text-ares-cyan uppercase tracking-wider mb-2">Favorite Food</p>
+                <p className="text-zinc-300 text-sm">{profile.favorite_food}</p>
               </div>
             )}
             {profile.grade_year && (
