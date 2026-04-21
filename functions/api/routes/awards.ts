@@ -8,7 +8,7 @@ awardsRouter.get("/", async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 50, 100);
     const { results } = await c.env.DB.prepare(
-      "SELECT id, title, date as year, event_name as event, "" as team, description, "" as media_url FROM awards ORDER BY year DESC, title ASC LIMIT ? OFFSET ?"
+      "SELECT id, title, date as year, event_name as event, '' as team, description, '' as media_url FROM awards ORDER BY year DESC, title ASC LIMIT ? OFFSET ?"
     ).bind(limit, offset).all();
     return c.json({ awards: results || [] });
   } catch (err) {
