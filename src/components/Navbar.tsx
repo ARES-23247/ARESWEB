@@ -19,6 +19,7 @@ export default function Navbar() {
   const role = (session?.user as any)?.role || "unverified";
   const canSeeInquiries = isSignedIn && role !== "unverified";
   
+  const [pendingInquiries, setPendingInquiries] = useState<{ id: string, name: string, type: string }[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -63,16 +64,32 @@ export default function Navbar() {
     }
   });
 
-  const notifications = notifData?.notifications || [];
+  const rawNotifications = notifData?.notifications || [];
+  
+  // Combine db notifications with pending inquiries
+  const notifications = [
+    ...rawNotifications,
+    ...pendingInquiries.map(i => ({
+      id: `inquiry-${i.id}`,
+      title: `New ${i.type === 'support' ? 'Support' : i.type === 'outreach' ? 'Outreach' : i.type === 'sponsor' ? 'Sponsor' : 'Inquiry'} Request`,
+      message: `From ${i.name}`,
+      is_read: false,
+      link: '/dashboard/inquiries',
+      is_inquiry: true
+    }))
+  ];
+  
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
     if (canSeeInquiries) {
       fetch("/api/inquiries")
-        .then(res => res.json() as Promise<{ inquiries?: { status: string }[] }>)
+        .then(res => res.json() as Promise<{ inquiries?: { id: string, status: string, name: string, type: string }[] }>)
         .then((data) => {
           if (data.inquiries) {
-            setPendingCount(data.inquiries.filter((i: { status: string }) => i.status === "pending").length);
+            const pending = data.inquiries.filter((i) => i.status === "pending");
+            setPendingInquiries(pending);
+            setPendingCount(pending.length);
           }
         }).catch(() => {});
     }
@@ -170,13 +187,15 @@ export default function Navbar() {
                           className={`px-4 py-3 border-b border-white/5 flex flex-col gap-1 hover:bg-white/5 cursor-pointer ${n.is_read ? 'opacity-60' : 'bg-ares-red/5'}`}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
-                              if (!n.is_read) markRead.mutate(n.id);
+                              // @ts-expect-error custom flag
+                              if (!n.is_read && !n.is_inquiry) markRead.mutate(n.id);
                               if (n.link) navigate(n.link);
                               setShowNotifs(false);
                             }
                           }}
                           onClick={() => {
-                            if (!n.is_read) markRead.mutate(n.id);
+                            // @ts-expect-error custom flag
+                            if (!n.is_read && !n.is_inquiry) markRead.mutate(n.id);
                             if (n.link) navigate(n.link);
                             setShowNotifs(false);
                           }}
