@@ -25,16 +25,16 @@ describe('analytics utility', () => {
     vi.restoreAllMocks();
   });
 
-  it('bypasses tracking on localhost', async () => {
+  it('tracks on localhost', async () => {
     window.location.hostname = 'localhost';
     await trackPageView('/docs', 'doc');
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('bypasses tracking on local 127.0.0.1 loopback', async () => {
+  it('tracks on local 127.0.0.1 loopback', async () => {
     window.location.hostname = '127.0.0.1';
     await trackPageView('/blog', 'blog');
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('fires a POST request to the analytics api for external domains', async () => {
