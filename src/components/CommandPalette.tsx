@@ -48,6 +48,7 @@ export default function CommandPalette() {
     };
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userRole = (session?.user as any)?.role;
 
   // Static Quick Links routes

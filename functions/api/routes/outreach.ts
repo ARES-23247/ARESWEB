@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings, ensureAdmin, parsePagination  } from "./_shared";
+import { AppEnv, ensureAdmin, parsePagination  } from "./_shared";
 
 const outreachRouter = new Hono<AppEnv>();
 

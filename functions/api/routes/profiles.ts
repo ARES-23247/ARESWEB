@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, Bindings, getSessionUser, sanitizeProfileForPublic } from "./_shared";
+import { AppEnv, getSessionUser, sanitizeProfileForPublic } from "./_shared";
 import { getAuth } from "../../utils/auth";
 import { encrypt, decrypt } from "../../utils/crypto";
 

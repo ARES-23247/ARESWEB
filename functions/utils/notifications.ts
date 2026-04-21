@@ -13,6 +13,7 @@ export async function emitNotification(
     message,
     link,
     external = false,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     priority = "low"
   }: {
     userId: string;

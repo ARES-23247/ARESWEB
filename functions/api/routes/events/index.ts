@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings, parsePagination  } from "../_shared";
+import { AppEnv, parsePagination  } from "../_shared";
 import signupsRouter from "./signups";
 
 const eventsRouter = new Hono<AppEnv>();
@@ -25,7 +25,7 @@ eventsRouter.get("/calendar", async (c) => {
     const { results } = await c.env.DB.prepare(
       "SELECT key, value FROM settings WHERE key IN ('CALENDAR_ID', 'CALENDAR_ID_INTERNAL', 'CALENDAR_ID_OUTREACH', 'CALENDAR_ID_EXTERNAL')"
     ).all<{key: string, value: string}>();
-    const map = (results || []).reduce((acc: any, row: any) => ({ ...acc, [row.key]: row.value }), {} as Record<string, string>);
+    const map = (results || []).reduce((acc: Record<string, string>, row: { key: string, value: string }) => ({ ...acc, [row.key]: row.value }), {} as Record<string, string>);
     return c.json({ 
       calendarIdInternal: map['CALENDAR_ID_INTERNAL'] || map['CALENDAR_ID'] || "",
       calendarIdOutreach: map['CALENDAR_ID_OUTREACH'] || "",

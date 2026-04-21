@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv,  Bindings, ensureAdmin, getSocialConfig  } from "./_shared";
+import { AppEnv, ensureAdmin, getSocialConfig  } from "./_shared";
 import { buildGitHubConfig, fetchProjectBoard, fetchProjectFields, createProjectItem, updateProjectItemStatus, queryProjectItem } from "../../utils/githubProjects";
 
 const githubRouter = new Hono<AppEnv>();

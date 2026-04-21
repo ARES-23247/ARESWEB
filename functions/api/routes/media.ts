@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings, ensureAdmin, getDbSettings  } from "./_shared";
+import { AppEnv, ensureAdmin, getDbSettings  } from "./_shared";
 
 const mediaRouter = new Hono<AppEnv>();
 const adminMediaRouter = new Hono<AppEnv>();
@@ -104,11 +104,14 @@ mediaRouter.get("/", async (c) => {
     const publicKeys = new Set(results.map(r => r.key));
 
     const merged = objects.objects
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter(obj => publicKeys.has((obj as any).key))
       .map(obj => ({
         ...obj,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         url: `/api/media/${(obj as any).key}`,
         folder: "Gallery",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tags: results.find(r => r.key === (obj as any).key)?.tags || ""
       }));
 
@@ -137,8 +140,11 @@ adminMediaRouter.get("/", async (c) => {
 
     const merged = objects.objects.map(obj => ({
       ...obj,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       url: `/api/media/${(obj as any).key}`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       folder: metaMap.get((obj as any).key)?.folder || "Library",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tags: metaMap.get((obj as any).key)?.tags || ""
     }));
 
@@ -166,6 +172,7 @@ adminMediaRouter.delete("/:key", ensureAdmin, async (c) => {
       // Authors trigger soft-deletion mechanism (archived/ prefix)
       const obj = await c.env.ARES_STORAGE.get(key);
       if (obj) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await c.env.ARES_STORAGE.put(`archived/${key}`, (obj as any).body, { httpMetadata: (obj as any).httpMetadata });
         await c.env.ARES_STORAGE.delete(key);
       }

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings, getSessionUser  } from "./_shared";
+import { AppEnv, getSessionUser  } from "./_shared";
 
 const logisticsRouter = new Hono<AppEnv>();
 

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings, ensureAdmin, getDbSettings, logAuditAction, validateLength, MAX_INPUT_LENGTHS  } from "./_shared";
+import { AppEnv, ensureAdmin, getDbSettings, logAuditAction, validateLength, MAX_INPUT_LENGTHS  } from "./_shared";
 
 const settingsRouter = new Hono<AppEnv>();
 

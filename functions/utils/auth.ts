@@ -49,6 +49,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                             name: "full_name",
                             image: "avatar_url"
                         }
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     } as any
                 ] : []
             }),

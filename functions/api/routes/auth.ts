@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings, getSessionUser  } from "./_shared";
+import { AppEnv, getSessionUser  } from "./_shared";
 import { getAuth } from "../../utils/auth";
 
 const authRouter = new Hono<AppEnv>();
@@ -27,6 +27,7 @@ authRouter.on(["POST", "GET"], "/*", async (c) => {
     console.error("[Auth Handler] Internal Exception:", err);
     return c.json({ 
       message: err.message || "Internal Server Error during Authentication", 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       stack: (c.env as any).ENVIRONMENT === "development" ? err.stack : undefined
     }, 500);
   }

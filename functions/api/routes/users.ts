@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings, ensureAdmin  } from "./_shared";
+import { AppEnv, ensureAdmin  } from "./_shared";
 import { encrypt } from "../../utils/crypto";
 
 const usersRouter = new Hono<AppEnv>();

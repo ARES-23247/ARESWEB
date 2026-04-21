@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv,  Bindings  } from "./_shared";
+import { AppEnv  } from "./_shared";
 
 const sitemapRouter = new Hono<AppEnv>();
 

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../../utils/site.config";
-import { AppEnv,  Bindings, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination  } from "../_shared";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination  } from "../_shared";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -91,6 +91,7 @@ adminRouter.post("/", async (c) => {
             title: title, url: `https://aresfirst.org/events`,
             snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             baseUrl: new URL(c.req.url).origin} as any as any, socialConfig, socials);
        } catch (err: unknown) {
          warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
@@ -172,6 +173,7 @@ adminRouter.put("/:id", async (c) => {
             title: title, url: `https://aresfirst.org/events`,
             snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             baseUrl: new URL(c.req.url).origin} as any as any, socialConfig, socials);
        } catch (err: unknown) {
          warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
@@ -295,6 +297,7 @@ adminRouter.post("/:id/repush", async (c) => {
     if (!event) return c.json({ error: "Event not found" }, 404);
     const socialConfig = await getSocialConfig(c);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await dispatchSocials(c.env.DB, { title: event.title, url: `${siteConfig.urls.base}/events`, snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", coverImageUrl: event.cover_image || "/gallery_1.png", baseUrl: new URL(c.req.url).origin} as any, socialConfig, socials);
     } catch (err: unknown) { return c.json({ error: `Network Repush Failed: ${(err as Error).message || String(err)}` }, 502); }
     return c.json({ success: true });

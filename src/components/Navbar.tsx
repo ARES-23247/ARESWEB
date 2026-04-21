@@ -15,6 +15,7 @@ export default function Navbar() {
 
   const isSignedIn = !isPending && session?.user;
   const userImage = session?.user?.image;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const isAdmin = (session?.user as any)?.role === "admin";
   
   const [pendingCount, setPendingCount] = useState(0);

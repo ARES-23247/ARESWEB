@@ -77,6 +77,7 @@ export async function dispatchBluesky(payload: PostPayload, config: SocialConfig
         await agent.post({
           text: rt.text,
           facets: rt.facets,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           embed: embed as any,
           createdAt: new Date().toISOString()
         });
