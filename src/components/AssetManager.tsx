@@ -124,7 +124,7 @@ export default function AssetManager() {
   const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter((a: R2Asset & { folder: string; tags: string; }) => a.folder === selectedFolderFilter);
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="flex-1 w-full flex flex-col min-h-0">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tighter">Asset Vault</h2>
@@ -186,7 +186,7 @@ export default function AssetManager() {
               >{folder}</button>
             ))}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto max-h-[600px] pr-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto flex-1 min-h-0 pr-2 pb-4 custom-scrollbar">
             {filteredAssets.map((asset: R2Asset & { folder: string; tags: string; }) => (
             <div
               key={asset.key}
