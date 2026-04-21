@@ -22,6 +22,6 @@ export const siteConfig = {
   // Get yours at: https://dash.cloudflare.com/?to=/:account/turnstile
   // Use "1x00000000000000000000AA" for testing (always passes)
   turnstile: {
-    siteKey: "1x00000000000000000000AA", // TODO: Replace with your production site key
+    siteKey: "0x4AAAAAADArWmWO1VgHsJWY",
   }
 };
