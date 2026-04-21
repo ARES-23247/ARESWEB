@@ -19,7 +19,7 @@ export default function MemberImpactOverview() {
   const { data: roster = [], isLoading } = useQuery<RosterMember[]>({
     queryKey: ["admin-roster-stats"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/roster-stats");
+      const r = await fetch("/api/admin/analytics/roster-stats");
       if (!r.ok) throw new Error("Failed to load roster stats");
       const d = await r.json() as { roster: RosterMember[] };
       return d.roster || [];

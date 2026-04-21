@@ -50,7 +50,7 @@ analyticsRouter.post("/sponsor-click", async (c) => {
 });
 
 // ── GET /admin/analytics/summary — Analytics Dashboard ───────────────
-analyticsRouter.get("/admin/analytics/summary", ensureAdmin, async (c) => {
+analyticsRouter.get("/summary", ensureAdmin, async (c) => {
   try {
     const [topPages, recentViews, totals] = await Promise.all([
       c.env.DB.prepare(
@@ -76,7 +76,7 @@ analyticsRouter.get("/admin/analytics/summary", ensureAdmin, async (c) => {
 });
 
 // ── GET /admin/roster-stats — Member Impact Roster ──────────────────
-analyticsRouter.get("/admin/roster-stats", ensureAdmin, async (c) => {
+analyticsRouter.get("/roster-stats", ensureAdmin, async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
       `SELECT 

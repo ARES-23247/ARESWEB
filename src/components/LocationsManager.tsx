@@ -25,7 +25,7 @@ export default function LocationsManager() {
   const { data: locations = [], isLoading } = useQuery<LocationRow[]>({
     queryKey: ["admin_locations"],
     queryFn: async () => {
-      const res = await fetch("/api/locations/admin");
+      const res = await fetch("/api/admin/locations");
       if (!res.ok) throw new Error("Failed to fetch locations");
       const d = await res.json();
       // @ts-expect-error - standard response format
@@ -36,7 +36,7 @@ export default function LocationsManager() {
   const saveMut = useMutation({
     mutationFn: async (payload: Partial<LocationRow> & { id?: string }) => {
       const method = payload.id ? "PUT" : "POST";
-      const u = payload.id ? `/api/locations/admin/${payload.id}` : "/api/locations/admin";
+      const u = payload.id ? `/api/admin/locations/${payload.id}` : "/api/admin/locations";
       const r = await fetch(u, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -54,7 +54,7 @@ export default function LocationsManager() {
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
-      const r = await fetch(`/api/locations/admin/${id}`, { method: "DELETE" });
+      const r = await fetch(`/api/admin/locations/${id}`, { method: "DELETE" });
       if (!r.ok) throw new Error("Failed to delete location");
       return r.json();
     },
@@ -63,7 +63,7 @@ export default function LocationsManager() {
   
   const restoreMut = useMutation({
     mutationFn: async (l: LocationRow) => {
-       const r = await fetch(`/api/locations/admin/${l.id}`, {
+       const r = await fetch(`/api/admin/locations/${l.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...l, is_deleted: 0 })

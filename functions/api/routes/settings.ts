@@ -4,7 +4,7 @@ import { Bindings, ensureAdmin, getDbSettings, logAuditAction, validateLength, M
 const settingsRouter = new Hono<{ Bindings: Bindings }>();
 
 // ── GET /admin/settings — get all integrations settings ───────────────
-settingsRouter.get("/admin/list", ensureAdmin, async (c) => {
+settingsRouter.get("/", ensureAdmin, async (c) => {
   try {
     const settings = await getDbSettings(c);
     return c.json({ success: true, settings });
@@ -15,7 +15,7 @@ settingsRouter.get("/admin/list", ensureAdmin, async (c) => {
 });
 
 // ── POST /admin/settings — upsert settings key-value pairs ────────────
-settingsRouter.post("/admin/save", ensureAdmin, async (c) => {
+settingsRouter.post("/", ensureAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const entries = Object.entries(body) as [string, string][];

@@ -18,7 +18,7 @@ locationsRouter.get("/", async (c) => {
 });
 
 // ── GET /admin/ — all for manager ─────────────────────────────
-locationsRouter.get("/", ensureAdmin, async (c) => {
+adminLocationsRouter.get("/", ensureAdmin, async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 50, 200);
     const { results } = await c.env.DB.prepare(
@@ -32,7 +32,7 @@ locationsRouter.get("/", ensureAdmin, async (c) => {
 });
 
 // ── POST / — create new ─────────────────────────────────
-locationsRouter.post("/", ensureAdmin, async (c) => {
+adminLocationsRouter.post("/", ensureAdmin, async (c) => {
   try {
     
     const body: { name?: string; address?: string; maps_url?: string } = await c.req.json();
@@ -60,7 +60,7 @@ locationsRouter.post("/", ensureAdmin, async (c) => {
 });
 
 // ── PUT /:id — update ──────────────────────────────────
-locationsRouter.put("/:id", ensureAdmin, async (c) => {
+adminLocationsRouter.put("/:id", ensureAdmin, async (c) => {
   try {
 
     const id = c.req.param("id");
@@ -89,7 +89,7 @@ locationsRouter.put("/:id", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /:id — soft delete ──────────────────────────
-locationsRouter.delete("/:id", ensureAdmin, async (c) => {
+adminLocationsRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
     const id = c.req.param("id");
     await c.env.DB.prepare(

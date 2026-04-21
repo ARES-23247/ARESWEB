@@ -305,12 +305,20 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
     };
   }
 
+  const safeParseArray = (val: unknown) => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch { return []; }
+    }
+    return [];
+  };
+
   const safe: Record<string, unknown> = {
     user_id: profile.user_id,
     nickname: profile.nickname || "ARES Member",
     avatar: profile.avatar,
     pronouns: profile.pronouns,
-    subteams: profile.subteams,
+    subteams: safeParseArray(profile.subteams),
     member_type: profile.member_type,
     bio: profile.bio,
     favorite_first_thing: profile.favorite_first_thing,
@@ -330,8 +338,8 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
     ...safe,
     email: Number(profile.show_email) ? (profile.contact_email || profile.email) : undefined,
     phone: Number(profile.show_phone) ? profile.phone : undefined,
-    colleges: profile.colleges,
-    employers: profile.employers,
+    colleges: safeParseArray(profile.colleges),
+    employers: safeParseArray(profile.employers),
     grade_year: profile.grade_year,
   };
 }
