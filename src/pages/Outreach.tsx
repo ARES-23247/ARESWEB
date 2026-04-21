@@ -15,6 +15,35 @@ interface OutreachLog {
   description: string | null;
 }
 
+// SEC-AST: Extract raw text from Tiptap ProseMirror JSON AST to prevent raw JSON from rendering
+const extractTextFromAst = (astString: string | null): string => {
+  if (!astString) return "";
+  try {
+    const data = JSON.parse(astString);
+    if (data && data.type === "doc" && Array.isArray(data.content)) {
+      let text = "";
+      const traverse = (node: unknown) => {
+        const n = node as Record<string, unknown>;
+        if (n.type === "text" && typeof n.text === "string") {
+          text += n.text;
+        } else if (n.type === "hardBreak" || n.type === "paragraph") {
+          text += " ";
+        }
+        if (Array.isArray(n.content)) {
+          n.content.forEach(traverse);
+        }
+      };
+      traverse(data);
+      // Clean up multiple spaces
+      return text.replace(/\s+/g, ' ').trim();
+    }
+  } catch {
+    // Not valid JSON, return as-is
+    return astString;
+  }
+  return astString;
+};
+
 export default function Outreach() {
   const { data: logs = [], isLoading } = useQuery<OutreachLog[]>({
     queryKey: ["public-outreach"],
@@ -155,7 +184,7 @@ export default function Outreach() {
                      <span>{new Date(log.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   <h3 className="text-2xl font-black text-white mb-3 group-hover:text-ares-gold transition-colors">{log.title}</h3>
-                  <p className="text-zinc-200 leading-relaxed max-w-2xl">{log.description}</p>
+                  <p className="text-zinc-200 leading-relaxed max-w-2xl">{extractTextFromAst(log.description)}</p>
                 </div>
                 
                 <div className="flex items-center gap-4">
