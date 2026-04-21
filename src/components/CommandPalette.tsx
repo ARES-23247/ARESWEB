@@ -183,7 +183,7 @@ export default function CommandPalette() {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-full max-w-2xl bg-[#0a0a0c] border border-white/5 rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-1 ring-white/10"
+            className="w-full max-w-2xl bg-ares-black-soft border border-white/5 rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-1 ring-white/10"
           >
             {/* Input Header */}
             <div className="flex items-center px-6 py-5 border-b border-white/5 bg-white/[0.02]">

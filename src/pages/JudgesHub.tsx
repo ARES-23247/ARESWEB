@@ -93,7 +93,7 @@ export default function JudgesHub() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="min-h-screen bg-ares-black flex items-center justify-center p-6 relative overflow-hidden">
         {/* Background Effects */}
         <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-ares-cyan/10 blur-[150px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-ares-red/5 blur-[120px] rounded-full" />
@@ -160,7 +160,7 @@ export default function JudgesHub() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-ares-cyan/30">
+    <div className="min-h-screen bg-ares-black text-white selection:bg-ares-cyan/30">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

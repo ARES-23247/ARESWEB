@@ -23,14 +23,14 @@ export default function CodePlayground() {
   };
 
   return (
-    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-[#0d1117] shadow-xl font-mono text-sm flex flex-col">
-      <div className="bg-[#161b22] px-4 py-2 border-b border-white/10 flex items-center justify-between">
+    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-ares-zinc-deep shadow-xl font-mono text-sm flex flex-col">
+      <div className="bg-ares-zinc-dark px-4 py-2 border-b border-white/10 flex items-center justify-between">
         <span className="text-white font-bold opacity-80">Robot.java</span>
         <button onClick={handleRun} disabled={running} className="flex items-center gap-2 bg-ares-cyan/20 hover:bg-ares-cyan/40 text-ares-cyan px-3 py-1 rounded transition-colors disabled:opacity-50">
           <Play size={14} className={running ? "animate-pulse" : ""} /> {running ? "RUNNING" : "RUN"}
         </button>
       </div>
-      <div className="p-4 bg-[#0d1117] text-zinc-300 whitespace-pre-wrap overflow-x-auto min-h-[160px]">
+      <div className="p-4 bg-ares-zinc-deep text-zinc-300 whitespace-pre-wrap overflow-x-auto min-h-[160px]">
         <div className="text-ares-cyan">{defaultCode}</div>
       </div>
       <div className="border-t border-white/10 bg-black min-h-[120px] max-h-[120px] p-3 text-xs overflow-y-auto">

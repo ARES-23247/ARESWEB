@@ -10,9 +10,9 @@ export function SocialCard({
   return (
     <>
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#5865F2]/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-discord/10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <MessageSquare size={20} className="text-[#5865F2]" /> Discord Publishing
+          <MessageSquare size={20} className="text-brand-discord" /> Discord Publishing
         </h3>
         <div className="space-y-4">
           <div>
@@ -25,16 +25,16 @@ export function SocialCard({
               placeholder="https://discord.com/api/webhooks/..."
               value={localSettings["DISCORD_WEBHOOK_URL"] || ""}
               onChange={(e) => handleChange("DISCORD_WEBHOOK_URL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#5865F2] transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-brand-discord transition-colors"
             />
           </div>
         </div>
       </div>
 
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#0085ff]/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-bluesky/10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Share2 size={20} className="text-[#0085ff]" /> Bluesky Network
+          <Share2 size={20} className="text-brand-bluesky" /> Bluesky Network
         </h3>
         <div className="space-y-4">
           <div>
@@ -47,7 +47,7 @@ export function SocialCard({
               placeholder="ares23247.bsky.social"
               value={localSettings["BLUESKY_HANDLE"] || ""}
               onChange={(e) => handleChange("BLUESKY_HANDLE", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#0085ff] transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-brand-bluesky transition-colors"
             />
           </div>
           <div>
@@ -60,7 +60,7 @@ export function SocialCard({
               placeholder="••••••••••••••••"
               value={localSettings["BLUESKY_APP_PASSWORD"] || ""}
               onChange={(e) => handleChange("BLUESKY_APP_PASSWORD", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#0085ff] transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-brand-bluesky transition-colors"
             />
           </div>
         </div>
@@ -211,9 +211,9 @@ export function SocialCard({
       </div>
 
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#1877F2]/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-facebook/10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Square size={20} className="text-[#1877F2]" /> Facebook Platform
+          <Square size={20} className="text-brand-facebook" /> Facebook Platform
         </h3>
         <p className="text-xs text-zinc-500 mb-4 block">
           Requires a Page ID and an active Graph API Page Access Token.
@@ -227,7 +227,7 @@ export function SocialCard({
               placeholder="1000XXXXXXXXXXX"
               value={localSettings["FACEBOOK_PAGE_ID"] || ""}
               onChange={(e) => handleChange("FACEBOOK_PAGE_ID", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-brand-facebook transition-colors"
             />
           </div>
           <div>
@@ -238,7 +238,7 @@ export function SocialCard({
               placeholder="EAABXXXXXXXXXXXXXXXX..."
               value={localSettings["FACEBOOK_ACCESS_TOKEN"] || ""}
               onChange={(e) => handleChange("FACEBOOK_ACCESS_TOKEN", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-brand-facebook transition-colors"
             />
           </div>
         </div>

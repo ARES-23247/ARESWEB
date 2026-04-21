@@ -84,9 +84,17 @@ mediaRouter.get("/:key", async (c) => {
   return new Response(object.body, { headers });
 });
 
+// SEC-DoW: Cache public gallery listing (R2 list() is expensive Class B operation)
+let galleryCache: { data: unknown; expiresAt: number } | null = null;
+
 // ── GET /media — list public R2 objects (Gallery only) ────────────────
 mediaRouter.get("/", async (c) => {
   try {
+    const now = Date.now();
+    if (galleryCache && galleryCache.expiresAt > now) {
+      return c.json(galleryCache.data);
+    }
+
     const [objects, dbRes] = await Promise.all([
       c.env.ARES_STORAGE.list(),
       c.env.DB.prepare("SELECT key, folder, tags FROM media_tags WHERE folder = 'Gallery'").all().catch(() => ({ results: [] }))
@@ -104,7 +112,10 @@ mediaRouter.get("/", async (c) => {
         tags: results.find(r => r.key === obj.key)?.tags || ""
       }));
 
-    return c.json({ media: merged });
+    const payload = { media: merged };
+    galleryCache = { data: payload, expiresAt: now + 300000 }; // 5 min cache
+
+    return c.json(payload);
   } catch (err) {
     console.error("R2 public list error:", err);
     return c.json({ error: "List failed", media: [] }, 500);

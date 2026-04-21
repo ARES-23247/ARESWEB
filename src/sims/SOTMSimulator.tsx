@@ -145,7 +145,7 @@ export default function SOTMSimulator() {
         ref={canvasRef} 
         onMouseDown={handleMouseDown}
         width={800} height={400} 
-        className="w-full h-[400px] bg-[#0a0a0a] ares-cut-sm border border-white/10 cursor-crosshair touch-none" 
+        className="w-full h-[400px] bg-ares-black-soft ares-cut-sm border border-white/10 cursor-crosshair touch-none" 
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
         <div>

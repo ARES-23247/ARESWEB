@@ -101,13 +101,13 @@ export default function PrintPortfolio() {
   return (
     <div className="print-layout bg-white text-black min-h-screen">
       {/* ── COVER PAGE ─────────────────────────────────────────────────── */}
-      <div className="print-cover flex flex-col items-center justify-center h-screen border-[12px] border-[#C00000] p-12 text-center page-break-after">
+      <div className="print-cover flex flex-col items-center justify-center h-screen border-[12px] border-ares-red p-12 text-center page-break-after">
         <div className="w-32 h-32 mb-8 bg-black rounded-lg flex items-center justify-center p-4">
            {/* Fallback to text logo for print reliability */}
-           <ShieldCheck size={80} className="text-[#C00000]" />
+           <ShieldCheck size={80} className="text-ares-red" />
         </div>
         <h1 className="text-6xl font-black uppercase tracking-tighter mb-4 text-black">ARES Robotics</h1>
-        <h2 className="text-4xl text-[#C00000] font-bold uppercase tracking-widest mb-12">Team 23247</h2>
+        <h2 className="text-4xl text-ares-red font-bold uppercase tracking-widest mb-12">Team 23247</h2>
         <div className="h-1 w-32 bg-black mb-12" />
         <h3 className="text-3xl font-bold text-gray-800 uppercase tracking-widest mb-4">Official Engineering Portfolio</h3>
         <p className="text-xl text-gray-500 font-mono">{format(new Date(), "MMMM do, yyyy")}</p>
@@ -121,7 +121,7 @@ export default function PrintPortfolio() {
       {execDocs.length > 0 && (
         <div className="print-section">
           <div className="print-section-header">
-            <h2 className="text-3xl font-black uppercase tracking-tight text-[#C00000] border-b-4 border-black pb-4 mb-8">Executive Summaries</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tight text-ares-red border-b-4 border-black pb-4 mb-8">Executive Summaries</h2>
           </div>
           
           {execDocs.map(doc => (

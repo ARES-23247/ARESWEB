@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Context } from "hono";
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination } from "./_shared";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkWriteRateLimit } from "./_shared";
 import { siteConfig } from "../../utils/site.config";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
@@ -28,11 +28,21 @@ docsRouter.get("/", async (c) => {
 });
 
 // ── GET /docs/search?q=keyword — full-text search ─────────────────────
+// SEC-DoW: Cache doc search results to prevent FTS query exhaustion
+const docSearchCache = new Map<string, { data: unknown; expiresAt: number }>();
+
 docsRouter.get("/search", async (c) => {
   const q = c.req.query("q");
   if (!q || q.length < 3) return c.json({ results: [] });
   try {
     const safeQ = q.replace(/"/g, '""');
+
+    const now = Date.now();
+    const cached = docSearchCache.get(safeQ);
+    if (cached && cached.expiresAt > now) {
+      return c.json(cached.data);
+    }
+
     const { results } = await c.env.DB.prepare(
       `SELECT slug, title, category, description FROM docs_fts WHERE is_deleted = '0' AND status = 'published' AND docs_fts MATCH ? ORDER BY rank LIMIT 20`
     ).bind(`"${safeQ}"*`).all();
@@ -51,7 +61,9 @@ docsRouter.get("/search", async (c) => {
         snippet,
       };
     });
-    return c.json({ results: mapped });
+    const payload = { results: mapped };
+    docSearchCache.set(safeQ, { data: payload, expiresAt: now + 60000 });
+    return c.json(payload);
   } catch (err) {
     console.error("D1 docs search error:", err);
     return c.json({ results: [] });
@@ -60,6 +72,12 @@ docsRouter.get("/search", async (c) => {
 
 // ── POST /docs/:slug/feedback — Submit doc feedback ───────────────────
 docsRouter.post("/:slug/feedback", async (c) => {
+  // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit
+  const ip = c.req.header("CF-Connecting-IP") || "unknown";
+  if (!checkWriteRateLimit(`feedback:${ip}`, 10, 60)) {
+    return c.json({ error: "Too many submissions" }, 429);
+  }
+
   try {
     const slug = c.req.param("slug");
     const body = await c.req.json();

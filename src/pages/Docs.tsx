@@ -149,7 +149,7 @@ export default function Docs() {
   }, [slug, allDocs, navigate]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex flex-col">
+    <div className="min-h-screen bg-ares-zinc-deep text-ares-offwhite flex flex-col">
       <SEO title={currentDoc?.title ? `${currentDoc.title} — ARESLib` : "ARESLib Documentation"} description={currentDoc?.description || "ARESLib documentation for the ARES 23247 FTC framework."} />
 
       {/* ── Search Overlay ─────────────────────────────────────────── */}
@@ -166,7 +166,7 @@ export default function Docs() {
               initial={{ y: -20, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: -20, scale: 0.95 }}
-              className="w-full max-w-2xl bg-[#161b22] border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
+              className="w-full max-w-2xl bg-ares-zinc-dark border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">

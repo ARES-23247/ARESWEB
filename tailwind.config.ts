@@ -24,6 +24,7 @@ const config: Config = {
         "ares-zinc-deep": "#0d1117",
         "ares-black": "#050505",
         "ares-black-soft": "#0a0a0a",
+        "ares-obsidian-soft": "#111111",
         "brand-discord": "#5865F2",
         "brand-bluesky": "#0085ff",
         "brand-facebook": "#1877F2",

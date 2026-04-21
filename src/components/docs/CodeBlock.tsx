@@ -25,7 +25,7 @@ export const CodeBlock = ({ language, value, ...props }: { language?: string; va
         style={vscDarkPlus as unknown as { [key: string]: React.CSSProperties }}
         language={language || 'text'}
         PreTag="div"
-        className="ares-cut-sm text-sm font-mono overflow-x-auto !bg-[#161b22] border border-white/8 shadow-lg !my-0"
+        className="ares-cut-sm text-sm font-mono overflow-x-auto !bg-ares-zinc-dark border border-white/8 shadow-lg !my-0"
         showLineNumbers={true}
         {...props}
       >

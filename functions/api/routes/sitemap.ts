@@ -3,8 +3,20 @@ import { Bindings } from "./_shared";
 
 const sitemapRouter = new Hono<{ Bindings: Bindings }>();
 
+// SEC-DoW: Cache sitemap to prevent repeated D1 queries from bots/crawlers
+let sitemapCache: { xml: string; expiresAt: number } | null = null;
+
 sitemapRouter.get(".xml", async (c) => {
   try {
+    // Serve from cache if available (15 minute TTL — content changes are infrequent)
+    const now = Date.now();
+    if (sitemapCache && sitemapCache.expiresAt > now) {
+      return c.text(sitemapCache.xml, 200, {
+        "Content-Type": "application/xml",
+        "Cache-Control": "public, s-maxage=900, max-age=900",
+      });
+    }
+
     const baseUrl = new URL(c.req.url).origin;
     
     // Fetch published docs and posts
@@ -43,8 +55,12 @@ sitemapRouter.get(".xml", async (c) => {
 
     xml += `</urlset>`;
 
+    // Cache the generated sitemap
+    sitemapCache = { xml, expiresAt: now + 900000 }; // 15 minutes
+
     return c.text(xml, 200, {
       "Content-Type": "application/xml",
+      "Cache-Control": "public, s-maxage=900, max-age=900",
     });
   } catch (err) {
     console.error("Sitemap generation error:", err);

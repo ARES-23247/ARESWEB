@@ -314,7 +314,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       )}
 
       {/* ===== EDITOR CONTENT AREA ===== */}
-      <div className="flex-1 bg-[#0e0e0e] border-x border-b border-zinc-800 rounded-b-xl overflow-hidden shadow-inner w-full min-h-[400px] relative">
+      <div className="flex-1 bg-ares-black border-x border-b border-zinc-800 rounded-b-xl overflow-hidden shadow-inner w-full min-h-[400px] relative">
         <EditorContent
           editor={editor}
           className="h-full p-4 md:p-6 pb-12"

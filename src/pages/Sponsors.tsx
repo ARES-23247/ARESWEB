@@ -139,7 +139,7 @@ export default function Sponsors() {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-7xl font-black tracking-tighter mb-6 italic"
           >
-            Our <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white" style={{ backgroundColor: '#c00000' }}>Partners</span>
+            Our <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Partners</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -208,29 +208,29 @@ export default function Sponsors() {
         </div>
 
         <footer 
-          className="mt-32 p-12 ares-cut-lg bg-[#181818] border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
+          className="mt-32 p-12 ares-cut-lg bg-ares-black-soft border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
         >
           {/* Subtle grid pattern background */}
           <div className="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-5 mix-blend-overlay pointer-events-none z-0" aria-hidden="true"></div>
 
           <div className="flex-1 relative z-10 flex flex-col justify-between">
             <div>
-              <h2 className="text-4xl md:text-5xl font-black text-white mb-6 uppercase tracking-tighter" style={{ color: '#ffffff', backgroundColor: '#181818' }}>Join the<br/><span className="text-ares-gold italic" style={{ color: '#ffb300', backgroundColor: '#181818' }}>Engineering Journey.</span></h2>
-              <p className="text-[#b3b3b3] text-lg mb-8 max-w-xl leading-relaxed" style={{ color: '#b3b3b3', backgroundColor: '#181818' }}>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-6 uppercase tracking-tighter">Join the<br/><span className="text-ares-gold italic">Engineering Journey.</span></h2>
+              <p className="text-zinc-400 text-lg mb-8 max-w-xl leading-relaxed">
                 Help us build the next generation of robotics. We are always looking for partners who share our passion for excellence, education, and innovation. Whether you can provide mentorship, machining, material donations, or financial grants, your support is the foundation of our success.
               </p>
             </div>
             
             <div className="mt-12 lg:mt-0">
-              <p className="text-[#b3b3b3] font-bold uppercase tracking-widest text-xs mb-3" style={{ color: '#b3b3b3', backgroundColor: '#181818' }}>Or email the executive board directly</p>
-              <a href={`mailto:${siteConfig.contact.email}`} className="text-2xl font-bold text-white hover:text-ares-gold transition-colors flex items-center gap-3 w-fit group" style={{ color: '#ffffff', backgroundColor: '#181818' }}>
+              <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs mb-3">Or email the executive board directly</p>
+              <a href={`mailto:${siteConfig.contact.email}`} className="text-2xl font-bold text-white hover:text-ares-gold transition-colors flex items-center gap-3 w-fit group">
                 {siteConfig.contact.email} <span className="group-hover:translate-x-1 transition-transform"><ArrowRight size={20} className="text-ares-red" /></span>
               </a>
             </div>
           </div>
           
           <div className="flex-1 relative z-10 bg-obsidian/80 p-8 ares-cut border border-white/5 shadow-2xl backdrop-blur-md">
-            <h4 className="text-xl font-black text-white mb-6 uppercase tracking-widest flex items-center gap-3" style={{ color: '#ffffff', backgroundColor: '#151515' }}>
+            <h4 className="text-xl font-black text-white mb-6 uppercase tracking-widest flex items-center gap-3">
               <Heart size={20} className="text-ares-red fill-ares-red/20" /> Become a Sponsor
             </h4>
             {submitStatus === "success" && (
@@ -247,17 +247,17 @@ export default function Sponsors() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="name-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Company / Name *</label>
-                  <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-zinc-400 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
+                  <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-zinc-400 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
                 </div>
                 <div>
                   <label htmlFor="email-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Email *</label>
-                  <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-zinc-400 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
+                  <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-zinc-400 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
                 </div>
               </div>
               <div>
-                <label htmlFor="subject-select" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1" style={{ color: '#e8e8e8', backgroundColor: '#151515' }}>Sponsorship Level</label>
+                <label htmlFor="subject-select" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1">Sponsorship Level</label>
                 <div className="relative">
-                  <select id="subject-select" value={level} onChange={e => setLevel(e.target.value)} className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer">
+                  <select id="subject-select" value={level} onChange={e => setLevel(e.target.value)} className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer">
                     <option>Interested in Details</option>
                     {dropdownTiers.map(t => (
                       <option key={t}>{t} Tier Sponsor</option>
@@ -271,14 +271,14 @@ export default function Sponsors() {
                 </div>
               </div>
               <div>
-                <label htmlFor="message-textarea" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1" style={{ color: '#e8e8e8', backgroundColor: '#151515' }}>Message</label>
-                <textarea id="message-textarea" value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
+                <label htmlFor="message-textarea" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1">Message</label>
+                <textarea id="message-textarea" value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
               </div>
               <div className="pt-2">
                 <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut hover:bg-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
                   {isSubmitting ? "Sending..." : <><span className="flex items-center gap-2">Submit Interest Request <ArrowRight size={18} /></span></>}
                 </button>
-                <p className="text-center text-[10px] text-[#999999] font-mono uppercase tracking-tighter mt-4" style={{ color: '#999999', backgroundColor: '#1f1f1f' }}>
+                <p className="text-center text-[10px] text-zinc-500 font-mono uppercase tracking-tighter mt-4">
                   {siteConfig.team.fullName} operates under a 501(c)(3) nonprofit umbrella. All donations are tax-deductible.
                 </p>
               </div>

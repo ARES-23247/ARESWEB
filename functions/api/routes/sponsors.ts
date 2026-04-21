@@ -10,7 +10,10 @@ sponsorsRouter.get("/", async (c) => {
     const { results } = await c.env.DB.prepare(
       "SELECT id, name, tier, logo_url, website_url FROM sponsors WHERE is_active = 1 ORDER BY CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END"
     ).all();
-    return c.json({ sponsors: results || [] });
+    const response = c.json({ sponsors: results || [] });
+    // SEC-DoW: CDN cache for 5 min — sponsors rarely change
+    response.headers.set("Cache-Control", "public, s-maxage=300, max-age=60");
+    return response;
   } catch (err) {
     console.error("D1 sponsors list error:", err);
     return c.json({ sponsors: [] });

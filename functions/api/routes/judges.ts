@@ -1,10 +1,16 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin } from "./_shared";
+import { Bindings, ensureAdmin, checkWriteRateLimit } from "./_shared";
 
 const judgesRouter = new Hono<{ Bindings: Bindings }>();
 
 // ── POST /judges/login — verify judge access code ─────────────────────
 judgesRouter.post("/login", async (c) => {
+  // SEC-DoW: Brute-force code guessing burns D1 reads
+  const ip = c.req.header("CF-Connecting-IP") || "unknown";
+  if (!checkWriteRateLimit(`judge-login:${ip}`, 10, 60)) {
+    return c.json({ error: "Too many attempts. Please try again later." }, 429);
+  }
+
   try {
     const { code } = await c.req.json();
     if (!code) return c.json({ error: "Code required" }, 400);
@@ -23,6 +29,9 @@ judgesRouter.post("/login", async (c) => {
   }
 });
 
+// SEC-DoW: Cache heavy portfolio responses (4 parallel D1 queries per request)
+const portfolioCache = new Map<string, { data: unknown; expiresAt: number }>();
+
 // ── GET /judges/portfolio — get all portfolio content ──────────────────
 judgesRouter.get("/portfolio", async (c) => {
   try {
@@ -30,10 +39,23 @@ judgesRouter.get("/portfolio", async (c) => {
     const code = c.req.header("X-Judge-Code");
     if (!code) return c.json({ error: "Access code required" }, 401);
 
+    // SEC-DoW: Rate-limit code validation attempts
+    const ip = c.req.header("CF-Connecting-IP") || "unknown";
+    if (!checkWriteRateLimit(`judge-portfolio:${ip}`, 20, 60)) {
+      return c.json({ error: "Too many requests" }, 429);
+    }
+
     const valid = await c.env.DB.prepare(
       "SELECT code FROM judge_access_codes WHERE code = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"
     ).bind(code).first();
     if (!valid) return c.json({ error: "Invalid or expired access code" }, 403);
+
+    // Check cache (5 minute TTL — portfolio content doesn't change mid-tournament)
+    const now = Date.now();
+    const cached = portfolioCache.get("portfolio");
+    if (cached && cached.expiresAt > now) {
+      return c.json(cached.data);
+    }
 
     // Fetch portfolio & executive summary docs
     const { results: portfolioDocs } = await c.env.DB.prepare(
@@ -55,12 +77,17 @@ judgesRouter.get("/portfolio", async (c) => {
       "SELECT id, name, tier, logo_url, website_url FROM sponsors WHERE is_active = 1 ORDER BY CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END"
     ).all();
 
-    return c.json({
+    const payload = {
       portfolioDocs: portfolioDocs || [],
       outreach: outreach || [],
       awards: awards || [],
       sponsors: sponsors || [],
-    });
+    };
+
+    // Cache the heavy payload for 5 minutes
+    portfolioCache.set("portfolio", { data: payload, expiresAt: now + 300000 });
+
+    return c.json(payload);
   } catch (err) {
     console.error("Portfolio fetch error:", err);
     return c.json({ error: "Portfolio fetch failed" }, 500);

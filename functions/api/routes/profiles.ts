@@ -1,12 +1,12 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, getSessionUser, sanitizeProfileForPublic } from "./_shared";
+import { Bindings, getSessionUser, sanitizeProfileForPublic } from "./_shared";
 import { getAuth } from "../../utils/auth";
 import { encrypt, decrypt } from "../../utils/crypto";
 
 
 const profilesRouter = new Hono<{ Bindings: Bindings }>();
 
-// ── GET /profile/me — fetch current user's full profile ───────────────
+// ── GET /me — fetch current user's full profile ───────────────
 profilesRouter.get("/me", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -14,7 +14,7 @@ profilesRouter.get("/me", async (c) => {
   try {
     const profile = await c.env.DB.prepare(
       "SELECT p.user_id, p.first_name, p.last_name, p.nickname, p.phone, p.contact_email, p.show_email, p.show_phone, p.pronouns, p.grade_year, p.subteams, p.member_type, p.bio, p.favorite_food, p.dietary_restrictions, p.favorite_first_thing, p.fun_fact, p.colleges, p.employers, p.show_on_about, p.favorite_robot_mechanism, p.pre_match_superstition, p.leadership_role, p.rookie_year, p.tshirt_size, p.emergency_contact_name, p.emergency_contact_phone, p.parents_name, p.parents_email, p.students_name, p.students_email, u.image as avatar, p.updated_at FROM user_profiles p JOIN user u ON p.user_id = u.id WHERE p.user_id = ?"
-    ).bind(user.id).first();
+    ).bind(user.id).first<Record<string, unknown>>();
 
     const { results: rawBadges } = await c.env.DB.prepare(
       `SELECT b.* FROM badges b
@@ -52,7 +52,7 @@ profilesRouter.get("/me", async (c) => {
   }
 });
 
-// ── PUT /profile/me — update current user's profile ──────────────────
+// ── PUT /me — update current user's profile ──────────────────
 profilesRouter.put("/me", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -79,7 +79,6 @@ profilesRouter.put("/me", async (c) => {
     const secret = c.env.ENCRYPTION_SECRET;
     const encryptedName = await encrypt(emergency_contact_name || "", secret);
     const encryptedPhone = await encrypt(emergency_contact_phone || "", secret);
-    // PII-01/PII-02: Encrypt all sensitive personal fields
     const encryptedUserPhone = await encrypt(phone || "", secret);
     const encryptedParentsName = await encrypt(parents_name || "", secret);
     const encryptedParentsEmail = await encrypt(parents_email || "", secret);
@@ -139,7 +138,7 @@ profilesRouter.put("/me", async (c) => {
   }
 });
 
-// ── PUT /profile/avatar — update avatar image ─────────────────────────
+// ── PUT /avatar — update avatar image ─────────────────────────
 profilesRouter.put("/avatar", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -148,7 +147,6 @@ profilesRouter.put("/avatar", async (c) => {
     const body = await c.req.json();
     const { image } = body;
 
-    // Update user.image in auth DB
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     await auth.api.updateUser({ 
       headers: c.req.raw.headers,
@@ -188,57 +186,7 @@ profilesRouter.get("/team-roster", async (c) => {
   }
 });
 
-// ── GET /logistics/summary — aggregated logistics for event planning ──
-profilesRouter.get("/logistics/summary", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
-
-  // Only admin/parent/coach/mentor can see logistics
-  const isManagement = user.role === "admin" || ["parent", "coach", "mentor"].includes(user.member_type);
-  if (!isManagement) return c.json({ error: "Forbidden" }, 403);
-
-  try {
-    const { results } = await c.env.DB.prepare(
-      `SELECT p.dietary_restrictions, p.tshirt_size, p.member_type, u.name
-       FROM user_profiles p
-       JOIN user u ON p.user_id = u.id
-       WHERE u.role NOT IN ('unverified')`
-    ).all();
-
-    const summary: Record<string, number> = {};
-    const tshirtSummary: Record<string, number> = {};
-    const memberCounts: Record<string, number> = {};
-    const totalMembers = results.length;
-
-    for (const r of results as { dietary_restrictions?: string; tshirt_size?: string; member_type?: string; name?: string }[]) {
-      const mt = r.member_type || "student";
-      memberCounts[mt] = (memberCounts[mt] || 0) + 1;
-
-      if (r.tshirt_size) {
-        tshirtSummary[r.tshirt_size] = (tshirtSummary[r.tshirt_size] || 0) + 1;
-      }
-
-      try {
-        const restrictions = JSON.parse(r.dietary_restrictions || "[]") as string[];
-        for (const dr of restrictions) {
-          summary[dr] = (summary[dr] || 0) + 1;
-        }
-      } catch { /* ignore */ }
-    }
-
-    return c.json({
-      totalCount: totalMembers,
-      memberCounts,
-      dietary: summary,
-      tshirts: tshirtSummary,
-    });
-  } catch (err) {
-    console.error("D1 logistics summary error:", err);
-    return c.json({ error: "Logistics fetch failed" }, 500);
-  }
-});
-
-// ── GET /profile/:userId — public profile ─────────────────────────────
+// ── GET /:userId — public profile ─────────────────────────────
 profilesRouter.get("/:userId", async (c) => {
   const userId = c.req.param("userId");
   try {
@@ -276,69 +224,6 @@ profilesRouter.get("/:userId", async (c) => {
   } catch (err) {
     console.error("D1 public profile error:", err);
     return c.json({ error: "Profile fetch failed" }, 500);
-  }
-});
-
-// ── GET /admin/users — list all users (admin only) ────────────────────
-profilesRouter.get("/admin/users", ensureAdmin, async (c) => {
-  try {
-    const { results } = await c.env.DB.prepare(
-      `SELECT u.id, u.name, u.email, u.image, u.role, u.createdAt,
-              p.nickname, p.member_type
-       FROM user u
-       LEFT JOIN user_profiles p ON u.id = p.user_id
-       ORDER BY u.createdAt DESC`
-    ).all();
-    return c.json({ users: results || [] });
-  } catch (err) {
-    console.error("D1 admin users error:", err);
-    return c.json({ users: [] }, 500);
-  }
-});
-
-// ── PATCH /admin/users/:id — update user role or type (admin only) ────
-profilesRouter.patch("/admin/users/:id", ensureAdmin, async (c) => {
-  try {
-    const id = c.req.param("id");
-    const body = await c.req.json();
-    const { role, member_type } = body;
-
-    if (role) {
-      await c.env.DB.prepare("UPDATE user SET role = ? WHERE id = ?").bind(role, id).run();
-    }
-    if (member_type) {
-      await c.env.DB.prepare(
-        "INSERT INTO user_profiles (user_id, member_type) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET member_type = excluded.member_type"
-      ).bind(id, member_type).run();
-    }
-
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 admin user patch error:", err);
-    return c.json({ error: "User update failed" }, 500);
-  }
-});
-
-// ── DELETE /admin/users/:id — delete user (admin only) ────────────────
-profilesRouter.delete("/admin/users/:id", ensureAdmin, async (c) => {
-  try {
-    const id = c.req.param("id");
-    
-    // GAP-03: Cascade delete all related user data
-    await c.env.DB.batch([
-      c.env.DB.prepare("DELETE FROM comments WHERE user_id = ?").bind(id),
-      c.env.DB.prepare("DELETE FROM event_signups WHERE user_id = ?").bind(id),
-      c.env.DB.prepare("DELETE FROM user_badges WHERE user_id = ?").bind(id),
-      c.env.DB.prepare("DELETE FROM user_profiles WHERE user_id = ?").bind(id),
-      c.env.DB.prepare("DELETE FROM session WHERE userId = ?").bind(id),
-      c.env.DB.prepare("DELETE FROM account WHERE userId = ?").bind(id),
-      c.env.DB.prepare("DELETE FROM user WHERE id = ?").bind(id),
-    ]);
-    
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 admin user delete error:", err);
-    return c.json({ error: "User delete failed" }, 500);
   }
 });
 

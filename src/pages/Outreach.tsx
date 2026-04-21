@@ -82,7 +82,7 @@ export default function Outreach() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 + (idx * 0.1) }}
-                className="bg-[#121212] border border-white/10 p-8 ares-cut-lg relative group hover:border-white/20 transition-all shadow-xl"
+                className="bg-ares-black-soft border border-white/10 p-8 ares-cut-lg relative group hover:border-white/20 transition-all shadow-xl"
               >
                 <div className="mb-6">{stat.icon}</div>
                 <div className="text-5xl font-black text-white mb-2 tracking-tighter">{stat.val}</div>

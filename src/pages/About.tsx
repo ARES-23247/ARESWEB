@@ -106,7 +106,7 @@ export default function About() {
             <div className="md:col-span-1">
               <h2 className="text-3xl md:text-4xl font-bold text-obsidian mb-6 font-heading uppercase leading-tight">
                 Who Joins <br />
-                <span className="bg-ares-red px-4 py-2 mt-2 inline-block ares-cut" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>Our Community?</span>
+                <span className="bg-ares-red px-4 py-2 mt-2 inline-block ares-cut text-white">Our Community?</span>
               </h2>
               <p className="text-obsidian/70 text-lg">
                 We recruit students from 6th–12th grade who possess grit, determination, and a hunger for innovation.
@@ -117,7 +117,7 @@ export default function About() {
                 In the <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a>, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
               </p>
               <div className="bg-white border-l-4 border-ares-red hero-card p-8 shadow-sm group hover:border-ares-red">
-                <h3 className="bg-ares-red py-1 px-3 rounded inline-block font-bold text-xs tracking-widest uppercase mb-6 font-heading" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>What You&apos;ll Learn</h3>
+                <h3 className="bg-ares-red py-1 px-3 rounded inline-block font-bold text-xs tracking-widest uppercase mb-6 font-heading text-white">What You&apos;ll Learn</h3>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-bold uppercase tracking-wider text-obsidian/60">
                   {[
                     "Mechanical Systems", "Electrical Engineering", "Java Programming", "CAD & 3D Design", 
@@ -140,13 +140,12 @@ export default function About() {
       <section className="py-16 bg-ares-red">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-heading uppercase">Ready to Join ARES?</h2>
-          <p className="text-[#e5e5e5] text-lg mb-8 max-w-2xl mx-auto">
+          <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
             We welcome students from 6th–12th grade across Monongalia and Harrison counties. No experience needed — just bring your curiosity.
           </p>
           <Link
             to="/join"
-            className="clipped-button bg-white text-ares-red hover:scale-105 hover:bg-marble transition-all shadow-[0_0_20px_#cc3333] font-heading text-lg"
-            style={{ color: '#c00000' }}
+            className="clipped-button bg-white text-ares-red hover:scale-105 hover:bg-marble transition-all shadow-[0_0_20px_rgba(192,0,0,0.4)] font-heading text-lg"
           >
             Apply to Join Our Team
           </Link>

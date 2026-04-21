@@ -213,7 +213,7 @@ export default function PhysicsSandbox(): JSX.Element {
   }, []);
 
   return (
-    <div className="bg-[#111] border border-zinc-700/50 ares-cut-sm p-5 my-10">
+    <div className="bg-ares-obsidian-soft border border-zinc-700/50 ares-cut-sm p-5 my-10">
       <div className="flex justify-between items-center mb-5">
         <div>
           <h3 className="m-0 text-white font-bold">Interactive Collision Sandbox</h3>
@@ -223,7 +223,7 @@ export default function PhysicsSandbox(): JSX.Element {
           SCORE: {score}
         </div>
       </div>
-      <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={canvasRef} width={800} height={400} className="w-full max-w-[800px] aspect-[2/1] h-auto block mx-auto bg-[#050505] ares-cut-sm border border-zinc-800 cursor-grab drop-shadow-2xl shadow-[inset_0_0_40px_rgba(0,0,0,0.8)]" />
+      <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={canvasRef} width={800} height={400} className="w-full max-w-[800px] aspect-[2/1] h-auto block mx-auto bg-ares-black ares-cut-sm border border-zinc-800 cursor-grab drop-shadow-2xl shadow-[inset_0_0_40px_rgba(0,0,0,0.8)]" />
       <div className="mt-4 p-3 bg-black/50 ares-cut-sm font-mono text-sm text-zinc-400">
         {log}
       </div>

@@ -68,7 +68,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
 
       <aside className={`
         fixed lg:sticky top-0 left-0 z-30 h-screen w-72 shrink-0
-        bg-[#0d1117] border-r border-white/8
+        bg-ares-zinc-deep border-r border-white/8
         overflow-y-auto overscroll-contain
         transition-transform duration-300
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}

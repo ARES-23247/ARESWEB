@@ -12,8 +12,8 @@ export default function ConfigVisualizer() {
   };
 
   return (
-    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-[#0d1117] shadow-xl">
-      <div className="bg-[#161b22] px-4 py-3 border-b border-white/10 flex items-center justify-between">
+    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-ares-zinc-deep shadow-xl">
+      <div className="bg-ares-zinc-dark px-4 py-3 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Settings size={18} className="text-ares-gold" />
           <span className="font-mono text-sm font-bold text-white">ARESLib Tuner (Live)</span>
@@ -26,7 +26,7 @@ export default function ConfigVisualizer() {
 
       <div className="flex flex-col sm:flex-row">
         {/* Sidebar */}
-        <div className="w-full sm:w-48 border-b sm:border-b-0 sm:border-r border-white/10 bg-[#0d1117]/50 p-2 flex flex-col gap-1">
+        <div className="w-full sm:w-48 border-b sm:border-b-0 sm:border-r border-white/10 bg-ares-zinc-deep/50 p-2 flex flex-col gap-1">
           {["constants", "pid_gains", "kinematics", "vision"].map((tab) => (
             <button
               key={tab}
