@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Bindings, parsePagination } from "./_shared";
+import { Bindings, ensureAdmin, parsePagination } from "./_shared";
 
 const outreachRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -41,7 +41,7 @@ outreachRouter.get("/", async (c) => {
 });
 
 // ── POST / — create or update an outreach log ───────────
-outreachRouter.post("/", async (c) => {
+outreachRouter.post("/", ensureAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const { id, title, date, location, students_count, hours_logged, reach_count, description } = body;
@@ -63,7 +63,7 @@ outreachRouter.post("/", async (c) => {
 });
 
 // ── DELETE /:id — remove an outreach log ────────────────
-outreachRouter.delete("/:id", async (c) => {
+outreachRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
     const id = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM outreach_logs WHERE id = ?").bind(id).run();

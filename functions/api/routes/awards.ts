@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Bindings, parsePagination } from "./_shared";
+import { Bindings, ensureAdmin, parsePagination } from "./_shared";
 
 const awardsRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -18,7 +18,7 @@ awardsRouter.get("/", async (c) => {
 });
 
 // ── POST / — create or update an award ───────────
-awardsRouter.post("/", async (c) => {
+awardsRouter.post("/", ensureAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const { id, title, year, event, team, description, media_url } = body;
@@ -40,7 +40,7 @@ awardsRouter.post("/", async (c) => {
 });
 
 // ── DELETE /:id — remove an award ────────────────
-awardsRouter.delete("/:id", async (c) => {
+awardsRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
     const id = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM awards WHERE id = ?").bind(id).run();
