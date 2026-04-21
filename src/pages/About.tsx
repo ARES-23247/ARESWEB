@@ -114,7 +114,7 @@ export default function About() {
             </div>
             <div className="md:col-span-2 space-y-8 text-lg leading-relaxed">
               <p>
-                In the <em>FIRST</em>® Tech Challenge, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
+                In the <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a>, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
               </p>
               <div className="bg-white border-l-4 border-ares-red hero-card p-8 shadow-sm group hover:border-ares-red">
                 <h3 className="bg-ares-red py-1 px-3 rounded inline-block font-bold text-xs tracking-widest uppercase mb-6 font-heading" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>What You&apos;ll Learn</h3>
@@ -196,10 +196,10 @@ export default function About() {
               <h3 className="text-4xl font-bold text-ares-bronze mb-6 font-heading group-hover:text-white transition-colors">Dave Huss & Kelley Burd-Huss</h3>
               <div className="space-y-6 text-lg text-marble/60 leading-relaxed max-w-2xl mx-auto italic">
                 <p>
-                  Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <em>FIRST</em>® ecosystem, and robotics has since redefined their community impact.
+                  Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>®</a> ecosystem, and robotics has since redefined their community impact.
                 </p>
                 <p>
-                  Active across <em>FIRST</em>® LEGO League and <em>FIRST</em>® Robotics Challenge, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
+                  Active across <a href="https://www.firstinspires.org/robotics/fll" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® LEGO League</a> and <a href="https://www.firstinspires.org/robotics/frc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Robotics Competition</a>, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
                 </p>
               </div>
             </div>

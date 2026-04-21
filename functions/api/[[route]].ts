@@ -104,8 +104,8 @@ apiRouter.use("*", cors({
 apiRouter.use("/admin/*", ensureAdmin);
 
 // ── Mount Domain Routers ─────────────────────────────────────────────
-// Auth (must be first — handles /auth/* wildcard)
-apiRouter.route("/", authRouter);
+// Auth
+apiRouter.route("/auth", authRouter);
 
 // Content
 apiRouter.route("/", postsRouter);
@@ -137,7 +137,7 @@ apiRouter.route("/", judgesRouter);
 apiRouter.route("/", sitemapRouter);
 apiRouter.route("/", profilesRouter);
 apiRouter.route("/", badgesRouter);
-apiRouter.route("/", notificationsRouter);
+apiRouter.route("/notifications", notificationsRouter);
 
 // Webhooks (public — self-authenticated via signatures/tokens)
 apiRouter.route("/webhooks/github", githubWebhookRouter);

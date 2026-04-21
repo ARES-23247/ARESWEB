@@ -80,16 +80,34 @@ export default function CommandPalette() {
     const fetchSearch = async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`/api/docs/search?q=${encodeURIComponent(query)}`);
-        const data = await res.json() as { results: Array<{ title: string; category: string; slug: string; snippet?: string }> };
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json() as { results: Array<{ type: string; id: string; title: string; matched_text?: string }> };
         
-        const docResults: SearchResult[] = (data.results || []).map(r => ({
-          title: r.title,
-          category: r.category,
-          slug: r.slug,
-          snippet: r.snippet,
-          icon: <FileText size={16} />
-        }));
+        const searchResults: SearchResult[] = (data.results || []).map(r => {
+          let icon = <FileText size={16} />;
+          let url = "";
+          if (r.type === "blog") {
+             icon = <Terminal size={16} />;
+             url = `/blog/${r.id}`;
+          } else if (r.type === "event") {
+             icon = <Calendar size={16} />;
+             url = `/events/${r.id}`;
+          } else if (r.type === "doc") {
+             icon = <FileText size={16} />;
+             url = `/docs/${r.id}`;
+          } else if (r.type === "user") {
+             icon = <ShieldCheck size={16} />;
+             url = `/profile/${r.id}`;
+          }
+
+          return {
+            title: r.title,
+            category: r.type.charAt(0).toUpperCase() + r.type.slice(1),
+            url,
+            snippet: r.matched_text,
+            icon
+          };
+        });
 
         // Combine matched static links with dynamic D1 search
         const matchedStaticLinks = staticLinks.filter((link) => 
@@ -97,7 +115,7 @@ export default function CommandPalette() {
           link.category.toLowerCase().includes(query.toLowerCase())
         );
 
-        setResults([...matchedStaticLinks, ...docResults]);
+        setResults([...matchedStaticLinks, ...searchResults]);
       } catch (err) {
         console.error("Search failed:", err);
       } finally {
@@ -164,10 +182,10 @@ export default function CommandPalette() {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl shadow-ares-red/10 overflow-hidden flex flex-col"
+            className="w-full max-w-2xl bg-[#0a0a0c] border border-white/5 rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-1 ring-white/10"
           >
             {/* Input Header */}
-            <div className="flex items-center px-4 py-4 border-b border-zinc-800 bg-zinc-900/50">
+            <div className="flex items-center px-6 py-5 border-b border-white/5 bg-white/[0.02]">
               <Search className="text-zinc-400 mr-3 shrink-0" size={20} />
               <input
                 ref={inputRef}

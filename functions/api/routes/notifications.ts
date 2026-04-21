@@ -4,7 +4,7 @@ import { AppEnv, getSessionUser, ensureAuth, parsePagination } from "./_shared";
 const notificationsRouter = new Hono<AppEnv>();
 
 // ── GET /notifications — list user notifications ──────────────────────
-notificationsRouter.get("/notifications", ensureAuth, async (c) => {
+notificationsRouter.get("/", ensureAuth, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) return c.json({ notifications: [] }, 401);
@@ -22,7 +22,7 @@ notificationsRouter.get("/notifications", ensureAuth, async (c) => {
 });
 
 // ── PUT /notifications/:id/read — mark as read ──────────────────────
-notificationsRouter.put("/notifications/:id/read", ensureAuth, async (c) => {
+notificationsRouter.put("/:id/read", ensureAuth, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -40,7 +40,7 @@ notificationsRouter.put("/notifications/:id/read", ensureAuth, async (c) => {
 });
 
 // ── PUT /notifications/read-all — mark all as read ──────────────────────
-notificationsRouter.put("/notifications/read-all", ensureAuth, async (c) => {
+notificationsRouter.put("/read-all", ensureAuth, async (c) => {
     try {
       const user = await getSessionUser(c);
       if (!user) return c.json({ error: "Unauthorized" }, 401);

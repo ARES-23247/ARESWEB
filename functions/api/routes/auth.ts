@@ -5,7 +5,7 @@ import { getAuth } from "../../utils/auth";
 const authRouter = new Hono<{ Bindings: Bindings }>();
 
 // ── Better Auth Routes ────────────────────────────────────────────────
-authRouter.on(["POST", "GET"], "/auth/*", async (c) => {
+authRouter.on(["POST", "GET"], "/*", async (c) => {
   console.log(`[Auth Handler] Request URL: ${c.req.url}`);
   try {
     const auth = getAuth(c.env.DB, c.env, c.req.url);

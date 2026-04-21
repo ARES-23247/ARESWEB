@@ -16,11 +16,11 @@ export default function Footer() {
           <button onClick={() => navigate("/")} className="block text-left mb-6 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
             <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-red transition-colors">ARES</h3>
             <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">Appalachian Robotics & Engineering Society</p>
-            <p className="text-marble/70 text-xs font-medium uppercase tracking-[0.2em]"><em>FIRST</em>® Tech Challenge Team #23247</p>
+            <p className="text-marble/70 text-xs font-medium uppercase tracking-[0.2em]"><a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a> Team #23247</p>
           </button>
           <p className="text-marble/70 text-base leading-relaxed max-w-md border-l-2 border-ares-bronze/30 pl-6">
             We are proud members of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:text-ares-red transition-colors italic">MARS Family</a>. 
-            Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <em>FIRST</em>®.
+            Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><em>FIRST</em>®</a>.
           </p>
         </div>
 
