@@ -29,7 +29,7 @@ profilesRouter.get("/profile/me", async (c) => {
         member_type: "student",
       }),
       badges: rawBadges || [],
-      auth: { id: user.id, email: user.email, name: user.name, image: user.image },
+      auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role },
     });
   } catch (err) {
     console.error("D1 profile/me read error:", err);

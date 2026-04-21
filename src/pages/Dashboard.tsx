@@ -108,13 +108,22 @@ export default function Dashboard() {
   }, [session, isAdmin]);
 
   useEffect(() => {
-    fetch("/api/auth-check")
+    fetch("/api/profile/me")
       .then(async (res) => {
         if (!res.ok) throw new Error("Not Authenticated");
         return res.json();
       })
-      .then((data: {user: Record<string, unknown>, authenticated: boolean}) => {
-        setEnrichedSession(data);
+      .then((data: { auth: Record<string, unknown>, member_type: string, first_name: string, last_name: string, nickname: string }) => {
+        setEnrichedSession({
+          authenticated: true,
+          user: {
+            ...data.auth,
+            member_type: data.member_type,
+            first_name: data.first_name,
+            last_name: data.last_name,
+            nickname: data.nickname
+          }
+        });
         setIsPending(false);
       })
       .catch(() => {

@@ -12,8 +12,8 @@ database_id = "24d5e2b3-5ad5-4e17-9c73-76b9a0030d16"
 binding = "ARES_STORAGE"
 bucket_name = "ares-media"
 
-[vars]
-DEV_BYPASS = "true"
+# DEV_BYPASS removed from production config (security audit item #1).
+# For local development, use: wrangler dev --var DEV_BYPASS:true
 
 [env.preview]
 [[env.preview.d1_databases]]

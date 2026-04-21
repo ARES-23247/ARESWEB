@@ -126,8 +126,9 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
             user: {
                 create: {
                     after: async (user) => {
-                        // Promoting initial admin
-                        if (user.email === "ares23247wv@gmail.com") {
+                        // SEC-01: Bootstrap admin from env var, not hardcoded email
+                        const initialAdmin = env.INITIAL_ADMIN_EMAIL as string | undefined;
+                        if (initialAdmin && user.email === initialAdmin) {
                             await db.prepare("UPDATE user SET role = 'admin' WHERE email = ?")
                                 .bind(user.email)
                                 .run();

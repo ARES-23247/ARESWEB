@@ -34,14 +34,17 @@ githubWebhookRouter.post("/", async (c) => {
   const secret = c.env.GITHUB_WEBHOOK_SECRET;
   const rawBody = await c.req.text();
 
-  // Validate signature if secret is configured
-  if (secret) {
-    const sig = c.req.header("X-Hub-Signature-256") || "";
-    const valid = await verifyGitHubSignature(secret, rawBody, sig);
-    if (!valid) {
-      console.warn("[GitHubWebhook] Invalid signature");
-      return c.json({ error: "Invalid signature" }, 401);
-    }
+  // SEC-02: Fail-closed — reject all requests if secret is not configured
+  if (!secret) {
+    console.warn("[GitHubWebhook] GITHUB_WEBHOOK_SECRET not configured. Rejecting request.");
+    return c.json({ error: "Webhook not configured" }, 503);
+  }
+
+  const sig = c.req.header("X-Hub-Signature-256") || "";
+  const valid = await verifyGitHubSignature(secret, rawBody, sig);
+  if (!valid) {
+    console.warn("[GitHubWebhook] Invalid signature");
+    return c.json({ error: "Invalid signature" }, 401);
   }
 
   const event = c.req.header("X-GitHub-Event") || "unknown";

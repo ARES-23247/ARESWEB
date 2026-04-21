@@ -30,6 +30,8 @@ export type Bindings = {
   ZULIP_WEBHOOK_TOKEN?: string;
   ZULIP_COMMENT_STREAM?: string;
   ZULIP_ADMIN_STREAM?: string;
+  // ── Bootstrap ──
+  INITIAL_ADMIN_EMAIL?: string;
   DEV_BYPASS?: string;
 };
 

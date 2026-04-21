@@ -10,21 +10,21 @@
     "hideElements": "#hero-mountaineer-mindset"
   },
   "urls": [
-    "http://localhost:5173/",
-    "http://localhost:5173/about",
-    "http://localhost:5173/dashboard",
-    "http://localhost:5173/sponsors",
-    "http://localhost:5173/seasons",
-    "http://localhost:5173/outreach",
-    "http://localhost:5173/tech-stack",
-    "http://localhost:5173/accessibility",
-    "http://localhost:5173/privacy",
-    "http://localhost:5173/join",
-    "http://localhost:5173/leaderboard",
-    "http://localhost:5173/bug-report",
-    "http://localhost:5173/blog",
-    "http://localhost:5173/events",
-    "http://localhost:5173/docs",
-    "http://localhost:5173/judges"
+    "http://localhost:4173/",
+    "http://localhost:4173/about",
+    "http://localhost:4173/dashboard",
+    "http://localhost:4173/sponsors",
+    "http://localhost:4173/seasons",
+    "http://localhost:4173/outreach",
+    "http://localhost:4173/tech-stack",
+    "http://localhost:4173/accessibility",
+    "http://localhost:4173/privacy",
+    "http://localhost:4173/join",
+    "http://localhost:4173/leaderboard",
+    "http://localhost:4173/bug-report",
+    "http://localhost:4173/blog",
+    "http://localhost:4173/events",
+    "http://localhost:4173/docs",
+    "http://localhost:4173/judges"
   ]
 }
