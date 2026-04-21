@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GraduationCap, Briefcase, ArrowLeft, Shield, ShieldAlert } from "lucide-react";
@@ -112,7 +112,7 @@ export default function ProfilePage() {
           </Link>
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-ares-red hover:bg-red-700 text-white text-sm font-bold ares-cut-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-ares-red hover:bg-ares-danger text-white text-sm font-bold ares-cut-sm transition-colors"
           >
             <LucideIcons.Printer size={16} /> Export Portfolio
           </button>
@@ -178,9 +178,9 @@ export default function ProfilePage() {
 
           {/* Admin / Private Details */}
           {(profile.emergency_contact_name || profile.dietary_restrictions || profile.tshirt_size) && (
-             <div className="bg-red-500/5 border border-red-500/20 ares-cut p-6 mb-8 relative overflow-hidden">
-               <div className="absolute top-0 right-0 bg-red-500/20 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-bl-lg">Private / Admin Only</div>
-               <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Shield size={14} /> Internal Records</h3>
+             <div className="bg-ares-danger/5 border border-ares-danger/20 ares-cut p-6 mb-8 relative overflow-hidden">
+               <div className="absolute top-0 right-0 bg-ares-danger/20 text-ares-danger text-[9px] font-black uppercase px-2 py-1 rounded-bl-lg">Private / Admin Only</div>
+               <h3 className="text-xs font-bold text-ares-danger-soft uppercase tracking-wider mb-4 flex items-center gap-2"><Shield size={14} /> Internal Records</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                  {(profile.emergency_contact_name || profile.emergency_contact_phone) && (
                    <div>

@@ -134,8 +134,8 @@ export default function Navbar() {
                 <Bell size={18} className="text-zinc-300" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 text-[9px] font-bold text-white items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-danger-soft opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-ares-danger text-[9px] font-bold text-white items-center justify-center">
                       {unreadCount}
                     </span>
                   </span>
@@ -203,8 +203,8 @@ export default function Navbar() {
               <span className="text-xs font-bold text-zinc-300 group-hover:text-white uppercase tracking-wider">Dashboard</span>
               {pendingCount > 0 && (
                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-danger-soft opacity-75"></span>
+                   <span className="relative inline-flex rounded-full h-3 w-3 bg-ares-danger"></span>
                  </span>
               )}
             </Link>
@@ -254,8 +254,8 @@ export default function Navbar() {
               <LayoutDashboard size={16} /> Dashboard
               {pendingCount > 0 && (
                 <span className="ml-1 flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-danger-soft opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-ares-danger"></span>
                 </span>
               )}
             </Link>

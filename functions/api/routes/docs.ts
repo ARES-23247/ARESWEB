@@ -44,7 +44,7 @@ docsRouter.get("/search", async (c) => {
     }
 
     const { results } = await c.env.DB.prepare(
-      `SELECT slug, title, category, description FROM docs_fts WHERE is_deleted = '0' AND status = 'published' AND docs_fts MATCH ? ORDER BY rank LIMIT 20`
+      `SELECT f.slug, f.title, f.category, f.description FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.is_deleted = 0 AND d.status = 'published' AND f.docs_fts MATCH ? ORDER BY f.rank LIMIT 20`
     ).bind(`"${safeQ}"*`).all();
 
     const mapped = (results ?? []).map((r: Record<string, unknown>) => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -198,7 +198,7 @@ export default function BadgeManager() {
         <button 
           onClick={() => awardBadgeMutation.mutate()}
           disabled={!selectedUser || !selectedBadge || awardBadgeMutation.isPending}
-          className="mt-6 px-8 py-3 bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-red-600 transition-all disabled:opacity-50 flex items-center gap-2"
+          className="mt-6 px-8 py-3 bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-ares-danger transition-all disabled:opacity-50 flex items-center gap-2"
         >
           {awardBadgeMutation.isPending ? "Processing..." : <><Check size={18} /> Grant Badge to Member</>}
         </button>

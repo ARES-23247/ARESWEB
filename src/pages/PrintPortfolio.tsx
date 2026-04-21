@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { ShieldCheck, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
@@ -80,7 +80,7 @@ export default function PrintPortfolio() {
 
   if (error) {
     return (
-      <div className="p-8 text-red-600 font-bold text-center">
+      <div className="p-8 text-ares-danger font-bold text-center">
         <h1>Print Failed</h1>
         <p>{error}</p>
       </div>

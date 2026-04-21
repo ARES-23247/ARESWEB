@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion } from "framer-motion";
 import { Rocket, Wrench, Code, PenTool, CheckCircle, GraduationCap } from "lucide-react";
 import SEO from "../components/SEO";
@@ -221,7 +221,7 @@ export default function Join() {
                 
                 <div className="pt-4">
                   <Turnstile onVerify={setTurnstileToken} theme="light" className="mb-4" />
-                  <button type="submit" disabled={isSubmitting} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-red-600" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
+                  <button type="submit" disabled={isSubmitting} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-ares-danger" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
                     {isSubmitting ? "Submitting..." : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
                   </button>
                   <p className="text-center text-[11px] text-obsidian/80 font-bold uppercase tracking-widest mt-4">

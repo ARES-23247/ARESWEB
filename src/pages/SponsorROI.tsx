@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldAlert, TrendingUp, Users, MousePointerClick, Calendar, ArrowLeft, Trophy } from "lucide-react";
@@ -71,7 +71,7 @@ export default function SponsorROI() {
         <p className="text-marble/60 max-w-md">
           {error || "The secure link you are trying to access is invalid or has expired."}
         </p>
-        <Link to="/" className="mt-8 px-8 py-3 bg-ares-red hover:bg-red-600 rounded-xl transition-all font-bold uppercase tracking-widest text-xs">
+        <Link to="/" className="mt-8 px-8 py-3 bg-ares-red hover:bg-ares-danger rounded-xl transition-all font-bold uppercase tracking-widest text-xs">
           Return to Portal
         </Link>
       </div>

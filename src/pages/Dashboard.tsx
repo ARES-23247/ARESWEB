@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from "react";
+﻿import { useState, useEffect, Suspense, lazy } from "react";
 import { useSearchParams, useNavigate, Link, useLocation, Routes, Route } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -164,10 +164,10 @@ export default function Dashboard() {
       <div className="w-full min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center relative overflow-hidden font-sans">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-ares-red/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-10 max-w-lg w-full mx-4">
-          <div className="bg-black/60 backdrop-blur-2xl ares-cut border border-red-500/20 p-10 shadow-2xl text-center">
+          <div className="bg-black/60 backdrop-blur-2xl ares-cut border border-ares-danger/20 p-10 shadow-2xl text-center">
             <div className="mb-6 flex justify-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-ares-red/30 to-red-900/20 border border-red-500/30 flex items-center justify-center shadow-[0_0_40px_rgba(220,38,38,0.3)]">
-                <ShieldAlert size={40} className="text-red-400" />
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-ares-red/30 to-red-900/20 border border-ares-danger/30 flex items-center justify-center shadow-[0_0_40px_rgba(220,38,38,0.3)]">
+                <ShieldAlert size={40} className="text-ares-danger-soft" />
               </div>
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight mb-3">Restricted Access</h1>
@@ -199,12 +199,12 @@ export default function Dashboard() {
       {/* Mobile Top Header */}
       <div className="md:hidden fixed top-0 w-full h-16 bg-black/80 backdrop-blur-xl border-b border-white/10 z-40 flex items-center justify-between px-4 shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 ares-cut-sm bg-gradient-to-br from-ares-red to-red-900 border border-red-500/30 flex items-center justify-center">
+          <div className="w-8 h-8 ares-cut-sm bg-gradient-to-br from-ares-red to-red-900 border border-ares-danger/30 flex items-center justify-center">
             <AppWindow size={16} className="text-white" />
           </div>
           <h1 className="text-lg font-black tracking-tighter text-white">ARES<span className="text-zinc-500 font-bold">Workspace</span></h1>
           {isAdmin && pendingCount > 0 && (
-            <Link to="/dashboard/inquiries" onClick={() => setIsSidebarOpen(false)} className="ml-2 px-2 py-0.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full animate-bounce shadow-[0_0_15px_rgba(239,68,68,0.6)]">
+            <Link to="/dashboard/inquiries" onClick={() => setIsSidebarOpen(false)} className="ml-2 px-2 py-0.5 bg-ares-danger text-white text-[10px] font-black uppercase tracking-widest rounded-full animate-bounce shadow-[0_0_15px_rgba(239,68,68,0.6)]">
               {pendingCount} New
             </Link>
           )}
@@ -315,7 +315,7 @@ export default function Dashboard() {
         <div className="p-4 border-t border-white/5 shrink-0 bg-black/20">
           <button 
               onClick={() => { fetch('/api/auth/sign-out', { method: 'POST' }).then(() => { window.location.href = '/'; }); }}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger border border-ares-danger/20 hover:border-ares-danger/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
             >
               <LogOut size={16} /> Sign Out
           </button>
@@ -329,7 +329,7 @@ export default function Dashboard() {
         <div className="max-w-[1500px] mx-auto w-full min-h-full flex flex-col p-4 pt-24 md:p-8 relative z-10">
           <div className="hidden md:flex items-center justify-between mb-8">
              <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-gradient-to-br from-ares-red to-red-900 ares-cut-sm flex items-center justify-center shadow-lg shadow-ares-red/20 border border-red-500/30">
+               <div className="w-12 h-12 bg-gradient-to-br from-ares-red to-red-900 ares-cut-sm flex items-center justify-center shadow-lg shadow-ares-red/20 border border-ares-danger/30">
                  <AppWindow className="text-white" size={24} />
                </div>
                <div>
@@ -339,12 +339,12 @@ export default function Dashboard() {
              </div>
              <div className="flex gap-4">
                {isAdmin && pendingCount > 0 && (
-                 <Link to="/dashboard/inquiries" className="px-4 py-2 bg-red-500/20 border border-red-500/40 text-red-100 text-xs font-bold ares-cut animate-pulse hover:bg-red-500/30 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2 uppercase tracking-wider">
+                 <Link to="/dashboard/inquiries" className="px-4 py-2 bg-ares-danger/20 border border-ares-danger/40 text-ares-danger-soft text-xs font-bold ares-cut animate-pulse hover:bg-ares-danger/30 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2 uppercase tracking-wider">
                    <MessageSquare size={14} /> {pendingCount} Pending Inquiries
                  </Link>
                )}
                {isUnverified && (
-                 <span className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold rounded-full uppercase tracking-wider animate-pulse flex items-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                 <span className="px-4 py-2 bg-ares-danger/10 border border-ares-danger/30 text-ares-danger-soft text-xs font-bold rounded-full uppercase tracking-wider animate-pulse flex items-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                    <ShieldAlert size={14} /> Locked: View Only
                  </span>
                )}

@@ -3,11 +3,31 @@ import { AppEnv, ensureAdmin, getDbSettings, logAuditAction, validateLength, MAX
 
 const settingsRouter = new Hono<AppEnv>();
 
+// SEC-03: Infrastructure secrets that must never be returned in plaintext
+const SENSITIVE_KEYS = new Set([
+  'ENCRYPTION_SECRET', 'BETTER_AUTH_SECRET',
+  'BLUESKY_APP_PASSWORD',
+  'FACEBOOK_ACCESS_TOKEN', 'TWITTER_API_SECRET', 'TWITTER_ACCESS_SECRET',
+  'INSTAGRAM_ACCESS_TOKEN', 'GCAL_PRIVATE_KEY',
+  'ZULIP_API_KEY', 'GITHUB_PAT', 'GITHUB_WEBHOOK_SECRET',
+  'CLOUDFLARE_API_TOKEN', 'R2_ACCESS_KEY', 'R2_SECRET_KEY',
+]);
+
+function maskSecret(value: string): string {
+  if (!value || value.length <= 4) return '••••';
+  return '••••••••' + value.slice(-4);
+}
+
 // ── GET /admin/settings — get all integrations settings ───────────────
 settingsRouter.get("/", ensureAdmin, async (c) => {
   try {
     const settings = await getDbSettings(c);
-    return c.json({ success: true, settings });
+    // Mask sensitive values for defense-in-depth
+    const masked: Record<string, string> = {};
+    for (const [key, value] of Object.entries(settings)) {
+      masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
+    }
+    return c.json({ success: true, settings: masked });
   } catch (err) {
     console.error("D1 settings read error:", err);
     return c.json({ success: false, settings: {} }, 500);

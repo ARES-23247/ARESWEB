@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Save, RefreshCw, Shield } from "lucide-react";
 import { IdentityForm } from "./profile/IdentityForm";
@@ -146,7 +146,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
       {/* Save */}
       {message && (
-        <div className={`p-4 ares-cut-sm text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
+        <div className={`p-4 ares-cut-sm text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-ares-danger/10 border border-ares-danger/20 text-ares-danger-soft"}`}>
           {message.text}
         </div>
       )}

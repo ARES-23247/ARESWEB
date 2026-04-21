@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { signIn } from "@/utils/auth-client";
 import { Key, LogIn, AlertCircle, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
@@ -84,10 +84,10 @@ export default function Login() {
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="mt-6 p-4 bg-red-500/10 border border-red-500/50 ares-cut-sm flex items-start gap-3"
+            className="mt-6 p-4 bg-ares-danger/10 border border-ares-danger/50 ares-cut-sm flex items-start gap-3"
           >
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-200 leading-relaxed font-medium">
+            <AlertCircle className="w-5 h-5 text-ares-danger flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-ares-danger-soft leading-relaxed font-medium">
               {errorMessage}
             </p>
           </motion.div>

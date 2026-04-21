@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -90,7 +90,7 @@ export default function SponsorEditor() {
             if (!isFormOpen) setFormData({ id: "", name: "", tier: "Gold", logo_url: "", website_url: "", is_active: 1 });
             setIsFormOpen(!isFormOpen);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
+          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
         >
           {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
           {isFormOpen ? "Cancel" : "Add Partner"}

@@ -13,6 +13,8 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         "ares-red": "#C00000",
+        "ares-danger": "#EF4444",       // Semantic: error banners, destructive actions, validation
+        "ares-danger-soft": "#F87171",   // Semantic: lighter error text on dark backgrounds
         "ares-bronze": "#CD7F32",
         "ares-gold": "#FFB81C",
         "ares-cyan": "#00E5FF",

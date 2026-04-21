@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, Clock, ArrowRight, Activity, MapPin, Heart, X, CheckCircle } from "lucide-react";
@@ -116,7 +116,7 @@ export default function Outreach() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-red-400 text-xs font-bold uppercase tracking-widest mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-ares-danger-soft text-xs font-bold uppercase tracking-widest mb-8"
           >
             <Activity size={14} className="animate-pulse" />
             Active Impact Reporting
@@ -126,7 +126,7 @@ export default function Outreach() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter italic"
           >
-            Engineering <br/> <span className="text-red-500">Change</span>.
+            Engineering <br/> <span className="text-ares-danger">Change</span>.
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}

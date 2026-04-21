@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
 
@@ -79,7 +79,7 @@ export default function AdminUsers() {
   }
 
   if (error) {
-    return <div className="text-red-400 text-center py-10">{error}</div>;
+    return <div className="text-ares-danger-soft text-center py-10">{error}</div>;
   }
 
   return (

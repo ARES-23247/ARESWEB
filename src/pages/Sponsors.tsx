@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { siteConfig } from "../site.config";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -279,7 +279,7 @@ export default function Sponsors() {
               </div>
               <div className="pt-2">
                 <Turnstile onVerify={setTurnstileToken} theme="dark" size="compact" className="mb-4" />
-                <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut hover:bg-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
+                <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut hover:bg-ares-danger hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
                   {isSubmitting ? "Sending..." : <><span className="flex items-center gap-2">Submit Interest Request <ArrowRight size={18} /></span></>}
                 </button>
                 <p className="text-center text-[10px] text-zinc-500 font-mono uppercase tracking-tighter mt-4">

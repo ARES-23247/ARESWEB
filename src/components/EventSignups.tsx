@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, Plus, Save, RefreshCw, Trash2, CheckCircle2, Circle, AlertCircle, Users } from "lucide-react";
 
 interface SignupEntry {
@@ -278,7 +278,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
               </button>
               {mySignup !== null && signups.some(s => s.is_own) && (
                 <button onClick={handleRemove}
-                  className="flex flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 ares-cut-sm text-sm font-black uppercase tracking-widest transition-all"
+                  className="flex flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 border border-ares-danger/20 text-ares-danger ares-cut-sm text-sm font-black uppercase tracking-widest transition-all"
                 >
                   <Trash2 size={16} /> Cancel RSVP
                 </button>

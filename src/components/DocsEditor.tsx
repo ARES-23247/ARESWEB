@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
@@ -249,7 +249,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
       </div>
 
       {errorMsg && (
-        <div className="p-4 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-red-200 text-sm">
+        <div className="p-4 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-danger-soft text-sm">
           {errorMsg}
         </div>
       )}

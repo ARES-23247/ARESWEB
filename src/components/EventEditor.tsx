@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -272,11 +272,11 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       </div>
       
       {isDeleted && (
-        <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg mb-6 flex items-start gap-3">
-          <div className="text-red-500 mt-0.5">⚠️</div>
+        <div className="bg-ares-danger/10 border-l-4 border-ares-danger p-4 rounded-r-lg mb-6 flex items-start gap-3">
+          <div className="text-ares-danger mt-0.5">⚠️</div>
           <div>
-            <h4 className="text-red-500 font-bold text-sm tracking-wide uppercase">Ghost Event</h4>
-            <p className="text-red-400/80 text-sm mt-1">This event is currently soft-deleted and is hidden from the public API and Google Calendar. Modifying and saving it will not undelete it.</p>
+            <h4 className="text-ares-danger font-bold text-sm tracking-wide uppercase">Ghost Event</h4>
+            <p className="text-ares-danger-soft/80 text-sm mt-1">This event is currently soft-deleted and is hidden from the public API and Google Calendar. Modifying and saving it will not undelete it.</p>
           </div>
         </div>
       )}
@@ -399,11 +399,11 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
 
       <div className="mt-6 flex flex-col gap-4">
         {errorMsg && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 ares-cut flex items-start gap-3">
-            <div className="text-red-500 mt-0.5">❌</div>
+          <div className="p-4 bg-ares-danger/10 border border-ares-danger/20 ares-cut flex items-start gap-3">
+            <div className="text-ares-danger mt-0.5">❌</div>
             <div>
-              <h4 className="text-red-500 font-bold text-xs tracking-wide uppercase">Critical Error</h4>
-              <p className="text-red-400/90 text-sm mt-1">{errorMsg}</p>
+              <h4 className="text-ares-danger font-bold text-xs tracking-wide uppercase">Critical Error</h4>
+              <p className="text-ares-danger-soft/90 text-sm mt-1">{errorMsg}</p>
             </div>
           </div>
         )}

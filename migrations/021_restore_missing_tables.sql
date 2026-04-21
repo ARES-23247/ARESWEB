@@ -37,10 +37,11 @@ CREATE TABLE IF NOT EXISTS page_analytics (
 CREATE INDEX IF NOT EXISTS idx_page_analytics_path ON page_analytics(path);
 
 CREATE TABLE IF NOT EXISTS awards (
-    id TEXT PRIMARY KEY,
-    year INTEGER NOT NULL,
-    name TEXT NOT NULL,
-    event TEXT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    event_name TEXT NOT NULL,
+    date TEXT NOT NULL,
     description TEXT,
+    icon_type TEXT DEFAULT 'trophy',
     created_at TEXT DEFAULT (datetime('now'))
 );

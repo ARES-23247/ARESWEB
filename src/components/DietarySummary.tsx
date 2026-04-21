@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Utensils, Shirt, RefreshCw, AlertCircle, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -44,7 +44,7 @@ export default function DietarySummary() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-3 p-6 bg-red-500/10 border border-red-500/20 ares-cut text-red-400">
+      <div className="flex items-center gap-3 p-6 bg-ares-danger/10 border border-ares-danger/20 ares-cut text-ares-danger-soft">
         <AlertCircle size={24} />
         <div>
           <h4 className="font-bold">Summary Unavailable</h4>

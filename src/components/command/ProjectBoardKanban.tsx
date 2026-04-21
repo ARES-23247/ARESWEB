@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   GitBranch, Plus, RefreshCw, 
@@ -22,7 +22,7 @@ const statusConfig: Record<string, { bg: string; text: string; border: string; i
   "Todo":        { bg: "bg-zinc-800/60",          text: "text-zinc-400",   border: "border-zinc-700",    icon: Circle },
   "In Progress": { bg: "bg-ares-cyan/10",         text: "text-ares-cyan",  border: "border-ares-cyan/30", icon: Clock },
   "Done":        { bg: "bg-emerald-500/10",       text: "text-emerald-400", border: "border-emerald-500/30", icon: CheckCircle2 },
-  "Blocked":     { bg: "bg-red-500/10",           text: "text-red-400",    border: "border-red-500/30",  icon: AlertTriangle },
+  "Blocked":     { bg: "bg-ares-danger/10",           text: "text-ares-danger-soft",    border: "border-ares-danger/30",  icon: AlertTriangle },
 };
 
 const defaultStatus = { bg: "bg-zinc-800/60", text: "text-zinc-400", border: "border-zinc-700", icon: Circle };

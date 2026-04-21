@@ -1,4 +1,4 @@
-import { GraduationCap, Plus, Trash2 } from "lucide-react";
+﻿import { GraduationCap, Plus, Trash2 } from "lucide-react";
 import { ProfileSubComponentProps, CollegeEntry } from "./types";
 import { BrandLogo } from "../BrandLogo";
 import { extractDomain } from "../../utils/logoResolvers";
@@ -62,7 +62,7 @@ export function EducationSection({ profile, setProfile, inputClass, sectionClass
             </div>
           </div>
 
-          <button onClick={() => removeCollege(i)} className="text-red-500 hover:text-red-400 p-1 self-center">
+          <button onClick={() => removeCollege(i)} className="text-ares-danger hover:text-ares-danger-soft p-1 self-center">
             <Trash2 size={16} />
           </button>
         </div>

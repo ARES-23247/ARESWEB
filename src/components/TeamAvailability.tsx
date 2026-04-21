@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Clock, Zap, Circle, UserMinus } from "lucide-react";
 
@@ -109,7 +109,7 @@ export default function TeamAvailability() {
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <span className="text-xs font-bold text-red-400">{error}</span>
+            <span className="text-xs font-bold text-ares-danger-soft">{error}</span>
           </div>
         ) : sortedMembers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">

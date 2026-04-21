@@ -1,12 +1,12 @@
-import { ReactNode, lazy, Suspense, useState } from "react";
+﻿import { ReactNode, lazy, Suspense, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Eye } from "lucide-react";
 import { CodeBlock } from "./docs/CodeBlock";
 
-const CodePlayground = lazy(() => import('./docs/CodePlayground').catch(() => ({ default: () => <div className="text-red-500">Failed to load CodePlayground</div> })));
-const InteractiveTutorial = lazy(() => import('./InteractiveTutorial').catch(() => ({ default: () => <div className="text-red-500">Failed to load InteractiveTutorial</div> })));
+const CodePlayground = lazy(() => import('./docs/CodePlayground').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CodePlayground</div> })));
+const InteractiveTutorial = lazy(() => import('./InteractiveTutorial').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load InteractiveTutorial</div> })));
       // @ts-expect-error -- D1 untyped response
-const CoreValueCallout = lazy(() => import('./CoreValueCallout').catch(() => ({ default: () => <div className="text-red-500">Failed to load CoreValueCallout</div> })));
+const CoreValueCallout = lazy(() => import('./CoreValueCallout').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CoreValueCallout</div> })));
 const SwerveSimulator = lazy(() => import('../sims/SwerveSimulator'));
 const SOTMSimulator = lazy(() => import('../sims/SOTMSimulator'));
 const ConfigVisualizer = lazy(() => import('./docs/ConfigVisualizer'));
@@ -162,7 +162,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
         );
       }
       return (
-        <div className="p-4 border border-red-500/50 bg-red-500/10 text-red-400 rounded my-8 font-mono text-sm">
+        <div className="p-4 border border-ares-danger/50 bg-ares-danger/10 text-ares-danger-soft rounded my-8 font-mono text-sm">
           Unknown interactive component: {componentName}
         </div>
       );

@@ -154,9 +154,9 @@ export default function LocationsManager() {
             {isLoading ? <div className="text-center p-8 text-zinc-500 animate-pulse">Loading venues...</div> : (
               <div className="flex flex-col gap-3">
                 {filtered.map(l => (
-                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.is_deleted ? 'border-red-900/50 bg-red-950/10 opacity-50' : 'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80'}`}>
+                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.is_deleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80'}`}>
                     <div>
-                      <h4 className={`font-bold ${l.is_deleted ? 'text-red-400 line-through' : 'text-white'}`}>{l.name}</h4>
+                      <h4 className={`font-bold ${l.is_deleted ? 'text-ares-danger-soft line-through' : 'text-white'}`}>{l.name}</h4>
                       <p className="text-sm text-zinc-400 mt-1 flex items-center gap-2">
                         <MapPin size={14} /> {l.address}
                       </p>

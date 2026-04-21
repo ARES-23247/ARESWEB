@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Radio, AlertTriangle } from "lucide-react";
 import TeamAvailability from "./TeamAvailability";
 import { ProjectBoard, IntegrationHealth } from "./command/types";
@@ -137,7 +137,7 @@ export default function CommandCenter() {
       </div>
 
       {error && (
-        <div className="p-4 ares-cut-sm bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+        <div className="p-4 ares-cut-sm bg-ares-danger/10 border border-ares-danger/30 text-ares-danger-soft text-sm">
           <AlertTriangle size={16} className="inline mr-2" />
           {error}
         </div>
