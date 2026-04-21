@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GraduationCap, Briefcase, ArrowLeft, Shield, ShieldAlert } from "lucide-react";
@@ -26,6 +26,10 @@ interface ProfilePublic {
   tshirt_size?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
+  favorite_robot_mechanism?: string;
+  pre_match_superstition?: string;
+  rookie_year?: string;
+  leadership_role?: string;
 }
 
 interface BadgeDef {
@@ -208,10 +212,34 @@ export default function ProfilePage() {
 
           {/* Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {profile.rookie_year && (
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Rookie Year</p>
+                <p className="text-zinc-300 text-sm">{profile.rookie_year}</p>
+              </div>
+            )}
+            {profile.leadership_role && (
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+                <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Leadership Role</p>
+                <p className="text-zinc-300 text-sm">{profile.leadership_role}</p>
+              </div>
+            )}
             {profile.favorite_first_thing && (
               <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Favorite Thing About FIRST</p>
                 <p className="text-zinc-300 text-sm">{profile.favorite_first_thing}</p>
+              </div>
+            )}
+            {profile.favorite_robot_mechanism && (
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+                <p className="text-[10px] font-bold text-ares-gold uppercase tracking-wider mb-2">Favorite Robot Mechanism</p>
+                <p className="text-zinc-300 text-sm">{profile.favorite_robot_mechanism}</p>
+              </div>
+            )}
+            {profile.pre_match_superstition && (
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+                <p className="text-[10px] font-bold text-ares-danger uppercase tracking-wider mb-2">Pre-Match Superstition</p>
+                <p className="text-zinc-300 text-sm">{profile.pre_match_superstition}</p>
               </div>
             )}
             {profile.fun_fact && (
