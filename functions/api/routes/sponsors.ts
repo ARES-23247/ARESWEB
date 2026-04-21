@@ -104,7 +104,7 @@ sponsorsRouter.get("/admin/sponsors/tokens", async (c) => {
       "SELECT t.token, t.sponsor_id, s.name as sponsor_name, t.created_at FROM sponsor_tokens t JOIN sponsors s ON t.sponsor_id = s.id ORDER BY t.created_at DESC"
     ).all();
     return c.json({ tokens: results || [] });
-  } catch (err) {
+  } catch {
     return c.json({ tokens: [] }, 500);
   }
 });
@@ -119,7 +119,7 @@ sponsorsRouter.post("/admin/sponsors/tokens", async (c) => {
       "INSERT INTO sponsor_tokens (token, sponsor_id) VALUES (?, ?)"
     ).bind(token, sponsor_id).run();
     return c.json({ success: true, token });
-  } catch (err) {
+  } catch {
     return c.json({ error: "Failed to generate" }, 500);
   }
 });
