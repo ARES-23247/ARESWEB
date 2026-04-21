@@ -123,25 +123,14 @@ h1, h2, h3, h4, .font-heading {
 
 /* --- NATIVE PDF PORTFOLIO EXPORTS --- */
 @media print {
-  /* Hide UI elements */
-  nav, button, header, .print\:hidden {
+  /* Hide global UI elements */
+  nav, footer, .print\:hidden {
     display: none !important;
   }
 
-  /* Force light theme for printing */
-  body, .bg-obsidian, .bg-zinc-900\/50, .bg-zinc-800, .bg-transparent {
+  /* Force light theme for standard pages printing */
+  body:not(.print-layout), .bg-obsidian, .bg-zinc-900\/50, .bg-zinc-800, .bg-transparent {
     background: white !important;
-    color: black !important;
-  }
-
-  /* Remove borders and shadows */
-  * {
-    box-shadow: none !important;
-    border-color: #ddd !important;
-  }
-
-  /* Force dark text globally */
-  h1, h2, h3, p, span, div, .text-white, .text-zinc-400, .text-zinc-300 {
     color: black !important;
   }
 
@@ -149,6 +138,7 @@ h1, h2, h3, h4, .font-heading {
   .ares-cut, .ares-cut-lg, .ares-cut-sm {
     break-inside: avoid;
     border: 1px solid #ccc !important;
+    box-shadow: none !important;
   }
 
   /* Expand layout limits */
@@ -156,5 +146,19 @@ h1, h2, h3, h4, .font-heading {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  @page {
+    margin: 0.75in;
+    size: letter;
+  }
+  
+  .print-layout {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .print-layout table {
+    break-inside: avoid;
   }
 }

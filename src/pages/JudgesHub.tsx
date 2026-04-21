@@ -173,12 +173,22 @@ export default function JudgesHub() {
               <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">Secure Rapid Review Protocol</span>
             </div>
           </div>
-          <button 
-            onClick={logout}
-            className="text-xs font-bold text-zinc-500 hover:text-ares-red transition-colors px-4 py-2 ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/20"
-          >
-            DISCONNECT
-          </button>
+          <div className="flex items-center gap-4">
+            <a 
+              href="/judges/print"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-ares-gold hover:text-black transition-colors px-4 py-2 ares-cut-sm bg-ares-gold/10 hover:bg-ares-gold border border-ares-gold/50 flex items-center gap-2"
+            >
+              <FileText size={14} /> GENERATE PDF PORTFOLIO
+            </a>
+            <button 
+              onClick={logout}
+              className="text-xs font-bold text-zinc-500 hover:text-ares-red transition-colors px-4 py-2 ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/20"
+            >
+              DISCONNECT
+            </button>
+          </div>
         </div>
       </header>
 
