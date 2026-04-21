@@ -32,7 +32,7 @@ outreachRouter.get("/", async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 50, 200);
     const { results: logs } = await c.env.DB.prepare(
-        "SELECT id, title, date, location, hours as hours_logged, people_reached as reach_count, impact_summary as description FROM outreach_logs ORDER BY date DESC LIMIT ? OFFSET ?"
+        "SELECT id, title, date, location, COALESCE(hours, 0) as hours_logged, COALESCE(people_reached, 0) as reach_count, 0 as students_count, impact_summary as description FROM outreach_logs ORDER BY date DESC LIMIT ? OFFSET ?"
     ).bind(limit, offset).all();
     
     const volunteerEvents = await fetchVolunteerEvents(c.env.DB);
