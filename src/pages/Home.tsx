@@ -12,8 +12,9 @@ export default function Home() {
         <div
           className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] z-0 opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
           style={{ backgroundImage: "url('/favicon.png')" }}
+          aria-hidden="true"
         ></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent z-1"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent z-1" aria-hidden="true"></div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-20 pb-16 flex flex-col items-start text-left">
           <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12 lg:gap-16 mb-6">
@@ -23,26 +24,30 @@ export default function Home() {
               className="w-32 md:w-56 lg:w-[22rem] h-32 md:h-56 lg:h-[22rem] object-contain drop-shadow-[0_0_25px_rgba(192,0,0,0.6)] shrink-0" 
             />
             <div>
-              <p className="text-ares-bronze font-bold uppercase tracking-[0.4em] text-sm md:text-base font-heading mb-3">
-                Appalachian Robotics & Engineering Society
-              </p>
+              <div className="inline-block bg-[#111111] px-2 py-1 mb-3 rounded shadow-lg">
+                <p className="text-ares-bronze font-bold uppercase tracking-[0.4em] text-sm md:text-base font-heading m-0">
+                  Appalachian Robotics & Engineering Society
+                </p>
+              </div>
               <h1 className="text-6xl md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
-                Engineered <br />
-                <span className="text-ares-red">To Inspire</span>
+                <span className="bg-[#111111] px-4 py-2 rounded-xl inline-block mb-2 shadow-2xl">Engineered</span> <br />
+                <span className="bg-ares-red px-6 py-2 pb-3 mt-4 inline-block rounded-2xl shadow-[0_20px_25px_-5px_#080808]" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>To Inspire</span>
               </h1>
             </div>
           </div>
 
-          <p className="text-marble/80 text-xl md:text-2xl font-medium max-w-2xl mb-10 leading-relaxed border-l-4 border-ares-bronze pl-6">
-            Building the future of West Virginia robotics with the <span className="text-white font-bold">Mountaineer Mindset</span>.
-            <em>FIRST</em>® Tech Challenge Team #23247.
-          </p>
+          <div className="max-w-2xl mb-10 border-l-4 border-ares-bronze pl-6">
+            <p className="text-[#cccccc] text-xl md:text-2xl font-medium leading-relaxed bg-[#111111] p-3 rounded-lg shadow-xl inline-block">
+              Building the future of West Virginia robotics with the <span className="text-white font-bold bg-[#111111]">Mountaineer Mindset</span>.
+              <em className="bg-[#111111]">FIRST</em>® Tech Challenge Team #23247.
+            </p>
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-6 mt-4">
-            <Link to="/about" className="clipped-button bg-ares-red text-white hover:bg-ares-bronze transition-all shadow-xl">
+            <Link to="/about" className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all shadow-xl" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>
               Meet the Team
             </Link>
-            <Link to="/sponsors" className="clipped-button bg-transparent border-2 border-ares-bronze text-ares-bronze hover:bg-ares-bronze hover:text-white transition-all">
+            <Link to="/sponsors" className="clipped-button bg-[#111111] border-2 border-ares-bronze text-ares-bronze hover:bg-ares-bronze hover:text-white transition-all">
               Support Our Mission
             </Link>
           </div>
@@ -98,7 +103,7 @@ export default function Home() {
       <section className="py-24 obsidian-section relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-bold mb-8 font-heading">
-            Join <span className="text-ares-red">ARES</span>
+            Join <span className="bg-ares-red px-3 py-1 pb-2 rounded-xl" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>ARES</span>
           </h2>
           <p className="text-marble/80 text-xl mb-12 leading-relaxed">
             Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future of WV technology, there is a place for you at the table.
@@ -119,7 +124,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="text-center md:text-left">
             <h3 className="text-3xl md:text-4xl font-bold mb-2 font-heading">Event Calendar</h3>
-            <p className="text-white/80 text-lg">Tracks our upcoming demos, qualifiers, and community workshops.</p>
+            <p className="text-white text-lg opacity-90 font-medium">Tracks our upcoming demos, qualifiers, and community workshops.</p>
           </div>
           <Link
             to="/events"

@@ -200,10 +200,9 @@ export default function Sponsors() {
         <motion.footer 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          className="mt-32 p-12 rounded-[3rem] border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
+          className="mt-32 p-12 rounded-[3rem] bg-[#181818] border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
         >
           {/* Subtle grid pattern background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-ares-red/20 to-obsidian z-0" aria-hidden="true"></div>
           <div className="absolute inset-0 bg-[url('https://api.aresfirst.org/assets/grid.svg')] opacity-5 mix-blend-overlay pointer-events-none z-0" aria-hidden="true"></div>
 
           <div className="flex-1 relative z-10 flex flex-col justify-between">

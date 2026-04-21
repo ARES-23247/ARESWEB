@@ -26,13 +26,13 @@ export default function Footer() {
         {/* Quick Links */}
         <div>
           <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">Navigation</h4>
-          <ul className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest text-marble/60">
+          <ul className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest text-marble/80">
             <li><Link to="/" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Home</Link></li>
             <li><Link to="/about" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Who We Are</Link></li>
             <li><Link to="/seasons" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Seasons</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Outreach</Link></li>
             <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
-            <li><Link to="/docs" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> <span className="flex items-center"><span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span></span></Link></li>
+            <li><Link to="/docs" className="hover:opacity-80 transition-colors flex items-center gap-2"><span>{"//"}</span> <span className="flex items-center shadow-lg" style={{ color: '#ffffff' }}><span className="bg-ares-red px-1.5 py-0.5 rounded-l text-[10px] uppercase" style={{ backgroundColor: '#c00000' }}>ARES</span><span className="bg-white/10 px-1.5 py-0.5 rounded-r text-[10px] uppercase">Lib</span></span></Link></li>
             <li><Link to="/join" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Join Us</Link></li>
           </ul>
         </div>
@@ -66,11 +66,11 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col lg:flex-row justify-between items-center gap-8">
-        <p className="text-marble/60 text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap">
-          © {new Date().getFullYear()} ARES 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
+        <p className="text-marble/80 text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap">
+          © {new Date().getFullYear()} <span className="bg-ares-red text-white px-1 rounded-sm">ARES</span> 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
         </p>
         
-        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-x-8 gap-y-4 text-[10px] font-bold uppercase tracking-[0.2em] text-marble/60">
+        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-x-8 gap-y-4 text-[10px] font-bold uppercase tracking-[0.2em] text-marble/80">
           <Link to="/accessibility" className="hover:text-white transition-colors flex items-center gap-2 group whitespace-nowrap">
             <svg className="w-3.5 h-3.5 text-ares-red group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -83,8 +83,8 @@ export default function Footer() {
             <a href="https://wave.webaim.org/" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-100 transition-opacity" title="Validated by WAVE Web Accessibility Evaluation Tool">
               <img src="https://wave.webaim.org/img/wavelogo.svg" alt="WAVE Logo" className="h-3.5" />
             </a>
-            <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-100 transition-opacity flex items-center font-bold text-[9px] gap-1" title="pa11y CI Integrated">
-              <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+            <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-opacity flex items-center font-bold text-[9px] gap-1 text-white" title="pa11y CI Integrated">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
               </svg>
               <span>PA11Y</span>
@@ -93,8 +93,8 @@ export default function Footer() {
 
           <div className="flex gap-8 items-center border-l border-marble/10 pl-8 h-4">
             <Link to="/privacy" className="hover:text-white transition-colors whitespace-nowrap">Privacy</Link>
-            <Link to="/docs" className="hover:text-white transition-colors flex items-center whitespace-nowrap">
-              <span className="text-ares-red normal-case tracking-normal">ARES</span><span className="text-white normal-case tracking-normal">Lib</span>
+            <Link to="/docs" className="hover:opacity-80 transition-colors flex items-center whitespace-nowrap shadow-sm" style={{ color: '#ffffff' }}>
+              <span className="bg-ares-red px-1 py-0.5 rounded-l uppercase text-[8px]" style={{ backgroundColor: '#c00000' }}>ARES</span><span className="bg-white/10 px-1 py-0.5 rounded-r uppercase text-[8px]">Lib</span>
             </Link>
             <Link to="/sponsors" className="hover:text-white transition-colors whitespace-nowrap">Support Us</Link>
           </div>

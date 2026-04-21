@@ -39,10 +39,10 @@ const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false, acti
       className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-semibold ${
         isActive 
           ? "bg-ares-red/10 text-white border border-ares-red/30 shadow-[0_0_15px_rgba(192,0,0,0.1)]" 
-          : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200 border border-transparent"
+          : "text-marble/70 hover:bg-white/5 hover:text-white border border-transparent"
       } ${sub ? "pl-11 text-sm font-bold" : "text-sm"} ${disabled ? "opacity-30 cursor-not-allowed" : ""}`}
     >
-      {Icon && <Icon size={18} className={isActive ? "text-ares-red" : "text-zinc-500"} />}
+      {Icon && <Icon size={18} className={isActive ? "text-white" : "text-marble/50"} />}
       <span className="truncate">{label}</span>
     </button>
   );
@@ -62,9 +62,9 @@ function TabLoader() {
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       >
-        <RefreshCw size={32} className="text-ares-red/50" />
+        <RefreshCw size={32} className="text-ares-cyan/70" />
       </motion.div>
-      <p className="text-sm font-bold text-zinc-500 animate-pulse uppercase tracking-widest">Loading Module...</p>
+      <p className="text-sm font-bold text-marble/60 animate-pulse uppercase tracking-widest">Loading Module...</p>
     </div>
   );
 }
@@ -146,9 +146,9 @@ export default function Dashboard() {
             animate={{ rotate: 360 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
           >
-            <RefreshCw size={48} className="text-ares-red" />
+            <RefreshCw size={48} className="text-ares-cyan" />
           </motion.div>
-          <p className="text-zinc-400 text-sm font-bold tracking-widest uppercase">Verifying ARES Session...</p>
+          <p className="text-marble/70 text-sm font-bold tracking-widest uppercase">Verifying ARES Session...</p>
         </motion.div>
       </div>
     );
@@ -174,8 +174,8 @@ export default function Dashboard() {
               {!session ? "The ARES Dashboard is protected by Internal Authentication. Please log in with an authorized identity." : "Your account does not have administrator privileges."}
             </p>
             <div className="space-y-3">
-              <button onClick={() => navigate("/login")} className="w-full px-6 py-4 bg-gradient-to-r from-ares-red to-red-800 text-white font-bold text-sm rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.2)] hover:shadow-[0_0_30px_rgba(220,38,38,0.4)]">
-                <Lock size={16} className="inline mr-2 -mt-1" /> Sign In with ARES ID
+              <button onClick={() => navigate("/login")} className="w-full px-6 py-4 bg-gradient-to-r from-ares-red to-red-800 text-transparent font-bold text-sm rounded-xl transition-all shadow-[0_0_20px_#7f1d1d] hover:shadow-[0_0_30px_#7f1d1d]">
+                <span style={{ backgroundColor: '#c00000', color: '#ffffff' }} className="flex items-center justify-center h-full w-full"><Lock size={16} className="inline mr-2 -mt-1" /> Sign In with ARES ID</span>
               </button>
               <button onClick={() => navigate("/")} className="w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white font-bold text-sm rounded-xl transition-all">
                 Return to Home
@@ -219,8 +219,8 @@ export default function Dashboard() {
         return isAdmin ? (
           <>
             <div className="mb-6 pb-6 border-b border-white/5">
-              <h2 className="text-2xl font-black text-white flex items-center gap-3"><MessageSquare className="text-ares-red" /> Team Inquiries</h2>
-              <p className="text-zinc-500 text-sm mt-1">Review student, mentor, and sponsor applications.</p>
+              <h2 className="text-2xl font-black text-white flex items-center gap-3"><MessageSquare className="text-ares-gold" /> Team Inquiries</h2>
+              <p className="text-marble/60 text-sm mt-1">Review student, mentor, and sponsor applications.</p>
             </div>
             <AdminInquiries />
           </>
@@ -241,8 +241,8 @@ export default function Dashboard() {
         return (
           <>
             <div className="mb-6 pb-6 border-b border-white/5">
-              <h2 className="text-2xl font-black text-white flex items-center gap-3"><Utensils className="text-ares-red" /> Team Logistics Summary</h2>
-              <p className="text-zinc-500 text-sm mt-1">Aggregated dietary data for event planning and team management.</p>
+              <h2 className="text-2xl font-black text-white flex items-center gap-3"><Utensils className="text-ares-gold" /> Team Logistics Summary</h2>
+              <p className="text-marble/60 text-sm mt-1">Aggregated dietary data for event planning and team management.</p>
             </div>
             <DietarySummary />
           </>
@@ -291,8 +291,8 @@ export default function Dashboard() {
         return (
           <>
             <div className="mb-6 pb-6 border-b border-white/5">
-              <h2 className="text-2xl font-black text-white flex items-center gap-3"><MapPin className="text-ares-red" /> Team Locations</h2>
-              <p className="text-zinc-500 text-sm mt-1">Manage physical meeting points, shops, and outreach sites.</p>
+              <h2 className="text-2xl font-black text-white flex items-center gap-3"><MapPin className="text-ares-gold" /> Team Locations</h2>
+              <p className="text-marble/60 text-sm mt-1">Manage physical meeting points, shops, and outreach sites.</p>
             </div>
             <LocationsManager />
           </>
@@ -382,7 +382,7 @@ export default function Dashboard() {
           {/* AUTHORING */}
           {isAuthorized && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6 flex items-center gap-2"><PlusCircle size={12} className="text-ares-red" /> Quick Create</h4>
+              <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/60 mb-2 px-6 flex items-center gap-2"><PlusCircle size={12} className="text-ares-cyan" /> Quick Create</h4>
               <div className="space-y-1 px-3">
                 <NavButton tab="blog" icon={PenTool} label={editPostSlug ? "Edit Post (Active)" : "New Blog Post"} activeTab={activeTab} onNavigate={handleNavigate} />
                 <NavButton tab="event" icon={Calendar} label={editEventId ? "Edit Event (Active)" : "New Event"} activeTab={activeTab} onNavigate={handleNavigate} />
@@ -426,7 +426,7 @@ export default function Dashboard() {
           {/* ADMINISTRATION */}
           {(isAdmin || canSeeLogistics) && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-red/80 mb-2 px-6">Administration</h4>
+              <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
                 {isAdmin && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" activeTab={activeTab} onNavigate={handleNavigate} />}
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" activeTab={activeTab} onNavigate={handleNavigate} />}
