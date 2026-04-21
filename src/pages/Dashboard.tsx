@@ -380,9 +380,9 @@ export default function Dashboard() {
                </div>
              </div>
              <div className="flex gap-4">
-               {canSeeInquiries && pendingCount > 0 && (
+               {canSeeInquiries && pendingInquiriesCount > 0 && (
                  <Link to="/dashboard/inquiries" className="px-4 py-2 bg-ares-danger/20 border border-ares-danger/40 text-ares-danger-soft text-xs font-bold ares-cut animate-pulse hover:bg-ares-danger/30 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2 uppercase tracking-wider">
-                   <MessageSquare size={14} /> {pendingCount} Pending Inquiries
+                   <MessageSquare size={14} /> {pendingInquiriesCount} Pending Inquiries
                  </Link>
                )}
                {isUnverified && (
