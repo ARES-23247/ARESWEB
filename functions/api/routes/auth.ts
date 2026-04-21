@@ -6,14 +6,18 @@ const authRouter = new Hono<{ Bindings: Bindings }>();
 
 // ── Better Auth Routes ────────────────────────────────────────────────
 authRouter.on(["POST", "GET"], "/auth/*", async (c) => {
+  console.log(`[Auth Handler] Request URL: ${c.req.url}`);
   try {
     const auth = getAuth(c.env.DB, c.env, c.req.url);
-    return await auth.handler(c.req.raw);
+    const response = await auth.handler(c.req.raw);
+    console.log(`[Auth Handler] Response Status: ${response.status}`);
+    return response;
   } catch (error: unknown) {
     const err = error as Error & { status?: number };
     console.error("[Auth Handler] Internal Exception:", err);
     return c.json({ 
       message: err.message || "Internal Server Error during Authentication", 
+      stack: c.env.ENVIRONMENT === "development" ? err.stack : undefined
     }, 500);
   }
 });

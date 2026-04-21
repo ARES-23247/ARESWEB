@@ -35,6 +35,7 @@ export default function Footer() {
             <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
             <li><Link to="/docs" className="hover:opacity-80 transition-colors flex items-center gap-2"><span>{"//"}</span> <span className="flex items-center shadow-lg ares-cut-sm overflow-hidden"><span className="bg-ares-red px-2 py-0.5 text-[10px] uppercase text-white font-bold">ARES</span><span className="bg-white/10 text-white font-bold px-2 py-0.5 text-[10px] uppercase">Lib</span></span></Link></li>
             <li><Link to="/join" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Join Us</Link></li>
+            <li><Link to="/tech-stack" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Tech Stack</Link></li>
           </ul>
         </div>
 

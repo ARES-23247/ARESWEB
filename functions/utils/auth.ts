@@ -12,10 +12,17 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
         }),
     });
 
-    let baseURL = env.BETTER_AUTH_URL || "http://localhost:5173";
+    let baseURL = env.BETTER_AUTH_URL as string | undefined || "http://localhost:5173";
     if (requestUrl) {
         const url = new URL(requestUrl);
-        baseURL = `${url.protocol}//${url.host}/api/auth`;
+        // Find the base authentication path dynamically (e.g., /api/auth or /dashboard/api/auth)
+        const authIndex = url.pathname.indexOf("/auth");
+        if (authIndex !== -1) {
+            const basePath = url.pathname.substring(0, authIndex + 5); // +5 for "/auth"
+            baseURL = `${url.protocol}//${url.host}${basePath}`;
+        } else {
+            baseURL = `${url.protocol}//${url.host}/api/auth`;
+        }
     }
 
     return betterAuth({

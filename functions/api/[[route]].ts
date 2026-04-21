@@ -95,7 +95,7 @@ apiRouter.use("*", cors({
     return undefined; // Deny
   },
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization"],
+  allowHeaders: ["Content-Type", "Authorization", "x-better-auth-origin", "x-better-auth-session-id", "better-auth-agent"],
   credentials: true,
   maxAge: 86400,
 }));

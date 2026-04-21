@@ -86,12 +86,10 @@ export default function Navbar() {
         </button>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-bold uppercase tracking-widest">
-          <Link to="/" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Home</Link>
           <Link to="/about" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">About</Link>
           <Link to="/seasons" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Seasons</Link>
           <Link to="/outreach" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Outreach</Link>
           <Link to="/events" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Events</Link>
-          <Link to="/tech-stack" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Tech Stack</Link>
           <Link to="/docs" className="hover:opacity-80 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-lg">
             <span className="bg-ares-red px-2 py-1 text-xs font-bold uppercase text-white">ARES</span>
             <span className="bg-white/10 text-white px-2 py-1 text-xs font-bold uppercase">Lib</span>
@@ -200,20 +198,6 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Language Switcher */}
-          <div className="flex bg-zinc-900 border border-white/10 p-1 ares-cut-sm">
-            {['en', 'es'].map((l) => (
-              <button
-                key={l}
-                onClick={() => i18n.changeLanguage(l)}
-                className={`px-3 py-1 text-xs font-black transition-all ares-cut-sm ${
-                  i18n.language === l ? 'bg-ares-red text-white shadow-lg' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
 
           <Link to="/sponsors" className="hidden md:flex bg-ares-red text-white px-6 py-2 rounded-tl-[1.2rem] rounded-br-[1.2rem] rounded-tr-md rounded-bl-md font-bold uppercase tracking-widest text-xs hover:bg-ares-bronze hover:text-white transition-all shadow-lg items-center gap-2">
             <Heart size={14} className="fill-white" />
@@ -240,12 +224,10 @@ export default function Navbar() {
             <Search size={16} aria-hidden="true" /> Command Palette
           </button>
           <div className="flex flex-col gap-6 p-8">
-          <Link to="/" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">HOME</Link>
           <Link to="/about" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">WHO WE ARE</Link>
           <Link to="/seasons" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">SEASONS</Link>
           <Link to="/outreach" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">OUTREACH</Link>
           <Link to="/events" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">EVENTS</Link>
-          <Link to="/tech-stack" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">TECH STACK</Link>
           <Link to="/blog" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter text-ares-gold">TEAM BLOG</Link>
           <Link to="/sponsors" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">SUPPORT US</Link>
         </div>
@@ -268,10 +250,6 @@ export default function Navbar() {
           <Link to="/join" onClick={() => setOpen(false)} className="text-marble/70 hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Join Us</Link>
           <Link to="/sponsors" onClick={() => setOpen(false)} className="text-marble/70 hover:text-ares-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Support Us</Link>
           
-          <div className="flex items-center gap-2 mt-2 px-2">
-             <button onClick={() => { i18n.changeLanguage('en'); setOpen(false); }} className={`px-3 py-1 rounded-full text-xs font-bold ${i18n.language === 'en' ? 'bg-ares-red text-white' : 'bg-white/5 text-zinc-500'}`}>English</button>
-             <button onClick={() => { i18n.changeLanguage('es'); setOpen(false); }} className={`px-3 py-1 rounded-full text-xs font-bold ${i18n.language === 'es' ? 'bg-ares-red text-white' : 'bg-white/5 text-zinc-500'}`}>Español</button>
-          </div>
         </div>
 
       )}
