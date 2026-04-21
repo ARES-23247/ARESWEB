@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { signIn } from "@/utils/auth-client";
-import { Key, LogIn, AlertCircle } from "lucide-react";
+import { Key, LogIn, AlertCircle, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Login() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleLogin = async (provider: "google" | "github") => {
+  const handleLogin = async (provider: "google" | "github" | "zulip") => {
     setErrorMessage(null);
     try {
+      if (provider === "zulip") {
+        const { error } = await signIn.oauth2({ providerId: "zulip", callbackURL: "/dashboard" });
+        if (error) throw error;
+        return;
+      }
+
       const { data, error } = await signIn.social({
         provider,
         callbackURL: "/dashboard",
@@ -62,6 +68,14 @@ export default function Login() {
           >
             <Key className="w-5 h-5" />
             Sign in with GitHub
+          </button>
+
+          <button
+            onClick={() => handleLogin("zulip")}
+            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl border border-emerald-500 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <MessageSquare className="w-5 h-5" />
+            Sign in with Zulip
           </button>
 
         </div>

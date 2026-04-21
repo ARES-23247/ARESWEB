@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { genericOAuth } from "better-auth/plugins";
 import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
@@ -17,6 +18,26 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
     }
 
     return betterAuth({
+        plugins: [
+            genericOAuth({
+                config: env.ZULIP_CLIENT_ID ? [
+                    {
+                        providerId: "zulip",
+                        clientId: env.ZULIP_CLIENT_ID as string,
+                        clientSecret: env.ZULIP_CLIENT_SECRET as string,
+                        authorizationEndpoint: `${env.ZULIP_URL || "https://ares.zulipchat.com"}/o/authorize/`,
+                        tokenEndpoint: `${env.ZULIP_URL || "https://ares.zulipchat.com"}/o/token/`,
+                        userInfoEndpoint: `${env.ZULIP_URL || "https://ares.zulipchat.com"}/api/v1/users/me`,
+                        mapping: {
+                            id: "user_id",
+                            email: "email",
+                            name: "full_name",
+                            image: "avatar_url"
+                        }
+                    }
+                ] : undefined
+            })
+        ],
         database: kyselyAdapter(kyselyDb, {
         }),
         onAPIError: {
