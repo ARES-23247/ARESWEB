@@ -135,6 +135,8 @@ apiRouter.route("/webhooks/github", githubWebhookRouter);
 apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
 
 // ── Global Platform Search (stays in aggregator — crosses domains) ───
+const searchCache = new Map<string, { data: any; expiresAt: number }>();
+
 apiRouter.get("/search", async (c) => {
   try {
     const q = c.req.query("q") || "";
@@ -144,6 +146,13 @@ apiRouter.get("/search", async (c) => {
     const safeQ = q.replace(/"/g, '""');
     const ftsQ = `"${safeQ}"*`;
 
+    // SEC-05: FTS Failsafe Cache (Denial of Wallet Protection)
+    // FTS searches are expensive D1 operations. Cache them per V8 isolate for 60 seconds.
+    const now = Date.now();
+    const cached = searchCache.get(safeQ);
+    if (cached && cached.expiresAt > now) {
+      return c.json(cached.data);
+    }
 
     const [postsReq, eventsReq, docsReq, usersReq] = await Promise.all([
       c.env.DB.prepare(
@@ -160,8 +169,19 @@ apiRouter.get("/search", async (c) => {
       ).bind(ftsQ).all()
     ]);
 
+    const payload = { 
+      results: [...(postsReq.results || []), ...(eventsReq.results || []), ...(docsReq.results || []), ...(usersReq.results || [])] 
+    };
 
-    return c.json({ results: [...(postsReq.results || []), ...(eventsReq.results || []), ...(docsReq.results || []), ...(usersReq.results || [])] });
+    searchCache.set(safeQ, { data: payload, expiresAt: now + 60000 });
+    
+    if (Math.random() < 0.05) {
+      for (const [k, v] of searchCache.entries()) {
+        if (v.expiresAt < now) searchCache.delete(k);
+      }
+    }
+
+    return c.json(payload);
   } catch (err) {
     console.error("D1 search error:", err);
     return c.json({ results: [] }, 500);
