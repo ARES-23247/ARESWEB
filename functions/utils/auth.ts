@@ -60,8 +60,14 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
         },
         secret: (() => {
             const s = env.BETTER_AUTH_SECRET as string | undefined;
-            if (!s) throw new Error("[FATAL] BETTER_AUTH_SECRET is not set. Refusing to start with an insecure default.");
-            return s;
+            if (s) return s;
+            // SEC-01: Allow a dev-only fallback ONLY on localhost
+            const isLocal = requestUrl && (requestUrl.includes("localhost") || requestUrl.includes("127.0.0.1"));
+            if (isLocal) {
+                console.warn("[AUTH] BETTER_AUTH_SECRET not set — using dev-only fallback. DO NOT deploy like this.");
+                return "ares-local-dev-secret-do-not-use-in-production";
+            }
+            throw new Error("[FATAL] BETTER_AUTH_SECRET is not set. Refusing to start with an insecure default.");
         })(),
         baseURL,
         trustedOrigins: [

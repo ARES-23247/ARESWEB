@@ -183,7 +183,7 @@ mediaRouter.put("/admin/:key/move", ensureAdmin, async (c) => {
 });
 
 // ── POST /admin/media/syndicate — Cross-post Asset to Socials (admin) ─
-mediaRouter.post("/admin/syndicate", async (c) => {
+mediaRouter.post("/admin/syndicate", ensureAdmin, async (c) => {
   try {
     const { key, caption } = await c.req.json();
     if (!key || !caption) {
