@@ -91,7 +91,7 @@ export default function Navbar() {
               <span className="text-xs font-bold text-zinc-300 group-hover:text-ares-gold uppercase tracking-wider">Sign In</span>
             </Link>
           )}
-          <Link to="/sponsors" className="clipped-button-sm bg-ares-red text-transparent hover:scale-105 hover:bg-ares-red transition-all shadow-[0_0_15px_#700000] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+          <Link to="/sponsors" className="px-5 py-2 font-bold uppercase tracking-wider text-xs rounded-xl bg-ares-red hover:scale-105 hover:bg-ares-red transition-all border border-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
             <span style={{ backgroundColor: '#c00000', color: '#ffffff' }}>Support Us</span>
           </Link>
         </div>

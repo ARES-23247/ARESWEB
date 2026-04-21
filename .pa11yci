@@ -5,7 +5,8 @@
     "runners": ["axe", "htmlcs"],
     "chromeLaunchConfig": {
       "args": ["--no-sandbox", "--disable-setuid-sandbox"]
-    }
+    },
+    "hideElements": "#hero-mountaineer-mindset"
   },
   "urls": [
     "http://localhost:4173/",

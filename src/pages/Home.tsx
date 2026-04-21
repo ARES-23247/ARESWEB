@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import SEO from "../components/SEO";
 import { GreekMeander } from "../components/GreekMeander";
 
@@ -8,13 +9,14 @@ export default function Home() {
       <SEO title="Home" description="Building the future of West Virginia robotics with the Mountaineer Mindset. ARES 23247." />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[95vh] flex items-center overflow-hidden bg-obsidian">
-        {/* Motif Background */}
-        <div
-          className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] z-0 opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
-          style={{ backgroundImage: "url('/favicon.png')" }}
-          aria-hidden="true"
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent z-1" aria-hidden="true"></div>
+        {/* Motif Background Isolated Layer */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true" style={{ isolation: 'isolate' }}>
+          <div
+            className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
+            style={{ backgroundImage: "url('/favicon.png')" }}
+          ></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent"></div>
+        </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-20 pb-16 flex flex-col items-start text-left">
           <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12 lg:gap-16 mb-6">
@@ -37,10 +39,9 @@ export default function Home() {
           </div>
 
           <div className="max-w-2xl mb-10 border-l-4 border-ares-bronze pl-6">
-            <p className="text-[#cccccc] text-xl md:text-2xl font-medium leading-relaxed bg-[#111111] p-3 rounded-lg shadow-xl inline-block">
-              Building the future of West Virginia robotics with the <span className="text-white font-bold bg-[#111111]">Mountaineer Mindset</span>.
-              <em className="bg-[#111111]">FIRST</em>® Tech Challenge Team #23247.
-            </p>
+            <div id="hero-mountaineer-mindset" className="text-xl md:text-2xl font-medium leading-relaxed p-3 rounded-lg inline-block" style={{ backgroundColor: '#111111', color: '#cccccc' }}>
+              Building the future of West Virginia robotics with the <strong style={{ backgroundColor: '#111111', color: '#ffffff' }}>Mountaineer Mindset</strong>. <em style={{ backgroundColor: '#111111', color: '#ffffff' }}>FIRST</em>® Tech Challenge Team #23247.
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-6 mt-4">
@@ -90,7 +91,7 @@ export default function Home() {
                 <h3 className="text-ares-red text-2xl font-bold mb-6 font-heading group-hover:text-ares-bronze transition-colors">{card.title}</h3>
                 <p className="text-obsidian/70 text-base leading-relaxed mb-8 flex-grow">{card.body}</p>
                 <Link to={card.link} className="text-ares-red font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
-                  {card.linkText} <span>→</span>
+                  <span style={{ backgroundColor: '#e8e8e8', color: '#c00000' }}>{card.linkText}</span> <ArrowRight size={16} className="text-ares-red" />
                 </Link>
               </div>
             ))}

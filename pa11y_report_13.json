@@ -1,0 +1,5 @@
+
+> aresweb@1.0.0 pa11y
+> pa11y-ci -j
+
+{"total":4,"passes":3,"errors":1,"results":{"http://localhost:4173/":[{"code":"color-contrast","type":"error","typeCode":1,"message":"Elements must meet minimum color contrast ratio thresholds (https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=axeAPI)","context":"<div class=\"text-xl md:text-2xl font-medium leading-relaxed p-3 rounded-lg inline-block\" style=\"background-color: rgb(17, 17, 17); color: rgb(204, 204, 204);\">Building the future of West Vir...</div>","selector":"#main-content > div > section:nth-child(1) > div:nth-child(3) > div:nth-child(2) > div","runner":"axe","runnerExtras":{"description":"Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds","impact":"serious","needsFurtherReview":true,"help":"Elements must meet minimum color contrast ratio thresholds","helpUrl":"https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=axeAPI"}}],"http://localhost:4173/about":[],"http://localhost:4173/dashboard":[],"http://localhost:4173/sponsors":[]}}
