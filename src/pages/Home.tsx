@@ -26,21 +26,21 @@ export default function Home() {
               className="w-32 md:w-56 lg:w-[22rem] h-32 md:h-56 lg:h-[22rem] object-contain drop-shadow-[0_0_25px_rgba(192,0,0,0.6)] shrink-0" 
             />
             <div>
-              <div className="inline-block bg-[#111111] px-2 py-1 mb-3 rounded shadow-lg">
-                <p className="text-ares-bronze font-bold uppercase tracking-[0.4em] text-sm md:text-base font-heading m-0">
+              <div className="inline-block bg-obsidian/40 backdrop-blur-md px-3 py-1 mb-3 rounded-lg border border-white/5 shadow-xl">
+                <p className="text-ares-bronze font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading m-0">
                   Appalachian Robotics & Engineering Society
                 </p>
               </div>
               <h1 className="text-6xl md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
-                <span className="bg-[#111111] px-4 py-2 rounded-xl inline-block mb-2 shadow-2xl">Engineered</span> <br />
-                <span className="bg-ares-red px-6 py-2 pb-3 mt-4 inline-block rounded-2xl shadow-[0_20px_25px_-5px_#080808]" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>To Inspire</span>
+                <span className="bg-obsidian/40 backdrop-blur-xl px-4 py-2 rounded-2xl inline-block mb-2 border border-white/5 shadow-2xl">Engineered</span> <br />
+                <span className="bg-ares-red px-6 py-2 pb-3 mt-4 inline-block rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)]" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>To Inspire</span>
               </h1>
             </div>
           </div>
 
           <div className="max-w-2xl mb-10 border-l-4 border-ares-bronze pl-6">
-            <div id="hero-mountaineer-mindset" className="text-xl md:text-2xl font-medium leading-relaxed p-3 rounded-lg inline-block" style={{ backgroundColor: '#111111', color: '#cccccc' }}>
-              Building the future of West Virginia robotics with the <strong style={{ backgroundColor: '#111111', color: '#ffffff' }}>Mountaineer Mindset</strong>. <em style={{ backgroundColor: '#111111', color: '#ffffff' }}>FIRST</em>® Tech Challenge Team #23247.
+            <div id="hero-mountaineer-mindset" className="text-xl md:text-2xl font-medium leading-relaxed p-4 rounded-2xl inline-block bg-obsidian/40 backdrop-blur-md border border-white/5 text-marble/80">
+              Building the future of West Virginia robotics with the <strong className="text-white">Mountaineer Mindset</strong>. <em className="text-white">FIRST</em>® Tech Challenge Team #23247.
             </div>
           </div>
 
@@ -48,7 +48,7 @@ export default function Home() {
             <Link to="/about" className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all shadow-xl" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>
               Meet the Team
             </Link>
-            <Link to="/sponsors" className="clipped-button bg-[#111111] border-2 border-ares-bronze text-ares-bronze hover:bg-ares-bronze hover:text-white transition-all">
+            <Link to="/sponsors" className="clipped-button bg-obsidian border-2 border-ares-bronze text-ares-bronze hover:bg-ares-bronze hover:text-white transition-all">
               Support Our Mission
             </Link>
           </div>
