@@ -1,4 +1,4 @@
-import { Cloud, Zap, Database, GlobeLock, DollarSign, HardDrive, LayoutDashboard } from "lucide-react";
+import { Cloud, Zap, Database, GlobeLock, DollarSign, HardDrive, LayoutDashboard, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import GitHubHeatmap from "../components/GitHubHeatmap";
 
@@ -106,6 +106,17 @@ export default function TechStack() {
               To support robotics pits entirely devoid of WiFi, we employ native PWA Service Workers routing `NetworkFirst`. The site silently caches React ASTs & D1 Payloads—launching perfectly offline anywhere in the world.
             </p>
             <div className="text-xs font-bold uppercase tracking-widest text-green-500 mt-auto">Cost: Open Source</div>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl flex flex-col">
+            <div className="w-12 h-12 rounded-full border border-teal-500/30 flex items-center justify-center bg-teal-500/10 text-teal-500 mb-6">
+              <MessageSquare size={24} />
+            </div>
+            <h3 className="text-2xl font-bold font-heading mb-4">Zulip Cloud</h3>
+            <p className="text-marble/70 leading-relaxed mb-4 flex-1">
+              For our team communications, we proudly use <strong>Zulip</strong>. Their generous donation of Zulip Cloud Standard provides our students and mentors with an organized, thread-based workspace that keeps our engineering and outreach discussions seamlessly coordinated.
+            </p>
+            <div className="text-xs font-bold uppercase tracking-widest text-teal-500 mt-auto">Cost: Sponsored</div>
           </div>
         </div>
 
