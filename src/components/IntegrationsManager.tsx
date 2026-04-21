@@ -21,7 +21,7 @@ export default function IntegrationsManager() {
       try {
         const res = await fetch("/dashboard/api/admin/settings", { credentials: "include" });
         if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        const json = await res.json();
+        const json = await res.json() as { settings: SettingsData };
         return json;
       } catch (err) {
         console.error("[IntegrationsManager] Fetch error:", err);

@@ -1,12 +1,12 @@
 import { Hono, Context } from "hono";
-import { Bindings } from "./_shared";
+import { AppEnv,  Bindings  } from "./_shared";
 
-const tbaRouter = new Hono<{ Bindings: Bindings }>();
+const tbaRouter = new Hono<AppEnv>();
 
 // SEC-DoW: Cache TBA responses in-memory to prevent external API quota exhaustion
 const tbaCache = new Map<string, { data: unknown; expiresAt: number }>();
 
-async function getTBA(path: string, c: Context<{ Bindings: Bindings }>) {
+async function getTBA(path: string, c: Context<AppEnv>) {
   // Check in-memory cache first (5 minute TTL)
   const now = Date.now();
   const cached = tbaCache.get(path);
@@ -40,7 +40,7 @@ async function getTBA(path: string, c: Context<{ Bindings: Bindings }>) {
 // ── GET /tba/rankings/:eventKey ───────────────────────────────────────
 tbaRouter.get("/rankings/:eventKey", async (c) => {
   try {
-    const eventKey = c.req.param("eventKey");
+    const eventKey = (c.req.param("eventKey") || "");
     const data = await getTBA(`/event/${eventKey}/rankings`, c);
     return c.json(data);
   } catch (err) {
@@ -52,7 +52,7 @@ tbaRouter.get("/rankings/:eventKey", async (c) => {
 // ── GET /tba/matches/:eventKey ────────────────────────────────────────
 tbaRouter.get("/matches/:eventKey", async (c) => {
   try {
-    const eventKey = c.req.param("eventKey");
+    const eventKey = (c.req.param("eventKey") || "");
     const data = (await getTBA(`/event/${eventKey}/matches/simple`, c)) as Array<{ time?: number; [key: string]: unknown }>;
     const sorted = (data || []).sort((a: { time?: number }, b: { time?: number }) => (a.time || 0) - (b.time || 0));
     return c.json({ matches: sorted });

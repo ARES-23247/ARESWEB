@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, getDbSettings } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, getDbSettings  } from "./_shared";
 
-const mediaRouter = new Hono<{ Bindings: Bindings }>();
-const adminMediaRouter = new Hono<{ Bindings: Bindings }>();
+const mediaRouter = new Hono<AppEnv>();
+const adminMediaRouter = new Hono<AppEnv>();
 
 // ── POST /admin/upload — File Upload via R2 & AI Image Accessibility ──
 adminMediaRouter.post("/upload", ensureAdmin, async (c) => {
@@ -69,7 +69,7 @@ adminMediaRouter.post("/upload", ensureAdmin, async (c) => {
 
 // ── GET /media/:key — proxy R2 images ─────────────────────────────────
 mediaRouter.get("/:key", async (c) => {
-  const key = c.req.param("key");
+  const key = (c.req.param("key") || "");
   const object = await c.env.ARES_STORAGE.get(key);
 
   if (!object) {
@@ -104,12 +104,12 @@ mediaRouter.get("/", async (c) => {
     const publicKeys = new Set(results.map(r => r.key));
 
     const merged = objects.objects
-      .filter(obj => publicKeys.has(obj.key))
+      .filter(obj => publicKeys.has((obj as any).key))
       .map(obj => ({
         ...obj,
-        url: `/api/media/${obj.key}`,
+        url: `/api/media/${(obj as any).key}`,
         folder: "Gallery",
-        tags: results.find(r => r.key === obj.key)?.tags || ""
+        tags: results.find(r => r.key === (obj as any).key)?.tags || ""
       }));
 
     const payload = { media: merged };
@@ -137,9 +137,9 @@ adminMediaRouter.get("/", async (c) => {
 
     const merged = objects.objects.map(obj => ({
       ...obj,
-      url: `/api/media/${obj.key}`,
-      folder: metaMap.get(obj.key)?.folder || "Library",
-      tags: metaMap.get(obj.key)?.tags || ""
+      url: `/api/media/${(obj as any).key}`,
+      folder: metaMap.get((obj as any).key)?.folder || "Library",
+      tags: metaMap.get((obj as any).key)?.tags || ""
     }));
 
     return c.json({ media: merged });
@@ -152,7 +152,7 @@ adminMediaRouter.get("/", async (c) => {
 // ── DELETE /admin/media/:key — delete R2 object (admin) ─────────────────
 adminMediaRouter.delete("/:key", ensureAdmin, async (c) => {
   try {
-    const key = c.req.param("key") as string;
+    const key = (c.req.param("key") || "") as string;
     // ensureAdmin already validated the session — use context
     const sessionUser = c.get("sessionUser") as { role: string } | undefined;
     const role = sessionUser?.role || "user";
@@ -166,7 +166,7 @@ adminMediaRouter.delete("/:key", ensureAdmin, async (c) => {
       // Authors trigger soft-deletion mechanism (archived/ prefix)
       const obj = await c.env.ARES_STORAGE.get(key);
       if (obj) {
-        await c.env.ARES_STORAGE.put(`archived/${key}`, obj.body, { httpMetadata: obj.httpMetadata });
+        await c.env.ARES_STORAGE.put(`archived/${key}`, (obj as any).body, { httpMetadata: (obj as any).httpMetadata });
         await c.env.ARES_STORAGE.delete(key);
       }
       await c.env.DB.prepare("UPDATE media_tags SET folder = 'Archived', key = ? WHERE key = ?").bind(`archived/${key}`, key).run().catch(() => {});
@@ -182,7 +182,7 @@ adminMediaRouter.delete("/:key", ensureAdmin, async (c) => {
 // ── PUT /admin/media/:key/move — change folder (admin) ─────────────────
 adminMediaRouter.put("/:key/move", ensureAdmin, async (c) => {
   try {
-    const key = c.req.param("key") as string;
+    const key = (c.req.param("key") || "") as string;
     const body = await c.req.json();
     const newFolder = body?.folder || "";
 

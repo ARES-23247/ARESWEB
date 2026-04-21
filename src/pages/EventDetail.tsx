@@ -16,6 +16,7 @@ interface EventRow {
   description: string;
   cover_image: string | null;
   is_potluck: number | null;
+  is_volunteer: number | null;
 }
 
 import { Calendar, Edit2 } from "lucide-react";

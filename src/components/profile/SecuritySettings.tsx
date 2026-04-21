@@ -18,7 +18,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
     setError("");
     setSuccess("");
     try {
-      const { error } = await authClient.emailVerification.sendVerificationEmail({
+      const { error } = await (authClient as any).emailVerification.sendVerificationEmail({
         email: session?.user.email || "",
         callbackURL: window.location.origin + "/dashboard/profile"
       });
@@ -34,7 +34,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
   const start2FASetup = async () => {
     setError("");
     try {
-      const { data, error } = await authClient.twoFactor.enable();
+      const { data, error } = await (authClient as any).twoFactor.enable();
       if (error) throw new Error(error.message);
       if (data) {
         setTwoFactorData({ qrCode: data.totpURI, secret: data.secret });
@@ -48,7 +48,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
   const verifyAndEnable2FA = async () => {
     setError("");
     try {
-      const { error } = await authClient.twoFactor.verifyTotp({
+      const { error } = await (authClient as any).twoFactor.verifyTotp({
         code: otpCode
       });
       if (error) throw new Error(error.message);
@@ -67,7 +67,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
     if (!confirm("Are you sure you want to disable 2FA? This makes your account less secure.")) return;
     setError("");
     try {
-      const { error } = await authClient.twoFactor.disable();
+      const { error } = await (authClient as any).twoFactor.disable();
       if (error) throw new Error(error.message);
       setSuccess("Two-factor authentication disabled.");
       await refetchSession();
@@ -112,19 +112,19 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
       <div className="bg-zinc-950/50 border border-zinc-800 p-4 ares-cut-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${session?.user.twoFactorEnabled ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-500"}`}>
+            <div className={`p-2 rounded-full ${(session?.user as any)?.twoFactorEnabled ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-500"}`}>
               <Key size={20} />
             </div>
             <div>
               <p className="text-sm font-bold text-white">Two-Factor Authentication (2FA)</p>
               <p className="text-xs text-zinc-500">
-                {session?.user.twoFactorEnabled 
+                {(session?.user as any)?.twoFactorEnabled 
                   ? "Active: Your account is protected with TOTP." 
                   : "Inactive: Add an extra layer of security to your account."}
               </p>
             </div>
           </div>
-          {!session?.user.twoFactorEnabled ? (
+          {!(session?.user as any)?.twoFactorEnabled ? (
             <button 
               onClick={start2FASetup}
               className="px-4 py-2 bg-white text-black text-xs font-bold ares-cut-sm hover:bg-ares-red hover:text-white transition-all"

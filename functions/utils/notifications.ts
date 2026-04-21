@@ -13,7 +13,7 @@ export async function emitNotification(
     message,
     link,
     external = false,
-    _priority = "low"
+    priority = "low"
   }: {
     userId: string;
     title: string;
@@ -58,7 +58,7 @@ export async function notifyAdmins(
     message,
     link,
     external = false,
-    _priority = "medium"
+    priority = "medium"
   }: {
     title: string;
     message: string;

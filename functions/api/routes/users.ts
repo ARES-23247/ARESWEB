@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin  } from "./_shared";
 import { encrypt } from "../../utils/crypto";
 
-const usersRouter = new Hono<{ Bindings: Bindings }>();
+const usersRouter = new Hono<AppEnv>();
 
 // All routes here are admin-only
 usersRouter.use("/*", ensureAdmin);
@@ -27,7 +27,7 @@ usersRouter.get("/", async (c) => {
 // ── PATCH /:id — update user role or type ────
 usersRouter.patch("/:id", async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     const body = await c.req.json();
     const { role, member_type } = body;
 
@@ -50,7 +50,7 @@ usersRouter.patch("/:id", async (c) => {
 // ── PUT /:id — admin profile override ──────────
 usersRouter.put("/:id", async (c) => {
   try {
-    const userId = c.req.param("id");
+    const userId = (c.req.param("id") || "");
     const body = await c.req.json();
     const {
       nickname, first_name, last_name, pronouns, phone, contact_email,
@@ -130,7 +130,7 @@ usersRouter.put("/:id", async (c) => {
 // ── DELETE /:id — delete user ────────────────
 usersRouter.delete("/:id", async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     
     // Cascade delete all related user data
     await c.env.DB.batch([

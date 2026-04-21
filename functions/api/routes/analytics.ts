@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, checkWriteRateLimit } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, checkWriteRateLimit  } from "./_shared";
 
-const analyticsRouter = new Hono<{ Bindings: Bindings }>();
+const analyticsRouter = new Hono<AppEnv>();
 
 // ── POST /analytics/track — log a page view ──────────────────────────
 analyticsRouter.post("/track", async (c) => {

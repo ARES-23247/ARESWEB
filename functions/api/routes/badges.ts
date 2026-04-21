@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, getSessionUser } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, getSessionUser  } from "./_shared";
 import { sendZulipMessage } from "../../utils/zulipSync";
 
-const badgesRouter = new Hono<{ Bindings: Bindings }>();
+const badgesRouter = new Hono<AppEnv>();
 
 // ── GET /badges — list ALL available badges ────────────────────────
 badgesRouter.get("/", async (c) => {
@@ -41,7 +41,7 @@ badgesRouter.post("/save", ensureAdmin, async (c) => {
 // ── POST /users/:userId/award — Award a badge (admin) ──────────────────
 badgesRouter.post("/users/:userId/award", ensureAdmin, async (c) => {
   try {
-    const userId = c.req.param("userId");
+    const userId = (c.req.param("userId") || "");
     const { badge_id } = await c.req.json();
     const user = await getSessionUser(c);
     const sessionId = user?.id || "system";
@@ -85,8 +85,8 @@ badgesRouter.post("/users/:userId/award", ensureAdmin, async (c) => {
 // ── DELETE /users/:userId/:badgeId/revoke — Revoke a badge (admin) ──────
 badgesRouter.delete("/users/:userId/:badgeId/revoke", ensureAdmin, async (c) => {
   try {
-    const userId = c.req.param("userId");
-    const badgeId = c.req.param("badgeId");
+    const userId = (c.req.param("userId") || "");
+    const badgeId = (c.req.param("badgeId") || "");
 
     await c.env.DB.prepare(
       "DELETE FROM user_badges WHERE user_id = ? AND badge_id = ?"

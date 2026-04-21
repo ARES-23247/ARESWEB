@@ -35,7 +35,7 @@ export default function SponsorROI() {
         if (!r.ok) {
           throw new Error("Invalid or expired token");
         }
-        return r.json();
+        return r.json() as Promise<SponsorROI>;
       })
       .then((d) => {
         if (!cancelled) {

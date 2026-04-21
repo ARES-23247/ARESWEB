@@ -20,7 +20,7 @@ export default function Leaderboard() {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/leaderboard")
-      .then(r => r.json())
+      .then(r => r.json() as Promise<{ leaderboard: LeaderboardUser[] }>)
       .then(d => {
         if (!cancelled && d.leaderboard) {
           setLeaders(d.leaderboard);

@@ -35,7 +35,7 @@ export default function Join() {
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
+        const errData = await response.json().catch(() => ({})) as { error?: string };
         throw new Error(errData.error || "Failed");
       }
       setSubmitStatus("success");

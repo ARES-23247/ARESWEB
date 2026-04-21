@@ -14,6 +14,7 @@ export interface EventItem {
   is_deleted?: number;
   status?: string;
   revision_of?: string;
+  category?: string;
 }
 
 export interface PostItem {

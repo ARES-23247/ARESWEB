@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { Bindings, ensureAdmin, getSocialConfig } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, getSocialConfig  } from "./_shared";
 import { buildGitHubConfig, fetchProjectBoard, fetchProjectFields, createProjectItem, updateProjectItemStatus, queryProjectItem } from "../../utils/githubProjects";
 
-const githubRouter = new Hono<{ Bindings: Bindings }>();
+const githubRouter = new Hono<AppEnv>();
 
 interface WeekData {
   total: number;
@@ -175,7 +175,7 @@ githubRouter.get("/projects/fields", ensureAdmin, async (c) => {
 // GET /github/projects/items/:id — Single project item
 githubRouter.get("/projects/items/:id", ensureAdmin, async (c) => {
   try {
-    const itemId = c.req.param("id");
+    const itemId = (c.req.param("id") || "");
     const config = await getSocialConfig(c);
     const ghConfig = buildGitHubConfig(config);
     if (!ghConfig) {
@@ -212,7 +212,7 @@ githubRouter.post("/projects/items", ensureAdmin, async (c) => {
 // PATCH /github/projects/items/:id/status — Update item status
 githubRouter.patch("/projects/items/:id/status", ensureAdmin, async (c) => {
   try {
-    const itemId = c.req.param("id");
+    const itemId = (c.req.param("id") || "");
     const { statusFieldId, statusOptionId } = await c.req.json<{ statusFieldId: string; statusOptionId: string }>();
     if (!statusFieldId || !statusOptionId) {
       return c.json({ error: "statusFieldId and statusOptionId are required" }, 400);

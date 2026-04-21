@@ -32,19 +32,26 @@ const SponsorTokensManager = lazy(() => import("@/components/SponsorTokensManage
 // ── NavButton Component ────────────────────────────────────────────
 const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false, currentPath }: { tab: string, icon?: React.ElementType, label: string, disabled?: boolean, sub?: boolean, currentPath: string }) => {
   const isActive = currentPath === `/dashboard/${tab}` || (tab === "profile" && (currentPath === "/dashboard" || currentPath === "/dashboard/"));
-  const Component = disabled ? "button" : Link;
+  const sharedClass = `w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left ${
+    isActive 
+      ? "bg-ares-red/10 text-white border border-ares-red/30 shadow-[0_0_15px_rgba(192,0,0,0.1)]" 
+      : "text-marble/70 hover:bg-white/5 hover:text-white border border-transparent"
+  } ${sub ? "pl-11 text-sm font-bold" : "text-sm"} ${disabled ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`;
+
+  if (disabled) {
+    return (
+      <button disabled className={sharedClass}>
+        {Icon && <Icon size={18} className={isActive ? "text-white" : "text-marble/50"} />}
+        <span className="truncate">{label}</span>
+      </button>
+    );
+  }
+
   return (
-    <Component
-      {...(disabled ? { disabled: true } : { to: `/dashboard/${tab}` })}
-      className={`w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left ${
-        isActive 
-          ? "bg-ares-red/10 text-white border border-ares-red/30 shadow-[0_0_15px_rgba(192,0,0,0.1)]" 
-          : "text-marble/70 hover:bg-white/5 hover:text-white border border-transparent"
-      } ${sub ? "pl-11 text-sm font-bold" : "text-sm"} ${disabled ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
-    >
+    <Link to={`/dashboard/${tab}`} className={sharedClass}>
       {Icon && <Icon size={18} className={isActive ? "text-white" : "text-marble/50"} />}
       <span className="truncate">{label}</span>
-    </Component>
+    </Link>
   );
 };
 
@@ -97,8 +104,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (session && isAdmin) {
       fetch("/api/inquiries/admin")
-        .then(res => res.json())
-        .then((data: { inquiries?: { status: string }[] }) => {
+        .then(res => res.json() as Promise<{ inquiries?: { status: string }[] }>)
+        .then((data) => {
           if (data.inquiries) {
             setPendingCount(data.inquiries.filter((i: { status: string }) => i.status === "pending").length);
           }
@@ -110,9 +117,9 @@ export default function Dashboard() {
     fetch("/api/profile/me")
       .then(async (res) => {
         if (!res.ok) throw new Error("Not Authenticated");
-        return res.json();
+        return res.json() as Promise<{ auth: Record<string, unknown>, member_type: string, first_name: string, last_name: string, nickname: string }>;
       })
-      .then((data: { auth: Record<string, unknown>, member_type: string, first_name: string, last_name: string, nickname: string }) => {
+      .then((data) => {
         setEnrichedSession({
           authenticated: true,
           user: {

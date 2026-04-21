@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings, getSessionUser, getDbSettings } from "../_shared";
+import { AppEnv,  Bindings, getSessionUser, getDbSettings  } from "../_shared";
 import { pullEventsFromGcal } from "../../../utils/gcalSync";
 
-const syncRouter = new Hono<{ Bindings: Bindings }>();
+const syncRouter = new Hono<AppEnv>();
 
 // ── POST /sync — Google Calendar Sync (admin) ──────────────
 syncRouter.post("/", async (c) => {

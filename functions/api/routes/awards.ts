@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, parsePagination } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, parsePagination  } from "./_shared";
 
-const awardsRouter = new Hono<{ Bindings: Bindings }>();
+const awardsRouter = new Hono<AppEnv>();
 
 // ── GET / ── list all awards ──────────
 awardsRouter.get("/", async (c) => {
@@ -55,7 +55,7 @@ awardsRouter.post("/", ensureAdmin, async (c) => {
 // ── DELETE /:id ── remove an award ────────────────
 awardsRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare("DELETE FROM awards WHERE id = ?").bind(id).run();
     return c.json({ success: true });
   } catch (err) {

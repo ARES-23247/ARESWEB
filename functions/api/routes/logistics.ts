@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, getSessionUser } from "./_shared";
+import { AppEnv,  Bindings, getSessionUser  } from "./_shared";
 
-const logisticsRouter = new Hono<{ Bindings: Bindings }>();
+const logisticsRouter = new Hono<AppEnv>();
 
 // ── GET /summary — aggregated logistics for event planning ──
 logisticsRouter.get("/summary", async (c) => {

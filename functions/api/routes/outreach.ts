@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, parsePagination } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, parsePagination  } from "./_shared";
 
-const outreachRouter = new Hono<{ Bindings: Bindings }>();
+const outreachRouter = new Hono<AppEnv>();
 
 // EFF-02: Shared volunteer event query
 async function fetchVolunteerEvents(db: D1Database) {
@@ -79,7 +79,7 @@ outreachRouter.post("/", ensureAdmin, async (c) => {
 // ── DELETE /:id ── remove an outreach log ────────────────
 outreachRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare("DELETE FROM outreach_logs WHERE id = ?").bind(id).run();
     return c.json({ success: true });
   } catch (err) {

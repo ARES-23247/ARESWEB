@@ -200,7 +200,7 @@ inquiriesRouter.post("/", async (c) => {
 // ── PATCH /:id/status — update status (admin) ──────────────────────────────────
 adminInquiriesRouter.patch("/:id/status", ensureAdmin, async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     const { status } = await c.req.json();
     
     const VALID_STATUSES = ["pending", "approved", "resolved", "rejected"];
@@ -222,7 +222,7 @@ adminInquiriesRouter.patch("/:id/status", ensureAdmin, async (c) => {
 // ── DELETE /:id — delete inquiry (admin) ────────────────────────────────────────
 adminInquiriesRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare("DELETE FROM inquiries WHERE id = ?").bind(id).run();
     await logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry permanently deleted");
     return c.json({ success: true });

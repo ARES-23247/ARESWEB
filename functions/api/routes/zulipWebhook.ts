@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { Bindings, getSocialConfig } from "./_shared";
+import { AppEnv, getSocialConfig } from "./_shared";
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem, fetchProjectFields, updateProjectItemStatus } from "../../utils/githubProjects";
 
-const zulipWebhookRouter = new Hono<{ Bindings: Bindings }>();
+const zulipWebhookRouter = new Hono<AppEnv>();
 
 interface ZulipOutgoingPayload {
   token: string;
@@ -13,6 +13,7 @@ interface ZulipOutgoingPayload {
     content: string;
     display_recipient: string;
     subject: string;
+    topic?: string;
     type: string;
   };
   trigger: string;
@@ -227,8 +228,9 @@ zulipWebhookRouter.post("/", async (c) => {
       default:
         // ── Phase 1: Bi-directional Comments Sync ──
         // Only process stream messages that are not meant as commands
-        if (body.message?.type === "stream" && body.message?.topic) {
-          const topicParts = body.message.topic.split("/");
+        if (body.message?.type === "stream" && (body.message.topic || body.message.subject)) {
+          const topicStr = body.message.topic || body.message.subject;
+          const topicParts = topicStr.split("/");
           if (topicParts.length >= 2 && ["post", "event", "doc"].includes(topicParts[0])) {
             const targetType = topicParts[0];
             const targetId = topicParts.slice(1).join("/");
@@ -253,7 +255,7 @@ zulipWebhookRouter.post("/", async (c) => {
                 targetId, 
                 userId, 
                 rawContent, 
-                String(body.trigger === "message" ? (body as Record<string, unknown>).message_id || "0" : "0"), 
+                String(body.trigger === "message" ? (body as unknown as Record<string, unknown>).message_id || "0" : "0"), 
                 body.message.sender_email // Storing email as sender_id for easier matching
               ).run();
               return c.json({ content: "" }); // empty response to not trigger bot reply

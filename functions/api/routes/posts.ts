@@ -35,7 +35,7 @@ postsRouter.get("/", async (c) => {
 
 // ── GET /posts/:slug — single blog post ──────────────────────────────
 postsRouter.get("/:slug", async (c) => {
-  const slug = c.req.param("slug");
+  const slug = (c.req.param("slug") || "");
   try {
     const row = await c.env.DB.prepare(
       `SELECT p.slug, p.title, p.date, p.ast, p.cf_email,
@@ -70,7 +70,7 @@ postsRouter.get("/list", ensureAdmin, async (c) => {
 
 // ── GET /:slug/detail — single blog post (admin) ─────────────────
 postsRouter.get("/:slug/detail", ensureAdmin, async (c) => {
-  const slug = c.req.param("slug");
+  const slug = (c.req.param("slug") || "");
   try {
     const row = await c.env.DB.prepare(
       "SELECT slug, title, date, snippet, thumbnail, content, is_deleted, status, revision_of, published_at FROM posts WHERE slug = ?"
@@ -170,7 +170,9 @@ async function handlePostSave(c: Context<AppEnv>) {
       const socialsFilter = (body as { socials?: Record<string, boolean> }).socials || null;
 
       try {
-        await dispatchSocials({
+        await dispatchSocials(
+          c.env.DB,
+          {
            title: body.title,
            url: `${new URL(c.req.url).origin}/blog/${slug}`,
            snippet: snippet || "Read the latest engineering update from ARES 23247!",
@@ -213,7 +215,7 @@ postsRouter.put("/:slug", ensureAuth, async (c) => {
 
 async function handlePostEdit(c: Context<AppEnv>) {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const body = await c.req.json<{
       title: string;
       author?: string;
@@ -272,7 +274,7 @@ async function handlePostEdit(c: Context<AppEnv>) {
 // ── DELETE /:slug — soft-delete (admin) ──────────────────
 postsRouter.delete("/:slug", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     await c.env.DB.prepare("UPDATE posts SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
@@ -284,7 +286,7 @@ postsRouter.delete("/:slug", ensureAdmin, async (c) => {
 // ── PATCH /:slug/undelete — restore (admin) ───────────────
 postsRouter.patch("/:slug/undelete", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     await c.env.DB.prepare("UPDATE posts SET is_deleted = 0 WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
@@ -296,7 +298,7 @@ postsRouter.patch("/:slug/undelete", ensureAdmin, async (c) => {
 // ── DELETE /:slug/purge — PERMANENTLY delete (admin) ──────
 postsRouter.delete("/:slug/purge", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
@@ -310,7 +312,7 @@ postsRouter.patch("/:slug/approve", ensureAdmin, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     
     const result = await approvePost(c, slug);
     if (!result.success) return c.json({ error: result.error }, 404);
@@ -328,7 +330,7 @@ postsRouter.patch("/:slug/reject", ensureAdmin, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const body = await c.req.json().catch(() => ({})) as { reason?: string };
     
     const row = await c.env.DB.prepare("SELECT title, cf_email FROM posts WHERE slug = ?").bind(slug).first<{ title: string, cf_email: string }>();
@@ -361,7 +363,7 @@ postsRouter.patch("/:slug/reject", ensureAdmin, async (c) => {
 // ── POST /:slug/repush — manual social broadcast (admin) ──
 postsRouter.post("/:slug/repush", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const { socials } = await c.req.json<{ socials: Record<string, boolean> }>();
     
     const post = await c.env.DB.prepare(
@@ -373,7 +375,9 @@ postsRouter.post("/:slug/repush", ensureAdmin, async (c) => {
     const socialConfig = await getSocialConfig(c);
     
     try {
-      await dispatchSocials({
+      await dispatchSocials(
+        c.env.DB,
+        {
         title: post.title,
         url: `${new URL(c.req.url).origin}/blog/${slug}`,
         snippet: extractAstText(post.snippet || "").substring(0, 250) || "Read the latest update from ARES 23247!",
@@ -395,7 +399,7 @@ postsRouter.post("/:slug/repush", ensureAdmin, async (c) => {
 // ── GET /:slug/history — list post history (admin) ─────────
 postsRouter.get("/:slug/history", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const history = await getPostHistory(c, slug);
     return c.json({ history });
   } catch (err) {
@@ -407,8 +411,8 @@ postsRouter.get("/:slug/history", ensureAdmin, async (c) => {
 // ── PATCH /:slug/history/:id/restore — restore from history (admin) ──
 postsRouter.patch("/:slug/history/:id/restore", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
-    const id = c.req.param("id");
+    const slug = (c.req.param("slug") || "");
+    const id = (c.req.param("id") || "");
     const user = await getSessionUser(c);
     
     const result = await restorePostFromHistory(c, slug, id, user?.email || "anonymous_admin");

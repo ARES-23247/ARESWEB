@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../../utils/site.config";
-import { Bindings, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination } from "../_shared";
+import { AppEnv,  Bindings, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination  } from "../_shared";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 
-const adminRouter = new Hono<{ Bindings: Bindings }>();
+const adminRouter = new Hono<AppEnv>();
 
 // ── GET /admin/events — list all events (admin) ─────────────────────────
 adminRouter.get("/", async (c) => {
@@ -29,7 +29,7 @@ adminRouter.get("/", async (c) => {
 
 // ── GET /admin/events/:id — single event (admin) ────────────────────────
 adminRouter.get("/:id", async (c) => {
-  const id = c.req.param("id");
+  const id = (c.req.param("id") || "");
   try {
     const row = await c.env.DB.prepare(
       "SELECT id, title, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, is_deleted, status, is_potluck, is_volunteer FROM events WHERE id = ?"
@@ -87,13 +87,11 @@ adminRouter.post("/", async (c) => {
 
     if (socials) {
        try {
-         await dispatchSocials({
-            title: title,
-            url: `https://aresfirst.org/events`,
+         await dispatchSocials(c.env.DB, {
+            title: title, url: `https://aresfirst.org/events`,
             snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png",
-            baseUrl: new URL(c.req.url).origin
-         }, socialConfig, socials);
+            baseUrl: new URL(c.req.url).origin} as any as any, socialConfig, socials);
        } catch (err: unknown) {
          warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
        }
@@ -126,7 +124,7 @@ adminRouter.post("/", async (c) => {
 // ── PUT /admin/events/:id — edit an event (admin) ────────────────────────
 adminRouter.put("/:id", async (c) => {
   try {
-    const paramId = c.req.param("id");
+    const paramId = (c.req.param("id") || "");
     const body = await c.req.json();
     const { title, category, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft, publishedAt } = body;
     const cat = category || 'internal';
@@ -170,13 +168,11 @@ adminRouter.put("/:id", async (c) => {
 
      if (socials) {
        try {
-         await dispatchSocials({
-            title: title,
-            url: `https://aresfirst.org/events`,
+         await dispatchSocials(c.env.DB, {
+            title: title, url: `https://aresfirst.org/events`,
             snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png",
-            baseUrl: new URL(c.req.url).origin
-         }, socialConfig, socials);
+            baseUrl: new URL(c.req.url).origin} as any as any, socialConfig, socials);
        } catch (err: unknown) {
          warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
        }
@@ -192,7 +188,7 @@ adminRouter.put("/:id", async (c) => {
 // ── DELETE /admin/events/:id — soft-delete (admin) ──────────────────────
 adminRouter.delete("/:id", async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare("UPDATE events SET is_deleted = 1 WHERE id = ?").bind(id).run();
     return c.json({ success: true });
   } catch (err) {
@@ -204,7 +200,7 @@ adminRouter.delete("/:id", async (c) => {
 // ── PATCH /admin/events/:id/undelete — restore (admin) ──────────────────
 adminRouter.patch("/:id/undelete", async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare("UPDATE events SET is_deleted = 0 WHERE id = ?").bind(id).run();
     return c.json({ success: true });
   } catch (err) {
@@ -216,7 +212,7 @@ adminRouter.patch("/:id/undelete", async (c) => {
 // ── DELETE /admin/events/:id/purge — PERMANENTLY delete (admin) ────────
 adminRouter.delete("/:id/purge", async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     const dbSettings = await getDbSettings(c);
     const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
     const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
@@ -243,7 +239,7 @@ adminRouter.patch("/:id/approve", async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
 
     interface EventRevisionRow { 
       revision_of: string; 
@@ -280,7 +276,7 @@ adminRouter.patch("/:id/reject", async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     const body = (await c.req.json().catch(() => ({}))) as { reason?: string };
     await c.env.DB.prepare("UPDATE events SET status = 'rejected' WHERE id = ?").bind(id).run();
     return c.json({ success: true, reason: body.reason || "No reason provided" });
@@ -293,13 +289,13 @@ adminRouter.patch("/:id/reject", async (c) => {
 // ── POST /admin/events/:id/repush — manual social broadcast (admin) ──
 adminRouter.post("/:id/repush", async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     const { socials } = await c.req.json<{ socials: Record<string, boolean> }>();
     const event = await c.env.DB.prepare("SELECT title, description, cover_image FROM events WHERE id = ?").bind(id).first<{title: string, description: string, cover_image: string}>();
     if (!event) return c.json({ error: "Event not found" }, 404);
     const socialConfig = await getSocialConfig(c);
     try {
-      await dispatchSocials({ title: event.title, url: `${siteConfig.urls.base}/events`, snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", coverImageUrl: event.cover_image || "/gallery_1.png", baseUrl: new URL(c.req.url).origin }, socialConfig, socials);
+      await dispatchSocials(c.env.DB, { title: event.title, url: `${siteConfig.urls.base}/events`, snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", coverImageUrl: event.cover_image || "/gallery_1.png", baseUrl: new URL(c.req.url).origin} as any, socialConfig, socials);
     } catch (err: unknown) { return c.json({ error: `Network Repush Failed: ${(err as Error).message || String(err)}` }, 502); }
     return c.json({ success: true });
   } catch (err) {

@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import { Bindings, getSessionUser } from "../_shared";
+import { AppEnv,  Bindings, getSessionUser  } from "../_shared";
 
-const signupsRouter = new Hono<{ Bindings: Bindings }>();
+const signupsRouter = new Hono<AppEnv>();
 
 // ── Event Sign-Ups ────────────────────────────────────────────────────
 signupsRouter.get("/:id/signups", async (c) => {
-  const eventId = c.req.param("id");
+  const eventId = (c.req.param("id") || "");
   const user = await getSessionUser(c);
 
   try {
@@ -92,7 +92,7 @@ signupsRouter.post("/:id/signups", async (c) => {
   if (!user || user.role === "unverified") {
     return c.json({ error: "Forbidden: Your account is pending team verification." }, 403);
   }
-  const eventId = c.req.param("id");
+  const eventId = (c.req.param("id") || "");
   const { bringing, notes, prep_hours } = await c.req.json() as { bringing: string; notes: string; prep_hours?: number };
   try {
     await c.env.DB.prepare(
@@ -109,7 +109,7 @@ signupsRouter.post("/:id/signups", async (c) => {
 signupsRouter.delete("/:id/signups/me", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
-  const eventId = c.req.param("id");
+  const eventId = (c.req.param("id") || "");
   try {
     await c.env.DB.prepare("DELETE FROM event_signups WHERE event_id = ? AND user_id = ?").bind(eventId, user.id).run();
     return c.json({ success: true });
@@ -120,7 +120,7 @@ signupsRouter.delete("/:id/signups/me", async (c) => {
 });
 
 signupsRouter.patch("/:id/signups/me/attendance", async (c) => {
-  const eventId = c.req.param("id");
+  const eventId = (c.req.param("id") || "");
   const user = await getSessionUser(c);
   if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 401);
 
@@ -141,8 +141,8 @@ signupsRouter.patch("/:id/signups/me/attendance", async (c) => {
 
 signupsRouter.patch("/:id/signups/:userId/attendance", async (c) => {
   try {
-    const eventId = c.req.param("id");
-    const userId = c.req.param("userId");
+    const eventId = (c.req.param("id") || "");
+    const userId = (c.req.param("userId") || "");
     const user = await getSessionUser(c);
     if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) {
       return c.json({ error: "Unauthorized" }, 401);

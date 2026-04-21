@@ -106,7 +106,7 @@ export default function Sponsors() {
         }),
       });
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
+        const errData = await response.json().catch(() => ({})) as { error?: string };
         throw new Error(errData.error || "Failed");
       }
       setSubmitStatus("success");
@@ -295,9 +295,9 @@ export default function Sponsors() {
 }
 
 // Separate component for arrow in footer
-function ArrowRight({ size }: { size: number }) {
+function ArrowRight({ size, className = "" }: { size: number, className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M5 12h14m-7-7 7 7-7 7" />
     </svg>
   );

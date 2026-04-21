@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings } from "./_shared";
+import { AppEnv,  Bindings  } from "./_shared";
 import { sendZulipMessage } from "../../utils/zulipSync";
 
-const githubWebhookRouter = new Hono<{ Bindings: Bindings }>();
+const githubWebhookRouter = new Hono<AppEnv>();
 
 // ── HMAC-SHA256 Signature Verification ───────────────────────────────
 async function verifyGitHubSignature(

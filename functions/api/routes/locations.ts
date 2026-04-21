@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings, validateLength, MAX_INPUT_LENGTHS, ensureAdmin, parsePagination } from "./_shared";
+import { AppEnv,  Bindings, validateLength, MAX_INPUT_LENGTHS, ensureAdmin, parsePagination  } from "./_shared";
 
-const locationsRouter = new Hono<{ Bindings: Bindings }>();
-const adminLocationsRouter = new Hono<{ Bindings: Bindings }>();
+const locationsRouter = new Hono<AppEnv>();
+const adminLocationsRouter = new Hono<AppEnv>();
 
 // ── GET / — public facing list ───────────────────────────────
 locationsRouter.get("/", async (c) => {
@@ -63,7 +63,7 @@ adminLocationsRouter.post("/", ensureAdmin, async (c) => {
 adminLocationsRouter.put("/:id", ensureAdmin, async (c) => {
   try {
 
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     const body: { name?: string; address?: string; maps_url?: string; is_deleted?: boolean } = await c.req.json();
     
     // SEC-04: Input length validation
@@ -91,7 +91,7 @@ adminLocationsRouter.put("/:id", ensureAdmin, async (c) => {
 // ── DELETE /:id — soft delete ──────────────────────────
 adminLocationsRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare(
       "UPDATE locations SET is_deleted = 1 WHERE id = ?"
     ).bind(id).run();

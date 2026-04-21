@@ -15,7 +15,7 @@ export default function Navbar() {
 
   const isSignedIn = !isPending && session?.user;
   const userImage = session?.user?.image;
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin = (session?.user as any)?.role === "admin";
   
   const [pendingCount, setPendingCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -67,8 +67,8 @@ export default function Navbar() {
   useEffect(() => {
     if (isAdmin) {
       fetch("/api/admin/inquiries")
-        .then(res => res.json())
-        .then((data: { inquiries?: { status: string }[] }) => {
+        .then(res => res.json() as Promise<{ inquiries?: { status: string }[] }>)
+        .then((data) => {
           if (data.inquiries) {
             setPendingCount(data.inquiries.filter((i: { status: string }) => i.status === "pending").length);
           }

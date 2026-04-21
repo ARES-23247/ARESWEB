@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, getSocialConfig } from "./_shared";
+import { AppEnv, Bindings, ensureAdmin, getSocialConfig } from "./_shared";
 
-const zulipRouter = new Hono<{ Bindings: Bindings }>();
+const zulipRouter = new Hono<AppEnv>();
 
 // GET /zulip/presence — Fetch realm presence
 zulipRouter.get("/presence", ensureAdmin, async (c) => {
@@ -20,7 +20,7 @@ zulipRouter.get("/presence", ensureAdmin, async (c) => {
     });
 
     if (!res.ok) {
-      return c.json({ error: await res.text() }, res.status);
+      return c.json({ error: await res.text() }, res.status as any);
     }
 
     const data = await res.json() as { result: string; presences: Record<string, unknown> };

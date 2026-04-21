@@ -48,6 +48,8 @@ export default function CommandPalette() {
     };
   }, []);
 
+  const userRole = (session?.user as any)?.role;
+
   // Static Quick Links routes
   const staticLinks = useMemo(() => {
     const links: SearchResult[] = [
@@ -58,11 +60,11 @@ export default function CommandPalette() {
       { title: "Sponsorships & ROI", category: "Navigation", url: "/sponsors", icon: <ShieldCheck size={16} /> },
       { title: "Join The Team", category: "Navigation", url: "/join", icon: <HelpCircle size={16} /> },
     ];
-    if (session?.user?.role === "admin") {
+    if (userRole === "admin") {
       links.push({ title: "Judges Hub Console", category: "Admin", url: "/judges", icon: <ShieldCheck size={16} /> });
     }
     return links;
-  }, [session?.user?.role]);
+  }, [userRole]);
 
   // Handle Search Input & D1 API Call
   useEffect(() => {
@@ -126,7 +128,7 @@ export default function CommandPalette() {
 
     const timer = setTimeout(fetchSearch, 300); // 300ms debounce
     return () => clearTimeout(timer);
-  }, [query, session?.user?.role, staticLinks]);
+  }, [query, userRole, staticLinks]);
 
   // Handle Keyboard Navigation (Up/Down/Enter)
   const handleKeyDown = (e: React.KeyboardEvent) => {

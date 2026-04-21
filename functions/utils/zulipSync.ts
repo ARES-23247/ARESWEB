@@ -33,8 +33,10 @@ export async function sendZulipMessage(
     formData.append("topic", topic);
     formData.append("content", content);
 
-    const headers = getZulipAuthHeaders(env);
-    headers["Content-Type"] = "application/x-www-form-urlencoded";
+    const headers: Record<string, string> = { 
+      ...getZulipAuthHeaders(env) as Record<string, string>,
+      "Content-Type": "application/x-www-form-urlencoded"
+    };
 
     const res = await fetch(url, {
       method: "POST",
@@ -75,8 +77,10 @@ export async function updateZulipMessage(
     const formData = new URLSearchParams();
     formData.append("content", newContent);
 
-    const headers = getZulipAuthHeaders(env);
-    headers["Content-Type"] = "application/x-www-form-urlencoded";
+    const headers: Record<string, string> = { 
+      ...getZulipAuthHeaders(env) as Record<string, string>,
+      "Content-Type": "application/x-www-form-urlencoded"
+    };
 
     const res = await fetch(url, {
       method: "PATCH",

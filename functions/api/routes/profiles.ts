@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { Bindings, getSessionUser, sanitizeProfileForPublic } from "./_shared";
+import { AppEnv, Bindings, getSessionUser, sanitizeProfileForPublic } from "./_shared";
 import { getAuth } from "../../utils/auth";
 import { encrypt, decrypt } from "../../utils/crypto";
 
 
-const profilesRouter = new Hono<{ Bindings: Bindings }>();
+const profilesRouter = new Hono<AppEnv>();
 
 // ── GET /me — fetch current user's full profile ───────────────
 profilesRouter.get("/me", async (c) => {
@@ -188,7 +188,7 @@ profilesRouter.get("/team-roster", async (c) => {
 
 // ── GET /:userId — public profile ─────────────────────────────
 profilesRouter.get("/:userId", async (c) => {
-  const userId = c.req.param("userId");
+  const userId = (c.req.param("userId") || "");
   try {
     const profile = await c.env.DB.prepare(
       `SELECT p.*, u.image as avatar, u.name 

@@ -1,8 +1,8 @@
 import { Context, Hono } from "hono";
-import { Bindings, ensureAdmin, logAuditAction, parsePagination, validateLength, MAX_INPUT_LENGTHS } from "./_shared";
+import { AppEnv, Bindings, ensureAdmin, logAuditAction, parsePagination, validateLength, MAX_INPUT_LENGTHS } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
 
-const sponsorsRouter = new Hono<{ Bindings: Bindings }>();
+const sponsorsRouter = new Hono<AppEnv>();
 
 // ── GET /sponsors — list active sponsors for public display ───────────
 sponsorsRouter.get("/", async (c) => {
@@ -25,7 +25,7 @@ sponsorsRouter.get("/admin", ensureAdmin, async (c) => {
   return handleSponsorList(c);
 });
 
-async function handleSponsorList(c: Context<{ Bindings: Bindings }>) {
+async function handleSponsorList(c: Context<AppEnv>) {
   try {
     const { limit, offset } = parsePagination(c, 50, 200);
     const { results } = await c.env.DB.prepare("SELECT id, name, tier, logo_url, website_url, is_active, created_at FROM sponsors ORDER BY created_at DESC LIMIT ? OFFSET ?").bind(limit, offset).all();
@@ -41,7 +41,7 @@ sponsorsRouter.post("/admin", ensureAdmin, async (c) => {
   return handleSponsorSave(c);
 });
 
-async function handleSponsorSave(c: Context<{ Bindings: Bindings }>) {
+async function handleSponsorSave(c: Context<AppEnv>) {
   try {
     const body = await c.req.json();
     const { id, name, tier, logo_url, website_url, is_active } = body;
@@ -74,9 +74,9 @@ async function handleSponsorSave(c: Context<{ Bindings: Bindings }>) {
 // ── DELETE /admin/:id — remove a sponsor (admin) ─────────
 sponsorsRouter.delete("/admin/:id", ensureAdmin, async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare("DELETE FROM sponsors WHERE id = ?").bind(id).run();
-    await logAuditAction(c, "sponsor_deleted", "sponsors", id, "Sponsor permanently deleted");
+    await logAuditAction(c, "sponsor_deleted", "sponsors", id || "unknown", "Sponsor permanently deleted");
     return c.json({ success: true });
   } catch (err) {
     console.error("D1 sponsor delete error:", err);
@@ -87,7 +87,7 @@ sponsorsRouter.delete("/admin/:id", ensureAdmin, async (c) => {
 // ── GET /sponsors/roi/:token — Public (hidden) Sponsor Dashboard ────
 sponsorsRouter.get("/roi/:token", async (c) => {
   try {
-    const token = c.req.param("token");
+    const token = (c.req.param("token") || "");
     const { results: tokens } = await c.env.DB.prepare(
       "SELECT sponsor_id FROM sponsor_tokens WHERE token = ?"
     ).bind(token).all();

@@ -26,14 +26,14 @@ export default function SponsorTokensManager() {
       // Fetch available sponsors to pick from
       const sRes = await fetch("/api/sponsors/admin");
       if (sRes.ok) {
-        const sData = await sRes.json();
+        const sData = await sRes.json() as { sponsors: Sponsor[] };
         setSponsors(sData.sponsors || []);
       }
       
       // Fetch generated tokens
       const tRes = await fetch("/api/sponsors/admin/tokens");
       if (tRes.ok) {
-        const tData = await tRes.json();
+        const tData = await tRes.json() as { tokens: Token[] };
         setTokens(tData.tokens || []);
       }
     } catch (e) {

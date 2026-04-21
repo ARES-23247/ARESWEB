@@ -152,7 +152,7 @@ export default function BadgeManager() {
             <p className="text-zinc-500 text-sm">No badges defined yet.</p>
           ) : (
             badges.map(b => {
-              const IconComp = (LucideIcons as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
+              const IconComp = (LucideIcons as unknown as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
               return (
                 <div key={b.id} className="bg-zinc-900/50 border border-zinc-800 ares-cut-sm p-4 flex items-start gap-4">
                   <div className={`p-3 ares-cut-sm bg-zinc-800/50 flex-shrink-0 text-${b.color_theme.replace("text-", "")}`}>

@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings, getSessionUser } from "./_shared";
+import { AppEnv,  Bindings, getSessionUser  } from "./_shared";
 import { getAuth } from "../../utils/auth";
 
-const authRouter = new Hono<{ Bindings: Bindings }>();
+const authRouter = new Hono<AppEnv>();
 
 // ── GET /api/auth-check — verify session (UI gate only) ────────────────
 authRouter.get("/auth-check", async (c) => {
@@ -27,7 +27,7 @@ authRouter.on(["POST", "GET"], "/*", async (c) => {
     console.error("[Auth Handler] Internal Exception:", err);
     return c.json({ 
       message: err.message || "Internal Server Error during Authentication", 
-      stack: c.env.ENVIRONMENT === "development" ? err.stack : undefined
+      stack: (c.env as any).ENVIRONMENT === "development" ? err.stack : undefined
     }, 500);
   }
 });

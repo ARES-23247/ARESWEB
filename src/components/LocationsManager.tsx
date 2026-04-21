@@ -84,7 +84,7 @@ export default function LocationsManager() {
       setIsSearchingOSM(true);
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressQuery)}&format=json&addressdetails=1&limit=5`);
-        const data = await res.json();
+        const data = await res.json() as { display_name: string }[];
         setSuggestions(data);
       } catch (err) {
         console.error("OSM Err:", err);

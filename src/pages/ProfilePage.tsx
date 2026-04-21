@@ -50,12 +50,12 @@ export default function ProfilePage() {
     fetch(`/api/profile/${userId}`)
       .then(async r => {
         if (!r.ok) {
-          const data = await r.json().catch(() => ({}));
+          const data = await r.json().catch(() => ({})) as { error?: string };
           throw { status: r.status, message: data.error || "Failed to load profile" };
         }
-        return r.json();
+        return r.json() as Promise<{ profile: ProfilePublic, badges?: BadgeDef[] }>;
       })
-      .then((data: { profile: ProfilePublic, badges?: BadgeDef[] }) => { 
+      .then((data) => { 
         if (cancelled) return;
         setProfile(data.profile); 
         setBadges(data.badges || []);
@@ -151,7 +151,7 @@ export default function ProfilePage() {
               </h3>
               <div className="flex flex-wrap gap-4">
                 {badges.map((b) => {
-                  const IconComp = (LucideIcons as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
+                  const IconComp = (LucideIcons as unknown as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
                   const colorClass = `text-${b.color_theme.replace("text-", "")}`;
                   return (
                     <div key={b.id} className="relative group cursor-help bg-zinc-800 border border-zinc-700/50 hover:border-zinc-500 ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">

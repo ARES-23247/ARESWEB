@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings } from "./_shared";
+import { AppEnv,  Bindings  } from "./_shared";
 
-const sitemapRouter = new Hono<{ Bindings: Bindings }>();
+const sitemapRouter = new Hono<AppEnv>();
 
 // SEC-DoW: Cache sitemap to prevent repeated D1 queries from bots/crawlers
 let sitemapCache: { xml: string; expiresAt: number } | null = null;

@@ -105,7 +105,7 @@ export default function DocManagerTab({
                     const code = prompt("Enter a name or purpose for this code (e.g. 'Championship Judge'):");
                     if (code !== null) {
                       fetch("/dashboard/api/admin/judges/codes", { method: "POST", credentials: "include" })
-                        .then(res => res.json())
+                        .then(res => res.json() as Promise<{ code: string; expiresAt: string }>)
                         .then((data: { code: string; expiresAt: string }) => alert(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
                     }
                   }}

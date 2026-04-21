@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, getDbSettings, logAuditAction, validateLength, MAX_INPUT_LENGTHS } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, getDbSettings, logAuditAction, validateLength, MAX_INPUT_LENGTHS  } from "./_shared";
 
-const settingsRouter = new Hono<{ Bindings: Bindings }>();
+const settingsRouter = new Hono<AppEnv>();
 
 // ── GET /admin/settings — get all integrations settings ───────────────
 settingsRouter.get("/", ensureAdmin, async (c) => {

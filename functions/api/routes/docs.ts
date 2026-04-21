@@ -79,7 +79,7 @@ docsRouter.post("/:slug/feedback", async (c) => {
   }
 
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const body = await c.req.json();
     const { isHelpful, comment, turnstileToken } = body;
 
@@ -106,7 +106,7 @@ docsRouter.post("/:slug/feedback", async (c) => {
 
 // ── GET /docs/:slug — single doc page ─────────────────────────────────
 docsRouter.get("/:slug", async (c) => {
-  const slug = c.req.param("slug");
+  const slug = (c.req.param("slug") || "");
   try {
     const row = await c.env.DB.prepare(
       `SELECT d.slug, d.title, d.category, d.description, d.content, d.updated_at, d.is_portfolio, d.is_executive_summary,
@@ -258,7 +258,7 @@ docsRouter.delete("/:slug", ensureAdmin, async (c) => {
 
 async function handleDocDelete(c: Context<AppEnv>) {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     await c.env.DB.prepare("UPDATE docs SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
@@ -270,7 +270,7 @@ async function handleDocDelete(c: Context<AppEnv>) {
 // ── PATCH /:slug/undelete — restore (admin) ────────────────
 docsRouter.patch("/:slug/undelete", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     await c.env.DB.prepare("UPDATE docs SET is_deleted = 0 WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
@@ -282,7 +282,7 @@ docsRouter.patch("/:slug/undelete", ensureAdmin, async (c) => {
 // ── DELETE /:slug/purge — PERMANENTLY delete (admin) ────────
 docsRouter.delete("/:slug/purge", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
     return c.json({ success: true });
   } catch (err) {
@@ -294,7 +294,7 @@ docsRouter.delete("/:slug/purge", ensureAdmin, async (c) => {
 // ── PATCH /:slug/sort — update sort order (admin) ───────────────
 docsRouter.patch("/:slug/sort", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const { sortOrder } = await c.req.json();
     if (typeof sortOrder !== 'number') {
       return c.json({ error: "Invalid sortOrder" }, 400);
@@ -312,7 +312,7 @@ docsRouter.patch("/:slug/approve", ensureAdmin, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
 
     type DocRow = { revision_of?: string; title: string; category: string; sort_order: number; description: string; content: string; is_portfolio: number; is_executive_summary: number; cf_email: string };
     const row = await c.env.DB.prepare("SELECT revision_of, title, category, sort_order, description, content, is_portfolio, is_executive_summary, cf_email FROM docs WHERE slug = ?").bind(slug).first<DocRow>();
@@ -384,7 +384,7 @@ docsRouter.patch("/:slug/reject", ensureAdmin, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const body = await c.req.json().catch(() => ({})) as { reason?: string };
     
     const row = await c.env.DB.prepare("SELECT title, cf_email FROM docs WHERE slug = ?").bind(slug).first<{ title: string, cf_email: string }>();
@@ -417,7 +417,7 @@ docsRouter.patch("/:slug/reject", ensureAdmin, async (c) => {
 // ── GET /:slug/history — list doc history (admin) ──────────
 docsRouter.get("/:slug/history", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
+    const slug = (c.req.param("slug") || "");
     const { results } = await c.env.DB.prepare(
       "SELECT id, title, category, description, author_email, created_at FROM docs_history WHERE slug = ? ORDER BY created_at DESC LIMIT 50"
     ).bind(slug).all();
@@ -431,8 +431,8 @@ docsRouter.get("/:slug/history", ensureAdmin, async (c) => {
 // ── PATCH /:slug/history/:id/restore — restore from history (admin) ──
 docsRouter.patch("/:slug/history/:id/restore", ensureAdmin, async (c) => {
   try {
-    const slug = c.req.param("slug");
-    const id = c.req.param("id");
+    const slug = (c.req.param("slug") || "");
+    const id = (c.req.param("id") || "");
     
     interface DocHistoryRestoreRow {
       title: string;

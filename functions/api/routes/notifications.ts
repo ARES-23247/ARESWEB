@@ -27,7 +27,7 @@ notificationsRouter.put("/:id/read", ensureAuth, async (c) => {
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare(
       "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?"
     ).bind(id, user.id).run();

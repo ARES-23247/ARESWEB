@@ -138,7 +138,7 @@ commentsRouter.put("/:id", async (c) => {
   const user = await getSessionUser(c);
   if (!user || user.role === "unverified") return c.json({ error: "Forbidden" }, 403);
 
-  const id = c.req.param("id");
+  const id = (c.req.param("id") || "");
   const body = await c.req.json();
   const { content } = body;
 
@@ -179,7 +179,7 @@ commentsRouter.delete("/:id", async (c) => {
   if (!user) return c.json({ error: "Unauthorized" }, 401);
 
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     const existing = await c.env.DB.prepare("SELECT user_id, zulip_message_id FROM comments WHERE id = ?").bind(id).first<{ user_id: string, zulip_message_id: string }>();
     if (!existing) return c.json({ error: "Not found" }, 404);
 

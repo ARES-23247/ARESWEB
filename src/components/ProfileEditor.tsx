@@ -8,7 +8,7 @@ import { LogisticsForm } from "./profile/LogisticsForm";
 import { SecuritySettings } from "./profile/SecuritySettings";
 import { ProfileData, CollegeEntry, EmployerEntry } from "./profile/types";
 
-interface ProfileResponse extends Partial<ProfileData> {
+interface ProfileResponse extends Omit<Partial<ProfileData>, 'subteams' | 'dietary_restrictions' | 'colleges' | 'employers'> {
   error?: string;
   subteams?: string | string[];
   dietary_restrictions?: string | string[];
@@ -55,8 +55,8 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
   useEffect(() => {
     fetch(fetchUrl, { credentials: "include" })
-      .then(r => r.json())
-      .then((data: ProfileResponse) => {
+      .then(r => r.json() as Promise<ProfileResponse>)
+      .then((data) => {
         if (data && !data.error) {
           setProfile({
             ...DEFAULT_PROFILE,

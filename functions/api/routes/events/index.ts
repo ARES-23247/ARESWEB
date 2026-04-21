@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { Bindings, parsePagination } from "../_shared";
+import { AppEnv,  Bindings, parsePagination  } from "../_shared";
 import signupsRouter from "./signups";
 
-const eventsRouter = new Hono<{ Bindings: Bindings }>();
+const eventsRouter = new Hono<AppEnv>();
 
 // ── GET /events — list all events ──────────────────────────────────────
 eventsRouter.get("/", async (c) => {
@@ -25,7 +25,7 @@ eventsRouter.get("/calendar", async (c) => {
     const { results } = await c.env.DB.prepare(
       "SELECT key, value FROM settings WHERE key IN ('CALENDAR_ID', 'CALENDAR_ID_INTERNAL', 'CALENDAR_ID_OUTREACH', 'CALENDAR_ID_EXTERNAL')"
     ).all<{key: string, value: string}>();
-    const map = (results || []).reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {} as Record<string, string>);
+    const map = (results || []).reduce((acc: any, row: any) => ({ ...acc, [row.key]: row.value }), {} as Record<string, string>);
     return c.json({ 
       calendarIdInternal: map['CALENDAR_ID_INTERNAL'] || map['CALENDAR_ID'] || "",
       calendarIdOutreach: map['CALENDAR_ID_OUTREACH'] || "",
@@ -39,7 +39,7 @@ eventsRouter.get("/calendar", async (c) => {
 
 // ── GET /events/:id — single event ─────────────────────────────────────
 eventsRouter.get("/:id", async (c) => {
-  const id = c.req.param("id");
+  const id = (c.req.param("id") || "");
   try {
     const row = await c.env.DB.prepare(
       `SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.gcal_event_id, e.cf_email, e.is_potluck, e.is_volunteer, e.published_at,

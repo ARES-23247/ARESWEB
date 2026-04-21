@@ -77,7 +77,7 @@ export async function dispatchBluesky(payload: PostPayload, config: SocialConfig
         await agent.post({
           text: rt.text,
           facets: rt.facets,
-          embed: embed as Record<string, unknown>,
+          embed: embed as any,
           createdAt: new Date().toISOString()
         });
         break; // Success

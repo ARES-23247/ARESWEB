@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, checkWriteRateLimit, verifyTurnstile } from "./_shared";
+import { AppEnv,  Bindings, ensureAdmin, checkWriteRateLimit, verifyTurnstile  } from "./_shared";
 
-const judgesRouter = new Hono<{ Bindings: Bindings }>();
+const judgesRouter = new Hono<AppEnv>();
 
 // ── POST /judges/login — verify judge access code ─────────────────────
 judgesRouter.post("/login", async (c) => {
@@ -135,7 +135,7 @@ judgesRouter.post("/admin/codes", ensureAdmin, async (c) => {
 // ── DELETE /admin/judges/codes/:id — delete an access code (admin) ────
 judgesRouter.delete("/admin/codes/:id", ensureAdmin, async (c) => {
   try {
-    const id = c.req.param("id");
+    const id = (c.req.param("id") || "");
     await c.env.DB.prepare("DELETE FROM judge_access_codes WHERE id = ?").bind(id).run();
     return c.json({ success: true });
   } catch (err) {

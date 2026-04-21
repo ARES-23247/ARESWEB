@@ -49,7 +49,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                             name: "full_name",
                             image: "avatar_url"
                         }
-                    }
+                    } as any
                 ] : []
             }),
         ],
@@ -84,14 +84,14 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
         socialProviders: {
             ...(env.GOOGLE_CLIENT_ID ? {
                 google: {
-                    clientId: env.GOOGLE_CLIENT_ID,
-                    clientSecret: env.GOOGLE_CLIENT_SECRET || "",
+                    clientId: env.GOOGLE_CLIENT_ID as string,
+                    clientSecret: (env.GOOGLE_CLIENT_SECRET as string) || "",
                 }
             } : {}),
             ...(env.GITHUB_CLIENT_ID ? {
                 github: {
-                    clientId: env.GITHUB_CLIENT_ID,
-                    clientSecret: env.GITHUB_CLIENT_SECRET || "",
+                    clientId: env.GITHUB_CLIENT_ID as string,
+                    clientSecret: (env.GITHUB_CLIENT_SECRET as string) || "",
                     scope: ["read:user", "user:email", "read:org"],
                 }
             } : {}),

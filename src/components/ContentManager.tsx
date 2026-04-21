@@ -33,7 +33,7 @@ export default function ContentManager({
       return `/dashboard/api/admin/${base}/${id}/undelete`;
     },
     method: "PATCH",
-    invalidateKeys: ["events", "posts", "docs"],
+    invalidateKeys: ["events", "admin_events", "posts", "docs"],
     clearConfirm: false,
   });
 
@@ -42,7 +42,7 @@ export default function ContentManager({
       const base = type === "event" ? "events" : type === "post" ? "posts" : "docs";
       return `/dashboard/api/admin/${base}/${id}/purge`;
     },
-    invalidateKeys: ["events", "posts", "docs"],
+    invalidateKeys: ["events", "admin_events", "posts", "docs"],
     setConfirmId,
   });
 
@@ -52,7 +52,7 @@ export default function ContentManager({
       return `/dashboard/api/admin/${base}/${id}/approve`;
     },
     method: "PATCH",
-    invalidateKeys: ["events", "posts", "docs"],
+    invalidateKeys: ["events", "admin_events", "posts", "docs"],
     clearConfirm: false,
   });
 
@@ -62,7 +62,7 @@ export default function ContentManager({
       return `/dashboard/api/admin/${base}/${id}/reject`;
     },
     method: "PATCH",
-    invalidateKeys: ["events", "posts", "docs"],
+    invalidateKeys: ["events", "admin_events", "posts", "docs"],
     clearConfirm: false,
   });
 
