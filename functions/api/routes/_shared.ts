@@ -37,6 +37,8 @@ export type Bindings = {
   INITIAL_ADMIN_EMAIL?: string;
   RESEND_API_KEY?: string;
   DEV_BYPASS?: string;
+  // ── Turnstile ──
+  TURNSTILE_SECRET_KEY?: string;
 };
 
 export type Variables = {
@@ -395,4 +397,36 @@ export function checkWriteRateLimit(ip: string, limit = 15, windowSeconds = 60):
   writeRateLimitCache.set(ip, record);
 
   return record.count <= limit;
+}
+
+// ── SEC-DoW: Cloudflare Turnstile Verification ──────────────────────
+// Validates a Turnstile challenge token server-side.
+// Returns true if the token is valid, false on failure.
+// Gracefully allows requests if TURNSTILE_SECRET_KEY is not configured
+// (dev environments, or before the secret is set in Cloudflare dashboard).
+export async function verifyTurnstile(
+  token: string | null | undefined,
+  secretKey: string | undefined,
+  clientIp: string
+): Promise<boolean> {
+  // If Turnstile is not configured, allow (graceful degradation)
+  if (!secretKey) return true;
+
+  // If no token provided, block
+  if (!token) return false;
+
+  try {
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(token)}&remoteip=${encodeURIComponent(clientIp)}`,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    const result = await res.json() as { success: boolean };
+    return result.success === true;
+  } catch (err) {
+    console.error("[Turnstile] Verification failed:", err);
+    // On network error, fail open to avoid blocking legitimate traffic
+    return true;
+  }
 }

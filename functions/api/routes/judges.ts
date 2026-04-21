@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Bindings, ensureAdmin, checkWriteRateLimit } from "./_shared";
+import { Bindings, ensureAdmin, checkWriteRateLimit, verifyTurnstile } from "./_shared";
 
 const judgesRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -12,9 +12,16 @@ judgesRouter.post("/login", async (c) => {
   }
 
   try {
-    const { code } = await c.req.json();
+    const body = await c.req.json();
+    const { code, turnstileToken } = body;
     if (!code) return c.json({ error: "Code required" }, 400);
     if (code.length > 50) return c.json({ error: "Invalid code format" }, 400);
+
+    // SEC-DoW: Verify Turnstile challenge before D1 lookup
+    const valid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+    if (!valid) {
+      return c.json({ error: "Security verification failed. Please try again." }, 403);
+    }
 
     const row = await c.env.DB.prepare(
       "SELECT code, label, expires_at FROM judge_access_codes WHERE code = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"

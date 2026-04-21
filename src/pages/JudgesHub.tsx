@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, BookOpen, Trophy, Users, ArrowRight, Lock, AlertCircle, FileText, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
+import Turnstile from "../components/Turnstile";
 
 interface PortfolioData {
   docs: Array<{
@@ -31,6 +32,7 @@ export default function JudgesHub() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   const fetchPortfolio = useCallback(async (code: string) => {
     try {
@@ -56,7 +58,7 @@ export default function JudgesHub() {
       const res = await fetch("/api/judges/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, turnstileToken }),
       });
 
       const data = await res.json() as { success: boolean, error?: string };
@@ -147,6 +149,8 @@ export default function JudgesHub() {
                 <span>{error}</span>
               </motion.div>
             )}
+
+            <Turnstile onVerify={setTurnstileToken} theme="dark" className="mt-4" />
           </div>
 
           <div className="mt-10 pt-8 border-t border-white/5 text-center">

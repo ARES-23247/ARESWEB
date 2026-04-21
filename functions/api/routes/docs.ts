@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Context } from "hono";
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkWriteRateLimit } from "./_shared";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkWriteRateLimit, verifyTurnstile } from "./_shared";
 import { siteConfig } from "../../utils/site.config";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
@@ -81,7 +81,13 @@ docsRouter.post("/:slug/feedback", async (c) => {
   try {
     const slug = c.req.param("slug");
     const body = await c.req.json();
-    const { isHelpful, comment } = body;
+    const { isHelpful, comment, turnstileToken } = body;
+
+    // SEC-DoW: Verify Turnstile challenge before D1 write
+    const valid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+    if (!valid) {
+      return c.json({ error: "Security verification failed" }, 403);
+    }
 
     // SEC-04: Validate comment length
     if (comment && typeof comment === "string" && comment.length > 2000) {

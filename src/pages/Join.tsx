@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Rocket, Wrench, Code, PenTool, CheckCircle } from "lucide-react";
 import SEO from "../components/SEO";
 import { GreekMeander } from "../components/GreekMeander";
+import Turnstile from "../components/Turnstile";
 
 export default function Join() {
   const [role, setRole] = useState<"student" | "mentor">("student");
@@ -16,6 +17,7 @@ export default function Join() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +31,7 @@ export default function Join() {
       const response = await fetch("/api/inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: role, name, email, metadata }),
+        body: JSON.stringify({ type: role, name, email, metadata, turnstileToken }),
       });
 
       if (!response.ok) {
@@ -218,6 +220,7 @@ export default function Join() {
                 </div>
                 
                 <div className="pt-4">
+                  <Turnstile onVerify={setTurnstileToken} theme="light" className="mb-4" />
                   <button type="submit" disabled={isSubmitting} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-red-600" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
                     {isSubmitting ? "Submitting..." : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
                   </button>

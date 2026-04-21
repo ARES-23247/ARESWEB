@@ -14,7 +14,7 @@ export default function DietarySummary() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/profile/logistics/summary", { credentials: "include" })
+    fetch("/api/logistics/summary", { credentials: "include" })
       .then(async (res) => {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({})) as { error?: string };

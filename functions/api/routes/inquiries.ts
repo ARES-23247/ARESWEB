@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination, ensureAdmin, logAuditAction, checkWriteRateLimit } from "./_shared";
+import { AppEnv, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination, ensureAdmin, logAuditAction, checkWriteRateLimit, verifyTurnstile } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects";
 import { notifyAdmins } from "../../utils/notifications";
@@ -38,7 +38,13 @@ inquiriesRouter.post("/", async (c) => {
 
   try {
     const body = await c.req.json();
-    const { type, name, email, metadata } = body;
+    const { type, name, email, metadata, turnstileToken } = body;
+
+    // SEC-DoW: Verify Turnstile challenge before any D1 operations
+    const valid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+    if (!valid) {
+      return c.json({ error: "Security verification failed. Please try again." }, 403);
+    }
 
     if (!type || !name || !email) {
       return c.json({ error: "Missing required fields" }, 400);

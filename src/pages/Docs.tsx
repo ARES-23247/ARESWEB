@@ -6,6 +6,7 @@ import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight } from "lu
 import SEO from "../components/SEO";
 import { useSession } from "../utils/auth-client";
 import { trackPageView } from "../utils/analytics";
+import Turnstile from "../components/Turnstile";
 import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
 import DocsSidebar from "../components/docs/DocsSidebar";
 import DocsTableOfContents from "../components/docs/DocsTableOfContents";
@@ -63,6 +64,7 @@ export default function Docs() {
   // ── State ──────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [feedbackToken, setFeedbackToken] = useState("");
 
   // ── Data Fetching ──────────────────────────────────────────────────
   const { data: allDocs = [] } = useQuery<DocRecord[]>({
@@ -352,13 +354,14 @@ export default function Docs() {
                 <div className="relative z-10">
                   <h4 className="text-xl font-bold text-white mb-2">Was this helpful?</h4>
                   <p className="text-white/50 text-sm mb-6 max-w-md">Your feedback helps our engineering team improve the documentation for the entire community.</p>
+                  <Turnstile onVerify={setFeedbackToken} theme="dark" size="compact" className="mb-4" />
                   <div className="flex flex-wrap gap-4">
                     <button 
                       onClick={async () => {
                         await fetch(`/api/docs/${slug}/feedback`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ isHelpful: true })
+                          body: JSON.stringify({ isHelpful: true, turnstileToken: feedbackToken })
                         });
                         alert('Thanks for your feedback!');
                       }}
@@ -372,7 +375,7 @@ export default function Docs() {
                         await fetch(`/api/docs/${slug}/feedback`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ isHelpful: false, comment })
+                          body: JSON.stringify({ isHelpful: false, comment, turnstileToken: feedbackToken })
                         });
                         alert('Thank you! We will use your feedback to improve this page.');
                       }}
