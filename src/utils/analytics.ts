@@ -7,11 +7,9 @@ export type AnalyticsCategory = 'blog' | 'doc' | 'event' | 'system';
 
 export async function trackPageView(path: string, category: AnalyticsCategory) {
   try {
-    // Only track in production or if explicitly enabled
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
-    // Optional: Only track in production to keep dev logs clean
-    if (isLocal) return;
+    // Analytics are now tracked in all environments (including local) to allow testing.
+    // If you want to disable local tracking, uncomment the following line:
+    // if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
 
     await fetch('/api/analytics/track', {
       method: 'POST',
