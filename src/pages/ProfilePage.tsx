@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GraduationCap, Briefcase, ArrowLeft, Shield } from "lucide-react";
+import { GraduationCap, Briefcase, ArrowLeft, Shield, ShieldAlert } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 
@@ -41,17 +41,29 @@ export default function ProfilePage() {
   const { userId } = useParams();
   const [profile, setProfile] = useState<ProfilePublic | null>(null);
   const [badges, setBadges] = useState<BadgeDef[]>([]);
+  const [error, setError] = useState<{ status: number; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch(`/api/profile/${userId}`)
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          throw { status: r.status, message: data.error || "Failed to load profile" };
+        }
+        return r.json();
+      })
       .then((data: { profile: ProfilePublic, badges?: BadgeDef[] }) => { 
         setProfile(data.profile); 
         setBadges(data.badges || []);
         setLoading(false); 
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        setError(err.status ? err : { status: 500, message: "Network error" });
+        setLoading(false);
+      });
   }, [userId]);
 
   if (loading) {
@@ -62,10 +74,19 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profile) {
+  if (error || !profile) {
     return (
-      <div className="min-h-screen bg-obsidian flex items-center justify-center text-marble">
-        <p>Profile not found.</p>
+      <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center text-marble gap-4 p-6 text-center">
+        <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-2">
+          <ShieldAlert size={40} className="text-ares-red" />
+        </div>
+        <h1 className="text-2xl font-black">{error?.status === 403 ? "Private Profile" : "Profile Not Found"}</h1>
+        <p className="text-marble/60 max-w-md">
+          {error?.message || "The profile you are looking for does not exist or has been hidden by the user."}
+        </p>
+        <Link to="/about" className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-sm font-bold">
+          Back to Team Roster
+        </Link>
       </div>
     );
   }

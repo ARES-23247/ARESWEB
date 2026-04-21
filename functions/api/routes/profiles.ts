@@ -139,10 +139,21 @@ profilesRouter.get("/profile/:userId", async (c) => {
   const userId = c.req.param("userId");
   try {
     const profile = await c.env.DB.prepare(
-      "SELECT p.user_id, p.first_name, p.last_name, p.nickname, p.phone, p.contact_email, p.show_email, p.show_phone, p.pronouns, p.grade_year, p.subteams, p.member_type, p.bio, p.favorite_food, p.dietary_restrictions, p.favorite_first_thing, p.fun_fact, p.colleges, p.employers, p.show_on_about, p.favorite_robot_mechanism, p.pre_match_superstition, p.leadership_role, p.rookie_year, p.parents_name, p.parents_email, p.students_name, p.students_email, u.image as avatar FROM user_profiles p JOIN user u ON p.user_id = u.id WHERE p.user_id = ? AND p.show_on_about = 1"
-    ).bind(userId).first();
+      `SELECT p.*, u.image as avatar, u.name 
+       FROM user_profiles p 
+       LEFT JOIN user u ON p.user_id = u.id 
+       WHERE p.user_id = ?`
+    ).bind(userId).first<any>();
 
-    if (!profile) return c.json({ error: "Profile not found or private" }, 404);
+    if (!profile) {
+      console.warn(`[Profile API] 404 - User ID ${userId} not found in user_profiles table.`);
+      return c.json({ error: "Profile not found" }, 404);
+    }
+
+    if (Number(profile.show_on_about || 0) !== 1) {
+      console.info(`[Profile API] 403 - User ID ${userId} exists but has show_on_about=0.`);
+      return c.json({ error: "This profile is private." }, 403);
+    }
 
     const memberType = String(profile.member_type || "student");
     const sanitized = sanitizeProfileForPublic(profile as Record<string, unknown>, memberType);
