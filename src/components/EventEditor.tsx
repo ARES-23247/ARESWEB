@@ -267,7 +267,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
           <input
             id="event-title" type="text"
             value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
+            className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
             placeholder="State Championship"
           />
         </div>
@@ -277,7 +277,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
             id="event-category"
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
+            className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
           >
             <option value="internal">ARES Practices</option>
             <option value="outreach">ARES Outreach &amp; Volunteer</option>
@@ -294,7 +294,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
               id="event-location"
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none pr-10"
+              className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none pr-10"
             >
               <option value="">-- Select a Venue --</option>
               {locations.map(l => (
@@ -311,7 +311,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
              <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
                <input
                  type="text"
-                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 text-sm focus:border-ares-red outline-none"
+                 className="w-full bg-zinc-900 border border-zinc-800 ares-cut-sm px-4 py-2 text-zinc-100 text-sm focus:border-ares-red outline-none"
                  placeholder="Enter custom location/address..."
                  onBlur={(e) => {
                    if (e.target.value.trim()) setForm({...form, location: e.target.value});
@@ -329,7 +329,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
           <input
             id="event-start" type="datetime-local"
             value={form.dateStart} onChange={(e) => setForm({ ...form, dateStart: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+            className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
           />
         </div>
         <div className="flex-1">
@@ -337,7 +337,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
           <input
             id="event-end" type="datetime-local"
             value={form.dateEnd} onChange={(e) => setForm({ ...form, dateEnd: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+            className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
           />
         </div>
       </div>
@@ -389,17 +389,17 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
           <input
             id="event-cover" type="text"
             value={form.coverImage} onChange={(e) => setForm({ ...form, coverImage: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
+            className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
             placeholder={DEFAULT_COVER_IMAGE}
           />
           <button 
-            className={`px-6 py-3 rounded-lg text-sm font-bold border border-zinc-700 transition-all focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900 ${isUploading ? "bg-zinc-800 animate-pulse text-zinc-300" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}
+            className={`px-6 py-3 ares-cut-sm text-sm font-bold border border-zinc-700 transition-all focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900 ${isUploading ? "bg-zinc-800 animate-pulse text-zinc-300" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}
             onClick={() => document.getElementById('event-img-upload')?.click()}
           >
             UPL
           </button>
           <button 
-            className="px-6 py-3 rounded-lg text-sm font-bold border border-ares-gold/30 transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-zinc-900 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold hover:text-black whitespace-nowrap"
+            className="px-6 py-3 ares-cut-sm text-sm font-bold border border-ares-gold/30 transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-zinc-900 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold hover:text-black whitespace-nowrap"
             onClick={() => setIsCoverPickerOpen(true)}
           >
             Library
@@ -424,7 +424,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       </div>
 
       {availableSocials.length > 0 && (
-        <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-4 shadow-inner">
+        <div className="bg-zinc-900/30 border border-zinc-800/50 ares-cut-sm p-4 shadow-inner">
           <div className="flex items-center gap-2 mb-3">
              <div className="w-2 h-2 rounded-full bg-ares-cyan animate-pulse"></div>
              <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Broadcast & Social Syndication</span>
@@ -452,7 +452,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
 
       <div className="mt-6 flex flex-col gap-4">
         {errorMsg && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 ares-cut flex items-start gap-3">
             <div className="text-red-500 mt-0.5">❌</div>
             <div>
               <h4 className="text-red-500 font-bold text-xs tracking-wide uppercase">Critical Error</h4>
@@ -462,7 +462,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
         )}
 
         {warningMsg && (
-          <div className="p-4 bg-ares-gold/10 border border-ares-gold/20 rounded-2xl flex items-start gap-3">
+          <div className="p-4 bg-ares-gold/10 border border-ares-gold/20 ares-cut flex items-start gap-3">
             <div className="text-ares-gold mt-0.5">⚠️</div>
             <div>
               <h4 className="text-ares-gold font-bold text-xs tracking-wide uppercase">Syndication Warning</h4>
@@ -472,7 +472,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
         )}
 
         {successMsg && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start gap-3">
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 ares-cut flex items-start gap-3">
             <div className="text-emerald-500 mt-0.5">✅</div>
             <div>
               <h4 className="text-emerald-500 font-bold text-xs tracking-wide uppercase">Success</h4>
@@ -486,7 +486,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
             <button
               onClick={handleDelete}
               disabled={isPending}
-              className={`px-8 py-4 rounded-2xl font-black tracking-widest transition-all shadow-xl disabled:opacity-50 border border-ares-red/30 bg-ares-red/10 text-ares-red hover:bg-ares-red hover:text-white mr-auto`}
+              className={`px-8 py-4 ares-cut font-black tracking-widest transition-all shadow-xl disabled:opacity-50 border border-ares-red/30 bg-ares-red/10 text-ares-red hover:bg-ares-red hover:text-white mr-auto`}
             >
               DELETE
             </button>
@@ -494,14 +494,14 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
           <button
             onClick={() => handlePublish(true)}
             disabled={isPending}
-            className={`px-8 py-4 rounded-2xl font-black tracking-widest transition-all shadow-xl disabled:opacity-50 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800`}
+            className={`px-8 py-4 ares-cut font-black tracking-widest transition-all shadow-xl disabled:opacity-50 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800`}
           >
             {isPending ? "SAVING..." : "SAVE AS DRAFT"}
           </button>
           <button
             onClick={() => handlePublish(false)}
             disabled={isPending}
-            className={`px-10 py-4 rounded-2xl font-black tracking-widest transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
+            className={`px-10 py-4 ares-cut font-black tracking-widest transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
               ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse cursor-wait" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-1 active:translate-y-0"}`}
           >
             {isPending ? "COMMITTING..." : editId ? "UPDATE EVENT" : (userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH EVENT")}

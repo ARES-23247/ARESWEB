@@ -59,6 +59,18 @@ h1, h2, h3, h4, .font-heading {
 
   /* --- GREEK ARCHITECTURAL MOTIFS --- */
 
+  .ares-cut-sm {
+    @apply rounded-tl-lg rounded-br-lg rounded-tr-sm rounded-bl-sm;
+  }
+
+  .ares-cut {
+    @apply rounded-tl-[1.5rem] rounded-br-[1.5rem] rounded-tr-md rounded-bl-md;
+  }
+
+  .ares-cut-lg {
+    @apply rounded-tl-[2rem] rounded-br-[2rem] rounded-tr-xl rounded-bl-xl;
+  }
+
   .spartan-plate {
     clip-path: polygon(48px 0, 100% 0, 100% calc(100% - 48px), calc(100% - 48px) 100%, 0 100%, 0 48px);
   }

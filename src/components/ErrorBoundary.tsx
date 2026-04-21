@@ -30,7 +30,7 @@ export default class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] w-full bg-zinc-950 text-white rounded-xl border border-dashed border-red-500/50 p-8 shadow-2xl">
+        <div className="flex flex-col items-center justify-center min-h-[400px] w-full bg-zinc-950 text-white ares-cut-sm border border-dashed border-red-500/50 p-8 shadow-2xl">
           <div className="text-red-500 mb-6">
             <svg className="w-16 h-16 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -40,7 +40,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <p className="text-zinc-400 text-center max-w-lg mb-6 leading-relaxed">
             The ARES React engine encountered an unhandled DOM rendering collision. The system has automatically isolated the fault.
           </p>
-          <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-md w-full max-w-xl text-left font-mono text-xs text-red-400 overflow-x-auto mb-8 shadow-inner">
+          <div className="bg-zinc-900 border border-zinc-800 p-4 ares-cut-sm w-full max-w-xl text-left font-mono text-xs text-red-400 overflow-x-auto mb-8 shadow-inner">
             {this.state.errorStr}
           </div>
           <button 

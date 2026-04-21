@@ -89,7 +89,7 @@ export default function ProfilePage() {
         <p className="text-marble/60 max-w-md">
           {error?.message || "The profile you are looking for does not exist or has been hidden by the user."}
         </p>
-        <Link to="/about" className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-sm font-bold">
+        <Link to="/about" className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm transition-all text-sm font-bold">
           Back to Team Roster
         </Link>
       </div>
@@ -112,8 +112,8 @@ export default function ProfilePage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {/* Header Card */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
-            <div className="w-32 h-32 rounded-2xl bg-zinc-800 border border-zinc-700 overflow-hidden p-3 flex-shrink-0">
+          <div className="bg-zinc-900/50 border border-zinc-800 ares-cut-lg p-8 flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
+            <div className="w-32 h-32 ares-cut bg-zinc-800 border border-zinc-700 overflow-hidden p-3 flex-shrink-0">
               <img src={profile.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${userId}`} alt="Avatar" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1 text-center md:text-left">
@@ -137,7 +137,7 @@ export default function ProfilePage() {
 
           {/* Trophy Rack */}
           {badges && badges.length > 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 mb-8">
+            <div className="bg-zinc-900/50 border border-zinc-800 ares-cut-lg p-8 mb-8">
               <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
                 <LucideIcons.Award className="text-ares-gold" size={16} /> Honors & Badges
               </h3>
@@ -146,12 +146,12 @@ export default function ProfilePage() {
                   const IconComp = (LucideIcons as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
                   const colorClass = `text-${b.color_theme.replace("text-", "")}`;
                   return (
-                    <div key={b.id} className="relative group cursor-help bg-zinc-800 border border-zinc-700/50 hover:border-zinc-500 rounded-2xl p-4 transition-all flex flex-col items-center justify-center w-28 h-28">
+                    <div key={b.id} className="relative group cursor-help bg-zinc-800 border border-zinc-700/50 hover:border-zinc-500 ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">
                       <IconComp size={40} className={`mb-2 ${colorClass}`} />
                       <span className="text-[10px] font-bold text-center text-zinc-300 leading-tight block">{b.name}</span>
                       
                       {/* Tooltip */}
-                      <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-black border border-zinc-700 text-white text-xs rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">
+                      <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-black border border-zinc-700 text-white text-xs ares-cut-sm p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">
                         <p className="font-bold mb-1">{b.name}</p>
                         <p className="text-zinc-400 text-[10px] leading-relaxed">{b.description}</p>
                         {b.awarded_at && (
@@ -170,7 +170,7 @@ export default function ProfilePage() {
 
           {/* Admin / Private Details */}
           {(profile.emergency_contact_name || profile.dietary_restrictions || profile.tshirt_size) && (
-             <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 mb-8 relative overflow-hidden">
+             <div className="bg-red-500/5 border border-red-500/20 ares-cut p-6 mb-8 relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-red-500/20 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-bl-lg">Private / Admin Only</div>
                <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Shield size={14} /> Internal Records</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -201,25 +201,25 @@ export default function ProfilePage() {
           {/* Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {profile.favorite_first_thing && (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Favorite Thing About FIRST</p>
                 <p className="text-zinc-300 text-sm">{profile.favorite_first_thing}</p>
               </div>
             )}
             {profile.fun_fact && (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-gold uppercase tracking-wider mb-2">Fun Fact</p>
                 <p className="text-zinc-300 text-sm">{profile.fun_fact}</p>
               </div>
             )}
             {profile.grade_year && (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Class</p>
                 <p className="text-zinc-300 text-sm">{profile.grade_year}</p>
               </div>
             )}
             {(profile.email || profile.phone) && (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Contact</p>
                 {profile.email && <p className="text-zinc-300 text-sm">{profile.email}</p>}
                 {profile.phone && <p className="text-zinc-400 text-sm">{profile.phone}</p>}
@@ -229,7 +229,7 @@ export default function ProfilePage() {
 
           {/* Colleges */}
           {colleges && colleges.length > 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 mb-4">
+            <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6 mb-4">
               <h3 className="text-xs font-bold text-ares-red uppercase tracking-wider mb-4 flex items-center gap-2"><GraduationCap size={14} /> Education</h3>
               <div className="space-y-3">
                 {colleges.map((col: { domain: string, name: string, degree: string, years: string }, i: number) => (
@@ -247,7 +247,7 @@ export default function ProfilePage() {
 
           {/* Employers */}
           {employers && employers.length > 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+            <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
               <h3 className="text-xs font-bold text-ares-red uppercase tracking-wider mb-4 flex items-center gap-2"><Briefcase size={14} /> Career</h3>
               <div className="space-y-3">
                 {employers.map((emp: { domain: string, name: string, current: boolean, title: string, years: string }, i: number) => (

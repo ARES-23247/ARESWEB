@@ -107,7 +107,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
     <div className="mt-10 border-t border-zinc-800 pt-8 space-y-8">
       {/* Attendance & Provisions Summary (Visible to verified users) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-zinc-900/40 border border-zinc-800 p-5 rounded-2xl">
+        <div className="bg-zinc-900/40 border border-zinc-800 p-5 ares-cut">
           <h4 className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
             <Users size={14} className="text-ares-gold" /> Attendance Stats
           </h4>
@@ -124,7 +124,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
         </div>
         
         {dietarySummary && (
-          <div className="bg-zinc-900/40 border border-zinc-800 p-5 rounded-2xl">
+          <div className="bg-zinc-900/40 border border-zinc-800 p-5 ares-cut">
             <h4 className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
               <AlertCircle size={14} className="text-ares-red" /> Dietary Restrictions
             </h4>
@@ -134,7 +134,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(dietarySummary).length > 0 ? (
                     Object.entries(dietarySummary).map(([restriction, count]) => (
-                      <span key={`rsvp-${restriction}`} className="px-2 py-1 bg-ares-red/10 border border-ares-red/20 rounded-md text-[10px] font-bold text-ares-red">
+                      <span key={`rsvp-${restriction}`} className="px-2 py-1 bg-ares-red/10 border border-ares-red/20 ares-cut-sm text-[10px] font-bold text-ares-red">
                         {count} {restriction}
                       </span>
                     ))
@@ -149,7 +149,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                   <span className="text-xs text-white/50 block mb-2 font-bold uppercase tracking-widest">Entire Team Roster</span>
                   <div className="flex flex-wrap gap-2 opacity-70 grayscale">
                     {Object.entries(teamDietarySummary).map(([restriction, count]) => (
-                      <span key={`team-${restriction}`} className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-md text-[10px] font-bold text-zinc-300">
+                      <span key={`team-${restriction}`} className="px-2 py-1 bg-zinc-800 border border-zinc-700 ares-cut-sm text-[10px] font-bold text-zinc-300">
                         {count} {restriction}
                       </span>
                     ))}
@@ -173,7 +173,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
               {/* Self Check-in Button */}
               <button 
                 onClick={selfCheckIn}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 ares-cut-sm text-xs font-black uppercase tracking-widest transition-all ${
                   myEntry?.attended 
                   ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20" 
                   : "bg-ares-gold hover:bg-yellow-400 text-black shadow-lg shadow-ares-gold/20"
@@ -185,7 +185,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto mb-6 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl">
+            <div className="overflow-x-auto mb-6 bg-zinc-900/20 border border-zinc-800/50 ares-cut">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-800 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
@@ -216,7 +216,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <img src={entry.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${entry.user_id}`}
-                            alt="" className="w-6 h-6 rounded-lg bg-zinc-800" />
+                            alt="" className="w-6 h-6 ares-cut-sm bg-zinc-800" />
                           <span className={`text-sm font-bold ${entry.attended ? "text-white" : "text-zinc-400"}`}>{entry.nickname || "ARES Member"}</span>
                         </div>
                       </td>
@@ -234,7 +234,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
           </div>
 
           {/* Sign Up Form */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] p-6 space-y-4">
+          <div className="bg-zinc-900/50 border border-zinc-800 ares-cut-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-black text-ares-gold uppercase tracking-[0.2em]">
                 {mySignup !== null ? "Update Your RSVP" : "RSVP to this Event"}
@@ -247,14 +247,14 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                   placeholder="What are you bringing? (e.g. chips & salsa)"
                   value={mySignup?.bringing || ""}
                   onChange={e => setMySignup(prev => ({ bringing: e.target.value, notes: prev?.notes || "", prep_hours: prev?.prep_hours || 0 }))}
-                  className="w-full bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
+                  className="w-full bg-zinc-800/40 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
                 />
               )}
               <input
                 placeholder={isPotluck ? "Notes (dietary info, arrival time...)" : "Notes (arrival time, etc...)"}
                 value={mySignup?.notes || ""}
                 onChange={e => setMySignup(prev => ({ bringing: prev?.bringing || "", notes: e.target.value, prep_hours: prev?.prep_hours || 0 }))}
-                className={`w-full ${isPotluck && isVolunteer ? 'md:col-span-2' : ''} bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all`}
+                className={`w-full ${isPotluck && isVolunteer ? 'md:col-span-2' : ''} bg-zinc-800/40 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all`}
                 style={(!isPotluck && !isVolunteer) ? { gridColumn: 'span 2' } : {}}
               />
               {isVolunteer && (
@@ -264,21 +264,21 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                     type="number" step="0.5" min="0" placeholder="0"
                     value={mySignup?.prep_hours || 0}
                     onChange={e => setMySignup(prev => ({ bringing: prev?.bringing || "", notes: prev?.notes || "", prep_hours: parseFloat(e.target.value) || 0 }))}
-                    className="w-full md:w-32 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
+                    className="w-full md:w-32 bg-zinc-800/40 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-sm text-white focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
                   />
                 </div>
               )}
             </div>
             <div className="flex gap-3">
               <button onClick={handleSignUp} disabled={isSaving}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/30 text-ares-gold rounded-xl text-sm font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/30 text-ares-gold ares-cut-sm text-sm font-black uppercase tracking-widest transition-all disabled:opacity-50"
               >
                 {isSaving ? <RefreshCw size={16} className="animate-spin" /> : mySignup !== null ? <Save size={16} /> : <Plus size={16} />}
                 {mySignup !== null ? "Update RSVP" : "RSVP Here"}
               </button>
               {mySignup !== null && signups.some(s => s.is_own) && (
                 <button onClick={handleRemove}
-                  className="flex flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-xl text-sm font-black uppercase tracking-widest transition-all"
+                  className="flex flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 ares-cut-sm text-sm font-black uppercase tracking-widest transition-all"
                 >
                   <Trash2 size={16} /> Cancel RSVP
                 </button>
@@ -287,7 +287,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
           </div>
         </>
       ) : (
-        <div className="my-12 p-8 bg-zinc-900/50 border border-zinc-800 rounded-3xl text-center">
+        <div className="my-12 p-8 bg-zinc-900/50 border border-zinc-800 ares-cut-lg text-center">
           <p className="text-sm text-zinc-300 mb-2">
             <span className="text-ares-gold font-bold">Verified Access Required</span>
           </p>
@@ -296,7 +296,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
           </p>
           {!isAuthenticated ? (
             <div>
-              <a href="/login" className="px-6 py-3 bg-ares-gold hover:bg-yellow-400 text-black rounded-xl font-black text-xs uppercase tracking-widest inline-block transition-all shadow-lg shadow-ares-gold/20">Sign in with ARES ID</a>
+              <a href="/login" className="px-6 py-3 bg-ares-gold hover:bg-yellow-400 text-black ares-cut-sm font-black text-xs uppercase tracking-widest inline-block transition-all shadow-lg shadow-ares-gold/20">Sign in with ARES ID</a>
               <p className="text-[10px] uppercase tracking-widest text-zinc-600 mt-6 font-bold">
                 Don&apos;t have an ARES ID? <a href="/about" className="text-ares-gold hover:underline">Contact us</a>
               </p>

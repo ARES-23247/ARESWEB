@@ -166,7 +166,7 @@ export default function Docs() {
               initial={{ y: -20, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: -20, scale: 0.95 }}
-              className="w-full max-w-2xl bg-[#161b22] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+              className="w-full max-w-2xl bg-[#161b22] border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
@@ -253,7 +253,7 @@ export default function Docs() {
                 {isEditor && (
                 <Link 
                   to={`/dashboard?editDoc=${currentDoc.slug}`}
-                  className="flex items-center gap-2 text-xs font-bold text-ares-cyan/70 hover:text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1.5 rounded-md transition-colors"
+                  className="flex items-center gap-2 text-xs font-bold text-ares-cyan/70 hover:text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1.5 ares-cut-sm transition-colors"
                 >
                   <Edit2 size={12} />
                   EDIT PAGE
@@ -278,13 +278,13 @@ export default function Docs() {
                     return (
                       <>
                         {prevDoc ? (
-                          <Link to={`/docs/${prevDoc.slug}`} className="flex flex-col p-4 rounded-xl border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group">
+                          <Link to={`/docs/${prevDoc.slug}`} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group">
                             <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" /> Previous</span>
                             <span className="text-white font-bold group-hover:text-ares-red transition-colors">{prevDoc.title}</span>
                           </Link>
                         ) : <div />}
                         {nextDoc ? (
-                          <Link to={`/docs/${nextDoc.slug}`} className="flex flex-col p-4 rounded-xl border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end">
+                          <Link to={`/docs/${nextDoc.slug}`} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end">
                             <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" /></span>
                             <span className="text-white font-bold group-hover:text-ares-cyan transition-colors">{nextDoc.title}</span>
                           </Link>
@@ -344,7 +344,7 @@ export default function Docs() {
               )}
 
               {/* ── Documentation Feedback ───────────────────────────── */}
-              <div className="mt-16 p-8 rounded-2xl bg-zinc-950/50 border border-white/5 relative overflow-hidden group/feedback">
+              <div className="mt-16 p-8 ares-cut bg-zinc-950/50 border border-white/5 relative overflow-hidden group/feedback">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
                   <BookOpen size={64} className="text-ares-gold rotate-12" />
                 </div>
@@ -361,7 +361,7 @@ export default function Docs() {
                         });
                         alert('Thanks for your feedback!');
                       }}
-                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all"
+                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all"
                     >
                       <span className="text-lg">👍</span> Yes, it was
                     </button>
@@ -375,7 +375,7 @@ export default function Docs() {
                         });
                         alert('Thank you! We will use your feedback to improve this page.');
                       }}
-                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all"
+                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all"
                     >
                       <span className="text-lg">👎</span> No, it wasn&apos;t
                     </button>

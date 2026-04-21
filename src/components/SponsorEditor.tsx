@@ -90,7 +90,7 @@ export default function SponsorEditor() {
             if (!isFormOpen) setFormData({ id: "", name: "", tier: "Gold", logo_url: "", website_url: "", is_active: 1 });
             setIsFormOpen(!isFormOpen);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
+          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
         >
           {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
           {isFormOpen ? "Cancel" : "Add Partner"}
@@ -104,7 +104,7 @@ export default function SponsorEditor() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleSubmit}
-            className="bg-black/40 border border-white/10 rounded-3xl p-6 space-y-4 overflow-hidden"
+            className="bg-black/40 border border-white/10 ares-cut-lg p-6 space-y-4 overflow-hidden"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
@@ -113,7 +113,7 @@ export default function SponsorEditor() {
                   id="sponsor-name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
                   placeholder="e.g. Google DeepMind"
                   required
                 />
@@ -124,7 +124,7 @@ export default function SponsorEditor() {
                   id="sponsor-tier"
                   value={formData.tier}
                   onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
                 >
                   {TIERS.map(t => <option key={t.name} value={t.name} className="bg-zinc-900">{t.name}</option>)}
                 </select>
@@ -135,7 +135,7 @@ export default function SponsorEditor() {
                   id="sponsor-logo"
                   value={formData.logo_url || ""}
                   onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
                   placeholder="https://..."
                 />
               </div>
@@ -145,7 +145,7 @@ export default function SponsorEditor() {
                   id="sponsor-link"
                   value={formData.website_url || ""}
                   onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
                   placeholder="https://..."
                 />
               </div>
@@ -153,7 +153,7 @@ export default function SponsorEditor() {
             <button
               type="submit"
               disabled={saveMutation.isPending}
-              className="w-full py-3 bg-gradient-to-r from-ares-red to-red-800 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-ares-red to-red-800 text-white font-bold ares-cut-sm hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
             >
               {saveMutation.isPending ? "Syncing..." : formData.id ? "Update Partner in D1" : "Commit Partner to D1"}
             </button>
@@ -163,9 +163,9 @@ export default function SponsorEditor() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-           [1,2,3].map(i => <div key={i} className="h-32 bg-white/5 rounded-3xl animate-pulse" />)
+           [1,2,3].map(i => <div key={i} className="h-32 bg-white/5 ares-cut-lg animate-pulse" />)
         ) : sponsors.map((s) => (
-          <div key={s.id} className="bg-black/40 border border-white/5 rounded-3xl p-6 relative group transition-all hover:border-white/20">
+          <div key={s.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 relative group transition-all hover:border-white/20">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2">
                 {TIERS.find(t => t.name === s.tier)?.icon}
@@ -212,7 +212,7 @@ export default function SponsorEditor() {
           </div>
         ))}
         {sponsors.length === 0 && !isLoading && !isFormOpen && (
-          <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 rounded-3xl outline-none">
+          <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 ares-cut-lg outline-none">
             <p className="text-zinc-600 font-medium italic">No sponsors logged. Start by adding your titanium partners.</p>
           </div>
         )}

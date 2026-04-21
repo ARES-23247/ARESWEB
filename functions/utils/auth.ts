@@ -35,7 +35,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                             image: "avatar_url"
                         }
                     }
-                ] : undefined
+                ] : []
             })
         ],
         database: kyselyAdapter(kyselyDb, {
@@ -43,7 +43,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
         onAPIError: {
             throw: true,
         },
-        secret: env.BETTER_AUTH_SECRET,
+        secret: env.BETTER_AUTH_SECRET || "aresweb_development_secret_replace_me_in_production",
         baseURL,
         trustedOrigins: [
             "http://localhost:8788", 

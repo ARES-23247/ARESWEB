@@ -40,7 +40,7 @@ export default function BugReport() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Form Column */}
             <div>
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 shadow-2xl relative overflow-hidden">
+              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut-sm p-8 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ares-red to-ares-bronze"></div>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
@@ -51,7 +51,7 @@ export default function BugReport() {
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-black/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono"
+                      className="w-full bg-black/50 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono"
                       placeholder="e.g. Gallery images fail to load on mobile"
                     />
                   </div>
@@ -63,7 +63,7 @@ export default function BugReport() {
                       rows={5}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full bg-black/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono resize-none text-sm"
+                      className="w-full bg-black/50 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono resize-none text-sm"
                       placeholder="Walk us through the steps to reproduce the error..."
                     />
                     <p className="text-xs text-zinc-500 mt-2 italic">You can always add screenshots or more info on GitHub directly.</p>
@@ -75,7 +75,7 @@ export default function BugReport() {
                       id="repo-select"
                       value={repoStr}
                       onChange={(e) => setRepoStr(e.target.value)}
-                      className="w-full bg-black/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono appearance-none"
+                      className="w-full bg-black/50 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono appearance-none"
                     >
                       <option value="ARES-23247/ARESWEB">ARESWEB (Web Portal)</option>
                       <option value="ARES-23247/IntoTheDeep">IntoTheDeep (Robot Code)</option>
@@ -84,7 +84,7 @@ export default function BugReport() {
 
                   <button 
                     type="submit" 
-                    className="w-full bg-ares-red hover:bg-white hover:text-ares-red text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl transition-all shadow-lg shadow-ares-red/20 active:translate-y-1"
+                    className="w-full bg-ares-red hover:bg-white hover:text-ares-red text-white font-bold tracking-widest uppercase text-sm py-4 ares-cut-sm transition-all shadow-lg shadow-ares-red/20 active:translate-y-1"
                   >
                     Draft GitHub Issue
                   </button>

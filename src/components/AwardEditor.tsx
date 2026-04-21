@@ -78,7 +78,7 @@ export default function AwardEditor() {
         </div>
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
+          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
         >
           {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
           {isAdding ? "Cancel" : "Add Award"}
@@ -92,7 +92,7 @@ export default function AwardEditor() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             onSubmit={handleSubmit}
-            className="bg-zinc-900 border border-ares-gold/30 rounded-3xl p-8 space-y-6 shadow-2xl"
+            className="bg-zinc-900 border border-ares-gold/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-1">
@@ -101,7 +101,7 @@ export default function AwardEditor() {
                   id="award-title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
                   placeholder="e.g. Excellence in Engineering"
                   required
                 />
@@ -113,7 +113,7 @@ export default function AwardEditor() {
                   type="number"
                   value={formData.year}
                   onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
                   required
                 />
               </div>
@@ -123,7 +123,7 @@ export default function AwardEditor() {
                   id="award-eventName"
                   value={formData.event_name || ""}
                   onChange={(e) => setFormData({ ...formData, event_name: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
                   placeholder="e.g. West Virginia State Championship"
                 />
               </div>
@@ -133,7 +133,7 @@ export default function AwardEditor() {
                   id="award-image"
                   value={formData.image_url || ""}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
                   placeholder="https://..."
                 />
               </div>
@@ -143,7 +143,7 @@ export default function AwardEditor() {
                   id="award-desc"
                   value={formData.description || ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors min-h-[100px]"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors min-h-[100px]"
                   placeholder="Tell the story of how we won..."
                 />
               </div>
@@ -151,7 +151,7 @@ export default function AwardEditor() {
             <button
               type="submit"
               disabled={saveMutation.isPending}
-              className="w-full py-4 bg-gradient-to-r from-ares-gold to-yellow-600 text-black font-black rounded-2xl hover:shadow-[0_0_30px_rgba(255,191,0,0.3)] transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gradient-to-r from-ares-gold to-yellow-600 text-black font-black ares-cut hover:shadow-[0_0_30px_rgba(255,191,0,0.3)] transition-all flex items-center justify-center gap-2"
             >
               {saveMutation.isPending ? "Syncing..." : <><Save size={20} /> Commemorate Achievement</>}
             </button>
@@ -161,18 +161,18 @@ export default function AwardEditor() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {isLoading ? (
-          <div className="h-48 bg-white/5 rounded-3xl animate-pulse" />
+          <div className="h-48 bg-white/5 ares-cut-lg animate-pulse" />
         ) : awards.map((award) => (
           <div key={award.id} className="bg-black/40 border border-white/5 rounded-[2.5rem] p-8 group hover:border-ares-gold/30 transition-all flex flex-col md:flex-row gap-8 relative overflow-hidden">
             {/* Background Glow */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
             
             {award.image_url ? (
-              <div className="w-full md:w-32 h-32 bg-white/5 rounded-2xl overflow-hidden flex-shrink-0 border border-white/10">
+              <div className="w-full md:w-32 h-32 bg-white/5 ares-cut overflow-hidden flex-shrink-0 border border-white/10">
                 <img src={award.image_url} alt={award.title} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-full md:w-32 h-32 bg-white/5 rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/10">
+              <div className="w-full md:w-32 h-32 bg-white/5 ares-cut flex items-center justify-center flex-shrink-0 border border-white/10">
                 <Trophy size={48} className="text-ares-gold/20" />
               </div>
             )}
@@ -191,14 +191,14 @@ export default function AwardEditor() {
 
             <button
               onClick={() => { if(confirm("Purge this achievement from history?")) deleteMutation.mutate(award.id); }}
-              className="absolute top-4 right-4 p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100"
+              className="absolute top-4 right-4 p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
             >
               <Trash2 size={18} />
             </button>
           </div>
         ))}
         {awards.length === 0 && !isLoading && !isAdding && (
-          <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+          <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 ares-cut-lg">
              <p className="text-zinc-600 font-medium italic">The trophy case is currently empty. Go win some banners!</p>
           </div>
         )}

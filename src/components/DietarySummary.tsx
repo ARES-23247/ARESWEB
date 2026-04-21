@@ -44,7 +44,7 @@ export default function DietarySummary() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-3 p-6 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400">
+      <div className="flex items-center gap-3 p-6 bg-red-500/10 border border-red-500/20 ares-cut text-red-400">
         <AlertCircle size={24} />
         <div>
           <h4 className="font-bold">Summary Unavailable</h4>
@@ -56,7 +56,7 @@ export default function DietarySummary() {
 
   if (!data || data.totalCount === 0) {
     return (
-      <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-3xl">
+      <div className="text-center py-12 border-2 border-dashed border-zinc-800 ares-cut-lg">
         <Users className="mx-auto text-zinc-700 mb-4" size={48} />
         <p className="text-zinc-500 font-bold">No member profile data found yet.</p>
       </div>
@@ -66,7 +66,7 @@ export default function DietarySummary() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Dietary Panel */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden group">
+      <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6 relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
           <Utensils size={120} />
         </div>
@@ -100,7 +100,7 @@ export default function DietarySummary() {
       </div>
 
       {/* Apparel Panel */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden group">
+      <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6 relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
           <Shirt size={120} />
         </div>

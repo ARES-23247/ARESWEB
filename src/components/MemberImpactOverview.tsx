@@ -59,7 +59,7 @@ export default function MemberImpactOverview() {
       {students.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Attendance MVP */}
-          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden group">
+          <div className="bg-zinc-900/40 border border-zinc-800 ares-cut-lg p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-ares-red/10 blur-[80px] rounded-full pointer-events-none" />
             <h3 className="text-[10px] font-black uppercase tracking-widest text-ares-red flex items-center gap-2 mb-6">
               <Users size={14} /> Attendance MVPs
@@ -67,12 +67,12 @@ export default function MemberImpactOverview() {
             
             <div className="flex flex-col gap-4">
               {topAttendance.map((mvp, idx) => (
-                <div key={mvp.user_id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-colors ${
+                <div key={mvp.user_id} className={`flex items-center gap-4 p-4 ares-cut border transition-colors ${
                   idx === 0 ? "bg-ares-gold/10 border-ares-gold/20" : 
                   idx === 1 ? "bg-zinc-300/10 border-zinc-300/20" : 
                   "bg-orange-800/10 border-orange-800/20"
                 }`}>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${
+                  <div className={`w-10 h-10 ares-cut-sm flex items-center justify-center font-black ${
                      idx === 0 ? "bg-ares-gold/20 text-ares-gold" : 
                      idx === 1 ? "bg-zinc-300/20 text-zinc-300" : 
                      "bg-orange-800/20 text-orange-600"
@@ -93,7 +93,7 @@ export default function MemberImpactOverview() {
           </div>
 
           {/* Outreach MVP */}
-          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden group">
+          <div className="bg-zinc-900/40 border border-zinc-800 ares-cut-lg p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-ares-cyan/10 blur-[80px] rounded-full pointer-events-none" />
             <h3 className="text-[10px] font-black uppercase tracking-widest text-ares-cyan flex items-center gap-2 mb-6">
               <Clock size={14} /> Outreach MVPs
@@ -101,12 +101,12 @@ export default function MemberImpactOverview() {
             
             <div className="flex flex-col gap-4">
               {topOutreach.map((mvp, idx) => (
-                <div key={mvp.user_id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-colors ${
+                <div key={mvp.user_id} className={`flex items-center gap-4 p-4 ares-cut border transition-colors ${
                   idx === 0 ? "bg-ares-gold/10 border-ares-gold/20" : 
                   idx === 1 ? "bg-zinc-300/10 border-zinc-300/20" : 
                   "bg-orange-800/10 border-orange-800/20"
                 }`}>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${
+                  <div className={`w-10 h-10 ares-cut-sm flex items-center justify-center font-black ${
                      idx === 0 ? "bg-ares-gold/20 text-ares-gold" : 
                      idx === 1 ? "bg-zinc-300/20 text-zinc-300" : 
                      "bg-orange-800/20 text-orange-600"
@@ -129,7 +129,7 @@ export default function MemberImpactOverview() {
       )}
 
       {/* Roster Table */}
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl overflow-hidden">
+      <div className="bg-zinc-900/40 border border-zinc-800 ares-cut-lg overflow-hidden">
         <div className="p-6 border-b border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-black text-white">Full Team Roster</h3>
@@ -143,7 +143,7 @@ export default function MemberImpactOverview() {
               placeholder="Search member..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-zinc-700 transition-colors"
+              className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-zinc-700 transition-colors"
             />
           </div>
         </div>
@@ -163,12 +163,12 @@ export default function MemberImpactOverview() {
                 <tr key={m.user_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${m.user_id}`} alt="avatar" className="w-8 h-8 rounded-lg bg-zinc-900" />
+                      <img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${m.user_id}`} alt="avatar" className="w-8 h-8 ares-cut-sm bg-zinc-900" />
                       <span className="font-bold text-white tracking-tight">{m.display_name}</span>
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-md text-[10px] uppercase font-bold text-zinc-400">
+                    <span className="px-2 py-1 bg-zinc-800 border border-zinc-700 ares-cut-sm text-[10px] uppercase font-bold text-zinc-400">
                       {m.member_type}
                     </span>
                   </td>

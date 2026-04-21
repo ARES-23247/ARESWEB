@@ -78,6 +78,14 @@ export default function Sponsors() {
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
+  const trackSponsorClick = (sponsorId: string) => {
+    fetch("/api/analytics/sponsor-click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sponsor_id: sponsorId })
+    }).catch(() => {}); // fire and forget
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -130,7 +138,7 @@ export default function Sponsors() {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-7xl font-black tracking-tighter mb-6 italic"
           >
-            Our <span className="bg-ares-red px-6 py-2 rounded-2xl shadow-xl mt-2 inline-block" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>Partners</span>
+            Our <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>Partners</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -164,11 +172,12 @@ export default function Sponsors() {
                       href={s.website_url || "#"}
                       target={s.website_url ? "_blank" : undefined}
                       rel="noopener noreferrer"
+                      onClick={() => trackSponsorClick(s.id)}
                       aria-label={`Visit the website of ${s.name}`}
                       whileHover={{ y: -5, scale: 1.02 }}
                       className={`
                         ${TIER_STYLING[tier].glass} ${TIER_STYLING[tier].border} ${TIER_STYLING[tier].glow}
-                        p-8 rounded-[2rem] border flex flex-col items-center justify-center text-center group transition-all duration-300
+                        p-8 ares-cut-lg border flex flex-col items-center justify-center text-center group transition-all duration-300
                         min-h-[200px] hover:bg-white/[0.07]
                       `}
                     >
@@ -198,7 +207,7 @@ export default function Sponsors() {
         </div>
 
         <footer 
-          className="mt-32 p-12 rounded-[3rem] bg-[#181818] border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
+          className="mt-32 p-12 ares-cut-lg bg-[#181818] border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
         >
           {/* Subtle grid pattern background */}
           <div className="absolute inset-0 bg-[url('https://api.aresfirst.org/assets/grid.svg')] opacity-5 mix-blend-overlay pointer-events-none z-0" aria-hidden="true"></div>
@@ -219,17 +228,17 @@ export default function Sponsors() {
             </div>
           </div>
           
-          <div className="flex-1 relative z-10 bg-obsidian/80 p-8 rounded-3xl border border-white/5 shadow-2xl backdrop-blur-md">
+          <div className="flex-1 relative z-10 bg-obsidian/80 p-8 ares-cut border border-white/5 shadow-2xl backdrop-blur-md">
             <h4 className="text-xl font-black text-white mb-6 uppercase tracking-widest flex items-center gap-3" style={{ color: '#ffffff', backgroundColor: '#151515' }}>
               <Heart size={20} className="text-ares-red fill-ares-red/20" /> Become a Sponsor
             </h4>
             {submitStatus === "success" && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl mb-6 text-sm font-bold flex items-center gap-2">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 ares-cut-sm mb-6 text-sm font-bold flex items-center gap-2">
                 <ShieldCheck size={16} /> Request sent successfully. We will follow up soon!
               </div>
             )}
             {submitStatus === "error" && (
-              <div className="bg-ares-red/10 border border-ares-red/20 text-ares-red p-4 rounded-xl mb-6 text-sm font-bold">
+              <div className="bg-ares-red/10 border border-ares-red/20 text-ares-red p-4 ares-cut-sm mb-6 text-sm font-bold">
                 {errorMessage === "Failed" ? "Something went wrong. Please try again or email us directly." : errorMessage}
               </div>
             )}
@@ -237,17 +246,17 @@ export default function Sponsors() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="name-input" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1" style={{ color: '#e8e8e8', backgroundColor: '#151515' }}>Company / Name *</label>
-                  <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-[#181818] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
+                  <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
                 </div>
                 <div>
                   <label htmlFor="email-input" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1" style={{ color: '#e8e8e8', backgroundColor: '#1f1f1f' }}>Email *</label>
-                  <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-[#181818] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
+                  <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
                 </div>
               </div>
               <div>
                 <label htmlFor="subject-select" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1" style={{ color: '#e8e8e8', backgroundColor: '#151515' }}>Sponsorship Level</label>
                 <div className="relative">
-                  <select id="subject-select" value={level} onChange={e => setLevel(e.target.value)} className="w-full bg-[#181818] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer">
+                  <select id="subject-select" value={level} onChange={e => setLevel(e.target.value)} className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer">
                     <option>Interested in Details</option>
                     {dropdownTiers.map(t => (
                       <option key={t}>{t} Tier Sponsor</option>
@@ -262,10 +271,10 @@ export default function Sponsors() {
               </div>
               <div>
                 <label htmlFor="message-textarea" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1" style={{ color: '#e8e8e8', backgroundColor: '#151515' }}>Message</label>
-                <textarea id="message-textarea" value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full bg-[#181818] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
+                <textarea id="message-textarea" value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full bg-[#181818] border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
               </div>
               <div className="pt-2">
-                <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest rounded-xl hover:bg-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
+                <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut hover:bg-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
                   {isSubmitting ? "Sending..." : <><span className="flex items-center gap-2">Submit Interest Request <ArrowRight size={18} /></span></>}
                 </button>
                 <p className="text-center text-[10px] text-[#999999] font-mono uppercase tracking-tighter mt-4" style={{ color: '#999999', backgroundColor: '#1f1f1f' }}>

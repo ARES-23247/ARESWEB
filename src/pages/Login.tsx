@@ -21,7 +21,7 @@ export default function Login() {
       });
       if (error) {
         console.error("Login Error:", error);
-        setErrorMessage(`Login failed: ${error.message} (${error.status})`);
+        setErrorMessage(`Login failed: ${error.message || error.statusText || "Server misconfiguration or unhandled exception"} (${error.status})`);
       } else {
         console.log("Login initiated:", data);
       }
@@ -41,10 +41,10 @@ export default function Login() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-10 rounded-3xl shadow-2xl relative z-10"
+        className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-10 ares-cut-lg shadow-2xl relative z-10"
       >
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-600/20">
+          <div className="w-16 h-16 bg-blue-600 ares-cut flex items-center justify-center mb-6 shadow-lg shadow-blue-600/20">
             <LogIn className="text-white w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight mb-2">ARES Portal</h1>
@@ -56,7 +56,7 @@ export default function Login() {
         <div className="space-y-4">
           <button
             onClick={() => handleLogin("google")}
-            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-zinc-200 text-black font-semibold rounded-2xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-zinc-200 text-black font-semibold ares-cut transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
             Sign in with Google
@@ -64,7 +64,7 @@ export default function Login() {
 
           <button
             onClick={() => handleLogin("github")}
-            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-2xl border border-zinc-700 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold ares-cut border border-zinc-700 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <Key className="w-5 h-5" />
             Sign in with GitHub
@@ -72,7 +72,7 @@ export default function Login() {
 
           <button
             onClick={() => handleLogin("zulip")}
-            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl border border-emerald-500 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold ares-cut border border-emerald-500 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <MessageSquare className="w-5 h-5" />
             Sign in with Zulip
@@ -84,7 +84,7 @@ export default function Login() {
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-start gap-3"
+            className="mt-6 p-4 bg-red-500/10 border border-red-500/50 ares-cut-sm flex items-start gap-3"
           >
             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-200 leading-relaxed font-medium">

@@ -115,7 +115,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       const srcStr = (node.src || node.attrs?.src || "") as string;
       const altStr = (node.alt || node.attrs?.alt || "") as string;
       return (
-        <figure className="my-8 rounded-xl overflow-hidden glass-card border border-white/5 bg-black/40">
+        <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40">
           <div className="relative w-full aspect-video">
             <img src={srcStr} alt={altStr} className="w-full h-full object-cover" />
           </div>
@@ -146,7 +146,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     );
     case "table": return (
       <div className="overflow-x-auto my-6">
-        <table className="w-full text-left border-collapse border border-zinc-800 rounded-lg hidden-border-corners shadow-lg table-auto">
+        <table className="w-full text-left border-collapse border border-zinc-800 ares-cut-sm hidden-border-corners shadow-lg table-auto">
           <tbody>{children}</tbody>
         </table>
       </div>
@@ -155,7 +155,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "tableHeader": return <th className="bg-zinc-900 border border-zinc-800 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
     case "tableCell": return <td className="border border-zinc-800 p-3 text-zinc-300 align-top">{children}</td>;
     case "youtube": return (
-      <div className="my-8 w-full aspect-video rounded-xl overflow-hidden glass-card shadow-lg flex items-center justify-center">
+      <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
         <iframe title="YouTube Video Component" src={node.attrs?.src as string} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
       </div>
     );
@@ -181,7 +181,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     );
     case "callout": {
       const type = node.attrs?.type || "info";
-      let baseClass = "p-4 my-6 rounded-xl border flex gap-4";
+      let baseClass = "p-4 my-6 ares-cut-sm border flex gap-4";
       let icon = "ℹ️";
       
       if (type === "info") {
@@ -215,13 +215,13 @@ function RevealBlock({ summary, children }: { summary: string, children: ReactNo
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="my-6 rounded-xl border border-white/10 bg-black/20 overflow-hidden shadow-lg transition-all hover:border-ares-gold/30">
+    <div className="my-6 ares-cut-sm border border-white/10 bg-black/20 overflow-hidden shadow-lg transition-all hover:border-ares-gold/30">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-6 py-4 text-left group transition-colors hover:bg-white/5"
       >
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg transition-colors ${isOpen ? 'bg-ares-gold text-black' : 'bg-white/5 text-ares-gold'}`}>
+          <div className={`p-2 ares-cut-sm transition-colors ${isOpen ? 'bg-ares-gold text-black' : 'bg-white/5 text-ares-gold'}`}>
             <Eye size={18} />
           </div>
           <span className={`font-bold tracking-wide transition-colors ${isOpen ? 'text-white' : 'text-white/70 group-hover:text-ares-gold'}`}>

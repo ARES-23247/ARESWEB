@@ -55,7 +55,7 @@ export const ClickToDeleteButton = ({
 
   if (isDeleting) {
     return (
-      <button disabled className="text-xs font-bold text-zinc-300 bg-zinc-800 px-3 py-1 rounded-md opacity-50 cursor-not-allowed">
+      <button disabled className="text-xs font-bold text-zinc-300 bg-zinc-800 px-3 py-1 ares-cut-sm opacity-50 cursor-not-allowed">
         DELETING...
       </button>
     );
@@ -65,7 +65,7 @@ export const ClickToDeleteButton = ({
     return (
       <button
         onClick={onDelete}
-        className="text-xs font-bold text-white bg-ares-red/80 hover:bg-ares-red px-3 py-1 rounded-md shadow-[0_0_10px_rgba(204,0,0,0.5)] transition-all animate-pulse focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        className="text-xs font-bold text-white bg-ares-red/80 hover:bg-ares-red px-3 py-1 ares-cut-sm shadow-[0_0_10px_rgba(204,0,0,0.5)] transition-all animate-pulse focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
         CONFIRM DELETE
       </button>
@@ -75,7 +75,7 @@ export const ClickToDeleteButton = ({
   return (
     <button
       onClick={() => setConfirmId(id)}
-      className="text-xs font-bold text-zinc-400 hover:text-ares-red bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red"
+      className="text-xs font-bold text-zinc-400 hover:text-ares-red bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 ares-cut-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red"
     >
       DELETE
     </button>

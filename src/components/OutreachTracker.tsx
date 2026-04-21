@@ -89,7 +89,7 @@ export default function OutreachTracker() {
           { label: "Student Leads", val: totals.students.toLocaleString(), icon: <Users className="text-ares-cyan" /> },
           { label: "Total Events", val: totals.events, icon: <CheckCircle className="text-emerald-500" /> },
         ].map(m => (
-          <div key={m.label} className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+          <div key={m.label} className="bg-white/5 border border-white/5 p-6 ares-cut-lg">
             <div className="flex items-center gap-2 mb-2 opacity-50 uppercase text-[10px] font-bold tracking-widest text-zinc-400">
               {m.icon} {m.label}
             </div>
@@ -107,7 +107,7 @@ export default function OutreachTracker() {
         </div>
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
+          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-red-700 transition-colors shadow-lg shadow-ares-red/20"
         >
           {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
           {isAdding ? "Cancel" : "Log Outreach"}
@@ -121,7 +121,7 @@ export default function OutreachTracker() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             onSubmit={handleSubmit}
-            className="bg-zinc-900 border border-ares-red/30 rounded-3xl p-8 space-y-6 shadow-2xl"
+            className="bg-zinc-900 border border-ares-red/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-1">
@@ -130,7 +130,7 @@ export default function OutreachTracker() {
                   id="outreach-title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
                   placeholder="e.g. Robot Demo at City Library"
                   required
                 />
@@ -142,7 +142,7 @@ export default function OutreachTracker() {
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
                   required
                 />
               </div>
@@ -153,7 +153,7 @@ export default function OutreachTracker() {
                   type="number"
                   value={formData.reach_count || 0}
                   onChange={(e) => setFormData({ ...formData, reach_count: parseInt(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
                 />
               </div>
               <div className="space-y-1">
@@ -164,7 +164,7 @@ export default function OutreachTracker() {
                   step="0.5"
                   value={formData.hours_logged || 0}
                   onChange={(e) => setFormData({ ...formData, hours_logged: parseFloat(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
                 />
               </div>
               <div className="space-y-1">
@@ -174,7 +174,7 @@ export default function OutreachTracker() {
                   type="number"
                   value={formData.students_count || 0}
                   onChange={(e) => setFormData({ ...formData, students_count: parseInt(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
                 />
               </div>
               <div className="lg:col-span-3 space-y-1">
@@ -183,7 +183,7 @@ export default function OutreachTracker() {
                   id="outreach-desc"
                   value={formData.description || ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-ares-red outline-none transition-colors min-h-[100px]"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors min-h-[100px]"
                   placeholder="Summarize the community impact..."
                 />
               </div>
@@ -191,7 +191,7 @@ export default function OutreachTracker() {
             <button
               type="submit"
               disabled={saveMutation.isPending}
-              className="w-full py-4 bg-ares-red text-white font-black rounded-2xl hover:shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-ares-red text-white font-black ares-cut hover:shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all flex items-center justify-center gap-2"
             >
               {saveMutation.isPending ? "Syncing..." : <><Save size={20} /> Finalize Impact Entry</>}
             </button>
@@ -201,9 +201,9 @@ export default function OutreachTracker() {
 
       <div className="space-y-4">
         {isLoading ? (
-          <div className="h-48 bg-white/5 rounded-3xl animate-pulse" />
+          <div className="h-48 bg-white/5 ares-cut-lg animate-pulse" />
         ) : logs.map((log) => (
-          <div key={log.id} className="bg-black/40 border border-white/5 rounded-3xl p-6 group hover:border-white/20 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div key={log.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 group hover:border-white/20 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
                  <span className="flex items-center gap-1"><Calendar size={12} /> {log.date}</span>
@@ -214,23 +214,23 @@ export default function OutreachTracker() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex flex-col items-center px-4 py-2 bg-white/5 rounded-2xl min-w-[80px]">
+              <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[80px]">
                 <span className="text-[10px] font-black text-ares-gold uppercase tracking-tighter">Reach</span>
                 <span className="text-lg font-black text-white">{log.reach_count}</span>
               </div>
-              <div className="flex flex-col items-center px-4 py-2 bg-white/5 rounded-2xl min-w-[80px]">
+              <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[80px]">
                 <span className="text-[10px] font-black text-ares-cyan uppercase tracking-tighter">Hours</span>
                 <span className="text-lg font-black text-white">{log.hours_logged.toFixed(1)}</span>
               </div>
               
               {log.is_dynamic ? (
-                <div className="flex items-center px-3 py-1 bg-ares-gold/10 border border-ares-gold/20 rounded-xl">
+                <div className="flex items-center px-3 py-1 bg-ares-gold/10 border border-ares-gold/20 ares-cut-sm">
                   <span className="text-[10px] font-bold text-ares-gold uppercase tracking-widest text-center leading-tight">Synced<br/>Event</span>
                 </div>
               ) : (
                 <button
                   onClick={() => { if(confirm("Purge this impact record?")) deleteMutation.mutate(log.id); }}
-                  className="p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100"
+                  className="p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
                 >
                   <Trash2 size={18} />
                 </button>
@@ -239,7 +239,7 @@ export default function OutreachTracker() {
           </div>
         ))}
         {logs.length === 0 && !isLoading && !isAdding && (
-          <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+          <div className="py-20 text-center border-2 border-dashed border-white/5 ares-cut-lg">
              <p className="text-zinc-600 font-medium italic">No outreach records found. Start logging your team&apos;s impact.</p>
           </div>
         )}

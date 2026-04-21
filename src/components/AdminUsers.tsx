@@ -109,7 +109,7 @@ export default function AdminUsers() {
                 <td className="py-3 px-2">
                   <a href={`/profile/${user.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <img src={user.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.id}`}
-                      alt="" className="w-8 h-8 rounded-xl bg-zinc-800" />
+                      alt="" className="w-8 h-8 ares-cut-sm bg-zinc-800" />
                     <div>
                       <span className="text-sm font-bold text-white block hover:text-ares-red">{user.nickname || user.name || "ARES Member"}</span>
                       {(user.first_name || user.last_name) && (
@@ -124,7 +124,7 @@ export default function AdminUsers() {
                     <select
                       value={user.role || "user"}
                       onChange={e => changeRole(user.id, e.target.value)}
-                      className={`appearance-none bg-transparent border rounded-lg px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none ${
+                      className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none ${
                         user.role === "admin" ? "border-ares-red/50 text-ares-red" :
                         user.role === "author" ? "border-ares-gold/50 text-ares-gold" :
                         "border-white/20 text-white/60"
@@ -140,7 +140,7 @@ export default function AdminUsers() {
                     <select
                       value={user.member_type || "student"}
                       onChange={e => changeMemberType(user.id, e.target.value)}
-                      className={`appearance-none bg-transparent border rounded-lg px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
+                      className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
                         user.member_type === "alumni" ? "border-ares-gold/50 text-ares-gold" :
                         ["parent", "coach", "mentor", "sponsor"].includes(user.member_type || "") ? "border-indigo-500/50 text-indigo-400" :
                         "border-zinc-700 text-zinc-400"
@@ -155,12 +155,12 @@ export default function AdminUsers() {
                 <td className="py-3 px-2 text-right">
                   <button onClick={() => setEditUserId(user.id)}
                     title="Edit Member Profile"
-                    className="p-2 mr-1 text-white/60 hover:text-ares-gold transition-all rounded-lg hover:bg-ares-gold/10 hover:scale-110">
+                    className="p-2 mr-1 text-white/60 hover:text-ares-gold transition-all ares-cut-sm hover:bg-ares-gold/10 hover:scale-110">
                     <Edit3 size={18} />
                   </button>
                   <button onClick={() => removeUser(user.id, user.nickname || user.name || "user")}
                     title="Delete User"
-                    className="p-2 text-white/60 hover:text-ares-red transition-all rounded-lg hover:bg-ares-red/10 hover:scale-110">
+                    className="p-2 text-white/60 hover:text-ares-red transition-all ares-cut-sm hover:bg-ares-red/10 hover:scale-110">
                     <Trash2 size={18} />
                   </button>
                 </td>
@@ -172,11 +172,11 @@ export default function AdminUsers() {
 
       {editUserId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4 sm:p-8 overflow-y-auto">
-          <div className="bg-obsidian border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+          <div className="bg-obsidian border border-white/10 ares-cut w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
             <div className="sticky top-0 right-0 z-10 flex justify-end p-4 pointer-events-none">
               <button 
                 onClick={() => setEditUserId(null)} 
-                className="p-2 bg-obsidian border border-white/10 rounded-lg text-white/40 hover:text-white pointer-events-auto shadow-xl"
+                className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/40 hover:text-white pointer-events-auto shadow-xl"
               >
                 <X size={20} />
               </button>

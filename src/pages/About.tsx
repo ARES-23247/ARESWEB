@@ -32,7 +32,7 @@ function MemberCard({ member }: { member: TeamMember }) {
   return (
     <Link to={`/profile/${member.user_id}`} className="group block">
       <div className="hero-card bg-white border border-ares-bronze/10 p-6 text-center transition-all duration-300 group-hover:border-ares-red/30 group-hover:shadow-lg">
-        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-marble border border-ares-bronze/20 overflow-hidden p-2 group-hover:scale-105 transition-transform">
+        <div className="w-20 h-20 mx-auto mb-4 ares-cut bg-marble border border-ares-bronze/20 overflow-hidden p-2 group-hover:scale-105 transition-transform">
           <img
             src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.user_id}`}
             alt=""
@@ -104,7 +104,7 @@ export default function About() {
             <div className="md:col-span-1">
               <h2 className="text-3xl md:text-4xl font-bold text-obsidian mb-6 font-heading uppercase leading-tight">
                 Who Joins <br />
-                <span className="bg-ares-red px-4 py-2 mt-2 inline-block rounded-xl" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>Our Community?</span>
+                <span className="bg-ares-red px-4 py-2 mt-2 inline-block ares-cut" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>Our Community?</span>
               </h2>
               <p className="text-obsidian/70 text-lg">
                 We recruit students from 6th–12th grade who possess grit, determination, and a hunger for innovation.

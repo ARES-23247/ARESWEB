@@ -149,7 +149,7 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
         td: ({ children }) => <td className="border border-white/10 px-4 py-2 text-[#e6edf3]/70">{children}</td>,
         hr: () => <hr className="border-white/10 my-8" />,
         img: ({ src, alt }) => (
-          <img src={src} alt={alt || "ARESLib documentation image"} className="rounded-lg border border-white/10 my-4 max-w-full" />
+          <img src={src} alt={alt || "ARESLib documentation image"} className="ares-cut-sm border border-white/10 my-4 max-w-full" />
         ),
         strong: ({ children }) => <strong className="text-white font-bold">{children}</strong>,
         em: ({ children }) => <em className="text-ares-gold/80">{children}</em>,

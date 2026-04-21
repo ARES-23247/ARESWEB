@@ -60,10 +60,10 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+      <div className="bg-zinc-950 border border-zinc-800 ares-cut-lg w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
         <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-ares-gold/10 flex items-center justify-center text-ares-gold">
+            <div className="w-10 h-10 ares-cut-sm bg-ares-gold/10 flex items-center justify-center text-ares-gold">
               <History size={20} />
             </div>
             <div>
@@ -71,7 +71,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
               <p className="text-zinc-500 text-xs">Viewing legacy versions for <span className="text-zinc-300 font-mono italic">&quot;{displayTitle}&quot;</span></p>
             </div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors p-2 bg-zinc-900 border border-zinc-800 rounded-xl">
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors p-2 bg-zinc-900 border border-zinc-800 ares-cut-sm">
             <X size={20} />
           </button>
         </div>
@@ -90,11 +90,11 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
           ) : (
             <div className="space-y-3">
               {revisions.map((rev) => (
-                <div key={rev.id} className="bg-zinc-900/40 border border-zinc-800/60 rounded-2xl p-4 flex items-center justify-between hover:border-zinc-700 transition-colors">
+                <div key={rev.id} className="bg-zinc-900/40 border border-zinc-800/60 ares-cut p-4 flex items-center justify-between hover:border-zinc-700 transition-colors">
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-zinc-200 truncate">{rev.title}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-zinc-400 bg-black/40 border border-zinc-800 px-2 py-0.5 rounded-md">
+                      <span className="text-[10px] text-zinc-400 bg-black/40 border border-zinc-800 px-2 py-0.5 ares-cut-sm">
                         {format(new Date(rev.created_at), 'MMM do, yyyy @ HH:mm')}
                       </span>
                       <span className="text-[10px] text-ares-cyan truncate max-w-[150px]">
@@ -109,7 +109,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
                         }
                     }}
                     disabled={restoreMutation.isPending}
-                    className="flex items-center gap-2 text-xs font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/20 px-4 py-2 rounded-xl transition-all"
+                    className="flex items-center gap-2 text-xs font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/20 px-4 py-2 ares-cut-sm transition-all"
                   >
                     <RotateCcw size={14} className={restoreMutation.isPending && restoreMutation.variables === rev.id ? "animate-spin" : ""} />
                     {restoreMutation.isPending && restoreMutation.variables === rev.id ? "RESTORING..." : "RESTORE"}

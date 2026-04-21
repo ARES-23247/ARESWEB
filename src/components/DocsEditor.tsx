@@ -141,7 +141,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full relative bg-obsidian/60 glass-card p-6 md:p-8 rounded-2xl border border-white/10">
+    <div className="flex flex-col gap-6 w-full relative bg-obsidian/60 glass-card p-6 md:p-8 ares-cut border border-white/10">
       <div>
         <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
           {editSlug ? "Edit Document" : "Publish Document"}
@@ -159,7 +159,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
             placeholder="e.g. Swerve Kinematics"
           />
         </div>
@@ -172,7 +172,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             disabled={!!editSlug}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="e.g. swerve-kinematics"
           />
         </div>
@@ -184,7 +184,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
             type="text"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
             placeholder="e.g. Tutorials"
           />
         </div>
@@ -196,7 +196,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
             type="number"
             value={sortOrder}
             onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
           />
         </div>
       </div>
@@ -208,12 +208,12 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+          className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
           placeholder="Brief summary of what this document covers..."
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-xl bg-zinc-900/50 border border-white/5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 ares-cut-sm bg-zinc-900/50 border border-white/5">
         <div className="flex items-center gap-3 cursor-pointer group">
           <input 
             id="isPortfolioToggle"
@@ -249,7 +249,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-ares-red/10 border border-ares-red/30 text-red-200 text-sm">
+        <div className="p-4 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-red-200 text-sm">
           {errorMsg}
         </div>
       )}
@@ -260,13 +260,13 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
             <button
               onClick={handleDelete}
               disabled={isPending}
-              className="px-6 py-2 rounded-xl text-ares-red/80 hover:text-white hover:bg-ares-red font-bold tracking-wider text-sm transition-colors border border-ares-red/30"
+              className="px-6 py-2 ares-cut-sm text-ares-red/80 hover:text-white hover:bg-ares-red font-bold tracking-wider text-sm transition-colors border border-ares-red/30"
             >
               DELETE
             </button>
             <button
               onClick={() => onClearEdit && onClearEdit()}
-              className="px-6 py-2 rounded-xl text-white/50 hover:text-white font-bold tracking-wider text-sm transition-colors"
+              className="px-6 py-2 ares-cut-sm text-white/50 hover:text-white font-bold tracking-wider text-sm transition-colors"
             >
               Cancel
             </button>
@@ -275,14 +275,14 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
         <button
           onClick={() => handlePublish(true)}
           disabled={isPending}
-          className="bg-black border border-zinc-700 hover:bg-zinc-800 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-black border border-zinc-700 hover:bg-zinc-800 text-white px-8 py-3 ares-cut-sm font-bold uppercase tracking-widest text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? "Connecting..." : "Save as Draft"}
         </button>
         <button
           onClick={() => handlePublish(false)}
           disabled={isPending}
-          className="bg-ares-gold hover:bg-white text-obsidian px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(255,184,28,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]"
+          className="bg-ares-gold hover:bg-white text-obsidian px-8 py-3 ares-cut-sm font-bold uppercase tracking-widest text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(255,184,28,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]"
         >
           {isPending ? "Connecting..." : editSlug ? "Update Document" : (userRole === "author" ? "Submit for Review" : "Publish Document")}
         </button>

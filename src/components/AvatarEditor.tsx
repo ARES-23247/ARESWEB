@@ -190,7 +190,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-red appearance-none custom-select"
+        className="bg-black/50 border border-white/10 ares-cut-sm px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-red appearance-none custom-select"
       >
         {options.map((opt) => (
           <option key={opt} value={opt}>{opt.replace(/([A-Z0-9])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</option>
@@ -207,7 +207,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
           <button
             key={hex}
             onClick={() => onChange(hex)}
-            className={`w-7 h-7 rounded-lg border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/30"}`}
+            className={`w-7 h-7 ares-cut-sm border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/30"}`}
             style={{ backgroundColor: `#${hex}` }}
             aria-label={`Color #${hex}`}
           />
@@ -236,7 +236,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[95vh] md:max-h-[85vh] relative"
+          className="w-full max-w-4xl bg-zinc-950 border border-white/10 ares-cut-lg shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[95vh] md:max-h-[85vh] relative"
         >
           {/* Left Panel: Preview */}
           <div className="w-full md:w-2/5 p-4 md:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden shrink-0 bg-zinc-900/40">
@@ -244,7 +244,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
             
             <div className="relative group w-28 h-28 md:w-56 md:h-56 mb-3 md:mb-6">
               <div className="absolute inset-0 bg-gradient-to-br from-ares-red/30 to-ares-gold/30 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative w-full h-full rounded-2xl md:rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
+              <div className="relative w-full h-full ares-cut md:ares-cut-lg bg-zinc-900 border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
                 <img
                   src={currentUrl}
                   alt="Avatar Preview"
@@ -255,7 +255,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
             <button
               onClick={randomizeAll}
-              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl md:rounded-2xl text-xs md:text-sm font-bold transition-colors w-full justify-center max-w-[160px] md:max-w-[200px]"
+              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm md:ares-cut text-xs md:text-sm font-bold transition-colors w-full justify-center max-w-[160px] md:max-w-[200px]"
             >
               <Shuffle size={14} className="text-ares-gold md:w-4 md:h-4" />
               Randomize
@@ -276,16 +276,16 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
             <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
               {/* Archetype Selector */}
-              <div className="flex bg-black/50 p-1 rounded-xl md:rounded-2xl mb-4 md:mb-6 border border-white/5">
+              <div className="flex bg-black/50 p-1 ares-cut-sm md:ares-cut mb-4 md:mb-6 border border-white/5">
                 <button
                   onClick={() => setStyleMode("avataaars")}
-                  className={`flex-1 py-1.5 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-bold transition-all ${styleMode === "avataaars" ? "bg-ares-red text-white shadow-lg" : "text-zinc-500 hover:text-white"}`}
+                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "avataaars" ? "bg-ares-red text-white shadow-lg" : "text-zinc-500 hover:text-white"}`}
                 >
                   👤 Human
                 </button>
                 <button
                   onClick={() => setStyleMode("bottts")}
-                  className={`flex-1 py-1.5 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-bold transition-all ${styleMode === "bottts" ? "bg-ares-gold text-black shadow-lg" : "text-zinc-500 hover:text-white"}`}
+                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "bottts" ? "bg-ares-gold text-black shadow-lg" : "text-zinc-500 hover:text-white"}`}
                 >
                   🤖 Robot
                 </button>
@@ -343,7 +343,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
               </div>
 
               {error && (
-                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold">
+                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 ares-cut-sm text-sm font-semibold">
                   {error}
                 </div>
               )}
@@ -353,7 +353,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-xl md:rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-red-700 hover:from-red-600 hover:to-red-800 text-white ares-cut-sm md:ares-cut shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
               >
                 {isSaving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
                 {isSaving ? "Flashing Firmware..." : "Confirm Identity"}

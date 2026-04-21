@@ -22,10 +22,10 @@ export default function AnalyticsDashboard() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6 animate-pulse">
-        <div className="h-32 bg-white/5 rounded-3xl" />
+        <div className="h-32 bg-white/5 ares-cut-lg" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-64 bg-white/5 rounded-3xl" />
-          <div className="h-64 bg-white/5 rounded-3xl" />
+          <div className="h-64 bg-white/5 ares-cut-lg" />
+          <div className="h-64 bg-white/5 ares-cut-lg" />
         </div>
       </div>
     );
@@ -47,7 +47,7 @@ export default function AnalyticsDashboard() {
             key={t.category}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-black/40 border border-white/5 p-6 rounded-3xl"
+            className="bg-black/40 border border-white/5 p-6 ares-cut-lg"
           >
             <div className="flex items-center gap-2 mb-2 opacity-50">
               {categoryIcons[t.category] || <BarChart3 size={16} />}
@@ -60,7 +60,7 @@ export default function AnalyticsDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Top Pages */}
-        <div className="bg-black/40 border border-white/5 rounded-3xl p-6 flex flex-col">
+        <div className="bg-black/40 border border-white/5 ares-cut-lg p-6 flex flex-col">
           <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
             <TrendingUp size={20} className="text-ares-gold" />
             Most Popular Content
@@ -78,14 +78,14 @@ export default function AnalyticsDashboard() {
                     <span className="text-[10px] uppercase text-zinc-600 font-bold tracking-tighter">{page.category}</span>
                   </div>
                 </div>
-                <div className="text-sm font-black text-white bg-white/5 px-2 py-1 rounded-lg">{page.views}</div>
+                <div className="text-sm font-black text-white bg-white/5 px-2 py-1 ares-cut-sm">{page.views}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Live Interaction Feed */}
-        <div className="bg-black/40 border border-white/5 rounded-3xl p-6 flex flex-col">
+        <div className="bg-black/40 border border-white/5 ares-cut-lg p-6 flex flex-col">
           <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
             <Clock size={20} className="text-ares-cyan" />
             Real-time Feed

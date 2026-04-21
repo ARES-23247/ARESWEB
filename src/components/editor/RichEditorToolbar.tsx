@@ -103,7 +103,7 @@ const Btn = ({ active, onClick, children, className = "", disabled = false }: {
     type="button"
     onClick={onClick}
     disabled={disabled}
-    className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+    className={`px-3 py-2 ares-cut-sm text-sm font-bold transition-all ${
       active
         ? "bg-zinc-800 text-white"
         : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
@@ -175,7 +175,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
   return (
     <>
       {/* ===== FLOATING TOOLBAR ===== */}
-      <div className="flex flex-wrap items-center gap-1 bg-zinc-900/95 backdrop-blur-md border border-zinc-800 rounded-xl p-2 z-50 w-full mb-0 sticky top-[64px] overflow-x-auto shadow-lg">
+      <div className="flex flex-wrap items-center gap-1 bg-zinc-900/95 backdrop-blur-md border border-zinc-800 ares-cut-sm p-2 z-50 w-full mb-0 sticky top-[64px] overflow-x-auto shadow-lg">
         {/* Undo / Redo */}
         <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>↶</Btn>
         <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>↷</Btn>
@@ -192,7 +192,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <Sep />
 
         {/* FIRST® */}
-        <button type="button" onClick={() => editor.chain().focus().insertContent('<em>FIRST</em>&reg; ').run()} className="px-3 py-2 rounded-lg text-sm font-black italic transition-all text-ares-red hover:bg-ares-red hover:text-white border border-ares-red/30 shadow-sm">FIRST</button>
+        <button type="button" onClick={() => editor.chain().focus().insertContent('<em>FIRST</em>&reg; ').run()} className="px-3 py-2 ares-cut-sm text-sm font-black italic transition-all text-ares-red hover:bg-ares-red hover:text-white border border-ares-red/30 shadow-sm">FIRST</button>
         <Sep />
 
         {/* Lists */}
@@ -204,18 +204,18 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <Sep />
 
         {/* Media */}
-        <button type="button" onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
-        <button type="button" onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
+        <button type="button" onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
+        <button type="button" onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
         <Sep />
 
         {/* Callouts + Reveal */}
-        <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()} className="px-3 py-2 border border-ares-cyan/30 text-ares-cyan hover:bg-ares-cyan hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm">Info</button>
-        <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white rounded-lg text-sm font-bold transition-all shadow-sm">Warn</button>
-        <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'tip' }).run()} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black rounded-lg text-sm font-bold transition-all shadow-sm">Tip</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()} className="px-3 py-2 border border-ares-cyan/30 text-ares-cyan hover:bg-ares-cyan hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Info</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Warn</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'tip' }).run()} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm">Tip</button>
         <button type="button" onClick={() => {
           const summary = window.prompt("Expand Button Label:", "Show Answer");
           if (summary !== null) editor.chain().focus().toggleReveal({ summary }).run();
-        }} className="px-3 py-2 border border-white/20 text-white hover:bg-white hover:text-black rounded-lg text-sm font-bold transition-all shadow-sm">Reveal</button>
+        }} className="px-3 py-2 border border-white/20 text-white hover:bg-white hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm">Reveal</button>
         <Sep />
 
         {/* Link / YT */}
@@ -229,7 +229,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
           } else {
             editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
           }
-        }} className="px-3 py-2 rounded-lg text-sm font-bold transition-all text-ares-cyan hover:bg-zinc-800 hover:text-white">🔗 / YT</button>
+        }} className="px-3 py-2 ares-cut-sm text-sm font-bold transition-all text-ares-cyan hover:bg-zinc-800 hover:text-white">🔗 / YT</button>
 
         {/* Table */}
         <Btn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Table</Btn>
@@ -239,7 +239,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
           const chain = editor.chain().focus() as unknown as { toggleMathInline?: () => { run: () => void }, insertContent: (c: string) => { run: () => void } };
           if (chain.toggleMathInline) chain.toggleMathInline().run();
           else chain.insertContent('$\\Sigma$').run();
-        }} className={`px-3 py-2 rounded-lg text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
+        }} className={`px-3 py-2 ares-cut-sm text-sm font-serif italic transition-all ${editor.isActive("mathematics") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>Σ Math</button>
 
         {/* Mermaid */}
         <Btn onClick={() => editor.chain().focus().insertContent({ type: 'mermaidBlock', attrs: { language: 'mermaid' } }).run()} className="border border-zinc-700">Mermaid</Btn>
@@ -253,7 +253,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
 
         {/* Utilities */}
         <Btn onClick={() => editor.chain().focus().setHorizontalRule().run()}>―――</Btn>
-        <button type="button" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} className="px-2 py-2 rounded-lg text-sm transition-all text-ares-red/70 hover:bg-ares-red hover:text-white">Clear</button>
+        <button type="button" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} className="px-2 py-2 ares-cut-sm text-sm transition-all text-ares-red/70 hover:bg-ares-red hover:text-white">Clear</button>
         <Sep />
 
         {/* Import / Export */}
@@ -261,7 +261,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
           type="button"
           onClick={() => importRef.current?.click()}
           disabled={isImporting}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all border border-ares-cyan/30 ${isImporting ? "bg-zinc-800 text-zinc-500 animate-pulse" : "text-ares-cyan hover:bg-ares-cyan hover:text-white shadow-sm"}`}
+          className={`px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-ares-cyan/30 ${isImporting ? "bg-zinc-800 text-zinc-500 animate-pulse" : "text-ares-cyan hover:bg-ares-cyan hover:text-white shadow-sm"}`}
         >
           {isImporting ? "IMPORTING..." : "Import .DOCX"}
         </button>
@@ -270,7 +270,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <button
           type="button"
           onClick={() => jsonImportRef.current?.click()}
-          className="px-4 py-2 rounded-lg text-sm font-bold transition-all border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white shadow-sm"
+          className="px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white shadow-sm"
         >
           Import .JSON
         </button>
@@ -279,7 +279,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <button
           type="button"
           onClick={() => exportAsHtml(editor, documentTitle || "")}
-          className="px-4 py-2 rounded-lg text-sm font-bold transition-all border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white shadow-sm"
+          className="px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white shadow-sm"
         >
           Export .HTML
         </button>
@@ -287,7 +287,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <button
           type="button"
           onClick={() => exportAsJson(editor, documentTitle || "")}
-          className="px-4 py-2 rounded-lg text-sm font-bold transition-all border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white shadow-sm"
+          className="px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white shadow-sm"
         >
           Export .JSON
         </button>

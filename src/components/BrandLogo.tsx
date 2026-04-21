@@ -34,14 +34,14 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   if (!cleanDomain || error) {
     return (
-      <div className={`${className} flex items-center justify-center bg-zinc-800 border border-zinc-700/50 rounded-lg text-zinc-500`}>
+      <div className={`${className} flex items-center justify-center bg-zinc-800 border border-zinc-700/50 ares-cut-sm text-zinc-500`}>
         <Fallback size={Math.max(12, parseInt(className.match(/\d+/)?.[0] || "16") * 0.6)} />
       </div>
     );
   }
 
   return (
-    <div className={`${className} relative group bg-white p-0.5 rounded-lg overflow-hidden flex-shrink-0`}>
+    <div className={`${className} relative group bg-white p-0.5 ares-cut-sm overflow-hidden flex-shrink-0`}>
       {loading && (
         <div className="absolute inset-0 bg-zinc-800 animate-pulse" />
       )}

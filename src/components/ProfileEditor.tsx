@@ -206,15 +206,15 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
     return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
   }
 
-  const inputClass = "w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-red transition-colors";
+  const inputClass = "w-full bg-zinc-800/50 border border-zinc-700 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-red transition-colors";
   const labelClass = "text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5 block";
-  const sectionClass = "bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-4";
+  const sectionClass = "bg-zinc-900/50 border border-zinc-800 ares-cut p-6 space-y-4";
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-6 pb-8">
       {/* Youth Protection Banner for Students */}
       {isMinor && (
-        <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+        <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 ares-cut">
           <Shield className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
           <p className="text-sm text-blue-200">
             <strong>FIRST Youth Protection:</strong> Your contact information (email, phone) is protected and never shown publicly. Only your nickname and avatar are visible to others.
@@ -299,7 +299,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
           <div className="flex flex-wrap gap-2">
             {SUBTEAM_OPTIONS.map(team => (
               <button key={team} onClick={() => toggleSubteam(team)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${profile.subteams.includes(team) ? "bg-ares-gold/20 border-ares-gold text-ares-gold" : "bg-zinc-800/50 border-zinc-700 text-zinc-500 hover:border-zinc-500"}`}
+                className={`px-3 py-1.5 ares-cut-sm border text-xs font-bold transition-all ${profile.subteams.includes(team) ? "bg-ares-gold/20 border-ares-gold text-ares-gold" : "bg-zinc-800/50 border-zinc-700 text-zinc-500 hover:border-zinc-500"}`}
               >
                 {team}
               </button>
@@ -436,12 +436,12 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
         <div className={sectionClass}>
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black uppercase tracking-wider text-ares-red flex items-center gap-2"><GraduationCap size={16} /> Education</h3>
-            <button onClick={addCollege} className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-ares-gold">
+            <button onClick={addCollege} className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-xs font-bold text-ares-gold">
               <Plus size={14} /> Add College
             </button>
           </div>
           {profile.colleges.map((col, i) => (
-            <div key={i} className="flex gap-4 items-start bg-black/30 p-4 rounded-2xl border border-white/5 group hover:border-ares-gold/30 transition-all">
+            <div key={i} className="flex gap-4 items-start bg-black/30 p-4 ares-cut border border-white/5 group hover:border-ares-gold/30 transition-all">
               <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-12 h-12" />
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <input className={inputClass} placeholder="University name" value={col.name} onChange={e => updateCollege(i, "name", e.target.value)} />
@@ -460,12 +460,12 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
         <div className={sectionClass}>
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black uppercase tracking-wider text-ares-red flex items-center gap-2"><Briefcase size={16} /> Career</h3>
-            <button onClick={addEmployer} className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-ares-gold">
+            <button onClick={addEmployer} className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-xs font-bold text-ares-gold">
               <Plus size={14} /> Add Employer
             </button>
           </div>
           {profile.employers.map((emp, i) => (
-            <div key={i} className="flex gap-4 items-start bg-black/30 p-4 rounded-2xl border border-white/5 group hover:border-ares-gold/30 transition-all">
+            <div key={i} className="flex gap-4 items-start bg-black/30 p-4 ares-cut border border-white/5 group hover:border-ares-gold/30 transition-all">
               <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-12 h-12" />
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <input className={inputClass} placeholder="Company name" value={emp.name} onChange={e => updateEmployer(i, "name", e.target.value)} />
@@ -485,12 +485,12 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
       {/* Save */}
       {message && (
-        <div className={`p-4 rounded-xl text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
+        <div className={`p-4 ares-cut-sm text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
           {message.text}
         </div>
       )}
       <button onClick={handleSave} disabled={isSaving}
-        className="w-full flex items-center justify-center gap-2 py-4 font-bold bg-gradient-to-r from-ares-red to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-4 font-bold bg-gradient-to-r from-ares-red to-red-700 hover:from-red-600 hover:to-red-800 text-white ares-cut shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
       >
         {isSaving ? <RefreshCw className="animate-spin" size={20} /> : <Save size={20} />}
         {isSaving ? "Saving..." : "Save Profile"}

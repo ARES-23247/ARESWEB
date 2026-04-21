@@ -47,7 +47,7 @@ export default function Gallery() {
           <div className="w-12 h-12 border-4 border-zinc-800 border-t-ares-red rounded-full animate-spin"></div>
         </div>
       ) : isError ? (
-        <div className="text-ares-red bg-ares-red/10 border border-ares-red rounded-xl p-4 font-bold text-center">
+        <div className="text-ares-red bg-ares-red/10 border border-ares-red ares-cut-sm p-4 font-bold text-center">
           Failed to load gallery images. Please try again later.
         </div>
       ) : photos.length === 0 ? (
@@ -62,7 +62,7 @@ export default function Gallery() {
             return (
               <div
                 key={photo.key}
-                className={`relative w-full overflow-hidden rounded-2xl glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect}`}
+                className={`relative w-full overflow-hidden ares-cut glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect}`}
               >
                 <LazyImage 
                    src={`/api/media/${photo.key}`} 

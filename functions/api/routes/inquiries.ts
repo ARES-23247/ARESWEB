@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { Bindings, MAX_INPUT_LENGTHS, validateLength, getSocialConfig } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
+import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects";
 
 const inquiriesRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -143,6 +144,19 @@ inquiriesRouter.post("/inquiries", async (c) => {
         ).catch(err => console.error("[Inquiry] Zulip alert failed:", err))
       );
     } catch { /* ignore Zulip error */ }
+
+    // ── GitHub Auto-Escalation ──
+    try {
+      const social = await getSocialConfig(c);
+      const ghConfig = buildGitHubConfig(social as Record<string, string>);
+      if (ghConfig) {
+         const markdownBody = `**Email:** ${email}\n\n**Details:**\n\`\`\`json\n${JSON.stringify(metadata, null, 2)}\n\`\`\``;
+         c.executionCtx.waitUntil(
+           createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry from ${name}`, markdownBody)
+             .catch(err => console.error("[Inquiry] GitHub task creation failed:", err))
+         );
+      }
+    } catch { /* ignore GitHub Error */ }
 
     return c.json({ success: true, id });
   } catch (err) {

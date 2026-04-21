@@ -73,4 +73,25 @@ badgesRouter.delete("/admin/users/:userId/badges/:badgeId", ensureAdmin, async (
   }
 });
 
+// ── GET /leaderboard — Public Leaderboard ─────────────────────────────
+badgesRouter.get("/leaderboard", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(`
+      SELECT u.user_id, u.first_name, u.last_name, u.nickname, u.member_type, 
+             COUNT(ub.id) as badge_count
+      FROM user_profiles u
+      JOIN user_badges ub ON u.user_id = ub.user_id
+      WHERE u.show_on_about = 1
+      GROUP BY u.user_id
+      ORDER BY badge_count DESC, u.first_name ASC
+      LIMIT 20
+    `).all();
+    
+    return c.json({ leaderboard: results || [] });
+  } catch (err) {
+    console.error("Failed to fetch leaderboard", err);
+    return c.json({ leaderboard: [] }, 500);
+  }
+});
+
 export default badgesRouter;

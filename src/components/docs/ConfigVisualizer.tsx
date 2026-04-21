@@ -12,7 +12,7 @@ export default function ConfigVisualizer() {
   };
 
   return (
-    <div className="my-6 border border-white/10 rounded-xl overflow-hidden bg-[#0d1117] shadow-xl">
+    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-[#0d1117] shadow-xl">
       <div className="bg-[#161b22] px-4 py-3 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Settings size={18} className="text-ares-gold" />

@@ -125,7 +125,7 @@ export default function LocationsManager() {
 
   return (
     <div className="w-full flex justify-center items-center h-full p-4 md:p-8 overflow-y-auto">
-      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl p-6 relative">
+      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 ares-cut-sm shadow-2xl p-6 relative">
         <h2 className="text-2xl font-bold font-heading text-white mb-6 flex items-center gap-3">
           <MapPin className="text-ares-red" /> Location Registry
         </h2>
@@ -137,7 +137,7 @@ export default function LocationsManager() {
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                 <input 
                   type="text" 
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 pl-10 pr-4 text-white focus:border-ares-red focus:outline-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 ares-cut-sm py-2 pl-10 pr-4 text-white focus:border-ares-red focus:outline-none"
                   placeholder="Search registered event locations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -145,7 +145,7 @@ export default function LocationsManager() {
               </div>
               <button 
                 onClick={() => setIsAdding(true)}
-                className="bg-ares-cyan text-black px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-white transition-colors uppercase tracking-wider text-xs"
+                className="bg-ares-cyan text-black px-4 py-2 ares-cut-sm font-bold flex items-center gap-2 hover:bg-white transition-colors uppercase tracking-wider text-xs"
               >
                 <Plus size={16} /> Add Venue
               </button>
@@ -154,7 +154,7 @@ export default function LocationsManager() {
             {isLoading ? <div className="text-center p-8 text-zinc-500 animate-pulse">Loading venues...</div> : (
               <div className="flex flex-col gap-3">
                 {filtered.map(l => (
-                  <div key={l.id} className={`p-4 border rounded-lg flex items-center justify-between ${l.is_deleted ? 'border-red-900/50 bg-red-950/10 opacity-50' : 'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80'}`}>
+                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.is_deleted ? 'border-red-900/50 bg-red-950/10 opacity-50' : 'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80'}`}>
                     <div>
                       <h4 className={`font-bold ${l.is_deleted ? 'text-red-400 line-through' : 'text-white'}`}>{l.name}</h4>
                       <p className="text-sm text-zinc-400 mt-1 flex items-center gap-2">
@@ -163,11 +163,11 @@ export default function LocationsManager() {
                     </div>
                     <div className="flex items-center gap-2">
                       {l.is_deleted ? (
-                        <button onClick={() => restoreMut.mutate(l)} className="p-2 text-zinc-400 hover:text-emerald-400 transition-colors bg-zinc-900 rounded-lg">RESTORE</button>
+                        <button onClick={() => restoreMut.mutate(l)} className="p-2 text-zinc-400 hover:text-emerald-400 transition-colors bg-zinc-900 ares-cut-sm">RESTORE</button>
                       ) : (
                         <>
-                          <button onClick={() => handleEdit(l)} className="p-2 text-zinc-400 hover:text-ares-cyan transition-colors bg-zinc-900 rounded-lg"><Edit3 size={16} /></button>
-                          <button onClick={() => deleteMut.mutate(l.id)} className="p-2 text-zinc-400 hover:text-ares-red transition-colors bg-zinc-900 rounded-lg"><Trash2 size={16} /></button>
+                          <button onClick={() => handleEdit(l)} className="p-2 text-zinc-400 hover:text-ares-cyan transition-colors bg-zinc-900 ares-cut-sm"><Edit3 size={16} /></button>
+                          <button onClick={() => deleteMut.mutate(l.id)} className="p-2 text-zinc-400 hover:text-ares-red transition-colors bg-zinc-900 ares-cut-sm"><Trash2 size={16} /></button>
                         </>
                       )}
                     </div>
@@ -178,7 +178,7 @@ export default function LocationsManager() {
             )}
           </>
         ) : (
-          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 ares-cut-sm">
             <h3 className="text-white font-bold mb-6 font-heading tracking-widest">{editingId ? 'Edit Venue' : 'Register New Venue'}</h3>
             
             <div className="flex flex-col gap-4">
@@ -208,7 +208,7 @@ export default function LocationsManager() {
                 </div>
 
                 {suggestions.length > 0 && addressQuery !== form.address && (
-                  <div className="absolute z-20 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
+                  <div className="absolute z-20 w-full mt-1 bg-zinc-800 border border-zinc-700 ares-cut-sm shadow-xl overflow-hidden">
                     {suggestions.map((s, i) => (
                       <button
                         key={i}

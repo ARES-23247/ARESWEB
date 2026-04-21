@@ -170,7 +170,7 @@ export default function CommandCenter() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-white flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-ares-cyan/20 to-ares-red/20 rounded-xl border border-white/10">
+            <div className="p-2 bg-gradient-to-br from-ares-cyan/20 to-ares-red/20 ares-cut-sm border border-white/10">
               <Radio className="text-ares-cyan" size={24} />
             </div>
             Command Center
@@ -186,7 +186,7 @@ export default function CommandCenter() {
           <button
             onClick={fetchAll}
             disabled={isLoading}
-            className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-zinc-400 hover:text-white transition-all disabled:opacity-30"
+            className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-zinc-400 hover:text-white transition-all disabled:opacity-30"
           >
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
           </button>
@@ -194,14 +194,14 @@ export default function CommandCenter() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+        <div className="p-4 ares-cut-sm bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
           <AlertTriangle size={16} className="inline mr-2" />
           {error}
         </div>
       )}
 
       {/* Integration Health Monitor */}
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+      <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
             <Activity size={16} className="text-ares-gold" />
@@ -221,7 +221,7 @@ export default function CommandCenter() {
               key={h.key}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`p-3 rounded-xl border text-center transition-all ${
+              className={`p-3 ares-cut-sm border text-center transition-all ${
                 h.configured
                   ? "bg-zinc-800/40 border-emerald-500/20 hover:border-emerald-500/40"
                   : "bg-zinc-900/40 border-zinc-800 hover:border-zinc-700"
@@ -241,7 +241,7 @@ export default function CommandCenter() {
       </div>
 
       {/* GitHub Project Board — Kanban View */}
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+      <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6">
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
             <GitBranch size={16} className="text-ares-cyan" />
@@ -249,10 +249,10 @@ export default function CommandCenter() {
           </h3>
           <div className="flex items-center gap-2">
             {/* Kanban filters */}
-            <div className="hidden sm:flex bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
+            <div className="hidden sm:flex bg-zinc-800/50 ares-cut-sm p-0.5 border border-white/5">
               <button
                 onClick={() => setActiveKanbanFilter(null)}
-                className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
+                className={`px-2.5 py-1 text-[10px] font-bold ares-cut-sm transition-all ${
                   !activeKanbanFilter ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
                 }`}
               >
@@ -262,7 +262,7 @@ export default function CommandCenter() {
                 <button
                   key={col}
                   onClick={() => setActiveKanbanFilter(activeKanbanFilter === col ? null : col)}
-                  className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
+                  className={`px-2.5 py-1 text-[10px] font-bold ares-cut-sm transition-all ${
                     activeKanbanFilter === col ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
                   }`}
                 >
@@ -272,7 +272,7 @@ export default function CommandCenter() {
             </div>
             <button
               onClick={() => setShowCreateForm(!showCreateForm)}
-              className="p-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan rounded-lg transition-all"
+              className="p-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan ares-cut-sm transition-all"
             >
               <Plus size={16} />
             </button>
@@ -288,7 +288,7 @@ export default function CommandCenter() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden mb-4"
             >
-              <div className="flex gap-2 p-3 bg-zinc-800/50 rounded-xl border border-white/5">
+              <div className="flex gap-2 p-3 bg-zinc-800/50 ares-cut-sm border border-white/5">
                 <input
                   type="text"
                   value={newTaskTitle}
@@ -300,7 +300,7 @@ export default function CommandCenter() {
                 <button
                   onClick={handleCreateTask}
                   disabled={isCreating || !newTaskTitle.trim()}
-                  className="px-4 py-2 bg-ares-cyan/20 hover:bg-ares-cyan/30 text-ares-cyan font-bold text-xs rounded-lg border border-ares-cyan/30 transition-all disabled:opacity-30"
+                  className="px-4 py-2 bg-ares-cyan/20 hover:bg-ares-cyan/30 text-ares-cyan font-bold text-xs ares-cut-sm border border-ares-cyan/30 transition-all disabled:opacity-30"
                 >
                   {isCreating ? <RefreshCw size={14} className="animate-spin" /> : "Create"}
                 </button>
@@ -333,7 +333,7 @@ export default function CommandCenter() {
               const StatusIcon = config.icon;
 
               return (
-                <div key={status} className={`rounded-xl border ${config.border} ${config.bg} overflow-hidden`}>
+                <div key={status} className={`ares-cut-sm border ${config.border} ${config.bg} overflow-hidden`}>
                   <div className="p-3 border-b border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <StatusIcon size={14} className={config.text} />
@@ -354,7 +354,7 @@ export default function CommandCenter() {
                           key={item.id}
                           initial={{ opacity: 0, y: 5 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="p-3 bg-zinc-900/60 hover:bg-zinc-800/60 rounded-lg border border-white/5 hover:border-white/10 transition-all cursor-default group"
+                          className="p-3 bg-zinc-900/60 hover:bg-zinc-800/60 ares-cut-sm border border-white/5 hover:border-white/10 transition-all cursor-default group"
                         >
                           <p className="text-sm font-bold text-white leading-tight mb-1.5">{item.title}</p>
                           <div className="flex items-center justify-between">
@@ -383,7 +383,7 @@ export default function CommandCenter() {
       {/* Platform Quick Stats + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Stats */}
-        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+        <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6">
           <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2 mb-4">
             <Zap size={16} className="text-ares-gold" />
             Platform Stats
@@ -394,7 +394,7 @@ export default function CommandCenter() {
               { label: "Events", value: stats.events || 0, color: "text-ares-gold" },
               { label: "Docs", value: stats.docs || 0, color: "text-ares-cyan" },
             ].map(stat => (
-              <div key={stat.label} className="text-center p-4 bg-zinc-800/30 rounded-xl border border-white/5">
+              <div key={stat.label} className="text-center p-4 bg-zinc-800/30 ares-cut-sm border border-white/5">
                 <p className={`text-3xl font-black ${stat.color}`}>{stat.value}</p>
                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-1">{stat.label}</p>
               </div>
@@ -403,7 +403,7 @@ export default function CommandCenter() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+        <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6">
           <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2 mb-4">
             <ArrowRight size={16} className="text-ares-cyan" />
             Quick Actions
@@ -419,7 +419,7 @@ export default function CommandCenter() {
                 href={action.href}
                 target={action.href.startsWith("http") ? "_blank" : "_self"}
                 rel="noopener noreferrer"
-                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${action.color}`}
+                className={`flex items-center justify-between p-3 ares-cut-sm border transition-all ${action.color}`}
               >
                 <div className="flex items-center gap-3">
                   <action.icon size={16} />
@@ -433,7 +433,7 @@ export default function CommandCenter() {
       </div>
 
       {/* Zulip Bot Status */}
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+      <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6">
         <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2 mb-4">
           <MessageCircle size={16} className="text-blue-400" />
           Zulip Bot Commands
@@ -451,7 +451,7 @@ export default function CommandCenter() {
             { cmd: "!events", desc: "Upcoming events" },
             { cmd: "!help", desc: "Show all commands" },
           ].map(item => (
-            <div key={item.cmd} className="p-3 bg-zinc-800/40 rounded-lg border border-white/5">
+            <div key={item.cmd} className="p-3 bg-zinc-800/40 ares-cut-sm border border-white/5">
               <code className="text-ares-cyan text-xs font-bold">{item.cmd}</code>
               <p className="text-zinc-500 text-[10px] mt-1">{item.desc}</p>
             </div>

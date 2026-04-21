@@ -45,7 +45,7 @@ export default function AdminInquiries() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {isLoading ? (
-           [1,2,3].map(i => <div key={i} className="h-40 bg-white/5 rounded-3xl animate-pulse" />)
+           [1,2,3].map(i => <div key={i} className="h-40 bg-white/5 ares-cut-lg animate-pulse" />)
         ) : inquiries.map((iq) => {
           let meta: Record<string, string | string[]> = {};
           try {
@@ -53,7 +53,7 @@ export default function AdminInquiries() {
           } catch { /* ignore */ }
           
           return (
-            <div key={iq.id} className="bg-black/40 border border-white/5 rounded-3xl p-6 relative group transition-all hover:border-white/20 flex flex-col h-full">
+            <div key={iq.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 relative group transition-all hover:border-white/20 flex flex-col h-full">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
@@ -94,7 +94,7 @@ export default function AdminInquiries() {
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-4 text-sm text-zinc-300 flex-1">
+              <div className="bg-white/5 ares-cut-sm p-4 text-sm text-zinc-300 flex-1">
                 <div className="grid grid-cols-2 gap-y-3 mb-2">
                   {Object.entries(meta).map(([k, v]) => (
                     k !== 'additional' && v && (
@@ -117,7 +117,7 @@ export default function AdminInquiries() {
         })}
 
         {inquiries.length === 0 && !isLoading && (
-          <div className="col-span-1 lg:col-span-2 py-16 text-center border-2 border-dashed border-white/5 rounded-3xl">
+          <div className="col-span-1 lg:col-span-2 py-16 text-center border-2 border-dashed border-white/5 ares-cut-lg">
             <MessageSquare className="mx-auto text-zinc-600 mb-3" size={32} />
             <p className="text-zinc-500 font-medium tracking-wide">No active inquiries or applications.</p>
           </div>

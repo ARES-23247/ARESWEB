@@ -32,8 +32,8 @@ export default function Home() {
                 </p>
               </div>
               <h1 className="text-6xl md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
-                <span className="inline-block mb-2 px-6 py-2 bg-obsidian" style={{ backgroundColor: '#1A1A1A', color: '#ffffff', borderRadius: '16px' }}>Engineered</span> <br />
-                <span className="bg-ares-red px-6 py-2 pb-3 mt-4 inline-block rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)]" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>To Inspire</span>
+                <span className="inline-block mb-2 px-6 py-2 bg-obsidian rounded-tl-[1.5rem] rounded-br-[1.5rem] rounded-tr-md rounded-bl-md" style={{ backgroundColor: '#1A1A1A', color: '#ffffff' }}>Engineered</span> <br />
+                <span className="bg-ares-red px-6 py-2 pb-3 mt-4 inline-block rounded-tl-[1.5rem] rounded-br-[1.5rem] rounded-tr-md rounded-bl-md shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)]" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>To Inspire</span>
               </h1>
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function Home() {
       <section className="py-24 obsidian-section relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-bold mb-8 font-heading">
-            Join <span className="bg-ares-red px-3 py-1 pb-2 rounded-xl" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>ARES</span>
+            Join <span className="bg-ares-red px-3 py-1 pb-2 ares-cut-sm" style={{ backgroundColor: '#c00000', color: '#ffffff' }}>ARES</span>
           </h2>
           <p className="text-marble/80 text-xl mb-12 leading-relaxed">
             Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future of WV technology, there is a place for you at the table.

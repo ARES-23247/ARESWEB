@@ -34,7 +34,7 @@ export default function ScreenshotGallery() {
   const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
 
   return (
-    <div className="my-6 relative border border-white/10 rounded-xl overflow-hidden bg-black aspect-video group shadow-xl">
+    <div className="my-6 relative border border-white/10 ares-cut-sm overflow-hidden bg-black aspect-video group shadow-xl">
       {isLoading ? (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-8 h-8 border-4 border-zinc-800 border-t-ares-gold rounded-full animate-spin"></div>

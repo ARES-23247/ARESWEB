@@ -129,7 +129,7 @@ export default function TechStack() {
         <div className="max-w-4xl mx-auto space-y-12">
           
           <div className="flex flex-col md:flex-row items-start gap-8">
-            <div className="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-br from-green-500 to-green-900 flex items-center justify-center text-white shadow-lg">
+            <div className="w-16 h-16 shrink-0 ares-cut bg-gradient-to-br from-green-500 to-green-900 flex items-center justify-center text-white shadow-lg">
               <DollarSign size={28} />
             </div>
             <div>
@@ -144,7 +144,7 @@ export default function TechStack() {
           </div>
 
           <div className="flex flex-col md:flex-row items-start gap-8">
-            <div className="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-900 flex items-center justify-center text-white shadow-lg">
+            <div className="w-16 h-16 shrink-0 ares-cut bg-gradient-to-br from-indigo-500 to-purple-900 flex items-center justify-center text-white shadow-lg">
               <GlobeLock size={28} />
             </div>
             <div>

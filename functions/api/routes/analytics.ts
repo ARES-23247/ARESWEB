@@ -26,6 +26,29 @@ analyticsRouter.post("/analytics/track", async (c) => {
   }
 });
 
+// ── POST /analytics/sponsor-click — log a sponsor link click ─────────
+analyticsRouter.post("/analytics/sponsor-click", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sponsor_id } = body as { sponsor_id: string };
+    
+    if (!sponsor_id) return c.json({ error: "Missing sponsor id" }, 400);
+
+    const yearMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    
+    await c.env.DB.prepare(
+      `INSERT INTO sponsor_metrics (id, sponsor_id, year_month, clicks, impressions) 
+       VALUES (?, ?, ?, 1, 0)
+       ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = clicks + 1`
+    ).bind(crypto.randomUUID(), sponsor_id, yearMonth).run();
+
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("Sponsor tracking error:", err);
+    return c.json({ success: false }, 500);
+  }
+});
+
 // ── GET /admin/analytics/summary — Analytics Dashboard ───────────────
 analyticsRouter.get("/admin/analytics/summary", ensureAdmin, async (c) => {
   try {

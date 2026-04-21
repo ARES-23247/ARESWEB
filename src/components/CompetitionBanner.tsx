@@ -61,7 +61,7 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-ares-cyan to-transparent animate-pulse" />
         
         <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-3xl bg-ares-cyan/20 border border-ares-cyan/30 flex items-center justify-center relative shadow-[0_0_15px_rgba(0,183,235,0.3)]">
+          <div className="w-16 h-16 ares-cut-lg bg-ares-cyan/20 border border-ares-cyan/30 flex items-center justify-center relative shadow-[0_0_15px_rgba(0,183,235,0.3)]">
             <Activity className="text-ares-cyan animate-pulse" size={32} />
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-ares-red rounded-full flex items-center justify-center">
               <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
@@ -98,11 +98,11 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
             href={`https://www.thebluealliance.com/event/${eventKey}`}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold text-zinc-300 hover:bg-white/10 transition-all"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 ares-cut text-sm font-bold text-zinc-300 hover:bg-white/10 transition-all"
           >
             Full Stats <ExternalLink size={14} />
           </a>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-ares-cyan text-black font-black rounded-2xl text-sm hover:shadow-[0_0_20px_rgba(0,183,235,0.4)] transition-all">
+          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-ares-cyan text-black font-black ares-cut text-sm hover:shadow-[0_0_20px_rgba(0,183,235,0.4)] transition-all">
             Match Predictions <Zap size={14} className="fill-current" />
           </button>
         </div>

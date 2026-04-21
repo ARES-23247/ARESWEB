@@ -71,7 +71,7 @@ export default function Seasons() {
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
                   <div className="flex justify-between items-start mb-6">
-                    <div className="w-16 h-16 rounded-2xl bg-ares-gold/10 border border-ares-gold/20 flex items-center justify-center">
+                    <div className="w-16 h-16 ares-cut bg-ares-gold/10 border border-ares-gold/20 flex items-center justify-center">
                        <Trophy className="text-ares-gold" size={32} />
                     </div>
                     <span className="text-2xl font-black text-white/20 italic">{award.year}</span>
@@ -84,7 +84,7 @@ export default function Seasons() {
                 </motion.div>
               ))
             ) : (
-              <div className="col-span-full py-32 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+              <div className="col-span-full py-32 text-center border-2 border-dashed border-white/5 ares-cut-lg">
                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-600">
                     <Trophy size={40} />
                  </div>
@@ -117,7 +117,7 @@ export default function Seasons() {
                       The rookie year. Establishing the ARES project, building our first competitive robot, and learning the values of <em>FIRST</em>. Focused on archaeological investigations and autonomous navigation.
                    </p>
                    <div className="flex flex-wrap gap-2 md:justify-end">
-                      {["ROOKIE", "BUILDING", "COMMUNITY"].map(t => <span key={t} className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-zinc-400 tracking-widest">{t}</span>)}
+                      {["ROOKIE", "BUILDING", "COMMUNITY"].map(t => <span key={t} className="px-3 py-1 bg-white/5 border border-white/10 ares-cut-sm text-[9px] font-bold text-zinc-400 tracking-widest">{t}</span>)}
                    </div>
                 </div>
              </div>
@@ -144,8 +144,8 @@ export default function Seasons() {
             <h2 className="text-4xl font-black text-white mb-6 italic tracking-tighter">Support the Legacy.</h2>
             <p className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto">Our history is written by the mentors, students, and sponsors who invest in our success. Join us in building the future.</p>
             <div className="flex flex-wrap justify-center gap-4">
-               <a href="/sponsors" className="px-8 py-4 bg-ares-gold text-black font-black rounded-2xl hover:scale-105 transition-all">Sponsor ARES</a>
-               <a href="/contact" className="px-8 py-4 bg-white/5 border border-white/10 text-white font-black rounded-2xl hover:bg-white/10 transition-all">Join the Team</a>
+               <a href="/sponsors" className="px-8 py-4 bg-ares-gold text-black font-black ares-cut hover:scale-105 transition-all">Sponsor ARES</a>
+               <a href="/contact" className="px-8 py-4 bg-white/5 border border-white/10 text-white font-black ares-cut hover:bg-white/10 transition-all">Join the Team</a>
             </div>
          </div>
       </section>

@@ -108,7 +108,7 @@ export default function Events() {
         {/* Date / Image Block */}
         <div className="md:w-1/3 relative overflow-hidden bg-ares-red/20 min-h-[200px] flex-shrink-0">
           <img src={event.cover_image || DEFAULT_COVER_IMAGE} alt={event.title} className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${isPast ? '' : 'group-hover:scale-105'} ${!event.cover_image ? 'object-contain p-8 bg-black/80' : ''}`} />
-          <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 text-center">
+          <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 ares-cut-sm border border-white/10 text-center">
             <div className={`text-2xl font-bold ${isPast ? 'text-white/80' : 'text-ares-gold'}`}>{format(startDate, 'd')}</div>
             <div className={`text-xs font-bold uppercase tracking-widest ${isPast ? 'text-white/80' : 'text-ares-red'}`}>{format(startDate, 'MMM')}</div>
           </div>
@@ -189,7 +189,7 @@ export default function Events() {
                 <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent"></div>
               </div>
               {calendars.length > 0 ? (
-                <div className="w-full bg-black/40 border border-white/10 rounded-xl overflow-hidden shadow-lg">
+                <div className="w-full bg-black/40 border border-white/10 ares-cut-sm overflow-hidden shadow-lg">
                   <iframe 
                     title="Google Calendar"
                     src={iframeSrc} 
@@ -199,14 +199,14 @@ export default function Events() {
                   />
                 </div>
               ) : (
-                <div className="w-full h-[600px] bg-black/40 border border-white/10 rounded-xl flex items-center justify-center text-marble/50">
+                <div className="w-full h-[600px] bg-black/40 border border-white/10 ares-cut-sm flex items-center justify-center text-marble/50">
                   <div className="w-8 h-8 border-2 border-ares-gold/30 border-t-ares-gold rounded-full animate-spin"></div>
                 </div>
               )}
 
               {/* Subscribe Buttons */}
               {calendars.length > 0 && (
-                <div className="bg-black/40 border border-white/10 rounded-xl p-6">
+                <div className="bg-black/40 border border-white/10 ares-cut-sm p-6">
                   <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Subscribe to Our Calendars</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
@@ -214,14 +214,14 @@ export default function Events() {
                       { id: calendarData?.calendarIdOutreach, name: "ARES Outreach & Volunteer", color: "ares-gold" },
                       { id: calendarData?.calendarIdExternal, name: "ARES Community Spotlight", color: "ares-cyan" },
                     ].filter(c => c.id).map((cal) => (
-                      <div key={cal.name} className="flex flex-col gap-2 bg-zinc-900/50 rounded-lg p-4 border border-white/5">
+                      <div key={cal.name} className="flex flex-col gap-2 bg-zinc-900/50 ares-cut-sm p-4 border border-white/5">
                         <span className="text-xs font-bold text-white uppercase tracking-wider">{cal.name}</span>
                         <div className="flex gap-2">
                           <a
                             href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(cal.id as string)}`}
                             target="_blank"
                             rel="noreferrer"
-                            className={`flex-1 text-center px-3 py-2 bg-${cal.color}/20 hover:bg-${cal.color}/40 text-${cal.color} border border-${cal.color}/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all`}
+                            className={`flex-1 text-center px-3 py-2 bg-${cal.color}/20 hover:bg-${cal.color}/40 text-${cal.color} border border-${cal.color}/30 ares-cut-sm text-[10px] font-black uppercase tracking-widest transition-all`}
                           >
                             + Google
                           </a>
@@ -229,7 +229,7 @@ export default function Events() {
                             href={`https://calendar.google.com/calendar/ical/${encodeURIComponent(cal.id as string)}/public/basic.ics`}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex-1 text-center px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                            className="flex-1 text-center px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 ares-cut-sm text-[10px] font-black uppercase tracking-widest transition-all"
                           >
                             + iCal
                           </a>
@@ -289,7 +289,7 @@ export default function Events() {
 
             {/* Archival - Past Events */}
             {(pastOutreach.length > 0 || pastPractices.length > 0) && (
-              <div className="mt-16 bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+              <div className="mt-16 bg-white/5 border border-white/10 ares-cut p-8 backdrop-blur-sm">
                 <h2 className="text-4xl font-black text-white/80 tracking-tight mb-8">Event Archive</h2>
                 
                 {pastOutreach.length > 0 && (

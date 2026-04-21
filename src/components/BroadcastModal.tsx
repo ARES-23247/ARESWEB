@@ -92,10 +92,10 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="bg-zinc-900 border border-zinc-800 w-full max-w-md ares-cut overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950/50">
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-md ${type === 'blog' ? 'bg-ares-red/20 text-ares-red' : 'bg-ares-gold/20 text-ares-gold'}`}>
+            <div className={`p-1.5 ares-cut-sm ${type === 'blog' ? 'bg-ares-red/20 text-ares-red' : 'bg-ares-gold/20 text-ares-gold'}`}>
               <Send size={16} />
             </div>
             <h3 className="font-bold text-white tracking-tight">Social Broadcast</h3>
@@ -120,7 +120,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
                   {availableSocials.map(platform => (
                     <label 
                       key={platform} 
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                      className={`flex items-center gap-3 p-3 ares-cut-sm border cursor-pointer transition-all ${
                         selectedsocials[platform] 
                         ? 'bg-ares-cyan/10 border-ares-cyan/40 text-white' 
                         : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
@@ -137,7 +137,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
                   ))}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-zinc-950 border border-dashed border-zinc-800 text-center mb-6">
+                <div className="p-4 ares-cut-sm bg-zinc-950 border border-dashed border-zinc-800 text-center mb-6">
                   <p className="text-xs text-zinc-500">No social platforms configured in settings.</p>
                 </div>
               )}
@@ -145,7 +145,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
               <button
                 onClick={handleBroadcast}
                 disabled={isPending || availableSocials.length === 0 || !Object.values(selectedsocials).some(Boolean)}
-                className="w-full py-3.5 rounded-xl bg-white text-zinc-950 font-bold tracking-wide hover:bg-ares-cyan hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-zinc-950 flex items-center justify-center gap-2 shadow-xl active:scale-[0.98]"
+                className="w-full py-3.5 ares-cut-sm bg-white text-zinc-950 font-bold tracking-wide hover:bg-ares-cyan hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-zinc-950 flex items-center justify-center gap-2 shadow-xl active:scale-[0.98]"
               >
                 {isPending ? (
                   <>

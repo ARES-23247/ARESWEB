@@ -44,7 +44,7 @@ export default function GlobalSearchModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-start justify-center p-4 pt-20">
-      <div className="bg-zinc-950 border border-zinc-800 shadow-2xl rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden relative">
+      <div className="bg-zinc-950 border border-zinc-800 shadow-2xl ares-cut w-full max-w-2xl flex flex-col overflow-hidden relative">
         
         {/* Search Header */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-zinc-800 bg-black/40">
@@ -93,7 +93,7 @@ export default function GlobalSearchModal({
                   onClick={onClose}
                   className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 px-6 border-b border-zinc-800/50 hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:bg-white/5 focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
-                  <div className="shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-ares-gold group-hover:border-ares-gold/50 transition-colors">
+                  <div className="shrink-0 w-10 h-10 ares-cut-sm bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-ares-gold group-hover:border-ares-gold/50 transition-colors">
                     {r.type === "blog" ? <FileText size={20} aria-hidden="true" /> : <CalendarIcon size={20} aria-hidden="true" />}
                   </div>
                   <div className="flex-1 min-w-0">

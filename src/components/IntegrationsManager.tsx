@@ -77,7 +77,7 @@ export default function IntegrationsManager() {
 
   if (isError) {
     return (
-      <div className="text-ares-red bg-ares-red/10 border border-ares-red rounded-xl p-4 font-bold text-center">
+      <div className="text-ares-red bg-ares-red/10 border border-ares-red ares-cut-sm p-4 font-bold text-center">
         Failed to load integrations. Access denied or network error.
         <div className="text-sm font-mono mt-2 opcaity-80">{error?.message || "Unknown Error"}</div>
       </div>
@@ -100,7 +100,7 @@ export default function IntegrationsManager() {
         <button
           onClick={handleSave}
           disabled={!isDirty || saveMutation.isPending}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg backdrop-blur ${
+          className={`flex items-center gap-2 px-6 py-2.5 ares-cut-sm font-bold transition-all shadow-lg backdrop-blur ${
             isDirty
               ? "bg-gradient-to-r from-ares-gold to-yellow-600 text-black hover:scale-105"
               : "bg-white/5 text-zinc-500 cursor-not-allowed border border-white/5"
@@ -116,7 +116,7 @@ export default function IntegrationsManager() {
       </div>
 
       {successMsg && (
-        <div className="absolute top-0 right-0 -translate-y-full mb-4 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-2 rounded-lg font-medium text-sm">
+        <div className="absolute top-0 right-0 -translate-y-full mb-4 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-2 ares-cut-sm font-medium text-sm">
           {successMsg}
         </div>
       )}
@@ -124,7 +124,7 @@ export default function IntegrationsManager() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Zulip Chat Integration */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-blue-500/20 relative overflow-hidden group lg:col-span-2">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-blue-500/20 relative overflow-hidden group lg:col-span-2">
           <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
             <Radio size={20} className="text-blue-400" /> Zulip Team Chat
@@ -133,33 +133,33 @@ export default function IntegrationsManager() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label htmlFor="zulip_url" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Organization URL</label>
-              <input id="zulip_url" type="text" placeholder="https://ares.zulipchat.com" value={localSettings["ZULIP_URL"] || ""} onChange={(e) => handleChange("ZULIP_URL", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
+              <input id="zulip_url" type="text" placeholder="https://ares.zulipchat.com" value={localSettings["ZULIP_URL"] || ""} onChange={(e) => handleChange("ZULIP_URL", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
             </div>
             <div>
               <label htmlFor="zulip_bot_email" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Bot Email</label>
-              <input id="zulip_bot_email" type="text" placeholder="ares-bot@ares.zulipchat.com" value={localSettings["ZULIP_BOT_EMAIL"] || ""} onChange={(e) => handleChange("ZULIP_BOT_EMAIL", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
+              <input id="zulip_bot_email" type="text" placeholder="ares-bot@ares.zulipchat.com" value={localSettings["ZULIP_BOT_EMAIL"] || ""} onChange={(e) => handleChange("ZULIP_BOT_EMAIL", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
             </div>
             <div>
               <label htmlFor="zulip_api_key" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">API Key</label>
-              <input id="zulip_api_key" type="text" placeholder="••••••••••••••••" value={localSettings["ZULIP_API_KEY"] || ""} onChange={(e) => handleChange("ZULIP_API_KEY", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
+              <input id="zulip_api_key" type="text" placeholder="••••••••••••••••" value={localSettings["ZULIP_API_KEY"] || ""} onChange={(e) => handleChange("ZULIP_API_KEY", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
             </div>
             <div>
               <label htmlFor="zulip_webhook_token" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Outgoing Webhook Token</label>
-              <input id="zulip_webhook_token" type="text" placeholder="Shared secret for bot commands" value={localSettings["ZULIP_WEBHOOK_TOKEN"] || ""} onChange={(e) => handleChange("ZULIP_WEBHOOK_TOKEN", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
+              <input id="zulip_webhook_token" type="text" placeholder="Shared secret for bot commands" value={localSettings["ZULIP_WEBHOOK_TOKEN"] || ""} onChange={(e) => handleChange("ZULIP_WEBHOOK_TOKEN", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
             </div>
             <div>
               <label htmlFor="zulip_admin_stream" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Admin Stream</label>
-              <input id="zulip_admin_stream" type="text" placeholder="leadership" value={localSettings["ZULIP_ADMIN_STREAM"] || ""} onChange={(e) => handleChange("ZULIP_ADMIN_STREAM", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
+              <input id="zulip_admin_stream" type="text" placeholder="leadership" value={localSettings["ZULIP_ADMIN_STREAM"] || ""} onChange={(e) => handleChange("ZULIP_ADMIN_STREAM", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
             </div>
             <div>
               <label htmlFor="zulip_comment_stream" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Comment Stream</label>
-              <input id="zulip_comment_stream" type="text" placeholder="website-discussion" value={localSettings["ZULIP_COMMENT_STREAM"] || ""} onChange={(e) => handleChange("ZULIP_COMMENT_STREAM", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
+              <input id="zulip_comment_stream" type="text" placeholder="website-discussion" value={localSettings["ZULIP_COMMENT_STREAM"] || ""} onChange={(e) => handleChange("ZULIP_COMMENT_STREAM", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors" />
             </div>
           </div>
         </div>
 
         {/* GitHub Projects v2 Integration */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/10 relative overflow-hidden group lg:col-span-2">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/10 relative overflow-hidden group lg:col-span-2">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
             <GitBranch size={20} className="text-white" /> GitHub Projects v2
@@ -168,24 +168,24 @@ export default function IntegrationsManager() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label htmlFor="github_pat" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Personal Access Token</label>
-              <input id="github_pat" type="text" placeholder="ghp_..." value={localSettings["GITHUB_PAT"] || ""} onChange={(e) => handleChange("GITHUB_PAT", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
+              <input id="github_pat" type="text" placeholder="ghp_..." value={localSettings["GITHUB_PAT"] || ""} onChange={(e) => handleChange("GITHUB_PAT", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
             </div>
             <div>
               <label htmlFor="github_org" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Organization</label>
-              <input id="github_org" type="text" placeholder="ARES-23247" value={localSettings["GITHUB_ORG"] || ""} onChange={(e) => handleChange("GITHUB_ORG", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
+              <input id="github_org" type="text" placeholder="ARES-23247" value={localSettings["GITHUB_ORG"] || ""} onChange={(e) => handleChange("GITHUB_ORG", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
             </div>
             <div>
               <label htmlFor="github_project_id" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Project Node ID</label>
-              <input id="github_project_id" type="text" placeholder="PVT_..." value={localSettings["GITHUB_PROJECT_ID"] || ""} onChange={(e) => handleChange("GITHUB_PROJECT_ID", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
+              <input id="github_project_id" type="text" placeholder="PVT_..." value={localSettings["GITHUB_PROJECT_ID"] || ""} onChange={(e) => handleChange("GITHUB_PROJECT_ID", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
             </div>
             <div>
               <label htmlFor="github_webhook_secret" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Webhook Secret</label>
-              <input id="github_webhook_secret" type="text" placeholder="HMAC signing secret" value={localSettings["GITHUB_WEBHOOK_SECRET"] || ""} onChange={(e) => handleChange("GITHUB_WEBHOOK_SECRET", e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
+              <input id="github_webhook_secret" type="text" placeholder="HMAC signing secret" value={localSettings["GITHUB_WEBHOOK_SECRET"] || ""} onChange={(e) => handleChange("GITHUB_WEBHOOK_SECRET", e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors" />
             </div>
           </div>
         </div>
         {/* Discord Setup */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#5865F2]/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <MessageSquare size={20} className="text-[#5865F2]" /> Discord Publishing
@@ -199,14 +199,14 @@ export default function IntegrationsManager() {
                 placeholder="https://discord.com/api/webhooks/..."
                 value={localSettings["DISCORD_WEBHOOK_URL"] || ""}
                 onChange={(e) => handleChange("DISCORD_WEBHOOK_URL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#5865F2] transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#5865F2] transition-colors"
               />
             </div>
           </div>
         </div>
 
         {/* Bluesky Setup */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#0085ff]/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Share2 size={20} className="text-[#0085ff]" /> Bluesky Network
@@ -220,7 +220,7 @@ export default function IntegrationsManager() {
                 placeholder="ares23247.bsky.social"
                 value={localSettings["BLUESKY_HANDLE"] || ""}
                 onChange={(e) => handleChange("BLUESKY_HANDLE", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#0085ff] transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#0085ff] transition-colors"
               />
             </div>
             <div>
@@ -231,14 +231,14 @@ export default function IntegrationsManager() {
                 placeholder="••••••••••••••••"
                 value={localSettings["BLUESKY_APP_PASSWORD"] || ""}
                 onChange={(e) => handleChange("BLUESKY_APP_PASSWORD", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#0085ff] transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#0085ff] transition-colors"
               />
             </div>
           </div>
         </div>
 
         {/* Make.com (Generic) Webhook */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <CloudLightning size={20} className="text-purple-500" /> Make.com (Omnichannel)
@@ -253,14 +253,14 @@ export default function IntegrationsManager() {
                 placeholder="https://hook.us1.make.com/..."
                 value={localSettings["MAKE_WEBHOOK_URL"] || ""}
                 onChange={(e) => handleChange("MAKE_WEBHOOK_URL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
               />
             </div>
           </div>
         </div>
 
         {/* Google Calendar Sync */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Calendar size={20} className="text-green-500" /> Google Calendar Admin
@@ -274,7 +274,7 @@ export default function IntegrationsManager() {
                 placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
                 value={localSettings["CALENDAR_ID_INTERNAL"] || ""}
                 onChange={(e) => handleChange("CALENDAR_ID_INTERNAL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
               />
             </div>
             <div>
@@ -285,7 +285,7 @@ export default function IntegrationsManager() {
                 placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
                 value={localSettings["CALENDAR_ID_OUTREACH"] || ""}
                 onChange={(e) => handleChange("CALENDAR_ID_OUTREACH", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
               />
             </div>
             <div>
@@ -296,7 +296,7 @@ export default function IntegrationsManager() {
                 placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
                 value={localSettings["CALENDAR_ID_EXTERNAL"] || ""}
                 onChange={(e) => handleChange("CALENDAR_ID_EXTERNAL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
               />
             </div>
             <div>
@@ -307,7 +307,7 @@ export default function IntegrationsManager() {
                 placeholder="ares-bot@ares-project.iam.gserviceaccount.com"
                 value={localSettings["GCAL_SERVICE_ACCOUNT_EMAIL"] || ""}
                 onChange={(e) => handleChange("GCAL_SERVICE_ACCOUNT_EMAIL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
               />
             </div>
             <div>
@@ -320,14 +320,14 @@ export default function IntegrationsManager() {
                 value={localSettings["GCAL_PRIVATE_KEY"] || ""}
                 onChange={(e) => handleChange("GCAL_PRIVATE_KEY", e.target.value)}
                 rows={4}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors resize-none font-mono text-xs"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors resize-none font-mono text-xs"
               />
             </div>
           </div>
         </div>
 
         {/* Team Communications Setup */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Users size={20} className="text-yellow-500" /> Team Communications
@@ -342,7 +342,7 @@ export default function IntegrationsManager() {
                 placeholder="https://hooks.slack.com/services/..."
                 value={localSettings["SLACK_WEBHOOK_URL"] || ""}
                 onChange={(e) => handleChange("SLACK_WEBHOOK_URL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
               />
             </div>
             <div>
@@ -353,7 +353,7 @@ export default function IntegrationsManager() {
                 placeholder="https://ares-robotics.webhook.office.com/webhookb2/..."
                 value={localSettings["TEAMS_WEBHOOK_URL"] || ""}
                 onChange={(e) => handleChange("TEAMS_WEBHOOK_URL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
               />
             </div>
             <div>
@@ -364,14 +364,14 @@ export default function IntegrationsManager() {
                 placeholder="https://chat.googleapis.com/v1/spaces/..."
                 value={localSettings["GCHAT_WEBHOOK_URL"] || ""}
                 onChange={(e) => handleChange("GCHAT_WEBHOOK_URL", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
               />
             </div>
           </div>
         </div>
 
         {/* Facebook Setup */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#1877F2]/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Square size={20} className="text-[#1877F2]" /> Facebook Platform
@@ -386,7 +386,7 @@ export default function IntegrationsManager() {
                 placeholder="1000XXXXXXXXXXX"
                 value={localSettings["FACEBOOK_PAGE_ID"] || ""}
                 onChange={(e) => handleChange("FACEBOOK_PAGE_ID", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
               />
             </div>
             <div>
@@ -397,14 +397,14 @@ export default function IntegrationsManager() {
                 placeholder="EAABXXXXXXXXXXXXXXXX..."
                 value={localSettings["FACEBOOK_ACCESS_TOKEN"] || ""}
                 onChange={(e) => handleChange("FACEBOOK_ACCESS_TOKEN", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-[#1877F2] transition-colors"
               />
             </div>
           </div>
         </div>
 
         {/* Instagram Setup */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 opacity-10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Camera size={20} className="text-pink-500" /> Instagram Platform
@@ -419,7 +419,7 @@ export default function IntegrationsManager() {
                 placeholder="178414XXXXXXXXX"
                 value={localSettings["INSTAGRAM_ACCOUNT_ID"] || ""}
                 onChange={(e) => handleChange("INSTAGRAM_ACCOUNT_ID", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors"
               />
             </div>
             <div>
@@ -430,14 +430,14 @@ export default function IntegrationsManager() {
                 placeholder="EAABXXXXXXXXXXXXXXXX..."
                 value={localSettings["INSTAGRAM_ACCESS_TOKEN"] || ""}
                 onChange={(e) => handleChange("INSTAGRAM_ACCESS_TOKEN", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors"
               />
             </div>
           </div>
         </div>
 
         {/* The Blue Alliance Setup */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-ares-cyan/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Zap size={20} className="text-ares-cyan" /> The Blue Alliance (TBA)
@@ -452,7 +452,7 @@ export default function IntegrationsManager() {
                 placeholder="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                 value={localSettings["TBA_API_KEY"] || ""}
                 onChange={(e) => handleChange("TBA_API_KEY", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-ares-cyan transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-cyan transition-colors"
                 spellCheck="false"
               />
             </div>
@@ -460,7 +460,7 @@ export default function IntegrationsManager() {
         </div>
 
         {/* X / Twitter Setup */}
-        <div className="glass-card bg-black/40 p-6 rounded-2xl border border-white/5 relative overflow-hidden group lg:col-span-2">
+        <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group lg:col-span-2">
           <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-400/10 blur-3xl rounded-full pointer-events-none" />
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Share2 size={20} className="text-zinc-400" /> X (Twitter) API v2
@@ -475,7 +475,7 @@ export default function IntegrationsManager() {
                 placeholder="XXXXXXXXXXXXXXXXXXXXXXXXX"
                 value={localSettings["TWITTER_API_KEY"] || ""}
                 onChange={(e) => handleChange("TWITTER_API_KEY", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
               />
             </div>
             <div>
@@ -486,7 +486,7 @@ export default function IntegrationsManager() {
                 placeholder="••••••••••••••••"
                 value={localSettings["TWITTER_API_SECRET"] || ""}
                 onChange={(e) => handleChange("TWITTER_API_SECRET", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
               />
             </div>
             <div>
@@ -497,7 +497,7 @@ export default function IntegrationsManager() {
                 placeholder="111111111111111111-XXXXXXXXXXXXXXXX"
                 value={localSettings["TWITTER_ACCESS_TOKEN"] || ""}
                 onChange={(e) => handleChange("TWITTER_ACCESS_TOKEN", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
               />
             </div>
             <div>
@@ -508,7 +508,7 @@ export default function IntegrationsManager() {
                 placeholder="••••••••••••••••"
                 value={localSettings["TWITTER_ACCESS_SECRET"] || ""}
                 onChange={(e) => handleChange("TWITTER_ACCESS_SECRET", e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
               />
             </div>
           </div>

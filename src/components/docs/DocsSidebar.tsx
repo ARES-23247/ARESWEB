@@ -84,7 +84,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
 
         <button
           onClick={onSearchOpen}
-          className="w-full flex items-center gap-2 px-3 py-2 mb-6 rounded-lg bg-white/5 border border-white/10 text-white/40 text-sm hover:border-ares-red/40 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 mb-6 ares-cut-sm bg-white/5 border border-white/10 text-white/40 text-sm hover:border-ares-red/40 transition-colors"
         >
           <Search size={14} />
           <span className="flex-1 text-left">Search docs...</span>
@@ -113,7 +113,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
                       <Link
                         key={doc.slug}
                         to={`/docs/${doc.slug}`}
-                        className={`block pl-6 pr-2 py-1.5 text-sm rounded-md transition-colors ${
+                        className={`block pl-6 pr-2 py-1.5 text-sm ares-cut-sm transition-colors ${
                           currentSlug === doc.slug
                             ? "bg-ares-red/15 text-ares-red font-bold border-l-2 border-ares-red"
                             : "text-white/60 hover:text-white hover:bg-white/5"

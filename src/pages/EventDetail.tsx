@@ -172,7 +172,7 @@ export default function EventDetail() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="prose prose-invert lg:prose-lg max-w-none w-full prose-headings:text-white prose-headings:font-heading prose-headings:uppercase prose-p:text-white/80 prose-a:text-ares-gold prose-img:rounded-2xl prose-img:border prose-img:border-zinc-800"
+          className="prose prose-invert lg:prose-lg max-w-none w-full prose-headings:text-white prose-headings:font-heading prose-headings:uppercase prose-p:text-white/80 prose-a:text-ares-gold prose-img:ares-cut prose-img:border prose-img:border-zinc-800"
         >
           {parsedAst ? (
             <TiptapRenderer node={parsedAst} />

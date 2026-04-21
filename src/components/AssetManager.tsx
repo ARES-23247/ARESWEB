@@ -138,11 +138,11 @@ export default function AssetManager() {
             placeholder="Assign Tag/Folder"
             value={activeFolder}
             onChange={(e) => setActiveFolder(e.target.value)}
-            className="w-full sm:w-48 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-ares-gold"
+            className="w-full sm:w-48 bg-zinc-900 border border-zinc-700 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-ares-gold"
           />
           <label
             htmlFor="asset-upload-input"
-            className={`px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs cursor-pointer transition-all flex items-center gap-2 focus-within:ring-2 focus-within:ring-ares-gold ${
+            className={`px-6 py-3 ares-cut font-bold uppercase tracking-widest text-xs cursor-pointer transition-all flex items-center gap-2 focus-within:ring-2 focus-within:ring-ares-gold ${
               uploadMutation.isPending
                 ? "bg-zinc-800 text-zinc-400 pointer-events-none"
                 : "bg-ares-gold text-obsidian hover:bg-ares-gold/80 shadow-lg"
@@ -190,7 +190,7 @@ export default function AssetManager() {
             {filteredAssets.map((asset: R2Asset & { folder: string; tags: string; }) => (
             <div
               key={asset.key}
-              className="group relative bg-black/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-zinc-700 transition-colors flex flex-col"
+              className="group relative bg-black/40 border border-zinc-800/60 ares-cut-sm overflow-hidden hover:border-zinc-700 transition-colors flex flex-col"
             >
               {/* Thumbnail */}
               <div className="relative aspect-square bg-zinc-900">
@@ -205,7 +205,7 @@ export default function AssetManager() {
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={() => copyUrl(asset.url, asset.key)}
-                      className="px-3 py-1.5 bg-white text-obsidian text-xs font-bold rounded-lg hover:bg-ares-gold transition-colors flex-1 text-center"
+                      className="px-3 py-1.5 bg-white text-obsidian text-xs font-bold ares-cut-sm hover:bg-ares-gold transition-colors flex-1 text-center"
                     >
                       {copiedKey === asset.key ? "Copied!" : "Copy URL"}
                     </button>
@@ -213,14 +213,14 @@ export default function AssetManager() {
                       <button
                         onClick={() => deleteMutation.mutate(asset.key)}
                         disabled={deleteMutation.isPending}
-                        className="px-3 py-1.5 bg-ares-red text-white text-xs font-bold rounded-lg animate-pulse flex-1 text-center"
+                        className="px-3 py-1.5 bg-ares-red text-white text-xs font-bold ares-cut-sm animate-pulse flex-1 text-center"
                       >
                         {deleteMutation.isPending ? "..." : "Confirm"}
                       </button>
                     ) : (
                       <button
                         onClick={() => setConfirmKey(asset.key)}
-                        className="px-3 py-1.5 bg-zinc-700 text-zinc-300 text-xs font-bold rounded-lg hover:bg-ares-red hover:text-white transition-colors flex-1 text-center"
+                        className="px-3 py-1.5 bg-zinc-700 text-zinc-300 text-xs font-bold ares-cut-sm hover:bg-ares-red hover:text-white transition-colors flex-1 text-center"
                       >
                         Delete
                       </button>
@@ -229,7 +229,7 @@ export default function AssetManager() {
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <button
                       onClick={() => setSyndicateKey(asset.key)}
-                      className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-lg hover:from-blue-400 hover:to-purple-500 transition-all text-center shadow-lg"
+                      className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold ares-cut-sm hover:from-blue-400 hover:to-purple-500 transition-all text-center shadow-lg"
                     >
                       📢 Broadcast
                     </button>
@@ -240,7 +240,7 @@ export default function AssetManager() {
                           moveMutation.mutate({ key: asset.key, newFolder: newFolder.trim() });
                         }
                       }}
-                      className="flex-1 px-3 py-2 bg-zinc-700 text-white text-xs font-bold rounded-lg hover:bg-ares-gold hover:text-black transition-colors text-center"
+                      className="flex-1 px-3 py-2 bg-zinc-700 text-white text-xs font-bold ares-cut-sm hover:bg-ares-gold hover:text-black transition-colors text-center"
                     >
                       📁 Move
                     </button>
@@ -273,7 +273,7 @@ export default function AssetManager() {
       {/* Syndication Modal Overlay */}
       {syndicateKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-obsidian border border-zinc-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative overflow-hidden">
+          <div className="bg-obsidian border border-zinc-700 ares-cut w-full max-w-md p-6 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
             
             <h3 className="text-xl font-bold text-white mb-2">Broadcast Media</h3>
@@ -281,7 +281,7 @@ export default function AssetManager() {
               Dispatch this asset to Instagram, X, Facebook, and Discord securely. Make sure your Integration Keys are populated.
             </p>
             
-            <div className="mb-6 bg-black/50 border border-white/10 rounded-lg p-2 flex justify-center">
+            <div className="mb-6 bg-black/50 border border-white/10 ares-cut-sm p-2 flex justify-center">
               <img 
                 src={`/api/media/${syndicateKey}`} 
                 alt="Broadcast target" 
@@ -297,7 +297,7 @@ export default function AssetManager() {
                 onChange={(e) => setSyndicateCaption(e.target.value)}
                 rows={4}
                 placeholder="Draft an engaging caption for your followers..."
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
               />
             </div>
             
@@ -311,7 +311,7 @@ export default function AssetManager() {
               <button
                 onClick={() => syndicateMutation.mutate({ key: syndicateKey, caption: syndicateCaption })}
                 disabled={syndicateMutation.isPending || syndicateCaption.trim() === ""}
-                className={`px-6 py-2 rounded-xl font-bold transition-all shadow-lg ${
+                className={`px-6 py-2 ares-cut-sm font-bold transition-all shadow-lg ${
                   syndicateMutation.isPending || syndicateCaption.trim() === ""
                    ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                    : "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:scale-105"

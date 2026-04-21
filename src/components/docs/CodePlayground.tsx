@@ -23,7 +23,7 @@ export default function CodePlayground() {
   };
 
   return (
-    <div className="my-6 border border-white/10 rounded-xl overflow-hidden bg-[#0d1117] shadow-xl font-mono text-sm flex flex-col">
+    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-[#0d1117] shadow-xl font-mono text-sm flex flex-col">
       <div className="bg-[#161b22] px-4 py-2 border-b border-white/10 flex items-center justify-between">
         <span className="text-white font-bold opacity-80">Robot.java</span>
         <button onClick={handleRun} disabled={running} className="flex items-center gap-2 bg-ares-cyan/20 hover:bg-ares-cyan/40 text-ares-cyan px-3 py-1 rounded transition-colors disabled:opacity-50">

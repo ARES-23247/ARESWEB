@@ -61,9 +61,9 @@ export function useRichEditor(options?: UseRichEditorOptions): Editor | null {
       Subscript,
       Superscript,
       CharacterCount,
-      Image.configure({ inline: false, HTMLAttributes: { class: 'rounded-xl border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
-      Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video rounded-xl shadow-lg my-6 glass-card' } }),
-      Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-zinc-800 rounded-lg hidden-border-corners shadow-lg table-auto my-6' } }),
+      Image.configure({ inline: false, HTMLAttributes: { class: 'ares-cut-sm border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
+      Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video ares-cut-sm shadow-lg my-6 glass-card' } }),
+      Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-zinc-800 ares-cut-sm hidden-border-corners shadow-lg table-auto my-6' } }),
       TableRow.configure({ HTMLAttributes: { class: 'border-b border-zinc-800 hover:bg-zinc-900/50 transition-colors odd:bg-black/20 even:bg-black/40' } }),
       TableHeader.configure({ HTMLAttributes: { class: 'bg-zinc-900 border border-zinc-800 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm' } }),
       TableCell.configure({ HTMLAttributes: { class: 'border border-zinc-800 p-3 text-zinc-300 align-top' } }),
@@ -74,7 +74,7 @@ export function useRichEditor(options?: UseRichEditorOptions): Editor | null {
       CodeBlockLowlight.configure({ lowlight }),
       MermaidBlock.configure({
         lowlight,
-        HTMLAttributes: { class: 'bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 my-4 font-mono text-sm shadow-inner overflow-x-auto' }
+        HTMLAttributes: { class: 'bg-[#1e1e1e] border border-zinc-700 ares-cut-sm p-4 my-4 font-mono text-sm shadow-inner overflow-x-auto' }
       }),
       Callout,
       Reveal,
@@ -85,7 +85,7 @@ export function useRichEditor(options?: UseRichEditorOptions): Editor | null {
         },
       }),
       Mention.configure({
-        HTMLAttributes: { class: 'bg-ares-red/10 text-ares-red font-bold py-0.5 px-2 rounded-md border border-ares-red/20' },
+        HTMLAttributes: { class: 'bg-ares-red/10 text-ares-red font-bold py-0.5 px-2 ares-cut-sm border border-ares-red/20' },
         renderLabel({ node }) {
           return `@${node.attrs.label ?? node.attrs.id}`;
         },

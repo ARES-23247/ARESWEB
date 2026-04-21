@@ -169,7 +169,7 @@ export default function GitHubHeatmap() {
 
       {/* Tooltip */}
       {hoveredCell && (
-        <div className="absolute bottom-4 right-4 bg-obsidian border border-white/20 rounded-lg px-4 py-2 text-sm shadow-xl pointer-events-none z-10">
+        <div className="absolute bottom-4 right-4 bg-obsidian border border-white/20 ares-cut-sm px-4 py-2 text-sm shadow-xl pointer-events-none z-10">
           <span className="text-white font-bold">{hoveredCell.count} commit{hoveredCell.count !== 1 ? "s" : ""}</span>
           <span className="text-marble/50 ml-2">{new Date(hoveredCell.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
         </div>

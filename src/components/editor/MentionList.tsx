@@ -60,7 +60,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
   }));
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden min-w-[200px] backdrop-blur-xl animate-in fade-in zoom-in duration-200">
+    <div className="bg-zinc-900 border border-zinc-800 ares-cut-sm shadow-2xl overflow-hidden min-w-[200px] backdrop-blur-xl animate-in fade-in zoom-in duration-200">
       <div className="p-2 border-b border-zinc-800 bg-ares-red/5">
         <span className="text-[10px] font-bold text-ares-red uppercase tracking-widest px-2">Team Members</span>
       </div>
@@ -69,7 +69,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
           <button
             key={index}
             onClick={() => selectItem(index)}
-            className={`w-full flex flex-col px-3 py-2 rounded-lg text-left transition-all ${
+            className={`w-full flex flex-col px-3 py-2 ares-cut-sm text-left transition-all ${
               index === selectedIndex ? 'bg-ares-red/20 text-white shadow-inner' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
             }`}
           >

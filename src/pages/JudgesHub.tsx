@@ -104,7 +104,7 @@ export default function JudgesHub() {
           className="w-full max-w-md bg-zinc-900/40 backdrop-blur-2xl border border-white/5 p-10 rounded-[2.5rem] shadow-2xl relative z-10"
         >
           <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-ares-cyan to-ares-blue rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,183,235,0.3)]">
+            <div className="w-20 h-20 bg-gradient-to-br from-ares-cyan to-ares-blue ares-cut-lg flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,183,235,0.3)]">
               <ShieldCheck className="text-white w-10 h-10" />
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight text-center">Judge&apos;s Hub</h1>
@@ -122,7 +122,7 @@ export default function JudgesHub() {
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin(accessCode)}
-                className="w-full bg-black/40 border border-zinc-800 focus:border-ares-cyan/50 text-white pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:ring-4 focus:ring-ares-cyan/10 transition-all font-mono tracking-[0.2em] text-center text-lg"
+                className="w-full bg-black/40 border border-zinc-800 focus:border-ares-cyan/50 text-white pl-12 pr-4 py-4 ares-cut focus:outline-none focus:ring-4 focus:ring-ares-cyan/10 transition-all font-mono tracking-[0.2em] text-center text-lg"
                 placeholder="ARES-XXXX"
               />
             </div>
@@ -130,7 +130,7 @@ export default function JudgesHub() {
             <button
               onClick={() => handleLogin(accessCode)}
               disabled={isLoading || !accessCode}
-              className="w-full bg-ares-cyan hover:bg-white text-black font-black py-4 rounded-2xl transition-all duration-500 flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(0,183,235,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-ares-cyan hover:bg-white text-black font-black py-4 ares-cut transition-all duration-500 flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(0,183,235,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "VERIFYING..." : "ENTER PORTAL"}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -140,7 +140,7 @@ export default function JudgesHub() {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 p-4 bg-ares-red/10 border border-ares-red/20 rounded-xl text-ares-red text-sm"
+                className="flex items-center gap-2 p-4 bg-ares-red/10 border border-ares-red/20 ares-cut-sm text-ares-red text-sm"
               >
                 <AlertCircle size={16} />
                 <span>{error}</span>
@@ -164,7 +164,7 @@ export default function JudgesHub() {
       <header className="sticky top-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-ares-cyan rounded-xl flex items-center justify-center shadow-lg shadow-ares-cyan/20">
+            <div className="w-10 h-10 bg-ares-cyan ares-cut-sm flex items-center justify-center shadow-lg shadow-ares-cyan/20">
               <ShieldCheck size={20} className="text-black" />
             </div>
             <div>
@@ -174,7 +174,7 @@ export default function JudgesHub() {
           </div>
           <button 
             onClick={logout}
-            className="text-xs font-bold text-zinc-500 hover:text-ares-red transition-colors px-4 py-2 rounded-lg bg-white/5 border border-white/5 hover:border-ares-red/20"
+            className="text-xs font-bold text-zinc-500 hover:text-ares-red transition-colors px-4 py-2 ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/20"
           >
             DISCONNECT
           </button>
@@ -190,7 +190,7 @@ export default function JudgesHub() {
             {/* Executive Summaries */}
             <section>
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-ares-gold/10 rounded-lg">
+                <div className="p-2 bg-ares-gold/10 ares-cut-sm">
                   <FileText className="text-ares-gold" size={20} />
                 </div>
                 <h3 className="text-xl font-black uppercase tracking-tight">Executive Summaries</h3>
@@ -203,7 +203,7 @@ export default function JudgesHub() {
                     href={`/docs/${doc.slug}`}
                     target="_blank"
                     whileHover={{ y: -4 }}
-                    className="group flex flex-col p-6 bg-zinc-900/50 border border-ares-gold/20 rounded-[2rem] hover:border-ares-gold/50 transition-all shadow-xl"
+                    className="group flex flex-col p-6 bg-zinc-900/50 border border-ares-gold/20 ares-cut-lg hover:border-ares-gold/50 transition-all shadow-xl"
                   >
                     <div className="text-xs font-bold text-ares-gold uppercase tracking-widest mb-2 flex items-center gap-2">
                        <ShieldCheck size={12} /> Priority Document
@@ -222,7 +222,7 @@ export default function JudgesHub() {
             {/* Technical Portfolio */}
             <section>
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-ares-cyan/10 rounded-lg">
+                <div className="p-2 bg-ares-cyan/10 ares-cut-sm">
                   <BookOpen className="text-ares-cyan" size={20} />
                 </div>
                 <h3 className="text-xl font-black uppercase tracking-tight">Curated Technical Documents</h3>
@@ -235,9 +235,9 @@ export default function JudgesHub() {
                     href={`/docs/${doc.slug}`}
                     target="_blank"
                     whileHover={{ x: 4 }}
-                    className="group flex items-center gap-4 p-5 bg-zinc-900/30 border border-white/5 rounded-2xl hover:bg-black hover:border-ares-cyan/30 transition-all"
+                    className="group flex items-center gap-4 p-5 bg-zinc-900/30 border border-white/5 ares-cut hover:bg-black hover:border-ares-cyan/30 transition-all"
                   >
-                    <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center border border-zinc-800 text-zinc-500 group-hover:text-ares-cyan group-hover:border-ares-cyan/50 transition-all">
+                    <div className="w-12 h-12 bg-black ares-cut-sm flex items-center justify-center border border-zinc-800 text-zinc-500 group-hover:text-ares-cyan group-hover:border-ares-cyan/50 transition-all">
                       <FileText size={24} />
                     </div>
                     <div className="flex-1">
@@ -253,7 +253,7 @@ export default function JudgesHub() {
             {/* Impact Logs */}
             <section>
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
+                <div className="p-2 bg-emerald-500/10 ares-cut-sm">
                   <Users className="text-emerald-500" size={20} />
                 </div>
                 <h3 className="text-xl font-black uppercase tracking-tight">Community Impact (Recent Outreach)</h3>
@@ -261,7 +261,7 @@ export default function JudgesHub() {
               
               <div className="space-y-4">
                 {portfolio?.outreach.map((log, i) => (
-                  <div key={i} className="p-6 bg-black/40 border border-zinc-800/50 rounded-3xl">
+                  <div key={i} className="p-6 bg-black/40 border border-zinc-800/50 ares-cut-lg">
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full uppercase tracking-widest">{format(new Date(log.date), 'MMM yyyy')}</div>
                       <div className="text-lg font-black text-white">{log.total_hours} <span className="text-xs text-zinc-500 uppercase tracking-tighter">Team Hours</span></div>
@@ -281,7 +281,7 @@ export default function JudgesHub() {
             {/* Awards & Trophies */}
             <section>
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-ares-gold/10 rounded-lg">
+                <div className="p-2 bg-ares-gold/10 ares-cut-sm">
                   <Trophy className="text-ares-gold" size={20} />
                 </div>
                 <h3 className="text-xl font-black uppercase tracking-tight">Awards & Recognition</h3>
@@ -294,7 +294,7 @@ export default function JudgesHub() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="p-5 bg-gradient-to-br from-zinc-900 to-black border border-white/5 rounded-2xl relative overflow-hidden group shadow-lg"
+                    className="p-5 bg-gradient-to-br from-zinc-900 to-black border border-white/5 ares-cut relative overflow-hidden group shadow-lg"
                   >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-ares-gold/5 blur-2xl rounded-full" />
                     <div className="text-[10px] font-black text-ares-gold/70 uppercase tracking-widest mb-1">{award.event_name}</div>

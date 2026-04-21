@@ -105,18 +105,18 @@ export default function Outreach() {
               Together, we are developing a new rotating exhibit structure that highlights STEM stories unique to West Virginia. Our first project is the <strong>WV Bridge Exhibit</strong>, using the Engineering Design Process to teach children about structural integrity and local history.
             </p>
             <div className="mt-10 flex gap-4">
-               <a href="https://sparkwv.org" target="_blank" rel="noreferrer" className="px-6 py-3 bg-ares-red text-white font-black rounded-xl hover:scale-105 transition-all shadow-lg shadow-ares-red/20">Support Spark!</a>
-               <a href="/join" className="px-6 py-3 bg-zinc-100 border border-zinc-200 text-zinc-900 font-black rounded-xl hover:bg-zinc-200 transition-all">Join the Mission</a>
+               <a href="https://sparkwv.org" target="_blank" rel="noreferrer" className="px-6 py-3 bg-ares-red text-white font-black ares-cut-sm hover:scale-105 transition-all shadow-lg shadow-ares-red/20">Support Spark!</a>
+               <a href="/join" className="px-6 py-3 bg-zinc-100 border border-zinc-200 text-zinc-900 font-black ares-cut-sm hover:bg-zinc-200 transition-all">Join the Mission</a>
             </div>
           </div>
           <div className="relative">
-             <div className="aspect-square bg-zinc-200 rounded-[3rem] overflow-hidden rotate-3 shadow-2xl border-8 border-white">
+             <div className="aspect-square bg-zinc-200 ares-cut-lg overflow-hidden rotate-3 shadow-2xl border-8 border-white">
                 <div className="absolute inset-0 bg-gradient-to-br from-ares-red to-ares-gold opacity-10" />
                 <div className="w-full h-full flex items-center justify-center text-zinc-300">
                    <Target size={120} strokeWidth={0.5} />
                 </div>
              </div>
-             <div className="absolute -bottom-8 -left-8 bg-ares-gold text-black p-8 rounded-[2rem] font-black -rotate-6 shadow-xl max-w-[200px] text-center">
+             <div className="absolute -bottom-8 -left-8 bg-ares-gold text-black p-8 ares-cut-lg font-black -rotate-6 shadow-xl max-w-[200px] text-center">
                 Empowering the next generation.
              </div>
           </div>
@@ -139,7 +139,7 @@ export default function Outreach() {
 
           <div className="space-y-6">
             {isLoading ? (
-              [1,2,3].map(i => <div key={i} className="h-48 bg-white/5 rounded-[2rem] animate-pulse" />)
+              [1,2,3].map(i => <div key={i} className="h-48 bg-white/5 ares-cut-lg animate-pulse" />)
             ) : logs.map((log) => (
               <motion.div 
                 key={log.id} 
@@ -158,7 +158,7 @@ export default function Outreach() {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <div className="px-6 py-4 bg-white/5 rounded-[2rem] text-center border border-white/5">
+                  <div className="px-6 py-4 bg-white/5 ares-cut-lg text-center border border-white/5">
                     <div className="text-[10px] font-black text-ares-gold uppercase tracking-tighter mb-1">Impact</div>
                     <div className="text-2xl font-black text-white">{log.reach_count.toLocaleString()}</div>
                   </div>
@@ -175,7 +175,7 @@ export default function Outreach() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-ares-red/20 blur-[100px] rounded-full pointer-events-none" />
           <h2 className="text-4xl md:text-5xl font-black text-white mb-6 italic tracking-tighter">Have a volunteer need?</h2>
           <p className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto font-medium">Whether it&apos;s a elementary school demo, a science fair, or a community workshop—ARES is here to inspire.</p>
-          <a href="mailto:ares@aresfirst.org" className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black rounded-2xl hover:bg-ares-gold hover:text-black transition-all shadow-2xl">
+          <a href="mailto:ares@aresfirst.org" className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black ares-cut hover:bg-ares-gold hover:text-black transition-all shadow-2xl">
             Get In Touch <ArrowRight size={20} />
           </a>
         </div>

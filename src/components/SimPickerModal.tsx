@@ -22,12 +22,12 @@ export default function SimPickerModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="bg-zinc-950 border border-zinc-800 shadow-2xl rounded-3xl w-full max-w-4xl h-[70vh] flex flex-col overflow-hidden relative">
+      <div className="bg-zinc-950 border border-zinc-800 shadow-2xl ares-cut-lg w-full max-w-4xl h-[70vh] flex flex-col overflow-hidden relative">
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-black/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-ares-red/20 flex items-center justify-center rounded-xl border border-ares-red/30">
+            <div className="w-10 h-10 bg-ares-red/20 flex items-center justify-center ares-cut-sm border border-ares-red/30">
               <TerminalSquare className="text-ares-red" size={20} aria-hidden="true" />
             </div>
             <div>
@@ -72,7 +72,7 @@ export default function SimPickerModal({
                     key={sim.id}
                     onClick={() => onSelect(sim.id)}
                     aria-label={`Inject ${sim.name} simulator`}
-                    className="group relative bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-ares-red transition-all flex flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan shadow-lg"
+                    className="group relative bg-zinc-900 border border-zinc-800 ares-cut-sm p-5 hover:border-ares-red transition-all flex flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan shadow-lg"
                   >
                     <div className="flex items-center gap-2 mb-3">
                        <TerminalSquare size={16} className="text-ares-red" aria-hidden="true" />

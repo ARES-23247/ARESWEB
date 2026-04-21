@@ -145,7 +145,7 @@ export default function SOTMSimulator() {
         ref={canvasRef} 
         onMouseDown={handleMouseDown}
         width={800} height={400} 
-        className="w-full h-[400px] bg-[#0a0a0a] rounded-xl border border-white/10 cursor-crosshair touch-none" 
+        className="w-full h-[400px] bg-[#0a0a0a] ares-cut-sm border border-white/10 cursor-crosshair touch-none" 
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
         <div>
@@ -161,7 +161,7 @@ export default function SOTMSimulator() {
           <input type="range" min="3" max="20" value={shotSpeed} step="0.5" className="w-full ares-slider" onChange={(e) => setShotSpeed(parseFloat(e.target.value))} />
         </div>
       </div>
-      <div className="mt-4 p-3 bg-black/40 rounded-lg border border-white/5 text-sm font-mono text-white/60 flex flex-wrap gap-4 justify-center">
+      <div className="mt-4 p-3 bg-black/40 ares-cut-sm border border-white/5 text-sm font-mono text-white/60 flex flex-wrap gap-4 justify-center">
         {logMessages.map((msg, i) => (
           <span key={i}>{msg}</span>
         ))}

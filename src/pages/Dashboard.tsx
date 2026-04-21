@@ -37,7 +37,7 @@ const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false, acti
     <button
       onClick={() => onNavigate(tab)}
       disabled={disabled}
-      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-semibold ${
+      className={`w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold ${
         isActive 
           ? "bg-ares-red/10 text-white border border-ares-red/30 shadow-[0_0_15px_rgba(192,0,0,0.1)]" 
           : "text-marble/70 hover:bg-white/5 hover:text-white border border-transparent"
@@ -164,7 +164,7 @@ export default function Dashboard() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-ares-red/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
         
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-10 max-w-lg w-full mx-4">
-          <div className="bg-black/60 backdrop-blur-2xl rounded-3xl border border-red-500/20 p-10 shadow-2xl text-center">
+          <div className="bg-black/60 backdrop-blur-2xl ares-cut border border-red-500/20 p-10 shadow-2xl text-center">
             <div className="mb-6 flex justify-center">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-ares-red/30 to-red-900/20 border border-red-500/30 flex items-center justify-center shadow-[0_0_40px_rgba(220,38,38,0.3)]">
                 <ShieldAlert size={40} className="text-red-400" />
@@ -175,10 +175,10 @@ export default function Dashboard() {
               {!session ? "The ARES Dashboard is protected by Internal Authentication. Please log in with an authorized identity." : "Your account does not have administrator privileges."}
             </p>
             <div className="space-y-3">
-              <button onClick={() => navigate("/login")} className="w-full px-6 py-4 bg-gradient-to-r from-ares-red to-red-800 text-transparent font-bold text-sm rounded-xl transition-all shadow-[0_0_20px_#7f1d1d] hover:shadow-[0_0_30px_#7f1d1d]">
+              <button onClick={() => navigate("/login")} className="w-full px-6 py-4 bg-gradient-to-r from-ares-red to-red-800 text-transparent font-bold text-sm ares-cut transition-all shadow-[0_0_20px_#7f1d1d] hover:shadow-[0_0_30px_#7f1d1d]">
                 <span style={{ backgroundColor: '#c00000', color: '#ffffff' }} className="flex items-center justify-center h-full w-full"><Lock size={16} className="inline mr-2 -mt-1" /> Sign In with ARES ID</span>
               </button>
-              <button onClick={() => navigate("/")} className="w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white font-bold text-sm rounded-xl transition-all">
+              <button onClick={() => navigate("/")} className="w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white font-bold text-sm ares-cut transition-all">
                 Return to Home
               </button>
             </div>
@@ -324,7 +324,7 @@ export default function Dashboard() {
       {/* Mobile Top Header */}
       <div className="md:hidden fixed top-0 w-full h-16 bg-black/80 backdrop-blur-xl border-b border-white/10 z-40 flex items-center justify-between px-4 shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-ares-red to-red-900 border border-red-500/30 flex items-center justify-center">
+          <div className="w-8 h-8 ares-cut-sm bg-gradient-to-br from-ares-red to-red-900 border border-red-500/30 flex items-center justify-center">
             <AppWindow size={16} className="text-white" />
           </div>
           <h1 className="text-lg font-black tracking-tighter text-white">ARES<span className="text-zinc-500 font-bold">Workspace</span></h1>
@@ -334,7 +334,7 @@ export default function Dashboard() {
             </button>
           )}
         </div>
-        <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-zinc-300 transition-colors">
+        <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-zinc-300 transition-colors">
           <Menu size={20} />
         </button>
       </div>
@@ -350,13 +350,13 @@ export default function Dashboard() {
         <div className="p-6 border-b border-white/5 shrink-0 flex flex-col gap-4">
           <div className="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-white/5">
              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Navigation Menu</span>
-             <button className="text-zinc-400 p-1 bg-white/5 rounded-md hover:text-white" onClick={() => setIsSidebarOpen(false)}><X size={16}/></button>
+             <button className="text-zinc-400 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={() => setIsSidebarOpen(false)}><X size={16}/></button>
           </div>
           
           <div className="flex items-center gap-3 relative">
             <button 
               onClick={() => setIsAvatarEditorOpen(true)}
-              className="relative group block w-12 h-12 rounded-2xl overflow-hidden border border-white/10 shadow-lg hover:border-ares-red transition-all focus:outline-none shrink-0"
+              className="relative group block w-12 h-12 ares-cut overflow-hidden border border-white/10 shadow-lg hover:border-ares-red transition-all focus:outline-none shrink-0"
               title="Customize Identity"
             >
               <img src={(session?.user?.image as string) || `https://api.dicebear.com/9.x/bottts/svg?seed=${session?.user?.id}`} alt="Profile" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
@@ -447,7 +447,7 @@ export default function Dashboard() {
         <div className="p-4 border-t border-white/5 shrink-0 bg-black/20">
           <button 
               onClick={() => { fetch('/api/auth/sign-out', { method: 'POST' }).then(() => { window.location.href = '/'; }); }}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 rounded-xl transition-all text-xs font-black uppercase tracking-wider"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
             >
               <LogOut size={16} /> Sign Out
           </button>
@@ -465,7 +465,7 @@ export default function Dashboard() {
           {/* Main Desktop Header */}
           <div className="hidden md:flex items-center justify-between mb-8">
              <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-gradient-to-br from-ares-red to-red-900 rounded-2xl flex items-center justify-center shadow-lg shadow-ares-red/20 border border-red-500/30">
+               <div className="w-12 h-12 bg-gradient-to-br from-ares-red to-red-900 ares-cut-sm flex items-center justify-center shadow-lg shadow-ares-red/20 border border-red-500/30">
                  <AppWindow className="text-white" size={24} />
                </div>
                <div>
@@ -477,7 +477,7 @@ export default function Dashboard() {
              </div>
              <div className="flex gap-4">
                {isAdmin && pendingCount > 0 && (
-                 <button onClick={() => setActiveTab("inquiries")} className="px-4 py-2 bg-red-500/20 border border-red-500/40 text-red-100 text-xs font-bold rounded-xl animate-pulse hover:bg-red-500/30 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2 uppercase tracking-wider">
+                 <button onClick={() => setActiveTab("inquiries")} className="px-4 py-2 bg-red-500/20 border border-red-500/40 text-red-100 text-xs font-bold ares-cut animate-pulse hover:bg-red-500/30 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2 uppercase tracking-wider">
                    <MessageSquare size={14} /> {pendingCount} Pending Inquiries
                  </button>
                )}
@@ -489,7 +489,7 @@ export default function Dashboard() {
              </div>
           </div>
 
-          <div className="flex-1 w-full bg-obsidian border border-white/5 rounded-3xl md:rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col">
+          <div className="flex-1 w-full bg-obsidian border border-white/5 ares-cut-lg shadow-2xl relative overflow-hidden flex flex-col">
             <AnimatePresence mode="wait">
               <motion.div 
                 key={activeTab}

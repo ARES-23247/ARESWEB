@@ -109,13 +109,13 @@ export default function DocManagerTab({
                         .then((data: { code: string; expiresAt: string }) => alert(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
                     }
                   }}
-                  className="text-[10px] font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-2 py-1 rounded-md transition-colors border border-ares-gold/20"
+                  className="text-[10px] font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-2 py-1 ares-cut-sm transition-colors border border-ares-gold/20"
                 >
                   GENERATE JUDGE CODE
                 </button>
                 <button
                   onClick={exportAllDocs}
-                  className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan normal-case tracking-normal"
+                  className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan normal-case tracking-normal"
                 >
                   <Download size={12} />
                   BACKUP ALL
@@ -127,10 +127,10 @@ export default function DocManagerTab({
       </h3>
       <div className="flex flex-col gap-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
         {filtered.length === 0 ? (
-          <div className="text-zinc-500 text-xs italic py-4 text-center border border-dashed border-zinc-800/50 rounded-xl">No {view} docs found.</div>
+          <div className="text-zinc-500 text-xs italic py-4 text-center border border-dashed border-zinc-800/50 ares-cut-sm">No {view} docs found.</div>
         ) : (
           filtered.map((doc) => (
-            <div key={doc.slug} className={`bg-black/40 border ${doc.is_deleted === 1 ? 'border-ares-red/30 bg-ares-red/[0.02]' : 'border-zinc-800/60'} rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-zinc-700 transition-colors`}>
+            <div key={doc.slug} className={`bg-black/40 border ${doc.is_deleted === 1 ? 'border-ares-red/30 bg-ares-red/[0.02]' : 'border-zinc-800/60'} ares-cut-sm p-4 flex flex-col justify-between gap-4 hover:border-zinc-700 transition-colors`}>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-zinc-200 truncate flex items-center gap-2">
                   {doc.title}
@@ -140,11 +140,11 @@ export default function DocManagerTab({
                   {doc.is_portfolio === 1 && <span className="text-[9px] font-bold text-ares-cyan bg-ares-cyan/10 border border-ares-cyan/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Portfolio</span>}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] text-ares-cyan/70 bg-ares-cyan/10 border border-ares-cyan/20 px-2 py-0.5 rounded-md truncate max-w-[120px]">
+                  <span className="text-[10px] text-ares-cyan/70 bg-ares-cyan/10 border border-ares-cyan/20 px-2 py-0.5 ares-cut-sm truncate max-w-[120px]">
                     {doc.category}
                   </span>
                   {view === 'active' && (
-                    <span className="flex items-center text-[10px] text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
+                    <span className="flex items-center text-[10px] text-zinc-400 bg-zinc-900 border border-zinc-800 ares-cut-sm overflow-hidden">
                       <button 
                         onClick={() => sortDocMutation.mutate({ slug: doc.slug, sortOrder: doc.sort_order - 1 })}
                         disabled={sortDocMutation.isPending}
@@ -171,14 +171,14 @@ export default function DocManagerTab({
                   <>
                     <button
                       onClick={() => onEditDoc && onEditDoc(doc.slug)}
-                      className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors"
+                      className="text-xs font-bold text-zinc-400 hover:text-ares-cyan bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 ares-cut-sm transition-colors"
                     >
                       EDIT
                     </button>
                     {view === 'active' && (
                        <button
                          onClick={() => setHistoryTarget({ slug: doc.slug, title: doc.title })}
-                         className="text-xs font-bold text-zinc-400 hover:text-ares-gold bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors"
+                         className="text-xs font-bold text-zinc-400 hover:text-ares-gold bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 ares-cut-sm transition-colors"
                        >
                          HISTORY
                        </button>
@@ -188,14 +188,14 @@ export default function DocManagerTab({
                       <button
                         onClick={() => approveMutation.mutate({ type: 'doc', id: doc.slug })}
                         disabled={approveMutation.isPending}
-                        className="text-xs font-bold text-ares-cyan hover:text-white bg-ares-cyan/10 hover:bg-ares-cyan/40 border border-ares-cyan/20 px-3 py-1 rounded-md transition-colors disabled:opacity-50"
+                        className="text-xs font-bold text-ares-cyan hover:text-white bg-ares-cyan/10 hover:bg-ares-cyan/40 border border-ares-cyan/20 px-3 py-1 ares-cut-sm transition-colors disabled:opacity-50"
                       >
                         APPROVE
                       </button>
                       <button
                         onClick={() => rejectMutation.mutate({ type: 'doc', id: doc.slug })}
                         disabled={rejectMutation.isPending}
-                        className="text-xs font-bold text-orange-400 hover:text-white bg-orange-400/10 hover:bg-orange-400/40 border border-orange-400/20 px-3 py-1 rounded-md transition-colors disabled:opacity-50"
+                        className="text-xs font-bold text-orange-400 hover:text-white bg-orange-400/10 hover:bg-orange-400/40 border border-orange-400/20 px-3 py-1 ares-cut-sm transition-colors disabled:opacity-50"
                       >
                         REJECT
                       </button>
@@ -203,7 +203,7 @@ export default function DocManagerTab({
                     ) : (
                       <button
                         onClick={() => exportSingleDoc(doc.slug)}
-                        className="text-xs font-bold text-zinc-400 hover:text-ares-gold bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                        className="text-xs font-bold text-zinc-400 hover:text-ares-gold bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1"
                       >
                         <Download size={10} />
                         EXPORT
@@ -222,7 +222,7 @@ export default function DocManagerTab({
                     <button
                       onClick={() => restoreMutation.mutate({ type: 'doc', id: doc.slug })}
                       disabled={restoreMutation.isPending}
-                      className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 rounded-md transition-colors"
+                      className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 ares-cut-sm transition-colors"
                     >
                       {restoreMutation.isPending && restoreMutation.variables?.id === doc.slug ? "RESTORING..." : "RESTORE"}
                     </button>

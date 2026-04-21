@@ -91,10 +91,10 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               placeholder="Share your thoughts..."
-              className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
+              className="flex-1 bg-zinc-900/50 border border-zinc-800 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
             />
             <button onClick={submitComment} disabled={posting || !newComment.trim()}
-              className="px-4 bg-ares-red hover:bg-red-700 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-colors flex items-center gap-1.5 self-end h-[60px]"
+              className="px-4 bg-ares-red hover:bg-red-700 text-white ares-cut-sm font-bold text-sm disabled:opacity-50 transition-colors flex items-center gap-1.5 self-end h-[60px]"
             >
               {posting ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
               Post
@@ -109,7 +109,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
               return (
                 <div key={comment.id} className="flex gap-3 group">
                   <img src={comment.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${comment.user_id}`}
-                    alt="" className="w-8 h-8 rounded-lg bg-zinc-800 flex-shrink-0" />
+                    alt="" className="w-8 h-8 ares-cut-sm bg-zinc-800 flex-shrink-0" />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-bold text-white">{comment.nickname || "ARES Member"}</span>
@@ -132,15 +132,15 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
                         <textarea
                           value={editContent}
                           onChange={e => setEditContent(e.target.value)}
-                          className="flex-1 bg-zinc-900/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
+                          className="flex-1 bg-zinc-900/50 border border-zinc-700 ares-cut-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
                         />
                         <div className="flex flex-col gap-2">
                           <button onClick={() => saveEdit(comment.id)} disabled={!editContent.trim() || editContent === comment.content}
-                            className="p-2 bg-zinc-800 hover:bg-green-600/20 text-green-500 hover:text-green-400 rounded-lg transition-colors disabled:opacity-50">
+                            className="p-2 bg-zinc-800 hover:bg-green-600/20 text-green-500 hover:text-green-400 ares-cut-sm transition-colors disabled:opacity-50">
                             <Check size={16} />
                           </button>
                           <button onClick={() => setEditingId(null)}
-                            className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-colors">
+                            className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 ares-cut-sm transition-colors">
                             <X size={16} />
                           </button>
                         </div>
@@ -155,7 +155,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
           </div>
         </div>
       ) : (
-        <div className="mb-8 p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl text-center">
+        <div className="mb-8 p-6 bg-zinc-900/50 border border-zinc-800 ares-cut text-center">
           <p className="text-sm text-zinc-300 mb-2">
             <span className="text-ares-red font-bold">Verified Access Required</span>
           </p>
@@ -164,7 +164,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
           </p>
           {!isAuthenticated ? (
             <div>
-              <a href="/login" className="px-5 py-2.5 bg-ares-red hover:bg-red-700 text-white rounded-lg font-bold text-sm inline-block transition-colors">
+              <a href="/login" className="px-5 py-2.5 bg-ares-red hover:bg-red-700 text-white ares-cut-sm font-bold text-sm inline-block transition-colors">
                 Sign in with ARES ID
               </a>
               <p className="text-xs text-zinc-600 mt-5">
