@@ -65,6 +65,8 @@ Common resource structures to expect in API responses:
 
 - **Standardized Endpoints**: Use `/admin/list` for pagination lists and `/admin/save` for create/update logic.
 - **D1 Schema Synchronization (CRITICAL)**: Whenever mapping UI models to D1 databases in `INSERT` or `UPDATE` transactions, you MUST verify destructuring and sql parameter bindings strictly match the column definitions in `schema.sql`. Missing a field silently drops user data.
+- **PII Cryptography Compliance (CRITICAL)**: PII fields like phone numbers and parent emails are stored as AES-encrypted cyphertext in the database. You MUST explicitly call `decrypt()` on these fields in `GET` routes before returning them to authorized users. Never expose raw `iv:hex` strings to the frontend.
+- **Domain-First Relative Routing**: When building modular Hono routers, NEVER use absolute paths (e.g., `/api/events/list`). Always use relative paths (`/list`) and let the root `[[route]].ts` gateway mount the domain prefixes. Overlapping absolute paths will cause silent 404s.
 - **Error Handling**: Use `c.json({ error: "Message" }, status)` for all failures. Never return raw text or unhandled exceptions.
 - **Audit Logging**: Use `logAuditAction` for all sensitive administrative changes (deletions, role changes, settings updates).
 

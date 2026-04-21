@@ -11,6 +11,7 @@ description: Dictates the absolute enforcement of the ARESWEB standard test cove
 2. **Automated Verification**: Never ask the user "does this look right" for critical logic changes. Instead, write a `*.test.ts/x` file, run `npm run test:coverage`, and verify mathematically that your code succeeds.
 3. **End-to-End Fallback**: If you change mission-critical user paths—such as the admin dashboard navigation or the login module—you must update or append to the `tests/e2e/` Playwright testing suite.
 4. **Coverage Integrity**: If you ever see a CI failure resulting from coverage falling beneath 85% (`lines` and `statements`) or 100% (`functions`), you must autonomously write additional tests to reach compliance before declaring the task complete.
+5. **E2E Authentication Mocking**: Playwright E2E tests MUST mock authentication states and backend API payloads via `page.route()` rather than relying on live Cloudflare database environments or fragile cookie states. Flaky tests resulting from un-mocked dependencies are unacceptable.
 
 ## Implementation Steps
 
