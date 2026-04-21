@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
+import CommandPalette from "./components/CommandPalette";
 
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -37,6 +38,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ScrollToTop />
+      <CommandPalette />
       <Navbar />
       <main id="main-content" role="main" className="flex-1 flex flex-col pt-16">
         <AnimatePresence mode="wait">

@@ -1,13 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Search, LayoutDashboard, LogIn } from "lucide-react";
-import GlobalSearchModal from "./GlobalSearchModal";
+
 import { useSession } from "../utils/auth-client";
 import { GreekMeander } from "./GreekMeander";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { data: session, isPending } = useSession();
 
@@ -63,11 +62,12 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-4">
           <button
-            onClick={() => setSearchOpen(true)}
-            aria-label="Open Site Search"
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+            aria-label="Open Command Palette"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan border border-white/5"
           >
-            <Search size={18} aria-hidden="true" />
+            <Search size={14} aria-hidden="true" />
+            <span className="text-xs font-mono pr-2">Search... <kbd className="hidden lg:inline bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded ml-1 border border-zinc-700">Ctrl K</kbd></span>
           </button>
           {isSignedIn && (
             <Link to="/dashboard" className="relative flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all group" aria-label="Dashboard">
@@ -110,8 +110,8 @@ export default function Navbar() {
 
       {open && (
         <div className="md:hidden mt-4 flex flex-col gap-4 text-sm font-bold uppercase tracking-widest px-2 pb-4 border-t border-white/10 pt-4">
-          <button onClick={() => { setOpen(false); setSearchOpen(true); }} className="text-left text-ares-gold flex items-center gap-2 mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">
-            <Search size={16} aria-hidden="true" /> Search Pipeline
+          <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-command-palette')); }} className="text-left text-ares-gold flex items-center gap-2 mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">
+            <Search size={16} aria-hidden="true" /> Command Palette
           </button>
           <Link to="/" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Home</Link>
           <Link to="/about" onClick={() => setOpen(false)} className="text-marble/70 hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">About</Link>
@@ -145,7 +145,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {searchOpen && <GlobalSearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />}
     </nav>
   );
 }
