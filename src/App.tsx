@@ -24,8 +24,10 @@ import Login from "./pages/Login";
 import ProfilePage from "./pages/ProfilePage";
 import BugReport from "./pages/BugReport";
 import Sponsors from "./pages/Sponsors";
+import SponsorROI from "./pages/SponsorROI";
 import JudgesHub from "./pages/JudgesHub";
 import Join from "./pages/Join";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -58,8 +60,10 @@ export default function App() {
               <Route path="/docs/:slug" element={<Docs />} />
               <Route path="/bug-report" element={<BugReport />} />
               <Route path="/sponsors" element={<Sponsors />} />
+              <Route path="/sponsors/roi/:tokenId" element={<SponsorROI />} />
               <Route path="/join" element={<Join />} />
               <Route path="/judges" element={<JudgesHub />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </ErrorBoundary>

@@ -24,6 +24,8 @@ import sitemapRouter from "./routes/sitemap";
 import githubRouter from "./routes/github";
 import githubWebhookRouter from "./routes/githubWebhook";
 import zulipWebhookRouter from "./routes/zulipWebhook";
+import zulipRouter from "./routes/zulip";
+
 const app = new Hono<{ Bindings: Bindings }>();
 const apiRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -62,6 +64,7 @@ apiRouter.route("/", awardsRouter);
 // External Integrations
 apiRouter.route("/", tbaRouter);
 apiRouter.route("/github", githubRouter);
+apiRouter.route("/zulip", zulipRouter);
 apiRouter.route("/", settingsRouter);
 apiRouter.route("/", judgesRouter);
 
@@ -80,16 +83,22 @@ apiRouter.get("/search", async (c) => {
     if (q.length < 3) return c.json({ results: [] });
 
     const wildcard = `%${q}%`;
-    const [postsReq, eventsReq] = await Promise.all([
+    const [postsReq, eventsReq, docsReq, usersReq] = await Promise.all([
       c.env.DB.prepare(
         "SELECT 'blog' as type, slug as id, title, snippet as matched_text FROM posts WHERE title LIKE ? OR snippet LIKE ? LIMIT 5"
       ).bind(wildcard, wildcard).all(),
       c.env.DB.prepare(
         "SELECT 'event' as type, id, title, description as matched_text FROM events WHERE title LIKE ? OR description LIKE ? LIMIT 5"
-      ).bind(wildcard, wildcard).all()
+      ).bind(wildcard, wildcard).all(),
+      c.env.DB.prepare(
+        "SELECT 'doc' as type, slug as id, title, description as matched_text FROM docs WHERE status = 'published' AND is_deleted = 0 AND (title LIKE ? OR description LIKE ?) LIMIT 5"
+      ).bind(wildcard, wildcard).all(),
+      c.env.DB.prepare(
+        "SELECT 'user' as type, user_id as id, nickname as title, bio as matched_text FROM user_profiles WHERE show_on_about = 1 AND (nickname LIKE ? OR first_name LIKE ? OR last_name LIKE ?) LIMIT 5"
+      ).bind(wildcard, wildcard, wildcard).all()
     ]);
 
-    return c.json({ results: [...(postsReq.results || []), ...(eventsReq.results || [])] });
+    return c.json({ results: [...(postsReq.results || []), ...(eventsReq.results || []), ...(docsReq.results || []), ...(usersReq.results || [])] });
   } catch (err) {
     console.error("D1 search error:", err);
     return c.json({ results: [] }, 500);

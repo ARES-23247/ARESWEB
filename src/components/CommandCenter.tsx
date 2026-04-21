@@ -5,6 +5,7 @@ import {
   CheckCircle2, Circle, Clock, AlertTriangle, 
   Zap, ExternalLink, ArrowRight, Activity
 } from "lucide-react";
+import TeamAvailability from "./TeamAvailability";
 
 // ── Types ────────────────────────────────────────────────────────────
 interface ProjectItem {
@@ -449,6 +450,7 @@ export default function CommandCenter() {
             { cmd: "!stats", desc: "Website quick stats" },
             { cmd: "!inquiries", desc: "Pending inquiry count" },
             { cmd: "!events", desc: "Upcoming events" },
+            { cmd: "!broadcast", desc: "Broadcast msg to stream" },
             { cmd: "!help", desc: "Show all commands" },
           ].map(item => (
             <div key={item.cmd} className="p-3 bg-zinc-800/40 ares-cut-sm border border-white/5">
@@ -457,6 +459,11 @@ export default function CommandCenter() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Team Availability Widget */}
+      <div className="grid grid-cols-1 gap-6">
+        <TeamAvailability />
       </div>
     </div>
   );

@@ -54,6 +54,7 @@ zulipWebhookRouter.post("/", async (c) => {
             "| `!stats` | ARESWEB quick stats |",
             "| `!inquiries` | Pending inquiry count |",
             "| `!events` | Upcoming events |",
+            "| `!broadcast <stream> <msg>` | Broadcast an admin msg |",
             "| `!help` | Show this help |",
           ].join("\n"),
         });
@@ -169,6 +170,39 @@ zulipWebhookRouter.post("/", async (c) => {
         return c.json({
           content: `📅 **Upcoming Events** (${results.length})\n\n${lines.join("\n")}`,
         });
+      }
+
+      case "!broadcast": {
+        const streamTarget = parts[1];
+        const msgCore = parts.slice(2).join(" ");
+        if (!streamTarget || !msgCore) {
+           return c.json({ content: "⚠️ Usage: `!broadcast <stream> <message...>`" });
+        }
+        
+        // Dynamic import to prevent circular dependency problems if they exist, or just use sendZulipMessage if imported.
+        // Actually we can simply use the identical fetch logic since we already have c.env credentials right here.
+        const authHeader = "Basic " + btoa(`${c.env.ZULIP_BOT_EMAIL}:${c.env.ZULIP_API_KEY}`);
+        const url = `${c.env.ZULIP_URL || "https://ares.zulipchat.com"}/api/v1/messages`;
+        
+        const content = `${msgCore}\n\n*— Broadcasted by ${body.message.sender_full_name} via ARES Bot*`;
+        const formData = new URLSearchParams();
+        formData.append("type", "stream");
+        formData.append("to", streamTarget);
+        formData.append("topic", "Broadcast");
+        formData.append("content", content);
+
+        c.executionCtx.waitUntil(
+          fetch(url, {
+            method: "POST",
+            headers: {
+              "Authorization": authHeader,
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: formData.toString()
+          }).catch(err => console.error("[ZulipBroadcast] Error:", err))
+        );
+
+        return c.json({ content: `✅ Broadcast dispatched to \`${streamTarget}\`.` });
       }
 
       default:

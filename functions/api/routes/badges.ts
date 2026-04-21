@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { Bindings, ensureAdmin, getSessionUser } from "./_shared";
+import { sendZulipMessage } from "../../utils/zulipSync";
 
 const badgesRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -48,6 +49,31 @@ badgesRouter.post("/admin/users/:userId/badges", ensureAdmin, async (c) => {
     await c.env.DB.prepare(
       "INSERT INTO user_badges (user_id, badge_id, awarded_by) VALUES (?, ?, ?)"
     ).bind(userId, badge_id, sessionId).run();
+
+    // Broadcast to Zulip asynchronously
+    c.executionCtx.waitUntil((async () => {
+      try {
+        const [userRes, badgeRes] = await Promise.all([
+          c.env.DB.prepare("SELECT first_name, last_name, nickname FROM user_profiles WHERE user_id = ?").bind(userId).first<{first_name: string, last_name: string, nickname: string}>(),
+          c.env.DB.prepare("SELECT name, icon FROM badges WHERE id = ?").bind(badge_id).first<{name: string, icon: string}>()
+        ]);
+        
+        if (userRes && badgeRes) {
+          const userName = userRes.nickname || userRes.first_name || "A team member";
+          const badgeName = badgeRes.name;
+          const icon = badgeRes.icon === "Trophy" ? "🏆" : badgeRes.icon === "Crown" ? "👑" : badgeRes.icon === "Star" ? "⭐" : "🏅";
+          
+          await sendZulipMessage(
+            c.env,
+            "general", // Broadcast gamification to the whole team in general
+            "Achievements",
+            `${icon} **${userName}** was just awarded the **${badgeName}** badge! \n\nCheck out the updated [ARES Leaderboard](${c.env.ZULIP_URL ? new URL("/leaderboard", c.env.ZULIP_URL.replace("zulipchat", "pages.dev")).href : "https://aresWEB/leaderboard"}).`
+          );
+        }
+      } catch (err) {
+        console.error("Zulip gamification sync failed", err);
+      }
+    })());
 
     return c.json({ success: true });
   } catch (err) {

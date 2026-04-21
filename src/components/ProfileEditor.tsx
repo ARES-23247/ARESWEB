@@ -59,6 +59,7 @@ interface ProfileResponse extends Partial<ProfileData> {
   dietary_restrictions?: string | string[];
   colleges?: string | CollegeEntry[];
   employers?: string | EmployerEntry[];
+  auth?: { email: string; name: string; image?: string; id: string; };
 }
 
 const DEFAULT_PROFILE: ProfileData = {
@@ -71,6 +72,19 @@ const DEFAULT_PROFILE: ProfileData = {
   favorite_robot_mechanism: "", pre_match_superstition: "", leadership_role: "", rookie_year: "",
   tshirt_size: "", emergency_contact_name: "", emergency_contact_phone: "",
   parents_name: "", parents_email: "", students_name: "", students_email: "",
+};
+
+const safeJSONParse = (val: unknown, fallback: any) => {
+  if (val === null || val === undefined || val === "") return fallback;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      return parsed === null ? fallback : parsed;
+    } catch {
+      return fallback;
+    }
+  }
+  return val;
 };
 
 export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: string }) {
@@ -91,13 +105,13 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
           setProfile({
             ...DEFAULT_PROFILE,
             ...data,
-            email: data.email || "",
+            email: data.auth?.email || data.email || "",
             first_name: data.first_name || "",
             last_name: data.last_name || "",
-            subteams: typeof data.subteams === "string" ? JSON.parse(data.subteams as string) : (data.subteams as string[]) || [],
-            dietary_restrictions: typeof data.dietary_restrictions === "string" ? JSON.parse((data.dietary_restrictions as string) || "[]") : (data.dietary_restrictions as string[]) || [],
-            colleges: typeof data.colleges === "string" ? JSON.parse(data.colleges as string) : (data.colleges as CollegeEntry[]) || [],
-            employers: typeof data.employers === "string" ? JSON.parse(data.employers as string) : (data.employers as EmployerEntry[]) || [],
+            subteams: safeJSONParse(data.subteams, []),
+            dietary_restrictions: safeJSONParse(data.dietary_restrictions, []),
+            colleges: safeJSONParse(data.colleges, []),
+            employers: safeJSONParse(data.employers, []),
             contact_email: data.contact_email || "",
             show_email: Boolean(data.show_email),
             show_phone: Boolean(data.show_phone),

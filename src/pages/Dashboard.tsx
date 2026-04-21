@@ -27,8 +27,9 @@ const BadgeManager = lazy(() => import("@/components/BadgeManager"));
 const LocationsManager = lazy(() => import("@/components/LocationsManager"));
 const AdminInquiries = lazy(() => import("@/components/AdminInquiries"));
 const CommandCenter = lazy(() => import("@/components/CommandCenter"));
+const SponsorTokensManager = lazy(() => import("@/components/SponsorTokensManager"));
 
-type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "locations" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy" | "impact_roster" | "badges" | "inquiries" | "command_center";
+type TabState = "blog" | "event" | "docs" | "manage_blog" | "manage_event" | "manage_docs" | "locations" | "assets" | "integrations" | "profile" | "users" | "logistics" | "analytics" | "sponsors" | "outreach" | "legacy" | "impact_roster" | "badges" | "inquiries" | "command_center" | "sponsor_tokens";
 
 // ── NavButton Component ────────────────────────────────────────────
 const NavButton = ({ tab, icon: Icon, label, disabled = false, sub = false, activeTab, onNavigate }: { tab: TabState, icon?: React.ElementType, label: string, disabled?: boolean, sub?: boolean, activeTab: TabState, onNavigate: (tab: TabState) => void }) => {
@@ -268,6 +269,16 @@ export default function Dashboard() {
             <SponsorEditor />
           </>
         );
+      case "sponsor_tokens":
+        return isAdmin ? (
+          <>
+             <div className="mb-6 pb-6 border-b border-white/5">
+               <h2 className="text-2xl font-black text-white flex items-center gap-3"><Gem className="text-ares-cyan" /> Sponsor ROI Tokens</h2>
+               <p className="text-zinc-500 text-sm mt-1">Generate secure magic links for sponsors to view their impact report.</p>
+             </div>
+             <SponsorTokensManager />
+          </>
+        ) : null;
       case "outreach":
         return (
           <>
@@ -421,6 +432,7 @@ export default function Dashboard() {
                 <NavButton tab="outreach" icon={Target} label="Outreach Tracker" activeTab={activeTab} onNavigate={handleNavigate} />
                 <NavButton tab="locations" icon={MapPin} label="Meeting Locations" activeTab={activeTab} onNavigate={handleNavigate} />
                 <NavButton tab="sponsors" icon={Gem} label="Sponsors & Funding" activeTab={activeTab} onNavigate={handleNavigate} />
+                {isAdmin && <NavButton tab="sponsor_tokens" icon={Gem} label="Sponsor ROI Tokens" activeTab={activeTab} onNavigate={handleNavigate} />}
                 <NavButton tab="analytics" icon={BarChart3} label="Analytics" activeTab={activeTab} onNavigate={handleNavigate} />
               </div>
             </div>

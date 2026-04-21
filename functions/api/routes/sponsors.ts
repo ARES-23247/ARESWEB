@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { Bindings } from "./_shared";
+import { sendZulipAlert } from "../../utils/zulipSync";
 
 const sponsorsRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -118,6 +119,23 @@ sponsorsRouter.post("/admin/sponsors/tokens", async (c) => {
     await c.env.DB.prepare(
       "INSERT INTO sponsor_tokens (token, sponsor_id) VALUES (?, ?)"
     ).bind(token, sponsor_id).run();
+
+    c.executionCtx.waitUntil((async () => {
+      try {
+        const sRes = await c.env.DB.prepare("SELECT name FROM sponsors WHERE id = ?").bind(sponsor_id).first<{name: string}>();
+        if (sRes) {
+          await sendZulipAlert(
+            c.env,
+            "Sponsor",
+            "New Sponsor ROI Token Generated",
+            `A magic ROI access link was just generated for **${sRes.name}**.\nTheir engagement and click metrics are now securely accessible via their specific token link.`
+          );
+        }
+      } catch (err) {
+        console.error("Failed to sync sponsor creation to Zulip", err);
+      }
+    })());
+
     return c.json({ success: true, token });
   } catch {
     return c.json({ error: "Failed to generate" }, 500);

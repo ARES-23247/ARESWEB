@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('ARESWEB Core Functionality', () => {
-  test('Dashboard loads successfully', async ({ page }) => {
+  test('Home page loads successfully', async ({ page }) => {
     await page.goto('/');
     
     // We expect the main ARES portal to load with its title

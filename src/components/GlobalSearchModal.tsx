@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, Search, FileText, Calendar as CalendarIcon, ArrowRight } from "lucide-react";
+import { X, Search, FileText, Calendar as CalendarIcon, ArrowRight, Book, User } from "lucide-react";
 import { Link } from "react-router-dom";
 
 type SearchResult = {
-  type: "blog" | "event";
+  type: "blog" | "event" | "doc" | "user";
   id: string; // slug for blog, id for event
   title: string;
   matched_text: string;
@@ -89,16 +89,16 @@ export default function GlobalSearchModal({
               {results.map((r, i) => (
                 <Link
                   key={`${r.type}-${r.id}-${i}`}
-                  to={r.type === "blog" ? `/blog/${r.id}` : `/events/${r.id}`}
+                  to={r.type === "blog" ? `/blog/${r.id}` : r.type === "event" ? `/events/${r.id}` : r.type === "doc" ? `/docs/${r.id}` : `/roster/${r.id}`}
                   onClick={onClose}
                   className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 px-6 border-b border-zinc-800/50 hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:bg-white/5 focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
                   <div className="shrink-0 w-10 h-10 ares-cut-sm bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-ares-gold group-hover:border-ares-gold/50 transition-colors">
-                    {r.type === "blog" ? <FileText size={20} aria-hidden="true" /> : <CalendarIcon size={20} aria-hidden="true" />}
+                    {r.type === "blog" ? <FileText size={20} aria-hidden="true" /> : r.type === "event" ? <CalendarIcon size={20} aria-hidden="true" /> : r.type === "doc" ? <Book size={20} aria-hidden="true" /> : <User size={20} aria-hidden="true" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${r.type === "blog" ? "bg-ares-gold/20 text-ares-gold" : "bg-ares-cyan/20 text-ares-cyan"}`}>
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${r.type === "blog" ? "bg-ares-gold/20 text-ares-gold" : r.type === "event" ? "bg-ares-cyan/20 text-ares-cyan" : r.type === "doc" ? "bg-white/10 text-white" : "bg-ares-red/20 text-ares-red"}`}>
                         {r.type}
                       </span>
                       <h3 className="text-white font-bold truncate group-hover:text-ares-gold transition-colors">{r.title}</h3>

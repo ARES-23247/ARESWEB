@@ -106,9 +106,17 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-obsidian">
       <div className="max-w-3xl mx-auto px-6 py-16">
-        <Link to="/about" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-bold mb-8 transition-colors">
-          <ArrowLeft size={16} /> Back to Team
-        </Link>
+        <div className="flex justify-between items-center mb-8 print:hidden">
+          <Link to="/about" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-bold transition-colors">
+            <ArrowLeft size={16} /> Back to Team
+          </Link>
+          <button 
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 bg-ares-red hover:bg-red-700 text-white text-sm font-bold ares-cut-sm transition-colors"
+          >
+            <LucideIcons.Printer size={16} /> Export Portfolio
+          </button>
+        </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {/* Header Card */}

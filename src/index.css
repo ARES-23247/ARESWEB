@@ -120,3 +120,41 @@ h1, h2, h3, h4, .font-heading {
 .tiptap pre code {
   @apply bg-transparent p-0 text-inherit;
 }
+
+/* --- NATIVE PDF PORTFOLIO EXPORTS --- */
+@media print {
+  /* Hide UI elements */
+  nav, button, header, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force light theme for printing */
+  body, .bg-obsidian, .bg-zinc-900\/50, .bg-zinc-800, .bg-transparent {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove borders and shadows */
+  * {
+    box-shadow: none !important;
+    border-color: #ddd !important;
+  }
+
+  /* Force dark text globally */
+  h1, h2, h3, p, span, div, .text-white, .text-zinc-400, .text-zinc-300 {
+    color: black !important;
+  }
+
+  /* Ensure elements don't get cut in half */
+  .ares-cut, .ares-cut-lg, .ares-cut-sm {
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+  }
+
+  /* Expand layout limits */
+  .max-w-3xl {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
