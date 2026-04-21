@@ -58,7 +58,11 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
         onAPIError: {
             throw: true,
         },
-        secret: env.BETTER_AUTH_SECRET || "aresweb_development_secret_replace_me_in_production",
+        secret: (() => {
+            const s = env.BETTER_AUTH_SECRET as string | undefined;
+            if (!s) throw new Error("[FATAL] BETTER_AUTH_SECRET is not set. Refusing to start with an insecure default.");
+            return s;
+        })(),
         baseURL,
         trustedOrigins: [
             "http://localhost:8788", 

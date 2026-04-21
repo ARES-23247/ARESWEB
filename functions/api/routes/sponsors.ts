@@ -1,5 +1,5 @@
 import { Context, Hono } from "hono";
-import { Bindings, parsePagination } from "./_shared";
+import { Bindings, ensureAdmin, logAuditAction, parsePagination, validateLength, MAX_INPUT_LENGTHS } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
 
 const sponsorsRouter = new Hono<{ Bindings: Bindings }>();
@@ -17,14 +17,8 @@ sponsorsRouter.get("/", async (c) => {
   }
 });
 
-// ── GET /admin — list all sponsors (admin) ──────
 // ── GET /list — list all sponsors (admin) ──────
-sponsorsRouter.get("/list", async (c) => {
-  return handleSponsorList(c);
-});
-
-// Legacy alias for dashboard GET /api/admin/sponsors
-sponsorsRouter.get("/admin", async (c) => {
+sponsorsRouter.get("/list", ensureAdmin, async (c) => {
   return handleSponsorList(c);
 });
 
@@ -39,14 +33,8 @@ async function handleSponsorList(c: Context<{ Bindings: Bindings }>) {
   }
 }
 
-// ── POST /admin — create or update a sponsor (admin) ──────
 // ── POST /save — create or update a sponsor (admin) ──────
-sponsorsRouter.post("/save", async (c) => {
-  return handleSponsorSave(c);
-});
-
-// Legacy alias for dashboard POST /api/admin/sponsors
-sponsorsRouter.post("/admin", async (c) => {
+sponsorsRouter.post("/save", ensureAdmin, async (c) => {
   return handleSponsorSave(c);
 });
 
@@ -59,11 +47,20 @@ async function handleSponsorSave(c: Context<{ Bindings: Bindings }>) {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
+    // REF-06: Input validation
+    const VALID_TIERS = ["Titanium", "Gold", "Silver", "Bronze", "Community"];
+    if (!VALID_TIERS.includes(tier)) {
+      return c.json({ error: `Invalid tier. Must be one of: ${VALID_TIERS.join(", ")}` }, 400);
+    }
+    const nameErr = validateLength(name, MAX_INPUT_LENGTHS.name, "Sponsor name");
+    if (nameErr) return c.json({ error: nameErr }, 400);
+
     await c.env.DB.prepare(
       "INSERT INTO sponsors (id, name, tier, logo_url, website_url, is_active) VALUES (?, ?, ?, ?, ?, ?) " +
       "ON CONFLICT(id) DO UPDATE SET name=excluded.name, tier=excluded.tier, logo_url=excluded.logo_url, website_url=excluded.website_url, is_active=excluded.is_active"
     ).bind(id, name, tier, logo_url || null, website_url || null, is_active ?? 1).run();
 
+    await logAuditAction(c, "sponsor_saved", "sponsors", id, `Sponsor "${name}" (${tier}) saved`);
     return c.json({ success: true });
   } catch (err) {
     console.error("D1 sponsor save error:", err);
@@ -71,27 +68,18 @@ async function handleSponsorSave(c: Context<{ Bindings: Bindings }>) {
   }
 }
 
-// ── DELETE /admin/:id — remove a sponsor (admin) ─────────
 // ── DELETE /:id — remove a sponsor (admin) ─────────
-sponsorsRouter.delete("/:id", async (c) => {
-  return handleSponsorDelete(c);
-});
-
-// Legacy alias for dashboard DELETE /api/admin/sponsors/:id
-sponsorsRouter.delete("/admin/:id", async (c) => {
-  return handleSponsorDelete(c);
-});
-
-async function handleSponsorDelete(c: Context<{ Bindings: Bindings }>) {
+sponsorsRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
     const id = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM sponsors WHERE id = ?").bind(id).run();
+    await logAuditAction(c, "sponsor_deleted", "sponsors", id, "Sponsor permanently deleted");
     return c.json({ success: true });
   } catch (err) {
     console.error("D1 sponsor delete error:", err);
     return c.json({ error: "Delete failed" }, 500);
   }
-}
+});
 
 // ── GET /sponsors/roi/:token — Public (hidden) Sponsor Dashboard ────
 sponsorsRouter.get("/roi/:token", async (c) => {
@@ -127,20 +115,9 @@ sponsorsRouter.get("/roi/:token", async (c) => {
   }
 });
 
-// ── GET /admin/tokens — Get Tokens for Admins ──────
 // ── GET /tokens — Get Tokens for Admins (admin) ──────
-sponsorsRouter.get("/tokens", async (c) => {
-  return handleTokenList(c);
-});
-
-// Legacy alias for dashboard GET /api/admin/sponsors/tokens
-sponsorsRouter.get("/admin/tokens", async (c) => {
-  return handleTokenList(c);
-});
-
-async function handleTokenList(c: Context<{ Bindings: Bindings }>) {
+sponsorsRouter.get("/tokens", ensureAdmin, async (c) => {
   try {
-    // Only admins (protected by middleware on routes ideally, or here)
     const { results } = await c.env.DB.prepare(
       "SELECT t.token, t.sponsor_id, s.name as sponsor_name, t.created_at FROM sponsor_tokens t JOIN sponsors s ON t.sponsor_id = s.id ORDER BY t.created_at DESC"
     ).all();
@@ -148,20 +125,10 @@ async function handleTokenList(c: Context<{ Bindings: Bindings }>) {
   } catch {
     return c.json({ tokens: [] }, 500);
   }
-}
+});
 
-// ── POST /admin/tokens — Generate Token ──────
 // ── POST /tokens/generate — Generate Token (admin) ──────
-sponsorsRouter.post("/tokens/generate", async (c) => {
-  return handleTokenGenerate(c);
-});
-
-// Legacy alias for dashboard POST /api/admin/sponsors/tokens
-sponsorsRouter.post("/admin/tokens", async (c) => {
-  return handleTokenGenerate(c);
-});
-
-async function handleTokenGenerate(c: Context<{ Bindings: Bindings }>) {
+sponsorsRouter.post("/tokens/generate", ensureAdmin, async (c) => {
   try {
     const { sponsor_id } = await c.req.json();
     if (!sponsor_id) return c.json({ error: "Missing sponsor_id"}, 400);
@@ -169,6 +136,8 @@ async function handleTokenGenerate(c: Context<{ Bindings: Bindings }>) {
     await c.env.DB.prepare(
       "INSERT INTO sponsor_tokens (token, sponsor_id) VALUES (?, ?)"
     ).bind(token, sponsor_id).run();
+
+    await logAuditAction(c, "sponsor_token_generated", "sponsor_tokens", token, `ROI token generated for sponsor ${sponsor_id}`);
 
     c.executionCtx.waitUntil((async () => {
       try {
@@ -190,6 +159,6 @@ async function handleTokenGenerate(c: Context<{ Bindings: Bindings }>) {
   } catch {
     return c.json({ error: "Failed to generate" }, 500);
   }
-}
+});
 
 export default sponsorsRouter;

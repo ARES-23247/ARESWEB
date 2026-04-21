@@ -106,26 +106,17 @@ apiRouter.use("/admin/*", ensureAdmin);
 // ── Auth
 apiRouter.route("/auth", authRouter);
 
-// ── Content (Modern + Legacy Bridge)
+// ── Content (routes now self-enforce auth via ensureAdmin/ensureAuth)
 apiRouter.route("/posts", postsRouter);
-apiRouter.route("/admin/posts", postsRouter);
-
 apiRouter.route("/docs", docsRouter);
-apiRouter.route("/admin/docs", docsRouter);
 
 apiRouter.route("/events", eventsRouter);
-apiRouter.route("/admin/events", adminEventsRouter); // Already domain-split
+apiRouter.route("/admin/events", adminEventsRouter);
 apiRouter.route("/admin/events/sync", syncEventsRouter);
 
 apiRouter.route("/comments", commentsRouter);
-apiRouter.route("/admin/comments", commentsRouter);
-
 apiRouter.route("/inquiries", inquiriesRouter);
-apiRouter.route("/admin/inquiries", inquiriesRouter);
-
 apiRouter.route("/locations", locationsRouter);
-apiRouter.route("/admin/locations", locationsRouter);
-
 apiRouter.route("/media", mediaRouter);
 apiRouter.route("/awards", awardsRouter);
 apiRouter.route("/outreach", outreachRouter);
@@ -133,21 +124,20 @@ apiRouter.route("/tba", tbaRouter);
 apiRouter.route("/judges", judgesRouter);
 apiRouter.route("/profile", profilesRouter);
 apiRouter.route("/badges", badgesRouter);
-apiRouter.route("/comments", commentsRouter);
 apiRouter.route("/settings", settingsRouter);
 apiRouter.route("/sitemap", sitemapRouter);
 apiRouter.route("/notifications", notificationsRouter);
 apiRouter.route("/analytics", analyticsRouter);
 apiRouter.route("/github", githubRouter);
 apiRouter.route("/zulip", zulipRouter);
-apiRouter.route("/locations", locationsRouter);
 
-// ── Admin Aliases (Ensure Dashboard stays functional) ───────────────
+// ── Admin Aliases (only where the dashboard explicitly uses /api/admin/*)
 apiRouter.route("/admin/posts", postsRouter);
-apiRouter.route("/admin/events", eventsRouter);
 apiRouter.route("/admin/docs", docsRouter);
-apiRouter.route("/admin/sponsors", sponsorsRouter);
 apiRouter.route("/admin/inquiries", inquiriesRouter);
+apiRouter.route("/admin/comments", commentsRouter);
+apiRouter.route("/admin/locations", locationsRouter);
+apiRouter.route("/admin/sponsors", sponsorsRouter);
 apiRouter.route("/admin/media", mediaRouter);
 apiRouter.route("/admin/awards", awardsRouter);
 apiRouter.route("/admin/outreach", outreachRouter);

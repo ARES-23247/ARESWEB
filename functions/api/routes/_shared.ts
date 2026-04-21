@@ -164,6 +164,34 @@ export interface SessionUser {
   member_type: string;
 }
 
+// ── REF-08: Audit Logging ────────────────────────────────────────────
+export async function logAuditAction(
+  c: Context<AppEnv>,
+  action: string,
+  resource_type: string,
+  resource_id: string | null,
+  details?: string
+): Promise<void> {
+  try {
+    const sessionUser = c.get("sessionUser") as SessionUser | undefined;
+    const actor = sessionUser?.email || "unknown";
+    await c.env.DB.prepare(
+      `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+    ).bind(
+      crypto.randomUUID(),
+      actor,
+      action,
+      resource_type,
+      resource_id || null,
+      details || null
+    ).run();
+  } catch (err) {
+    // Never let audit logging break the request
+    console.error("[AuditLog] Failed to record action:", action, err);
+  }
+}
+
 // ── Session Helper ───────────────────────────────────────────────────
 export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | null> {
   // Check if ensureAdmin already stored session in context
@@ -306,30 +334,4 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
     employers: profile.employers,
     grade_year: profile.grade_year,
   };
-}
-
-// ── Audit Log Helper (GAP-01) ────────────────────────────────────────
-export async function logAuditAction(
-  c: Context<AppEnv>,
-  action: string,
-  targetType: string,
-  targetId: string | null,
-  details?: string
-) {
-  try {
-    const user = await getSessionUser(c);
-    await c.env.DB.prepare(
-      "INSERT INTO audit_log (action, target_type, target_id, actor_email, actor_role, details) VALUES (?, ?, ?, ?, ?, ?)"
-    ).bind(
-      action,
-      targetType,
-      targetId,
-      user?.email || "system",
-      user?.role || "unknown",
-      details || null
-    ).run();
-  } catch (err) {
-    // Never let audit logging break the main request
-    console.error("[AuditLog] Failed to log action:", err);
-  }
 }

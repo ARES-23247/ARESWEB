@@ -27,11 +27,15 @@ zulipWebhookRouter.post("/", async (c) => {
     return c.json({ content: "❌ Invalid request payload." });
   }
 
-  // Validate webhook token
+  // Validate webhook token — fail-closed: reject if no token is configured
   const expectedToken = c.env.ZULIP_WEBHOOK_TOKEN;
-  if (expectedToken && body.token !== expectedToken) {
+  if (!expectedToken) {
+    console.error("[ZulipWebhook] ZULIP_WEBHOOK_TOKEN is not configured. Rejecting all requests.");
+    return c.json({ content: "❌ Webhook token not configured on server." }, 403);
+  }
+  if (body.token !== expectedToken) {
     console.warn("[ZulipWebhook] Invalid token");
-    return c.json({ content: "❌ Unauthorized: Invalid webhook token." });
+    return c.json({ content: "❌ Unauthorized: Invalid webhook token." }, 403);
   }
 
   const rawContent = body.message?.content || "";

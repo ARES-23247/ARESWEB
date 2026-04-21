@@ -1,6 +1,6 @@
 import { Context, Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, parsePagination } from "./_shared";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, logAuditAction, parsePagination } from "./_shared";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
@@ -55,7 +55,7 @@ postsRouter.get("/:slug", async (c) => {
 });
 
 // ── GET /list — list all blog posts (admin) ──────────────────────
-postsRouter.get("/list", async (c) => {
+postsRouter.get("/list", ensureAdmin, async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 50, 200);
     const { results } = await c.env.DB.prepare(
@@ -69,7 +69,7 @@ postsRouter.get("/list", async (c) => {
 });
 
 // ── GET /:slug/detail — single blog post (admin) ─────────────────
-postsRouter.get("/:slug/detail", async (c) => {
+postsRouter.get("/:slug/detail", ensureAdmin, async (c) => {
   const slug = c.req.param("slug");
   try {
     const row = await c.env.DB.prepare(
@@ -101,8 +101,8 @@ function buildSnippet(ast: unknown): string {
   return "";
 }
 
-// ── POST /save — create a new blog post (admin) ────────────────
-postsRouter.post("/save", async (c) => {
+// ── POST /save — create a new blog post (auth required) ────────────────
+postsRouter.post("/save", ensureAuth, async (c) => {
   return handlePostSave(c);
 });
 
@@ -206,8 +206,8 @@ async function handlePostSave(c: Context<AppEnv>) {
   }
 }
 
-// ── PUT /:slug — edit a blog post (admin) ────────────────────
-postsRouter.put("/:slug", async (c) => {
+// ── PUT /:slug — edit a blog post (auth required) ────────────────────
+postsRouter.put("/:slug", ensureAuth, async (c) => {
   return handlePostEdit(c);
 });
 
@@ -270,7 +270,7 @@ async function handlePostEdit(c: Context<AppEnv>) {
 }
 
 // ── DELETE /:slug — soft-delete (admin) ──────────────────
-postsRouter.delete("/:slug", async (c) => {
+postsRouter.delete("/:slug", ensureAdmin, async (c) => {
   try {
     const slug = c.req.param("slug");
     await c.env.DB.prepare("UPDATE posts SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
@@ -282,7 +282,7 @@ postsRouter.delete("/:slug", async (c) => {
 });
 
 // ── PATCH /:slug/undelete — restore (admin) ───────────────
-postsRouter.patch("/:slug/undelete", async (c) => {
+postsRouter.patch("/:slug/undelete", ensureAdmin, async (c) => {
   try {
     const slug = c.req.param("slug");
     await c.env.DB.prepare("UPDATE posts SET is_deleted = 0 WHERE slug = ?").bind(slug).run();
@@ -294,7 +294,7 @@ postsRouter.patch("/:slug/undelete", async (c) => {
 });
 
 // ── DELETE /:slug/purge — PERMANENTLY delete (admin) ──────
-postsRouter.delete("/:slug/purge", async (c) => {
+postsRouter.delete("/:slug/purge", ensureAdmin, async (c) => {
   try {
     const slug = c.req.param("slug");
     await c.env.DB.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run();
@@ -306,7 +306,7 @@ postsRouter.delete("/:slug/purge", async (c) => {
 });
 
 // ── PATCH /:slug/approve — approve pending post (admin) ─────
-postsRouter.patch("/:slug/approve", async (c) => {
+postsRouter.patch("/:slug/approve", ensureAdmin, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
@@ -324,7 +324,7 @@ postsRouter.patch("/:slug/approve", async (c) => {
 
 
 // ── PATCH /:slug/reject — reject pending post (admin) ─────
-postsRouter.patch("/:slug/reject", async (c) => {
+postsRouter.patch("/:slug/reject", ensureAdmin, async (c) => {
   try {
     const user = await getSessionUser(c);
     if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
@@ -359,7 +359,7 @@ postsRouter.patch("/:slug/reject", async (c) => {
 });
 
 // ── POST /:slug/repush — manual social broadcast (admin) ──
-postsRouter.post("/:slug/repush", async (c) => {
+postsRouter.post("/:slug/repush", ensureAdmin, async (c) => {
   try {
     const slug = c.req.param("slug");
     const { socials } = await c.req.json<{ socials: Record<string, boolean> }>();
@@ -393,7 +393,7 @@ postsRouter.post("/:slug/repush", async (c) => {
 });
 
 // ── GET /:slug/history — list post history (admin) ─────────
-postsRouter.get("/:slug/history", async (c) => {
+postsRouter.get("/:slug/history", ensureAdmin, async (c) => {
   try {
     const slug = c.req.param("slug");
     const history = await getPostHistory(c, slug);

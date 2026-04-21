@@ -102,14 +102,15 @@ badgesRouter.delete("/users/:userId/:badgeId/revoke", ensureAdmin, async (c) => 
 // ── GET /leaderboard — Public Leaderboard ─────────────────────────────
 badgesRouter.get("/leaderboard", async (c) => {
   try {
+    // PII-04: Only expose nickname publicly, never first_name/last_name
     const { results } = await c.env.DB.prepare(`
-      SELECT u.user_id, u.first_name, u.last_name, u.nickname, u.member_type, 
+      SELECT u.user_id, u.nickname, u.member_type, 
              COUNT(ub.id) as badge_count
       FROM user_profiles u
       JOIN user_badges ub ON u.user_id = ub.user_id
       WHERE u.show_on_about = 1
       GROUP BY u.user_id
-      ORDER BY badge_count DESC, u.first_name ASC
+      ORDER BY badge_count DESC, u.nickname ASC
       LIMIT 20
     `).all();
     

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination } from "./_shared";
+import { AppEnv, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination, ensureAdmin, logAuditAction } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects";
 import { notifyAdmins } from "../../utils/notifications";
@@ -75,7 +75,8 @@ inquiriesRouter.post("/", async (c) => {
     // Webhook or Email Notification
     try {
       const social = await getSocialConfig(c);
-      const msg = `🔔 *New ${type.toUpperCase()} Inquiry*\n*Name:* ${name}\n*Email:* ${email}\n*Data:* \`${JSON.stringify(metadata)}\``;
+      // PII-03: Redact personal information from external webhook notifications
+      const msg = `🔔 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${siteConfig.urls.base}/dashboard?tab=inquiries`;
       
       let notified = false;
 
@@ -126,7 +127,7 @@ inquiriesRouter.post("/", async (c) => {
                 personalizations: [{ to: [{ email: siteConfig.contact.email, name: `${siteConfig.team.name} Admissions` }] }],
                 from: { email: `noreply@${new URL(siteConfig.urls.base).hostname}`, name: `${siteConfig.team.name} Website Portal` },
                 subject: `New ${type.toUpperCase()} Inquiry Submission`,
-                content: [{ type: "text/plain", value: `You received a new ${type} inquiry from ${name} (${email}).\n\nPayload:\n${JSON.stringify(metadata, null, 2)}` }]
+                content: [{ type: "text/plain", value: `You received a new ${type} inquiry (ID: ${id}).\nPlease review it in the Dashboard: ${siteConfig.urls.base}/dashboard?tab=inquiries` }]
               })
             }).catch(console.error)
          );
@@ -137,8 +138,7 @@ inquiriesRouter.post("/", async (c) => {
     // ── Zulip Admin Alert ──
     try {
       const alertBody = [
-        `📧 **Email:** ${email}`,
-        metadata ? `📎 **Details:** \`${JSON.stringify(metadata)}\`` : "",
+        `📧 **Contact:** (see Dashboard for details)`,
         `🔗 [Review in Dashboard](${siteConfig.urls.base}/dashboard?tab=inquiries)`,
       ].filter(Boolean).join("\n");
 
@@ -146,7 +146,7 @@ inquiriesRouter.post("/", async (c) => {
         sendZulipAlert(
           c.env,
           type === "sponsor" ? "Sponsor" : type === "join" ? "Applicant" : "Outreach",
-          `New ${type} inquiry from ${name}`,
+          `New ${type} inquiry received (ID: ${id.slice(0, 8)})`,
           alertBody
         ).catch(err => console.error("[Inquiry] Zulip alert failed:", err))
       );
@@ -186,17 +186,21 @@ inquiriesRouter.post("/", async (c) => {
 });
 
 // ── PATCH /:id/status — update status (admin) ──────────────────────────────────
-inquiriesRouter.patch("/:id/status", async (c) => {
+inquiriesRouter.patch("/:id/status", ensureAdmin, async (c) => {
   try {
     const id = c.req.param("id");
     const { status } = await c.req.json();
     
-    if (!status) return c.json({ error: "Missing status" }, 400);
+    const VALID_STATUSES = ["pending", "approved", "resolved", "rejected"];
+    if (!status || !VALID_STATUSES.includes(status)) {
+      return c.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` }, 400);
+    }
 
     await c.env.DB.prepare(
       "UPDATE inquiries SET status = ? WHERE id = ?"
     ).bind(status, id).run();
 
+    await logAuditAction(c, "inquiry_status_change", "inquiries", id, `Status changed to ${status}`);
     return c.json({ success: true });
   } catch {
     return c.json({ error: "Update failed" }, 500);
@@ -204,10 +208,11 @@ inquiriesRouter.patch("/:id/status", async (c) => {
 });
 
 // ── DELETE /:id — delete inquiry (admin) ────────────────────────────────────────
-inquiriesRouter.delete("/:id", async (c) => {
+inquiriesRouter.delete("/:id", ensureAdmin, async (c) => {
   try {
     const id = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM inquiries WHERE id = ?").bind(id).run();
+    await logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry permanently deleted");
     return c.json({ success: true });
   } catch {
     return c.json({ error: "Delete failed" }, 500);

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Bindings, getSessionUser, validateLength, MAX_INPUT_LENGTHS, UserRole, parsePagination } from "./_shared";
+import { Bindings, getSessionUser, validateLength, MAX_INPUT_LENGTHS, UserRole, ensureAdmin, parsePagination } from "./_shared";
 
 const locationsRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -17,12 +17,8 @@ locationsRouter.get("/locations", async (c) => {
 });
 
 // ── GET /admin/locations — all for manager ─────────────────────────────
-locationsRouter.get("/admin/locations", async (c) => {
+locationsRouter.get("/admin/locations", ensureAdmin, async (c) => {
   try {
-    const session = await getSessionUser(c);
-    if (!session || session.role === UserRole.UNVERIFIED) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
     const { limit, offset } = parsePagination(c, 50, 200);
     const { results } = await c.env.DB.prepare(
       "SELECT id, name, address, maps_url, is_deleted FROM locations ORDER BY is_deleted ASC, name ASC LIMIT ? OFFSET ?"
@@ -35,13 +31,8 @@ locationsRouter.get("/admin/locations", async (c) => {
 });
 
 // ── POST /admin/locations — create new ─────────────────────────────────
-locationsRouter.post("/admin/locations", async (c) => {
+locationsRouter.post("/admin/locations", ensureAdmin, async (c) => {
   try {
-    const session = await getSessionUser(c);
-    // SEC-09: Require at least author role, not just any authenticated user
-    if (!session || ![UserRole.ADMIN, UserRole.AUTHOR].includes(session.role as typeof UserRole[keyof typeof UserRole])) {
-      return c.json({ error: "Forbidden: Author or Admin privileges required." }, 403);
-    }
     
     const body: { name?: string; address?: string; maps_url?: string } = await c.req.json();
     
@@ -68,12 +59,8 @@ locationsRouter.post("/admin/locations", async (c) => {
 });
 
 // ── PUT /admin/locations/:id — update ──────────────────────────────────
-locationsRouter.put("/admin/locations/:id", async (c) => {
+locationsRouter.put("/admin/locations/:id", ensureAdmin, async (c) => {
   try {
-    const session = await getSessionUser(c);
-    if (!session || ![UserRole.ADMIN, "mentor"].includes(session.role)) {
-      return c.json({ error: "Unauthorized" }, 403);
-    }
 
     const id = c.req.param("id");
     const body: { name?: string; address?: string; maps_url?: string; is_deleted?: boolean } = await c.req.json();
@@ -101,12 +88,8 @@ locationsRouter.put("/admin/locations/:id", async (c) => {
 });
 
 // ── DELETE /admin/locations/:id — soft delete ──────────────────────────
-locationsRouter.delete("/admin/locations/:id", async (c) => {
+locationsRouter.delete("/admin/locations/:id", ensureAdmin, async (c) => {
   try {
-    const session = await getSessionUser(c);
-    if (!session || ![UserRole.ADMIN, "mentor"].includes(session.role)) {
-      return c.json({ error: "Unauthorized" }, 403);
-    }
     const id = c.req.param("id");
     await c.env.DB.prepare(
       "UPDATE locations SET is_deleted = 1 WHERE id = ?"

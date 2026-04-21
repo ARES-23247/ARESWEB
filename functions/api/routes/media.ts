@@ -1,11 +1,10 @@
 import { Hono } from "hono";
 import { Bindings, ensureAdmin, getDbSettings } from "./_shared";
-import { getAuth } from "../../utils/auth";
 
 const mediaRouter = new Hono<{ Bindings: Bindings }>();
 
 // ── POST /admin/upload — File Upload via R2 & AI Image Accessibility ──
-mediaRouter.post("/admin/upload", async (c) => {
+mediaRouter.post("/admin/upload", ensureAdmin, async (c) => {
   try {
     const body = await c.req.parseBody();
     const file = body["file"] as File;
@@ -142,10 +141,9 @@ mediaRouter.get("/admin/list", async (c) => {
 mediaRouter.delete("/admin/:key", ensureAdmin, async (c) => {
   try {
     const key = c.req.param("key") as string;
-    const auth = getAuth(c.env.DB, c.env);
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    const isLocalDev = new URL(c.req.url).hostname === "localhost" || new URL(c.req.url).hostname === "127.0.0.1";
-    const role = isLocalDev ? "admin" : ((session?.user?.role as string) || "user");
+    // ensureAdmin already validated the session — use context
+    const sessionUser = c.get("sessionUser") as { role: string } | undefined;
+    const role = sessionUser?.role || "user";
 
     if (role === "admin") {
       await Promise.all([
@@ -153,13 +151,11 @@ mediaRouter.delete("/admin/:key", ensureAdmin, async (c) => {
         c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(key).run().catch(() => {})
       ]);
     } else {
-      // Authors trigger soft-deletion mechanism for photos (archived/ prefix)
-      if (!isLocalDev) {
-        const obj = await c.env.ARES_STORAGE.get(key);
-        if (obj) {
-          await c.env.ARES_STORAGE.put(`archived/${key}`, obj.body, { httpMetadata: obj.httpMetadata });
-          await c.env.ARES_STORAGE.delete(key);
-        }
+      // Authors trigger soft-deletion mechanism (archived/ prefix)
+      const obj = await c.env.ARES_STORAGE.get(key);
+      if (obj) {
+        await c.env.ARES_STORAGE.put(`archived/${key}`, obj.body, { httpMetadata: obj.httpMetadata });
+        await c.env.ARES_STORAGE.delete(key);
       }
       await c.env.DB.prepare("UPDATE media_tags SET folder = 'Archived', key = ? WHERE key = ?").bind(`archived/${key}`, key).run().catch(() => {});
     }

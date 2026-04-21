@@ -74,6 +74,12 @@ profilesRouter.put("/me", async (c) => {
     const secret = c.env.ENCRYPTION_SECRET;
     const encryptedName = await encrypt(emergency_contact_name || "", secret);
     const encryptedPhone = await encrypt(emergency_contact_phone || "", secret);
+    // PII-01/PII-02: Encrypt all sensitive personal fields
+    const encryptedUserPhone = await encrypt(phone || "", secret);
+    const encryptedParentsName = await encrypt(parents_name || "", secret);
+    const encryptedParentsEmail = await encrypt(parents_email || "", secret);
+    const encryptedStudentsName = await encrypt(students_name || "", secret);
+    const encryptedStudentsEmail = await encrypt(students_email || "", secret);
 
     await c.env.DB.prepare(
       `INSERT INTO user_profiles (
@@ -107,7 +113,7 @@ profilesRouter.put("/me", async (c) => {
     ).bind(
       user.id,
       nickname || "", first_name || "", last_name || "", pronouns || "",
-      phone || "", contact_email || "",
+      encryptedUserPhone, contact_email || "",
       bio || "", subteamsStr, dietaryStr,
       show_on_about ? 1 : 0, show_email ? 1 : 0, show_phone ? 1 : 0,
       member_type || "student", grade_year || "", colleges || "", employers || "",
@@ -115,7 +121,7 @@ profilesRouter.put("/me", async (c) => {
       favorite_robot_mechanism || "", pre_match_superstition || "",
       leadership_role || "", rookie_year || "",
       tshirt_size || "", encryptedName, encryptedPhone,
-      parents_name || "", parents_email || "", students_name || "", students_email || ""
+      encryptedParentsName, encryptedParentsEmail, encryptedStudentsName, encryptedStudentsEmail
     ).run();
 
 

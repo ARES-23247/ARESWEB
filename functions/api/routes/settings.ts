@@ -41,15 +41,24 @@ settingsRouter.post("/admin/save", ensureAdmin, async (c) => {
 // ── GET /admin/backup — Export database as JSON ───────────────
 settingsRouter.get("/admin/backup", ensureAdmin, async (c) => {
   try {
-    const { results: tables } = await c.env.DB.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT LIKE '%_fts%'"
-    ).all();
+    // SEC-02: Whitelist known safe table names instead of dynamic interpolation from sqlite_master
+    const SAFE_TABLES = [
+      "posts", "events", "docs", "docs_history", "docs_feedback",
+      "settings", "media_tags", "user_profiles", "event_signups",
+      "badges", "user_badges", "inquiries", "locations",
+      "sponsor_metrics", "sponsor_tokens", "notifications",
+      "sponsors", "comments", "outreach_events", "awards",
+      "page_analytics", "audit_log"
+    ];
     
     const backup: Record<string, Record<string, unknown>[]> = {};
-    for (const row of tables) {
-      if (!row || typeof row.name !== 'string') continue;
-      const { results } = await c.env.DB.prepare(`SELECT * FROM ${row.name}`).all();
-      backup[row.name] = results;
+    for (const tableName of SAFE_TABLES) {
+      try {
+        const { results } = await c.env.DB.prepare(`SELECT * FROM "${tableName}"`).all();
+        backup[tableName] = results;
+      } catch {
+        // Table may not exist yet — skip silently
+      }
     }
     
     await logAuditAction(c, "database_export", "system", null, "Exported full D1 database backup as JSON.");
