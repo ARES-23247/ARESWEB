@@ -73,7 +73,7 @@ postsRouter.get("/:slug/detail", ensureAdmin, async (c) => {
   const slug = (c.req.param("slug") || "");
   try {
     const row = await c.env.DB.prepare(
-      "SELECT slug, title, date, snippet, thumbnail, content, is_deleted, status, revision_of, published_at FROM posts WHERE slug = ?"
+      "SELECT slug, title, date, snippet, thumbnail, ast, is_deleted, status, revision_of, published_at FROM posts WHERE slug = ?"
     ).bind(slug).first();
 
     if (!row) return c.json({ error: "Post not found" }, 404);

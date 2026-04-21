@@ -47,7 +47,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
     if (!editSlug) return;
     const fetchPost = async () => {
       try {
-        const res = await fetch(`/api/posts/${editSlug}`);
+        const res = await fetch(`/dashboard/api/admin/posts/${editSlug}/detail`, { credentials: "include" });
         const data = await res.json();
       // @ts-expect-error -- D1 untyped response
         if (data.post) {
@@ -55,6 +55,8 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
           setTitle(data.post.title || "");
       // @ts-expect-error -- D1 untyped response
           setPublishedAt(data.post.published_at || "");
+      // @ts-expect-error -- D1 untyped response
+          if (data.post.thumbnail) setCoverImageUrl(data.post.thumbnail);
           if (editor) {
             try {
       // @ts-expect-error -- D1 untyped response

@@ -151,6 +151,22 @@ docsRouter.get("/list", ensureAdmin, async (c) => {
   }
 });
 
+// ── GET /:slug/detail — single doc (admin, no status filter) ──────
+docsRouter.get("/:slug/detail", ensureAdmin, async (c) => {
+  const slug = (c.req.param("slug") || "");
+  try {
+    const row = await c.env.DB.prepare(
+      "SELECT slug, title, category, sort_order, description, content, is_portfolio, is_executive_summary, is_deleted, status, revision_of FROM docs WHERE slug = ?"
+    ).bind(slug).first();
+
+    if (!row) return c.json({ error: "Doc not found" }, 404);
+    return c.json({ doc: row });
+  } catch (err) {
+    console.error("D1 admin doc detail error:", err);
+    return c.json({ error: "Database error" }, 500);
+  }
+});
+
 // ── GET /export-all — export all docs (admin) ─────────────────
 docsRouter.get("/export-all", ensureAdmin, async (c) => {
   try {

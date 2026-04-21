@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
@@ -25,7 +25,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
     if (!editSlug) return;
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`/api/docs/${editSlug}`);
+        const res = await fetch(`/dashboard/api/admin/docs/${editSlug}/detail`, { credentials: "include" });
         const data = await res.json();
       // @ts-expect-error -- D1 untyped response
         if (data.doc) {
