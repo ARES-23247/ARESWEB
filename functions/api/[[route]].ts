@@ -152,7 +152,7 @@ apiRouter.get("/search", async (c) => {
     // Sanitize query for FTS MATCH
     const safeQ = q.replace(/"/g, '""');
     const ftsQ = `"${safeQ}"*`;
-    const wildcard = `%${q}%`;
+
 
     const [postsReq, eventsReq, docsReq, usersReq] = await Promise.all([
       c.env.DB.prepare(
@@ -204,7 +204,7 @@ import { purgeOldInquiries } from "./routes/inquiries";
 export const scheduled = async (
   event: ScheduledEvent,
   env: Bindings,
-  ctx: ExecutionContext
+  _ctx: ExecutionContext
 ) => {
   try {
     // 1. Fetch Retention Policy from Database

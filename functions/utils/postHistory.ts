@@ -78,7 +78,7 @@ export async function approveAndMergeRevision(
   if (row.cf_email) {
     const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
     if (author) {
-      c.executionCtx.waitUntil(emitNotification(c as any, {
+      c.executionCtx.waitUntil(emitNotification(c, {
         userId: author.id,
         title: "Post Merged",
         message: `Your changes to "${row.title}" have been approved and published.`,
@@ -165,7 +165,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
   if (row.cf_email) {
     const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
     if (author) {
-      c.executionCtx.waitUntil(emitNotification(c as any, {
+      c.executionCtx.waitUntil(emitNotification(c, {
         userId: author.id,
         title: "Post Approved",
         message: `Your post "${row.title}" has been published.`,

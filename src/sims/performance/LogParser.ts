@@ -146,7 +146,7 @@ export async function parseWPILog(file: File): Promise<ParsedLog> {
       },
     };
   } catch (error) {
-    throw new Error(`Failed to parse WPILog: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Failed to parse WPILog: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
 }
 

@@ -53,7 +53,7 @@ export default function EventDetail() {
   const handleSaveToCalendar = () => {
     if (!event) return;
     const startStr = new Date(event.date_start).toISOString().replace(/-|:|\.\d+/g, '');
-    let endStr = startStr;
+    let endStr: string;
     if (event.date_end) {
       endStr = new Date(event.date_end).toISOString().replace(/-|:|\.\d+/g, '');
     } else {
@@ -86,7 +86,7 @@ export default function EventDetail() {
   };
 
   // Try to parse description as Tiptap AST. If it fails, treat as a legacy plain-text description.
-  let parsedAst: ASTNode | null = null;
+  let parsedAst: ASTNode | null;
   try {
     parsedAst = JSON.parse(event.description);
     if (!parsedAst || parsedAst.type !== "doc") parsedAst = null;

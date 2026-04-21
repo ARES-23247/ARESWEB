@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { AppEnv } from "../api/routes/_shared";
-import { siteConfig } from "./site.config";
+
 
 /**
  * Centrally emit a user notification and broadcast to external channels if needed.
@@ -13,7 +13,7 @@ export async function emitNotification(
     message,
     link,
     external = false,
-    priority = "low"
+    _priority = "low"
   }: {
     userId: string;
     title: string;
@@ -58,7 +58,7 @@ export async function notifyAdmins(
     message,
     link,
     external = false,
-    priority = "medium"
+    _priority = "medium"
   }: {
     title: string;
     message: string;

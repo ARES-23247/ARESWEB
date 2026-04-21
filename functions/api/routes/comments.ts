@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { Bindings, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig } from "./_shared";
+import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig } from "./_shared";
 import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
 
 
-const commentsRouter = new Hono<{ Bindings: Bindings }>();
+const commentsRouter = new Hono<AppEnv>();
 
 // ── GET /comments/:targetType/:targetId — list comments ───────────────
 commentsRouter.get("/comments/:targetType/:targetId", async (c) => {
@@ -110,8 +110,9 @@ commentsRouter.post("/comments/:targetType/:targetId", async (c) => {
         const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(authorEmail).first<{ id: string }>();
         if (author) {
           c.executionCtx.waitUntil(
-            emitNotification(c as any, {
+            emitNotification(c, {
               userId: author.id,
+
               title: "New Comment",
               message: `${user.name || "Someone"} commented on "${targetTitle || targetId}"`,
               link: `/${targetType === "blog" ? "blog" : targetType === "doc" ? "docs" : "events"}/${targetId}`,

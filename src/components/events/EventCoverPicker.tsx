@@ -1,5 +1,5 @@
-import React from "react";
 import { DEFAULT_COVER_IMAGE } from "../../utils/constants";
+
 
 interface EventCoverPickerProps {
   coverImage: string;

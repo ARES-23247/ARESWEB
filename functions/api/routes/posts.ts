@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { Bindings, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, parsePagination } from "./_shared";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, parsePagination } from "./_shared";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
@@ -12,7 +12,7 @@ import {
 } from "../../utils/postHistory";
 
 
-const postsRouter = new Hono<{ Bindings: Bindings }>();
+const postsRouter = new Hono<AppEnv>();
 
 // ── GET /posts — list all blog posts ─────────────────────────────────
 postsRouter.get("/posts", async (c) => {
@@ -332,7 +332,7 @@ postsRouter.patch("/admin/posts/:slug/reject", async (c) => {
     if (row?.cf_email) {
       const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
       if (author) {
-        c.executionCtx.waitUntil(emitNotification(c as any, {
+        c.executionCtx.waitUntil(emitNotification(c, {
           userId: author.id,
           title: "Post Rejected",
           message: `Your post "${row.title}" was rejected${body.reason ? `: "${body.reason}"` : "."}`,

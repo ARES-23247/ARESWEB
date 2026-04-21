@@ -85,7 +85,7 @@ export async function dispatchBluesky(payload: PostPayload, config: SocialConfig
         const errMsg = (err as Error)?.message || String(err);
         if (attempt === maxRetries || !errMsg.includes('UpstreamTimeout')) {
             console.error("Bluesky post failed:", errMsg);
-            throw new Error(`Bluesky: ${errMsg}`);
+            throw new Error(`Bluesky: ${errMsg}`, { cause: err });
         }
         console.warn(`Bluesky timeout (attempt ${attempt}), retrying...`);
         await new Promise(r => setTimeout(r, 1500)); // Brief backoff
@@ -93,6 +93,6 @@ export async function dispatchBluesky(payload: PostPayload, config: SocialConfig
     }
   } catch (err: unknown) {
     console.error("Bluesky syndication failed:", (err as Error)?.message || err);
-    throw new Error(`Bluesky: ${(err as Error)?.message || String(err)}`);
+    throw new Error(`Bluesky: ${(err as Error)?.message || String(err)}`, { cause: err });
   }
 }

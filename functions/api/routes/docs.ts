@@ -1,11 +1,10 @@
-import { Hono } from "hono";
-import { siteConfig } from "../../utils/site.config";
 import { AppEnv, ensureAdmin, getSessionUser, parsePagination } from "./_shared";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
 
 
 const docsRouter = new Hono<AppEnv>();
+
 
 // ── GET /docs — list all docs grouped by category ─────────────────────
 docsRouter.get("/docs", async (c) => {
@@ -294,7 +293,7 @@ docsRouter.patch("/admin/docs/:slug/approve", async (c) => {
       if (row.cf_email) {
         const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
         if (author) {
-          c.executionCtx.waitUntil(emitNotification(c as any, {
+          c.executionCtx.waitUntil(emitNotification(c, {
             userId: author.id,
             title: "Doc Merged",
             message: `Your changes to document "${row.title}" have been approved and published.`,
@@ -313,8 +312,9 @@ docsRouter.patch("/admin/docs/:slug/approve", async (c) => {
     if (row.cf_email) {
       const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
       if (author) {
-        c.executionCtx.waitUntil(emitNotification(c as any, {
+        c.executionCtx.waitUntil(emitNotification(c, {
           userId: author.id,
+
           title: "Doc Approved",
           message: `Your technical document "${row.title}" has been published.`,
           link: `/docs/${slug}`,
@@ -360,7 +360,7 @@ docsRouter.patch("/admin/docs/:slug/reject", async (c) => {
     if (row?.cf_email) {
       const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
       if (author) {
-        c.executionCtx.waitUntil(emitNotification(c as any, {
+        c.executionCtx.waitUntil(emitNotification(c, {
           userId: author.id,
           title: "Doc Rejected",
           message: `Your technical document "${row.title}" was rejected${body.reason ? `: "${body.reason}"` : "."}`,

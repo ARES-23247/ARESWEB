@@ -1,6 +1,5 @@
-import React from "react";
-
 interface EventSocialSyndicationProps {
+
   availableSocials: string[];
   socials: Record<string, boolean>;
   onChange: (platform: string, enabled: boolean) => void;

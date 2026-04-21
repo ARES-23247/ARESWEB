@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { Search, LayoutDashboard, LogIn, Bell, Check, Heart } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { siteConfig } from "../site.config";
 
 
 import { useSession } from "../utils/auth-client";

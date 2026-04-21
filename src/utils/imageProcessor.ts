@@ -122,7 +122,7 @@ export const compressImage = async (
   } catch (nativeErr) {
     console.warn(
       "[imageProcessor] Native HEIC decode failed, invoking software fallback:",
-      nativeErr instanceof Error ? nativeErr.message : nativeErr
+      nativeErr instanceof Error ? nativeErr.message : String(nativeErr)
     );
   }
 
@@ -142,7 +142,8 @@ export const compressImage = async (
   } catch (swErr) {
     console.error("[imageProcessor] heic2any software decode failed:", swErr);
     throw new Error(
-      "Cannot process this HEIC file. Neither the browser nor the software decoder could read it. The file may be corrupted or use an unsupported HEIC variant."
+      "Cannot process this HEIC file. Neither the browser nor the software decoder could read it. The file may be corrupted or use an unsupported HEIC variant.",
+      { cause: swErr }
     );
   }
 };

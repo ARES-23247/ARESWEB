@@ -119,7 +119,7 @@ function prepareGcalPayload(event: ARES_Event) {
     ? { dateTime: formatFloatingDateTime(baseStart), timeZone: "America/New_York" }
     : { date: baseStart.split("T")[0] };
 
-  let endObj = startObj;
+  let endObj;
   if (event.date_end) {
     const endHasTime = event.date_end.includes("T");
     endObj = endHasTime

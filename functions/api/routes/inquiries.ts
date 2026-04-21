@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { Bindings, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination } from "./_shared";
+import { AppEnv, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects";
 import { notifyAdmins } from "../../utils/notifications";
 
 
-const inquiriesRouter = new Hono<{ Bindings: Bindings }>();
+const inquiriesRouter = new Hono<AppEnv>();
 
 // ── GET /admin/inquiries — List all inquiries ──────────────────────────
 inquiriesRouter.get("/admin/inquiries", async (c) => {
@@ -150,7 +150,7 @@ inquiriesRouter.post("/inquiries", async (c) => {
     // ── In-App Dashboard Notification ──
     try {
       c.executionCtx.waitUntil(
-        notifyAdmins(c as any, {
+        notifyAdmins(c, {
           title: `New ${type.toUpperCase()} Inquiry`,
           message: `${name} (${email}) submitted a new inquiry.`,
           link: "/dashboard?tab=inquiries",

@@ -34,7 +34,7 @@ function getStatusConfig(status?: string) {
 
 export default function ProjectBoardKanban({
   board, isLoading, isCreating, newTaskTitle, setNewTaskTitle,
-  showCreateForm, setShowCreateForm, onCreateTask, onRefresh
+  showCreateForm, setShowCreateForm, onCreateTask, onRefresh: _onRefresh
 }: ProjectBoardKanbanProps) {
   const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
 

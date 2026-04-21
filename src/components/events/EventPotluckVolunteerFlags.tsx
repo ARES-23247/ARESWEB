@@ -1,6 +1,5 @@
-import React from "react";
-
 interface EventPotluckVolunteerFlagsProps {
+
   isPotluck: boolean;
   isVolunteer: boolean;
   onChange: (field: "isPotluck" | "isVolunteer", value: boolean) => void;

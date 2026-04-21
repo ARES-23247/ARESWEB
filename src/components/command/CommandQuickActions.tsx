@@ -1,5 +1,5 @@
-import React from "react";
 import { MessageCircle, GitBranch, Activity, ArrowRight, ExternalLink } from "lucide-react";
+
 import { siteConfig } from "../../site.config";
 
 export default function CommandQuickActions() {
