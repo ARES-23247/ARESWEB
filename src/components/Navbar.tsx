@@ -102,7 +102,13 @@ export default function Navbar() {
             className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan border border-white/10"
           >
             <Search size={14} aria-hidden="true" />
-            <span className="text-xs font-mono pr-2">Search... <kbd className="hidden lg:inline bg-zinc-800 text-zinc-200 px-1.5 py-0.5 rounded ml-1 border border-zinc-600">Ctrl K</kbd></span>
+            <span className="text-[10px] sm:text-xs font-mono flex items-center gap-2 whitespace-nowrap">
+              Search... 
+              <span className="hidden lg:flex items-center gap-1 opacity-60">
+                <kbd className="bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-600 leading-none">Ctrl</kbd>
+                <kbd className="bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-600 leading-none">K</kbd>
+              </span>
+            </span>
           </button>
           {isSignedIn && (
             <div className="relative">
