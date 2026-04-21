@@ -1,3 +1,4 @@
+import { Hono } from "hono";
 import { AppEnv, ensureAdmin, getSessionUser, parsePagination } from "./_shared";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
