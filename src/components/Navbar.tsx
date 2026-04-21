@@ -16,7 +16,8 @@ export default function Navbar() {
   const isSignedIn = !isPending && session?.user;
   const userImage = session?.user?.image;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const isAdmin = (session?.user as any)?.role === "admin";
+  const role = (session?.user as any)?.role || "unverified";
+  const canSeeInquiries = isSignedIn && role !== "unverified";
   
   const [pendingCount, setPendingCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -66,8 +67,8 @@ export default function Navbar() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
-    if (isAdmin) {
-      fetch("/api/admin/inquiries")
+    if (canSeeInquiries) {
+      fetch("/api/inquiries")
         .then(res => res.json() as Promise<{ inquiries?: { status: string }[] }>)
         .then((data) => {
           if (data.inquiries) {
@@ -75,7 +76,7 @@ export default function Navbar() {
           }
         }).catch(() => {});
     }
-  }, [isAdmin]);
+  }, [canSeeInquiries]);
 
   return (
     <nav role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible rounded-bl-xl rounded-br-[2.5rem] border-t-4 border-ares-bronze">

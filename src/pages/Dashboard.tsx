@@ -103,8 +103,8 @@ export default function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (session && isAdmin) {
-      fetch("/api/inquiries/admin")
+    if (session && canSeeInquiries) {
+      fetch("/api/inquiries")
         .then(res => res.json() as Promise<{ inquiries?: { status: string }[] }>)
         .then((data) => {
           if (data.inquiries) {
@@ -112,7 +112,7 @@ export default function Dashboard() {
           }
         }).catch(() => {});
     }
-  }, [session, isAdmin]);
+  }, [session, canSeeInquiries]);
 
   useEffect(() => {
     fetch("/api/profile/me")
@@ -204,7 +204,7 @@ export default function Dashboard() {
             <AppWindow size={16} className="text-white" />
           </div>
           <h1 className="text-lg font-black tracking-tighter text-white">ARES<span className="text-zinc-500 font-bold">Workspace</span></h1>
-          {isAdmin && pendingCount > 0 && (
+          {canSeeInquiries && pendingCount > 0 && (
             <Link to="/dashboard/inquiries" onClick={() => setIsSidebarOpen(false)} className="ml-2 px-2 py-0.5 bg-ares-danger text-white text-[10px] font-black uppercase tracking-widest rounded-full animate-bounce shadow-[0_0_15px_rgba(239,68,68,0.6)]">
               {pendingCount} New
             </Link>
@@ -288,6 +288,7 @@ export default function Dashboard() {
             <div>
               <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6">Operations</h4>
               <div className="space-y-1 px-3">
+                {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} />}
                 <NavButton tab="outreach" icon={Target} label="Outreach Tracker" currentPath={location.pathname} />
                 <NavButton tab="locations" icon={MapPin} label="Meeting Locations" currentPath={location.pathname} />
                 <NavButton tab="sponsors" icon={Gem} label="Sponsors & Funding" currentPath={location.pathname} />
@@ -301,7 +302,6 @@ export default function Dashboard() {
             <div>
               <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
-                {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="command_center" icon={Radio} label="Command Center" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="impact_roster" icon={Trophy} label="Impact & Roster" currentPath={location.pathname} />}
@@ -339,7 +339,7 @@ export default function Dashboard() {
                </div>
              </div>
              <div className="flex gap-4">
-               {isAdmin && pendingCount > 0 && (
+               {canSeeInquiries && pendingCount > 0 && (
                  <Link to="/dashboard/inquiries" className="px-4 py-2 bg-ares-danger/20 border border-ares-danger/40 text-ares-danger-soft text-xs font-bold ares-cut animate-pulse hover:bg-ares-danger/30 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2 uppercase tracking-wider">
                    <MessageSquare size={14} /> {pendingCount} Pending Inquiries
                  </Link>
