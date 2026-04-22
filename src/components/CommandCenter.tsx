@@ -49,12 +49,12 @@ export default function CommandCenter() {
         if (data.success && data.settings) {
           const cfg = data.settings;
           setHealth([
-            { name: "Zulip Chat", key: "zulip", icon: "??", configured: !!(cfg.ZULIP_BOT_EMAIL && cfg.ZULIP_API_KEY) },
-            { name: "GitHub Projects", key: "github", icon: "??", configured: !!(cfg.GITHUB_PAT && cfg.GITHUB_PROJECT_ID) },
-            { name: "Discord", key: "discord", icon: "??", configured: !!cfg.DISCORD_WEBHOOK_URL },
-            { name: "Bluesky", key: "bluesky", icon: "??", configured: !!(cfg.BLUESKY_HANDLE && cfg.BLUESKY_APP_PASSWORD) },
-            { name: "Slack", key: "slack", icon: "??", configured: !!cfg.SLACK_WEBHOOK_URL },
-            { name: "Google Calendar", key: "gcal", icon: "??", configured: !!(cfg.GCAL_SERVICE_ACCOUNT_EMAIL && cfg.GCAL_PRIVATE_KEY) },
+            { name: "Zulip Chat", key: "zulip", icon: <img src="/icons/zulip.svg" alt="Zulip" className="w-8 h-8 mx-auto" />, configured: !!(cfg.ZULIP_BOT_EMAIL && cfg.ZULIP_API_KEY) },
+            { name: "GitHub Projects", key: "github", icon: <img src="/icons/github.svg" alt="GitHub" className="w-8 h-8 mx-auto" />, configured: !!(cfg.GITHUB_PAT && cfg.GITHUB_PROJECT_ID) },
+            { name: "Discord", key: "discord", icon: <img src="/icons/discord.svg" alt="Discord" className="w-8 h-8 mx-auto" />, configured: !!cfg.DISCORD_WEBHOOK_URL },
+            { name: "Bluesky", key: "bluesky", icon: <img src="/icons/bluesky.svg" alt="Bluesky" className="w-8 h-8 mx-auto" />, configured: !!(cfg.BLUESKY_HANDLE && cfg.BLUESKY_APP_PASSWORD) },
+            { name: "Slack", key: "slack", icon: <img src="/icons/slack.svg" alt="Slack" className="w-8 h-8 mx-auto" style={{ filter: "invert(100%)" }} />, configured: !!cfg.SLACK_WEBHOOK_URL },
+            { name: "Google Calendar", key: "gcal", icon: <img src="/icons/gcal.svg" alt="Google Calendar" className="w-8 h-8 mx-auto" />, configured: !!(cfg.GCAL_SERVICE_ACCOUNT_EMAIL && cfg.GCAL_PRIVATE_KEY) },
           ]);
         }
       }

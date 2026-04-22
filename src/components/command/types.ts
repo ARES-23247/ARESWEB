@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export interface ProjectItem {
   id: string;
   title: string;
@@ -19,5 +21,5 @@ export interface IntegrationHealth {
   name: string;
   key: string;
   configured: boolean;
-  icon: string;
+  icon: ReactNode;
 }
