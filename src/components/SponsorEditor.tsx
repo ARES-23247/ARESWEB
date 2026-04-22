@@ -21,9 +21,9 @@ interface Sponsor {
 const TIERS = [
   { name: "Titanium", icon: <Gem className="text-ares-cyan" />, color: "text-ares-cyan", border: "border-ares-cyan/30" },
   { name: "Gold", icon: <Award className="text-ares-gold" />, color: "text-ares-gold", border: "border-ares-gold/30" },
-  { name: "Silver", icon: <ShieldCheck className="text-zinc-400" />, color: "text-zinc-400", border: "border-zinc-400/30" },
+  { name: "Silver", icon: <ShieldCheck className="text-marble/60" />, color: "text-marble/60", border: "border-marble/20" },
   { name: "Bronze", icon: <Zap className="text-ares-bronze" />, color: "text-ares-bronze", border: "border-ares-bronze/30" },
-  { name: "In-Kind", icon: <Package className="text-emerald-500" />, color: "text-emerald-500", border: "border-emerald-500/30" },
+  { name: "In-Kind", icon: <Package className="text-marble/40" />, color: "text-marble/40", border: "border-marble/10" },
 ];
 
 export default function SponsorEditor() {
@@ -113,14 +113,14 @@ export default function SponsorEditor() {
                 required
               />
               <div className="space-y-1">
-                <label htmlFor="sponsor-tier" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Tier</label>
+                <label htmlFor="sponsor-tier" className="text-xs font-bold uppercase tracking-widest text-marble/40">Tier</label>
                 <select
                   id="sponsor-tier"
                   value={formData.tier}
                   onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
                 >
-                  {TIERS.map(t => <option key={t.name} value={t.name} className="bg-zinc-900">{t.name}</option>)}
+                  {TIERS.map(t => <option key={t.name} value={t.name} className="bg-obsidian">{t.name}</option>)}
                 </select>
               </div>
               <DashboardInput
@@ -167,13 +167,13 @@ export default function SponsorEditor() {
                     setFormData(s);
                     setIsFormOpen(true);
                   }}
-                  className="text-zinc-600 hover:text-ares-cyan transition-colors"
+                  className="text-white/20 hover:text-ares-cyan transition-colors"
                 >
                   <Edit2 size={16} />
                 </button>
                 <button
                   onClick={() => { if(confirm("Purge this partner from database?")) deleteMutation.mutate(s.id); }}
-                  className="text-zinc-600 hover:text-ares-red transition-colors"
+                  className="text-white/20 hover:text-ares-red transition-colors"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -184,7 +184,7 @@ export default function SponsorEditor() {
             
             <div className="flex items-center gap-3 mt-4">
               {s.website_url && (
-                <a href={s.website_url} target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-ares-gold transition-colors">
+                <a href={s.website_url} target="_blank" rel="noreferrer" className="text-marble/40 hover:text-ares-gold transition-colors">
                   <Globe size={16} />
                 </a>
               )}
@@ -192,7 +192,7 @@ export default function SponsorEditor() {
                 <div className="h-6 w-px bg-white/5" />
               )}
               {s.logo_url && (
-                <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 flex items-center gap-1">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-ares-gold flex items-center gap-1">
                   <CheckCircle2 size={12} /> Logo Linked
                 </div>
               )}

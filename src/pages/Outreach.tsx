@@ -101,7 +101,7 @@ export default function Outreach() {
   }), { hours: 0, reach: 0, events: 0 });
 
   return (
-    <div className="flex flex-col w-full bg-zinc-950 min-h-screen text-zinc-100 relative overflow-hidden">
+    <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">
       <SEO title="Community Impact" description="Empowering Morgantown and beyond through STEM outreach. Track our service hours, community reach, and impact initiatives." />
       
       {/* Background Ambience */}
@@ -130,7 +130,7 @@ export default function Outreach() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-zinc-300 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium"
+            className="text-ares-gray text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium"
           >
             ARES 23247 isn&apos;t just about building robots. We&apos;re building a community that values curiosity, innovation, and service.
           </motion.p>
@@ -156,7 +156,7 @@ export default function Outreach() {
                 <div className="mb-6">{stat.icon}</div>
                 <div className="text-5xl font-black text-white mb-2 tracking-tighter">{stat.val}</div>
                 <div className="text-xs font-bold uppercase tracking-widest text-white mb-4">{stat.label}</div>
-                <p className="text-zinc-100 text-sm italic">{stat.desc}</p>
+                <p className="text-marble text-sm italic">{stat.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -164,25 +164,25 @@ export default function Outreach() {
       </section>
 
       {/* Spark! Initiative */}
-      <section className="py-32 px-6 bg-white text-zinc-900 ares-cut-lg relative z-10 mt-20">
+      <section className="py-32 px-6 bg-white text-ares-black ares-cut-lg relative z-10 mt-20">
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <h2 className="text-4xl md:text-6xl font-black text-ares-red mb-8 tracking-tighter italic">Sparking Curiosity.</h2>
-            <p className="text-lg leading-relaxed mb-6 font-medium text-zinc-700">
+            <p className="text-lg leading-relaxed mb-6 font-medium text-ares-gray">
               ARES is proud to partner with <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="text-ares-red underline font-black">Spark! Imagination and Science Center</a> in Morgantown. 
             </p>
-            <p className="text-lg leading-relaxed text-zinc-700">
+            <p className="text-lg leading-relaxed text-ares-gray">
               Together, we are developing a new rotating exhibit structure that highlights STEM stories unique to West Virginia. Our first project is the <strong>WV Bridge Exhibit</strong>, using the Engineering Design Process to teach children about structural integrity and local history.
             </p>
             <div className="mt-10 flex gap-4">
                <a href="https://sparkwv.org" target="_blank" rel="noreferrer" className="px-6 py-3 bg-ares-red text-white font-black ares-cut-sm hover:scale-105 transition-all shadow-lg shadow-ares-red/20">Support Spark!</a>
-               <a href="/join" className="px-6 py-3 bg-zinc-100 border border-zinc-200 text-zinc-900 font-black ares-cut-sm hover:bg-zinc-200 transition-all">Join the Mission</a>
+               <a href="/join" className="px-6 py-3 bg-marble border border-white/10 text-ares-black font-black ares-cut-sm hover:bg-ares-gray transition-all">Join the Mission</a>
             </div>
           </div>
           <div className="relative">
-             <div className="aspect-square bg-zinc-200 ares-cut-lg overflow-hidden rotate-3 shadow-2xl border-8 border-white">
+             <div className="aspect-square bg-ares-gray/10 ares-cut-lg overflow-hidden rotate-3 shadow-2xl border-8 border-white">
                 <div className="absolute inset-0 bg-gradient-to-br from-ares-red to-ares-gold opacity-10" />
-                <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                <div className="w-full h-full flex items-center justify-center text-ares-gray">
                    <Target size={120} strokeWidth={0.5} />
                 </div>
              </div>
@@ -194,12 +194,12 @@ export default function Outreach() {
       </section>
 
       {/* Recent Impact Feed */}
-      <section className="py-32 px-6 bg-zinc-950 relative z-10">
+      <section className="py-32 px-6 bg-ares-gray-deep relative z-10">
         <div className="max-w-5xl mx-auto">
           <header className="mb-16 flex flex-col md:flex-row items-end justify-between gap-6">
             <div>
               <h2 className="text-4xl font-black text-white italic tracking-tighter">Impact Log</h2>
-              <p className="text-zinc-200 font-medium">A chronological record of our community interactions.</p>
+              <p className="text-ares-gray font-medium">A chronological record of our community interactions.</p>
             </div>
             <div className="h-px flex-1 bg-white/5 mx-6 hidden md:block" />
             <button onClick={() => setIsModalOpen(true)} className="text-ares-gold font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:translate-x-2 transition-all">
@@ -215,16 +215,16 @@ export default function Outreach() {
                 key={log.id} 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                className="bg-zinc-900/50 border border-white/5 p-8 ares-cut-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-8 group hover:border-white/10 transition-all backdrop-blur-sm"
+                className="bg-ares-gray-dark/50 border border-white/5 p-8 ares-cut-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-8 group hover:border-white/10 transition-all backdrop-blur-sm"
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 text-zinc-200 text-xs font-bold uppercase tracking-widest mb-3">
+                  <div className="flex items-center gap-3 text-ares-gray text-xs font-bold uppercase tracking-widest mb-3">
                      <span className="flex items-center gap-1"><MapPin size={10} className="text-ares-red" /> {log.location || 'Local Community'}</span>
                      <span>&middot;</span>
                      <span>{new Date(log.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   <h3 className="text-2xl font-black text-white mb-3 group-hover:text-ares-gold transition-colors">{log.title}</h3>
-                  <p className="text-zinc-200 leading-relaxed max-w-2xl">{extractTextFromAst(log.description)}</p>
+                  <p className="text-ares-gray leading-relaxed max-w-2xl">{extractTextFromAst(log.description)}</p>
                 </div>
                 
                 <div className="flex items-center gap-4">
@@ -241,10 +241,10 @@ export default function Outreach() {
 
       {/* CTA Footer */}
       <section className="py-32 px-6">
-        <div className="max-w-4xl mx-auto ares-cut-lg bg-gradient-to-br from-ares-red/30 to-zinc-900 border border-ares-red/40 p-12 text-center relative overflow-hidden">
+        <div className="max-w-4xl mx-auto ares-cut-lg bg-gradient-to-br from-ares-red/30 to-ares-gray-dark border border-ares-red/40 p-12 text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-ares-red/20 blur-[100px] rounded-full pointer-events-none" />
           <h2 className="text-4xl md:text-5xl font-black text-white mb-6 italic tracking-tighter">Have a volunteer need?</h2>
-          <p className="text-zinc-300 text-lg mb-10 max-w-xl mx-auto font-medium">Whether it&apos;s a elementary school demo, a science fair, or a community workshop—ARES is here to inspire.</p>
+          <p className="text-ares-gray text-lg mb-10 max-w-xl mx-auto font-medium">Whether it&apos;s a elementary school demo, a science fair, or a community workshop—ARES is here to inspire.</p>
           <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black ares-cut hover:bg-ares-gold hover:text-black transition-all shadow-2xl">
             Get In Touch <ArrowRight size={20} />
           </button>
@@ -270,21 +270,21 @@ export default function Outreach() {
             >
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors"
+                className="absolute top-6 right-6 text-ares-gray hover:text-white transition-colors"
                 disabled={isSubmitting}
               >
                 <X size={24} />
               </button>
 
               <h3 className="text-3xl font-black text-white italic tracking-tight mb-2">Request a <span className="text-ares-red">Demo</span>.</h3>
-              <p className="text-zinc-400 text-sm mb-8">Tell us about your event, and our student outreach team will get back to you to coordinate.</p>
+              <p className="text-ares-gray text-sm mb-8">Tell us about your event, and our student outreach team will get back to you to coordinate.</p>
 
               {submitStatus === "success" ? (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-6 ares-cut-sm text-center">
+                <div className="bg-ares-gold/10 border border-ares-gold/20 text-ares-gold p-6 ares-cut-sm text-center">
                   <CheckCircle size={32} className="mx-auto mb-3" />
                   <div className="font-bold">Request Submitted!</div>
                   <div className="text-sm mt-1 opacity-80">Our logistics team will verify your request and reach out shortly.</div>
-                  <button onClick={() => setIsModalOpen(false)} className="mt-6 px-6 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-white text-xs font-bold uppercase tracking-widest ares-cut-sm transition-colors">Close</button>
+                  <button onClick={() => setIsModalOpen(false)} className="mt-6 px-6 py-2 bg-ares-gold/20 hover:bg-ares-gold/30 text-white text-xs font-bold uppercase tracking-widest ares-cut-sm transition-colors">Close</button>
                 </div>
               ) : (
                 <form onSubmit={handleDemoSubmit} className="space-y-5">
@@ -296,22 +296,22 @@ export default function Outreach() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label htmlFor="demo-name" className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 ml-1">Your Name *</label>
+                      <label htmlFor="demo-name" className="block text-xs font-bold text-ares-gray uppercase tracking-widest mb-2 ml-1">Your Name *</label>
                       <input id="demo-name" type="text" value={name} onChange={e => setName(e.target.value)} required disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" />
                     </div>
                     <div>
-                      <label htmlFor="demo-email" className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 ml-1">Email Address *</label>
+                      <label htmlFor="demo-email" className="block text-xs font-bold text-ares-gray uppercase tracking-widest mb-2 ml-1">Email Address *</label>
                       <input id="demo-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" />
                     </div>
                   </div>
                   
                   <div>
-                    <label htmlFor="demo-org" className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 ml-1">Organization / School (Optional)</label>
+                    <label htmlFor="demo-org" className="block text-xs font-bold text-ares-gray uppercase tracking-widest mb-2 ml-1">Organization / School (Optional)</label>
                     <input id="demo-org" type="text" value={organization} onChange={e => setOrganization(e.target.value)} disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="e.g. Morgantown Public Market" />
                   </div>
 
                   <div>
-                    <label htmlFor="demo-desc" className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 ml-1">Event Details & Dates *</label>
+                    <label htmlFor="demo-desc" className="block text-xs font-bold text-ares-gray uppercase tracking-widest mb-2 ml-1">Event Details & Dates *</label>
                     <textarea id="demo-desc" value={description} onChange={e => setDescription(e.target.value)} required disabled={isSubmitting} rows={4} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all resize-none" placeholder="What are you hosting, and when do you need us?"></textarea>
                   </div>
 

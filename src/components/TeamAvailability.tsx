@@ -56,25 +56,25 @@ export default function TeamAvailability() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]";
-      case "idle": return "bg-ares-gold shadow-[0_0_10px_rgba(250,204,21,0.4)]";
-      default: return "bg-zinc-600";
+      case "active": return "bg-ares-cyan shadow-[0_0_10px_rgba(0,229,255,0.4)]";
+      case "idle": return "bg-ares-gold shadow-[0_0_10px_rgba(255,184,28,0.4)]";
+      default: return "bg-marble/20";
     }
   };
 
   const getBorderColor = (status: string) => {
     switch (status) {
-      case "active": return "border-emerald-500/30";
+      case "active": return "border-ares-cyan/30";
       case "idle": return "border-ares-gold/30";
-      default: return "border-zinc-700/50";
+      default: return "border-white/5";
     }
   };
 
   const getIcon = (status: string) => {
     switch (status) {
-      case "active": return <Zap size={14} className="text-emerald-400" />;
+      case "active": return <Zap size={14} className="text-ares-cyan" />;
       case "idle": return <Clock size={14} className="text-ares-gold" />;
-      default: return <UserMinus size={14} className="text-zinc-500" />;
+      default: return <UserMinus size={14} className="text-marble/40" />;
     }
   };
 
@@ -88,14 +88,14 @@ export default function TeamAvailability() {
   }) : [];
 
   return (
-    <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6 h-full flex flex-col">
+    <div className="bg-obsidian/50 border border-white/5 ares-cut p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
           <Users size={16} className="text-ares-cyan" />
           Team Availability
         </h3>
         {presences && (
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-marble/40 uppercase tracking-wider">
             {sortedMembers.filter(m => m.status === "active").length} Online
           </span>
         )}
@@ -104,8 +104,8 @@ export default function TeamAvailability() {
       <div className="flex-1 overflow-y-auto min-h-[250px] scrollbar-thin scrollbar-thumb-white/5 pr-2">
         {loading && !presences ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">
-            <Circle className="text-zinc-600 animate-pulse" size={24} />
-            <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Syncing Radar...</span>
+            <Circle className="text-marble/20 animate-pulse" size={24} />
+            <span className="text-xs font-bold uppercase tracking-widest text-marble/40">Syncing Radar...</span>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
@@ -113,8 +113,8 @@ export default function TeamAvailability() {
           </div>
         ) : sortedMembers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">
-            <Users className="text-zinc-600" size={24} />
-            <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">No telemetry data</span>
+            <Users className="text-marble/20" size={24} />
+            <span className="text-xs font-bold uppercase tracking-widest text-marble/40">No telemetry data</span>
           </div>
         ) : (
           <AnimatePresence>
@@ -124,22 +124,22 @@ export default function TeamAvailability() {
                   key={member.email}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`p-3 ares-cut-sm bg-zinc-800/40 border transition-all flex items-center gap-3 ${getBorderColor(member.status)}`}
+                  className={`p-3 ares-cut-sm bg-white/5 border transition-all flex items-center gap-3 ${getBorderColor(member.status)}`}
                 >
                   <div className="relative">
                     <img 
                       src={`https://api.dicebear.com/9.x/bottts/svg?seed=${member.email}`} 
                       alt="Avatar" 
-                      className="w-8 h-8 rounded-full border border-white/10 bg-zinc-900"
+                      className="w-8 h-8 rounded-full border border-white/10 bg-obsidian"
                     />
-                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-zinc-900 ${getStatusColor(member.status)}`} />
+                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-obsidian ${getStatusColor(member.status)}`} />
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-white truncate">{member.email.split("@")[0]}</p>
                     <div className="flex items-center gap-1 mt-0.5">
                       {getIcon(member.status)}
-                      <span className="text-[9px] uppercase tracking-wider font-bold text-zinc-500">
+                      <span className="text-[9px] uppercase tracking-wider font-bold text-marble/40">
                         {member.status}
                       </span>
                     </div>

@@ -48,8 +48,8 @@ const ComponentMap = {
   FlywheelKvSim,
   PowerSheddingSim,
   StateMachineSim,
-  Mermaid: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-zinc-800 bg-zinc-900 rounded text-zinc-400 text-sm font-mono">[Mermaid Diagram]</div> })),
-  HomeCoreValues: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-zinc-800 bg-zinc-900 rounded text-zinc-400 text-sm font-mono">[Core Values Component]</div> }))
+  Mermaid: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-white/10 bg-ares-gray-dark rounded text-ares-gray text-sm font-mono">[Mermaid Diagram]</div> })),
+  HomeCoreValues: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-white/10 bg-ares-gray-dark rounded text-ares-gray text-sm font-mono">[Core Values Component]</div> }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as Record<string, any>;
 
@@ -126,7 +126,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       return (
         <Tag id={id} className={className}>
           {(level === 2 || level === 3) && (
-             <a href={`#${id}`} className="absolute -left-6 top-1 opcode-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-ares-cyan" aria-label="Link to section">
+             <a href={`#${id}`} className="absolute -left-6 top-1 opcode-0 group-hover:opacity-100 transition-opacity text-ares-gray hover:text-ares-cyan" aria-label="Link to section">
                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
              </a>
           )}
@@ -156,7 +156,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       const Component = ComponentMap[componentName];
       if (Component) {
         return (
-          <Suspense fallback={<div className="p-8 border border-zinc-800 bg-zinc-900 rounded animate-pulse text-center text-zinc-500">Loading interactive tool...</div>}>
+          <Suspense fallback={<div className="p-8 border border-white/10 bg-ares-gray-dark rounded animate-pulse text-center text-marble/40">Loading interactive tool...</div>}>
             <Component className="my-8" />
           </Suspense>
         );
@@ -174,14 +174,14 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     );
     case "table": return (
       <div className="overflow-x-auto my-6">
-        <table className="w-full text-left border-collapse border border-zinc-800 ares-cut-sm hidden-border-corners shadow-lg table-auto">
+        <table className="w-full text-left border-collapse border border-white/10 ares-cut-sm hidden-border-corners shadow-lg table-auto">
           <tbody>{children}</tbody>
         </table>
       </div>
     );
-    case "tableRow": return <tr className="border-b border-zinc-800 hover:bg-zinc-900/50 transition-colors odd:bg-black/20 even:bg-black/40">{children}</tr>;
-    case "tableHeader": return <th className="bg-zinc-900 border border-zinc-800 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
-    case "tableCell": return <td className="border border-zinc-800 p-3 text-zinc-300 align-top">{children}</td>;
+    case "tableRow": return <tr className="border-b border-white/5 hover:bg-white/5 transition-colors odd:bg-black/20 even:bg-black/40">{children}</tr>;
+    case "tableHeader": return <th className="bg-obsidian border border-white/10 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
+    case "tableCell": return <td className="border border-white/5 p-3 text-marble/80 align-top">{children}</td>;
     case "youtube": {
       const src = validateUrl(node.attrs?.src as string, 'video');
       if (!src) return null;
@@ -199,10 +199,10 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
             type="checkbox" 
             checked={node.attrs?.checked as boolean} 
             readOnly 
-            className="w-4 h-4 rounded appearance-none border border-zinc-600 bg-zinc-950 checked:bg-ares-cyan checked:border-ares-cyan relative after:content-[''] after:hidden checked:after:block after:absolute after:left-[4px] after:top-[1px] after:w-[6px] after:h-[10px] after:border-solid after:border-zinc-950 after:border-r-[2px] after:border-b-[2px] after:rotate-45 transition-colors cursor-default" 
+            className="w-4 h-4 rounded appearance-none border border-white/20 bg-ares-black checked:bg-ares-cyan checked:border-ares-cyan relative after:content-[''] after:hidden checked:after:block after:absolute after:left-[4px] after:top-[1px] after:w-[6px] after:h-[10px] after:border-solid after:border-obsidian after:border-r-[2px] after:border-b-[2px] after:rotate-45 transition-colors cursor-default" 
           />
         </div>
-        <div className={node.attrs?.checked ? "text-zinc-500 line-through" : ""}>{children}</div>
+        <div className={node.attrs?.checked ? "text-marble/40 line-through" : ""}>{children}</div>
       </li>
     );
     case "codeBlock": return (

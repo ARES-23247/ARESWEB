@@ -20,7 +20,7 @@ const config: Config = {
         "ares-cyan": "#00E5FF",
         "obsidian": "#1A1A1A",
         "marble": "#F9F9F9",
-        "ares-gray": "var(--ares-gray)",
+        "ares-gray": "#4a4a4a",
         "ares-offwhite": "#e6edf3",
         "ares-gray-dark": "#161b22",
         "ares-gray-deep": "#0d1117",

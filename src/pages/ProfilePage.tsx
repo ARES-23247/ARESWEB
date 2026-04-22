@@ -105,7 +105,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-obsidian">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <div className="flex justify-between items-center mb-8 print:hidden">
-          <Link to="/about" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-bold transition-colors">
+          <Link to="/about" className="inline-flex items-center gap-2 text-ares-gray hover:text-white text-sm font-bold transition-colors">
             <ArrowLeft size={16} /> Back to Team
           </Link>
           <button 
@@ -118,15 +118,15 @@ export default function ProfilePage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {/* Header Card */}
-          <div className="bg-zinc-900/50 border border-zinc-800 ares-cut-lg p-8 flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
-            <div className="w-32 h-32 ares-cut bg-zinc-800 border border-zinc-700 overflow-hidden p-3 flex-shrink-0">
+          <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut-lg p-8 flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
+            <div className="w-32 h-32 ares-cut bg-ares-gray-dark border border-ares-gray overflow-hidden p-3 flex-shrink-0">
               <img src={profile.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${userId}`} alt="Avatar" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-black text-white mb-1">
                 {profile.first_name && profile.last_name ? `${profile.first_name} "${profile.nickname}" ${profile.last_name}` : (profile.nickname || "ARES Member")}
               </h1>
-              {profile.pronouns && <p className="text-zinc-400 text-sm mb-3">{profile.pronouns}</p>}
+              {profile.pronouns && <p className="text-ares-gray text-sm mb-3">{profile.pronouns}</p>}
               <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-4">
                 <span className="px-3 py-1 bg-ares-red/20 border border-ares-red/30 rounded-full text-xs font-bold text-ares-red">
                   {memberIcon} {memberLabel}
@@ -137,13 +137,13 @@ export default function ProfilePage() {
                   </span>
                 ))}
               </div>
-              {profile.bio && <p className="text-zinc-300 text-sm leading-relaxed">{profile.bio}</p>}
+              {profile.bio && <p className="text-ares-gray text-sm leading-relaxed">{profile.bio}</p>}
             </div>
           </div>
 
           {/* Trophy Rack */}
           {badges && badges.length > 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800 ares-cut-lg p-8 mb-8">
+            <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut-lg p-8 mb-8">
               <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
                 <LucideIcons.Award className="text-ares-gold" size={16} /> Honors & Badges
               </h3>
@@ -152,20 +152,20 @@ export default function ProfilePage() {
                   const IconComp = (LucideIcons as unknown as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
                   const colorClass = `text-${b.color_theme.replace("text-", "")}`;
                   return (
-                    <div key={b.id} className="relative group cursor-help bg-zinc-800 border border-zinc-700/50 hover:border-zinc-500 ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">
+                    <div key={b.id} className="relative group cursor-help bg-ares-gray-dark border border-ares-gray/50 hover:border-ares-gold ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">
                       <IconComp size={40} className={`mb-2 ${colorClass}`} />
-                      <span className="text-[10px] font-bold text-center text-zinc-300 leading-tight block">{b.name}</span>
+                      <span className="text-[10px] font-bold text-center text-ares-gray leading-tight block">{b.name}</span>
                       
                       {/* Tooltip */}
-                      <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-black border border-zinc-700 text-white text-xs ares-cut-sm p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">
+                      <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-black border border-ares-gray text-white text-xs ares-cut-sm p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">
                         <p className="font-bold mb-1">{b.name}</p>
-                        <p className="text-zinc-400 text-[10px] leading-relaxed">{b.description}</p>
+                        <p className="text-ares-gray text-[10px] leading-relaxed">{b.description}</p>
                         {b.awarded_at && (
-                          <p className="text-zinc-500 text-[9px] mt-2 border-t border-white/10 pt-2">
+                          <p className="text-ares-gray/60 text-[9px] mt-2 border-t border-white/10 pt-2">
                             Awarded: {new Date(b.awarded_at).toLocaleDateString()}
                           </p>
                         )}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-700"></div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ares-gray"></div>
                       </div>
                     </div>
                   );
@@ -182,21 +182,21 @@ export default function ProfilePage() {
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                  {(profile.emergency_contact_name || profile.emergency_contact_phone) && (
                    <div>
-                     <p className="text-[10px] font-bold text-zinc-500 uppercase">Emergency Contact</p>
-                     <p className="text-zinc-300 text-sm">{profile.emergency_contact_name || "Unknown"}</p>
-                     <p className="text-zinc-400 text-xs">{profile.emergency_contact_phone}</p>
+                     <p className="text-[10px] font-bold text-ares-gray uppercase">Emergency Contact</p>
+                     <p className="text-ares-gray text-sm">{profile.emergency_contact_name || "Unknown"}</p>
+                     <p className="text-ares-gray/60 text-xs">{profile.emergency_contact_phone}</p>
                    </div>
                  )}
                  {profile.dietary_restrictions && (
                    <div>
-                     <p className="text-[10px] font-bold text-zinc-500 uppercase">Dietary Info</p>
-                     <p className="text-zinc-300 text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>
+                     <p className="text-[10px] font-bold text-ares-gray uppercase">Dietary Info</p>
+                     <p className="text-ares-gray text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>
                    </div>
                  )}
                  {profile.tshirt_size && (
                    <div>
-                     <p className="text-[10px] font-bold text-zinc-500 uppercase">T-Shirt Size</p>
-                     <p className="text-zinc-300 text-sm uppercase">{profile.tshirt_size}</p>
+                     <p className="text-[10px] font-bold text-ares-gray uppercase">T-Shirt Size</p>
+                     <p className="text-ares-gray text-sm uppercase">{profile.tshirt_size}</p>
                    </div>
                  )}
                </div>
@@ -206,65 +206,65 @@ export default function ProfilePage() {
           {/* Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {profile.rookie_year && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Rookie Year</p>
-                <p className="text-zinc-300 text-sm">{profile.rookie_year}</p>
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
+                <p className="text-[10px] font-bold text-ares-gray uppercase tracking-wider mb-2">Rookie Year</p>
+                <p className="text-ares-gray text-sm">{profile.rookie_year}</p>
               </div>
             )}
             {profile.leadership_role && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Leadership Role</p>
-                <p className="text-zinc-300 text-sm">{profile.leadership_role}</p>
+                <p className="text-ares-gray text-sm">{profile.leadership_role}</p>
               </div>
             )}
             {profile.favorite_first_thing && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Favorite Thing About FIRST</p>
-                <p className="text-zinc-300 text-sm">{profile.favorite_first_thing}</p>
+                <p className="text-ares-gray text-sm">{profile.favorite_first_thing}</p>
               </div>
             )}
             {profile.favorite_robot_mechanism && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-gold uppercase tracking-wider mb-2">Favorite Robot Mechanism</p>
-                <p className="text-zinc-300 text-sm">{profile.favorite_robot_mechanism}</p>
+                <p className="text-ares-gray text-sm">{profile.favorite_robot_mechanism}</p>
               </div>
             )}
             {profile.pre_match_superstition && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-danger uppercase tracking-wider mb-2">Pre-Match Superstition</p>
-                <p className="text-zinc-300 text-sm">{profile.pre_match_superstition}</p>
+                <p className="text-ares-gray text-sm">{profile.pre_match_superstition}</p>
               </div>
             )}
             {profile.fun_fact && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-gold uppercase tracking-wider mb-2">Fun Fact</p>
-                <p className="text-zinc-300 text-sm">{profile.fun_fact}</p>
+                <p className="text-ares-gray text-sm">{profile.fun_fact}</p>
               </div>
             )}
             {profile.favorite_food && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
                 <p className="text-[10px] font-bold text-ares-cyan uppercase tracking-wider mb-2">Favorite Food</p>
-                <p className="text-zinc-300 text-sm">{profile.favorite_food}</p>
+                <p className="text-ares-gray text-sm">{profile.favorite_food}</p>
               </div>
             )}
             {profile.grade_year && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Class</p>
-                <p className="text-zinc-300 text-sm">{profile.grade_year}</p>
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
+                <p className="text-[10px] font-bold text-ares-gray uppercase tracking-wider mb-2">Class</p>
+                <p className="text-ares-gray text-sm">{profile.grade_year}</p>
               </div>
             )}
             {(profile.email || profile.phone) && (
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Contact</p>
-                {profile.email && <p className="text-zinc-300 text-sm">{profile.email}</p>}
-                {profile.phone && <p className="text-zinc-400 text-sm">{profile.phone}</p>}
+              <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
+                <p className="text-[10px] font-bold text-ares-gray uppercase tracking-wider mb-2">Contact</p>
+                {profile.email && <p className="text-ares-gray text-sm">{profile.email}</p>}
+                {profile.phone && <p className="text-ares-gray/60 text-sm">{profile.phone}</p>}
               </div>
             )}
           </div>
 
           {/* Colleges */}
           {colleges && colleges.length > 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6 mb-4">
+            <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6 mb-4">
               <h3 className="text-xs font-bold text-ares-red uppercase tracking-wider mb-4 flex items-center gap-2"><GraduationCap size={14} /> Education</h3>
               <div className="space-y-3">
                 {colleges.map((col: { domain: string, name: string, degree: string, years: string }, i: number) => (
@@ -272,7 +272,7 @@ export default function ProfilePage() {
                     <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-8 h-8" />
                     <div>
                       <p className="text-white text-sm font-bold">{col.name}</p>
-                      <p className="text-zinc-400 text-xs">{[col.degree, col.years].filter(Boolean).join(" · ")}</p>
+                      <p className="text-ares-gray/60 text-xs">{[col.degree, col.years].filter(Boolean).join(" · ")}</p>
                     </div>
                   </div>
                 ))}
@@ -282,15 +282,15 @@ export default function ProfilePage() {
 
           {/* Employers */}
           {employers && employers.length > 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6">
+            <div className="bg-ares-gray-dark/50 border border-white/10 ares-cut p-6">
               <h3 className="text-xs font-bold text-ares-red uppercase tracking-wider mb-4 flex items-center gap-2"><Briefcase size={14} /> Career</h3>
               <div className="space-y-3">
                 {employers.map((emp: { domain: string, name: string, current: boolean, title: string, years: string }, i: number) => (
                   <div key={i} className="flex items-center gap-3">
                     <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-8 h-8" />
                     <div>
-                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-green-400 text-[10px] ml-1">● Current</span>}</p>
-                      <p className="text-zinc-400 text-xs">{[emp.title, emp.years].filter(Boolean).join(" · ")}</p>
+                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-ares-gold text-[10px] ml-1">● Current</span>}</p>
+                      <p className="text-ares-gray/60 text-xs">{[emp.title, emp.years].filter(Boolean).join(" · ")}</p>
                     </div>
                   </div>
                 ))}
@@ -300,7 +300,7 @@ export default function ProfilePage() {
 
           {/* Student Safety Notice */}
           {profile.member_type === "student" && (
-            <div className="mt-8 flex items-center gap-2 text-zinc-600 text-xs">
+            <div className="mt-8 flex items-center gap-2 text-ares-gray/40 text-xs">
               <Shield size={12} /> Contact information protected per FIRST Youth Protection guidelines.
             </div>
           )}

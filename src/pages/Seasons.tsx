@@ -22,7 +22,7 @@ export default function Seasons() {
     }
   });
   return (
-    <div className="flex flex-col w-full bg-zinc-950 min-h-screen text-zinc-100 relative overflow-hidden">
+    <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">
       <SEO title="Team Legacy" description="A chronicle of ARES 23247's journey through FIRST Robotics. Explore our seasonal achievements, awards, and growth." />
       
       {/* Ambience */}
@@ -44,7 +44,7 @@ export default function Seasons() {
         >
           Our <span className="text-ares-red">Legacy</span>.
         </motion.h1>
-        <p className="text-zinc-300 text-xl max-w-2xl mx-auto leading-relaxed font-medium">
+        <p className="text-ares-gray text-xl max-w-2xl mx-auto leading-relaxed font-medium">
           The story of ARES 23247 is told through the banners we hang and the challenges we overcome. We document our history to inspire our future.
         </p>
       </section>
@@ -67,7 +67,7 @@ export default function Seasons() {
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="bg-zinc-900 border border-white/5 p-8 rounded-[2.5rem] group hover:border-ares-gold/40 transition-all relative overflow-hidden"
+                  className="bg-ares-gray-dark border border-white/5 p-8 rounded-[2.5rem] group hover:border-ares-gold/40 transition-all relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
                   <div className="flex justify-between items-start mb-6">
@@ -77,19 +77,19 @@ export default function Seasons() {
                     <span className="text-2xl font-black text-white/20 italic">{award.year}</span>
                   </div>
                   <h3 className="text-2xl font-black text-white mb-2 italic tracking-tighter group-hover:text-ares-gold transition-colors">{award.title}</h3>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-300 mb-4 flex items-center gap-2">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-ares-gray mb-4 flex items-center gap-2">
                     <MapPin size={10} className="text-ares-red" /> {award.event_name}
                   </div>
-                  <p className="text-zinc-300 text-sm leading-relaxed line-clamp-3">{award.description}</p>
+                  <p className="text-ares-gray text-sm leading-relaxed line-clamp-3">{award.description}</p>
                 </motion.div>
               ))
             ) : (
               <div className="col-span-full py-32 text-center border-2 border-dashed border-white/5 ares-cut-lg">
-                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-300">
+                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-ares-gray">
                     <Trophy size={40} />
                  </div>
                  <h3 className="text-2xl font-bold text-white mb-2">The Case is Open.</h3>
-                 <p className="text-zinc-300">We are currently in our rookie season and looking forward to our first banners.</p>
+                 <p className="text-ares-gray">We are currently in our rookie season and looking forward to our first banners.</p>
               </div>
             )}
           </div>
@@ -97,11 +97,11 @@ export default function Seasons() {
       </section>
 
       {/* Seasonal Timeline */}
-      <section className="py-32 px-6 bg-zinc-900/50 relative z-10 border-y border-white/5">
+      <section className="py-32 px-6 bg-ares-gray-dark/50 relative z-10 border-y border-white/5">
         <div className="max-w-4xl mx-auto">
           <header className="mb-20 text-center">
             <h2 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter mb-4">Journey Through Time</h2>
-            <p className="text-zinc-300 font-medium italic">Our evolution from a rookie build to a championship contender.</p>
+            <p className="text-ares-gray font-medium italic">Our evolution from a rookie build to a championship contender.</p>
           </header>
 
           <div className="space-y-24 relative">
@@ -113,22 +113,22 @@ export default function Seasons() {
                 <div className="md:w-[45%] md:mr-auto text-left md:text-right">
                    <div className="mb-3"><span className="bg-ares-red text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm shadow-md">2025 - 2026</span></div>
                    <h3 className="text-3xl font-black text-white italic tracking-tighter mb-4 uppercase">FTC DECODE</h3>
-                   <p className="text-zinc-300 leading-relaxed mb-6">
+                   <p className="text-ares-gray leading-relaxed mb-6">
                       The rookie year. Establishing the ARES project, building our first competitive robot, and learning the values of <em>FIRST</em>. Focused on archaeological investigations and autonomous navigation.
                    </p>
                    <div className="flex flex-wrap gap-2 md:justify-end">
-                      {["ROOKIE", "BUILDING", "COMMUNITY"].map(t => <span key={t} className="px-3 py-1 bg-white/5 border border-white/10 ares-cut-sm text-[9px] font-bold text-zinc-300 tracking-widest">{t}</span>)}
+                      {["ROOKIE", "BUILDING", "COMMUNITY"].map(t => <span key={t} className="px-3 py-1 bg-white/5 border border-white/10 ares-cut-sm text-[9px] font-bold text-ares-gray tracking-widest">{t}</span>)}
                    </div>
                 </div>
              </div>
 
              {/* Future Expansion */}
              <div className="relative pl-8 md:pl-0">
-                <div className="absolute left-[-5px] md:left-1/2 md:-translate-x-1/2 top-0 w-3 h-3 rounded-full bg-zinc-700 border border-zinc-500" />
+                <div className="absolute left-[-5px] md:left-1/2 md:-translate-x-1/2 top-0 w-3 h-3 rounded-full bg-ares-gray border border-ares-gray-dark" />
                 <div className="md:w-[45%] md:ml-auto text-left">
-                   <div className="mb-3"><span className="bg-zinc-800 text-zinc-300 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm border border-zinc-600">2026 - 2027</span></div>
+                   <div className="mb-3"><span className="bg-ares-gray-dark text-ares-gray text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm border border-ares-gray">2026 - 2027</span></div>
                    <h3 className="text-3xl font-black text-white italic tracking-tighter mb-4 uppercase">Next Frontier</h3>
-                   <p className="text-zinc-300 leading-relaxed italic">
+                   <p className="text-ares-gray leading-relaxed italic">
                       Expanding the ARES engine, mentoring younger teams, and striving for consistent championship performance.
                    </p>
                 </div>
@@ -139,10 +139,10 @@ export default function Seasons() {
 
       {/* Footer Support */}
       <section className="py-32 px-6">
-         <div className="max-w-4xl mx-auto p-12 rounded-[3.5rem] bg-gradient-to-tr from-ares-gold/20 via-zinc-900 to-black border border-ares-gold/20 text-center">
+         <div className="max-w-4xl mx-auto p-12 rounded-[3.5rem] bg-gradient-to-tr from-ares-gold/20 via-ares-gray-dark to-black border border-ares-gold/20 text-center">
             <Trophy className="text-ares-gold mx-auto mb-8" size={64} strokeWidth={1} />
             <h2 className="text-4xl font-black text-white mb-6 italic tracking-tighter">Support the Legacy.</h2>
-            <p className="text-zinc-300 text-lg mb-10 max-w-xl mx-auto">Our history is written by the mentors, students, and sponsors who invest in our success. Join us in building the future.</p>
+            <p className="text-ares-gray text-lg mb-10 max-w-xl mx-auto">Our history is written by the mentors, students, and sponsors who invest in our success. Join us in building the future.</p>
             <div className="flex flex-wrap justify-center gap-4">
                <a href="/sponsors" className="px-8 py-4 bg-ares-gold text-black font-black ares-cut hover:scale-105 transition-all">Sponsor ARES</a>
                <a href="/contact" className="px-8 py-4 bg-white/5 border border-white/10 text-white font-black ares-cut hover:bg-white/10 transition-all">Join the Team</a>
