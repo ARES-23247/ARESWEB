@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
+import { ModalProvider } from "./contexts/ModalContext";
 import App from "./App";
 import "./index.css";
 import "./i18n";
@@ -21,16 +22,6 @@ if (
   // Halt further execution — prevent React from rendering a broken state
   throw new Error("Redirecting to aresfirst.org");
 }
-import { registerSW } from "virtual:pwa-register";
-
-const updateSW = registerSW({
-  onNeedRefresh() {
-    if (confirm("New content available. Reload?")) {
-      updateSW(true);
-    }
-  },
-});
-
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,7 +37,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <App />
+          <ModalProvider>
+            <App />
+          </ModalProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </HelmetProvider>

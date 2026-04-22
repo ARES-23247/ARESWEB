@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package } from "lucide-react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { adminApi } from "../api/adminApi";
 
@@ -47,7 +48,7 @@ export default function SponsorEditor() {
       return adminApi.createSponsor(sponsor);
     },
     onError: (err: Error) => {
-      alert(`[Failure Exposure] Sponsor sync failed: \n${err.message}`);
+      toast.error(`[Failure Exposure] Sponsor sync failed: \n${err.message}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-sponsors"] });

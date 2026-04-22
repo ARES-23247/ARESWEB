@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { compressImage } from "../utils/imageProcessor";
 import { adminApi } from "../api/adminApi";
+import { useModal } from "../contexts/ModalContext";
 
 interface R2Asset {
   key: string;
@@ -12,6 +13,7 @@ interface R2Asset {
 
 export default function AssetManager() {
   const queryClient = useQueryClient();
+  const modal = useModal();
   const [confirmKey, setConfirmKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [syndicateKey, setSyndicateKey] = useState<string | null>(null);
@@ -219,8 +221,13 @@ export default function AssetManager() {
                       📢 Broadcast
                     </button>
                     <button
-                      onClick={() => {
-                        const newFolder = window.prompt("Enter new folder name to move this asset:", asset.folder || "Library");
+                      onClick={async () => {
+                        const newFolder = await modal.prompt({
+                          title: "Move Asset",
+                          description: "Enter new folder name to move this asset:",
+                          defaultValue: asset.folder || "Library",
+                          submitText: "Move",
+                        });
                         if (newFolder !== null && newFolder.trim() !== "") {
                           moveMutation.mutate({ key: asset.key, newFolder: newFolder.trim() });
                         }

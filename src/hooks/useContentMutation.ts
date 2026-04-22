@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../api/adminApi";
+import { toast } from "sonner";
 
 type HttpMethod = "DELETE" | "POST" | "PATCH" | "PUT";
 
@@ -63,7 +64,7 @@ export function useContentMutation<TVariables = string>(opts: UseContentMutation
       onSuccess?.(data);
     },
     onError: (err: Error) => {
-      alert(err.message);
+      toast.error(err.message || "Operation failed");
     },
   });
 }

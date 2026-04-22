@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 import SEO from "../components/SEO";
 import { useSession } from "../utils/auth-client";
 import { trackPageView } from "../utils/analytics";
@@ -11,6 +12,7 @@ import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
 import DocsSidebar from "../components/docs/DocsSidebar";
 import DocsTableOfContents from "../components/docs/DocsTableOfContents";
 import { publicApi } from "../api/publicApi";
+import { useModal } from "../contexts/ModalContext";
 
 interface DocRecord {
   slug: string;
@@ -57,9 +59,9 @@ export default function Docs() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { data: session } = useSession();
-  
-  // @ts-expect-error - Better Auth session type overrides
-  const userRole = (session?.user?.role as string) || "user";
+  const modal = useModal();
+
+  const userRole = (session?.user as Record<string, unknown>)?.role || "user";
   const isEditor = userRole === "admin" || userRole === "author";
 
   // ── State ──────────────────────────────────────────────────────────
@@ -250,7 +252,7 @@ export default function Docs() {
                 
                 {isEditor && (
                 <Link 
-                  to={`/dashboard?editDoc=${currentDoc.slug}`}
+                  to={`/dashboard/docs/${currentDoc.slug}`}
                   className="flex items-center gap-2 text-xs font-bold text-ares-cyan/70 hover:text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1.5 ares-cut-sm transition-colors"
                 >
                   <Edit2 size={12} />
@@ -354,7 +356,7 @@ export default function Docs() {
                     <button 
                       onClick={async () => {
                         await publicApi.submitDocsFeedback(slug!, true, feedbackToken);
-                        alert('Thanks for your feedback!');
+                        toast.success('Thanks for your feedback!');
                       }}
                       className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all"
                     >
@@ -362,9 +364,15 @@ export default function Docs() {
                     </button>
                     <button 
                       onClick={async () => {
-                        const comment = window.prompt("How can we improve this page?");
-                        await publicApi.submitDocsFeedback(slug!, false, feedbackToken, comment || "");
-                        alert('Thank you! We will use your feedback to improve this page.');
+                        const comment = await modal.prompt({
+                          title: "Feedback",
+                          description: "How can we improve this page?",
+                          submitText: "Submit",
+                        });
+                        if (comment !== null) {
+                          await publicApi.submitDocsFeedback(slug!, false, feedbackToken, comment || "");
+                          toast.success('Thank you! We will use your feedback to improve this page.');
+                        }
                       }}
                       className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all"
                     >

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import * as LucideIcons from "lucide-react";
 import { adminApi } from "../api/adminApi";
 import { publicApi } from "../api/publicApi";
@@ -62,12 +63,12 @@ export default function BadgeManager() {
       return adminApi.grantBadge(selectedUser, selectedBadge);
     },
     onSuccess: () => {
-      alert("Badge awarded successfully!");
+      toast.success("Badge awarded successfully!");
       setSelectedUser("");
       setSelectedBadge("");
     },
     onError: (err: Error) => {
-      alert(`Error awarding badge: ${err.message}`);
+      toast.error(`Error awarding badge: ${err.message}`);
     }
   });
 

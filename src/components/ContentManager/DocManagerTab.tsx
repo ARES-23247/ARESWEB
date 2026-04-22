@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Download, ChevronUp, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useContentMutation } from "../../hooks/useContentMutation";
 import { DocItem, ViewType, ClickToDeleteButton, contentFilter, ContentMutationResult } from "./shared";
@@ -55,7 +56,7 @@ export default function DocManagerTab({
     try {
       const data = await publicApi.get<{ doc?: DocItem }>(`/api/docs/${slug}`);
       const doc = data.doc;
-      if (!doc) { alert("Doc not found."); return; }
+      if (!doc) { toast.error("Doc not found."); return; }
       const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -64,7 +65,7 @@ export default function DocManagerTab({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Failed to export document.");
+      toast.error("Failed to export document.");
     }
   };
 
@@ -78,7 +79,7 @@ export default function DocManagerTab({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Failed to export all documents.");
+      toast.error("Failed to export all documents.");
     }
   };
 
@@ -103,7 +104,7 @@ export default function DocManagerTab({
                     const code = prompt("Enter a name or purpose for this code (e.g. 'Championship Judge'):");
                     if (code !== null) {
                       adminApi.request<{ code: string; expiresAt: string }>("/api/admin/judges/codes", { method: "POST" })
-                        .then((data) => alert(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
+                        .then((data) => toast.info(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
                     }
                   }}
                   className="text-[10px] font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-2 py-1 ares-cut-sm transition-colors border border-ares-gold/20"

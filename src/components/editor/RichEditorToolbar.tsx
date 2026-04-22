@@ -8,11 +8,13 @@
 import { useState, useRef, useCallback } from "react";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
+import { toast } from "sonner";
 import mammoth from "mammoth";
 import { compressImage } from "../../utils/imageProcessor";
 import AssetPickerModal from "../AssetPickerModal";
 import SimPickerModal from "../SimPickerModal";
 import { adminApi } from "../../api/adminApi";
+import { useModal } from "../../contexts/ModalContext";
 
 /* ---------- Props ---------- */
 export interface RichEditorToolbarProps {
@@ -115,6 +117,7 @@ const Sep = () => <div className="w-px h-6 bg-zinc-800 mx-1" />;
 
 /* ---------- Component ---------- */
 export default function RichEditorToolbar({ editor, documentTitle }: RichEditorToolbarProps) {
+  const modal = useModal();
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
@@ -162,7 +165,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       editor.commands.setContent(ast);
     } catch (err) {
       console.error("Failed to import JSON:", err);
-      alert("Invalid JSON file. Expected an ARES export (.json) or raw Tiptap AST.");
+      toast.error("Invalid JSON file. Expected an ARES export (.json) or raw Tiptap AST.");
     } finally {
       e.target.value = "";
     }
@@ -210,23 +213,37 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()} className="px-3 py-2 border border-ares-cyan/30 text-ares-cyan hover:bg-ares-cyan hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Info</button>
         <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Warn</button>
         <button type="button" onClick={() => editor.chain().focus().toggleCallout({ type: 'tip' }).run()} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm">Tip</button>
-        <button type="button" onClick={() => {
-          const summary = window.prompt("Expand Button Label:", "Show Answer");
+        <button type="button" onClick={async () => {
+          const summary = await modal.prompt({
+            title: "Reveal Button Label",
+            description: "Enter the label for the button:",
+            defaultValue: "Show Answer"
+          });
           if (summary !== null) editor.chain().focus().toggleReveal({ summary }).run();
         }} className="px-3 py-2 border border-white/20 text-white hover:bg-white hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm">Reveal</button>
         <Sep />
 
         {/* Link / YT */}
-        <button type="button" onClick={() => {
-          const url = window.prompt('URL:');
+        <button type="button" onClick={async () => {
+          const url = await modal.prompt({
+            title: "Insert Link",
+            description: "Enter the URL:",
+          });
           if (url === null) return;
           if (url === '') { editor.chain().focus().extendMarkRange('link').unsetLink().run(); return; }
           const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
-          if (isYoutube && window.confirm('Embed as YouTube player?')) {
-            editor.chain().focus().setYoutubeVideo({ src: url }).run();
-          } else {
-            editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+          if (isYoutube) {
+            const embed = await modal.confirm({
+              title: "Embed YouTube Video?",
+              description: "Would you like to embed this as a YouTube player instead of a simple link?",
+              confirmText: "Embed",
+            });
+            if (embed) {
+              editor.chain().focus().setYoutubeVideo({ src: url }).run();
+              return;
+            }
           }
+          editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
         }} className="px-3 py-2 ares-cut-sm text-sm font-bold transition-all text-ares-cyan hover:bg-zinc-800 hover:text-white">🔗 / YT</button>
 
         {/* Table */}

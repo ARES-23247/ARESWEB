@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { Radio } from "lucide-react";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useContentMutation } from "../../hooks/useContentMutation";
 import { EventItem, ViewType, ClickToDeleteButton, ContentMutationResult } from "./shared";
@@ -63,7 +64,7 @@ export default function EventManagerTab({
     clearConfirm: false,
     onSuccess: (data: unknown) => {
       const res = data as { synced: number; newEvents: number; updatedEvents: number; lastSyncedAt: string };
-      alert(`Sync Complete! Fetched ${res.synced} events. (${res.newEvents} new, ${res.updatedEvents} updated)`);
+      toast.success(`Sync Complete! Fetched ${res.synced} events. (${res.newEvents} new, ${res.updatedEvents} updated)`);
     },
   });
 

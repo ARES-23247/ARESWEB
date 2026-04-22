@@ -14,6 +14,7 @@ import { useImageUpload } from "../hooks/useImageUpload";
 import { eventSchema } from "../schemas/eventSchema";
 import { adminApi } from "../api/adminApi";
 import { publicApi } from "../api/publicApi";
+import { useModal } from "../contexts/ModalContext";
 
 interface LocationRow {
   id: string;
@@ -42,6 +43,7 @@ interface EventData {
 export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
   const { editId } = useParams<{ editId?: string }>();
   const queryClient = useQueryClient();
+  const modal = useModal();
   const [errorMsg, setErrorMsg] = useState("");
   const [warningMsg, setWarningMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -187,8 +189,13 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
 
   const handleDelete = async () => {
     if (!editId) return;
-    const confirm = window.confirm("Are you sure you want to permanently delete this event?");
-    if (!confirm) return;
+    const confirmed = await modal.confirm({
+      title: "Delete Event",
+      description: "Are you sure you want to permanently delete this event?",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     setErrorMsg("");
     setWarningMsg("");

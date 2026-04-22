@@ -27,13 +27,11 @@ import { useSession } from "../utils/auth-client";
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSession();
-  
-  // @ts-expect-error - Better Auth session type overrides
-  const userRole = (session?.user?.role as string) || "user";
+
+  const userRole = (session?.user as Record<string, unknown>)?.role || "user";
   const isEditor = userRole === "admin" || userRole === "author";
 
-  const { data: event, isLoading, isError } = useQuery<EventRow>({
-    queryKey: ["event", id],
+  const { data: event, isLoading, isError } = useQuery<EventRow>({    queryKey: ["event", id],
     queryFn: async () => {
       try {
         const data = await publicApi.get<{ event: EventRow }>(`/api/events/${id}`);
@@ -138,7 +136,7 @@ export default function EventDetail() {
             )}
             {isEditor && (
               <Link 
-                to={`/dashboard?editEvent=${event.id}`}
+                to={`/dashboard/event/${event.id}`}
                 className="w-fit flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-ares-cyan/10 hover:bg-ares-cyan text-ares-cyan hover:text-black border border-ares-cyan/30 transition-all shadow-lg backdrop-blur-sm"
               >
                 <Edit2 size={14} /> Edit Event

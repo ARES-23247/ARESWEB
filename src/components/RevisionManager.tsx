@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { History, RotateCcw, X, Clock } from "lucide-react";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../api/adminApi";
 
@@ -45,12 +46,12 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
       });
     },
     onSuccess: () => {
-      alert("Successfully restored to this version!");
+      toast.success("Successfully restored to this version!");
       queryClient.invalidateQueries({ queryKey: [type === "doc" ? "docs" : "posts"] });
       onClose();
     },
     onError: (err: unknown) => {
-      alert(`Error: ${(err as Error).message || String(err)}`);
+      toast.error(`Error: ${(err as Error).message || String(err)}`);
     }
   });
 

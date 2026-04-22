@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import AssetPickerModal from "./AssetPickerModal";
@@ -10,11 +11,13 @@ import { useImageUpload } from "../hooks/useImageUpload";
 import { useEntityFetch } from "../hooks/useEntityFetch";
 import { postSchema } from "../schemas/postSchema";
 import { adminApi } from "../api/adminApi";
+import { useModal } from "../contexts/ModalContext";
 
 export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
   const { editSlug } = useParams<{ editSlug?: string }>();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const modal = useModal();
   
   // Custom Hooks
   const { availableSocials } = useAdminSettings();
@@ -102,7 +105,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
         queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
         
         if (data.warning) {
-          alert("Post saved successfully, but social syndication had issues:\n\n" + data.warning);
+          toast.info("Post saved successfully, but social syndication had issues:\n\n" + data.warning);
         }
 
         navigate(`/blog/${data.slug}`);
@@ -118,8 +121,13 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
 
   const handleDelete = async () => {
     if (!editSlug) return;
-    const confirm = window.confirm("Are you sure you want to permanently delete this post?");
-    if (!confirm) return;
+    const confirmed = await modal.confirm({
+      title: "Delete Post",
+      description: "Are you sure you want to permanently delete this post?",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     setIsPending(true);
     setErrorMsg("");

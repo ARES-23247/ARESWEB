@@ -25,8 +25,7 @@ export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const { data: session } = useSession();
   
-  // @ts-expect-error - Better Auth session type overrides
-  const userRole = (session?.user?.role as string) || "user";
+  const userRole = (session?.user as Record<string, unknown>)?.role || "user";
   const isEditor = userRole === "admin" || userRole === "author";
 
   const { data: post, isLoading, isError } = useQuery<PostRow>({
@@ -86,7 +85,7 @@ export default function BlogPost() {
              )}
             {isEditor && (
               <Link 
-                to={`/dashboard?editPost=${post.slug}`}
+                to={`/dashboard/blog/${post.slug}`}
                 className="flex items-center gap-2 ml-auto px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-ares-cyan/10 hover:bg-ares-cyan text-ares-cyan hover:text-black border border-ares-cyan/30 transition-all shadow-lg backdrop-blur-sm"
               >
                 <Edit2 size={14} /> Edit Post

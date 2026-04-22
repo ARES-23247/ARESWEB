@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { Toaster } from "sonner";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -32,11 +33,30 @@ import Join from "./pages/Join";
 import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 
+import { useModal } from "./contexts/ModalContext";
+import { useRegisterSW } from "virtual:pwa-register/react";
+
 export default function App() {
   const location = useLocation();
+  const modal = useModal();
+
+  useRegisterSW({
+    onNeedRefresh() {
+      modal.confirm({
+        title: "Update Available",
+        description: "New content is available. Would you like to reload the app?",
+        confirmText: "Reload",
+      }).then(confirmed => {
+        if (confirmed) {
+          window.location.reload();
+        }
+      });
+    },
+  });
   
   return (
     <ErrorBoundary>
+      <Toaster theme="dark" position="bottom-right" />
       <ScrollToTop />
       <CommandPalette />
       <Navbar />

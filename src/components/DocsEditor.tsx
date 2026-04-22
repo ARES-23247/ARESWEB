@@ -6,6 +6,7 @@ import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { useEntityFetch } from "../hooks/useEntityFetch";
 import { docSchema } from "../schemas/docSchema";
 import { adminApi } from "../api/adminApi";
+import { useModal } from "../contexts/ModalContext";
 
 interface DocData {
   slug: string;
@@ -22,6 +23,7 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
   const { editSlug } = useParams<{ editSlug?: string }>();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const modal = useModal();
   const [isPending, setIsPending] = useState(false);
 
   // Fields
@@ -121,8 +123,13 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
 
   const handleDelete = async () => {
     if (!editSlug) return;
-    const confirm = window.confirm("Are you sure you want to permanently delete this documentation page?");
-    if (!confirm) return;
+    const confirmed = await modal.confirm({
+      title: "Delete Documentation",
+      description: "Are you sure you want to permanently delete this documentation page?",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     setIsPending(true);
     setErrorMsg("");
