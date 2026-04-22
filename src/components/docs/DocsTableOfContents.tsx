@@ -92,7 +92,7 @@ function DocsTableOfContents({ content }: DocsTableOfContentsProps) {
             } ${
               activeId === heading.id 
                 ? "text-ares-gold translate-x-1" 
-                : (heading.level === 3 ? "text-white/40" : "text-white/70")
+                : (heading.level === 3 ? "text-white/60" : "text-white/70")
             }`}
           >
             {heading.text}

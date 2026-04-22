@@ -67,7 +67,7 @@ export default function AssetGrid({
         {filteredAssets.map((asset) => (
         <div
           key={asset.key}
-          className="group relative bg-black/40 border border-white/10 ares-cut-sm overflow-hidden hover:border-white/30 transition-colors flex flex-col"
+          className="group relative bg-black/40 border border-white/10 ares-cut-sm overflow-hidden hover:border-white/60 transition-colors flex flex-col"
         >
           {/* Thumbnail */}
           <div className="relative aspect-square bg-black">

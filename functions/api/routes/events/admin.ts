@@ -89,11 +89,11 @@ adminRouter.post("/", async (c) => {
     if (socials) {
        try {
          await dispatchSocials(c.env.DB, {
-            title: title, url: `https://aresfirst.org/events`,
+            title: title, url: `${siteConfig.urls.base}/events`,
             snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            baseUrl: new URL(c.req.url).origin} as any as any, socialConfig, socials);
+            baseUrl: siteConfig.urls.base} as any as any, socialConfig, socials);
        } catch (err: unknown) {
          warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
        }
@@ -193,11 +193,11 @@ adminRouter.put("/:id", async (c) => {
      if (socials) {
        try {
          await dispatchSocials(c.env.DB, {
-            title: title, url: `https://aresfirst.org/events`,
+            title: title, url: `${siteConfig.urls.base}/events`,
             snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
             coverImageUrl: coverImage || "/gallery_1.png",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            baseUrl: new URL(c.req.url).origin} as any as any, socialConfig, socials);
+            baseUrl: siteConfig.urls.base} as any as any, socialConfig, socials);
        } catch (err: unknown) {
          warnings.push(`Network Syndication Failed: ${(err as Error).message || String(err)}`);
        }
@@ -228,10 +228,12 @@ adminRouter.route("/", createContentLifecycleRouter("events", {
     const row = await c.env.DB.prepare("SELECT revision_of, title, date_start, date_end, location, description, cover_image, gcal_event_id, is_potluck, is_volunteer FROM events WHERE id = ?").bind(id).first<EventRevisionRow>();
 
     if (row && row.revision_of) {
-      await c.env.DB.prepare(
-        "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = 'published', is_potluck = ?, is_volunteer = ? WHERE id = ?"
-      ).bind(row.title, row.date_start, row.date_end, row.location, row.description, row.cover_image, row.gcal_event_id, row.is_potluck, row.is_volunteer, row.revision_of).run();
-      await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
+      await c.env.DB.batch([
+        c.env.DB.prepare(
+          "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = 'published', is_potluck = ?, is_volunteer = ? WHERE id = ?"
+        ).bind(row.title, row.date_start, row.date_end, row.location, row.description, row.cover_image, row.gcal_event_id, row.is_potluck, row.is_volunteer, row.revision_of),
+        c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id)
+      ]);
       return true; // DB logic handled
     }
     // Let generic router handle simple status update
@@ -271,7 +273,7 @@ adminRouter.post("/:id/repush", async (c) => {
     const socialConfig = await getSocialConfig(c);
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await dispatchSocials(c.env.DB, { title: event.title, url: `${siteConfig.urls.base}/events`, snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", coverImageUrl: event.cover_image || "/gallery_1.png", baseUrl: new URL(c.req.url).origin} as any, socialConfig, socials);
+      await dispatchSocials(c.env.DB, { title: event.title, url: `${siteConfig.urls.base}/events`, snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", coverImageUrl: event.cover_image || "/gallery_1.png", baseUrl: siteConfig.urls.base} as any, socialConfig, socials);
     } catch (err: unknown) { return c.json({ error: `Network Repush Failed: ${(err as Error).message || String(err)}` }, 502); }
     return c.json({ success: true });
   } catch (err) {

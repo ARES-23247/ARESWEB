@@ -53,7 +53,7 @@ export default function BugReport() {
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-ares-gold focus:border-ares-gold transition-all font-mono"
+                      className="w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-1 focus:ring-ares-gold focus:border-ares-gold transition-all font-mono"
                       placeholder="e.g. Gallery images fail to load on mobile"
                     />
                   </div>
@@ -65,7 +65,7 @@ export default function BugReport() {
                       rows={5}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-ares-gold focus:border-ares-gold transition-all font-mono resize-none text-sm"
+                      className="w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-1 focus:ring-ares-gold focus:border-ares-gold transition-all font-mono resize-none text-sm"
                       placeholder="Walk us through the steps to reproduce the error..."
                     />
                     <p className="text-xs text-white/60 mt-2 italic">You can always add screenshots or more info on GitHub directly.</p>

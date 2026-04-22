@@ -163,7 +163,7 @@ export default function Leaderboard() {
                       <td className="py-4 text-center font-bold text-ares-gray">{(idx + 4).toString().padStart(2, '0')}</td>
                       <td className="py-4">
                         <Link to={`/roster/${user.user_id}`} className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-ares-gray-dark shrink-0 overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-ares-gray-dark shrink-0 overflow-hidden border border-white/10 group-hover:border-white/60 transition-colors">
                             <img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${user.user_id}`} alt="Avatar" className="w-full h-full object-cover" />
                           </div>
                           <div>

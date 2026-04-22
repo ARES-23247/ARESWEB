@@ -122,7 +122,7 @@ export default function EventDetail() {
             <span>&larr;</span> Back to Archive
           </Link>
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-            <span className={`w-fit px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${isPast ? "bg-obsidian text-white/40" : "bg-ares-red/20 text-ares-red border border-ares-red/50 shadow-[0_0_15px_rgba(192,0,0,0.4)]"}`}>
+            <span className={`w-fit px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${isPast ? "bg-obsidian text-white/60" : "bg-ares-red/20 text-ares-red border border-ares-red/50 shadow-[0_0_15px_rgba(192,0,0,0.4)]"}`}>
               {isPast ? "Historical Record" : "Upcoming Event"}
             </span>
             

@@ -13,7 +13,7 @@ export default function EventSocialSyndication({ availableSocials, socials, onCh
     <div className="bg-obsidian/30 border border-white/5 ares-cut-sm p-4 shadow-inner">
       <div className="flex items-center gap-2 mb-3">
          <div className="w-2 h-2 rounded-full bg-ares-cyan animate-pulse"></div>
-         <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Broadcast & Social Syndication</span>
+         <span className="text-xs font-bold text-white/60 uppercase tracking-widest">Broadcast & Social Syndication</span>
       </div>
       <div className="flex flex-wrap gap-4">
         {availableSocials.map(platform => (

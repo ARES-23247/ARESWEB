@@ -26,7 +26,8 @@ if (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60, // EFF-D01: Cache D1 reads for 1 min to reduce costs
+      retry: 1,
       refetchOnWindowFocus: false,
     },
   },

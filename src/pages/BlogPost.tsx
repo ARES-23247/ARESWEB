@@ -84,14 +84,14 @@ export default function BlogPost() {
              <span className="w-fit px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
                {post.date && !isNaN(new Date(post.date).getTime()) ? format(new Date(post.date), 'MMMM do, yyyy') : "Unpublished"}
              </span>
-             {(post.author_avatar || post.author_nickname || post.cf_email) && (
+             {(post.author_avatar || post.author_nickname) && (
                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit">
                  <img 
-                   src={post.author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.cf_email}`}
+                   src={post.author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author_nickname || post.slug}`}
                    alt="Author"
                    className="w-6 h-6 rounded-full object-cover border border-white/20"
                  />
-                 <span className="text-sm text-white/80">{post.author_nickname || post.cf_email?.split('@')[0] || "Author"}</span>
+                 <span className="text-sm text-white/80">{post.author_nickname || "ARES Author"}</span>
                </div>
              )}
             {isEditor && (

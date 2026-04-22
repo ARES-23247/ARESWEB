@@ -68,7 +68,7 @@ export default function ScreenshotGallery() {
       {!isLoading && images.length > 1 && (
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
           {images.map((_, i) => (
-            <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === index ? "bg-ares-gold scale-125" : "bg-white/30"}`} />
+            <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === index ? "bg-ares-gold scale-125" : "bg-white/60"}`} />
           ))}
         </div>
       )}

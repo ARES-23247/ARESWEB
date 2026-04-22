@@ -34,7 +34,7 @@ export default function CodePlayground() {
         <div className="text-ares-cyan">{defaultCode}</div>
       </div>
       <div className="border-t border-white/10 bg-black min-h-[120px] max-h-[120px] p-3 text-xs overflow-y-auto">
-        <div className="flex items-center gap-2 text-white/40 mb-2 font-bold"><Terminal size={12} /> Terminal Output</div>
+        <div className="flex items-center gap-2 text-white/60 mb-2 font-bold"><Terminal size={12} /> Terminal Output</div>
         {output.map((line, i) => (
           <div key={i} className={line.includes("ROBOT") ? "text-ares-gold" : "text-marble/40"}>{line}</div>
         ))}

@@ -186,7 +186,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
   const renderSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider pl-1">{label}</label>
+      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -201,13 +201,13 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
   const renderColorSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider pl-1">{label}</label>
+      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
       <div className="flex flex-wrap gap-2">
         {options.map((hex) => (
           <button
             key={hex}
             onClick={() => onChange(hex)}
-            className={`w-7 h-7 ares-cut-sm border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/30"}`}
+            className={`w-7 h-7 ares-cut-sm border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/60"}`}
             style={{ backgroundColor: `#${hex}` }}
             aria-label={`Color #${hex}`}
           />
@@ -218,9 +218,9 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
   const renderToggle = (label: string, value: boolean, onChange: (val: boolean) => void) => (
     <div className="flex items-center justify-between py-2">
-      <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{label}</label>
+      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider">{label}</label>
       <button onClick={() => onChange(!value)} className="text-white">
-        {value ? <ToggleRight size={28} className="text-ares-red" /> : <ToggleLeft size={28} className="text-white/30" />}
+        {value ? <ToggleRight size={28} className="text-ares-red" /> : <ToggleLeft size={28} className="text-white/60" />}
       </button>
     </div>
   );
@@ -269,7 +269,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
                 <ImageIcon className="text-ares-red" size={18} />
                 Character Creator
               </h2>
-              <button onClick={onClose} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-colors">
+              <button onClick={onClose} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -279,13 +279,13 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
               <div className="flex bg-black/50 p-1 ares-cut-sm md:ares-cut mb-4 md:mb-6 border border-white/5">
                 <button
                   onClick={() => setStyleMode("avataaars")}
-                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "avataaars" ? "bg-ares-red text-white shadow-lg" : "text-white/40 hover:text-white"}`}
+                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "avataaars" ? "bg-ares-red text-white shadow-lg" : "text-white/60 hover:text-white"}`}
                 >
                   👤 Human
                 </button>
                 <button
                   onClick={() => setStyleMode("bottts")}
-                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "bottts" ? "bg-ares-gold text-black shadow-lg" : "text-white/40 hover:text-white"}`}
+                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "bottts" ? "bg-ares-gold text-black shadow-lg" : "text-white/60 hover:text-white"}`}
                 >
                   🤖 Robot
                 </button>

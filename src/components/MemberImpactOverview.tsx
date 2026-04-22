@@ -91,11 +91,11 @@ export default function MemberImpactOverview() {
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-white tracking-tight">{mvp.display_name}</p>
-                    <p className="text-xs text-white/40 uppercase tracking-widest font-bold">Student</p>
+                    <p className="text-xs text-white/60 uppercase tracking-widest font-bold">Student</p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-black text-white">{mvp.attended_events}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Events</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Events</p>
                   </div>
                 </div>
               ))}
@@ -125,11 +125,11 @@ export default function MemberImpactOverview() {
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-white tracking-tight">{mvp.display_name}</p>
-                    <p className="text-xs text-white/40 uppercase tracking-widest font-bold">Student</p>
+                    <p className="text-xs text-white/60 uppercase tracking-widest font-bold">Student</p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-black text-white">{mvp.total_hours.toFixed(1)}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Hours</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Hours</p>
                   </div>
                 </div>
               ))}
@@ -143,11 +143,11 @@ export default function MemberImpactOverview() {
         <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-black text-white">Full Team Roster</h3>
-            <p className="text-sm text-white/40 font-medium tracking-tight">Detailed attendance and volunteering metrics for export.</p>
+            <p className="text-sm text-white/60 font-medium tracking-tight">Detailed attendance and volunteering metrics for export.</p>
           </div>
           
           <div className="relative w-full md:w-64">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
             <input
               type="text"
               placeholder="Search member..."
@@ -162,10 +162,10 @@ export default function MemberImpactOverview() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/10 bg-white/5">
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/40">Member</th>
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/40">Type</th>
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/40">Events Attended</th>
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/40">Volunteer Hours</th>
+                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Member</th>
+                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Type</th>
+                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Events Attended</th>
+                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Volunteer Hours</th>
               </tr>
             </thead>
             <tbody>
@@ -186,7 +186,7 @@ export default function MemberImpactOverview() {
                     <span className="text-white font-bold">{m.attended_events}</span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="text-white font-bold">{m.total_hours.toFixed(1)} <span className="text-white/40 text-xs font-medium">hrs</span></span>
+                    <span className="text-white font-bold">{m.total_hours.toFixed(1)} <span className="text-white/60 text-xs font-medium">hrs</span></span>
                   </td>
                 </tr>
               ))}

@@ -1,9 +1,9 @@
-import { memo } from "react";
+import { memo, lazy, Suspense } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Link as LinkIcon } from "lucide-react";
-import { lazy, Suspense } from "react";
 import TiptapRenderer from "../TiptapRenderer";
 import { CodeBlock } from "./CodeBlock";
 
@@ -45,6 +45,23 @@ interface DocsMarkdownRendererProps {
   content: string;
 }
 
+const protocolWhitelist = ["http", "https", "mailto", "tel"];
+
+function validateUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (protocolWhitelist.includes(parsed.protocol.replace(":", ""))) {
+      return url;
+    }
+    return undefined;
+  } catch {
+    // Relative paths are safe
+    if (url.startsWith("/") || url.startsWith("#")) return url;
+    return undefined;
+  }
+}
+
 function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
   let tiptapNode = null;
   // Check if it's Tiptap JSON
@@ -67,7 +84,20 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw]}
+      rehypePlugins={[
+        rehypeRaw, 
+        [rehypeSanitize, {
+          ...defaultSchema,
+          tagNames: [
+            ...(defaultSchema.tagNames || []), 
+            "swervesimulator", "sotmsimulator", "configvisualizer", "codeplayground", 
+            "screenshotgallery", "faultsim", "physicssim", "sysidsim", "visionsim", 
+            "zeroallocationsim", "fieldvisualizer", "troubleshootingwizard", 
+            "performancedashboard", "armkgsim", "autosim", "elevatorpidsim", 
+            "flywheelkvsim", "interactivetutorial", "powersheddingsim", "statemachinesim"
+          ]
+        }]
+      ]}
       components={{
         // @ts-expect-error -- Custom component injection
         swervesimulator: () => <LazyWrap><SwerveSimulator /></LazyWrap>,
@@ -119,11 +149,14 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
         },
         h4: ({ children }) => <h4 className="text-lg font-bold mt-4 mb-2 text-white/80">{children}</h4>,
         p: ({ children }) => <p className="text-ares-offwhite/80 leading-relaxed mb-4">{children}</p>,
-        a: ({ href, children }) => (
-          <a href={href} className="text-ares-gold hover:text-white underline underline-offset-2 transition-colors" target={href?.startsWith("http") ? "_blank" : undefined} rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}>
-            {children}
-          </a>
-        ),
+        a: ({ href, children }) => {
+          const safeHref = validateUrl(href);
+          return (
+            <a href={safeHref} className="text-ares-gold hover:text-white underline underline-offset-2 transition-colors" target={href?.startsWith("http") ? "_blank" : undefined} rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}>
+              {children}
+            </a>
+          );
+        },
         ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-4 text-ares-offwhite/70 ml-2">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-4 text-ares-offwhite/70 ml-2">{children}</ol>,
         li: ({ children }) => <li className="leading-relaxed">{children}</li>,
@@ -148,9 +181,12 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
         th: ({ children }) => <th className="border border-white/10 bg-ares-red/10 px-4 py-2 text-left font-bold text-ares-gold">{children}</th>,
         td: ({ children }) => <td className="border border-white/10 px-4 py-2 text-ares-offwhite/70">{children}</td>,
         hr: () => <hr className="border-white/10 my-8" />,
-        img: ({ src, alt }) => (
-          <img src={src} alt={alt || "ARESLib documentation image"} className="ares-cut-sm border border-white/10 my-4 max-w-full" />
-        ),
+        img: ({ src, alt }) => {
+          const safeSrc = validateUrl(src);
+          return (
+            <img src={safeSrc} alt={alt || "ARESLib documentation image"} className="ares-cut-sm border border-white/10 my-4 max-w-full" />
+          );
+        },
         strong: ({ children }) => <strong className="text-white font-bold">{children}</strong>,
         em: ({ children }) => <em className="text-ares-gold/80">{children}</em>,
       }}

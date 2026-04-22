@@ -44,14 +44,14 @@ export default function ConfigVisualizer() {
             <motion.div initial={{opacity:0}} animate={{opacity:1}}>
               <div className="text-ares-red">drive:</div>
               <div className="pl-4">
-                <div className="mb-2"><span className="text-ares-cyan">max_velocity:</span> <span className="text-ares-gold block sm:inline bg-white/5 px-2 py-0.5 rounded border border-white/10" contentEditable suppressContentEditableWarning>4.5</span> <span className="text-white/40 italic"># m/s</span></div>
-                <div className="mb-2"><span className="text-ares-cyan">max_acceleration:</span> <span className="text-ares-gold block sm:inline bg-white/5 px-2 py-0.5 rounded border border-white/10" contentEditable suppressContentEditableWarning>3.0</span> <span className="text-white/40 italic"># m/s²</span></div>
+                <div className="mb-2"><span className="text-ares-cyan">max_velocity:</span> <span className="text-ares-gold block sm:inline bg-white/5 px-2 py-0.5 rounded border border-white/10" contentEditable suppressContentEditableWarning>4.5</span> <span className="text-white/60 italic"># m/s</span></div>
+                <div className="mb-2"><span className="text-ares-cyan">max_acceleration:</span> <span className="text-ares-gold block sm:inline bg-white/5 px-2 py-0.5 rounded border border-white/10" contentEditable suppressContentEditableWarning>3.0</span> <span className="text-white/60 italic"># m/s²</span></div>
                 <div className="mb-2"><span className="text-ares-cyan">track_width:</span> <span className="text-ares-gold block sm:inline bg-white/5 px-2 py-0.5 rounded border border-white/10">0.55</span></div>
               </div>
             </motion.div>
           )}
           {activeTab !== "constants" && (
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} className="flex items-center justify-center p-8 text-white/30 italic">
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} className="flex items-center justify-center p-8 text-white/60 italic">
               <AlertCircle size={16} className="mr-2" /> Select a parameter file to edit
             </motion.div>
           )}

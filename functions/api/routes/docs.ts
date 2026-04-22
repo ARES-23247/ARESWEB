@@ -50,9 +50,17 @@ docsRouter.get("/export-all", ensureAdmin, async (c) => {
   }
 });
 
-// ── GET /docs/search?q=keyword — full-text search ─────────────────────
-// SEC-DoW: Cache doc search results to prevent FTS query exhaustion
+// SEC-Z01: Cache doc search results with bounded size to prevent OOM
+const MAX_CACHE_SIZE = 100;
 const docSearchCache = new Map<string, { data: unknown; expiresAt: number }>();
+
+function setCache(key: string, value: { data: unknown; expiresAt: number }) {
+  if (docSearchCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = docSearchCache.keys().next().value;
+    if (firstKey !== undefined) docSearchCache.delete(firstKey);
+  }
+  docSearchCache.set(key, value);
+}
 
 docsRouter.get("/search", async (c) => {
   const q = c.req.query("q");
@@ -85,7 +93,7 @@ docsRouter.get("/search", async (c) => {
       };
     });
     const payload = { results: mapped };
-    docSearchCache.set(safeQ, { data: payload, expiresAt: now + 60000 });
+    setCache(safeQ, { data: payload, expiresAt: now + 60000 });
     return c.json(payload);
   } catch (err) {
     console.error("D1 docs search error:", err);
@@ -127,12 +135,12 @@ docsRouter.get("/:slug/detail", ensureAdmin, async (c) => {
   }
 });
 
-// ── GET /:slug/history — list doc history (admin) ──────────
-docsRouter.get("/:slug/history", ensureAdmin, async (c) => {
+// ── GET /:slug/history — list doc history (authorized) ──────────
+docsRouter.get("/:slug/history", ensureAuth, async (c) => {
   try {
     const slug = (c.req.param("slug") || "");
     const { results } = await c.env.DB.prepare(
-      "SELECT id, title, category, description, author_email, created_at FROM docs_history WHERE slug = ? ORDER BY created_at DESC LIMIT 50"
+      "SELECT id, title, category, description, created_at FROM docs_history WHERE slug = ? ORDER BY created_at DESC LIMIT 50"
     ).bind(slug).all();
     return c.json({ history: results ?? [] });
   } catch (err) {

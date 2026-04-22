@@ -32,7 +32,7 @@ export default function SimPickerModal({
             </div>
             <div>
               <h2 className="text-xl font-black text-white tracking-widest uppercase">Inject Simulator</h2>
-              <p className="text-xs text-white/40 font-mono">Insert interactive React simulators directly into the page hierarchy.</p>
+              <p className="text-xs text-white/60 font-mono">Insert interactive React simulators directly into the page hierarchy.</p>
             </div>
           </div>
           <button
@@ -46,7 +46,7 @@ export default function SimPickerModal({
 
         {/* Search Bar */}
         <div className="px-6 py-4 bg-white/5 border-b border-white/10 flex items-center gap-3 shadow-inner">
-           <Search size={18} className="text-white/40" aria-hidden="true" />
+           <Search size={18} className="text-white/60" aria-hidden="true" />
            <label htmlFor="simSearch" className="sr-only">Search active simulators</label>
            <input
              id="simSearch"
@@ -54,14 +54,14 @@ export default function SimPickerModal({
              placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
              value={searchQuery}
              onChange={e => setSearchQuery(e.target.value)}
-             className="w-full bg-transparent border-none text-white placeholder-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
+             className="w-full bg-transparent border-none text-white placeholder-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
            />
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-obsidian">
           {sims.length === 0 ? (
-            <div className="w-full h-full flex flex-col items-center justify-center text-white/40 gap-4">
+            <div className="w-full h-full flex flex-col items-center justify-center text-white/60 gap-4">
               <TerminalSquare size={48} className="opacity-50" aria-hidden="true" />
               <p className="font-mono text-sm">No simulator matched the query &ldquo;{searchQuery}&rdquo;.</p>
             </div>
@@ -79,7 +79,7 @@ export default function SimPickerModal({
                      <p className="text-white text-sm font-black tracking-wider uppercase">{sim.name}</p>
                   </div>
                   <div className="mt-auto pt-3 border-t border-white/10 w-full flex justify-between items-center">
-                    <p className="text-white/40 text-[10px] font-mono">&lt;{sim.id} /&gt;</p>
+                    <p className="text-white/60 text-[10px] font-mono">&lt;{sim.id} /&gt;</p>
                   </div>
                 </button>
               ))}

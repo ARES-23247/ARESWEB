@@ -235,7 +235,7 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
           />
           <div>
             <label htmlFor="isPortfolioToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Judge&apos;s Portfolio Selection</label>
-            <span className="block text-xs text-white/40">Feature this in the Rapid Review dashboard for judges.</span>
+            <span className="block text-xs text-white/60">Feature this in the Rapid Review dashboard for judges.</span>
           </div>
         </div>
         
@@ -249,7 +249,7 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
           />
           <div>
             <label htmlFor="isExecSummaryToggle" className="block text-sm font-bold text-white group-hover:text-ares-gold transition-colors cursor-pointer">Executive Summary Flag</label>
-            <span className="block text-xs text-white/40">Mark as the primary seasonal overview for rapid judging.</span>
+            <span className="block text-xs text-white/60">Mark as the primary seasonal overview for rapid judging.</span>
           </div>
         </div>
       </div>

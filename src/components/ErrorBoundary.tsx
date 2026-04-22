@@ -37,7 +37,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </svg>
           </div>
           <h2 className="text-2xl font-bold font-mono tracking-widest text-ares-danger uppercase mb-2">Telemetry Fault Detected</h2>
-          <p className="text-white/40 text-center max-w-lg mb-6 leading-relaxed">
+          <p className="text-white/60 text-center max-w-lg mb-6 leading-relaxed">
             The ARES React engine encountered an unhandled DOM rendering collision. The system has automatically isolated the fault.
           </p>
           <div className="bg-ares-gray-dark border border-white/10 p-4 ares-cut-sm w-full max-w-xl text-left font-mono text-xs text-white overflow-x-auto mb-8 shadow-inner">

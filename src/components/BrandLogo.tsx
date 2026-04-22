@@ -34,7 +34,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   if (!cleanDomain || error) {
     return (
-      <div className={`${className} flex items-center justify-center bg-obsidian border border-white/5 ares-cut-sm text-white/40`}>
+      <div className={`${className} flex items-center justify-center bg-obsidian border border-white/5 ares-cut-sm text-white/60`}>
         <Fallback size={Math.max(12, parseInt(className.match(/\d+/)?.[0] || "16") * 0.6)} />
       </div>
     );

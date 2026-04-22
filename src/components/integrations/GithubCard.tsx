@@ -28,7 +28,7 @@ export function GithubCard({
             placeholder="ghp_..."
             value={localSettings["GITHUB_PAT"] || ""}
             onChange={(e) => handleChange("GITHUB_PAT", e.target.value)}
-            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors"
+            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/60 transition-colors"
           />
         </div>
         <div>
@@ -41,7 +41,7 @@ export function GithubCard({
             placeholder={siteConfig.urls.githubOrg}
             value={localSettings["GITHUB_ORG"] || ""}
             onChange={(e) => handleChange("GITHUB_ORG", e.target.value)}
-            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors"
+            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/60 transition-colors"
           />
         </div>
         <div>
@@ -54,7 +54,7 @@ export function GithubCard({
             placeholder="PVT_..."
             value={localSettings["GITHUB_PROJECT_ID"] || ""}
             onChange={(e) => handleChange("GITHUB_PROJECT_ID", e.target.value)}
-            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors"
+            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/60 transition-colors"
           />
         </div>
         <div>
@@ -67,7 +67,7 @@ export function GithubCard({
             placeholder="HMAC signing secret"
             value={localSettings["GITHUB_WEBHOOK_SECRET"] || ""}
             onChange={(e) => handleChange("GITHUB_WEBHOOK_SECRET", e.target.value)}
-            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-colors"
+            className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/60 transition-colors"
           />
         </div>
       </div>

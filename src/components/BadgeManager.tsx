@@ -105,24 +105,24 @@ export default function BadgeManager() {
           <div className="p-6 bg-black/40 border-b border-white/10 space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label htmlFor="badge-id" className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Badge ID (slug)</label>
+                <label htmlFor="badge-id" className="text-xs font-bold text-white/60 uppercase tracking-widest pl-1">Badge ID (slug)</label>
                 <input id="badge-id" type="text" value={newBadgeId} onChange={e => setNewBadgeId(e.target.value)} placeholder="e.g. outreach_mvp" className="w-full bg-ares-gray-dark border border-white/5 ares-cut-sm px-4 py-2.5 text-white focus:outline-none focus:border-ares-gold mt-1" />
               </div>
               <div>
-                <label htmlFor="badge-name" className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Display Name</label>
+                <label htmlFor="badge-name" className="text-xs font-bold text-white/60 uppercase tracking-widest pl-1">Display Name</label>
                 <input id="badge-name" type="text" value={newBadgeName} onChange={e => setNewBadgeName(e.target.value)} placeholder="Outreach MVP" className="w-full bg-ares-gray-dark border border-white/5 ares-cut-sm px-4 py-2.5 text-white focus:outline-none focus:border-ares-gold mt-1" />
               </div>
               <div>
-                <label htmlFor="badge-icon" className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Icon (Lucide Node)</label>
+                <label htmlFor="badge-icon" className="text-xs font-bold text-white/60 uppercase tracking-widest pl-1">Icon (Lucide Node)</label>
                 <input id="badge-icon" type="text" value={newBadgeIcon} onChange={e => setNewBadgeIcon(e.target.value)} placeholder="Award" className="w-full bg-ares-gray-dark border border-white/5 ares-cut-sm px-4 py-2.5 text-white focus:outline-none focus:border-ares-gold mt-1" />
               </div>
               <div>
-                <label htmlFor="badge-color" className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Color Theme (CSS)</label>
+                <label htmlFor="badge-color" className="text-xs font-bold text-white/60 uppercase tracking-widest pl-1">Color Theme (CSS)</label>
                 <input id="badge-color" type="text" value={newBadgeColor} onChange={e => setNewBadgeColor(e.target.value)} placeholder="ares-gold" className="w-full bg-ares-gray-dark border border-white/5 ares-cut-sm px-4 py-2.5 text-white focus:outline-none focus:border-ares-gold mt-1" />
               </div>
             </div>
             <div>
-              <label htmlFor="badge-desc" className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Description</label>
+              <label htmlFor="badge-desc" className="text-xs font-bold text-white/60 uppercase tracking-widest pl-1">Description</label>
               <input id="badge-desc" type="text" value={newBadgeDesc} onChange={e => setNewBadgeDesc(e.target.value)} placeholder="Awarded to members who attain top 3 in outreach hours." className="w-full bg-ares-gray-dark border border-white/5 ares-cut-sm px-4 py-2.5 text-white focus:outline-none focus:border-ares-gold mt-1" />
             </div>
             <button 
@@ -138,9 +138,9 @@ export default function BadgeManager() {
         {/* Existing Badges List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-ares-gray-deep">
           {badgesLoading ? (
-            <p className="text-white/40 text-sm">Loading badges...</p>
+            <p className="text-white/60 text-sm">Loading badges...</p>
           ) : badges.length === 0 ? (
-            <p className="text-white/40 text-sm">No badges defined yet.</p>
+            <p className="text-white/60 text-sm">No badges defined yet.</p>
           ) : (
             badges.map(b => {
               const IconComp = (LucideIcons as unknown as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award;
@@ -151,7 +151,7 @@ export default function BadgeManager() {
                   </div>
                   <div>
                     <h4 className="text-white font-bold">{b.name}</h4>
-                    <p className="text-xs text-white/40 mt-0.5">{b.description || "No description provided."}</p>
+                    <p className="text-xs text-white/60 mt-0.5">{b.description || "No description provided."}</p>
                     <p className="text-[10px] text-white/20 font-mono mt-2">ID: {b.id}</p>
                   </div>
                 </div>
@@ -168,7 +168,7 @@ export default function BadgeManager() {
         </h3>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
-            <label htmlFor="grant-user" className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Target Member</label>
+            <label htmlFor="grant-user" className="text-xs font-bold text-white/60 uppercase tracking-widest pl-1">Target Member</label>
             <select id="grant-user" value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red mt-1">
               <option value="">-- Select Member --</option>
               {users.map(u => (
@@ -177,7 +177,7 @@ export default function BadgeManager() {
             </select>
           </div>
           <div className="flex-1">
-            <label htmlFor="grant-badge" className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Select Badge</label>
+            <label htmlFor="grant-badge" className="text-xs font-bold text-white/60 uppercase tracking-widest pl-1">Select Badge</label>
             <select id="grant-badge" value={selectedBadge} onChange={e => setSelectedBadge(e.target.value)} className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red mt-1">
               <option value="">-- Select Badge --</option>
               {badges.map(b => (

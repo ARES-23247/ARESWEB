@@ -169,14 +169,14 @@ export default function Docs() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-                <Search size={18} className="text-white/40" />
+                <Search size={18} className="text-white/60" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search documentation..."
-                  className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/30"
+                  className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/60"
                 />
-                <kbd className="text-[10px] bg-white/10 text-white/40 px-2 py-0.5 rounded font-mono">ESC</kbd>
+                <kbd className="text-[10px] bg-white/10 text-white/60 px-2 py-0.5 rounded font-mono">ESC</kbd>
               </div>
               {searchResults.length > 0 && (
                 <div className="max-h-80 overflow-y-auto">
@@ -192,13 +192,13 @@ export default function Docs() {
                     >
                       <div className="text-sm font-bold text-white">{r.title}</div>
                       <div className="text-xs text-ares-gold/80 mb-1">{r.category}</div>
-                      <div className="text-xs text-white/40 line-clamp-2">{r.snippet}</div>
+                      <div className="text-xs text-white/60 line-clamp-2">{r.snippet}</div>
                     </button>
                   ))}
                 </div>
               )}
               {searchQuery.length >= 2 && searchResults.length === 0 && (
-                <div className="px-4 py-8 text-center text-white/30 text-sm">No results found.</div>
+                <div className="px-4 py-8 text-center text-white/60 text-sm">No results found.</div>
               )}
             </motion.div>
           </motion.div>
@@ -239,7 +239,7 @@ export default function Docs() {
               transition={{ duration: 0.2 }}
             >
               <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2 text-xs text-white/30">
+                <div className="flex items-center gap-2 text-xs text-white/60">
                   <Link to="/docs" className="flex items-center shadow-lg ares-cut-sm overflow-hidden group">
                     <span className="bg-ares-red px-2 py-0.5 text-[10px] font-heading font-bold uppercase text-white tracking-wider border-r border-white/10">ARES</span>
                     <span className="bg-white/10 text-white font-heading font-medium px-2 py-0.5 text-[10px] uppercase tracking-widest group-hover:bg-white/20 transition-colors">Lib</span>
@@ -298,7 +298,7 @@ export default function Docs() {
               {currentDoc && (
                 <div className="mt-12 pt-6 border-t border-white/8 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 text-xs">
                   <div className="flex flex-col gap-1">
-                    <span className="text-white/30 font-bold uppercase tracking-widest text-[10px]">Document Lifecycle</span>
+                    <span className="text-white/60 font-bold uppercase tracking-widest text-[10px]">Document Lifecycle</span>
                     <span className="text-white/50">
                       {currentDoc.updated_at ? `Last updated: ${new Date(currentDoc.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : 'Not yet updated'}
                     </span>

@@ -257,7 +257,7 @@ adminMediaRouter.post("/syndicate", ensureAdmin, async (c) => {
 
     const config = await getDbSettings(c);
     
-    const imageUrl = `${new URL(c.req.url).origin}/api/media/${key}`;
+    const imageUrl = `${siteConfig.urls.base}/api/media/${key}`;
     const { dispatchPhotoSocials } = await import("../../utils/socialSync");
     
     c.executionCtx.waitUntil(

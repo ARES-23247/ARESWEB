@@ -218,14 +218,15 @@ async function handlePostSave(c: Context<AppEnv>) {
           c.env.DB,
           {
            title: body.title,
-           url: `${new URL(c.req.url).origin}/blog/${slug}`,
+           url: `${siteConfig.urls.base}/blog/${slug}`,
            snippet: snippet || "Read the latest engineering update from ARES 23247!",
            coverImageUrl: body.coverImageUrl || "/gallery_1.png",
-           baseUrl: new URL(c.req.url).origin
+           baseUrl: siteConfig.urls.base
                   },
           socialConfig,
           socialsFilter
         );
+
       } catch (err: unknown) {
         console.error("Social dispatch failed in background:", err);
         await logAuditAction(c, "SYNDICATION_FAILURE", "posts", slug, (err as Error)?.message || String(err));
@@ -376,10 +377,10 @@ postsRouter.post("/:slug/repush", ensureAdmin, async (c) => {
       c.env.DB,
       {
       title: post.title,
-      url: `${new URL(c.req.url).origin}/blog/${slug}`,
+      url: `${siteConfig.urls.base}/blog/${slug}`,
       snippet: extractAstText(post.snippet || "").substring(0, 250) || "Read the latest update from ARES 23247!",
       coverImageUrl: post.thumbnail || "",
-      baseUrl: new URL(c.req.url).origin
+      baseUrl: siteConfig.urls.base
     }, socialConfig, socials);
   } catch (err: unknown) {
     console.error("Post repush failed:", err);

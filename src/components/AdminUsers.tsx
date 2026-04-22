@@ -77,13 +77,13 @@ export default function AdminUsers() {
         <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
           <Shield size={20} className="text-ares-red" /> User Management
         </h2>
-        <span className="text-white/40 text-sm font-bold">{users.length} registered</span>
+        <span className="text-white/60 text-sm font-bold">{users.length} registered</span>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/10 text-[10px] font-bold text-white/40 uppercase tracking-wider">
+            <tr className="border-b border-white/10 text-[10px] font-bold text-white/60 uppercase tracking-wider">
               <th className="text-left py-3 px-2">User</th>
               <th className="text-left py-3 px-2">Email</th>
               <th className="text-left py-3 px-2">Role</th>
@@ -102,7 +102,7 @@ export default function AdminUsers() {
                     <div>
                       <span className="text-sm font-bold text-white block hover:text-ares-red">{user.nickname || user.name || "ARES Member"}</span>
                       {(user.first_name || user.last_name) && (
-                        <span className="text-[10px] uppercase tracking-wider text-white/30 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-white/60 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
                       )}
                     </div>
                   </a>
@@ -121,7 +121,7 @@ export default function AdminUsers() {
                     >
                       {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
                     </select>
-                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" />
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" />
                   </div>
                 </td>
                 <td className="py-3 px-2">
@@ -132,15 +132,15 @@ export default function AdminUsers() {
                       className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
                         user.member_type === "alumni" ? "border-ares-gold/50 text-ares-gold" :
                         ["parent", "coach", "mentor", "sponsor"].includes(user.member_type || "") ? "border-ares-gold/30 text-ares-gold/70" :
-                        "border-white/20 text-white/40"
+                        "border-white/20 text-white/60"
                       }`}
                     >
                       {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" />
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" />
                   </div>
                 </td>
-                <td className="py-3 px-2 text-xs text-white/40">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
+                <td className="py-3 px-2 text-xs text-white/60">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
                 <td className="py-3 px-2 text-right">
                   <button onClick={() => setEditUserId(user.id)}
                     title="Edit Member Profile"
@@ -165,7 +165,7 @@ export default function AdminUsers() {
             <div className="sticky top-0 right-0 z-10 flex justify-end p-4 pointer-events-none">
               <button 
                 onClick={() => setEditUserId(null)} 
-                className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/40 hover:text-white pointer-events-auto shadow-xl"
+                className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/60 hover:text-white pointer-events-auto shadow-xl"
               >
                 <X size={20} />
               </button>
@@ -176,7 +176,7 @@ export default function AdminUsers() {
                   <Shield size={20} />
                   Admin Override: Managing Profile
                 </h3>
-                <p className="text-white/40 text-sm">You are editing another user&apos;s personal profile data.</p>
+                <p className="text-white/60 text-sm">You are editing another user&apos;s personal profile data.</p>
               </div>
               <ProfileEditor adminEditUserId={editUserId} />
             </div>

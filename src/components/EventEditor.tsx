@@ -60,7 +60,9 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           <input
             id="event-title" type="text"
             value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
+            aria-invalid={!!errorMsg && !form.title}
+            aria-describedby={errorMsg ? "event-error-msg" : undefined}
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
             placeholder="State Championship"
           />
         </div>
@@ -82,7 +84,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             id="event-category"
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
           >
             <option value="internal">ARES Practices</option>
             <option value="outreach">ARES Outreach &amp; Volunteer</option>
@@ -92,14 +94,14 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         <div className="flex-1">
           <label htmlFor="event-location" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
             <span>Location</span>
-            <span className="text-[10px] text-white/40 font-normal normal-case">Pick from registry</span>
+            <span className="text-[10px] text-white/60 font-normal normal-case">Pick from registry</span>
           </label>
           <div className="relative group">
             <select
               id="event-location"
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none pr-10"
+              className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none pr-10"
             >
               <option value="">-- Select a Venue --</option>
               {locations.map(l => (
@@ -107,7 +109,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
               ))}
               <option value="CUSTOM">--- Manual Entry / New Venue ---</option>
             </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30 group-hover:text-ares-red transition-colors">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/60 group-hover:text-ares-red transition-colors">
               <MapPin size={16} />
             </div>
           </div>
@@ -122,7 +124,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
                    if (e.target.value.trim()) setForm({...form, location: e.target.value});
                  }}
                />
-               <p className="text-[10px] text-white/40 mt-1 italic">Tip: Use the &apos;Location Manager&apos; tab to permanently save venues.</p>
+               <p className="text-[10px] text-white/60 mt-1 italic">Tip: Use the &apos;Location Manager&apos; tab to permanently save venues.</p>
              </div>
           )}
         </div>
@@ -134,7 +136,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           <input
             id="event-start" type="datetime-local"
             value={form.dateStart} onChange={(e) => setForm({ ...form, dateStart: e.target.value })}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
           />
         </div>
         <div className="flex-1">
@@ -142,7 +144,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           <input
             id="event-end" type="datetime-local"
             value={form.dateEnd} onChange={(e) => setForm({ ...form, dateEnd: e.target.value })}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
           />
         </div>
         <div className="flex-1">
@@ -150,7 +152,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           <input
             id="event-published-at" type="datetime-local"
             value={form.publishedAt} onChange={(e) => setForm({ ...form, publishedAt: e.target.value })}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
           />
         </div>
       </div>
@@ -174,7 +176,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             <div className="text-ares-danger mt-0.5">⚠️</div>
             <div>
               <h4 className="text-white font-bold text-xs tracking-wide uppercase">Critical Error</h4>
-              <p className="text-white text-sm mt-1 font-bold">{errorMsg}</p>
+              <p id="event-error-msg" className="text-white text-sm mt-1 font-bold">{errorMsg}</p>
             </div>
           </div>
         )}
