@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { siteConfig } from "../site.config";
 import { Link } from "react-router-dom";
+import { Github, Mail } from "lucide-react";
 
 export default function BugReport() {
   const [title, setTitle] = useState("");
@@ -110,7 +111,7 @@ export default function BugReport() {
 
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-black/40 rounded-full flex items-center justify-center shrink-0 border border-white/10 text-white/60 text-xl">
-                  <i className="fab fa-github"></i>
+                  <Github className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2 tracking-wide uppercase">GitHub Account Required</h3>
@@ -122,7 +123,7 @@ export default function BugReport() {
               
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-ares-cyan/10 rounded-full flex items-center justify-center shrink-0 border border-ares-cyan/20 text-ares-cyan text-xl">
-                  <i className="fas fa-envelope"></i>
+                  <Mail className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2 tracking-wide uppercase">No Account? No Problem</h3>

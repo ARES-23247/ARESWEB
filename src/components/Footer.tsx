@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { GreekMeander } from "./GreekMeander";
 import { siteConfig } from "../site.config";
+import { Instagram, Youtube, Mail } from "lucide-react";
 
 export default function Footer() {
 
@@ -50,16 +51,16 @@ export default function Footer() {
           <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">Connect</h4>
           <div className="flex flex-wrap gap-4 mb-8">
             <a href="https://instagram.com/ares23247" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-red transition-colors text-white" aria-label="Instagram">
-              <i className="fab fa-instagram"></i>
+              <Instagram className="w-5 h-5" />
             </a>
             <a href="https://bsky.app/profile/ares23247.bsky.social" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-brand-bluesky transition-colors text-white" aria-label="Bluesky">
               <svg className="w-5 h-5 fill-current" viewBox="0 0 512 512"><path d="M111.8 62.2C170.2 105.9 233 194.7 256 242.4c23-47.6 85.8-136.4 144.2-180.2c42.1-31.6 110.3-56 110.3 21.8c0 15.5-8.9 130.5-14.1 149.2C478.2 298.9 416 314.3 353.1 304.9c47.2 32.2 53.6 81.9 5.4 108.8C315.6 437.4 256 376 256 376s-59.6 61.4-102.5 37.7c-48.2-26.9-41.8-76.6 5.4-108.8c-62.9 9.4-125.1-6-143.3-71.7C10.5 214.6 1.6 99.5 1.6 84C1.6 6.2 69.9 30.6 111.8 62.2z"/></svg>
             </a>
             <a href="https://www.youtube.com/@ARESFTC" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-red transition-colors text-white" aria-label="YouTube">
-              <i className="fab fa-youtube"></i>
+              <Youtube className="w-5 h-5" />
             </a>
             <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Email ${siteConfig.team.fullName}`} className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-bronze transition-colors text-white">
-              <i className="fas fa-envelope" aria-hidden="true"></i>
+              <Mail className="w-5 h-5" aria-hidden="true" />
             </a>
           </div>
           <p className="text-marble/70 text-xs font-bold uppercase tracking-widest">ARES HQ</p>
