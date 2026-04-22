@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { mockExecutionContext } from "../../../src/test/utils";
 import commentsRouter from "./comments";
-import { createMockComment } from "@/test/factories/userFactory";
+import { createMockComment } from "../../../src/test/factories/userFactory";
 
 // Mock Zulip and Notifications
 vi.mock("../../utils/zulipSync", () => ({
@@ -61,7 +61,7 @@ describe("Hono Backend - /comments Router", () => {
       body: JSON.stringify({ content: "New comment content" }),
       headers: { "Content-Type": "application/json" },
     });
-    const res = await commentsRouter.request(req, undefined, env, executionCtx);
+    const res = await commentsRouter.request(req, undefined, env, executionCtx as any);
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ success: true });
@@ -88,7 +88,7 @@ describe("Hono Backend - /comments Router", () => {
       body: JSON.stringify({ content: "Updated content" }),
       headers: { "Content-Type": "application/json" },
     });
-    const res = await commentsRouter.request(req, undefined, env, executionCtx);
+    const res = await commentsRouter.request(req, undefined, env, executionCtx as any);
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ success: true });
@@ -113,7 +113,7 @@ describe("Hono Backend - /comments Router", () => {
     env.DB.run.mockResolvedValue({ success: true });
 
     const req = new Request("http://localhost/1", { method: "DELETE" });
-    const res = await commentsRouter.request(req, undefined, env, executionCtx);
+    const res = await commentsRouter.request(req, undefined, env, executionCtx as any);
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ success: true });

@@ -94,6 +94,31 @@ profilesRouter.put("/avatar", async (c) => {
 // ── GET /team-roster — about page roster ──────────────────────────────
 profilesRouter.get("/team-roster", async (c) => {
   try {
+    const q = c.req.query("q") || "";
+    
+    if (q) {
+      // FTS5 Search Route
+      const { results } = await c.env.DB.prepare(
+        `SELECT p.user_id, p.nickname, p.bio, p.pronouns, p.subteams, p.member_type,
+                p.favorite_first_thing, p.fun_fact, p.show_email, p.contact_email,
+                p.favorite_robot_mechanism, p.pre_match_superstition, p.leadership_role,
+                p.rookie_year, p.colleges, p.employers,
+                u.image as avatar, u.name
+         FROM user_profiles_fts f
+         JOIN user_profiles p ON f.user_id = p.user_id
+         JOIN user u ON p.user_id = u.id
+         WHERE p.show_on_about = 1 AND u.role NOT IN ('unverified') AND f.user_profiles_fts MATCH ?
+         ORDER BY f.rank`
+      ).bind(q).all();
+
+      const sanitized = (results || []).map((r: Record<string, unknown>) => {
+        const memberType = String(r.member_type || "student");
+        return sanitizeProfileForPublic(r, memberType);
+      });
+
+      return c.json({ members: sanitized });
+    }
+
     const { results } = await c.env.DB.prepare(
       `SELECT p.user_id, p.nickname, p.bio, p.pronouns, p.subteams, p.member_type,
               p.favorite_first_thing, p.fun_fact, p.show_email, p.contact_email,

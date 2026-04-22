@@ -20,6 +20,7 @@ export function useAdminSettings() {
           if (config.FACEBOOK_ACCESS_TOKEN) available.push("facebook");
           if (config.TWITTER_ACCESS_TOKEN) available.push("twitter");
           if (config.INSTAGRAM_ACCESS_TOKEN) available.push("instagram");
+          if (config.ZULIP_BOT_EMAIL && config.ZULIP_API_KEY) available.push("zulip");
           setAvailableSocials(available);
         }
       } catch (err) {

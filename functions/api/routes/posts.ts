@@ -44,6 +44,25 @@ postsRouter.get("/export-all", ensureAdmin, async (c) => {
 postsRouter.get("/", async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 10, 100);
+    const q = c.req.query("q") || "";
+
+    if (q) {
+      // FTS5 Search Route (Using JOIN rule for metadata)
+      const { results } = await c.env.DB.prepare(
+        `SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.cf_email,
+                uP.nickname as author_nickname, u.image as author_avatar
+         FROM posts_fts f
+         JOIN posts p ON f.slug = p.slug
+         LEFT JOIN user u ON p.cf_email = u.email
+         LEFT JOIN user_profiles uP ON u.id = uP.user_id
+         WHERE p.is_deleted = 0 AND p.status = 'published' AND (p.published_at IS NULL OR datetime(p.published_at) <= datetime('now')) 
+         AND f.posts_fts MATCH ?
+         ORDER BY f.rank LIMIT ? OFFSET ?`
+      ).bind(q, limit, offset).all();
+      return c.json({ posts: results ?? [] });
+    }
+
+    // Standard Route
     const { results } = await c.env.DB.prepare(
       `SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.cf_email,
               uP.nickname as author_nickname, u.image as author_avatar

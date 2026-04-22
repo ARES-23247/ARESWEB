@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { mockExecutionContext } from "../../../src/test/utils";
 import authRouter from "./auth";
 import * as shared from "./_shared";
 import * as authUtils from "../../utils/auth";
@@ -27,7 +27,7 @@ describe("Auth Router", () => {
       vi.mocked(shared.getSessionUser).mockResolvedValue(mockUser as any);
 
       const req = new Request("http://localhost/auth-check");
-      const res = await authRouter.request(req, {}, { DB: {} } as any);
+      const res = await authRouter.request(req, {}, { DB: {} } as any, mockExecutionContext);
 
       expect(res.status).toBe(200);
       const body = await res.json() as any;
@@ -39,7 +39,7 @@ describe("Auth Router", () => {
       vi.mocked(shared.getSessionUser).mockResolvedValue(null);
 
       const req = new Request("http://localhost/auth-check");
-      const res = await authRouter.request(req, {}, { DB: {} } as any);
+      const res = await authRouter.request(req, {}, { DB: {} } as any, mockExecutionContext);
 
       expect(res.status).toBe(401);
       const body = await res.json() as any;
@@ -55,7 +55,7 @@ describe("Auth Router", () => {
       } as any);
 
       const req = new Request("http://localhost/signin", { method: "POST" });
-      const res = await authRouter.request(req, {}, { DB: {}, BETTER_AUTH_SECRET: "test" } as any);
+      const res = await authRouter.request(req, {}, { DB: {}, BETTER_AUTH_SECRET: "test" } as any, mockExecutionContext);
 
       expect(res.status).toBe(200);
       expect(await res.text()).toBe("auth response");
@@ -70,7 +70,7 @@ describe("Auth Router", () => {
 
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const req = new Request("http://localhost/error");
-      const res = await authRouter.request(req, {}, { DB: {}, ENVIRONMENT: "development" } as any);
+      const res = await authRouter.request(req, {}, { DB: {}, ENVIRONMENT: "development" } as any, mockExecutionContext);
 
       expect(res.status).toBe(500);
       const body = await res.json() as any;
@@ -88,7 +88,7 @@ describe("Auth Router", () => {
   
         const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
         const req = new Request("http://localhost/error");
-        const res = await authRouter.request(req, {}, { DB: {}, ENVIRONMENT: "production" } as any);
+        const res = await authRouter.request(req, {}, { DB: {}, ENVIRONMENT: "production" } as any, mockExecutionContext);
   
         expect(res.status).toBe(500);
         const body = await res.json() as any;
@@ -105,7 +105,7 @@ describe("Auth Router", () => {
 
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const req = new Request("http://localhost/error");
-      const res = await authRouter.request(req, {}, { DB: {}, ENVIRONMENT: "development" } as any);
+      const res = await authRouter.request(req, {}, { DB: {}, ENVIRONMENT: "development" } as any, mockExecutionContext);
 
       expect(res.status).toBe(500);
       const body = await res.json() as any;

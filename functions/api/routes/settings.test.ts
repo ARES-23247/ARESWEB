@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { mockExecutionContext } from "../../../src/test/utils";
 import settingsRouter from "./settings";
 
 describe("Settings Router", () => {
@@ -136,7 +136,7 @@ describe("Settings Router", () => {
       expect(body.success).toBe(true);
       expect(body.backup).toBeDefined();
       expect(body.backup.posts).toEqual([{ id: 1, data: "test" }]);
-      expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining("SELECT * FROM \"posts\""));
+      expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM "posts"'));
     });
 
     it("should handle missing tables gracefully", async () => {

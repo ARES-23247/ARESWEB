@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { mockExecutionContext } from "../../../src/test/utils";
 import badgesRouter from "./badges";
-import { createMockBadge } from "@/test/factories/userFactory";
+import { createMockBadge } from "../../../src/test/factories/userFactory";
 
 // Mock Zulip sync
 vi.mock("../../utils/zulipSync", () => ({
@@ -92,7 +92,7 @@ describe("Hono Backend - /badges Router", () => {
       body: JSON.stringify({ badge_id: "pro-badge" }),
       headers: { "Content-Type": "application/json" },
     });
-    const res = await badgesRouter.request(req, undefined, env, executionCtx);
+    const res = await badgesRouter.request(req, undefined, env, executionCtx as any);
 
     expect(res.status).toBe(200);
     expect(env.DB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO user_badges"));

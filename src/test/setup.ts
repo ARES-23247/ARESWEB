@@ -11,6 +11,8 @@ afterEach(() => server.resetHandlers());
 // Close server after all tests
 afterAll(() => server.close());
 
+export { server };
+
 // Mock Cloudflare-specific globals
 vi.stubGlobal("caches", {
   default: {

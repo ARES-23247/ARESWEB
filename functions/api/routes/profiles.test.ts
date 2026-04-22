@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { mockExecutionContext } from "../../../src/test/utils";
 import profilesRouter from "./profiles";
-import { createMockProfile } from "@/test/factories/userFactory";
+import { createMockProfile } from "../../../src/test/factories/userFactory";
 
 // Mock crypto to avoid Web Crypto API issues in test env
 vi.mock("../../utils/crypto", () => ({

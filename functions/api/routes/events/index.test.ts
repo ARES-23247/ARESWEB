@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { mockExecutionContext } from "../../../src/test/utils";
 import eventsRouter from "./index";
 
 describe("Hono Backend - /events Router", () => {

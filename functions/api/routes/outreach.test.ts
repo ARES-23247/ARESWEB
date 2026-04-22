@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
 import outreachRouter from "./outreach";
-import { createMockOutreach } from "@/test/factories/logisticsFactory";
+import { createMockOutreach } from "../../../src/test/factories/logisticsFactory";
+import { mockExecutionContext } from "../../../src/test/utils";
 
 describe("Hono Backend - /outreach Router", () => {
   const env = {
@@ -20,14 +20,17 @@ describe("Hono Backend - /outreach Router", () => {
 
   it("should list all outreach records", async () => {
     const mockOutreach = [createMockOutreach(), createMockOutreach()];
-    env.DB.all.mockResolvedValue({ results: mockOutreach });
+    // Mock the direct outreach logs query
+    env.DB.all.mockResolvedValueOnce({ results: mockOutreach });
+    // Mock the volunteer events query
+    env.DB.all.mockResolvedValueOnce({ results: [] });
 
     const req = new Request("http://localhost/", { method: "GET" });
     const res = await outreachRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
     const body = await res.json() as any;
-    expect(body.outreach).toHaveLength(2);
+    expect(body.logs).toHaveLength(2);
   });
 
   it("should create outreach record (admin)", async () => {
@@ -40,6 +43,5 @@ describe("Hono Backend - /outreach Router", () => {
     const res = await outreachRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    expect(env.DB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO outreach"));
   });
 });

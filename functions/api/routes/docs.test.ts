@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { mockExecutionContext } from "../../../src/test/utils";
 import docsRouter from "./docs";
-import { createMockDoc } from "@/test/factories/contentFactory";
+import { createMockDoc } from "../../../src/test/factories/contentFactory";
 
 // Mock external utilities
 vi.mock("../../utils/zulipSync", () => ({
@@ -53,7 +53,7 @@ describe("Hono Backend - /docs Router", () => {
 
   it("POST /:slug/feedback - submit feedback", async () => {
     // Mock fetch for Turnstile
-    global.fetch = vi.fn().mockResolvedValue({
+    (globalThis.fetch as any) = vi.fn().mockResolvedValue({
       json: () => Promise.resolve({ success: true }),
     });
 

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { mockExecutionContext } from "@/test/utils";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mockExecutionContext } from "../../../src/test/utils";
 import usersRouter from "./users";
-import { createMockUser } from "@/test/factories/userFactory";
+import { createMockUser } from "../../../src/test/factories/userFactory";
 
 describe("Hono Backend - /users Router", () => {
   const env = {

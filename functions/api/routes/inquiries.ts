@@ -53,7 +53,7 @@ const inquirySchema = z.object({
   type: z.enum(["sponsor", "join", "outreach", "support"]),
   name: z.string().min(1).max(MAX_INPUT_LENGTHS.name),
   email: z.string().email().max(MAX_INPUT_LENGTHS.email),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   turnstileToken: z.string().optional()
 });
 
