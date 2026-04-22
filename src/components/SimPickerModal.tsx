@@ -85,7 +85,6 @@ export default function SimPickerModal({
            <input
              id="simSearch"
              type="text"
-             autoFocus
              placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
              value={searchQuery}
              onChange={e => setSearchQuery(e.target.value)}

@@ -65,10 +65,9 @@ mediaRouter.get("/", async (c) => {
     const publicKeys = new Set(results.map(r => r.key));
 
     const merged = objects.objects
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter(obj => publicKeys.has((obj as any).key))
+      .filter(obj => publicKeys.has((obj as { key: string }).key))
       .map(obj => {
-        const key = (obj as any).key;
+        const key = (obj as { key: string }).key;
         return {
           ...obj,
           url: `/api/media/${key}`,
@@ -109,10 +108,8 @@ adminMediaRouter.get("/", ensureAdmin, async (c) => {
 
     const merged = objects.objects.map(obj => ({
       ...obj,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      url: `/api/media/${(obj as any).key}`,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...metaMap.get((obj as any).key) || { folder: "Uncategorized", tags: "" }
+      url: `/api/media/${(obj as { key: string }).key}`,
+      ...metaMap.get((obj as { key: string }).key) || { folder: "Uncategorized", tags: "" }
     }));
 
     return c.json({ media: merged });
