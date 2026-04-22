@@ -19,7 +19,7 @@ export default function Navbar() {
   const isSignedIn = !isPending && session?.authenticated;
   const userImage = session?.user?.image;
    
-  const { role, canSeeInquiries, isAuthorized } = permissions;
+  const { canSeeInquiries, isAuthorized } = permissions;
   
   const [pendingInquiries, setPendingInquiries] = useState<{ id: string, name: string, type: string }[]>([]);
   const [pendingPosts, setPendingPosts] = useState<{ slug: string, status: string, title: string, author_nickname?: string }[]>([]);
@@ -146,7 +146,7 @@ export default function Navbar() {
           }
         }).catch(() => {});
     }
-  }, [canSeeInquiries]);
+  }, [canSeeInquiries, isAuthorized]);
 
   return (
     <nav role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible rounded-bl-xl rounded-br-[2.5rem] border-t-4 border-ares-bronze">
