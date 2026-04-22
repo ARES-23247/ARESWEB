@@ -149,17 +149,17 @@ export default function Navbar() {
   }, [canSeeInquiries, isAuthorized]);
 
   return (
-    <nav role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible rounded-bl-xl rounded-br-[2.5rem] border-t-4 border-ares-bronze">
+    <nav role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible ares-cut-lg rounded-t-none border-t-4 border-ares-bronze">
       <a 
         href="#main-content" 
         className="sr-only focus:not-sr-only focus:absolute focus:top-24 focus:left-6 bg-ares-red text-white px-6 py-3 ares-cut-sm font-bold z-[100] shadow-2xl border border-white/20 transition-all"
       >
         Skip to Main Content
       </a>
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-bl-xl rounded-br-[2.5rem]">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden ares-cut-lg rounded-t-none">
         <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative z-10">
         <button 
           onClick={() => navigate("/")} 
           className="text-2xl font-bold tracking-tighter text-white flex items-center gap-2 font-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
