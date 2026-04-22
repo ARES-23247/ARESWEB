@@ -189,7 +189,6 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
           <CoverAssetPicker 
             coverImage={coverImageUrl}
             isUploading={isUploadingCover}
-            onUploadClick={() => document.getElementById('cover-upload-input-Cover-Asset')?.click()}
             onLibraryClick={() => setIsCoverPickerOpen(true)}
             onUrlChange={setCoverImageUrl}
             onFileChange={async (file) => {

@@ -74,4 +74,33 @@ describe("Hono Backend - /media Router", () => {
 
     expect(res.status).toBe(200);
   });
+
+  it("should upload an image and generate AI alt text", async () => {
+    const mockAi = {
+      run: vi.fn().mockResolvedValue({ description: "A cool robot" }),
+    };
+    const localEnv = {
+      ...env,
+      AI: mockAi,
+    };
+
+    const formData = new FormData();
+    const file = new File(["dummy content"], "robot.png", { type: "image/png" });
+    formData.append("file", file);
+    formData.append("folder", "Gallery");
+
+    const req = new Request("http://localhost/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await adminMediaRouter.request(req, {}, localEnv, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+    expect(body.altText).toBe("A cool robot");
+    expect(mockR2.put).toHaveBeenCalled();
+    expect(mockAi.run).toHaveBeenCalledWith("@cf/llava-1.5-7b-hf", expect.anything());
+  });
 });

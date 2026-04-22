@@ -70,7 +70,6 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             isUploading={isUploading}
             onUrlChange={(url) => setForm({ ...form, coverImage: url })}
             onLibraryClick={() => setIsCoverPickerOpen(true)}
-            onUploadClick={() => document.getElementById('event-img-upload')?.click()}
             onFileChange={handleFileUpload}
           />
         </div>
