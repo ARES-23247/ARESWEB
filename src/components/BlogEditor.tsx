@@ -216,13 +216,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
         </div>
       </div>
 
-      {/* Social Syndication Controls */}
-      <SocialSyndicationGrid 
-        availableSocials={availableSocials}
-        socials={socials}
-        onChange={(platform, val) => setSocials(prev => ({ ...prev, [platform]: val }))}
-        isEdit={!!editSlug}
-      />
+
 
       {/* ===== Unified Rich Editor ===== */}
       <RichEditorToolbar editor={editor} documentTitle={title} />
@@ -248,7 +242,15 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
         updateText="UPDATE ENTRY"
         publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY"}
         userRole={userRole}
-        roundedClass="rounded-full"
+        roundedClass="ares-cut"
+        extraControls={
+          <SocialSyndicationGrid 
+            availableSocials={availableSocials}
+            socials={socials}
+            onChange={(platform, val) => setSocials(prev => ({ ...prev, [platform]: val }))}
+            isEdit={!!editSlug}
+          />
+        }
       />
     </div>
   );

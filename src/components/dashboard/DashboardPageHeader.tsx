@@ -21,7 +21,7 @@ export default function DashboardPageHeader({
         <h2 className={`text-2xl font-black text-white flex items-center gap-3 ${italicTitle ? 'italic' : ''}`}>
           {icon} {title}
         </h2>
-        <p className="text-zinc-500 text-sm mt-1">{subtitle}</p>
+        <p className="text-marble/50 text-sm mt-1">{subtitle}</p>
       </div>
       {action && (
         <div className="mt-4 md:mt-0">

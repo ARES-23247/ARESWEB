@@ -281,7 +281,7 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
           updateText="UPDATE DOC"
           publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH DOC"}
           userRole={userRole}
-          roundedClass="ares-cut-sm"
+          roundedClass="ares-cut"
         />
       </div>
     </div>

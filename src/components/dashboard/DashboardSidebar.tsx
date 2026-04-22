@@ -199,10 +199,10 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6">Content Hub</h4>
+              <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Content Hub</h4>
               <div className="space-y-1 px-3">
-                <div className="flex items-center gap-3 px-4 py-2 mt-1 mb-1 text-[11px] font-black uppercase tracking-wider text-zinc-500">
-                  <Folders size={14} className="text-zinc-600" /> Database Manager
+                <div className="flex items-center gap-3 px-4 py-2 mt-1 mb-1 text-[11px] font-black uppercase tracking-wider text-marble/40">
+                  <Folders size={14} className="text-marble/30" /> Database Manager
                 </div>
                 <NavButton tab="manage_blog" label="1. Blogs / News" sub={true} currentPath={location.pathname} pendingCount={pendingPostsCount} />
                 <NavButton tab="manage_event" label="2. Calendar Events" sub={true} currentPath={location.pathname} pendingCount={pendingEventsCount} />
@@ -216,7 +216,7 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6">Operations</h4>
+              <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Operations</h4>
               <div className="space-y-1 px-3">
                 {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} pendingCount={pendingInquiriesCount} />}
                 <NavButton tab="outreach" icon={Target} label="Outreach Tracker" currentPath={location.pathname} />

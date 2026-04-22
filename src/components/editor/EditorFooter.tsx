@@ -13,6 +13,7 @@ interface EditorFooterProps {
   updateText?: string;
   userRole?: string | unknown;
   roundedClass?: string;
+  extraControls?: React.ReactNode;
 }
 
 export default function EditorFooter({
@@ -27,12 +28,16 @@ export default function EditorFooter({
   publishText = "PUBLISH",
   updateText = "UPDATE",
   userRole,
-  roundedClass = "rounded-full" // Use "ares-cut-sm" for docs/events
+  roundedClass = "rounded-full", // Use "ares-cut-sm" for docs/events
+  extraControls
 }: EditorFooterProps) {
   return (
-    <div className="flex items-center justify-between mt-6 pt-6 border-t border-white/10">
-      <span className="text-ares-red text-sm font-medium">{errorMsg}</span>
-      <div className="flex gap-4">
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-6 pt-6 border-t border-white/10">
+      <div className="flex flex-col gap-2">
+        <span className="text-ares-red text-sm font-medium">{errorMsg}</span>
+        {extraControls && <div>{extraControls}</div>}
+      </div>
+      <div className="flex flex-wrap gap-4 items-center justify-end">
         {isEditing && onDelete && (
           <button
             onClick={onDelete}

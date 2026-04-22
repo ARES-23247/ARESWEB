@@ -163,12 +163,6 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         onFileChange={handleFileUpload}
       />
 
-      <SocialSyndicationGrid 
-        availableSocials={availableSocials}
-        socials={socials}
-        onChange={(platform, val) => setSocials(prev => ({ ...prev, [platform]: val }))}
-        isEdit={!!editId}
-      />
 
       <div className="mt-6 flex flex-col gap-4">
         {errorMsg && (
@@ -212,7 +206,15 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           updateText="UPDATE EVENT"
           publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH EVENT"}
           userRole={userRole}
-          roundedClass="ares-cut-sm"
+          roundedClass="ares-cut"
+          extraControls={
+            <SocialSyndicationGrid 
+              availableSocials={availableSocials}
+              socials={socials}
+              onChange={(platform, val) => setSocials(prev => ({ ...prev, [platform]: val }))}
+              isEdit={!!editId}
+            />
+          }
         />
       </div>
 

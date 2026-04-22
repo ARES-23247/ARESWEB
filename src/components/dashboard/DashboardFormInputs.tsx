@@ -21,7 +21,7 @@ export function DashboardInput({
 
   return (
     <div className={`space-y-1 ${fullWidth ? "md:col-span-2" : ""}`}>
-      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-marble/50">
         {label}
       </label>
       <input
@@ -47,7 +47,7 @@ export function DashboardTextarea({
 
   return (
     <div className={`space-y-1 ${fullWidth ? "lg:col-span-3" : ""}`}>
-      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-marble/50">
         {label}
       </label>
       <textarea
