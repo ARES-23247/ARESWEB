@@ -33,7 +33,7 @@ export interface EventData {
   published_at?: string;
 }
 
-export function useEventEditor(editId: string | undefined, editor: Editor | null) {
+export function useEventEditor(editId: string | undefined, editor: Editor | null, userRole?: string | unknown) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();
@@ -152,6 +152,12 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
             category: "internal", isPotluck: false, isVolunteer: false, publishedAt: "" 
           });
           if (editor) editor.commands.clearContent();
+        }
+
+        // Redirect if it's a draft or if the user is an author
+        // We use a small timeout to let the success message be seen or just navigate immediately
+        if (mutation.variables?.isDraft || userRole === "author") {
+          navigate("/dashboard");
         }
       } else {
         setErrorMsg(data.error || "Failed to publish event");

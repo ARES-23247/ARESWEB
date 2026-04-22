@@ -41,7 +41,7 @@ export default function AnalyticsDashboard() {
     doc: <BarChart3 className="text-ares-cyan" size={20} />,
     blog: <TrendingUp className="text-ares-gold" size={20} />,
     event: <Users className="text-ares-red" size={20} />,
-    system: <Clock className="text-zinc-400" size={20} />,
+    system: <Clock className="text-marble/60" size={20} />,
   };
 
   return (
@@ -71,13 +71,13 @@ export default function AnalyticsDashboard() {
             {data?.topPages.map((page, idx) => (
               <div key={page.path} className="flex items-center justify-between group">
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <span className="text-xs font-mono text-zinc-600 w-4">0{idx + 1}</span>
+                  <span className="text-xs font-mono text-marble/40 w-4">0{idx + 1}</span>
                   <div className="flex flex-col truncate">
-                    <Link to={page.path} className="text-sm text-zinc-300 hover:text-ares-gold transition-colors truncate flex items-center gap-1">
+                    <Link to={page.path} className="text-sm text-marble/70 hover:text-ares-gold transition-colors truncate flex items-center gap-1">
                       {page.path}
                       <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
-                    <span className="text-[10px] uppercase text-zinc-600 font-bold tracking-tighter">{page.category}</span>
+                    <span className="text-[10px] uppercase text-marble/40 font-bold tracking-tighter">{page.category}</span>
                   </div>
                 </div>
                 <div className="text-sm font-black text-white bg-white/5 px-2 py-1 ares-cut-sm">{page.views}</div>
@@ -97,13 +97,13 @@ export default function AnalyticsDashboard() {
               <div key={idx} className="flex flex-col gap-1 border-l border-white/5 pl-4 py-1 relative">
                 <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-ares-red shadow-[0_0_8px_rgba(192,0,0,0.5)]" />
                 <div className="flex justify-between items-start">
-                  <span className="text-xs text-zinc-200 font-medium truncate max-w-[200px]">{view.path}</span>
-                  <span className="text-[10px] text-zinc-600 font-mono">
+                  <span className="text-xs text-marble/80 font-medium truncate max-w-[200px]">{view.path}</span>
+                  <span className="text-[10px] text-marble/40 font-mono">
                     {new Date(view.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-[9px] text-zinc-600 uppercase font-bold tracking-widest">
-                  <span className={view.category === 'doc' ? 'text-ares-cyan' : view.category === 'blog' ? 'text-ares-gold' : 'text-zinc-500'}>
+                <div className="flex items-center gap-2 text-[9px] text-marble/40 uppercase font-bold tracking-widest">
+                  <span className={view.category === 'doc' ? 'text-ares-cyan' : view.category === 'blog' ? 'text-ares-gold' : 'text-marble/50'}>
                     {view.category}
                   </span>
                   <span>&middot;</span>

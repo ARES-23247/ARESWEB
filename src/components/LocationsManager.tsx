@@ -126,16 +126,16 @@ export default function LocationsManager() {
           icon={<MapPin className="text-ares-red" />}
         />
       </div>
-      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 ares-cut-sm shadow-2xl p-6 relative">
+      <div className="w-full max-w-4xl bg-obsidian border border-white/10 ares-cut-sm shadow-2xl p-6 relative">
 
         {!isAdding ? (
           <>
             <div className="flex gap-4 mb-6">
               <div className="relative flex-1">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/50" />
                 <input 
                   type="text" 
-                  className="w-full bg-zinc-900 border border-zinc-800 ares-cut-sm py-2 pl-10 pr-4 text-white focus:border-ares-red focus:outline-none"
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm py-2 pl-10 pr-4 text-white focus:border-ares-red focus:outline-none"
                   placeholder="Search registered event locations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -149,68 +149,68 @@ export default function LocationsManager() {
               </button>
             </div>
 
-            {isLoading ? <div className="text-center p-8 text-zinc-500 animate-pulse">Loading venues...</div> : (
+            {isLoading ? <div className="text-center p-8 text-marble/50 animate-pulse">Loading venues...</div> : (
               <div className="flex flex-col gap-3">
                 {filtered.map(l => (
-                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.is_deleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80'}`}>
+                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.is_deleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-white/10 bg-obsidian/50 hover:bg-white/5'}`}>
                     <div>
                       <h4 className={`font-bold ${l.is_deleted ? 'text-ares-danger-soft line-through' : 'text-white'}`}>{l.name}</h4>
-                      <p className="text-sm text-zinc-400 mt-1 flex items-center gap-2">
+                      <p className="text-sm text-marble/60 mt-1 flex items-center gap-2">
                         <MapPin size={14} /> {l.address}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {l.is_deleted ? (
-                        <button onClick={() => restoreMut.mutate(l)} className="p-2 text-zinc-400 hover:text-emerald-400 transition-colors bg-zinc-900 ares-cut-sm">RESTORE</button>
+                        <button onClick={() => restoreMut.mutate(l)} className="p-2 text-marble/60 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm">RESTORE</button>
                       ) : (
                         <>
-                          <button onClick={() => handleEdit(l)} className="p-2 text-zinc-400 hover:text-ares-cyan transition-colors bg-zinc-900 ares-cut-sm"><Edit3 size={16} /></button>
-                          <button onClick={() => deleteMut.mutate(l.id)} className="p-2 text-zinc-400 hover:text-ares-red transition-colors bg-zinc-900 ares-cut-sm"><Trash2 size={16} /></button>
+                          <button onClick={() => handleEdit(l)} className="p-2 text-marble/60 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"><Edit3 size={16} /></button>
+                          <button onClick={() => deleteMut.mutate(l.id)} className="p-2 text-marble/60 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
                         </>
                       )}
                     </div>
                   </div>
                 ))}
-                {filtered.length === 0 && <div className="text-center p-8 text-zinc-500">No verified locations found.</div>}
+                {filtered.length === 0 && <div className="text-center p-8 text-marble/50">No verified locations found.</div>}
               </div>
             )}
           </>
         ) : (
-          <div className="bg-zinc-900 border border-zinc-800 p-6 ares-cut-sm">
+          <div className="bg-obsidian border border-white/10 p-6 ares-cut-sm">
             <h3 className="text-white font-bold mb-6 font-heading tracking-widest">{editingId ? 'Edit Venue' : 'Register New Venue'}</h3>
             
             <div className="flex flex-col gap-4">
               <div>
-                <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2 block">Alias (e.g. &apos;Mars Workspace&apos;) *</label>
+                <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-marble/60 font-bold mb-2 block">Alias (e.g. &apos;Mars Workspace&apos;) *</label>
                 <input 
                   id="venue_name"
                   type="text" 
                   value={form.name}
                   onChange={(e) => setForm({...form, name: e.target.value})}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded p-3 text-white focus:border-ares-cyan outline-none"
+                  className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
                 />
               </div>
 
               <div className="relative">
-                <label htmlFor="venue_address" className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2 block">Street Address (Auto-suggest) *</label>
+                <label htmlFor="venue_address" className="text-xs uppercase tracking-widest text-marble/60 font-bold mb-2 block">Street Address (Auto-suggest) *</label>
                 <div className="relative">
                   <input 
                     id="venue_address"
                     type="text" 
                     value={addressQuery}
                     onChange={(e) => setAddressQuery(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-3 text-white focus:border-ares-cyan outline-none"
+                    className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
                     placeholder="Start typing an address..."
                   />
-                  {isSearchingOSM && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">...</div>}
+                  {isSearchingOSM && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-marble/50 text-xs">...</div>}
                 </div>
 
                 {suggestions.length > 0 && addressQuery !== form.address && (
-                  <div className="absolute z-20 w-full mt-1 bg-zinc-800 border border-zinc-700 ares-cut-sm shadow-xl overflow-hidden">
+                  <div className="absolute z-20 w-full mt-1 bg-white/10 border border-white/10 ares-cut-sm shadow-xl overflow-hidden">
                     {suggestions.map((s, i) => (
                       <button
                         key={i}
-                        className="w-full text-left p-3 hover:bg-ares-cyan hover:text-black border-b border-zinc-700/50 text-sm text-zinc-300 transition-colors last:border-0"
+                        className="w-full text-left p-3 hover:bg-ares-cyan hover:text-black border-b border-white/10 text-sm text-marble/70 transition-colors last:border-0"
                         onClick={() => {
                           setAddressQuery(s.display_name);
                           const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.display_name)}`;
@@ -226,9 +226,9 @@ export default function LocationsManager() {
               </div>
 
               <div>
-                <label htmlFor="maps_url" className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2 block flex items-center justify-between">
+                <label htmlFor="maps_url" className="text-xs uppercase tracking-widest text-marble/60 font-bold mb-2 block flex items-center justify-between">
                   <span>Google Maps URL</span>
-                  <span className="text-zinc-600 text-[10px] lowercase tracking-normal bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">Auto-generated</span>
+                  <span className="text-marble/40 text-[10px] lowercase tracking-normal bg-obsidian border border-white/10 px-2 py-0.5 rounded">Auto-generated</span>
                 </label>
                 <div className="flex gap-2">
                   <input 
@@ -236,10 +236,10 @@ export default function LocationsManager() {
                     type="text" 
                     value={form.maps_url}
                     readOnly
-                    className="flex-1 bg-zinc-950/50 border border-zinc-800/50 rounded p-3 text-zinc-500 outline-none cursor-not-allowed text-sm font-mono"
+                    className="flex-1 bg-obsidian/50 border border-white/5 rounded p-3 text-marble/50 outline-none cursor-not-allowed text-sm font-mono"
                   />
                   {form.maps_url && (
-                    <a href={form.maps_url} target="_blank" rel="noreferrer" className="bg-zinc-800 flex items-center justify-center px-4 rounded hover:bg-zinc-700 text-zinc-400">
+                    <a href={form.maps_url} target="_blank" rel="noreferrer" className="bg-white/10 flex items-center justify-center px-4 rounded hover:bg-white/20 text-marble/60">
                       <Navigation size={18} />
                     </a>
                   )}
@@ -252,10 +252,10 @@ export default function LocationsManager() {
                 </div>
               )}
 
-              <div className="flex gap-3 justify-end mt-4 pt-4 border-t border-zinc-800">
+              <div className="flex gap-3 justify-end mt-4 pt-4 border-t border-white/10">
                 <button 
                   onClick={resetForm}
-                  className="px-4 py-2 text-zinc-400 hover:text-white font-bold text-sm tracking-widest uppercase"
+                  className="px-4 py-2 text-marble/60 hover:text-white font-bold text-sm tracking-widest uppercase"
                 >
                   Cancel
                 </button>

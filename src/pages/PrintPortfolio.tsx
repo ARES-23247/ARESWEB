@@ -103,11 +103,11 @@ export default function PrintPortfolio() {
         <h1 className="text-6xl font-black uppercase tracking-tighter mb-4 text-black">ARES Robotics</h1>
         <h2 className="text-4xl text-ares-red font-bold uppercase tracking-widest mb-12">Team 23247</h2>
         <div className="h-1 w-32 bg-black mb-12" />
-        <h3 className="text-3xl font-bold text-gray-800 uppercase tracking-widest mb-4">Official Engineering Portfolio</h3>
-        <p className="text-xl text-gray-500 font-mono">{format(new Date(), "MMMM do, yyyy")}</p>
+        <h3 className="text-3xl font-bold text-black/80 uppercase tracking-widest mb-4">Official Engineering Portfolio</h3>
+        <p className="text-xl text-black/50 font-mono">{format(new Date(), "MMMM do, yyyy")}</p>
         
         <div className="mt-auto mb-10 w-full text-center">
-          <p className="uppercase text-sm tracking-[0.2em] font-bold text-gray-400">Generated automatically via the ARES Portal Edge Architecture</p>
+          <p className="uppercase text-sm tracking-[0.2em] font-bold text-black/40">Generated automatically via the ARES Portal Edge Architecture</p>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ export default function PrintPortfolio() {
           {execDocs.map(doc => (
             <div key={doc.slug} className="mb-12 page-break-inside-avoid">
               <h3 className="text-2xl font-bold uppercase tracking-tight mb-2">{doc.title}</h3>
-              <p className="text-gray-500 italic mb-6">{doc.description}</p>
+              <p className="text-black/50 italic mb-6">{doc.description}</p>
               <div className="print-prosemirror">
                 <DocsMarkdownRenderer content={doc.content} />
               </div>
@@ -134,16 +134,16 @@ export default function PrintPortfolio() {
       {techDocs.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header flex items-center gap-4 border-b-4 border-black pb-4 mb-8">
-            <h2 className="text-3xl font-black uppercase tracking-tight text-blue-800">Technical Documentation</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tight text-ares-red">Technical Documentation</h2>
           </div>
 
           <div className="space-y-12">
             {techDocs.map((doc, idx) => (
-              <div key={doc.slug} className={`print-doc ${idx > 0 ? "pt-12 border-t-2 border-gray-200" : ""}`}>
+              <div key={doc.slug} className={`print-doc ${idx > 0 ? "pt-12 border-t-2 border-black/10" : ""}`}>
                 <div className="mb-6">
-                  <div className="text-xs font-bold uppercase tracking-widest text-blue-800 mb-1">{doc.category}</div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-ares-red mb-1">{doc.category}</div>
                   <h3 className="text-2xl font-bold tracking-tight mb-2">{doc.title}</h3>
-                  <p className="text-gray-600 mb-4">{doc.description}</p>
+                  <p className="text-black/60 mb-4">{doc.description}</p>
                 </div>
                 <div className="print-prosemirror">
                   <DocsMarkdownRenderer content={doc.content} />
@@ -158,40 +158,40 @@ export default function PrintPortfolio() {
       {portfolio.outreach && portfolio.outreach.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header border-b-4 border-black pb-4 mb-8">
-            <h2 className="text-3xl font-black uppercase tracking-tight text-green-700">Community Impact & Outreach</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tight text-ares-gold">Community Impact & Outreach</h2>
           </div>
           
           <div className="grid grid-cols-2 gap-6 mb-10">
-            <div className="bg-gray-100 p-6 rounded-lg text-center border border-gray-300">
+            <div className="bg-black/5 p-6 rounded-lg text-center border border-black/10">
                <div className="text-4xl font-black text-black">
                  {portfolio.outreach.reduce((acc, curr) => acc + (curr.hours_logged || 0), 0)}
                </div>
-               <div className="text-sm font-bold uppercase tracking-widest text-gray-500 mt-2">Total Outreach Hours</div>
+               <div className="text-sm font-bold uppercase tracking-widest text-black/50 mt-2">Total Outreach Hours</div>
             </div>
-            <div className="bg-gray-100 p-6 rounded-lg text-center border border-gray-300">
-               <div className="text-4xl font-black text-green-700">
+            <div className="bg-black/5 p-6 rounded-lg text-center border border-black/10">
+               <div className="text-4xl font-black text-ares-gold">
                  {portfolio.outreach.reduce((acc, curr) => acc + ((curr.hours_logged || 0) * 5), 0).toLocaleString()}
                </div>
-               <div className="text-sm font-bold uppercase tracking-widest text-gray-500 mt-2">Estimated People Impacted</div>
+               <div className="text-sm font-bold uppercase tracking-widest text-black/50 mt-2">Estimated People Impacted</div>
             </div>
           </div>
 
           <table className="w-full text-left border-collapse border border-black text-sm">
             <thead>
               <tr className="bg-black text-white">
-                <th className="p-3 border border-gray-600">Event</th>
-                <th className="p-3 border border-gray-600">Location</th>
-                <th className="p-3 border border-gray-600">Date</th>
-                <th className="p-3 border border-gray-600 text-center">Hours</th>
+                <th className="p-3 border border-black/40">Event</th>
+                <th className="p-3 border border-black/40">Location</th>
+                <th className="p-3 border border-black/40">Date</th>
+                <th className="p-3 border border-black/40 text-center">Hours</th>
               </tr>
             </thead>
             <tbody>
               {portfolio.outreach.map((event, i) => (
-                <tr key={i} className="even:bg-gray-50">
+                <tr key={i} className="even:bg-black/5">
                   <td className="p-3 border border-black font-bold">{event.event_name}</td>
                   <td className="p-3 border border-black">{event.location}</td>
                   <td className="p-3 border border-black">{format(new Date(event.date), "MMM d, yyyy")}</td>
-                  <td className="p-3 border border-black text-center font-bold text-green-700">{event.hours_logged}</td>
+                  <td className="p-3 border border-black text-center font-bold text-ares-gold">{event.hours_logged}</td>
                 </tr>
               ))}
             </tbody>
@@ -203,15 +203,15 @@ export default function PrintPortfolio() {
       {portfolio.awards && portfolio.awards.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header border-b-4 border-black pb-4 mb-8">
-            <h2 className="text-3xl font-black uppercase tracking-tight text-orange-600">Official Awards</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tight text-ares-gold">Official Awards</h2>
           </div>
           
           <div className="grid grid-cols-2 gap-6">
             {portfolio.awards.map((award, i) => (
-              <div key={i} className="border-l-4 border-orange-600 pl-4 py-2 mb-6 page-break-inside-avoid">
+              <div key={i} className="border-l-4 border-ares-gold pl-4 py-2 mb-6 page-break-inside-avoid">
                 <h4 className="text-lg font-black uppercase">{award.award_name}</h4>
-                <div className="text-sm font-bold text-gray-600 mt-1">{award.title}</div>
-                <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                <div className="text-sm font-bold text-black/60 mt-1">{award.title}</div>
+                <div className="text-sm text-black/50 mt-1 flex items-center gap-2">
                   <Calendar size={14} /> {format(new Date(award.date), "MMMM yyyy")} &bull; {award.event_name}
                 </div>
               </div>

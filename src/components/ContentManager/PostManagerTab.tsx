@@ -37,7 +37,7 @@ export default function PostManagerTab({
   const { data: posts = [], isLoading } = useQuery<PostItem[]>({
     queryKey: ["posts"],
     queryFn: async () => {
-      const data = await adminApi.get<{ posts?: PostItem[] }>("/api/admin/posts");
+      const data = await adminApi.get<{ posts?: PostItem[] }>("/api/admin/posts/list");
       return data.posts ?? [];
     },
   });

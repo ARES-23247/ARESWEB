@@ -3,7 +3,7 @@ import SEO from "../components/SEO";
 
 export default function Accessibility() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-white selection:bg-ares-gold selection:text-zinc-950 pt-24 pb-20">
+    <main className="min-h-screen bg-obsidian text-white selection:bg-ares-gold selection:text-obsidian pt-24 pb-20">
       <SEO 
         title="Accessibility & Web Standards" 
         description="ARES 23247's commitment to web accessibility and AI-powered ARIA compliance."
@@ -18,12 +18,12 @@ export default function Accessibility() {
         >
           <div className="flex items-center gap-3 mb-6">
             <span className="w-8 h-1 bg-ares-red"></span>
-            <span className="text-zinc-400 font-mono text-sm tracking-widest uppercase">Digital Manifesto</span>
+            <span className="text-marble/40 font-mono text-sm tracking-widest uppercase">Digital Manifesto</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
             Championship-Grade <span className="text-ares-red">Accessibility</span>
           </h1>
-          <p className="text-zinc-400 text-lg md:text-xl leading-relaxed">
+          <p className="text-marble/60 text-lg md:text-xl leading-relaxed">
             As part of our commitment to the <em>FIRST</em>® Robotics core values, ARES 23247 architects our digital infrastructure to exceed inclusive design standards, ensuring our engineering resources are available to everyone.
           </p>
         </motion.div>
@@ -35,7 +35,7 @@ export default function Accessibility() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="bg-zinc-900 border border-zinc-800 p-8 hero-card h-full">
+            <div className="bg-white/5 border border-white/10 p-8 hero-card h-full">
               <div className="bg-ares-red/10 w-12 h-12 ares-cut-sm flex items-center justify-center mb-6 text-ares-red">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -43,7 +43,7 @@ export default function Accessibility() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">AI-Powered ARIA</h2>
-              <p className="text-zinc-400 leading-relaxed">
+              <p className="text-marble/60 leading-relaxed">
                 We leverage Cloudflare Workers AI and LLava vision models directly at the edge. When authors upload media, AI autonomously evaluates the image and injects deeply descriptive screen-reader tags (ALT) before it ever hits the live database.
               </p>
             </div>
@@ -54,12 +54,12 @@ export default function Accessibility() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="bg-zinc-900 border border-zinc-800 p-8 hero-card h-full">
+            <div className="bg-white/5 border border-white/10 p-8 hero-card h-full">
               <div className="bg-ares-gold/10 w-12 h-12 ares-cut-sm flex items-center justify-center mb-6 text-ares-gold">
                 <span className="font-bold font-mono">10.0</span>
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">WAVE AA Compliance</h2>
-              <p className="text-zinc-400 leading-relaxed">
+              <p className="text-marble/60 leading-relaxed">
                 Our DOM tree maintains a perfect 10.0 AIM score and 0 technical errors across WAVE and pa11y enterprise scanners. We enforce strict WCAG 2.1 AA contrast constraints natively in our Tailwind theme configurations.
               </p>
             </div>
@@ -70,14 +70,14 @@ export default function Accessibility() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="bg-zinc-900 border border-zinc-800 p-8 hero-card h-full">
-              <div className="bg-blue-500/10 w-12 h-12 ares-cut-sm flex items-center justify-center mb-6 text-blue-500">
+            <div className="bg-white/5 border border-white/10 p-8 hero-card h-full">
+              <div className="bg-ares-cyan/10 w-12 h-12 ares-cut-sm flex items-center justify-center mb-6 text-ares-cyan">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">8th-Grade Readability</h2>
-              <p className="text-zinc-400 leading-relaxed">
+              <p className="text-marble/60 leading-relaxed">
                 We enforce Flesch-Kincaid 8th Grade Reading constraints across our technical blog and Outreach portals. We believe FTC mechanisms shouldn&apos;t be gated behind excessive jargon.
               </p>
             </div>
@@ -88,14 +88,14 @@ export default function Accessibility() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="bg-zinc-900 border border-zinc-800 p-8 hero-card h-full">
-              <div className="bg-green-500/10 w-12 h-12 ares-cut-sm flex items-center justify-center mb-6 text-green-500">
+            <div className="bg-white/5 border border-white/10 p-8 hero-card h-full">
+              <div className="bg-ares-gold/10 w-12 h-12 ares-cut-sm flex items-center justify-center mb-6 text-ares-gold">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">Zero Trust Architecture</h2>
-              <p className="text-zinc-400 leading-relaxed">
+              <p className="text-marble/60 leading-relaxed">
                 Security is an absolute requirement. Administrative vectors evaluate incoming tokens on the Cloudflare Edge network to block automated bot scans and guarantee system integrity without proxy domains.
               </p>
             </div>
@@ -106,21 +106,21 @@ export default function Accessibility() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-center p-8 hero-card border border-dashed border-zinc-800"
+          className="text-center p-8 hero-card border border-dashed border-white/10"
         >
-          <div className="flex gap-6 justify-center items-center mb-6 border-b border-zinc-800/50 pb-4 max-w-sm mx-auto">
-            <span className="font-mono text-sm tracking-widest text-zinc-400 mr-2">SCANNED BY</span>
+          <div className="flex gap-6 justify-center items-center mb-6 border-b border-white/5 pb-4 max-w-sm mx-auto">
+            <span className="font-mono text-sm tracking-widest text-marble/40 mr-2">SCANNED BY</span>
             <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity flex items-center font-bold text-sm gap-1.5" title="pa11y CI Integrated">
-              <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-5 h-5 text-ares-cyan" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
               </svg>
-              <span className="text-zinc-300">pa11y</span>
+              <span className="text-marble/70">pa11y</span>
             </a>
             <a href="https://wave.webaim.org/" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity" title="Validated by WAVE Web Accessibility Evaluation Tool">
               <img src="https://wave.webaim.org/img/wavelogo.svg" alt="WAVE Logo" className="h-4" />
             </a>
           </div>
-          <p className="text-zinc-400 text-sm max-w-lg mx-auto">
+          <p className="text-marble/60 text-sm max-w-lg mx-auto">
             If you encounter an accessibility hurdle on the ARES Web Portal, please contact us immediately on GitHub or via our Mentors. We treat accessibility defect patches with identical severity to hard system crashes.
           </p>
         </motion.div>

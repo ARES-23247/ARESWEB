@@ -72,7 +72,7 @@ export default function Join() {
         </div>
       </section>
 
-      <section className="py-20 bg-zinc-950 relative">
+      <section className="py-20 bg-obsidian relative">
         <GreekMeander variant="thin" opacity="opacity-50" className="absolute top-0 left-0" />
         
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16">
@@ -150,7 +150,7 @@ export default function Join() {
               </div>
 
               {submitStatus === "success" && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 ares-cut-sm mb-6 flex gap-3 text-sm font-bold">
+                <div className="bg-ares-gold/10 border border-ares-gold/20 text-ares-gold p-4 ares-cut-sm mb-6 flex gap-3 text-sm font-bold">
                   <CheckCircle size={20} /> Application submitted successfully! We&apos;ll be in touch soon.
                 </div>
               )}
@@ -219,7 +219,7 @@ export default function Join() {
                 
                 <div className="pt-4">
                   <Turnstile onVerify={setTurnstileToken} theme="light" className="mb-4" />
-                  <button type="submit" disabled={isSubmitting} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-ares-danger" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
+                  <button type="submit" disabled={isSubmitting} className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)] hover:bg-ares-bronze" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}>
                     {isSubmitting ? "Submitting..." : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
                   </button>
                   <p className="text-center text-[11px] text-obsidian/80 font-bold uppercase tracking-widest mt-4">

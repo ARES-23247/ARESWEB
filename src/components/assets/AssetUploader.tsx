@@ -30,13 +30,13 @@ export default function AssetUploader({
         placeholder="Assign Tag/Folder"
         value={activeFolder}
         onChange={(e) => setActiveFolder(e.target.value)}
-        className="w-full sm:w-48 bg-zinc-900 border border-zinc-700 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-ares-gold"
+        className="w-full sm:w-48 bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/30 focus:outline-none focus:ring-2 focus:ring-ares-gold"
       />
       <label
         htmlFor="asset-upload-input"
         className={`px-6 py-3 ares-cut font-bold uppercase tracking-widest text-xs cursor-pointer transition-all flex items-center gap-2 focus-within:ring-2 focus-within:ring-ares-gold ${
           uploadMutation.isPending
-            ? "bg-zinc-800 text-zinc-400 pointer-events-none"
+            ? "bg-white/5 text-marble/40 pointer-events-none"
             : "bg-ares-gold text-obsidian hover:bg-ares-gold/80 shadow-lg"
         }`}
       >

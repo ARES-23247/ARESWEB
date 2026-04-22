@@ -33,20 +33,20 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-ares-black p-6 relative overflow-hidden">
       {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-ares-red/10 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-ares-gold/10 blur-[120px] rounded-full" />
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-10 ares-cut-lg shadow-2xl relative z-10"
+        className="w-full max-w-md bg-obsidian/50 backdrop-blur-xl border border-white/10 p-10 ares-cut-lg shadow-2xl relative z-10"
       >
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-blue-600 ares-cut flex items-center justify-center mb-6 shadow-lg shadow-blue-600/20">
+          <div className="w-16 h-16 bg-ares-red ares-cut flex items-center justify-center mb-6 shadow-lg shadow-ares-red/20">
             <LogIn className="text-white w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight mb-2">ARES Portal</h1>
-          <p className="text-zinc-400 text-center text-sm">
+          <p className="text-ares-gray text-center text-sm">
             Appalachian Robotics & Engineering Society <br/> Admin Authentication
           </p>
         </div>
@@ -54,7 +54,7 @@ export default function Login() {
         <div className="space-y-4">
           <button
             onClick={() => handleLogin("google")}
-            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-zinc-200 text-black font-semibold ares-cut transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-ares-offwhite text-black font-semibold ares-cut transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
             Sign in with Google
@@ -62,7 +62,7 @@ export default function Login() {
 
           <button
             onClick={() => handleLogin("github")}
-            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold ares-cut border border-zinc-700 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-ares-gray-dark hover:bg-obsidian text-white font-semibold ares-cut border border-white/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <Key className="w-5 h-5" />
             Sign in with GitHub
@@ -70,7 +70,7 @@ export default function Login() {
 
           <button
             onClick={() => handleLogin("zulip")}
-            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold ares-cut border border-emerald-500 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full group flex items-center justify-center gap-3 px-6 py-4 bg-ares-gold hover:bg-ares-gold/80 text-black font-semibold ares-cut border border-ares-gold transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <MessageSquare className="w-5 h-5" />
             Sign in with Zulip
@@ -91,7 +91,7 @@ export default function Login() {
           </motion.div>
         )}
 
-        <p className="mt-10 text-center text-zinc-500 text-xs text-balance">
+        <p className="mt-10 text-center text-ares-gray text-xs text-balance">
           Protected by ARES Authentication Architecture. <br/>
           By signing in, you agree to our Code of Conduct.
         </p>

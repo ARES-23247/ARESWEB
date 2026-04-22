@@ -87,14 +87,14 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
       </h3>
 
       {/* Email Verification Status */}
-      <div className="bg-zinc-950/50 border border-zinc-800 p-4 ares-cut-sm flex items-center justify-between">
+      <div className="bg-obsidian/50 border border-white/10 p-4 ares-cut-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-full ${session?.user.emailVerified ? "bg-emerald-500/10 text-emerald-500" : "bg-ares-gold/10 text-ares-gold"}`}>
+          <div className={`p-2 rounded-full ${session?.user.emailVerified ? "bg-ares-gold/10 text-ares-gold" : "bg-ares-red/10 text-ares-red"}`}>
             {session?.user.emailVerified ? <CheckCircle size={20} /> : <AlertTriangle size={20} />}
           </div>
           <div>
             <p className="text-sm font-bold text-white">Email Verification</p>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-marble/50">
               {session?.user.emailVerified 
                 ? "Your email address has been verified." 
                 : "Your email address is not yet verified."}
@@ -113,15 +113,15 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
       </div>
 
       {/* 2FA Status */}
-      <div className="bg-zinc-950/50 border border-zinc-800 p-4 ares-cut-sm space-y-4">
+      <div className="bg-obsidian/50 border border-white/10 p-4 ares-cut-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${session?.user?.twoFactorEnabled ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-500"}`}>
+            <div className={`p-2 rounded-full ${session?.user?.twoFactorEnabled ? "bg-ares-gold/10 text-ares-gold" : "bg-black/40 text-marble/40"}`}>
               <Key size={20} />
             </div>
             <div>
               <p className="text-sm font-bold text-white">Two-Factor Authentication (2FA)</p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-marble/50">
                 {session?.user?.twoFactorEnabled 
                   ? "Active: Your account is protected with TOTP." 
                   : "Inactive: Add an extra layer of security to your account."}
@@ -147,17 +147,17 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
 
         {/* 2FA Setup Flow */}
         {isSettingUp2FA && twoFactorData && (
-          <div className="mt-4 p-4 border-t border-zinc-800 space-y-6 pt-4 animate-in fade-in slide-in-from-top-2">
+          <div className="mt-4 p-4 border-t border-white/10 space-y-6 pt-4 animate-in fade-in slide-in-from-top-2">
             <div className="flex flex-col md:flex-row gap-6 items-center">
               <div className="bg-white p-2 rounded-lg">
                 <QRCodeSVG value={twoFactorData.qrCode} size={160} />
               </div>
               <div className="flex-1 space-y-3">
-                <p className="text-xs text-zinc-400 font-medium">
+                <p className="text-xs text-marble/40 font-medium">
                   Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.). 
                   If you can&apos;t scan it, enter the secret key manually:
                 </p>
-                <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-2 ares-cut-sm">
+                <div className="flex items-center gap-2 bg-obsidian border border-white/10 p-2 ares-cut-sm">
                   <code className="text-ares-gold text-xs font-mono flex-1 truncate">{twoFactorData.secret}</code>
                   <button 
                     onClick={() => {
@@ -165,7 +165,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
                         setSuccess("Secret copied!");
                         setTimeout(() => setSuccess(""), 2000);
                     }}
-                    className="text-zinc-500 hover:text-white p-1"
+                    className="text-marble/50 hover:text-white p-1"
                   >
                     <Copy size={14} />
                   </button>
@@ -187,13 +187,13 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
                 />
                 <button 
                   onClick={verifyAndEnable2FA}
-                  className="px-6 bg-emerald-600 text-white font-bold ares-cut-sm hover:bg-emerald-500 transition-all"
+                  className="px-6 bg-ares-gold text-black font-bold ares-cut-sm hover:bg-ares-gold/80 transition-all"
                 >
                   Confirm
                 </button>
                 <button 
                   onClick={() => setIsSettingUp2FA(false)}
-                  className="px-4 border border-zinc-700 text-zinc-400 font-bold ares-cut-sm hover:bg-zinc-800"
+                  className="px-4 border border-white/20 text-marble/40 font-bold ares-cut-sm hover:bg-white/5"
                 >
                   Cancel
                 </button>
@@ -204,7 +204,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
       </div>
 
       {error && <p className="text-xs text-ares-red font-bold animate-pulse">{error}</p>}
-      {success && <p className="text-xs text-emerald-400 font-bold">{success}</p>}
+      {success && <p className="text-xs text-ares-gold font-bold">{success}</p>}
     </div>
   );
 }

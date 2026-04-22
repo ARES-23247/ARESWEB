@@ -34,7 +34,7 @@ export default function DocManagerTab({
   const { data: docs = [], isLoading } = useQuery<DocItem[]>({
     queryKey: ["docs"],
     queryFn: async () => {
-      const data = await adminApi.get<{ docs?: DocItem[] }>("/api/admin/docs");
+      const data = await adminApi.get<{ docs?: DocItem[] }>("/api/admin/docs/list");
       return data.docs ?? [];
     },
   });

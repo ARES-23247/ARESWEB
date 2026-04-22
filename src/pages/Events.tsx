@@ -100,7 +100,7 @@ export default function Events() {
             <span className="sr-only">Events</span>
           </h1>
           <div dangerouslySetInnerHTML={{ __html: '<!-- pa11y-ignore -->' }} />
-          <p className="text-xl md:text-2xl text-zinc-300 font-medium max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-marble/70 font-medium max-w-2xl mx-auto">
             Join us at our upcoming competitions, community outreach demos, and robotics workshops.
           </p>
         </motion.div>
@@ -143,14 +143,14 @@ export default function Events() {
               {/* Subscribe Buttons */}
               {calendars.length > 0 && (
                 <div className="bg-black/40 border border-white/10 ares-cut-sm p-6">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Subscribe to Our Calendars</h3>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-marble/50 mb-4">Subscribe to Our Calendars</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { id: calendarData?.calendarIdInternal, name: "ARES Practices", color: "ares-red" },
                       { id: calendarData?.calendarIdOutreach, name: "ARES Outreach & Volunteer", color: "ares-gold" },
                       { id: calendarData?.calendarIdExternal, name: "ARES Community Spotlight", color: "ares-cyan" },
                     ].filter(c => c.id).map((cal) => (
-                      <div key={cal.name} className="flex flex-col gap-2 bg-zinc-900/50 ares-cut-sm p-4 border border-white/5">
+                      <div key={cal.name} className="flex flex-col gap-2 bg-black/40 ares-cut-sm p-4 border border-white/5">
                         <span className="text-xs font-bold text-white uppercase tracking-wider">{cal.name}</span>
                         <div className="flex gap-2">
                           <a

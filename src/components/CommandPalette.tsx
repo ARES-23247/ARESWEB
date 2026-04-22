@@ -187,14 +187,14 @@ export default function CommandPalette() {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-full max-w-2xl bg-ares-black-soft border border-white/5 rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-1 ring-white/10"
+            className="w-full max-w-2xl bg-obsidian border border-white/5 rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-1 ring-white/10"
           >
             {/* Input Header */}
             <div className="flex items-center px-6 py-5 border-b border-white/5 bg-white/[0.02]">
-              <Search className="text-zinc-400 mr-3 shrink-0" size={20} />
+              <Search className="text-marble/40 mr-3 shrink-0" size={20} />
               <input
                 ref={inputRef}
-                className="w-full bg-transparent border-none outline-none text-white placeholder-zinc-500 font-mono text-lg"
+                className="w-full bg-transparent border-none outline-none text-white placeholder-marble/30 font-mono text-lg"
                 placeholder="Search documentation, routes, workflows..."
                 value={query}
                 onChange={(e) => {
@@ -204,19 +204,19 @@ export default function CommandPalette() {
                 onKeyDown={handleKeyDown}
               />
               <div className="flex shrink-0 items-center gap-1 ml-3 hidden sm:flex">
-                <kbd className="bg-zinc-800 text-zinc-400 text-xs px-2 py-1 rounded font-mono border border-zinc-700">ESC</kbd>
-                <span className="text-xs text-zinc-500 ml-1">to close</span>
+                <kbd className="bg-white/10 text-marble/40 text-xs px-2 py-1 rounded font-mono border border-white/10">ESC</kbd>
+                <span className="text-xs text-marble/40 ml-1">to close</span>
               </div>
             </div>
 
             {/* Results Body */}
-            <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+            <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               {isSearching && query.length >= 2 && results.length === 0 ? (
-                 <div className="p-8 text-center text-zinc-500 animate-pulse font-mono flex items-center justify-center gap-2">
+                 <div className="p-8 text-center text-marble/40 animate-pulse font-mono flex items-center justify-center gap-2">
                    <Terminal className="text-ares-cyan" size={16} /> Scanning D1 nodes...
                  </div>
               ) : results.length === 0 ? (
-                <div className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-sm">
+                <div className="p-8 text-center text-marble/40 font-bold uppercase tracking-widest text-sm">
                   No vectors matched telemetry.
                 </div>
               ) : (
@@ -228,31 +228,31 @@ export default function CommandPalette() {
                     className={`w-full text-left flex items-center px-4 py-3 rounded-lg mb-1 transition-colors ares-cut-sm group ${
                       selectedIndex === idx
                         ? "bg-ares-red/20 border-l-2 border-ares-red text-white"
-                        : "text-zinc-400 hover:bg-zinc-900 border-l-2 border-transparent"
+                        : "text-marble/40 hover:bg-white/5 border-l-2 border-transparent"
                     }`}
                   >
-                    <div className={`mr-4 shrink-0 transition-colors ${selectedIndex === idx ? "text-ares-red" : "text-zinc-600"}`}>
+                    <div className={`mr-4 shrink-0 transition-colors ${selectedIndex === idx ? "text-ares-red" : "text-marble/30"}`}>
                       {res.icon}
                     </div>
                     
                     <div className="flex-1 overflow-hidden">
                        <div className="flex items-center gap-2">
-                          <h4 className={`font-bold transition-colors ${selectedIndex === idx ? "text-white" : "text-zinc-200"}`}>
+                          <h4 className={`font-bold transition-colors ${selectedIndex === idx ? "text-white" : "text-marble/80"}`}>
                             {res.title}
                           </h4>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800 shrink-0">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-marble/30 bg-white/5 px-2 py-0.5 rounded-full border border-white/10 shrink-0">
                             {res.category}
                           </span>
                        </div>
                        
                        {res.snippet && (
-                         <p className="text-xs text-zinc-500 line-clamp-1 mt-1 font-mono leading-relaxed" 
+                         <p className="text-xs text-marble/40 line-clamp-1 mt-1 font-mono leading-relaxed" 
                            dangerouslySetInnerHTML={{__html: sanitizeHtml(res.snippet)}} 
                          />
                        )}
                     </div>
 
-                    <ArrowRight className={`shrink-0 ml-4 transition-all ${selectedIndex === idx ? "text-ares-red opacity-100 transform translate-x-1" : "text-zinc-700 opacity-0 transform -translate-x-2"}`} size={16} />
+                    <ArrowRight className={`shrink-0 ml-4 transition-all ${selectedIndex === idx ? "text-ares-red opacity-100 transform translate-x-1" : "text-marble/20 opacity-0 transform -translate-x-2"}`} size={16} />
                   </button>
                 ))
               )}

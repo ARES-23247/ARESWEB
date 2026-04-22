@@ -80,7 +80,7 @@ export default function AssetManager() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tighter">Asset Vault</h2>
-          <p className="text-zinc-400 text-sm mt-1">
+          <p className="text-marble/40 text-sm mt-1">
             {assets.length} asset{assets.length !== 1 && "s"} registered in the Edge.
           </p>
         </div>
@@ -94,11 +94,11 @@ export default function AssetManager() {
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center min-h-[300px]">
-          <div className="w-8 h-8 md:w-12 md:h-12 border-4 border-zinc-800 border-t-ares-gold rounded-full animate-spin"></div>
+          <div className="w-8 h-8 md:w-12 md:h-12 border-4 border-white/10 border-t-ares-gold rounded-full animate-spin"></div>
         </div>
       ) : assets.length === 0 ? (
         <div className="flex-1 flex items-center justify-center min-h-[300px]">
-          <p className="text-zinc-400 text-sm italic">No assets found in R2. Upload an image to get started.</p>
+          <p className="text-marble/40 text-sm italic">No assets found in R2. Upload an image to get started.</p>
         </div>
       ) : (
         <AssetGrid

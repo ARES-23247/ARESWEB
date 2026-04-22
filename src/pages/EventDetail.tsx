@@ -122,14 +122,14 @@ export default function EventDetail() {
             <span>&larr;</span> Back to Archive
           </Link>
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-            <span className={`w-fit px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${isPast ? "bg-zinc-800 text-zinc-400" : "bg-ares-red/20 text-ares-red border border-ares-red/50 shadow-[0_0_15px_rgba(192,0,0,0.4)]"}`}>
+            <span className={`w-fit px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${isPast ? "bg-obsidian text-white/40" : "bg-ares-red/20 text-ares-red border border-ares-red/50 shadow-[0_0_15px_rgba(192,0,0,0.4)]"}`}>
               {isPast ? "Historical Record" : "Upcoming Event"}
             </span>
             
             {!isPast && (
               <button 
                 onClick={handleSaveToCalendar}
-                className="w-fit flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-zinc-800/80 hover:bg-ares-gold text-zinc-300 hover:text-black border border-zinc-700 hover:border-ares-gold transition-all shadow-lg backdrop-blur-sm"
+                className="w-fit flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-obsidian/80 hover:bg-ares-gold text-white/80 hover:text-black border border-white/10 hover:border-ares-gold transition-all shadow-lg backdrop-blur-sm"
               >
                 <Calendar size={14} /> Add to Calendar
               </button>
@@ -172,7 +172,7 @@ export default function EventDetail() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="prose prose-invert lg:prose-lg max-w-none w-full prose-headings:text-white prose-headings:font-heading prose-headings:uppercase prose-p:text-white/80 prose-a:text-ares-gold prose-img:ares-cut prose-img:border prose-img:border-zinc-800"
+          className="prose prose-invert lg:prose-lg max-w-none w-full prose-headings:text-white prose-headings:font-heading prose-headings:uppercase prose-p:text-white/80 prose-a:text-ares-gold prose-img:ares-cut prose-img:border prose-img:border-white/10"
         >
           {parsedAst ? (
             <TiptapRenderer node={parsedAst} />

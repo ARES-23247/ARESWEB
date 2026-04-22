@@ -42,7 +42,7 @@ export default function BugReport() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Form Column */}
             <div>
-              <div className="bg-zinc-900/50 border border-zinc-800 ares-cut-sm p-8 shadow-2xl relative overflow-hidden">
+              <div className="bg-obsidian/50 border border-white/10 ares-cut-sm p-8 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ares-red to-ares-bronze"></div>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
@@ -53,7 +53,7 @@ export default function BugReport() {
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-black/50 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-white placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono"
+                      className="w-full bg-black/50 border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono"
                       placeholder="e.g. Gallery images fail to load on mobile"
                     />
                   </div>
@@ -65,10 +65,10 @@ export default function BugReport() {
                       rows={5}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full bg-black/50 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-white placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono resize-none text-sm"
+                      className="w-full bg-black/50 border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono resize-none text-sm"
                       placeholder="Walk us through the steps to reproduce the error..."
                     />
-                    <p className="text-xs text-zinc-400 mt-2 italic">You can always add screenshots or more info on GitHub directly.</p>
+                    <p className="text-xs text-white/60 mt-2 italic">You can always add screenshots or more info on GitHub directly.</p>
                   </div>
 
                   <div>
@@ -77,7 +77,7 @@ export default function BugReport() {
                       id="repo-select"
                       value={repoStr}
                       onChange={(e) => setRepoStr(e.target.value)}
-                      className="w-full bg-black/50 border border-zinc-700/50 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono appearance-none"
+                      className="w-full bg-black/50 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all font-mono appearance-none"
                     >
                       <option value={`${siteConfig.urls.githubOrg}/ARESWEB`}>ARESWEB (Web Portal)</option>
                       <option value={`${siteConfig.urls.githubOrg}/IntoTheDeep`}>IntoTheDeep (Robot Code)</option>
@@ -109,7 +109,7 @@ export default function BugReport() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center shrink-0 border border-zinc-700 text-zinc-400 text-xl">
+                <div className="w-12 h-12 bg-obsidian rounded-full flex items-center justify-center shrink-0 border border-white/10 text-white/60 text-xl">
                   <i className="fab fa-github"></i>
                 </div>
                 <div>

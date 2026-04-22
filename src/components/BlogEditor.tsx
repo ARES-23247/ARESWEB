@@ -111,7 +111,11 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
           toast.info("Post saved successfully, but social syndication had issues:\n\n" + data.warning);
         }
 
-        navigate(`/blog/${data.slug}`);
+        if (isDraft || userRole === "author") {
+          navigate("/dashboard");
+        } else {
+          navigate(`/blog/${data.slug}`);
+        }
       } else {
         setErrorMsg(data.error || "Failed to publish");
       }

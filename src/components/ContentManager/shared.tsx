@@ -56,7 +56,7 @@ export const ClickToDeleteButton = ({
 
   if (isDeleting) {
     return (
-      <button disabled className="text-xs font-bold text-zinc-300 bg-zinc-800 px-3 py-1 ares-cut-sm opacity-50 cursor-not-allowed">
+      <button disabled className="text-xs font-bold text-marble/60 bg-white/5 px-3 py-1 ares-cut-sm opacity-50 cursor-not-allowed">
         DELETING...
       </button>
     );
@@ -76,7 +76,7 @@ export const ClickToDeleteButton = ({
   return (
     <button
       onClick={() => setConfirmId(id)}
-      className="text-xs font-bold text-zinc-400 hover:text-ares-red bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1 ares-cut-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red"
+      className="text-xs font-bold text-marble/40 hover:text-ares-red bg-white/5 hover:bg-white/10 px-3 py-1 ares-cut-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red"
     >
       DELETE
     </button>

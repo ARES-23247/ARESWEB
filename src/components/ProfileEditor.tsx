@@ -119,17 +119,17 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
     return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
   }
 
-  const inputClass = "w-full bg-zinc-800/50 border border-zinc-700 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-red transition-colors";
-  const labelClass = "text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5 block";
-  const sectionClass = "bg-zinc-900/50 border border-zinc-800 ares-cut p-6 space-y-4";
+  const inputClass = "w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-red transition-colors";
+  const labelClass = "text-xs font-bold text-marble/60 uppercase tracking-wider mb-1.5 block";
+  const sectionClass = "bg-obsidian/50 border border-white/10 ares-cut p-6 space-y-4";
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-6 pb-8">
       {/* Youth Protection Banner for Students */}
       {isMinor && (
-        <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 ares-cut">
-          <Shield className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
-          <p className="text-sm text-blue-200">
+        <div className="flex items-start gap-3 p-4 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut">
+          <Shield className="text-ares-cyan flex-shrink-0 mt-0.5" size={20} />
+          <p className="text-sm text-marble/80">
             <strong>FIRST Youth Protection:</strong> Your contact information (email, phone) is protected and never shown publicly. Only your nickname and avatar are visible to others.
           </p>
         </div>
@@ -143,12 +143,12 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
       {/* Save */}
       {message && (
-        <div className={`p-4 ares-cut-sm text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-ares-danger/10 border border-ares-danger/20 text-ares-danger-soft"}`}>
+        <div className={`p-4 ares-cut-sm text-sm font-semibold ${message.type === "success" ? "bg-ares-cyan/10 border border-ares-cyan/20 text-ares-cyan" : "bg-ares-danger/10 border border-ares-danger/20 text-ares-danger-soft"}`}>
           {message.text}
         </div>
       )}
       <button onClick={handleSave} disabled={isSaving}
-        className="w-full flex items-center justify-center gap-2 py-4 font-bold bg-gradient-to-r from-ares-red to-red-700 hover:from-red-600 hover:to-red-800 text-white ares-cut shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-4 font-bold bg-gradient-to-r from-ares-red to-ares-bronze hover:from-ares-bronze hover:to-ares-red text-white ares-cut shadow-[0_0_30px_rgba(192,0,0,0.3)] transition-all disabled:opacity-50"
       >
         {isSaving ? <RefreshCw className="animate-spin" size={20} /> : <Save size={20} />}
         {isSaving ? "Saving..." : "Save Profile"}

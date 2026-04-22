@@ -68,29 +68,29 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-zinc-900 border border-zinc-800 w-full max-w-md ares-cut overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950/50">
+      <div className="bg-obsidian border border-white/10 w-full max-w-md ares-cut overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
           <div className="flex items-center gap-2">
             <div className={`p-1.5 ares-cut-sm ${type === 'blog' ? 'bg-ares-red/20 text-ares-red' : 'bg-ares-gold/20 text-ares-gold'}`}>
               <Send size={16} />
             </div>
             <h3 className="font-bold text-white tracking-tight">Social Broadcast</h3>
           </div>
-          <button onClick={onClose} className="p-1 text-zinc-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1 text-marble/40 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6">
           <div className="mb-6">
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Target Content</p>
+            <p className="text-xs font-bold text-marble/40 uppercase tracking-widest mb-1">Target Content</p>
             <p className="text-lg font-bold text-white leading-tight">{title}</p>
-            <p className="text-xs text-zinc-400 mt-1 italic capitalize">{type} Entry</p>
+            <p className="text-xs text-marble/60 mt-1 italic capitalize">{type} Entry</p>
           </div>
 
           {status === "idle" && (
             <>
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Select Platforms</p>
+              <p className="text-xs font-bold text-marble/40 uppercase tracking-widest mb-3">Select Platforms</p>
               {availableSocials.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {availableSocials.map(platform => (
@@ -99,33 +99,33 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
                       className={`flex items-center gap-3 p-3 ares-cut-sm border cursor-pointer transition-all ${
                         selectedsocials[platform] 
                         ? 'bg-ares-cyan/10 border-ares-cyan/40 text-white' 
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                        : 'bg-white/5 border-white/10 text-marble/40 hover:border-white/20'
                       }`}
                     >
                       <input 
                         type="checkbox" 
                         checked={selectedsocials[platform] || false}
                         onChange={(e) => setToggleOverrides(prev => ({ ...prev, [platform]: e.target.checked }))}
-                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-ares-cyan focus:ring-ares-cyan"
+                        className="w-4 h-4 rounded border-white/20 bg-obsidian text-ares-cyan focus:ring-ares-cyan"
                       />
                       <span className="text-sm font-bold capitalize">{platform}</span>
                     </label>
                   ))}
                 </div>
               ) : (
-                <div className="p-4 ares-cut-sm bg-zinc-950 border border-dashed border-zinc-800 text-center mb-6">
-                  <p className="text-xs text-zinc-500">No social platforms configured in settings.</p>
+                <div className="p-4 ares-cut-sm bg-white/5 border border-dashed border-white/10 text-center mb-6">
+                  <p className="text-xs text-marble/40">No social platforms configured in settings.</p>
                 </div>
               )}
 
               <button
                 onClick={handleBroadcast}
                 disabled={isPending || availableSocials.length === 0 || !Object.values(selectedsocials).some(Boolean)}
-                className="w-full py-3.5 ares-cut-sm bg-white text-zinc-950 font-bold tracking-wide hover:bg-ares-cyan hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-zinc-950 flex items-center justify-center gap-2 shadow-xl active:scale-[0.98]"
+                className="w-full py-3.5 ares-cut-sm bg-white text-obsidian font-bold tracking-wide hover:bg-ares-gold hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-obsidian flex items-center justify-center gap-2 shadow-xl active:scale-[0.98]"
               >
                 {isPending ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-zinc-400 border-t-zinc-950 rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-marble/40 border-t-obsidian rounded-full animate-spin"></div>
                     BROADCASTING...
                   </>
                 ) : (
@@ -140,11 +140,11 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
 
           {status === "success" && (
             <div className="flex flex-col items-center justify-center py-8 text-center animate-in zoom-in-90 scale-95 duration-300">
-              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-ares-gold/20 text-ares-gold rounded-full flex items-center justify-center mb-4">
                 <CheckCircle2 size={32} />
               </div>
               <h4 className="text-xl font-bold text-white mb-1">Broadcast Sent!</h4>
-              <p className="text-zinc-400 text-sm">Synchronizing across {Object.values(selectedsocials).filter(Boolean).length} platforms...</p>
+              <p className="text-marble/60 text-sm">Synchronizing across {Object.values(selectedsocials).filter(Boolean).length} platforms...</p>
             </div>
           )}
 
@@ -157,7 +157,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
               <p className="text-ares-red text-sm mb-4">{errorMsg}</p>
               <button 
                 onClick={() => setStatus("idle")}
-                className="text-xs font-bold text-zinc-400 hover:text-white underline tracking-widest"
+                className="text-xs font-bold text-marble/40 hover:text-white underline tracking-widest"
               >
                 TRY AGAIN
               </button>
@@ -165,8 +165,8 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
           )}
         </div>
 
-        <div className="p-4 bg-zinc-950/30 border-t border-zinc-800/50">
-          <p className="text-[10px] text-zinc-500 italic text-center font-mono uppercase tracking-tighter">
+        <div className="p-4 bg-white/[0.02] border-t border-white/5">
+          <p className="text-[10px] text-marble/40 italic text-center font-mono uppercase tracking-tighter">
             Omnichannel content delivery managed by ARES Content Pipeline
           </p>
         </div>

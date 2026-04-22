@@ -93,7 +93,7 @@ export default function OutreachTracker() {
           { label: "Community Reach", value: totals.reach.toLocaleString(), icon: <Target className="text-ares-red" /> },
           { label: "Service Hours", value: totals.hours.toLocaleString(), icon: <Clock className="text-ares-gold" /> },
           { label: "Student Leads", value: totals.students.toLocaleString(), icon: <Users className="text-ares-cyan" /> },
-          { label: "Total Events", value: totals.events, icon: <CheckCircle className="text-emerald-500" /> },
+          { label: "Total Events", value: totals.events, icon: <CheckCircle className="text-ares-gold" /> },
         ]}
       />
 
@@ -120,7 +120,7 @@ export default function OutreachTracker() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             onSubmit={handleSubmit}
-            className="bg-zinc-900 border border-ares-red/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
+            className="bg-obsidian border border-ares-red/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <DashboardInput
@@ -193,12 +193,12 @@ export default function OutreachTracker() {
         ) : logs.map((log) => (
           <div key={log.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 group hover:border-white/20 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex-1">
-              <div className="flex items-center gap-3 text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
+              <div className="flex items-center gap-3 text-marble/50 text-[10px] font-bold uppercase tracking-widest mb-2">
                  <span className="flex items-center gap-1"><Calendar size={12} /> {log.date}</span>
                  {log.location && <span className="flex items-center gap-1">&middot; <MapPin size={12} /> {log.location}</span>}
               </div>
               <h4 className="text-xl font-bold text-white mb-2">{log.title}</h4>
-              <p className="text-zinc-500 text-sm line-clamp-2">
+              <p className="text-marble/50 text-sm line-clamp-2">
                 {(() => {
                   try {
                     const ast = JSON.parse(log.description || "");
@@ -236,7 +236,7 @@ export default function OutreachTracker() {
               ) : (
                 <button
                   onClick={() => { if(confirm("Purge this impact record?")) deleteMutation.mutate(log.id); }}
-                  className="p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
+                  className="p-3 text-marble/40 hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
                 >
                   <Trash2 size={18} />
                 </button>

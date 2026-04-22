@@ -56,7 +56,7 @@ export default function Leaderboard() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-ares-gold/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-5xl mx-auto px-6 relative z-10">
-        <Link to="/" className="inline-flex items-center gap-2 text-zinc-300 hover:text-white text-xs font-bold uppercase tracking-widest mb-12 transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 text-ares-offwhite hover:text-white text-xs font-bold uppercase tracking-widest mb-12 transition-colors">
           <ArrowLeft size={16} /> Back to Portal
         </Link>
         <header className="mb-20 text-center">
@@ -81,7 +81,7 @@ export default function Leaderboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-zinc-300 max-w-xl mx-auto text-lg"
+            className="text-ares-offwhite max-w-xl mx-auto text-lg"
           >
             Recognizing the students and mentors who go above and beyond in engineering, outreach, and leadership.
           </motion.p>
@@ -100,7 +100,7 @@ export default function Leaderboard() {
               let Icon = Crown;
 
               if (podium.length === 3) {
-                if (idx === 0) { rank = 2; height = "h-56"; color = "text-zinc-300"; border = "border-zinc-400"; bg = "bg-white/5"; Icon = Medal; }
+                if (idx === 0) { rank = 2; height = "h-56"; color = "text-ares-offwhite"; border = "border-ares-gray/40"; bg = "bg-white/5"; Icon = Medal; }
                 if (idx === 1) { rank = 1; height = "h-72"; color = "text-ares-gold"; border = "border-ares-gold"; bg = "bg-ares-gold/10"; Icon = Crown; }
                 if (idx === 2) { rank = 3; height = "h-48"; color = "text-ares-bronze"; border = "border-ares-bronze"; bg = "bg-ares-bronze/10"; Icon = Award; }
               }
@@ -114,16 +114,16 @@ export default function Leaderboard() {
                   className="flex flex-col items-center w-full md:w-64"
                 >
                   <Link to={`/roster/${user.user_id}`} className="group relative z-10 flex flex-col items-center mb-4 transition-transform hover:-translate-y-2">
-                    <div className={`w-20 h-20 rounded-full border-4 ${border} bg-zinc-900 overflow-hidden mb-3 relative`}>
+                    <div className={`w-20 h-20 rounded-full border-4 ${border} bg-obsidian overflow-hidden mb-3 relative`}>
                       <img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${user.user_id}`} alt="Avatar" className="w-full h-full object-cover" />
-                      <div className={`absolute -bottom-2 -right-2 bg-zinc-900 rounded-full p-1 border-2 ${border}`}>
+                      <div className={`absolute -bottom-2 -right-2 bg-obsidian rounded-full p-1 border-2 ${border}`}>
                          <Icon size={14} className={color} />
                       </div>
                     </div>
                     <p className="text-white font-black text-lg text-center leading-tight">
                       {user.nickname || user.first_name}
                     </p>
-                    <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">{user.member_type}</p>
+                    <p className="text-ares-gray text-[10px] font-bold uppercase tracking-widest">{user.member_type}</p>
                   </Link>
 
                   <div className={`w-full ${height} ${bg} border-t border-x ${border}/30 rounded-t-3xl flex flex-col items-center justify-start pt-6 relative overflow-hidden backdrop-blur-sm group`}>
@@ -148,10 +148,10 @@ export default function Leaderboard() {
             transition={{ delay: 0.6 }}
             className="max-w-3xl mx-auto"
           >
-            <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 md:p-8 backdrop-blur-md">
+            <div className="bg-obsidian/40 border border-white/5 rounded-3xl p-6 md:p-8 backdrop-blur-md">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 uppercase tracking-widest text-[10px] text-zinc-500">
+                  <tr className="border-b border-white/10 uppercase tracking-widest text-[10px] text-ares-gray">
                     <th className="py-4 font-bold w-16 text-center">Rank</th>
                     <th className="py-4 font-bold">Member</th>
                     <th className="py-4 font-bold text-right">Badges Earned</th>
@@ -160,22 +160,22 @@ export default function Leaderboard() {
                 <tbody className="text-sm">
                   {rest.map((user, idx) => (
                     <tr key={user.user_id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
-                      <td className="py-4 text-center font-bold text-zinc-500">{(idx + 4).toString().padStart(2, '0')}</td>
+                      <td className="py-4 text-center font-bold text-ares-gray">{(idx + 4).toString().padStart(2, '0')}</td>
                       <td className="py-4">
                         <Link to={`/roster/${user.user_id}`} className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-zinc-800 shrink-0 overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-ares-gray-dark shrink-0 overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
                             <img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${user.user_id}`} alt="Avatar" className="w-full h-full object-cover" />
                           </div>
                           <div>
-                            <p className="text-zinc-200 font-bold group-hover:text-white transition-colors">
+                            <p className="text-ares-offwhite font-bold group-hover:text-white transition-colors">
                               {user.first_name} {user.last_name || `"${user.nickname}"`}
                             </p>
-                            <p className="text-[10px] uppercase tracking-widest text-zinc-500">{user.member_type}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-ares-gray">{user.member_type}</p>
                           </div>
                         </Link>
                       </td>
                       <td className="py-4 text-right">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 text-zinc-300 font-bold text-xs">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 text-ares-offwhite font-bold text-xs">
                           <Award size={14} className="text-ares-red" />
                           {user.badge_count}
                         </div>

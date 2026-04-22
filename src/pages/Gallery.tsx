@@ -43,14 +43,14 @@ export default function Gallery() {
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <div className="w-12 h-12 border-4 border-zinc-800 border-t-ares-red rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-white/10 border-t-ares-red rounded-full animate-spin"></div>
         </div>
       ) : isError ? (
         <div className="text-ares-red bg-ares-red/10 border border-ares-red ares-cut-sm p-4 font-bold text-center">
           Failed to load gallery images. Please try again later.
         </div>
       ) : photos.length === 0 ? (
-        <div className="text-zinc-500 italic text-center py-12 font-medium">No photos found in the ARES gallery.</div>
+        <div className="text-marble/50 italic text-center py-12 font-medium">No photos found in the ARES gallery.</div>
       ) : (
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
           {photos.map((photo, index) => {

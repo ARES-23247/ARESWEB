@@ -63,28 +63,28 @@ export default function AdminInquiries() {
                 <div className="flex items-center gap-3">
                   <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
                     iq.type === 'student' ? 'bg-ares-red/20 text-ares-red' : 
-                    iq.type === 'mentor' ? 'bg-blue-500/20 text-blue-400' : 'bg-ares-cyan/20 text-ares-cyan'
+                    iq.type === 'mentor' ? 'bg-ares-gold/20 text-ares-gold' : 'bg-ares-cyan/20 text-ares-cyan'
                   }`}>
                     {iq.type} Form
                   </div>
                   <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                    iq.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-emerald-500/20 text-emerald-500'
+                    iq.status === 'pending' ? 'bg-ares-gold/20 text-ares-gold' : 'bg-ares-cyan/20 text-ares-cyan'
                   }`}>
                     {iq.status}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {iq.status === 'pending' && (
-                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'resolved' })} className="text-zinc-500 hover:text-emerald-500 transition-colors" title="Mark Resolved">
+                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'resolved' })} className="text-marble/40 hover:text-ares-cyan transition-colors" title="Mark Resolved">
                       <CheckSquare size={16} />
                     </button>
                   )}
                   {iq.status === 'resolved' && (
-                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'pending' })} className="text-zinc-500 hover:text-yellow-500 transition-colors" title="Mark Pending">
+                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'pending' })} className="text-marble/40 hover:text-ares-gold transition-colors" title="Mark Pending">
                       <Clock size={16} />
                     </button>
                   )}
-                  <button onClick={() => { if(confirm("Delete inquiry?")) deleteInquiry.mutate(iq.id); }} className="text-zinc-500 hover:text-ares-red transition-colors" title="Delete">
+                  <button onClick={() => { if(confirm("Delete inquiry?")) deleteInquiry.mutate(iq.id); }} className="text-marble/40 hover:text-ares-red transition-colors" title="Delete">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -92,19 +92,19 @@ export default function AdminInquiries() {
 
               <div className="mb-4 flex-shrink-0">
                 <h4 className="text-xl font-bold text-white mb-1">{iq.name}</h4>
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <div className="flex items-center gap-2 text-sm text-marble/60">
                   <Mail size={14} /> <a href={`mailto:${iq.email}`} className="hover:text-white transition-colors">{iq.email}</a>
-                  <span className="mx-2 text-zinc-600">•</span>
+                  <span className="mx-2 text-marble/20">•</span>
                   <Calendar size={14} /> {new Date(iq.created_at).toLocaleDateString()}
                 </div>
               </div>
 
-              <div className="bg-white/5 ares-cut-sm p-4 text-sm text-zinc-300 flex-1">
+              <div className="bg-white/5 ares-cut-sm p-4 text-sm text-marble/70 flex-1">
                 <div className="grid grid-cols-2 gap-y-3 mb-2">
                   {Object.entries(meta).map(([k, v]) => (
                     k !== 'additional' && v && (
                       <div key={k}>
-                        <span className="block text-[10px] font-black uppercase text-zinc-500 tracking-widest">{k}</span>
+                        <span className="block text-[10px] font-black uppercase text-marble/40 tracking-widest">{k}</span>
                         <span className="font-medium text-white">{Array.isArray(v) ? v.join(', ') : String(v)}</span>
                       </div>
                     )
@@ -112,8 +112,8 @@ export default function AdminInquiries() {
                 </div>
                 {meta.additional && (
                   <div className="mt-4 pt-4 border-t border-white/5">
-                    <span className="block text-[10px] font-black uppercase text-zinc-500 tracking-widest">Additional Notes</span>
-                    <p className="mt-1 italic text-zinc-400 whitespace-pre-wrap">{meta.additional}</p>
+                    <span className="block text-[10px] font-black uppercase text-marble/40 tracking-widest">Additional Notes</span>
+                    <p className="mt-1 italic text-marble/60 whitespace-pre-wrap">{meta.additional}</p>
                   </div>
                 )}
               </div>

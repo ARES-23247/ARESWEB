@@ -59,18 +59,18 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-zinc-950 border border-zinc-800 ares-cut-lg w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
-        <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
+      <div className="bg-obsidian border border-white/10 ares-cut-lg w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+        <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 ares-cut-sm bg-ares-gold/10 flex items-center justify-center text-ares-gold">
               <History size={20} />
             </div>
             <div>
               <h3 className="text-xl font-bold text-white tracking-tight">Revision History</h3>
-              <p className="text-zinc-500 text-xs">Viewing legacy versions for <span className="text-zinc-300 font-mono italic">&quot;{displayTitle}&quot;</span></p>
+              <p className="text-white/40 text-xs">Viewing legacy versions for <span className="text-white/80 font-mono italic">&quot;{displayTitle}&quot;</span></p>
             </div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors p-2 bg-zinc-900 border border-zinc-800 ares-cut-sm">
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors p-2 bg-white/5 border border-white/10 ares-cut-sm">
             <X size={20} />
           </button>
         </div>
@@ -78,22 +78,22 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
         <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
           {isLoading ? (
             <div className="h-48 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-zinc-800 border-t-ares-gold rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-2 border-white/10 border-t-ares-gold rounded-full animate-spin"></div>
             </div>
           ) : revisions.length === 0 ? (
-            <div className="h-48 flex flex-col items-center justify-center text-zinc-500">
+            <div className="h-48 flex flex-col items-center justify-center text-white/40">
                <Clock size={32} className="mb-2 opacity-20" />
                <p className="text-sm italic">No legacy revisions found for this entry.</p>
-               <p className="text-[10px] mt-1 text-zinc-600">History is captured automatically whenever an admin modifies content.</p>
+               <p className="text-[10px] mt-1 text-white/30">History is captured automatically whenever an admin modifies content.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {revisions.map((rev) => (
-                <div key={rev.id} className="bg-zinc-900/40 border border-zinc-800/60 ares-cut p-4 flex items-center justify-between hover:border-zinc-700 transition-colors">
+                <div key={rev.id} className="bg-white/5 border border-white/10 ares-cut p-4 flex items-center justify-between hover:border-white/20 transition-colors">
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-zinc-200 truncate">{rev.title}</div>
+                    <div className="font-bold text-white/90 truncate">{rev.title}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-zinc-400 bg-black/40 border border-zinc-800 px-2 py-0.5 ares-cut-sm">
+                      <span className="text-[10px] text-white/40 bg-black/40 border border-white/10 px-2 py-0.5 ares-cut-sm">
                         {format(new Date(rev.created_at), 'MMM do, yyyy @ HH:mm')}
                       </span>
                       <span className="text-[10px] text-ares-cyan truncate max-w-[150px]">
@@ -119,8 +119,8 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
           )}
         </div>
 
-        <div className="p-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center justify-center">
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">End of Revision Timeline</p>
+        <div className="p-4 bg-white/5 border-t border-white/10 flex items-center justify-center">
+            <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">End of Revision Timeline</p>
         </div>
       </div>
     </div>

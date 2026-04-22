@@ -113,7 +113,7 @@ export default function CommandCenter() {
             </div>
             Command Center
           </h2>
-          <p className="text-zinc-500 text-sm mt-1">
+          <p className="text-marble/40 text-sm mt-1">
             Unified view of ARESWEB, Zulip, and GitHub integrations
           </p>
         </div>
@@ -122,13 +122,13 @@ export default function CommandCenter() {
             <div className="w-2 h-2 rounded-full bg-ares-gold animate-pulse" />
             D1 Connected
           </span>
-          <span className="text-[10px] font-mono text-zinc-600 uppercase">
+          <span className="text-[10px] font-mono text-marble/20 uppercase">
             Last sync: {lastRefresh.toLocaleTimeString()}
           </span>
           <button
             onClick={fetchAll}
             disabled={isLoading}
-            className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-zinc-400 hover:text-white transition-all disabled:opacity-30"
+            className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble/40 hover:text-white transition-all disabled:opacity-30"
           >
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
           </button>

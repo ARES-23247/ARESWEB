@@ -16,7 +16,7 @@ export default function NotFound() {
         <h2 className="text-2xl font-bold text-white mb-3">
           Page Not Found
         </h2>
-        <p className="text-zinc-400 mb-8 text-sm leading-relaxed">
+        <p className="text-marble/60 mb-8 text-sm leading-relaxed">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
           <br />
           Let&apos;s get you back on track.
@@ -25,13 +25,13 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             to="/"
-            className="px-6 py-3 bg-ares-red text-white font-bold uppercase text-xs tracking-widest ares-cut-sm hover:bg-ares-red/80 transition-all"
+            className="px-6 py-3 bg-ares-red text-white font-bold uppercase text-xs tracking-widest ares-cut-sm hover:bg-ares-bronze transition-all"
           >
             Go Home
           </Link>
           <Link
             to="/blog"
-            className="px-6 py-3 bg-zinc-800 text-zinc-300 font-bold uppercase text-xs tracking-widest ares-cut-sm hover:bg-zinc-700 border border-zinc-700 transition-all"
+            className="px-6 py-3 bg-white/5 text-white/70 font-bold uppercase text-xs tracking-widest ares-cut-sm hover:bg-white/10 border border-white/20 transition-all"
           >
             Read Blog
           </Link>

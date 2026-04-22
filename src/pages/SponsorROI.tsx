@@ -66,7 +66,7 @@ export default function SponsorROI() {
         <p className="text-marble/60 max-w-md">
           {error || "The secure link you are trying to access is invalid or has expired."}
         </p>
-        <Link to="/" className="mt-8 px-8 py-3 bg-ares-red hover:bg-ares-danger rounded-xl transition-all font-bold uppercase tracking-widest text-xs">
+        <Link to="/" className="mt-8 px-8 py-3 bg-ares-red hover:bg-ares-bronze rounded-xl transition-all font-bold uppercase tracking-widest text-xs">
           Return to Portal
         </Link>
       </div>

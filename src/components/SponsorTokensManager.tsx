@@ -76,16 +76,16 @@ export default function SponsorTokensManager() {
       <DashboardPageHeader 
         title="ROI Links" 
         subtitle="Generate magic links for sponsors to view impact data."
-        icon={<FileKey2 className="text-ares-cyan" />}
+        icon={<FileKey2 className="text-ares-gold" />}
       />
       {/* Generate Action */}
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+      <div className="bg-obsidian/50 border border-white/5 rounded-2xl p-6">
         <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-widest flex items-center gap-2">
-          <FileKey2 size={16} className="text-ares-cyan" /> Generate Magic Link
+          <FileKey2 size={16} className="text-ares-gold" /> Generate Magic Link
         </h3>
         <div className="flex flex-col sm:flex-row gap-4">
           <select 
-            className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold text-white focus:border-ares-cyan focus:outline-none"
+            className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold text-white focus:border-ares-gold focus:outline-none"
             value={selectedSponsor}
             onChange={(e) => setSelectedSponsor(e.target.value)}
           >
@@ -97,7 +97,7 @@ export default function SponsorTokensManager() {
           <button
             disabled={!selectedSponsor || generating}
             onClick={generateToken}
-            className="px-6 py-2.5 bg-ares-cyan hover:bg-cyan-500 text-black font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="px-6 py-2.5 bg-ares-gold hover:opacity-90 text-black font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {generating ? <RefreshCw className="animate-spin" size={16} /> : <Plus size={16} />} 
             Generate Link
@@ -106,18 +106,18 @@ export default function SponsorTokensManager() {
       </div>
 
       {/* List */}
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden">
+      <div className="bg-obsidian/50 border border-white/5 rounded-2xl overflow-hidden">
         {tokens.length === 0 ? (
-          <div className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">
+          <div className="p-8 text-center text-white/40 font-bold uppercase tracking-widest text-xs">
             No access tokens generated yet.
           </div>
         ) : (
           <table className="w-full text-left">
             <thead className="bg-black/40 border-b border-white/5">
               <tr>
-                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">Sponsor</th>
-                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">Magic URL</th>
-                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">Created</th>
+                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/40">Sponsor</th>
+                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/40">Magic URL</th>
+                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/40">Created</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -130,13 +130,13 @@ export default function SponsorTokensManager() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <input readOnly value={url} className="bg-black text-[10px] text-zinc-400 font-mono px-3 py-1.5 rounded-lg border border-white/5 w-64 focus:outline-none" />
-                        <a href={url} target="_blank" rel="noreferrer" className="text-ares-cyan hover:text-white transition-colors">
+                        <input readOnly value={url} className="bg-black text-[10px] text-white/40 font-mono px-3 py-1.5 rounded-lg border border-white/5 w-64 focus:outline-none" />
+                        <a href={url} target="_blank" rel="noreferrer" className="text-ares-gold hover:text-white transition-colors">
                           <ExternalLink size={14} />
                         </a>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs font-mono text-zinc-500">
+                    <td className="px-6 py-4 text-xs font-mono text-white/40">
                       {new Date(t.created_at).toLocaleDateString()}
                     </td>
                   </tr>

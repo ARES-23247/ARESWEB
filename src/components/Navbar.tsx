@@ -184,14 +184,14 @@ export default function Navbar() {
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
             aria-label="Open Command Palette"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan border border-white/10"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-marble/90 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan border border-white/10"
           >
             <Search size={14} aria-hidden="true" />
             <span className="text-[10px] sm:text-xs font-mono flex items-center gap-2 whitespace-nowrap">
               Search... 
               <span className="hidden lg:flex items-center gap-1 opacity-60">
-                <kbd className="bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-600 leading-none">Ctrl</kbd>
-                <kbd className="bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-600 leading-none">K</kbd>
+                <kbd className="bg-black/40 text-marble/80 px-1.5 py-0.5 rounded border border-white/20 leading-none">Ctrl</kbd>
+                <kbd className="bg-black/40 text-marble/80 px-1.5 py-0.5 rounded border border-white/20 leading-none">K</kbd>
               </span>
             </span>
           </button>
@@ -202,7 +202,7 @@ export default function Navbar() {
                 className="relative flex items-center justify-center p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 aria-label="Notifications"
               >
-                <Bell size={18} className="text-zinc-300" />
+                <Bell size={18} className="text-marble/80" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-danger-soft opacity-75"></span>
@@ -214,7 +214,7 @@ export default function Navbar() {
               </button>
               
               {showNotifs && (
-                <div className="absolute top-12 right-0 w-80 bg-zinc-900 border border-white/10 shadow-2xl rounded-lg overflow-hidden flex flex-col z-[200]">
+                <div className="absolute top-12 right-0 w-80 bg-obsidian border border-white/10 shadow-2xl rounded-lg overflow-hidden flex flex-col z-[200]">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
                     <h3 className="text-sm font-bold text-white">Notifications</h3>
                     {unreadCount > 0 && (
@@ -228,7 +228,7 @@ export default function Navbar() {
                   </div>
                   <div className="flex-1 overflow-y-auto max-h-96 w-full">
                     {notifications.length === 0 ? (
-                      <div className="px-4 py-6 text-center text-sm text-zinc-500">
+                      <div className="px-4 py-6 text-center text-sm text-marble/50">
                         No notifications yet.
                       </div>
                     ) : (
@@ -257,7 +257,7 @@ export default function Navbar() {
                              <span className="text-sm font-bold text-white">{n.title}</span>
                              {!n.is_read && <span className="h-2 w-2 rounded-full bg-ares-red flex-shrink-0 mt-1"></span>}
                           </div>
-                          <span className="text-xs text-zinc-400 line-clamp-2">{n.message}</span>
+                          <span className="text-xs text-marble/40 line-clamp-2">{n.message}</span>
                         </div>
                       ))
                     )}
@@ -271,15 +271,15 @@ export default function Navbar() {
               <img 
                 src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${session?.user?.id}`} 
                 alt="" 
-                className="w-6 h-6 rounded-full bg-zinc-800" 
+                className="w-6 h-6 rounded-full bg-black/40" 
               />
-              <span className="text-xs font-bold text-zinc-300 group-hover:text-white uppercase tracking-wider">Dashboard</span>
+              <span className="text-xs font-bold text-marble/80 group-hover:text-white uppercase tracking-wider">Dashboard</span>
             </Link>
           )}
           {!isPending && !isSignedIn && (
             <Link to="/login" className="flex items-center gap-2 px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-ares-gold/30 rounded-full transition-all group" aria-label="Sign In">
               <LogIn size={14} className="text-ares-gold" />
-              <span className="text-xs font-bold text-zinc-300 group-hover:text-ares-gold uppercase tracking-wider">Sign In</span>
+              <span className="text-xs font-bold text-marble/80 group-hover:text-ares-gold uppercase tracking-wider">Sign In</span>
             </Link>
           )}
 

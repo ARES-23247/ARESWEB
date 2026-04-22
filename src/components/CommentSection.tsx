@@ -81,7 +81,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
   if (loading) return null;
 
   return (
-    <div className="mt-12 border-t border-zinc-800 pt-8">
+    <div className="mt-12 border-t border-white/5 pt-8">
       <h3 className="text-lg font-black flex items-center gap-2 mb-6">
         <MessageCircle size={20} className="text-ares-red" />
         Discussion ({comments.filter(c => !c.is_deleted).length})
@@ -94,10 +94,10 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               placeholder="Share your thoughts..."
-              className="flex-1 bg-zinc-900/50 border border-zinc-800 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
+              className="flex-1 bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
             />
             <button onClick={submitComment} disabled={posting || !newComment.trim()}
-              className="px-4 bg-ares-red hover:bg-ares-danger text-white ares-cut-sm font-bold text-sm disabled:opacity-50 transition-colors flex items-center gap-1.5 self-end h-[60px]"
+              className="px-4 bg-ares-red hover:bg-ares-bronze text-white ares-cut-sm font-bold text-sm disabled:opacity-50 transition-colors flex items-center gap-1.5 self-end h-[60px]"
             >
               {posting ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
               Post
@@ -112,19 +112,19 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
               return (
                 <div key={comment.id} className="flex gap-3 group">
                   <img src={comment.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${comment.user_id}`}
-                    alt="" className="w-8 h-8 ares-cut-sm bg-zinc-800 flex-shrink-0" />
+                    alt="" className="w-8 h-8 ares-cut-sm bg-white/5 flex-shrink-0" />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-bold text-white">{comment.nickname || "ARES Member"}</span>
-                      <span className="text-[10px] text-zinc-600">{new Date(comment.created_at).toLocaleDateString()}</span>
+                      <span className="text-[10px] text-marble/30">{new Date(comment.created_at).toLocaleDateString()}</span>
                       {userCanModify && !isEditing && (
                         <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => { setEditingId(comment.id); setEditContent(comment.content); }}
-                            className="p-1 text-zinc-600 hover:text-white transition-colors">
+                            className="p-1 text-marble/40 hover:text-white transition-colors">
                             <Pencil size={14} />
                           </button>
                           <button onClick={() => deleteComment(comment.id)}
-                            className="p-1 text-zinc-600 hover:text-ares-danger transition-colors">
+                            className="p-1 text-marble/40 hover:text-ares-red transition-colors">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -135,21 +135,21 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
                         <textarea
                           value={editContent}
                           onChange={e => setEditContent(e.target.value)}
-                          className="flex-1 bg-zinc-900/50 border border-zinc-700 ares-cut-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
+                          className="flex-1 bg-white/5 border border-white/10 ares-cut-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-ares-red resize-none min-h-[60px]"
                         />
                         <div className="flex flex-col gap-2">
                           <button onClick={() => saveEdit(comment.id)} disabled={!editContent.trim() || editContent === comment.content}
-                            className="p-2 bg-zinc-800 hover:bg-green-600/20 text-green-500 hover:text-green-400 ares-cut-sm transition-colors disabled:opacity-50">
+                            className="p-2 bg-white/5 hover:bg-ares-cyan/20 text-ares-cyan ares-cut-sm transition-colors disabled:opacity-50">
                             <Check size={16} />
                           </button>
                           <button onClick={() => setEditingId(null)}
-                            className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 ares-cut-sm transition-colors">
+                            className="p-2 bg-white/5 hover:bg-white/10 text-marble/40 ares-cut-sm transition-colors">
                             <X size={16} />
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+                      <p className="text-sm text-marble/70 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
                     )}
                   </div>
                 </div>
@@ -158,24 +158,24 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
           </div>
         </div>
       ) : (
-        <div className="mb-8 p-6 bg-zinc-900/50 border border-zinc-800 ares-cut text-center">
-          <p className="text-sm text-zinc-300 mb-2">
+        <div className="mb-8 p-6 bg-white/5 border border-white/10 ares-cut text-center">
+          <p className="text-sm text-marble/70 mb-2">
             <span className="text-ares-red font-bold">Verified Access Required</span>
           </p>
-          <p className="text-sm text-zinc-500 max-w-md mx-auto mb-6">
+          <p className="text-sm text-marble/40 max-w-md mx-auto mb-6">
             Discussions are strictly restricted to verified ARES members to protect privacy.
           </p>
           {!isAuthenticated ? (
             <div>
-              <a href="/login" className="px-5 py-2.5 bg-ares-red hover:bg-ares-danger text-white ares-cut-sm font-bold text-sm inline-block transition-colors">
+              <a href="/login" className="px-5 py-2.5 bg-ares-red hover:bg-ares-bronze text-white ares-cut-sm font-bold text-sm inline-block transition-colors">
                 Sign in with ARES ID
               </a>
-              <p className="text-xs text-zinc-600 mt-5">
+              <p className="text-xs text-marble/30 mt-5">
                 Don&apos;t have an ARES ID? <a href="/about" className="text-ares-red hover:underline">Contact us</a>
               </p>
             </div>
           ) : (
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+            <p className="text-xs text-marble/40 max-w-sm mx-auto">
               Your account is pending team verification. If you have any questions, <a href="/about" className="text-ares-red hover:underline">contact us</a>.
             </p>
           )}

@@ -98,7 +98,7 @@ export default function AdminUsers() {
                 <td className="py-3 px-2">
                   <a href={`/profile/${user.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <img src={user.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.id}`}
-                      alt="" className="w-8 h-8 ares-cut-sm bg-zinc-800" />
+                      alt="" className="w-8 h-8 ares-cut-sm bg-obsidian" />
                     <div>
                       <span className="text-sm font-bold text-white block hover:text-ares-red">{user.nickname || user.name || "ARES Member"}</span>
                       {(user.first_name || user.last_name) && (
@@ -131,8 +131,8 @@ export default function AdminUsers() {
                       onChange={e => changeMemberType(user.id, e.target.value)}
                       className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
                         user.member_type === "alumni" ? "border-ares-gold/50 text-ares-gold" :
-                        ["parent", "coach", "mentor", "sponsor"].includes(user.member_type || "") ? "border-indigo-500/50 text-indigo-400" :
-                        "border-zinc-700 text-zinc-400"
+                        ["parent", "coach", "mentor", "sponsor"].includes(user.member_type || "") ? "border-ares-gold/30 text-ares-gold/70" :
+                        "border-white/20 text-white/40"
                       }`}
                     >
                       {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}

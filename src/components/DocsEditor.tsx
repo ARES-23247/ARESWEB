@@ -111,7 +111,11 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
         queryClient.invalidateQueries({ queryKey: ["docs"] });
         queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
         
-        navigate(`/docs/${data.slug}`);
+        if (isDraft || userRole === "author") {
+          navigate("/dashboard");
+        } else {
+          navigate(`/docs/${data.slug}`);
+        }
       } else {
         setErrorMsg(data.error || "Failed to publish");
       }
@@ -148,7 +152,7 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full relative bg-obsidian/60 glass-card p-6 md:p-8 ares-cut border border-white/10">
+    <div className="flex flex-col gap-6 w-full relative">
       <div>
         <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
           {editSlug ? "Edit Document" : "Publish Document"}
@@ -220,18 +224,18 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 ares-cut-sm bg-zinc-900/50 border border-white/5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 ares-cut-sm bg-obsidian/50 border border-white/5">
         <div className="flex items-center gap-3 cursor-pointer group">
           <input 
             id="isPortfolioToggle"
             type="checkbox" 
             checked={isPortfolio} 
             onChange={(e) => setIsPortfolio(e.target.checked)} 
-            className="w-5 h-5 rounded border-zinc-700 bg-black text-ares-cyan focus:ring-ares-cyan"
+            className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
           />
           <div>
             <label htmlFor="isPortfolioToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Judge&apos;s Portfolio Selection</label>
-            <span className="block text-xs text-zinc-500">Feature this in the Rapid Review dashboard for judges.</span>
+            <span className="block text-xs text-white/40">Feature this in the Rapid Review dashboard for judges.</span>
           </div>
         </div>
         
@@ -241,11 +245,11 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
             type="checkbox" 
             checked={isExecutiveSummary} 
             onChange={(e) => setIsExecutiveSummary(e.target.checked)} 
-            className="w-5 h-5 rounded border-zinc-700 bg-black text-ares-gold focus:ring-ares-gold"
+            className="w-5 h-5 rounded border-white/10 bg-black text-ares-gold focus:ring-ares-gold"
           />
           <div>
             <label htmlFor="isExecSummaryToggle" className="block text-sm font-bold text-white group-hover:text-ares-gold transition-colors cursor-pointer">Executive Summary Flag</label>
-            <span className="block text-xs text-zinc-500">Mark as the primary seasonal overview for rapid judging.</span>
+            <span className="block text-xs text-white/40">Mark as the primary seasonal overview for rapid judging.</span>
           </div>
         </div>
       </div>
