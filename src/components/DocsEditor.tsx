@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 
-export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSlug?: string | null; onClearEdit?: () => void; userRole?: string | unknown }) {
+export default function DocsEditor({ userRole }: { userRole?: string | unknown }) {
+  const { editSlug } = useParams<{ editSlug?: string }>();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isPending, setIsPending] = useState(false);
@@ -100,7 +101,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["docs"] });
         queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
-        if (onClearEdit) onClearEdit();
+        
       // @ts-expect-error -- D1 untyped response
         navigate(`/docs/${data.slug}`);
       } else {
@@ -108,7 +109,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
         setErrorMsg(data.error || "Failed to publish");
       }
     } catch {
-      setErrorMsg("Network error — could not reach the API.");
+      setErrorMsg("Network error â€” could not reach the API.");
     } finally {
       setIsPending(false);
     }
@@ -131,7 +132,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
       }
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
-      if (onClearEdit) onClearEdit();
+      
       navigate("/docs");
     } catch {
       setErrorMsg("Failed to delete the document. Please try again.");
@@ -265,7 +266,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
               DELETE
             </button>
             <button
-              onClick={() => onClearEdit && onClearEdit()}
+              onClick={() => navigate('/dashboard/manage_docs')}
               className="px-6 py-2 ares-cut-sm text-white/50 hover:text-white font-bold tracking-wider text-sm transition-colors"
             >
               Cancel
@@ -290,3 +291,4 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
     </div>
   );
 }
+

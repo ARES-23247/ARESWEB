@@ -30,7 +30,7 @@ export default function DashboardHome() {
     }
   }, [canSeeInquiries]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   // @ts-expect-error - BetterAuth session typing
   const firstName = session?.user?.first_name || session?.user?.name || "ARES Member";
 

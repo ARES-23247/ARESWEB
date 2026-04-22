@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -40,7 +41,8 @@ interface SyncResponse {
   warning?: string;
 }
 
-export default function EventEditor({ editId, onClearEdit, userRole }: { editId?: string | null; onClearEdit?: () => void; userRole?: string | unknown }) {
+export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
+  const { editId } = useParams<{ editId?: string }>();
   const queryClient = useQueryClient();
   const [errorMsg, setErrorMsg] = useState("");
   const [warningMsg, setWarningMsg] = useState("");
@@ -204,7 +206,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
         // Multi-stage invalidation to account for D1 propagation delay
         setTimeout(() => queryClient.invalidateQueries({ queryKey: ["events"] }), 1500);
 
-        if (onClearEdit) onClearEdit();
+        
 
         if (!editId) {
           setForm({ 
@@ -219,7 +221,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       }
     },
     onError: (err: unknown) => {
-      setErrorMsg((err as Error).message || "Network error � could not reach the API.");
+      setErrorMsg((err as Error).message || "Network error — could not reach the API.");
     }
   });
 
@@ -241,7 +243,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       }
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      if (onClearEdit) onClearEdit();
+      
     } catch {
       setErrorMsg("Failed to delete the event. Please try again.");
     }
@@ -467,3 +469,4 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
     </div>
   );
 }
+

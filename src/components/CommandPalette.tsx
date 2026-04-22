@@ -48,7 +48,7 @@ export default function CommandPalette() {
     };
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   // @ts-expect-error - BetterAuth session typing
   const userRole = session?.user?.role;
 

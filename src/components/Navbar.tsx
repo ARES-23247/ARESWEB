@@ -15,7 +15,7 @@ export default function Navbar() {
 
   const isSignedIn = !isPending && session?.user;
   const userImage = session?.user?.image;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   // @ts-expect-error - BetterAuth session typing
   const role = session?.user?.role || "unverified";
   const canSeeInquiries = isSignedIn && role !== "unverified";

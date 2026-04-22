@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from "react";
-import { useSearchParams, useNavigate, Link, useLocation, Routes, Route } from "react-router-dom";
+import { useNavigate, Link, useLocation, Routes, Route } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, 
@@ -91,10 +91,9 @@ function TabLoader() {
 }
 
 export default function Dashboard() {
-  const [searchParams] = useSearchParams();
+
   const navigate = useNavigate();
   const location = useLocation();
-  const initialDoc = searchParams.get("editDoc");
 
   // ── State ──────────────────────────────────────────────────────────
   const [enrichedSession, setEnrichedSession] = useState<{user: Record<string, unknown>, authenticated: boolean} | null>(null);
@@ -113,9 +112,7 @@ export default function Dashboard() {
   const canSeeInquiries = !isUnverified;
   const canSeeLogistics = isAdmin || ["parent", "coach", "mentor"].includes(memberType);
 
-  const [editPostSlug, setEditPostSlug] = useState<string | null>(null);
-  const [editEventId, setEditEventId] = useState<string | null>(null);
-  const [editDocSlug, setEditDocSlug] = useState<string | null>(initialDoc);
+  // Navigation now handled via URL params in the Editor components
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -299,9 +296,9 @@ export default function Dashboard() {
             <div>
               <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/60 mb-2 px-6 flex items-center gap-2"><PlusCircle size={12} className="text-ares-cyan" /> Quick Create</h4>
               <div className="space-y-1 px-3">
-                <NavButton tab="blog" icon={PenTool} label={editPostSlug ? "Edit Post (Active)" : "New Blog Post"} currentPath={location.pathname} />
-                <NavButton tab="event" icon={Calendar} label={editEventId ? "Edit Event (Active)" : "New Event"} currentPath={location.pathname} />
-                <NavButton tab="docs" icon={Book} label={editDocSlug ? "Edit Doc (Active)" : "New Document"} currentPath={location.pathname} />
+                <NavButton tab="blog" icon={PenTool} label={location.pathname.includes("/dashboard/blog/") ? "Edit Post (Active)" : "New Blog Post"} currentPath={location.pathname} />
+                <NavButton tab="event" icon={Calendar} label={location.pathname.includes("/dashboard/event/") ? "Edit Event (Active)" : "New Event"} currentPath={location.pathname} />
+                <NavButton tab="docs" icon={Book} label={location.pathname.includes("/dashboard/docs/") ? "Edit Doc (Active)" : "New Document"} currentPath={location.pathname} />
               </div>
             </div>
           )}
@@ -401,12 +398,12 @@ export default function Dashboard() {
                   <Routes>
                     <Route index element={<DashboardHome />} />
                     <Route path="profile" element={<ProfileEditor />} />
-                    <Route path="blog" element={<BlogEditor editSlug={editPostSlug} onClearEdit={() => setEditPostSlug(null)} userRole={session?.user?.role} />} />
-                    <Route path="event" element={<EventEditor editId={editEventId} onClearEdit={() => setEditEventId(null)} userRole={session?.user?.role} />} />
-                    <Route path="docs" element={<DocsEditor editSlug={editDocSlug} onClearEdit={() => setEditDocSlug(null)} userRole={session?.user?.role} />} />
-                    <Route path="manage_blog" element={<ContentManager mode="blog" onEditPost={(slug) => { setEditPostSlug(slug); navigate("/dashboard/blog"); }} />} />
-                    <Route path="manage_event" element={<ContentManager mode="event" onEditEvent={(id) => { setEditEventId(id); navigate("/dashboard/event"); }} />} />
-                    <Route path="manage_docs" element={<ContentManager mode="docs" onEditDoc={(slug) => { setEditDocSlug(slug); navigate("/dashboard/docs"); }} />} />
+                    <Route path="blog/:editSlug?" element={<BlogEditor userRole={session?.user?.role} />} />
+                    <Route path="event/:editId?" element={<EventEditor userRole={session?.user?.role} />} />
+                    <Route path="docs/:editSlug?" element={<DocsEditor userRole={session?.user?.role} />} />
+                    <Route path="manage_blog" element={<ContentManager mode="blog" onEditPost={(slug) => navigate(`/dashboard/blog/${slug}`)} />} />
+                    <Route path="manage_event" element={<ContentManager mode="event" onEditEvent={(id) => navigate(`/dashboard/event/${id}`)} />} />
+                    <Route path="manage_docs" element={<ContentManager mode="docs" onEditDoc={(slug) => navigate(`/dashboard/docs/${slug}`)} />} />
                     <Route path="assets" element={<AssetManager />} />
                     <Route path="integrations" element={isAdmin ? <IntegrationsManager /> : <div className="text-center py-20">Access Denied</div>} />
                     <Route path="users" element={isAdmin ? <AdminUsers /> : <div className="text-center py-20">Access Denied</div>} />

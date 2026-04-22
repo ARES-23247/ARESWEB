@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import AssetPickerModal from "./AssetPickerModal";
 import { compressImage } from "../utils/imageProcessor";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
 
-export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSlug?: string | null; onClearEdit?: () => void; userRole?: string | unknown }) {
+export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
+  const { editSlug } = useParams<{ editSlug?: string }>();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isPending, setIsPending] = useState(false);
@@ -128,8 +129,6 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
         setTimeout(() => queryClient.invalidateQueries({ queryKey: ["posts"] }), 1500);
         setTimeout(() => queryClient.invalidateQueries({ queryKey: ["posts"] }), 3000);
         queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-        if (onClearEdit) onClearEdit();
-        
       // @ts-expect-error -- D1 untyped response
         if (data.warning) {
       // @ts-expect-error -- D1 untyped response
