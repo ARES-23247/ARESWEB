@@ -86,6 +86,6 @@ export const ClickToDeleteButton = ({
 export const contentFilter = (view: ViewType) => (item: { is_deleted?: number | boolean, status?: string }) => {
   const isDeleted = Number(item.is_deleted) === 1;
   if (view === 'trash') return isDeleted;
-  if (view === 'pending') return !isDeleted && (item.status === 'pending' || item.status === 'rejected');
+  if (view === 'pending') return !isDeleted && (item.status === 'pending' || item.status === 'rejected' || item.status === 'draft');
   return !isDeleted && (item.status === 'published' || !item.status);
 };

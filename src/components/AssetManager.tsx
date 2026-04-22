@@ -2,20 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { compressImage } from "../utils/imageProcessor";
 import { adminApi } from "../api/adminApi";
-import { useModal } from "../contexts/ModalContext";
-
-interface R2Asset {
-  key: string;
-  size: number;
-  uploaded: string;
-  url: string;
-}
+import AssetUploader from "./assets/AssetUploader";
+import AssetGrid, { R2Asset } from "./assets/AssetGrid";
+import AssetSyndicateModal from "./assets/AssetSyndicateModal";
 
 export default function AssetManager() {
   const queryClient = useQueryClient();
-  const modal = useModal();
-  const [confirmKey, setConfirmKey] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [syndicateKey, setSyndicateKey] = useState<string | null>(null);
   const [syndicateCaption, setSyndicateCaption] = useState("");
   const [activeFolder, setActiveFolder] = useState<string>("Library");
@@ -58,7 +50,6 @@ export default function AssetManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media"] });
-      setConfirmKey(null);
     },
   });
 
@@ -78,37 +69,11 @@ export default function AssetManager() {
     onSuccess: () => {
       setSyndicateKey(null);
       setSyndicateCaption("");
-      // Perhaps a success toast could go here
     },
   });
 
-
-
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    uploadMutation.mutate(files, {
-      onSettled: () => {
-        e.target.value = "";
-      }
-    });
-  };
-
-  const copyUrl = (url: string, key: string) => {
-    const fullUrl = `${window.location.origin}${url}`;
-    navigator.clipboard.writeText(fullUrl);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   const uniqueFolders = Array.from(new Set(assets.map(a => a.folder))).filter(Boolean);
-  const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter((a: R2Asset & { folder: string; tags: string; }) => a.folder === selectedFolderFilter);
+  const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter((a) => a.folder === selectedFolderFilter);
 
   return (
     <div className="flex-1 w-full flex flex-col min-h-0">
@@ -119,35 +84,12 @@ export default function AssetManager() {
             {assets.length} asset{assets.length !== 1 && "s"} registered in the Edge.
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <input
-            type="text"
-            placeholder="Assign Tag/Folder"
-            value={activeFolder}
-            onChange={(e) => setActiveFolder(e.target.value)}
-            className="w-full sm:w-48 bg-zinc-900 border border-zinc-700 ares-cut-sm px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-ares-gold"
-          />
-          <label
-            htmlFor="asset-upload-input"
-            className={`px-6 py-3 ares-cut font-bold uppercase tracking-widest text-xs cursor-pointer transition-all flex items-center gap-2 focus-within:ring-2 focus-within:ring-ares-gold ${
-              uploadMutation.isPending
-                ? "bg-zinc-800 text-zinc-400 pointer-events-none"
-                : "bg-ares-gold text-obsidian hover:bg-ares-gold/80 shadow-lg"
-            }`}
-          >
-            {uploadMutation.isPending 
-              ? `Uploading ${uploadProgress?.current} / ${uploadProgress?.total}` 
-              : "Upload Bulk"}
-            <input
-              id="asset-upload-input"
-              type="file"
-              accept="image/*,.heic,.heif"
-              multiple
-              className="hidden"
-              onChange={handleUpload}
-            />
-          </label>
-        </div>
+        <AssetUploader
+          activeFolder={activeFolder}
+          setActiveFolder={setActiveFolder}
+          uploadMutation={uploadMutation}
+          uploadProgress={uploadProgress}
+        />
       </div>
 
       {isLoading ? (
@@ -159,162 +101,25 @@ export default function AssetManager() {
           <p className="text-zinc-400 text-sm italic">No assets found in R2. Upload an image to get started.</p>
         </div>
       ) : (
-        <>
-          <div className="flex flex-wrap gap-2 mb-4 pb-2 border-b border-zinc-800/80">
-            <button 
-              onClick={() => setSelectedFolderFilter("All")}
-              className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full border transition-all ${selectedFolderFilter === "All" ? "bg-ares-gold border-ares-gold text-black" : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white"}`}
-            >All Gallery</button>
-            {uniqueFolders.map(folder => (
-              <button 
-                key={folder}
-                onClick={() => setSelectedFolderFilter(folder)}
-                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full border shadow-sm transition-all ${selectedFolderFilter === folder ? "bg-white border-white text-black" : "bg-black/40 border-zinc-700 text-zinc-400 hover:text-white"}`}
-              >{folder}</button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto flex-1 min-h-0 pr-2 pb-4 custom-scrollbar">
-            {filteredAssets.map((asset: R2Asset & { folder: string; tags: string; }) => (
-            <div
-              key={asset.key}
-              className="group relative bg-black/40 border border-zinc-800/60 ares-cut-sm overflow-hidden hover:border-zinc-700 transition-colors flex flex-col"
-            >
-              {/* Thumbnail */}
-              <div className="relative aspect-square bg-zinc-900">
-                <img
-                  src={asset.url}
-                  alt={asset.key}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center gap-2 p-4">
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => copyUrl(asset.url, asset.key)}
-                      className="px-3 py-1.5 bg-white text-obsidian text-xs font-bold ares-cut-sm hover:bg-ares-gold transition-colors flex-1 text-center"
-                    >
-                      {copiedKey === asset.key ? "Copied!" : "Copy URL"}
-                    </button>
-                    {confirmKey === asset.key ? (
-                      <button
-                        onClick={() => deleteMutation.mutate(asset.key)}
-                        disabled={deleteMutation.isPending}
-                        className="px-3 py-1.5 bg-ares-red text-white text-xs font-bold ares-cut-sm animate-pulse flex-1 text-center"
-                      >
-                        {deleteMutation.isPending ? "..." : "Confirm"}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmKey(asset.key)}
-                        className="px-3 py-1.5 bg-zinc-700 text-zinc-300 text-xs font-bold ares-cut-sm hover:bg-ares-red hover:text-white transition-colors flex-1 text-center"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <button
-                      onClick={() => setSyndicateKey(asset.key)}
-                      className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold ares-cut-sm hover:from-blue-400 hover:to-purple-500 transition-all text-center shadow-lg"
-                    >
-                      📢 Broadcast
-                    </button>
-                    <button
-                      onClick={async () => {
-                        const newFolder = await modal.prompt({
-                          title: "Move Asset",
-                          description: "Enter new folder name to move this asset:",
-                          defaultValue: asset.folder || "Library",
-                          submitText: "Move",
-                        });
-                        if (newFolder !== null && newFolder.trim() !== "") {
-                          moveMutation.mutate({ key: asset.key, newFolder: newFolder.trim() });
-                        }
-                      }}
-                      className="flex-1 px-3 py-2 bg-zinc-700 text-white text-xs font-bold ares-cut-sm hover:bg-ares-gold hover:text-black transition-colors text-center"
-                    >
-                      📁 Move
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Info strip */}
-              <div className="p-3 bg-zinc-900 border-t border-zinc-800/60">
-                <p className="text-white text-xs font-mono font-medium truncate w-full" title={asset.key}>
-                  {asset.key}
-                </p>
-                <div className="flex justify-between items-center mt-2 border-t border-zinc-800/50 pt-2">
-                  <p className="text-zinc-500 text-[10px] tracking-widest uppercase">
-                    {formatSize(asset.size)}
-                  </p>
-                  {asset.folder && (
-                    <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">
-                      {asset.folder}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-          </div>
-        </>
+        <AssetGrid
+          assets={assets}
+          filteredAssets={filteredAssets}
+          selectedFolderFilter={selectedFolderFilter}
+          setSelectedFolderFilter={setSelectedFolderFilter}
+          uniqueFolders={uniqueFolders}
+          deleteMutation={deleteMutation}
+          moveMutation={moveMutation}
+          setSyndicateKey={setSyndicateKey}
+        />
       )}
 
-      {/* Syndication Modal Overlay */}
-      {syndicateKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-obsidian border border-zinc-700 ares-cut w-full max-w-md p-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
-            
-            <h3 className="text-xl font-bold text-white mb-2">Broadcast Media</h3>
-            <p className="text-sm text-zinc-400 mb-6">
-              Dispatch this asset to Instagram, X, Facebook, and Discord securely. Make sure your Integration Keys are populated.
-            </p>
-            
-            <div className="mb-6 bg-black/50 border border-white/10 ares-cut-sm p-2 flex justify-center">
-              <img 
-                src={`/api/media/${syndicateKey}`} 
-                alt="Broadcast target" 
-                className="h-32 object-contain rounded" 
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label htmlFor="captionInput" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Social Caption</label>
-              <textarea
-                id="captionInput"
-                value={syndicateCaption}
-                onChange={(e) => setSyndicateCaption(e.target.value)}
-                rows={4}
-                placeholder="Draft an engaging caption for your followers..."
-                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
-              />
-            </div>
-            
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => { setSyndicateKey(null); setSyndicateCaption(""); }}
-                className="px-4 py-2 font-medium text-zinc-400 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => syndicateMutation.mutate({ key: syndicateKey, caption: syndicateCaption })}
-                disabled={syndicateMutation.isPending || syndicateCaption.trim() === ""}
-                className={`px-6 py-2 ares-cut-sm font-bold transition-all shadow-lg ${
-                  syndicateMutation.isPending || syndicateCaption.trim() === ""
-                   ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                   : "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:scale-105"
-                }`}
-              >
-                {syndicateMutation.isPending ? "Dispatching..." : "Launch Payload"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AssetSyndicateModal
+        syndicateKey={syndicateKey}
+        setSyndicateKey={setSyndicateKey}
+        syndicateCaption={syndicateCaption}
+        setSyndicateCaption={setSyndicateCaption}
+        syndicateMutation={syndicateMutation}
+      />
     </div>
   );
 }

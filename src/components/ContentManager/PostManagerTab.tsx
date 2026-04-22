@@ -68,6 +68,7 @@ export default function PostManagerTab({
                   {Number(post.is_deleted) === 1 && <span className="text-[9px] font-bold text-ares-red bg-ares-red/10 border border-ares-red/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Deleted</span>}
                   {post.revision_of && <span className="text-[9px] font-bold text-ares-gold bg-ares-gold/10 border border-ares-gold/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Revision</span>}
                   {post.status === 'rejected' && <span className="text-[9px] font-bold text-orange-400 bg-orange-400/10 border border-orange-400/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Rejected</span>}
+                  {post.status === 'draft' && <span className="text-[9px] font-bold text-ares-gold bg-ares-gold/10 border border-ares-gold/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Draft</span>}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 ares-cut-sm">{format(new Date(post.date), 'MMM do, yyyy')}</span>

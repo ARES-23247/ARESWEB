@@ -176,7 +176,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
   return (
     <>
       {/* ===== FLOATING TOOLBAR ===== */}
-      <div className="flex flex-wrap items-center gap-1 bg-zinc-900/95 backdrop-blur-md border border-zinc-800 ares-cut-sm p-2 z-50 w-full mb-0 sticky top-[64px] overflow-x-auto shadow-lg">
+      <div className="flex flex-wrap items-center gap-1 bg-zinc-900/95 backdrop-blur-md border border-zinc-800 ares-cut-sm p-2 z-50 w-full mb-0 sticky top-24 overflow-x-auto shadow-lg">
         {/* Undo / Redo */}
         <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>↶</Btn>
         <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>↷</Btn>
