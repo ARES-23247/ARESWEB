@@ -30,11 +30,7 @@ export default function CommandCenter() {
       const [boardRes, settingsRes, statsRes] = await Promise.allSettled([
         adminApi.get<{ success: boolean; board: ProjectBoard }>("/api/github/projects"),
         adminApi.get<{ success: boolean; settings: Record<string, string> }>("/api/admin/settings"),
-        Promise.all([
-          adminApi.get<{ posts: unknown[] }>("/api/admin/posts?limit=1"),
-          adminApi.get<{ events: unknown[] }>("/api/admin/events?limit=1"),
-          adminApi.get<{ docs: unknown[] }>("/api/admin/docs?limit=1"),
-        ]),
+        adminApi.get<{ posts: number; events: number; docs: number }>("/api/admin/stats"),
       ]);
 
       // GitHub Projects Board
@@ -61,11 +57,11 @@ export default function CommandCenter() {
 
       // Quick Stats
       if (statsRes.status === "fulfilled") {
-        const [posts, events, docs] = statsRes.value;
+        const data = statsRes.value;
         setStats({
-          posts: Array.isArray(posts.posts) ? posts.posts.length : 0,
-          events: Array.isArray(events.events) ? events.events.length : 0,
-          docs: Array.isArray(docs.docs) ? docs.docs.length : 0,
+          posts: data.posts || 0,
+          events: data.events || 0,
+          docs: data.docs || 0,
         });
       }
 

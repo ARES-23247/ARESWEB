@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, getSessionUser  } from "../middleware";
+import { AppEnv, ensureAdmin, getSessionUser, rateLimitMiddleware  } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -28,7 +28,7 @@ const badgeSchema = z.object({
   color_theme: z.string().optional()
 });
 
-badgesRouter.post("/save", ensureAdmin, zValidator("json", badgeSchema), async (c) => {
+badgesRouter.post("/save", ensureAdmin, rateLimitMiddleware(15, 60), zValidator("json", badgeSchema), async (c) => {
   try {
     const { id, name, description, icon, color_theme } = c.req.valid("json");
 
@@ -50,7 +50,7 @@ const awardBadgeSchema = z.object({
   badge_id: z.string().min(1)
 });
 
-badgesRouter.post("/users/:userId/award", ensureAdmin, zValidator("json", awardBadgeSchema), async (c) => {
+badgesRouter.post("/users/:userId/award", ensureAdmin, rateLimitMiddleware(15, 60), zValidator("json", awardBadgeSchema), async (c) => {
   try {
     const userId = (c.req.param("userId") || "");
     const { badge_id } = c.req.valid("json");
@@ -78,7 +78,7 @@ badgesRouter.post("/users/:userId/award", ensureAdmin, zValidator("json", awardB
             c.env,
             "general", // Broadcast gamification to the whole team in general
             "Achievements",
-            `${icon} **${userName}** was just awarded the **${badgeName}** badge! \n\nCheck out the updated [ARES Leaderboard](${c.env.ZULIP_URL ? new URL("/leaderboard", c.env.ZULIP_URL.replace("zulipchat", "pages.dev")).href : "https://aresWEB/leaderboard"}).`
+            `${icon} **${userName}** was just awarded the **${badgeName}** badge! \n\nCheck out the updated [ARES Leaderboard](${c.env.ZULIP_URL ? new URL("/leaderboard", c.env.ZULIP_URL.replace("zulipchat", "pages.dev")).href : "https://aresfirst.org/leaderboard"}).`
           );
         }
       } catch (err) {
@@ -94,7 +94,7 @@ badgesRouter.post("/users/:userId/award", ensureAdmin, zValidator("json", awardB
 });
 
 // ── DELETE /users/:userId/:badgeId/revoke — Revoke a badge (admin) ──────
-badgesRouter.delete("/users/:userId/:badgeId/revoke", ensureAdmin, async (c) => {
+badgesRouter.delete("/users/:userId/:badgeId/revoke", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const userId = (c.req.param("userId") || "");
     const badgeId = (c.req.param("badgeId") || "");

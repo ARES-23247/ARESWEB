@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, parsePagination, logAuditAction  } from "../middleware";
+import { AppEnv, ensureAdmin, parsePagination, logAuditAction, rateLimitMiddleware  } from "../middleware";
 
 const outreachRouter = new Hono<AppEnv>();
 
@@ -39,7 +39,7 @@ outreachRouter.get("/", async (c) => {
 });
 
 // ── POST / ── create or update an outreach log ───────────
-outreachRouter.post("/", ensureAdmin, async (c) => {
+outreachRouter.post("/", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const body = await c.req.json();
     const { id, title, date, location, hours_logged, reach_count, students_count, description } = body;

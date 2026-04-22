@@ -1,5 +1,5 @@
 import { Context, Hono } from "hono";
-import { AppEnv, ensureAdmin, logAuditAction, parsePagination, validateLength, MAX_INPUT_LENGTHS } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, parsePagination, validateLength, MAX_INPUT_LENGTHS, rateLimitMiddleware } from "../middleware";
 import { sendZulipAlert } from "../../utils/zulipSync";
 
 const sponsorsRouter = new Hono<AppEnv>();
@@ -37,7 +37,7 @@ async function handleSponsorList(c: Context<AppEnv>) {
 }
 
 // ── POST /admin — create or update a sponsor (admin) ──────
-sponsorsRouter.post("/admin", ensureAdmin, async (c) => {
+sponsorsRouter.post("/admin", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   return handleSponsorSave(c);
 });
 
@@ -131,7 +131,7 @@ sponsorsRouter.get("/admin/tokens", ensureAdmin, async (c) => {
 });
 
 // ── POST /admin/tokens/generate — Generate Token (admin) ──────
-sponsorsRouter.post("/admin/tokens/generate", ensureAdmin, async (c) => {
+sponsorsRouter.post("/admin/tokens/generate", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const { sponsor_id } = await c.req.json();
     if (!sponsor_id) return c.json({ error: "Missing sponsor_id"}, 400);

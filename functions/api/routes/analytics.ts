@@ -1,10 +1,18 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, checkWriteRateLimit  } from "../middleware";
+import { AppEnv, ensureAdmin, checkWriteRateLimit, MAX_INPUT_LENGTHS, turnstileMiddleware  } from "../middleware";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 const analyticsRouter = new Hono<AppEnv>();
 
 // ── POST /analytics/track — log a page view ──────────────────────────
-analyticsRouter.post("/track", async (c) => {
+const trackSchema = z.object({
+  path: z.string().max(MAX_INPUT_LENGTHS.slug).optional(),
+  category: z.string().max(MAX_INPUT_LENGTHS.code).optional(),
+  referrer: z.string().max(MAX_INPUT_LENGTHS.generic).optional()
+});
+
+analyticsRouter.post("/track", turnstileMiddleware(), zValidator("json", trackSchema), async (c) => {
   // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   if (!checkWriteRateLimit(`track:${ip}`, 20, 60)) {
@@ -12,8 +20,7 @@ analyticsRouter.post("/track", async (c) => {
   }
 
   try {
-    const body = await c.req.json();
-    const { path, category, referrer } = body as { path?: string; category?: string; referrer?: string };
+    const { path, category, referrer } = c.req.valid("json");
     const userAgent = c.req.header("user-agent") || "";
     
     await c.env.DB.prepare(
@@ -33,7 +40,11 @@ analyticsRouter.post("/track", async (c) => {
 });
 
 // ── POST /analytics/sponsor-click — log a sponsor link click ─────────
-analyticsRouter.post("/sponsor-click", async (c) => {
+const clickSchema = z.object({
+  sponsor_id: z.string().min(1).max(MAX_INPUT_LENGTHS.code)
+});
+
+analyticsRouter.post("/sponsor-click", turnstileMiddleware(), zValidator("json", clickSchema), async (c) => {
   // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   if (!checkWriteRateLimit(`click:${ip}`, 10, 60)) {
@@ -41,11 +52,8 @@ analyticsRouter.post("/sponsor-click", async (c) => {
   }
 
   try {
-    const body = await c.req.json();
-    const { sponsor_id } = body as { sponsor_id: string };
+    const { sponsor_id } = c.req.valid("json");
     
-    if (!sponsor_id) return c.json({ error: "Missing sponsor id" }, 400);
-
     const yearMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
     
     await c.env.DB.prepare(

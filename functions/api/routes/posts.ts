@@ -1,6 +1,6 @@
 import { Context, Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, logAuditAction } from "../middleware";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, logAuditAction, rateLimitMiddleware } from "../middleware";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification, notifyByRole } from "../../utils/notifications";
@@ -145,7 +145,7 @@ function buildSnippet(ast: unknown): string {
 }
 
 // ── POST /save — create a new blog post (auth required) ────────────────
-postsRouter.post("/save", ensureAuth, async (c) => {
+postsRouter.post("/save", ensureAuth, rateLimitMiddleware(15, 60), async (c) => {
   return handlePostSave(c);
 });
 
@@ -189,11 +189,11 @@ async function handlePostSave(c: Context<AppEnv>) {
     const email = user?.email || "anonymous_dashboard_user";
     const status = body.isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
-    await c.env.DB.prepare(
-      `INSERT INTO posts (slug, title, author, date, thumbnail, snippet, ast, cf_email, status, published_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-      .bind(
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        `INSERT INTO posts (slug, title, author, date, thumbnail, snippet, ast, cf_email, status, published_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
         slug,
         body.title,
         body.author || "ARES Team",
@@ -204,8 +204,19 @@ async function handlePostSave(c: Context<AppEnv>) {
         email,
         status,
         body.publishedAt || null
+      ),
+      c.env.DB.prepare(
+        `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+      ).bind(
+        crypto.randomUUID(),
+        email,
+        "CREATE_POST",
+        "posts",
+        slug,
+        `Created post: ${body.title} (${status})`
       )
-      .run();
+    ]);
 
     // ── Phase 3: Omnichannel Social Media Integration ──
     const socialConfig = await getSocialConfig(c);
@@ -267,7 +278,7 @@ async function handlePostSave(c: Context<AppEnv>) {
 }
 
 // ── PUT /:slug — edit a blog post (auth required) ────────────────────
-postsRouter.put("/:slug", ensureAuth, async (c) => {
+postsRouter.put("/:slug", ensureAuth, rateLimitMiddleware(15, 60), async (c) => {
   return handlePostEdit(c);
 });
 
@@ -307,10 +318,10 @@ async function handlePostEdit(c: Context<AppEnv>) {
 
     // ── Direct Update Logic (Admin Edits) ──
     const status = body.isDraft ? "pending" : "published";
-    await c.env.DB.prepare(
-      `UPDATE posts SET title = ?, author = ?, thumbnail = ?, snippet = ?, ast = ?, status = ?, published_at = ? WHERE slug = ?`
-    )
-      .bind(
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        `UPDATE posts SET title = ?, author = ?, thumbnail = ?, snippet = ?, ast = ?, status = ?, published_at = ? WHERE slug = ?`
+      ).bind(
         body.title,
         body.author || "ARES Team",
         body.coverImageUrl || "",
@@ -319,10 +330,19 @@ async function handlePostEdit(c: Context<AppEnv>) {
         status,
         body.publishedAt || null,
         slug
+      ),
+      c.env.DB.prepare(
+        `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+      ).bind(
+        crypto.randomUUID(),
+        user?.email || "unknown",
+        "UPDATE_POST",
+        "posts",
+        slug,
+        `Updated post: ${body.title} (${status})`
       )
-      .run();
-
-    await logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`);
+    ]);
 
     return c.json({ success: true, slug });
   } catch (err: unknown) {
@@ -360,7 +380,7 @@ postsRouter.route("/", createContentLifecycleRouter("posts", {
 }, "slug"));
 
 // ── POST /:slug/repush — manual social broadcast (admin) ──
-postsRouter.post("/:slug/repush", ensureAdmin, async (c) => {
+postsRouter.post("/:slug/repush", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   const slug = (c.req.param("slug") || "");
   const { socials } = await c.req.json<{ socials: Record<string, boolean> }>();
   
@@ -391,7 +411,7 @@ postsRouter.post("/:slug/repush", ensureAdmin, async (c) => {
 });
 
 // ── PATCH /:slug/history/:id/restore — restore from history (admin) ──
-postsRouter.patch("/:slug/history/:id/restore", ensureAdmin, async (c) => {
+postsRouter.patch("/:slug/history/:id/restore", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   const slug = (c.req.param("slug") || "");
   const id = (c.req.param("id") || "");
   const user = await getSessionUser(c);

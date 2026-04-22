@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, getDbSettings, logAuditAction, validateLength, MAX_INPUT_LENGTHS  } from "../middleware";
+import { AppEnv, ensureAdmin, getDbSettings, logAuditAction, validateLength, MAX_INPUT_LENGTHS, rateLimitMiddleware  } from "../middleware";
 
 const settingsRouter = new Hono<AppEnv>();
 
@@ -35,7 +35,7 @@ settingsRouter.get("/", ensureAdmin, async (c) => {
 });
 
 // ── POST /admin/settings — upsert settings key-value pairs ────────────
-settingsRouter.post("/", ensureAdmin, async (c) => {
+settingsRouter.post("/", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const body = await c.req.json();
     const entries = Object.entries(body) as [string, string][];
@@ -58,16 +58,41 @@ settingsRouter.post("/", ensureAdmin, async (c) => {
   }
 });
 
+// ── GET /admin/stats — Fast counting for Dashboard ────────────────────
+settingsRouter.get("/stats", ensureAdmin, async (c) => {
+  try {
+    const [posts, events, docs, inquiries, users] = await c.env.DB.batch([
+      c.env.DB.prepare("SELECT COUNT(*) as count FROM posts WHERE is_deleted = 0"),
+      c.env.DB.prepare("SELECT COUNT(*) as count FROM events WHERE is_deleted = 0"),
+      c.env.DB.prepare("SELECT COUNT(*) as count FROM docs WHERE is_deleted = 0"),
+      c.env.DB.prepare("SELECT COUNT(*) as count FROM inquiries WHERE status = 'pending'"),
+      c.env.DB.prepare("SELECT COUNT(*) as count FROM user"),
+    ]);
+
+    return c.json({
+      posts: (posts.results?.[0] as any)?.count || 0,
+      events: (events.results?.[0] as any)?.count || 0,
+      docs: (docs.results?.[0] as any)?.count || 0,
+      inquiries: (inquiries.results?.[0] as any)?.count || 0,
+      users: (users.results?.[0] as any)?.count || 0,
+    });
+  } catch (err) {
+    console.error("D1 stats error:", err);
+    return c.json({ posts: 0, events: 0, docs: 0, inquiries: 0, users: 0 });
+  }
+});
+
 // ── GET /admin/backup — Export database as JSON ───────────────
 settingsRouter.get("/admin/backup", ensureAdmin, async (c) => {
   try {
-    // SEC-02: Whitelist known safe table names instead of dynamic interpolation from sqlite_master
+    // SEC-02: Whitelist known safe table names.
+    // PII-S01: CRITICAL - Explicitly exclude "settings" from full export to prevent secret leak.
     const SAFE_TABLES = [
       "posts", "events", "docs", "docs_history", "docs_feedback",
-      "settings", "media_tags", "user_profiles", "event_signups",
+      "media_tags", "user_profiles", "event_signups",
       "badges", "user_badges", "inquiries", "locations",
       "sponsor_metrics", "sponsor_tokens", "notifications",
-      "sponsors", "comments", "outreach_events", "awards",
+      "sponsors", "comments", "awards",
       "page_analytics", "audit_log"
     ];
     

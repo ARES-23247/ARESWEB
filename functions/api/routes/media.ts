@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, getDbSettings, checkRateLimit } from "../middleware";
+import { AppEnv, ensureAdmin, getDbSettings, checkRateLimit, rateLimitMiddleware } from "../middleware";
 
 const mediaRouter = new Hono<AppEnv>();
 const adminMediaRouter = new Hono<AppEnv>();
@@ -117,7 +117,7 @@ adminMediaRouter.get("/", ensureAdmin, async (c) => {
 });
 
 // ── POST /admin/upload — File Upload via R2 & AI Image Accessibility ──
-adminMediaRouter.post("/upload", ensureAdmin, async (c) => {
+adminMediaRouter.post("/upload", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get("file") as File;
@@ -206,7 +206,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
 });
 
 // ── PUT /media/move/:key — Move object to folder (Admin) ──────────────
-adminMediaRouter.put("/move/:key{.+$}", ensureAdmin, async (c) => {
+adminMediaRouter.put("/move/:key{.+$}", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   const oldKey = c.req.param("key");
   const { folder } = await c.req.json();
   if (!folder) return c.json({ error: "Folder is required" }, 400);
@@ -237,7 +237,7 @@ adminMediaRouter.put("/move/:key{.+$}", ensureAdmin, async (c) => {
 
 
 // ── DELETE /media/:key — Delete object (Admin) ───────────────────────
-adminMediaRouter.delete("/:key{.+$}", ensureAdmin, async (c) => {
+adminMediaRouter.delete("/:id", ensureAdmin, async (c) => {
   const key = c.req.param("key");
   try {
     await c.env.ARES_STORAGE.delete(key);
@@ -250,7 +250,7 @@ adminMediaRouter.delete("/:key{.+$}", ensureAdmin, async (c) => {
 });
 
 // ── POST /media/syndicate — Manual social broadcast of asset (Admin) ────
-adminMediaRouter.post("/syndicate", ensureAdmin, async (c) => {
+adminMediaRouter.post("/syndicate", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const { key, caption } = await c.req.json();
     if (!key) return c.json({ error: "Key is required" }, 400);

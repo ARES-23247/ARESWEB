@@ -90,6 +90,26 @@ export async function approveAndMergeRevision(
 }
 
 /**
+ * Prunes old history records, keeping only the last N versions.
+ */
+export async function pruneHistory(c: Context<AppEnv>, slug: string, limit = 10) {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT id FROM posts_history WHERE slug = ? ORDER BY created_at DESC LIMIT 1 OFFSET ?"
+    ).bind(slug, limit - 1).all();
+
+    if (results && results.length > 0) {
+      const oldestId = (results[0] as { id: number }).id;
+      await c.env.DB.prepare(
+        "DELETE FROM posts_history WHERE slug = ? AND id < ?"
+      ).bind(slug, oldestId).run();
+    }
+  } catch (err) {
+    console.error("[PostHistory] Prune failed:", err);
+  }
+}
+
+/**
  * Saves current post state to history table.
  */
 export async function captureHistory(
@@ -100,6 +120,9 @@ export async function captureHistory(
   await c.env.DB.prepare(
     "INSERT INTO posts_history (slug, title, author, thumbnail, snippet, ast, author_email) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).bind(slug, data.title, data.author, data.thumbnail, data.snippet, data.ast, data.cf_email || "unknown").run();
+
+  // EFF-N05: Prune old versions to prevent D1 bloat
+  c.executionCtx.waitUntil(pruneHistory(c, slug, 10));
 }
 
 /**

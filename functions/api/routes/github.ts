@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, ensureAdmin, getSocialConfig  } from "../middleware";
+import { AppEnv, ensureAdmin, getSocialConfig, rateLimitMiddleware  } from "../middleware";
 import { buildGitHubConfig, fetchProjectBoard, fetchProjectFields, createProjectItem, updateProjectItemStatus, queryProjectItem } from "../../utils/githubProjects";
 
 const githubRouter = new Hono<AppEnv>();
@@ -191,7 +191,7 @@ githubRouter.get("/projects/items/:id", ensureAdmin, async (c) => {
 });
 
 // POST /github/projects/items — Create a new draft item
-githubRouter.post("/projects/items", ensureAdmin, async (c) => {
+githubRouter.post("/projects/items", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const { title, body } = await c.req.json<{ title: string; body?: string }>();
     if (!title) return c.json({ error: "Title is required" }, 400);
@@ -210,7 +210,7 @@ githubRouter.post("/projects/items", ensureAdmin, async (c) => {
 });
 
 // PATCH /github/projects/items/:id/status — Update item status
-githubRouter.patch("/projects/items/:id/status", ensureAdmin, async (c) => {
+githubRouter.patch("/projects/items/:id/status", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const itemId = (c.req.param("id") || "");
     const { statusFieldId, statusOptionId } = await c.req.json<{ statusFieldId: string; statusOptionId: string }>();

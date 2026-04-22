@@ -2,7 +2,15 @@ import { Context, Next } from "hono";
 import { AppEnv } from "./utils";
 
 // ── Rate Limiting (In-Memory Worker V8 Isolate) ────────────────────────
+const MAX_RATE_LIMIT_CACHE = 500;
 const rateLimitCache = new Map<string, { count: number; expiresAt: number }>();
+
+function pruneCache(cache: Map<string, any>) {
+  if (cache.size >= MAX_RATE_LIMIT_CACHE) {
+    const first = cache.keys().next().value;
+    if (first !== undefined) cache.delete(first);
+  }
+}
 
 export function checkRateLimit(ip: string, limit = 100, windowSeconds = 60): boolean {
   const now = Date.now();
@@ -17,6 +25,7 @@ export function checkRateLimit(ip: string, limit = 100, windowSeconds = 60): boo
 
   let record = rateLimitCache.get(ip);
   if (!record || record.expiresAt < now) {
+    pruneCache(rateLimitCache);
     record = { count: 0, expiresAt: now + windowSeconds * 1000 };
   }
 
@@ -40,6 +49,7 @@ export function checkWriteRateLimit(ip: string, limit = 15, windowSeconds = 60):
 
   let record = writeRateLimitCache.get(ip);
   if (!record || record.expiresAt < now) {
+    pruneCache(writeRateLimitCache);
     record = { count: 0, expiresAt: now + windowSeconds * 1000 };
   }
 
@@ -63,6 +73,7 @@ export async function verifyTurnstile(
       method: "POST",
       body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(token)}&remoteip=${encodeURIComponent(clientIp)}`,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      signal: AbortSignal.timeout(5000)
     });
 
     const result = await res.json() as { success: boolean, 'error-codes'?: string[] };

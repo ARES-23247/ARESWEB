@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination, createContentLifecycleRouter  } from "../../middleware";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination, createContentLifecycleRouter, rateLimitMiddleware  } from "../../middleware";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -45,7 +45,7 @@ adminRouter.get("/:id", async (c) => {
 });
 
 // ── POST /admin/events — manual event creation (admin) ─────────────────
-adminRouter.post("/", async (c) => {
+adminRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
   try {
     const body = await c.req.json();
     const { title, category, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft, publishedAt } = body;
@@ -137,7 +137,7 @@ adminRouter.post("/", async (c) => {
 });
 
 // ── PUT /admin/events/:id — edit an event (admin) ────────────────────────
-adminRouter.put("/:id", async (c) => {
+adminRouter.put("/:id", rateLimitMiddleware(15, 60), async (c) => {
   try {
     const paramId = (c.req.param("id") || "");
     const body = await c.req.json();
@@ -264,7 +264,7 @@ adminRouter.route("/", createContentLifecycleRouter("events", {
 }));
 
 // ── POST /admin/events/:id/repush — manual social broadcast (admin) ──
-adminRouter.post("/:id/repush", async (c) => {
+adminRouter.post("/:id/repush", rateLimitMiddleware(15, 60), async (c) => {
   try {
     const id = (c.req.param("id") || "");
     const { socials } = await c.req.json<{ socials: Record<string, boolean> }>();

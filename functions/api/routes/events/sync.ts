@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import { AppEnv, getSessionUser, getDbSettings  } from "../../middleware";
+import { AppEnv, getSessionUser, getDbSettings, rateLimitMiddleware  } from "../../middleware";
 import { pullEventsFromGcal } from "../../../utils/gcalSync";
 
 const syncRouter = new Hono<AppEnv>();
 
 // ── POST /sync — Google Calendar Sync (admin) ──────────────
-syncRouter.post("/", async (c) => {
+syncRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
   try {
     const dbSettings = await getDbSettings(c);
     const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];

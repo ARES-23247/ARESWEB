@@ -3,8 +3,17 @@ import { AppEnv  } from "../middleware";
 
 const tbaRouter = new Hono<AppEnv>();
 
-// SEC-DoW: Cache TBA responses in-memory to prevent external API quota exhaustion
+// SEC-DoW: Cache TBA responses in-memory with bounded size to prevent OOM
+const MAX_TBA_CACHE = 100;
 const tbaCache = new Map<string, { data: unknown; expiresAt: number }>();
+
+function setTbaCache(key: string, value: { data: unknown; expiresAt: number }) {
+  if (tbaCache.size >= MAX_TBA_CACHE) {
+    const first = tbaCache.keys().next().value;
+    if (first !== undefined) tbaCache.delete(first);
+  }
+  tbaCache.set(key, value);
+}
 
 async function getTBA(path: string, c: Context<AppEnv>) {
   // Check in-memory cache first (5 minute TTL)
@@ -18,21 +27,16 @@ async function getTBA(path: string, c: Context<AppEnv>) {
   const apiKey = (settingsRows[0] as { value: string })?.value;
   if (!apiKey) throw new Error("TBA_API_KEY not configured");
 
+  // EFF-N01: Implement fetch timeout
   const r = await fetch(`https://www.thebluealliance.com/api/v3${path}`, {
-    headers: { "X-TBA-Auth-Key": apiKey }
+    headers: { "X-TBA-Auth-Key": apiKey },
+    signal: AbortSignal.timeout(5000)
   });
   if (!r.ok) throw new Error(`TBA API error: ${r.status}`);
   const data = await r.json();
 
   // Cache for 5 minutes
-  tbaCache.set(path, { data, expiresAt: now + 300000 });
-
-  // Periodic GC
-  if (Math.random() < 0.05) {
-    for (const [k, v] of tbaCache.entries()) {
-      if (v.expiresAt < now) tbaCache.delete(k);
-    }
-  }
+  setTbaCache(path, { data, expiresAt: now + 300000 });
 
   return data;
 }

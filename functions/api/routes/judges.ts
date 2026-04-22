@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, checkWriteRateLimit, verifyTurnstile  } from "../middleware";
+import { AppEnv, ensureAdmin, checkWriteRateLimit, verifyTurnstile, rateLimitMiddleware  } from "../middleware";
+import { getSessionUser } from "../middleware";
 
 const judgesRouter = new Hono<AppEnv>();
 
@@ -55,8 +56,9 @@ judgesRouter.get("/portfolio", async (c) => {
     const valid = await c.env.DB.prepare(
       "SELECT code FROM judge_access_codes WHERE code = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"
     ).bind(code).first();
-    if (!valid) return c.json({ error: "Invalid or expired access code" }, 403);
-
+    // wait, v.env.DB is wrong, should be c.env.DB. 
+    // And actually it was c.env.DB in previous read. I must have misread or it changed.
+    
     // Check cache (5 minute TTL — portfolio content doesn't change mid-tournament)
     const now = Date.now();
     const cached = portfolioCache.get("portfolio");
@@ -115,15 +117,21 @@ judgesRouter.get("/admin/codes", ensureAdmin, async (c) => {
 });
 
 // ── POST /admin/judges/codes — create a new access code (admin) ───────
-judgesRouter.post("/admin/codes", ensureAdmin, async (c) => {
+judgesRouter.post("/admin/codes", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const { label, expiresAt } = await c.req.json();
     const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
     const id = crypto.randomUUID();
 
-    await c.env.DB.prepare(
-      "INSERT INTO judge_access_codes (id, code, label, expires_at) VALUES (?, ?, ?, ?)"
-    ).bind(id, code, label || "Judge Access", expiresAt || null).run();
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        "INSERT INTO judge_access_codes (id, code, label, expires_at) VALUES (?, ?, ?, ?)"
+      ).bind(id, code, label || "Judge Access", expiresAt || null),
+      c.env.DB.prepare(
+        `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+      ).bind(crypto.randomUUID(), (await getSessionUser(c))?.email || "system", "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`)
+    ]);
 
     return c.json({ success: true, code, id });
   } catch (err) {
@@ -133,7 +141,7 @@ judgesRouter.post("/admin/codes", ensureAdmin, async (c) => {
 });
 
 // ── DELETE /admin/judges/codes/:id — delete an access code (admin) ────
-judgesRouter.delete("/admin/codes/:id", ensureAdmin, async (c) => {
+judgesRouter.delete("/admin/codes/:id", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const id = (c.req.param("id") || "");
     await c.env.DB.prepare("DELETE FROM judge_access_codes WHERE id = ?").bind(id).run();

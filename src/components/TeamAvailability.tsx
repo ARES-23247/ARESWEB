@@ -78,10 +78,21 @@ export default function TeamAvailability() {
     }
   };
 
+  // PII-N01: Hash email to prevent discovery in Dicebear seed
+  const getAvatarSeed = (email: string) => {
+    let hash = 0;
+    for (let i = 0; i < email.length; i++) {
+      const char = email.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36);
+  };
+
   // Convert map to array and sort: Active > Idle > Offline
   const sortedMembers = presences ? Object.entries(presences).map(([email, clients]) => {
     const status = getAggregatedStatus(clients as Record<string, PresenceData>);
-    return { email, status };
+    return { email, status, seed: getAvatarSeed(email) };
   }).sort((a, b) => {
     const order = { active: 1, idle: 2, offline: 3 };
     return order[a.status] - order[b.status];
@@ -128,7 +139,7 @@ export default function TeamAvailability() {
                 >
                   <div className="relative">
                     <img 
-                      src={`https://api.dicebear.com/9.x/bottts/svg?seed=${member.email}`} 
+                      src={`https://api.dicebear.com/9.x/bottts/svg?seed=${member.seed}`} 
                       alt="Avatar" 
                       className="w-8 h-8 rounded-full border border-white/10 bg-obsidian"
                     />

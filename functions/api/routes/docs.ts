@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Context } from "hono";
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkWriteRateLimit, verifyTurnstile, createContentLifecycleRouter } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkWriteRateLimit, verifyTurnstile, createContentLifecycleRouter, rateLimitMiddleware } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification, notifyByRole } from "../../utils/notifications";
@@ -221,8 +221,28 @@ docsRouter.post("/:slug/feedback", async (c) => {
   }
 });
 
+/**
+ * Prunes old doc history records, keeping only the last N versions.
+ */
+async function pruneDocHistory(c: Context<AppEnv>, slug: string, limit = 10) {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT id FROM docs_history WHERE slug = ? ORDER BY created_at DESC LIMIT 1 OFFSET ?"
+    ).bind(slug, limit - 1).all();
+
+    if (results && results.length > 0) {
+      const oldestId = (results[0] as { id: number }).id;
+      await c.env.DB.prepare(
+        "DELETE FROM docs_history WHERE slug = ? AND id < ?"
+      ).bind(slug, oldestId).run();
+    }
+  } catch (err) {
+    console.error("[DocsHistory] Prune failed:", err);
+  }
+}
+
 // ── POST /save — create/update a doc (auth required) ────────────────────
-docsRouter.post("/save", ensureAuth, async (c) => {
+docsRouter.post("/save", ensureAuth, rateLimitMiddleware(15, 60), async (c) => {
   return handleDocSave(c);
 });
 
@@ -248,11 +268,15 @@ async function handleDocSave(c: Context<AppEnv>) {
       is_executive_summary: number;
     }
     const existing = await c.env.DB.prepare("SELECT slug, title, category, description, content, cf_email, is_portfolio, is_executive_summary FROM docs WHERE slug = ?").bind(slug).first<DocsRowLegacy>();
+    
     if (existing) {
        await c.env.DB.prepare(
          `INSERT INTO docs_history (slug, title, category, description, content, author_email)
           VALUES (?, ?, ?, ?, ?, ?)`
        ).bind(existing.slug, existing.title, existing.category, existing.description, existing.content, existing.cf_email || "unknown").run();
+       
+       // EFF-N05: Prune old versions to prevent D1 bloat
+       c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
     }
     
     if (user?.role !== "admin" && existing) {
@@ -318,7 +342,7 @@ async function handleDocSave(c: Context<AppEnv>) {
 }
 
 // ── PATCH /:slug/sort — update sort order (admin) ───────────────
-docsRouter.patch("/:slug/sort", ensureAdmin, async (c) => {
+docsRouter.patch("/:slug/sort", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   const slug = (c.req.param("slug") || "");
   const { sortOrder } = await c.req.json();
   if (typeof sortOrder !== 'number') {
@@ -337,10 +361,12 @@ docsRouter.route("/", createContentLifecycleRouter("docs", {
     if (!row) return;
 
     if (row.revision_of) {
-      await c.env.DB.prepare(
-        "UPDATE docs SET title = ?, category = ?, sort_order = ?, description = ?, content = ?, is_portfolio = ?, is_executive_summary = ?, status = 'published', updated_at = datetime('now') WHERE slug = ?"
-      ).bind(row.title, row.category, row.sort_order, row.description, row.content, row.is_portfolio ? 1 : 0, row.is_executive_summary ? 1 : 0, row.revision_of).run();
-      await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
+      await c.env.DB.batch([
+        c.env.DB.prepare(
+          "UPDATE docs SET title = ?, category = ?, sort_order = ?, description = ?, content = ?, is_portfolio = ?, is_executive_summary = ?, status = 'published', updated_at = datetime('now') WHERE slug = ?"
+        ).bind(row.title, row.category, row.sort_order, row.description, row.content, row.is_portfolio ? 1 : 0, row.is_executive_summary ? 1 : 0, row.revision_of),
+        c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug)
+      ]);
 
       if (row.cf_email) {
         const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
@@ -354,6 +380,7 @@ docsRouter.route("/", createContentLifecycleRouter("docs", {
           }));
         }
       }
+      return true;
     } else {
       if (row.cf_email) {
         const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
@@ -398,7 +425,7 @@ docsRouter.route("/", createContentLifecycleRouter("docs", {
 
 
 // ── PATCH /:slug/history/:id/restore — restore from history (admin) ──
-docsRouter.patch("/:slug/history/:id/restore", ensureAdmin, async (c) => {
+docsRouter.patch("/:slug/history/:id/restore", ensureAdmin, rateLimitMiddleware(15, 60), async (c) => {
   try {
     const slug = (c.req.param("slug") || "");
     const id = (c.req.param("id") || "");
@@ -432,6 +459,8 @@ docsRouter.patch("/:slug/history/:id/restore", ensureAdmin, async (c) => {
         await c.env.DB.prepare(
           "INSERT INTO docs_history (slug, title, category, description, content, author_email) VALUES (?, ?, ?, ?, ?, ?)"
         ).bind(current.slug, current.title, current.category, current.description, current.content, current.cf_email || "unknown").run();
+        
+        c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
     }
 
     await c.env.DB.prepare(

@@ -8,6 +8,7 @@ import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircl
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { adminApi } from "../api/adminApi";
+import { useModal } from "../contexts/ModalContext";
 
 interface Sponsor {
   id: string;
@@ -28,6 +29,7 @@ const TIERS = [
 
 export default function SponsorEditor() {
   const queryClient = useQueryClient();
+  const modal = useModal();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Sponsor>>({
     id: "",
@@ -167,13 +169,23 @@ export default function SponsorEditor() {
                     setFormData(s);
                     setIsFormOpen(true);
                   }}
-                  className="text-white/20 hover:text-ares-cyan transition-colors"
+                  aria-label={`Edit ${s.name}`}
+                  className="text-white/60 hover:text-ares-cyan transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
                 >
                   <Edit2 size={16} />
                 </button>
                 <button
-                  onClick={() => { if(confirm("Purge this partner from database?")) deleteMutation.mutate(s.id); }}
-                  className="text-white/20 hover:text-ares-red transition-colors"
+                  onClick={async () => { 
+                    const confirmed = await modal.confirm({
+                      title: "Delete Partner",
+                      description: `Are you sure you want to permanently remove ${s.name} from the ARES registry?`,
+                      confirmText: "Delete",
+                      destructive: true
+                    });
+                    if (confirmed) deleteMutation.mutate(s.id); 
+                  }}
+                  aria-label={`Delete ${s.name}`}
+                  className="text-white/60 hover:text-ares-red transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red rounded"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -201,7 +213,7 @@ export default function SponsorEditor() {
         ))}
         {sponsors.length === 0 && !isLoading && !isFormOpen && (
           <DashboardEmptyState
-            className="col-span-full py-12 text-center border-2 border-dashed border-white/5 ares-cut-lg outline-none"
+            className="col-span-full py-12 text-center border-2 border-dashed border-white/10 ares-cut-lg"
             icon={<Package size={48} />}
             message="No sponsors logged. Start by adding your titanium partners."
           />

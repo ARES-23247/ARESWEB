@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, getSessionUser, sanitizeProfileForPublic } from "../middleware";
+import { AppEnv, getSessionUser, sanitizeProfileForPublic, rateLimitMiddleware } from "../middleware";
 import { getAuth } from "../../utils/auth";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";
@@ -55,7 +55,7 @@ profilesRouter.get("/me", async (c) => {
 });
 
 // ── PUT /me — update current user's profile ──────────────────
-profilesRouter.put("/me", async (c) => {
+profilesRouter.put("/me", rateLimitMiddleware(15, 60), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -70,7 +70,7 @@ profilesRouter.put("/me", async (c) => {
 });
 
 // ── PUT /avatar — update avatar image ─────────────────────────
-profilesRouter.put("/avatar", async (c) => {
+profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
 

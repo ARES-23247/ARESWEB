@@ -259,10 +259,16 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
   if (memberType === "student" || memberType === "parent") {
     return safe;
   }
+
+  // PII-P04: Mentors/Coaches can show public contact info, 
+  // but we MUST ensure the router has already decrypted them before calling this.
+  // We check if the value looks like a hex-IV (contains ':'). If so, we strip it.
+  const isEncrypted = (val: unknown) => typeof val === 'string' && val.includes(':');
+
   return {
     ...safe,
-    email: Number(profile.show_email) ? (profile.contact_email || profile.email) : undefined,
-    phone: Number(profile.show_phone) ? profile.phone : undefined,
+    email: (Number(profile.show_email) && !isEncrypted(profile.contact_email)) ? (profile.contact_email || profile.email) : undefined,
+    phone: (Number(profile.show_phone) && !isEncrypted(profile.phone)) ? profile.phone : undefined,
     colleges: safeParseArray(profile.colleges),
     employers: safeParseArray(profile.employers),
     grade_year: profile.grade_year,

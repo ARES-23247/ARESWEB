@@ -137,7 +137,16 @@ apiRouter.route("/webhooks/github", githubWebhookRouter);
 apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
 
 // ── Global Platform Search (stays in aggregator — crosses domains) ───
+const MAX_SEARCH_CACHE = 100;
 const searchCache = new Map<string, { data: unknown; expiresAt: number }>();
+
+function setSearchCache(key: string, value: { data: unknown; expiresAt: number }) {
+  if (searchCache.size >= MAX_SEARCH_CACHE) {
+    const first = searchCache.keys().next().value;
+    if (first !== undefined) searchCache.delete(first);
+  }
+  searchCache.set(key, value);
+}
 
 apiRouter.get("/search", async (c) => {
   try {
@@ -175,14 +184,8 @@ apiRouter.get("/search", async (c) => {
       results: [...(postsReq.results || []), ...(eventsReq.results || []), ...(docsReq.results || []), ...(usersReq.results || [])] 
     };
 
-    searchCache.set(safeQ, { data: payload, expiresAt: now + 60000 });
+    setSearchCache(safeQ, { data: payload, expiresAt: now + 60000 });
     
-    if (Math.random() < 0.05) {
-      for (const [k, v] of searchCache.entries()) {
-        if (v.expiresAt < now) searchCache.delete(k);
-      }
-    }
-
     return c.json(payload);
   } catch (err) {
     console.error("D1 search error:", err);
