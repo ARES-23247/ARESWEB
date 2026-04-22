@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import mediaRouter, { adminMediaRouter } from "./media";
-import { createMockMedia } from "../../../src/test/factories/contentFactory";
+// unused import removed
 import { mockExecutionContext } from "../../../src/test/utils";
 
 describe("Hono Backend - /media Router", () => {

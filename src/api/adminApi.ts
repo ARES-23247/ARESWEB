@@ -21,22 +21,26 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   if (!res.ok && res.status !== 207) {
     let errorMessage = `API Error [${res.status}]: ${res.statusText || "Unknown error"}`;
     try {
-      const errorData = await res.json() as any;
+      const errorData = await res.json() as Record<string, unknown>;
       if (errorData.error) {
         let errStr = "";
         if (typeof errorData.error === "string") {
           errStr = errorData.error;
-        } else if (typeof errorData.error === "object") {
-          if (errorData.error.issues && Array.isArray(errorData.error.issues)) {
-            errStr = errorData.error.issues.map((i: any) => `${i.path ? i.path.join('.') + ': ' : ''}${i.message}`).join(", ");
-          } else if (errorData.error.message) {
-            errStr = errorData.error.message;
+        } else if (typeof errorData.error === "object" && errorData.error !== null) {
+          const errObj = errorData.error as Record<string, unknown>;
+          if (Array.isArray(errObj.issues)) {
+            errStr = errObj.issues.map((i: unknown) => {
+              const issue = i as { path?: string[]; message?: string };
+              return `${issue.path ? issue.path.join('.') + ': ' : ''}${issue.message}`;
+            }).join(", ");
+          } else if (typeof errObj.message === "string") {
+            errStr = errObj.message;
           } else {
-            errStr = JSON.stringify(errorData.error);
+            errStr = JSON.stringify(errObj);
           }
         }
         errorMessage = errStr + (errorData.details ? `: ${errorData.details}` : "");
-      } else if (errorData.message && typeof errorData.message === "string") {
+      } else if (typeof errorData.message === "string") {
         errorMessage = errorData.message;
       }
     } catch {

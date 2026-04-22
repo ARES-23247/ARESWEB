@@ -50,15 +50,16 @@ inquiriesRouter.get("/", ensureAuth, async (c) => {
     const { results } = await c.env.DB.prepare(query).bind(limit, offset).all();
     
     // Also mask phone in metadata if present
-    const sanitizedResults = maskPII ? (results || []).map((r: any) => {
-      if (r.metadata) {
+    const sanitizedResults = maskPII ? (results || []).map((r: unknown) => {
+      const row = r as Record<string, unknown>;
+      if (typeof row.metadata === "string") {
         try {
-          const meta = JSON.parse(r.metadata);
+          const meta = JSON.parse(row.metadata) as Record<string, unknown>;
           if (meta.phone) meta.phone = "***-***-****";
-          r.metadata = JSON.stringify(meta);
+          row.metadata = JSON.stringify(meta);
         } catch { /* ignore */ }
       }
-      return r;
+      return row;
     }) : results;
 
     return c.json({ inquiries: sanitizedResults });

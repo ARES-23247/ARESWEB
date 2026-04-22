@@ -19,7 +19,7 @@ export default function Navbar() {
   const isSignedIn = !isPending && session?.authenticated;
   const userImage = session?.user?.image;
    
-  const { canSeeInquiries, isAuthorized } = permissions;
+  // Unused permissions omitted to satisfy ESLint
   
   const { pendingInquiries, pendingPosts, pendingEvents, pendingDocs } = useDashboardNotifications(session, permissions);
   
