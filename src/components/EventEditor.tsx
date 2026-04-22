@@ -55,7 +55,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
       )}
       
       <div className="flex flex-col md:flex-row gap-4 mt-2">
-        <div className="flex-[2]">
+        <div className="flex-1">
           <label htmlFor="event-title" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Event Title *</label>
           <input
             id="event-title" type="text"
@@ -64,6 +64,19 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             placeholder="State Championship"
           />
         </div>
+        <div className="flex-1">
+          <CoverAssetPicker 
+            coverImage={form.coverImage}
+            isUploading={isUploading}
+            onUrlChange={(url) => setForm({ ...form, coverImage: url })}
+            onLibraryClick={() => setIsCoverPickerOpen(true)}
+            onUploadClick={() => document.getElementById('event-img-upload')?.click()}
+            onFileChange={handleFileUpload}
+          />
+        </div>
+      </div>
+      
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <label htmlFor="event-category" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Category *</label>
           <select
@@ -154,14 +167,6 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         {editor && <RichEditorToolbar editor={editor} documentTitle={form.title} />}
       </div>
 
-      <CoverAssetPicker 
-        coverImage={form.coverImage}
-        isUploading={isUploading}
-        onUrlChange={(url) => setForm({ ...form, coverImage: url })}
-        onLibraryClick={() => setIsCoverPickerOpen(true)}
-        onUploadClick={() => document.getElementById('event-img-upload')?.click()}
-        onFileChange={handleFileUpload}
-      />
 
 
       <div className="mt-6 flex flex-col gap-4">
