@@ -118,7 +118,7 @@ export default function Navbar() {
           }
         }).catch(() => {});
         
-      fetch("/dashboard/api/admin/posts", { credentials: "include" })
+      fetch("/api/admin/posts", { credentials: "include" })
         .then(res => res.json() as Promise<{ posts?: { slug: string, status: string, title: string, author_nickname?: string }[] }>)
         .then((data) => {
           if (data.posts) {
@@ -127,7 +127,7 @@ export default function Navbar() {
           }
         }).catch(() => {});
 
-      fetch("/dashboard/api/admin/events", { credentials: "include" })
+      fetch("/api/admin/events", { credentials: "include" })
         .then(res => res.json() as Promise<{ events?: { id: string, status: string, title: string }[] }>)
         .then((data) => {
           if (data.events) {
@@ -136,7 +136,7 @@ export default function Navbar() {
           }
         }).catch(() => {});
 
-      fetch("/dashboard/api/admin/docs", { credentials: "include" })
+      fetch("/api/admin/docs", { credentials: "include" })
         .then(res => res.json() as Promise<{ docs?: { slug: string, status: string, title: string }[] }>)
         .then((data) => {
           if (data.docs) {

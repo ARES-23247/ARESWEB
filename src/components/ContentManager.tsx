@@ -30,7 +30,7 @@ export default function ContentManager({
   const restoreMutation = useContentMutation<{ type: "event" | "post" | "doc", id: string }>({
     endpoint: ({ type, id }) => {
       const base = type === "event" ? "events" : type === "post" ? "posts" : "docs";
-      return `/dashboard/api/admin/${base}/${id}/undelete`;
+      return `/api/admin/${base}/${id}/undelete`;
     },
     method: "PATCH",
     invalidateKeys: ["events", "admin_events", "posts", "docs"],
@@ -40,7 +40,7 @@ export default function ContentManager({
   const purgeMutation = useContentMutation<{ type: "event" | "post" | "doc", id: string }>({
     endpoint: ({ type, id }) => {
       const base = type === "event" ? "events" : type === "post" ? "posts" : "docs";
-      return `/dashboard/api/admin/${base}/${id}/purge`;
+      return `/api/admin/${base}/${id}/purge`;
     },
     invalidateKeys: ["events", "admin_events", "posts", "docs"],
     setConfirmId,
@@ -49,7 +49,7 @@ export default function ContentManager({
   const approveMutation = useContentMutation<{ type: "event" | "post" | "doc", id: string }>({
     endpoint: ({ type, id }) => {
       const base = type === "event" ? "events" : type === "post" ? "posts" : "docs";
-      return `/dashboard/api/admin/${base}/${id}/approve`;
+      return `/api/admin/${base}/${id}/approve`;
     },
     method: "PATCH",
     invalidateKeys: ["events", "admin_events", "posts", "docs"],
@@ -59,7 +59,7 @@ export default function ContentManager({
   const rejectMutation = useContentMutation<{ type: "event" | "post" | "doc", id: string }>({
     endpoint: ({ type, id }) => {
       const base = type === "event" ? "events" : type === "post" ? "posts" : "docs";
-      return `/dashboard/api/admin/${base}/${id}/reject`;
+      return `/api/admin/${base}/${id}/reject`;
     },
     method: "PATCH",
     invalidateKeys: ["events", "admin_events", "posts", "docs"],

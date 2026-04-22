@@ -35,14 +35,14 @@ export default function PostManagerTab({
   const { data: posts = [], isLoading } = useQuery<PostItem[]>({
     queryKey: ["posts"],
     queryFn: async () => {
-      const res = await fetch("/dashboard/api/admin/posts", { credentials: "include" });
+      const res = await fetch("/api/admin/posts", { credentials: "include" });
       const data = await res.json() as { posts?: PostItem[] };
       return data.posts ?? [];
     },
   });
 
   const deletePostMutation = useContentMutation<string>({
-    endpoint: (slug) => `/dashboard/api/admin/posts/${slug}`,
+    endpoint: (slug) => `/api/admin/posts/${slug}`,
     invalidateKeys: ["posts"],
     setConfirmId,
   });

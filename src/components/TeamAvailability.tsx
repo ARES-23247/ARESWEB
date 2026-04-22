@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Clock, Zap, Circle, UserMinus } from "lucide-react";
 
@@ -23,7 +23,7 @@ export default function TeamAvailability() {
 
   const fetchPresence = async () => {
     try {
-      const res = await fetch("/dashboard/api/zulip/presence", { credentials: "include" });
+      const res = await fetch("/api/zulip/presence", { credentials: "include" });
       const data = await res.json() as { success: boolean; presence: ZulipPresences; error?: string };
       if (res.ok && data.success) {
         setPresences(data.presence);

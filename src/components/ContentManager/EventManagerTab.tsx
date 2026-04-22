@@ -38,7 +38,7 @@ export default function EventManagerTab({
   const { data: eventsResult, isLoading } = useQuery<{ events: EventItem[], lastSyncedAt: string | null }>({
     queryKey: ["admin_events"],
     queryFn: async () => {
-      const res = await fetch("/dashboard/api/admin/events", { credentials: "include" });
+      const res = await fetch("/api/admin/events", { credentials: "include" });
       const data = await res.json() as { events?: EventItem[], lastSyncedAt?: string | null };
       return { 
         events: data.events ?? [], 
@@ -51,13 +51,13 @@ export default function EventManagerTab({
   const lastSyncedAt = eventsResult?.lastSyncedAt;
 
   const deleteEventMutation = useContentMutation<string>({
-    endpoint: (id) => `/dashboard/api/admin/events/${id}`,
+    endpoint: (id) => `/api/admin/events/${id}`,
     invalidateKeys: ["admin_events", "events"],
     setConfirmId,
   });
 
   const syncGcalMutation = useContentMutation<void>({
-    endpoint: () => `/dashboard/api/admin/events/sync`,
+    endpoint: () => `/api/admin/events/sync`,
     method: "POST",
     invalidateKeys: ["admin_events", "events"],
     clearConfirm: false,

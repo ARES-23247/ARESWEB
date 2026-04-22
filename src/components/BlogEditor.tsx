@@ -35,7 +35,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
     const { blob: compressedBlob, ext } = await compressImage(file);
     const formData = new FormData();
     formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ext));
-    const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
+    const res = await fetch("/api/admin/upload", { method: "POST", credentials: "include", body: formData });
     const data = await res.json();
     // @ts-expect-error -- D1 untyped response
     if (!data.url) throw new Error(data.error || "Upload failed");
@@ -47,7 +47,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
     if (!editSlug) return;
     const fetchPost = async () => {
       try {
-        const res = await fetch(`/dashboard/api/admin/posts/${editSlug}/detail`, { credentials: "include" });
+        const res = await fetch(`/api/admin/posts/${editSlug}/detail`, { credentials: "include" });
         const data = await res.json();
       // @ts-expect-error -- D1 untyped response
         if (data.post) {
@@ -76,7 +76,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("/dashboard/api/admin/settings", { credentials: "include" });
+        const res = await fetch("/api/admin/settings", { credentials: "include" });
         const data = await res.json() as { success: boolean, settings: Record<string, string> };
         if (data.success && data.settings) {
           const config = data.settings;
@@ -111,7 +111,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
       const ast = editor.getJSON();
 
       const method = editSlug ? "PUT" : "POST";
-      const url = editSlug ? `/dashboard/api/admin/posts/${editSlug}` : "/dashboard/api/admin/posts";
+      const url = editSlug ? `/api/admin/posts/${editSlug}` : "/api/admin/posts";
 
       const res = await fetch(url, {
         method,
@@ -156,7 +156,7 @@ export default function BlogEditor({ editSlug, onClearEdit, userRole }: { editSl
     setIsPending(true);
     setErrorMsg("");
     try {
-      const res = await fetch(`/dashboard/api/admin/posts/${editSlug}`, {
+      const res = await fetch(`/api/admin/posts/${editSlug}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });

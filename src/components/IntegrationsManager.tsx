@@ -19,7 +19,7 @@ export default function IntegrationsManager() {
     queryKey: ["admin_settings"],
     queryFn: async () => {
       try {
-        const res = await fetch("/dashboard/api/admin/settings", { credentials: "include" });
+        const res = await fetch("/api/admin/settings", { credentials: "include" });
         if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         const json = await res.json() as { settings: SettingsData };
         return json;
@@ -46,7 +46,7 @@ export default function IntegrationsManager() {
 
   const saveMutation = useMutation({
     mutationFn: async (settings: SettingsData) => {
-      const res = await fetch("/dashboard/api/admin/settings", {
+      const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -89,7 +89,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
     const { blob: compressedBlob, ext } = await compressImage(file);
     const formData = new FormData();
     formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ext));
-    const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
+    const res = await fetch("/api/admin/upload", { method: "POST", credentials: "include", body: formData });
     const data = await res.json() as { url?: string; altText?: string; error?: string };
     if (!data.url) throw new Error(data.error || "Upload failed");
     return { url: data.url, altText: data.altText };
@@ -112,7 +112,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
     queryKey: ["event", editId],
     queryFn: async () => {
       if (!editId) return null;
-      const res = await fetch(`/dashboard/api/admin/events/${editId}`, { credentials: "include" });
+      const res = await fetch(`/api/admin/events/${editId}`, { credentials: "include" });
       const data = await res.json() as { event?: EventData };
       if (data.event) {
         setIsDeleted(data.event.is_deleted === 1);
@@ -144,7 +144,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("/dashboard/api/admin/settings", { credentials: "include" });
+        const res = await fetch("/api/admin/settings", { credentials: "include" });
         const data = await res.json() as { success?: boolean; settings?: Record<string, string> };
         if (data.success && data.settings) {
           const config = data.settings;
@@ -177,7 +177,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       };
 
       const method = editId ? "PUT" : "POST";
-      const url = editId ? `/dashboard/api/admin/events/${editId}` : "/dashboard/api/admin/events";
+      const url = editId ? `/api/admin/events/${editId}` : "/api/admin/events";
 
       const res = await fetch(url, {
         method,
@@ -219,7 +219,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       }
     },
     onError: (err: unknown) => {
-      setErrorMsg((err as Error).message || "Network error — could not reach the API.");
+      setErrorMsg((err as Error).message || "Network error � could not reach the API.");
     }
   });
 
@@ -232,7 +232,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
     setWarningMsg("");
     setSuccessMsg("");
     try {
-      const res = await fetch(`/dashboard/api/events/admin/${editId}`, {
+      const res = await fetch(`/api/events/admin/${editId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
@@ -273,7 +273,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       
       {isDeleted && (
         <div className="bg-ares-danger/10 border-l-4 border-ares-danger p-4 rounded-r-lg mb-6 flex items-start gap-3">
-          <div className="text-ares-danger mt-0.5">⚠️</div>
+          <div className="text-ares-danger mt-0.5">??</div>
           <div>
             <h4 className="text-ares-danger font-bold text-sm tracking-wide uppercase">Ghost Event</h4>
             <p className="text-ares-danger-soft/80 text-sm mt-1">This event is currently soft-deleted and is hidden from the public API and Google Calendar. Modifying and saving it will not undelete it.</p>
@@ -400,7 +400,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
       <div className="mt-6 flex flex-col gap-4">
         {errorMsg && (
           <div className="p-4 bg-ares-danger/10 border border-ares-danger/20 ares-cut flex items-start gap-3">
-            <div className="text-ares-danger mt-0.5">❌</div>
+            <div className="text-ares-danger mt-0.5">?</div>
             <div>
               <h4 className="text-ares-danger font-bold text-xs tracking-wide uppercase">Critical Error</h4>
               <p className="text-ares-danger-soft/90 text-sm mt-1">{errorMsg}</p>
@@ -410,7 +410,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
 
         {warningMsg && (
           <div className="p-4 bg-ares-gold/10 border border-ares-gold/20 ares-cut flex items-start gap-3">
-            <div className="text-ares-gold mt-0.5">⚠️</div>
+            <div className="text-ares-gold mt-0.5">??</div>
             <div>
               <h4 className="text-ares-gold font-bold text-xs tracking-wide uppercase">Syndication Warning</h4>
               <p className="text-zinc-300 text-sm mt-1">Event saved, but: {warningMsg}</p>
@@ -420,7 +420,7 @@ export default function EventEditor({ editId, onClearEdit, userRole }: { editId?
 
         {successMsg && (
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 ares-cut flex items-start gap-3">
-            <div className="text-emerald-500 mt-0.5">✅</div>
+            <div className="text-emerald-500 mt-0.5">?</div>
             <div>
               <h4 className="text-emerald-500 font-bold text-xs tracking-wide uppercase">Success</h4>
               <p className="text-emerald-400/90 text-sm mt-1">{successMsg}</p>

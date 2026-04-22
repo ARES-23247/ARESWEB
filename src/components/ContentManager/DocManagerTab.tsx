@@ -30,20 +30,20 @@ export default function DocManagerTab({
   const { data: docs = [], isLoading } = useQuery<DocItem[]>({
     queryKey: ["docs"],
     queryFn: async () => {
-      const res = await fetch("/dashboard/api/admin/docs", { credentials: "include" });
+      const res = await fetch("/api/admin/docs", { credentials: "include" });
       const data = await res.json() as { docs?: DocItem[] };
       return data.docs ?? [];
     },
   });
 
   const deleteDocMutation = useContentMutation<string>({
-    endpoint: (slug) => `/dashboard/api/admin/docs/${slug}`,
+    endpoint: (slug) => `/api/admin/docs/${slug}`,
     invalidateKeys: ["docs"],
     setConfirmId,
   });
 
   const sortDocMutation = useContentMutation<{ slug: string, sortOrder: number }>({
-    endpoint: ({ slug }) => `/dashboard/api/admin/docs/${slug}/sort`,
+    endpoint: ({ slug }) => `/api/admin/docs/${slug}/sort`,
     method: "PATCH",
     invalidateKeys: ["docs"],
     body: ({ sortOrder }) => ({ sortOrder }),
@@ -70,7 +70,7 @@ export default function DocManagerTab({
 
   const exportAllDocs = async () => {
     try {
-      const res = await fetch("/dashboard/api/admin/docs/export-all", { credentials: "include" });
+      const res = await fetch("/api/admin/docs/export-all", { credentials: "include" });
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -104,7 +104,7 @@ export default function DocManagerTab({
                   onClick={() => {
                     const code = prompt("Enter a name or purpose for this code (e.g. 'Championship Judge'):");
                     if (code !== null) {
-                      fetch("/dashboard/api/admin/judges/codes", { method: "POST", credentials: "include" })
+                      fetch("/api/admin/judges/codes", { method: "POST", credentials: "include" })
                         .then(res => res.json() as Promise<{ code: string; expiresAt: string }>)
                         .then((data: { code: string; expiresAt: string }) => alert(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
                     }

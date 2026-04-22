@@ -26,7 +26,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
     queryKey: ["history", type, slug],
     queryFn: async () => {
       const base = type === "doc" ? "docs" : "posts";
-      const res = await fetch(`/dashboard/api/admin/${base}/${slug}/history`, { credentials: "include" });
+      const res = await fetch(`/api/admin/${base}/${slug}/history`, { credentials: "include" });
       const data = await res.json() as { history?: Revision[] };
       return data.history ?? [];
     },
@@ -36,7 +36,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
   const restoreMutation = useMutation({
     mutationFn: async (revisionId: number) => {
       const base = type === "doc" ? "docs" : "posts";
-      const res = await fetch(`/dashboard/api/admin/${base}/${slug}/history/${revisionId}/restore`, {
+      const res = await fetch(`/api/admin/${base}/${slug}/history/${revisionId}/restore`, {
         method: "PATCH",
         credentials: "include",
       });

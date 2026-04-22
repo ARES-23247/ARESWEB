@@ -9,7 +9,7 @@ export function DataBackupCard() {
     setIsExporting(true);
     setErrorMsg("");
     try {
-      const res = await fetch("/dashboard/api/admin/backup", { credentials: "include" });
+      const res = await fetch("/api/admin/backup", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to generate backup");
       
       const blob = await res.blob();

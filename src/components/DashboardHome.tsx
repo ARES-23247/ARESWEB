@@ -17,9 +17,9 @@ export default function DashboardHome() {
     // We only fetch stats if the user isn't unverified, just to give them some data
     if (canSeeInquiries) {
       Promise.allSettled([
-        fetch("/dashboard/api/admin/posts", { credentials: "include" }).then(r => r.json()),
-        fetch("/dashboard/api/admin/events", { credentials: "include" }).then(r => r.json()),
-        fetch("/dashboard/api/admin/docs", { credentials: "include" }).then(r => r.json()),
+        fetch("/api/admin/posts", { credentials: "include" }).then(r => r.json()),
+        fetch("/api/admin/events", { credentials: "include" }).then(r => r.json()),
+        fetch("/api/admin/docs", { credentials: "include" }).then(r => r.json()),
       ]).then(([postsRes, eventsRes, docsRes]) => {
         let p = 0, e = 0, d = 0;
         if (postsRes.status === "fulfilled" && postsRes.value.posts) p = postsRes.value.posts.length;

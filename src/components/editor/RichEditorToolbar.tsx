@@ -25,7 +25,7 @@ const uploadFile = async (file: File): Promise<{url: string, altText?: string}> 
   const { blob: compressedBlob, ext } = await compressImage(file);
   const formData = new FormData();
   formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ext));
-  const res = await fetch("/dashboard/api/admin/upload", { method: "POST", credentials: "include", body: formData });
+  const res = await fetch("/api/admin/upload", { method: "POST", credentials: "include", body: formData });
   const data = await res.json();
   // @ts-expect-error -- D1 untyped response
   if (!data.url) throw new Error(data.error || "Upload failed");

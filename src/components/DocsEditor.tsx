@@ -25,7 +25,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
     if (!editSlug) return;
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`/dashboard/api/admin/docs/${editSlug}/detail`, { credentials: "include" });
+        const res = await fetch(`/api/admin/docs/${editSlug}/detail`, { credentials: "include" });
         const data = await res.json();
       // @ts-expect-error -- D1 untyped response
         if (data.doc) {
@@ -77,7 +77,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
     const jsonAST = JSON.stringify(editor.getJSON());
 
     try {
-      const res = await fetch("/dashboard/api/admin/docs", {
+      const res = await fetch("/api/admin/docs", {
         method: "POST", // API does an INSERT OR REPLACE
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -122,7 +122,7 @@ export default function DocsEditor({ editSlug, onClearEdit, userRole }: { editSl
     setIsPending(true);
     setErrorMsg("");
     try {
-      const res = await fetch(`/dashboard/api/admin/docs/${editSlug}`, {
+      const res = await fetch(`/api/admin/docs/${editSlug}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });

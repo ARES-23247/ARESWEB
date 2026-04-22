@@ -27,7 +27,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
 
     const fetchSettings = async () => {
       try {
-        const res = await fetch("/dashboard/api/admin/settings", { credentials: "include" });
+        const res = await fetch("/api/admin/settings", { credentials: "include" });
         const data = await res.json() as { success: boolean, settings: Record<string, string> };
         if (data.success && data.settings) {
           const config = data.settings;
@@ -62,8 +62,8 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
     
     try {
       const url = type === "blog" 
-        ? `/dashboard/api/admin/posts/${id}/repush` 
-        : `/dashboard/api/admin/events/${id}/repush`;
+        ? `/api/admin/posts/${id}/repush` 
+        : `/api/admin/events/${id}/repush`;
         
       const res = await fetch(url, {
         method: "POST",

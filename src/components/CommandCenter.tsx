@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Radio, AlertTriangle } from "lucide-react";
 import TeamAvailability from "./TeamAvailability";
 import { ProjectBoard, IntegrationHealth } from "./command/types";
@@ -8,7 +8,7 @@ import PlatformQuickStats from "./command/PlatformQuickStats";
 import CommandQuickActions from "./command/CommandQuickActions";
 import ZulipBotCommands from "./command/ZulipBotCommands";
 
-// ── Command Center Component ─────────────────────────────────────────
+// -- Command Center Component -----------------------------------------
 export default function CommandCenter() {
   const [board, setBoard] = useState<ProjectBoard | null>(null);
   const [health, setHealth] = useState<IntegrationHealth[]>([]);
@@ -20,19 +20,19 @@ export default function CommandCenter() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // ── Data Fetching ──────────────────────────────────────────────────
+  // -- Data Fetching --------------------------------------------------
   const fetchAll = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const [boardRes, settingsRes, statsRes] = await Promise.allSettled([
-        fetch("/dashboard/api/github/projects", { credentials: "include" }),
-        fetch("/dashboard/api/admin/settings", { credentials: "include" }),
+        fetch("/api/github/projects", { credentials: "include" }),
+        fetch("/api/admin/settings", { credentials: "include" }),
         Promise.all([
-          fetch("/dashboard/api/admin/posts?limit=1", { credentials: "include" }).then(r => r.json() as Promise<{ posts: unknown[] }>),
-          fetch("/dashboard/api/admin/events?limit=1", { credentials: "include" }).then(r => r.json() as Promise<{ events: unknown[] }>),
-          fetch("/dashboard/api/admin/docs?limit=1", { credentials: "include" }).then(r => r.json() as Promise<{ docs: unknown[] }>),
+          fetch("/api/admin/posts?limit=1", { credentials: "include" }).then(r => r.json() as Promise<{ posts: unknown[] }>),
+          fetch("/api/admin/events?limit=1", { credentials: "include" }).then(r => r.json() as Promise<{ events: unknown[] }>),
+          fetch("/api/admin/docs?limit=1", { credentials: "include" }).then(r => r.json() as Promise<{ docs: unknown[] }>),
         ]),
       ]);
 
@@ -48,12 +48,12 @@ export default function CommandCenter() {
         if (data.success && data.settings) {
           const cfg = data.settings;
           setHealth([
-            { name: "Zulip Chat", key: "zulip", icon: "💬", configured: !!(cfg.ZULIP_BOT_EMAIL && cfg.ZULIP_API_KEY) },
-            { name: "GitHub Projects", key: "github", icon: "📋", configured: !!(cfg.GITHUB_PAT && cfg.GITHUB_PROJECT_ID) },
-            { name: "Discord", key: "discord", icon: "🎮", configured: !!cfg.DISCORD_WEBHOOK_URL },
-            { name: "Bluesky", key: "bluesky", icon: "🦋", configured: !!(cfg.BLUESKY_HANDLE && cfg.BLUESKY_APP_PASSWORD) },
-            { name: "Slack", key: "slack", icon: "💼", configured: !!cfg.SLACK_WEBHOOK_URL },
-            { name: "Google Calendar", key: "gcal", icon: "📅", configured: !!(cfg.GCAL_SERVICE_ACCOUNT_EMAIL && cfg.GCAL_PRIVATE_KEY) },
+            { name: "Zulip Chat", key: "zulip", icon: "??", configured: !!(cfg.ZULIP_BOT_EMAIL && cfg.ZULIP_API_KEY) },
+            { name: "GitHub Projects", key: "github", icon: "??", configured: !!(cfg.GITHUB_PAT && cfg.GITHUB_PROJECT_ID) },
+            { name: "Discord", key: "discord", icon: "??", configured: !!cfg.DISCORD_WEBHOOK_URL },
+            { name: "Bluesky", key: "bluesky", icon: "??", configured: !!(cfg.BLUESKY_HANDLE && cfg.BLUESKY_APP_PASSWORD) },
+            { name: "Slack", key: "slack", icon: "??", configured: !!cfg.SLACK_WEBHOOK_URL },
+            { name: "Google Calendar", key: "gcal", icon: "??", configured: !!(cfg.GCAL_SERVICE_ACCOUNT_EMAIL && cfg.GCAL_PRIVATE_KEY) },
           ]);
         }
       }
@@ -83,12 +83,12 @@ export default function CommandCenter() {
     return () => clearInterval(interval);
   }, [fetchAll]);
 
-  // ── Create Task ────────────────────────────────────────────────────
+  // -- Create Task ----------------------------------------------------
   const handleCreateTask = async () => {
     if (!newTaskTitle.trim()) return;
     setIsCreating(true);
     try {
-      const res = await fetch("/dashboard/api/github/projects/items", {
+      const res = await fetch("/api/github/projects/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -146,7 +146,7 @@ export default function CommandCenter() {
       {/* Integration Health Monitor */}
       <IntegrationHealthMonitor health={health} />
 
-      {/* GitHub Project Board — Kanban View */}
+      {/* GitHub Project Board � Kanban View */}
       <ProjectBoardKanban 
         board={board}
         isLoading={isLoading}
