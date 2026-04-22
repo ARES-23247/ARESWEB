@@ -1,4 +1,4 @@
-﻿import { Briefcase, Plus, Trash2 } from "lucide-react";
+import { Briefcase, Plus, Trash2 } from "lucide-react";
 import { ProfileSubComponentProps, EmployerEntry } from "./types";
 import { BrandLogo } from "../BrandLogo";
 import { extractDomain } from "../../utils/logoResolvers";
@@ -66,7 +66,7 @@ export function CareerSection({ profile, setProfile, inputClass, sectionClass }:
               className="accent-ares-red w-4 h-4 rounded" 
             />
           </div>
-          <button onClick={() => removeEmployer(i)} className="text-ares-danger hover:text-ares-danger-soft p-1 self-center">
+          <button onClick={() => removeEmployer(i)} className="text-ares-red hover:text-white transition-colors p-1 self-center">
             <Trash2 size={16} />
           </button>
         </div>

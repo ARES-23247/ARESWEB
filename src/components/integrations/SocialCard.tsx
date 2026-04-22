@@ -16,7 +16,7 @@ export function SocialCard({
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="discord_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="discord_webhook" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               Webhook URL
             </label>
             <input
@@ -38,7 +38,7 @@ export function SocialCard({
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="bsky_handle" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="bsky_handle" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               Handle
             </label>
             <input
@@ -51,7 +51,7 @@ export function SocialCard({
             />
           </div>
           <div>
-            <label htmlFor="bsky_app_pw" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="bsky_app_pw" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               App Password
             </label>
             <input
@@ -67,16 +67,16 @@ export function SocialCard({
       </div>
 
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-ares-bronze/10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <CloudLightning size={20} className="text-purple-500" /> Make.com (Omnichannel)
+          <CloudLightning size={20} className="text-ares-bronze" /> Make.com (Omnichannel)
         </h3>
-        <p className="text-xs text-zinc-500 mb-4 block">
+        <p className="text-xs text-ares-gray mb-4 block">
           Fires upon Post and Event creations. Route payloads to Instagram, X, Facebook, and more.
         </p>
         <div className="space-y-4">
           <div>
-            <label htmlFor="make_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="make_webhook" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               Remote Webhook URL
             </label>
             <input
@@ -85,20 +85,20 @@ export function SocialCard({
               placeholder="https://hook.us1.make.com/..."
               value={localSettings["MAKE_WEBHOOK_URL"] || ""}
               onChange={(e) => handleChange("MAKE_WEBHOOK_URL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-bronze transition-colors"
             />
           </div>
         </div>
       </div>
 
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Calendar size={20} className="text-green-500" /> Google Calendar Admin
+          <Calendar size={20} className="text-ares-gold" /> Google Calendar Admin
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="cal_id_internal" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="cal_id_internal" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               ARES Practices — Calendar ID
             </label>
             <input
@@ -107,11 +107,11 @@ export function SocialCard({
               placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
               value={localSettings["CALENDAR_ID_INTERNAL"] || ""}
               onChange={(e) => handleChange("CALENDAR_ID_INTERNAL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="cal_id_outreach" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="cal_id_outreach" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               ARES Outreach &amp; Volunteer — Calendar ID
             </label>
             <input
@@ -120,11 +120,11 @@ export function SocialCard({
               placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
               value={localSettings["CALENDAR_ID_OUTREACH"] || ""}
               onChange={(e) => handleChange("CALENDAR_ID_OUTREACH", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="cal_id_external" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="cal_id_external" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               ARES Community Spotlight — Calendar ID
             </label>
             <input
@@ -133,11 +133,11 @@ export function SocialCard({
               placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
               value={localSettings["CALENDAR_ID_EXTERNAL"] || ""}
               onChange={(e) => handleChange("CALENDAR_ID_EXTERNAL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="gcal_service_email" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+            <label htmlFor="gcal_service_email" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
               Service Account Email
             </label>
             <input
@@ -146,11 +146,11 @@ export function SocialCard({
               placeholder="ares-bot@ares-project.iam.gserviceaccount.com"
               value={localSettings["GCAL_SERVICE_ACCOUNT_EMAIL"] || ""}
               onChange={(e) => handleChange("GCAL_SERVICE_ACCOUNT_EMAIL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="gcal_service_pk" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <label htmlFor="gcal_service_pk" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2 flex items-center gap-2">
               RSA Private Key
             </label>
             <textarea
@@ -159,52 +159,52 @@ export function SocialCard({
               value={localSettings["GCAL_PRIVATE_KEY"] || ""}
               onChange={(e) => handleChange("GCAL_PRIVATE_KEY", e.target.value)}
               rows={4}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors resize-none font-mono text-xs"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors resize-none font-mono text-xs"
             />
           </div>
         </div>
       </div>
 
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Users size={20} className="text-yellow-500" /> Team Communications
+          <Users size={20} className="text-ares-gold" /> Team Communications
         </h3>
-        <p className="text-xs text-zinc-500 mb-4 block">
+        <p className="text-xs text-ares-gray mb-4 block">
           Standard webhooks for instant PR updates inside your team workspaces.
         </p>
         <div className="space-y-4">
           <div>
-            <label htmlFor="slack_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Hash size={12}/> Slack</label>
+            <label htmlFor="slack_webhook" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2 flex items-center gap-1"><Hash size={12}/> Slack</label>
             <input
               id="slack_webhook"
               type="text"
               placeholder="https://hooks.slack.com/services/..."
               value={localSettings["SLACK_WEBHOOK_URL"] || ""}
               onChange={(e) => handleChange("SLACK_WEBHOOK_URL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="teams_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Users size={12}/> Microsoft Teams</label>
+            <label htmlFor="teams_webhook" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2 flex items-center gap-1"><Users size={12}/> Microsoft Teams</label>
             <input
               id="teams_webhook"
               type="text"
               placeholder="https://ares-robotics.webhook.office.com/webhookb2/..."
               value={localSettings["TEAMS_WEBHOOK_URL"] || ""}
               onChange={(e) => handleChange("TEAMS_WEBHOOK_URL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="gchat_webhook" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1"><MessageSquare size={12}/> Google Chat</label>
+            <label htmlFor="gchat_webhook" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2 flex items-center gap-1"><MessageSquare size={12}/> Google Chat</label>
             <input
               id="gchat_webhook"
               type="text"
               placeholder="https://chat.googleapis.com/v1/spaces/..."
               value={localSettings["GCHAT_WEBHOOK_URL"] || ""}
               onChange={(e) => handleChange("GCHAT_WEBHOOK_URL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
             />
           </div>
         </div>
@@ -215,12 +215,12 @@ export function SocialCard({
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Square size={20} className="text-brand-facebook" /> Facebook Platform
         </h3>
-        <p className="text-xs text-zinc-500 mb-4 block">
+        <p className="text-xs text-ares-gray mb-4 block">
           Requires a Page ID and an active Graph API Page Access Token.
         </p>
         <div className="space-y-4">
           <div>
-            <label htmlFor="facebook_page_id" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Page ID</label>
+            <label htmlFor="facebook_page_id" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Page ID</label>
             <input
               id="facebook_page_id"
               type="text"
@@ -231,7 +231,7 @@ export function SocialCard({
             />
           </div>
           <div>
-            <label htmlFor="facebook_access_token" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Page Access Token</label>
+            <label htmlFor="facebook_access_token" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Page Access Token</label>
             <input
               id="facebook_access_token"
               type="text"
@@ -245,34 +245,34 @@ export function SocialCard({
       </div>
 
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 opacity-10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-tr from-ares-gold via-ares-red to-ares-bronze opacity-10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Camera size={20} className="text-pink-500" /> Instagram Platform
+          <Camera size={20} className="text-ares-red" /> Instagram Platform
         </h3>
-        <p className="text-xs text-zinc-500 mb-4 block">
+        <p className="text-xs text-ares-gray mb-4 block">
           Requires an Instagram Professional Account linked to a Facebook Page ID.
         </p>
         <div className="space-y-4">
           <div>
-            <label htmlFor="instagram_account_id" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Instagram Account ID</label>
+            <label htmlFor="instagram_account_id" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Instagram Account ID</label>
             <input
               id="instagram_account_id"
               type="text"
               placeholder="178414XXXXXXXXX"
               value={localSettings["INSTAGRAM_ACCOUNT_ID"] || ""}
               onChange={(e) => handleChange("INSTAGRAM_ACCOUNT_ID", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="instagram_access_token" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Graph Access Token</label>
+            <label htmlFor="instagram_access_token" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Graph Access Token</label>
             <input
               id="instagram_access_token"
               type="text"
               placeholder="EAABXXXXXXXXXXXXXXXX..."
               value={localSettings["INSTAGRAM_ACCESS_TOKEN"] || ""}
               onChange={(e) => handleChange("INSTAGRAM_ACCESS_TOKEN", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-colors"
             />
           </div>
         </div>
@@ -283,12 +283,12 @@ export function SocialCard({
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Zap size={20} className="text-ares-cyan" /> The Blue Alliance (TBA)
         </h3>
-        <p className="text-xs text-zinc-500 mb-4 block">
+        <p className="text-xs text-ares-gray mb-4 block">
           Enables live event rankings, match predictions, and historical data integration.
         </p>
         <div className="space-y-4">
           <div>
-            <label htmlFor="tba_api_key" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">TBA Read API Key</label>
+            <label htmlFor="tba_api_key" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">TBA Read API Key</label>
             <input
               id="tba_api_key"
               type="password"
@@ -303,54 +303,54 @@ export function SocialCard({
 
       {/* X / Twitter Setup */}
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group lg:col-span-2">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-400/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gray/10 blur-3xl rounded-full pointer-events-none" />
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Share2 size={20} className="text-zinc-400" /> X (Twitter) API v2
+          <Share2 size={20} className="text-ares-gray" /> X (Twitter) API v2
         </h3>
-        <p className="text-xs text-zinc-500 mb-4 block">Utilizes strict OAuth 1.0A PKCE parameters for Native Edge Cryptography integration.</p>
+        <p className="text-xs text-ares-gray mb-4 block">Utilizes strict OAuth 1.0A PKCE parameters for Native Edge Cryptography integration.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="twitter_api_key" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">API Key (Consumer Key)</label>
+            <label htmlFor="twitter_api_key" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">API Key (Consumer Key)</label>
             <input
               id="twitter_api_key"
               type="text"
               placeholder="XXXXXXXXXXXXXXXXXXXXXXXXX"
               value={localSettings["TWITTER_API_KEY"] || ""}
               onChange={(e) => handleChange("TWITTER_API_KEY", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gray transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="twitter_api_secret" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">API Key Secret</label>
+            <label htmlFor="twitter_api_secret" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">API Key Secret</label>
             <input
               id="twitter_api_secret"
               type="text"
               placeholder="••••••••••••••••"
               value={localSettings["TWITTER_API_SECRET"] || ""}
               onChange={(e) => handleChange("TWITTER_API_SECRET", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gray transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="twitter_access_token" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Access Token</label>
+            <label htmlFor="twitter_access_token" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Access Token</label>
             <input
               id="twitter_access_token"
               type="text"
               placeholder="111111111111111111-XXXXXXXXXXXXXXXX"
               value={localSettings["TWITTER_ACCESS_TOKEN"] || ""}
               onChange={(e) => handleChange("TWITTER_ACCESS_TOKEN", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gray transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="twitter_access_secret" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Access Token Secret</label>
+            <label htmlFor="twitter_access_secret" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Access Token Secret</label>
             <input
               id="twitter_access_secret"
               type="text"
               placeholder="••••••••••••••••"
               value={localSettings["TWITTER_ACCESS_SECRET"] || ""}
               onChange={(e) => handleChange("TWITTER_ACCESS_SECRET", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-zinc-400 transition-colors"
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gray transition-colors"
             />
           </div>
         </div>

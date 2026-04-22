@@ -7,7 +7,7 @@ export function PrivateLogisticsSection({ profile, setProfile, inputClass, label
       <div className="flex items-center gap-2 mb-2 text-sm font-black uppercase tracking-wider text-ares-red">
         <Shield size={16} /> Team Logistics (Private)
       </div>
-      <p className="text-xs text-zinc-400 mb-4">
+      <p className="text-xs text-ares-gray mb-4">
         This information is strictly for event organization and travel. It will NEVER be shown publicly.
       </p>
       

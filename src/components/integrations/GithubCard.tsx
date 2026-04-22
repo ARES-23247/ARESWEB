@@ -14,12 +14,12 @@ export function GithubCard({
       <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
         <GitBranch size={20} className="text-white" /> GitHub Projects v2
       </h3>
-      <p className="text-xs text-zinc-500 mb-4">
+      <p className="text-xs text-white/50 mb-4">
         Connect your GitHub Project board for task management via the Command Center and Zulip bot commands.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label htmlFor="github_pat" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+          <label htmlFor="github_pat" className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
             Personal Access Token
           </label>
           <input
@@ -32,7 +32,7 @@ export function GithubCard({
           />
         </div>
         <div>
-          <label htmlFor="github_org" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+          <label htmlFor="github_org" className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
             Organization
           </label>
           <input
@@ -45,7 +45,7 @@ export function GithubCard({
           />
         </div>
         <div>
-          <label htmlFor="github_project_id" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+          <label htmlFor="github_project_id" className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
             Project Node ID
           </label>
           <input
@@ -58,7 +58,7 @@ export function GithubCard({
           />
         </div>
         <div>
-          <label htmlFor="github_webhook_secret" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+          <label htmlFor="github_webhook_secret" className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
             Webhook Secret
           </label>
           <input

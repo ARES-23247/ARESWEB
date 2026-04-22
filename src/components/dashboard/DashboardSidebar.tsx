@@ -100,12 +100,12 @@ export default function DashboardSidebar({
             <AppWindow size={16} className="text-white" />
           </div>
           <h1 className="text-lg font-black tracking-tighter text-white">
-            ARES<span className="text-zinc-500 font-bold">Workspace</span>
+            ARES<span className="text-marble/40 font-bold">Workspace</span>
           </h1>
         </div>
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-zinc-300 transition-colors"
+          className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble/70 transition-colors"
         >
           <Menu size={20} />
         </button>
@@ -129,8 +129,8 @@ export default function DashboardSidebar({
         {/* Profile Header */}
         <div className="p-6 border-b border-white/5 shrink-0 flex flex-col gap-4">
           <div className="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-white/5">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Navigation Menu</span>
-            <button className="text-zinc-400 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={() => setIsSidebarOpen(false)}>
+            <span className="text-[10px] font-black text-marble/40 uppercase tracking-widest">Navigation Menu</span>
+            <button className="text-marble/50 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={() => setIsSidebarOpen(false)}>
               <X size={16} />
             </button>
           </div>
@@ -157,7 +157,7 @@ export default function DashboardSidebar({
                   {role} • {memberType}
                 </span>
                 {permissions.isUnverified && (
-                  <span className="w-fit px-1.5 py-0.5 bg-ares-danger/10 border border-ares-danger/30 text-ares-danger-soft text-[8px] font-bold rounded uppercase tracking-wider animate-pulse flex items-center gap-1 shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                  <span className="w-fit px-1.5 py-0.5 bg-ares-red text-white text-[8px] font-black rounded uppercase tracking-wider animate-pulse flex items-center gap-1 shadow-[0_0_10px_rgba(192,0,0,0.3)]">
                     <ShieldAlert size={8} /> Locked: View Only
                   </span>
                 )}
@@ -169,7 +169,7 @@ export default function DashboardSidebar({
         {/* Scrollable Navigation */}
         <div className="flex-1 overflow-y-auto py-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           <div>
-            <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-2 px-6">Personal</h4>
+            <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Personal</h4>
             <div className="space-y-1 px-3">
               <NavButton tab="" icon={LayoutDashboard} label="Dashboard Home" currentPath={location.pathname} />
               <NavButton tab="profile" icon={User} label="My Profile" currentPath={location.pathname} />

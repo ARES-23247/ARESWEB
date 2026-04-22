@@ -21,7 +21,7 @@ export default function Accessibility() {
             <span className="text-marble/40 font-mono text-sm tracking-widest uppercase">Digital Manifesto</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
-            Championship-Grade <span className="text-ares-danger-soft">Accessibility</span>
+            Championship-Grade <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Accessibility</span>
           </h1>
           <p className="text-marble/60 text-lg md:text-xl leading-relaxed">
             As part of our commitment to the <em>FIRST</em>® Robotics core values, ARES 23247 architects our digital infrastructure to exceed inclusive design standards, ensuring our engineering resources are available to everyone.

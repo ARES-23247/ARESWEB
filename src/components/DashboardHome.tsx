@@ -45,7 +45,7 @@ export default function DashboardHome() {
           </div>
           Welcome back, {firstName}
         </h2>
-        <p className="text-zinc-500 text-sm mt-2">
+        <p className="text-marble/40 text-sm mt-2">
           Your centralized ARESWEB overview and quick actions.
         </p>
       </div>
@@ -55,29 +55,29 @@ export default function DashboardHome() {
         {/* Left Column: Quick Links & Stats */}
         <div className="lg:col-span-1 space-y-6 flex flex-col">
           
-          <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6">
+          <div className="bg-obsidian/50 border border-white/5 ares-cut p-6">
             <h3 className="font-black text-white text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
               <Activity size={16} className="text-ares-cyan" />
               Quick Actions
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <Link to="/dashboard/profile" className="flex flex-col items-center justify-center p-4 bg-zinc-800/40 hover:bg-zinc-700/50 ares-cut-sm transition-colors border border-white/5 group">
-                <User size={20} className="text-zinc-400 group-hover:text-white mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">My Profile</span>
+              <Link to="/dashboard/profile" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
+                <User size={20} className="text-marble/40 group-hover:text-white mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">My Profile</span>
               </Link>
-              <Link to="/dashboard/outreach" className="flex flex-col items-center justify-center p-4 bg-zinc-800/40 hover:bg-zinc-700/50 ares-cut-sm transition-colors border border-white/5 group">
-                <Target size={20} className="text-zinc-400 group-hover:text-white mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">Outreach</span>
+              <Link to="/dashboard/outreach" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
+                <Target size={20} className="text-marble/40 group-hover:text-white mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">Outreach</span>
               </Link>
               {canSeeInquiries && (
-                <Link to="/dashboard/inquiries" className="flex flex-col items-center justify-center p-4 bg-zinc-800/40 hover:bg-zinc-700/50 ares-cut-sm transition-colors border border-white/5 group">
-                  <MessageSquare size={20} className="text-zinc-400 group-hover:text-white mb-2" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">Inquiries</span>
+                <Link to="/dashboard/inquiries" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
+                  <MessageSquare size={20} className="text-marble/40 group-hover:text-white mb-2" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">Inquiries</span>
                 </Link>
               )}
-              <Link to="/docs" className="flex flex-col items-center justify-center p-4 bg-zinc-800/40 hover:bg-zinc-700/50 ares-cut-sm transition-colors border border-white/5 group">
-                <BookOpen size={20} className="text-zinc-400 group-hover:text-white mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">ARESLib</span>
+              <Link to="/docs" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
+                <BookOpen size={20} className="text-marble/40 group-hover:text-white mb-2" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">ARESLib</span>
               </Link>
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Right Column: Team Availability */}
-        <div className="lg:col-span-2 bg-zinc-900/50 border border-white/5 ares-cut p-6 flex flex-col h-[500px] lg:h-auto">
+        <div className="lg:col-span-2 bg-obsidian/50 border border-white/5 ares-cut p-6 flex flex-col h-[500px] lg:h-auto">
           <TeamAvailability />
         </div>
 

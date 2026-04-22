@@ -143,7 +143,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
       {/* Save */}
       {message && (
-        <div className={`p-4 ares-cut-sm text-sm font-semibold ${message.type === "success" ? "bg-ares-cyan/10 border border-ares-cyan/20 text-ares-cyan" : "bg-ares-danger/10 border border-ares-danger/20 text-ares-danger-soft"}`}>
+        <div className={`p-4 ares-cut-sm text-sm font-bold ${message.type === "success" ? "bg-ares-cyan/10 border border-ares-cyan/20 text-ares-cyan" : "bg-ares-red text-white shadow-lg shadow-ares-red/20"}`}>
           {message.text}
         </div>
       )}

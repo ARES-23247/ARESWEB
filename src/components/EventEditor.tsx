@@ -48,8 +48,8 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         <div className="bg-ares-danger/10 border-l-4 border-ares-danger p-4 rounded-r-lg mb-6 flex items-start gap-3">
           <div className="text-ares-danger mt-0.5">⚠️</div>
           <div>
-            <h4 className="text-ares-danger font-bold text-sm tracking-wide uppercase">Ghost Event</h4>
-            <p className="text-ares-danger-soft/80 text-sm mt-1">This event is currently soft-deleted and is hidden from the public API and Google Calendar. Modifying and saving it will not undelete it.</p>
+            <h4 className="text-white font-bold text-sm tracking-wide uppercase">Ghost Event</h4>
+            <p className="text-white text-sm mt-1 font-bold">This event is currently soft-deleted and is hidden from the public API and Google Calendar. Modifying and saving it will not undelete it.</p>
           </div>
         </div>
       )}
@@ -175,8 +175,8 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           <div className="p-4 bg-ares-danger/10 border border-ares-danger/20 ares-cut flex items-start gap-3">
             <div className="text-ares-danger mt-0.5">⚠️</div>
             <div>
-              <h4 className="text-ares-danger font-bold text-xs tracking-wide uppercase">Critical Error</h4>
-              <p className="text-ares-danger-soft/90 text-sm mt-1">{errorMsg}</p>
+              <h4 className="text-white font-bold text-xs tracking-wide uppercase">Critical Error</h4>
+              <p className="text-white text-sm mt-1 font-bold">{errorMsg}</p>
             </div>
           </div>
         )}

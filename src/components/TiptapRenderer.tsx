@@ -162,7 +162,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
         );
       }
       return (
-        <div className="p-4 border border-ares-danger/50 bg-ares-danger/10 text-ares-danger-soft rounded my-8 font-mono text-sm">
+        <div className="p-4 border border-ares-red/50 bg-ares-red/10 text-white font-bold rounded my-8 font-mono text-sm shadow-lg shadow-ares-red/20">
           Unknown interactive component: {componentName}
         </div>
       );

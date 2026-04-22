@@ -114,7 +114,7 @@ export default function Outreach() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-ares-danger-soft text-xs font-bold uppercase tracking-widest mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-ares-red text-white text-xs font-bold uppercase tracking-widest mb-8 shadow-lg shadow-ares-red/20"
           >
             <Activity size={14} className="animate-pulse" />
             Active Impact Reporting
@@ -124,7 +124,7 @@ export default function Outreach() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter italic"
           >
-            Engineering <br/> <span className="text-ares-danger-soft">Change</span>.
+            Engineering <br/> <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Change</span>.
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -276,7 +276,7 @@ export default function Outreach() {
                 <X size={24} />
               </button>
 
-              <h3 className="text-3xl font-black text-white italic tracking-tight mb-2">Request a <span className="text-ares-danger-soft">Demo</span>.</h3>
+              <h3 className="text-3xl font-black text-white italic tracking-tight mb-2">Request a <span className="bg-ares-red px-3 py-1 ares-cut shadow-lg inline-block text-white ml-2">Demo</span></h3>
               <p className="text-marble/60 text-sm mb-8">Tell us about your event, and our student outreach team will get back to you to coordinate.</p>
 
               {submitStatus === "success" ? (

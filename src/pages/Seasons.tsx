@@ -42,7 +42,7 @@ export default function Seasons() {
           animate={{ opacity: 1, y: 0 }}
           className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter italic"
         >
-          Our <span className="text-ares-danger-soft">Legacy</span>.
+          Our <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Legacy</span>.
         </motion.h1>
         <p className="text-marble/80 text-xl max-w-2xl mx-auto leading-relaxed font-medium">
           The story of ARES 23247 is told through the banners we hang and the challenges we overcome. We document our history to inspire our future.

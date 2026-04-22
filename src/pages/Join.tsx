@@ -59,10 +59,10 @@ export default function Join() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <p aria-hidden="true" className="text-ares-danger-soft uppercase tracking-[0.3em] font-bold text-sm mb-4 before:content-['Enrollment_Open']"></p>
+            <p aria-hidden="true" className="bg-ares-red text-white inline-block px-4 py-1 rounded-full uppercase tracking-[0.3em] font-bold text-[10px] mb-6 shadow-lg shadow-ares-red/20 before:content-['Enrollment_Open']"></p>
             <p className="sr-only">Enrollment Open</p>
             <h1 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter italic">
-              Join <span aria-hidden="true" className="text-ares-danger-soft before:content-['ARES.']"></span>
+              Join <span aria-hidden="true" className="bg-ares-red px-6 py-1 ares-cut shadow-xl inline-block text-white ml-2 before:content-['ARES.']"></span>
               <span className="sr-only">ARES.</span>
             </h1>
             <p className="text-marble/80 text-xl max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-8">
@@ -82,7 +82,7 @@ export default function Join() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-4"
           >
-            <h2 className="text-3xl font-black text-white mb-6 uppercase tracking-tight">The ARES <span className="text-ares-danger-soft">Advantage</span></h2>
+            <h2 className="text-3xl font-black text-white mb-6 uppercase tracking-tight">The ARES <span className="bg-ares-red px-4 py-1 ares-cut shadow-xl inline-block text-white">Advantage</span></h2>
             
             <div className="space-y-6">
               <div className="flex gap-4">

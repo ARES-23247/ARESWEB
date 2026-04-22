@@ -143,9 +143,9 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>((prop
   }));
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 ares-cut-sm shadow-2xl overflow-hidden min-w-[280px] backdrop-blur-xl animate-in fade-in zoom-in duration-200">
-      <div className="p-2 border-b border-zinc-800">
-        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-2">Commands</span>
+    <div className="bg-obsidian border border-white/10 ares-cut-sm shadow-2xl overflow-hidden min-w-[280px] backdrop-blur-xl animate-in fade-in zoom-in duration-200">
+      <div className="p-2 border-b border-white/10">
+        <span className="text-[10px] font-bold text-marble/40 uppercase tracking-widest px-2">Commands</span>
       </div>
       <div className="max-h-[320px] overflow-y-auto p-1 custom-scrollbar">
         {items.map((item, index) => (
@@ -153,10 +153,10 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>((prop
             key={index}
             onClick={() => selectItem(index)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 ares-cut-sm text-left transition-all ${
-              index === selectedIndex ? 'bg-ares-gold/20 text-ares-gold shadow-inner' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+              index === selectedIndex ? 'bg-ares-gold/20 text-ares-gold shadow-inner' : 'text-marble/50 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <div className={`p-2 ares-cut-sm ${index === selectedIndex ? 'bg-ares-gold/20' : 'bg-zinc-800'}`}>
+            <div className={`p-2 ares-cut-sm ${index === selectedIndex ? 'bg-ares-gold/20' : 'bg-white/5'}`}>
               {item.icon}
             </div>
             <div>

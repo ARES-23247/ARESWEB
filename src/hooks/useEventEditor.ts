@@ -156,7 +156,7 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
 
         // Redirect if it's a draft or if the user is an author
         // We use a small timeout to let the success message be seen or just navigate immediately
-        if (mutation.variables?.isDraft || userRole === "author") {
+        if (mutation.variables || userRole === "author") {
           navigate("/dashboard");
         }
       } else {

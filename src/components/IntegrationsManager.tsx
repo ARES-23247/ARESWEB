@@ -72,7 +72,7 @@ export default function IntegrationsManager() {
 
   if (isError) {
     return (
-      <div className="text-ares-red bg-ares-red/10 border border-ares-red ares-cut-sm p-4 font-bold text-center">
+      <div className="text-white bg-ares-red border border-ares-red ares-cut-sm p-4 font-bold text-center shadow-lg shadow-ares-red/20">
         Failed to load integrations. Access denied or network error.
         <div className="text-sm font-mono mt-2 opcaity-80">{error?.message || "Unknown Error"}</div>
       </div>

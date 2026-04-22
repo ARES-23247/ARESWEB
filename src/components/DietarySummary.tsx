@@ -34,14 +34,14 @@ export default function DietarySummary() {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <RefreshCw className="animate-spin text-ares-red" size={32} />
-        <p className="text-zinc-500 text-sm font-bold animate-pulse">Aggregating Team Data...</p>
+        <p className="text-ares-gray text-sm font-bold animate-pulse">Aggregating Team Data...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center gap-3 p-6 bg-ares-danger/10 border border-ares-danger/20 ares-cut text-ares-danger-soft">
+      <div className="flex items-center gap-3 p-6 bg-ares-red text-white border border-ares-red/20 ares-cut font-bold shadow-lg shadow-ares-red/20">
         <AlertCircle size={24} />
         <div>
           <h4 className="font-bold">Summary Unavailable</h4>
@@ -54,7 +54,7 @@ export default function DietarySummary() {
   if (!data || data.totalCount === 0) {
     return (
       <DashboardEmptyState
-        className="text-center py-12 border-2 border-dashed border-zinc-800 ares-cut-lg"
+        className="text-center py-12 border-2 border-dashed border-white/10 ares-cut-lg"
         icon={<Users size={48} />}
         message="No member profile data found yet."
       />
@@ -70,7 +70,7 @@ export default function DietarySummary() {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Dietary Panel */}
-      <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6 relative overflow-hidden group">
+      <div className="bg-obsidian/50 border border-ares-gray-dark ares-cut p-6 relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
           <Utensils size={120} />
         </div>
@@ -80,17 +80,17 @@ export default function DietarySummary() {
         
         <div className="space-y-4 relative z-10">
           {Object.keys(data.dietary).length === 0 ? (
-            <p className="text-zinc-500 text-sm italic">No restrictions reported.</p>
+            <p className="text-ares-gray text-sm italic">No restrictions reported.</p>
           ) : (
             Object.entries(data.dietary)
               .sort((a,b) => b[1] - a[1])
               .map(([label, count]) => (
                 <div key={label} className="space-y-1.5">
                   <div className="flex justify-between text-sm font-bold">
-                    <span className="text-zinc-300">{label}</span>
+                    <span className="text-ares-offwhite">{label}</span>
                     <span className="text-ares-red">{count}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-ares-gray-dark rounded-full overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${(count / data.totalCount) * 100}%` }}
@@ -104,7 +104,7 @@ export default function DietarySummary() {
       </div>
 
       {/* Apparel Panel */}
-      <div className="bg-zinc-900/50 border border-zinc-800 ares-cut p-6 relative overflow-hidden group">
+      <div className="bg-obsidian/50 border border-ares-gray-dark ares-cut p-6 relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
           <Shirt size={120} />
         </div>
@@ -114,7 +114,7 @@ export default function DietarySummary() {
         
         <div className="space-y-4 relative z-10">
           {Object.keys(data.tshirts).length === 0 ? (
-            <p className="text-zinc-500 text-sm italic">No sizes reported.</p>
+            <p className="text-ares-gray text-sm italic">No sizes reported.</p>
           ) : (
             Object.entries(data.tshirts)
               .sort((a, b) => {
@@ -124,10 +124,10 @@ export default function DietarySummary() {
               .map(([label, count]) => (
                 <div key={label} className="space-y-1.5">
                   <div className="flex justify-between text-sm font-bold">
-                    <span className="text-zinc-300">{label}</span>
+                    <span className="text-ares-offwhite">{label}</span>
                     <span className="text-ares-gold">{count}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-ares-gray-dark rounded-full overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${(count / data.totalCount) * 100}%` }}
@@ -141,7 +141,7 @@ export default function DietarySummary() {
       </div>
 
       <div className="md:col-span-2 flex justify-center pt-2">
-        <div className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+        <div className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-ares-gray uppercase tracking-widest">
           Based on {data.totalCount} active member profiles
         </div>
       </div>

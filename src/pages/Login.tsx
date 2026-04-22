@@ -85,7 +85,7 @@ export default function Login() {
             className="mt-6 p-4 bg-ares-danger/10 border border-ares-danger/50 ares-cut-sm flex items-start gap-3"
           >
             <AlertCircle className="w-5 h-5 text-ares-danger flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-ares-danger-soft leading-relaxed font-medium">
+            <p className="text-sm text-white leading-relaxed font-medium">
               {errorMessage}
             </p>
           </motion.div>

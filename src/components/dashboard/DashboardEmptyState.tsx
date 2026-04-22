@@ -10,12 +10,12 @@ interface DashboardEmptyStateProps {
 export default function DashboardEmptyState({ icon, message, subMessage, className = "py-20 text-center border-2 border-dashed border-white/5 ares-cut-lg" }: DashboardEmptyStateProps) {
   return (
     <div className={className}>
-      <div className="flex justify-center mb-4 text-zinc-600">
+      <div className="flex justify-center mb-4 text-marble/30">
         {icon}
       </div>
-      <p className="text-zinc-500 font-bold italic">{message}</p>
+      <p className="text-marble/40 font-bold italic">{message}</p>
       {subMessage && (
-        <p className="text-zinc-600 text-sm mt-2">{subMessage}</p>
+        <p className="text-marble/30 text-sm mt-2">{subMessage}</p>
       )}
     </div>
   );

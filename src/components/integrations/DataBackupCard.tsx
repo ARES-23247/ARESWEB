@@ -28,17 +28,17 @@ export function DataBackupCard() {
   };
 
   return (
-    <div className="bg-zinc-950 border border-zinc-800 p-6 flex flex-col gap-6 relative shadow-xl ares-cut-sm">
+    <div className="bg-ares-black border border-ares-gray-dark p-6 flex flex-col gap-6 relative shadow-xl ares-cut-sm">
       {/* Decorative Brand Accent */}
       <div className="absolute top-0 right-0 w-16 h-1 bg-ares-gold" />
       
       <div className="flex items-start gap-4">
-        <div className="p-3 bg-zinc-900 border border-zinc-800/50 ares-cut-sm shadow-inner group-hover:bg-zinc-800 transition-colors shrink-0">
-          <Database size={24} className="text-zinc-400 group-hover:text-ares-gold transition-colors" />
+        <div className="p-3 bg-obsidian border border-ares-gray-dark/50 ares-cut-sm shadow-inner group-hover:bg-ares-gray-dark transition-colors shrink-0">
+          <Database size={24} className="text-ares-offwhite/70 group-hover:text-ares-gold transition-colors" />
         </div>
         <div>
           <h3 className="text-lg font-bold text-white tracking-wide uppercase">Data Management & Backup</h3>
-          <p className="text-zinc-500 text-sm mt-1 leading-relaxed">
+          <p className="text-ares-gray text-sm mt-1 leading-relaxed">
             Generate and download a full JSON snapshot of your Cloudflare D1 database. Protect against critical data loss by exporting regularly.
           </p>
         </div>

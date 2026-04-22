@@ -71,7 +71,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
       <div className="bg-obsidian border border-white/10 w-full max-w-md ares-cut overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 ares-cut-sm ${type === 'blog' ? 'bg-ares-red/20 text-ares-red' : 'bg-ares-gold/20 text-ares-gold'}`}>
+            <div className={`p-1.5 ares-cut-sm ${type === 'blog' ? 'bg-ares-red text-white' : 'bg-ares-gold text-black'}`}>
               <Send size={16} />
             </div>
             <h3 className="font-bold text-white tracking-tight">Social Broadcast</h3>

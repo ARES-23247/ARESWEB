@@ -61,15 +61,12 @@ export default function AdminInquiries() {
             <div key={iq.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 relative group transition-all hover:border-white/20 flex flex-col h-full">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                    iq.type === 'student' ? 'bg-ares-red/20 text-ares-red' : 
-                    iq.type === 'mentor' ? 'bg-ares-gold/20 text-ares-gold' : 'bg-ares-cyan/20 text-ares-cyan'
-                  }`}>
-                    {iq.type} Form
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                    iq.status === 'pending' ? 'bg-ares-gold/20 text-ares-gold' : 'bg-ares-cyan/20 text-ares-cyan'
-                  }`}>
+            <div className={`p-1.5 ares-cut-sm ${iq.type === 'student' ? 'bg-ares-red text-white' : iq.type === 'mentor' ? 'bg-ares-gold text-black' : 'bg-ares-cyan text-black'}`}>
+              {iq.type} Form
+            </div>
+            <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+              iq.status === 'pending' ? 'bg-ares-gold text-black shadow-lg shadow-ares-gold/20' : 'bg-ares-cyan text-black shadow-lg shadow-ares-cyan/20'
+            }`}>
                     {iq.status}
                   </div>
                 </div>

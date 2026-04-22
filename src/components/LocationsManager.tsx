@@ -154,7 +154,7 @@ export default function LocationsManager() {
                 {filtered.map(l => (
                   <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.is_deleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-white/10 bg-obsidian/50 hover:bg-white/5'}`}>
                     <div>
-                      <h4 className={`font-bold ${l.is_deleted ? 'text-ares-danger-soft line-through' : 'text-white'}`}>{l.name}</h4>
+                      <h4 className={`font-bold ${l.is_deleted ? 'text-ares-red/60 line-through' : 'text-white'}`}>{l.name}</h4>
                       <p className="text-sm text-marble/60 mt-1 flex items-center gap-2">
                         <MapPin size={14} /> {l.address}
                       </p>
@@ -247,7 +247,7 @@ export default function LocationsManager() {
               </div>
 
               {errorMsg && (
-                <div className="p-3 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-danger-soft text-sm">
+                <div className="p-3 ares-cut-sm bg-ares-red text-white text-sm font-bold shadow-lg shadow-ares-red/20">
                   {errorMsg}
                 </div>
               )}

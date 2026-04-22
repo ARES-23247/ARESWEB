@@ -109,7 +109,7 @@ export default function TeamAvailability() {
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <span className="text-xs font-bold text-ares-danger-soft">{error}</span>
+            <span className="text-xs font-bold text-white bg-ares-red/20 border border-ares-red/30 px-3 py-1 ares-cut-sm">{error}</span>
           </div>
         ) : sortedMembers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">

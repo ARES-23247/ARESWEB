@@ -4,22 +4,22 @@ import { Search, LayoutDashboard, LogIn, Bell, Check, Heart } from "lucide-react
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 
-import { useSession } from "../utils/auth-client";
+
 import { GreekMeander } from "./GreekMeander";
 import { adminApi } from "../api/adminApi";
+import { useDashboardSession } from "../hooks/useDashboardSession";
+
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
 
   const navigate = useNavigate();
-  const { data: session, isPending } = useSession();
+  const { session, isPending, permissions } = useDashboardSession();
 
-  const isSignedIn = !isPending && session?.user;
+  const isSignedIn = !isPending && session?.authenticated;
   const userImage = session?.user?.image;
    
-  // @ts-expect-error - BetterAuth session typing
-  const role = session?.user?.role || "unverified";
-  const canSeeInquiries = isSignedIn && role !== "unverified";
+  const { role, canSeeInquiries, isAuthorized } = permissions;
   
   const [pendingInquiries, setPendingInquiries] = useState<{ id: string, name: string, type: string }[]>([]);
   const [pendingPosts, setPendingPosts] = useState<{ slug: string, status: string, title: string, author_nickname?: string }[]>([]);
@@ -113,7 +113,7 @@ export default function Navbar() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
-    if (canSeeInquiries) {
+    if (isAuthorized) {
       adminApi.get<{ inquiries?: { id: string, status: string, name: string, type: string }[] }>("/api/inquiries")
         .then((data) => {
           if (data && data.inquiries) {
@@ -122,7 +122,7 @@ export default function Navbar() {
           }
         }).catch(() => {});
         
-      adminApi.get<{ posts?: { slug: string, status: string, title: string, author_nickname?: string }[] }>("/api/admin/posts")
+      adminApi.get<{ posts?: { slug: string, status: string, title: string, author_nickname?: string }[] }>("/api/admin/posts/list")
         .then((data) => {
           if (data && data.posts) {
             const pending = data.posts.filter((p) => p.status === "pending");
@@ -138,7 +138,7 @@ export default function Navbar() {
           }
         }).catch(() => {});
 
-      adminApi.get<{ docs?: { slug: string, status: string, title: string }[] }>("/api/admin/docs")
+      adminApi.get<{ docs?: { slug: string, status: string, title: string }[] }>("/api/admin/docs/list")
         .then((data) => {
           if (data && data.docs) {
             const pending = data.docs.filter((d) => d.status === "pending");
@@ -173,11 +173,11 @@ export default function Navbar() {
           <Link to="/seasons" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Seasons</Link>
           <Link to="/outreach" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Outreach</Link>
           <Link to="/events" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Events</Link>
+          <Link to="/blog" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Blog</Link>
           <Link to="/docs" className="hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group border border-white/5 bg-white/5">
             <span className="bg-ares-red px-3 py-1.5 text-[10px] font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">ARES</span>
             <span className="text-white px-3 py-1.5 text-[10px] font-heading font-bold uppercase tracking-[0.2em] group-hover:bg-white/10 transition-colors">LIB</span>
           </Link>
-          <Link to="/blog" className="text-marble/70 hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Blog</Link>
         </div>
 
         <div className="hidden md:flex items-center gap-4">
@@ -205,7 +205,7 @@ export default function Navbar() {
                 <Bell size={18} className="text-marble/80" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-danger-soft opacity-75"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-ares-danger text-[9px] font-bold text-white items-center justify-center">
                       {unreadCount}
                     </span>

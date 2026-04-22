@@ -68,7 +68,7 @@ export default function AdminUsers() {
   }
 
   if (error) {
-    return <div className="text-ares-danger-soft text-center py-10">{error}</div>;
+    return <div className="bg-ares-red text-white font-bold ares-cut p-4 text-center py-10 shadow-lg shadow-ares-red/20">{error}</div>;
   }
 
   return (

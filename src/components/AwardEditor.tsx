@@ -93,7 +93,7 @@ export default function AwardEditor() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             onSubmit={handleSubmit}
-            className="bg-zinc-900 border border-ares-gold/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
+            className="bg-obsidian border border-ares-gold/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <DashboardInput
@@ -176,15 +176,15 @@ export default function AwardEditor() {
                  <span className="flex items-center gap-1">&middot; <Star size={12} className="fill-ares-gold" /> Blue Banner</span>
               </div>
               <h4 className="text-2xl font-black text-white mb-2 italic tracking-tighter">{award.title}</h4>
-              <div className="flex items-center gap-2 text-zinc-500 text-xs font-bold mb-4">
+              <div className="flex items-center gap-2 text-ares-gray text-xs font-bold mb-4">
                  <MapPin size={10} /> {award.event_name}
               </div>
-              <p className="text-zinc-500 text-sm line-clamp-3 leading-relaxed">{award.description}</p>
+              <p className="text-ares-gray text-sm line-clamp-3 leading-relaxed">{award.description}</p>
             </div>
 
             <button
               onClick={() => { if(confirm("Purge this achievement from history?")) deleteMutation.mutate(award.id); }}
-              className="absolute top-4 right-4 p-3 text-zinc-600 hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
+              className="absolute top-4 right-4 p-3 text-ares-gray hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
             >
               <Trash2 size={18} />
             </button>

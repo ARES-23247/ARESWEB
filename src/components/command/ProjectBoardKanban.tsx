@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   GitBranch, Plus, RefreshCw, 
@@ -19,13 +19,13 @@ interface ProjectBoardKanbanProps {
 }
 
 const statusConfig: Record<string, { bg: string; text: string; border: string; icon: React.ElementType }> = {
-  "Todo":        { bg: "bg-zinc-800/60",          text: "text-zinc-400",   border: "border-zinc-700",    icon: Circle },
+  "Todo":        { bg: "bg-ares-gray-dark/60",   text: "text-ares-offwhite/60", border: "border-ares-gray/30", icon: Circle },
   "In Progress": { bg: "bg-ares-cyan/10",         text: "text-ares-cyan",  border: "border-ares-cyan/30", icon: Clock },
-  "Done":        { bg: "bg-emerald-500/10",       text: "text-emerald-400", border: "border-emerald-500/30", icon: CheckCircle2 },
-  "Blocked":     { bg: "bg-ares-danger/10",           text: "text-ares-danger-soft",    border: "border-ares-danger/30",  icon: AlertTriangle },
+  "Done":        { bg: "bg-ares-gold/10",         text: "text-ares-gold",  border: "border-ares-gold/30", icon: CheckCircle2 },
+  "Blocked":     { bg: "bg-ares-red",           text: "text-white",    border: "border-ares-red/30",  icon: AlertTriangle },
 };
 
-const defaultStatus = { bg: "bg-zinc-800/60", text: "text-zinc-400", border: "border-zinc-700", icon: Circle };
+const defaultStatus = { bg: "bg-ares-gray-dark/60", text: "text-ares-offwhite/60", border: "border-ares-gray/30", icon: Circle };
 
 function getStatusConfig(status?: string) {
   if (!status) return defaultStatus;
@@ -52,18 +52,18 @@ export default function ProjectBoardKanban({
     : groupedItems;
 
   return (
-    <div className="bg-zinc-900/50 border border-white/5 ares-cut p-6">
+    <div className="bg-obsidian/50 border border-white/5 ares-cut p-6">
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
           <GitBranch size={16} className="text-ares-cyan" />
           {board?.title || "Project Board"}
         </h3>
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex bg-zinc-800/50 ares-cut-sm p-0.5 border border-white/5">
+          <div className="hidden sm:flex bg-ares-gray-dark/50 ares-cut-sm p-0.5 border border-white/5">
             <button
               onClick={() => setActiveKanbanFilter(null)}
               className={`px-2.5 py-1 text-[10px] font-bold ares-cut-sm transition-all ${
-                !activeKanbanFilter ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                !activeKanbanFilter ? "bg-white/10 text-white" : "text-ares-gray hover:text-ares-offwhite"
               }`}
             >
               All
@@ -73,7 +73,7 @@ export default function ProjectBoardKanban({
                 key={col}
                 onClick={() => setActiveKanbanFilter(activeKanbanFilter === col ? null : col)}
                 className={`px-2.5 py-1 text-[10px] font-bold ares-cut-sm transition-all ${
-                  activeKanbanFilter === col ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                  activeKanbanFilter === col ? "bg-white/10 text-white" : "text-ares-gray hover:text-ares-offwhite"
                 }`}
               >
                 {col}
@@ -97,14 +97,14 @@ export default function ProjectBoardKanban({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden mb-4"
           >
-            <div className="flex gap-2 p-3 bg-zinc-800/50 ares-cut-sm border border-white/5">
+            <div className="flex gap-2 p-3 bg-ares-gray-dark/50 ares-cut-sm border border-white/5">
               <input
                 type="text"
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onCreateTask()}
                 placeholder="New task title..."
-                className="flex-1 bg-transparent text-white text-sm outline-none placeholder-zinc-600 font-medium"
+                className="flex-1 bg-transparent text-white text-sm outline-none placeholder-ares-gray font-medium"
               />
               <button
                 onClick={onCreateTask}
@@ -122,14 +122,14 @@ export default function ProjectBoardKanban({
         <div className="text-center py-12">
           {isLoading ? (
             <div className="flex flex-col items-center gap-3">
-              <RefreshCw className="text-zinc-600 animate-spin" size={24} />
-              <p className="text-zinc-600 text-sm font-bold">Loading project board...</p>
+              <RefreshCw className="text-ares-gray animate-spin" size={24} />
+              <p className="text-ares-gray text-sm font-bold">Loading project board...</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">
-              <GitBranch className="text-zinc-700" size={32} />
-              <p className="text-zinc-500 text-sm font-bold">GitHub Projects not configured</p>
-              <p className="text-zinc-600 text-xs max-w-sm mx-auto">
+              <GitBranch className="text-ares-gray" size={32} />
+              <p className="text-ares-gray text-sm font-bold">GitHub Projects not configured</p>
+              <p className="text-ares-offwhite/50 text-xs max-w-sm mx-auto">
                 Set your <code className="text-ares-cyan">GITHUB_PAT</code> and <code className="text-ares-cyan">GITHUB_PROJECT_ID</code> in System Integrations to enable the project board.
               </p>
             </div>
@@ -150,31 +150,31 @@ export default function ProjectBoardKanban({
                       {status}
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-zinc-600 bg-zinc-800/80 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 rounded-full">
                     {items.length}
                   </span>
                 </div>
                 <div className="p-2 space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/5">
                   {items.length === 0 ? (
-                    <p className="text-zinc-700 text-xs text-center py-6 italic">No items</p>
+                    <p className="text-ares-gray text-xs text-center py-6 italic">No items</p>
                   ) : (
                     items.map((item) => (
                       <motion.div
                         key={item.id}
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="p-3 bg-zinc-900/60 hover:bg-zinc-800/60 ares-cut-sm border border-white/5 hover:border-white/10 transition-all cursor-default group"
+                        className="p-3 bg-obsidian/60 hover:bg-ares-gray-dark/60 ares-cut-sm border border-white/5 hover:border-white/10 transition-all cursor-default group"
                       >
                         <p className="text-sm font-bold text-white leading-tight mb-1.5">{item.title}</p>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             {item.assignees.slice(0, 2).map(a => (
-                              <span key={a} className="text-[9px] font-bold text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">
+                              <span key={a} className="text-[9px] font-bold text-ares-gray bg-ares-gray-dark px-1.5 py-0.5 rounded">
                                 @{a}
                               </span>
                             ))}
                           </div>
-                          <span className="text-[9px] text-zinc-700 font-mono">
+                          <span className="text-[9px] text-ares-gray font-mono">
                             {item.type === "DRAFT_ISSUE" ? "Draft" : item.type === "ISSUE" ? "Issue" : "PR"}
                           </span>
                         </div>

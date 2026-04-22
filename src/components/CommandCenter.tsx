@@ -136,7 +136,7 @@ export default function CommandCenter() {
       </div>
 
       {error && (
-        <div className="p-4 ares-cut-sm bg-ares-danger/10 border border-ares-danger/30 text-ares-danger-soft text-sm">
+        <div className="p-4 ares-cut-sm bg-ares-red text-white text-sm font-bold shadow-lg shadow-ares-red/20">
           <AlertTriangle size={16} className="inline mr-2" />
           {error}
         </div>

@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, RefreshCw, Save, Image as ImageIcon, Shuffle, ToggleLeft, ToggleRight } from "lucide-react";
 import { authClient } from "../utils/auth-client";
@@ -343,7 +343,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
               </div>
 
               {error && (
-                <div className="mt-4 p-4 bg-ares-danger/10 border border-ares-danger/20 text-ares-danger-soft ares-cut-sm text-sm font-semibold">
+                <div className="mt-4 p-4 bg-ares-red text-white font-bold ares-cut-sm text-sm shadow-lg shadow-ares-red/20">
                   {error}
                 </div>
               )}
