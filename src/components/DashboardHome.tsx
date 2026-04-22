@@ -9,17 +9,17 @@ export default function DashboardHome() {
   const { data: session } = useSession();
   const [stats, setStats] = useState<Record<string, number>>({});
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const role = (session?.user as any)?.role || "unverified";
+  // @ts-expect-error - BetterAuth session typing
+  const role = session?.user?.role || "unverified";
   const canSeeInquiries = role !== "unverified";
 
   useEffect(() => {
     // We only fetch stats if the user isn't unverified, just to give them some data
     if (canSeeInquiries) {
       Promise.allSettled([
-        fetch("/api/admin/posts", { credentials: "include" }).then(r => r.json()),
-        fetch("/api/admin/events", { credentials: "include" }).then(r => r.json()),
-        fetch("/api/admin/docs", { credentials: "include" }).then(r => r.json()),
+        fetch("/api/admin/posts", { credentials: "include" }).then(r => r.json() as Promise<{ posts?: unknown[] }>),
+        fetch("/api/admin/events", { credentials: "include" }).then(r => r.json() as Promise<{ events?: unknown[] }>),
+        fetch("/api/admin/docs", { credentials: "include" }).then(r => r.json() as Promise<{ docs?: unknown[] }>),
       ]).then(([postsRes, eventsRes, docsRes]) => {
         let p = 0, e = 0, d = 0;
         if (postsRes.status === "fulfilled" && postsRes.value.posts) p = postsRes.value.posts.length;
@@ -31,7 +31,8 @@ export default function DashboardHome() {
   }, [canSeeInquiries]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const firstName = (session?.user as any)?.first_name || session?.user?.name || "ARES Member";
+  // @ts-expect-error - BetterAuth session typing
+  const firstName = session?.user?.first_name || session?.user?.name || "ARES Member";
 
   return (
     <div className="space-y-8 h-full flex flex-col">

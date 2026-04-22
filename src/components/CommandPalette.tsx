@@ -49,7 +49,8 @@ export default function CommandPalette() {
   }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userRole = (session?.user as any)?.role;
+  // @ts-expect-error - BetterAuth session typing
+  const userRole = session?.user?.role;
 
   // Static Quick Links routes
   const staticLinks = useMemo(() => {
