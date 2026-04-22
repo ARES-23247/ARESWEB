@@ -51,6 +51,7 @@ export default function Outreach() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [organization, setOrganization] = useState("");
   const [description, setDescription] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
@@ -67,7 +68,7 @@ export default function Outreach() {
         type: "outreach",
         name,
         email,
-        metadata: { organization, description },
+        metadata: { organization, description, phone: phone || undefined },
         turnstileToken
       });
 
@@ -77,7 +78,7 @@ export default function Outreach() {
 
       await publicApi.submitInquiry(payloadResult.data);
       setSubmitStatus("success");
-      setName(""); setEmail(""); setOrganization(""); setDescription("");
+      setName(""); setEmail(""); setPhone(""); setOrganization(""); setDescription("");
     } catch (err) {
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong.");
@@ -304,9 +305,15 @@ export default function Outreach() {
                     </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="demo-org" className="block text-xs font-bold text-marble/60 uppercase tracking-widest mb-2 ml-1">Organization / School (Optional)</label>
-                    <input id="demo-org" type="text" value={organization} onChange={e => setOrganization(e.target.value)} disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="e.g. Morgantown Public Market" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label htmlFor="demo-org" className="block text-xs font-bold text-marble/60 uppercase tracking-widest mb-2 ml-1">Organization / School (Optional)</label>
+                      <input id="demo-org" type="text" value={organization} onChange={e => setOrganization(e.target.value)} disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="e.g. Morgantown Public Market" />
+                    </div>
+                    <div>
+                      <label htmlFor="demo-phone" className="block text-xs font-bold text-marble/60 uppercase tracking-widest mb-2 ml-1">Phone Number (Optional)</label>
+                      <input id="demo-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="(304) 555-1234" />
+                    </div>
                   </div>
 
                   <div>

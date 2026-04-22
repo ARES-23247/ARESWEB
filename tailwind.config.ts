@@ -22,6 +22,7 @@ const config: Config = {
         "marble": "#F9F9F9",
         "ares-gray": "#4a4a4a",
         "ares-offwhite": "#e6edf3",
+        "ares-muted": "#c9d1d9",
         "ares-gray-dark": "#161b22",
         "ares-gray-deep": "#0d1117",
         "ares-black": "#050505",

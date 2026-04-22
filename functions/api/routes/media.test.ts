@@ -89,17 +89,23 @@ describe("Hono Backend - /media Router", () => {
     formData.append("file", file);
     formData.append("folder", "Gallery");
 
-    const req = new Request("http://localhost/upload", {
-      method: "POST",
-      body: formData,
+    // Create a wrapper app to inject the mocked formData
+    const { Hono } = await import("hono");
+    const app = new Hono<any>();
+    app.post("/upload", async (c, next) => {
+      c.req.formData = async () => formData;
+      await next();
     });
+    app.route("/", adminMediaRouter);
 
-    const res = await adminMediaRouter.request(req, {}, localEnv, mockExecutionContext);
+    const res = await app.request("http://localhost/upload", {
+      method: "POST",
+    }, localEnv, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as any;
-    expect(body.success).toBe(true);
-    expect(body.altText).toBe("A cool robot");
+    const json = await res.json() as any;
+    expect(json.success).toBe(true);
+    expect(json.altText).toBe("A cool robot");
     expect(mockR2.put).toHaveBeenCalled();
     expect(mockAi.run).toHaveBeenCalledWith("@cf/llava-1.5-7b-hf", expect.anything());
   }, 15000);

@@ -93,21 +93,21 @@ h1, h2, h3, h4, .font-heading {
 }
 
 .callout-block[data-type="info"] {
-  @apply bg-ares-cyan/10 border-ares-cyan/30 text-[#e6edf3];
+  @apply bg-ares-cyan/10 border-ares-cyan/30 text-ares-offwhite;
 }
 .callout-block[data-type="info"]::before {
   content: "ℹ️";
 }
 
 .callout-block[data-type="warning"] {
-  @apply bg-ares-red/10 border-ares-red/30 text-[#e6edf3];
+  @apply bg-ares-red/10 border-ares-red/30 text-ares-offwhite;
 }
 .callout-block[data-type="warning"]::before {
   content: "⚠️";
 }
 
 .callout-block[data-type="tip"] {
-  @apply bg-ares-gold/10 border-ares-gold/30 text-[#e6edf3];
+  @apply bg-ares-gold/10 border-ares-gold/30 text-ares-offwhite;
 }
 .callout-block[data-type="tip"]::before {
   content: "💡";
@@ -115,7 +115,7 @@ h1, h2, h3, h4, .font-heading {
 
 /* Tiptap CodeBlock syntax highlighting enforcement */
 .tiptap pre {
-  @apply bg-[#0d1117] border border-white/10 rounded-xl p-4 my-4 font-mono text-sm shadow-inner overflow-x-auto text-[#c9d1d9];
+  @apply bg-ares-gray-deep border border-white/10 rounded-xl p-4 my-4 font-mono text-sm shadow-inner overflow-x-auto text-ares-muted;
 }
 .tiptap pre code {
   @apply bg-transparent p-0 text-inherit;

@@ -75,6 +75,7 @@ export default function Sponsors() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [level, setLevel] = useState("Interested in Details");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,7 +96,7 @@ export default function Sponsors() {
         type: "sponsor",
         name,
         email,
-        metadata: { level, message },
+        metadata: { level, message, phone: phone || undefined },
         turnstileToken,
       });
 
@@ -105,7 +106,7 @@ export default function Sponsors() {
 
       await publicApi.submitInquiry(payloadResult.data);
       setSubmitStatus("success");
-      setName(""); setEmail(""); setLevel("Interested in Details"); setMessage("");
+      setName(""); setEmail(""); setPhone(""); setLevel("Interested in Details"); setMessage("");
     } catch (err) {
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again or email us directly.");
@@ -242,14 +243,20 @@ export default function Sponsors() {
               </div>
             )}
             <form className="space-y-5" onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label htmlFor="name-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Company / Name *</label>
                   <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
                 </div>
-                <div>
-                  <label htmlFor="email-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Email *</label>
-                  <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="email-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Email *</label>
+                    <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
+                  </div>
+                  <div>
+                    <label htmlFor="phone-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Phone Number (Optional)</label>
+                    <input id="phone-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="(304) 555-1234" />
+                  </div>
                 </div>
               </div>
               <div>

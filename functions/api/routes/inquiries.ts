@@ -158,8 +158,11 @@ inquiriesRouter.post(
 
     // ── Zulip Admin Alert ──
     try {
+      const metadataObj = metadata as Record<string, unknown> | undefined;
+      const phoneStr = metadataObj?.phone ? `\n📱 **Phone:** ${metadataObj.phone}` : "";
+      
       const alertBody = [
-        `📧 **Contact:** (see Dashboard for details)`,
+        `📧 **Contact:** (see Dashboard for details)${phoneStr}`,
         `🔗 [Review in Dashboard](${siteConfig.urls.base}/dashboard?tab=inquiries)`,
       ].filter(Boolean).join("\n");
 

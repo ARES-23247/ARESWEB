@@ -102,7 +102,11 @@ export default function AdminInquiries() {
                     k !== 'additional' && v && (
                       <div key={k}>
                         <span className="block text-[10px] font-black uppercase text-marble/40 tracking-widest">{k}</span>
-                        <span className="font-medium text-white">{Array.isArray(v) ? v.join(', ') : String(v)}</span>
+                        {k === 'phone' ? (
+                          <a href={`tel:${String(v).replace(/[^0-9+]/g, '')}`} className="font-medium text-white hover:text-ares-cyan underline decoration-white/20 underline-offset-4">{String(v)}</a>
+                        ) : (
+                          <span className="font-medium text-white">{Array.isArray(v) ? v.join(', ') : String(v)}</span>
+                        )}
                       </div>
                     )
                   ))}

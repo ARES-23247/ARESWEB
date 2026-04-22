@@ -11,6 +11,7 @@ export default function Join() {
   const [role, setRole] = useState<"student" | "mentor">("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [school, setSchool] = useState("");
   const [grade, setGrade] = useState("");
   const [occupation, setOccupation] = useState("");
@@ -27,8 +28,8 @@ export default function Join() {
     setSubmitStatus("idle");
     try {
       const metadata = role === "student" 
-        ? { school, grade, interests, additional }
-        : { occupation, interests, additional };
+        ? { school, grade, interests, additional, phone: phone || undefined }
+        : { occupation, interests, additional, phone: phone || undefined };
 
       const payloadResult = inquirySchema.safeParse({ type: role, name, email, metadata, turnstileToken });
       if (!payloadResult.success) {
@@ -37,7 +38,7 @@ export default function Join() {
 
       await publicApi.submitInquiry(payloadResult.data);
       setSubmitStatus("success");
-      setName(""); setEmail(""); setSchool(""); setGrade(""); setOccupation(""); setInterests([]); setAdditional("");
+      setName(""); setEmail(""); setPhone(""); setSchool(""); setGrade(""); setOccupation(""); setInterests([]); setAdditional("");
     } catch (err) {
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -169,6 +170,13 @@ export default function Join() {
                   <div>
                     <label htmlFor="join-email" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Email Address *</label>
                     <input id="join-email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="jane@example.com" required />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label htmlFor="join-phone" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Phone Number (Optional)</label>
+                    <input id="join-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm" placeholder="(304) 555-1234" />
                   </div>
                 </div>
 

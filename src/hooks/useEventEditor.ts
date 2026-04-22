@@ -8,6 +8,7 @@ import { adminApi } from "../api/adminApi";
 import { publicApi } from "../api/publicApi";
 import { useModal } from "../contexts/ModalContext";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
+import { useEntityFetch } from "./useEntityFetch";
 import type { Editor } from "@tiptap/react";
 
 export interface LocationRow {
@@ -86,12 +87,10 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
     }
   };
 
-  useQuery({
-    queryKey: ["event", editId],
-    queryFn: async () => {
-      if (!editId) return null;
-      const data = await adminApi.get<{ event?: EventData }>(`/api/admin/events/${editId}`);
-      if (data.event) {
+  useEntityFetch<{ event?: EventData }>(
+    editId ? `/api/admin/events/${editId}` : null,
+    (data) => {
+      if (data?.event) {
         setIsDeleted(data.event.is_deleted === 1);
         setForm({
           title: data.event.title || "",
@@ -113,10 +112,8 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
           }
         }
       }
-      return data.event;
-    },
-    enabled: !!editId && !!editor,
-  });
+    }
+  );
 
   const mutation = useMutation({
     mutationFn: async (isDraft: boolean) => {
