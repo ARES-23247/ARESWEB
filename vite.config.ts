@@ -12,7 +12,7 @@ export default defineConfig({
     exclude: ['node_modules', 'tests/e2e/**'],
     coverage: {
       provider: "v8",
-      include: ['src/utils/**'],
+      include: ['src/utils/**', 'src/hooks/**', 'functions/api/routes/**'],
       thresholds: {
         lines: 85,
         functions: 100,

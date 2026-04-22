@@ -15,6 +15,8 @@ interface BadgeDef {
   created_at: string;
 }
 
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+
 export default function BadgeManager() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
@@ -77,6 +79,11 @@ export default function BadgeManager() {
 
   return (
     <div className="space-y-8">
+      <DashboardPageHeader 
+        title="Badge Management" 
+        subtitle="Define platform-wide awards and distribute them to members."
+        icon={<Award className="text-ares-gold" />}
+      />
       {/* Creation Panel */}
       <div className="bg-zinc-900 border border-zinc-800 ares-cut overflow-hidden shadow-2xl">
         <div className="p-6 border-b border-zinc-800 flex justify-between items-center">

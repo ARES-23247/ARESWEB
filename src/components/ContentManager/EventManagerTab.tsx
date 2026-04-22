@@ -1,5 +1,6 @@
 import { format } from "date-fns";
-import { Radio } from "lucide-react";
+import { Radio, Calendar } from "lucide-react";
+import DashboardEmptyState from "../dashboard/DashboardEmptyState";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useContentMutation } from "../../hooks/useContentMutation";
@@ -110,7 +111,11 @@ export default function EventManagerTab({
 
       <div className="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0 pr-2 custom-scrollbar">
         {filtered.length === 0 ? (
-          <div className="text-zinc-500 text-xs italic py-4 text-center border border-dashed border-zinc-800/50 ares-cut-sm">No {view} events found.</div>
+          <DashboardEmptyState
+            className="text-zinc-500 text-xs italic py-8 text-center border border-dashed border-zinc-800/50 ares-cut-sm"
+            icon={<Calendar size={24} />}
+            message={`No ${view} events found.`}
+          />
         ) : (
           filtered.map((event) => (
             <div key={event.id} className={`bg-black/40 border ${Number(event.is_deleted) === 1 ? 'border-ares-red/30 bg-ares-red/[0.02]' : 'border-zinc-800/60'} ares-cut-sm p-4 flex flex-col justify-between gap-4 hover:border-zinc-700 transition-colors`}>

@@ -1,4 +1,4 @@
-import { Context, Next } from "hono";
+import { Hono, Context, Next } from "hono";
 import { siteConfig } from "../../utils/site.config";
 import { getAuth } from "../../utils/auth";
 import { parseAstToText } from "../../utils/gcalSync";
@@ -480,4 +480,153 @@ export async function verifyTurnstile(
     // On network error, fail open to avoid blocking legitimate traffic
     return true;
   }
+}
+
+// ── Middlewares ────────────────────────────────────────────────────────
+
+/**
+ * Middleware: Rate Limit
+ */
+export const rateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
+  return async (c: Context<AppEnv>, next: Next) => {
+    const ip = c.req.header("CF-Connecting-IP") || "unknown";
+    if (!checkWriteRateLimit(`mw:${ip}`, limit, windowSeconds)) {
+      return c.json({ error: "Too many submissions. Please try again later." }, 429);
+    }
+    await next();
+  };
+};
+
+/**
+ * Middleware: Turnstile Verification
+ * Assumes the client sends a JSON payload with a `turnstileToken` field.
+ */
+export const turnstileMiddleware = () => {
+  return async (c: Context<AppEnv>, next: Next) => {
+    const ip = c.req.header("CF-Connecting-IP") || "unknown";
+    
+    let token: string | undefined;
+    try {
+      const clonedReq = c.req.raw.clone();
+      const body = await clonedReq.json() as { turnstileToken?: string };
+      token = body.turnstileToken;
+    } catch (err) {
+      // Body might not be JSON, skip token extraction
+    }
+
+    const valid = await verifyTurnstile(token, c.env.TURNSTILE_SECRET_KEY, ip);
+    if (!valid) {
+      return c.json({ error: "Security verification failed. Please try again." }, 403);
+    }
+    await next();
+  };
+};
+
+// ── Generic Content Management Factory ────────────────────────────────
+
+export interface ContentLifecycleHooks {
+  onApprove?: (c: Context<AppEnv>, id: string) => Promise<boolean | void>;
+  onReject?: (c: Context<AppEnv>, id: string, reason?: string) => Promise<boolean | void>;
+  onRestore?: (c: Context<AppEnv>, id: string) => Promise<boolean | void>;
+  onDelete?: (c: Context<AppEnv>, id: string, type: "trashed" | "purged") => Promise<boolean | void>;
+}
+
+export function createContentLifecycleRouter(tableName: string, hooks?: ContentLifecycleHooks) {
+  const router = new Hono<AppEnv>();
+
+  // Use ensureAdmin for all lifecycle routes
+  router.use("*", ensureAdmin);
+
+  // Approve
+  router.patch("/:id/approve", async (c) => {
+    const id = c.req.param("id");
+    
+    let handled = false;
+    if (hooks?.onApprove) handled = (await hooks.onApprove(c, id)) === true;
+
+    if (!handled) {
+      const { success } = await c.env.DB.prepare(
+        `UPDATE ${tableName} SET status = 'published' WHERE slug = ? OR id = ?`
+      ).bind(id, id).run();
+      if (!success) return c.json({ error: "Failed to approve" }, 500);
+    }
+
+    await logAuditAction(c, `APPROVE_${tableName.toUpperCase()}`, tableName, id);
+    return c.json({ success: true });
+  });
+
+  // Reject
+  router.patch("/:id/reject", async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json().catch(() => ({})) as { reason?: string };
+
+    let handled = false;
+    if (hooks?.onReject) handled = (await hooks.onReject(c, id, body.reason)) === true;
+
+    if (!handled) {
+      const { success } = await c.env.DB.prepare(
+        `UPDATE ${tableName} SET status = 'rejected' WHERE slug = ? OR id = ?`
+      ).bind(id, id).run();
+      if (!success) return c.json({ error: "Failed to reject" }, 500);
+    }
+
+    await logAuditAction(c, `REJECT_${tableName.toUpperCase()}`, tableName, id);
+    return c.json({ success: true });
+  });
+
+  // Restore
+  router.patch("/:id/restore", async (c) => {
+    const id = c.req.param("id");
+
+    let handled = false;
+    if (hooks?.onRestore) handled = (await hooks.onRestore(c, id)) === true;
+
+    if (!handled) {
+      const { success } = await c.env.DB.prepare(
+        `UPDATE ${tableName} SET is_deleted = 0, status = 'draft' WHERE slug = ? OR id = ?`
+      ).bind(id, id).run();
+      if (!success) return c.json({ error: "Failed to restore" }, 500);
+    }
+
+    await logAuditAction(c, `RESTORE_${tableName.toUpperCase()}`, tableName, id);
+    return c.json({ success: true });
+  });
+
+  // Soft Delete (Trash)
+  router.delete("/:id", async (c) => {
+    const id = c.req.param("id");
+    
+    let handled = false;
+    if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "trashed")) === true;
+
+    if (!handled) {
+      const { success } = await c.env.DB.prepare(
+        `UPDATE ${tableName} SET is_deleted = 1 WHERE slug = ? OR id = ?`
+      ).bind(id, id).run();
+      if (!success) return c.json({ error: "Operation failed" }, 500);
+    }
+    
+    await logAuditAction(c, `DELETE_${tableName.toUpperCase()}`, tableName, id);
+    return c.json({ success: true, action: "trashed" });
+  });
+
+  // Hard Delete (Purge)
+  router.delete("/:id/purge", async (c) => {
+    const id = c.req.param("id");
+    
+    let handled = false;
+    if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "purged")) === true;
+
+    if (!handled) {
+      const { success } = await c.env.DB.prepare(
+        `DELETE FROM ${tableName} WHERE slug = ? OR id = ?`
+      ).bind(id, id).run();
+      if (!success) return c.json({ error: "Operation failed" }, 500);
+    }
+    
+    await logAuditAction(c, `PURGE_${tableName.toUpperCase()}`, tableName, id);
+    return c.json({ success: true, action: "purged" });
+  });
+
+  return router;
 }

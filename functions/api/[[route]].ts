@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
-import { Bindings, ensureAdmin, checkRateLimit } from "./routes/_shared";
+import { Bindings, AppEnv, ensureAdmin, checkRateLimit, logSystemError } from "./routes/_shared";
 
 // ── Domain Routers ───────────────────────────────────────────────────
 import authRouter from "./routes/auth";
@@ -30,8 +30,8 @@ import zulipWebhookRouter from "./routes/zulipWebhook";
 import zulipRouter from "./routes/zulip";
 import notificationsRouter from "./routes/notifications";
 
-const app = new Hono<{ Bindings: Bindings }>();
-const apiRouter = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<AppEnv>();
+const apiRouter = new Hono<AppEnv>();
 // ── Isolate-Memory Rate Limiting ─────────────────────────────────────
 app.use("*", async (c, next) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
@@ -203,6 +203,25 @@ apiRouter.get("/admin/audit-log", async (c) => {
     console.error("Audit log read error:", err);
     return c.json({ logs: [] }, 500);
   }
+});
+
+app.onError(async (err, c) => {
+  console.error("Global API Error:", err);
+  
+  try {
+    if (c.env?.DB) {
+      await logSystemError(c.env.DB, "GlobalErrorHandler", err.message || "Unknown error", err.stack);
+    }
+  } catch (logErr) {
+    console.error("Failed to log system error in global handler", logErr);
+  }
+
+  // Handle Hono HTTPExceptions
+  if (err instanceof Error && err.name === "HTTPException") {
+    return (err as any).getResponse();
+  }
+
+  return c.json({ error: "Internal Server Error", message: err.message }, 500);
 });
 
 // ── Mount at /api and /dashboard/api ─────────────────────────────────

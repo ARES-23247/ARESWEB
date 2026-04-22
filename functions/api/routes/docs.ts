@@ -1,29 +1,54 @@
 import { Hono } from "hono";
 import { Context } from "hono";
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkWriteRateLimit, verifyTurnstile } from "./_shared";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, createContentLifecycleRouter, rateLimitMiddleware, turnstileMiddleware } from "./_shared";
 import { siteConfig } from "../../utils/site.config";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification, notifyByRole } from "../../utils/notifications";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 
 const docsRouter = new Hono<AppEnv>();
 
 
-// ── GET /docs — list all docs grouped by category ─────────────────────
-docsRouter.get("/", async (c) => {
+// ── GET /list — list all docs (admin) ──────────────────────
+// Static route must be BEFORE /:slug
+docsRouter.get("/list", ensureAdmin, async (c) => {
   try {
+    const { limit, offset } = parsePagination(c, 100, 500);
     const { results } = await c.env.DB.prepare(
-      `SELECT d.slug, d.title, d.category, d.sort_order, d.description, d.is_portfolio, d.is_executive_summary,
-              p.nickname as original_author_nickname, u.image as original_author_avatar
-       FROM docs d
-       LEFT JOIN user u ON d.cf_email = u.email
-       LEFT JOIN user_profiles p ON u.id = p.user_id
-       WHERE d.is_deleted = 0 AND d.status = 'published' ORDER BY d.category, d.sort_order ASC`
-    ).all();
+      "SELECT slug, title, category, sort_order, description, is_portfolio, is_executive_summary, is_deleted, status, revision_of FROM docs ORDER BY category, sort_order ASC LIMIT ? OFFSET ?"
+    ).bind(limit, offset).all();
     return c.json({ docs: results ?? [] });
   } catch (err) {
-    console.error("D1 docs list error:", err);
+    console.error("D1 admin docs list error:", err);
     return c.json({ docs: [] });
+  }
+});
+
+// ── GET /export-all — export all docs (admin) ─────────────────
+docsRouter.get("/export-all", ensureAdmin, async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      `SELECT slug, title, category, sort_order, description, content, is_portfolio, is_executive_summary, status FROM docs WHERE is_deleted = 0 OR is_deleted IS NULL ORDER BY category, sort_order`
+    ).all();
+
+    const backup = {
+      exportedAt: new Date().toISOString(),
+      version: "aresweb-docs-v1",
+      count: results.length,
+      docs: results,
+    };
+
+    return new Response(JSON.stringify(backup, null, 2), {
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="aresweb-docs-backup-${new Date().toISOString().slice(0, 10)}.json"`,
+      },
+    });
+  } catch (err) {
+    console.error("Docs export error:", err);
+    return c.json({ error: "Export failed" }, 500);
   }
 });
 
@@ -70,37 +95,51 @@ docsRouter.get("/search", async (c) => {
   }
 });
 
-// ── POST /docs/:slug/feedback — Submit doc feedback ───────────────────
-docsRouter.post("/:slug/feedback", async (c) => {
-  // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit
-  const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  if (!checkWriteRateLimit(`feedback:${ip}`, 10, 60)) {
-    return c.json({ error: "Too many submissions" }, 429);
+// ── GET /docs — list all docs grouped by category ─────────────────────
+docsRouter.get("/", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      `SELECT d.slug, d.title, d.category, d.sort_order, d.description, d.is_portfolio, d.is_executive_summary,
+              p.nickname as original_author_nickname, u.image as original_author_avatar
+       FROM docs d
+       LEFT JOIN user u ON d.cf_email = u.email
+       LEFT JOIN user_profiles p ON u.id = p.user_id
+       WHERE d.is_deleted = 0 AND d.status = 'published' ORDER BY d.category, d.sort_order ASC`
+    ).all();
+    return c.json({ docs: results ?? [] });
+  } catch (err) {
+    console.error("D1 docs list error:", err);
+    return c.json({ docs: [] });
   }
+});
 
+// ── GET /:slug/detail — single doc (admin, no status filter) ──────
+docsRouter.get("/:slug/detail", ensureAdmin, async (c) => {
+  const slug = (c.req.param("slug") || "");
+  try {
+    const row = await c.env.DB.prepare(
+      "SELECT slug, title, category, sort_order, description, content, is_portfolio, is_executive_summary, is_deleted, status, revision_of FROM docs WHERE slug = ?"
+    ).bind(slug).first();
+
+    if (!row) return c.json({ error: "Doc not found" }, 404);
+    return c.json({ doc: row });
+  } catch (err) {
+    console.error("D1 admin doc detail error:", err);
+    return c.json({ error: "Database error" }, 500);
+  }
+});
+
+// ── GET /:slug/history — list doc history (admin) ──────────
+docsRouter.get("/:slug/history", ensureAdmin, async (c) => {
   try {
     const slug = (c.req.param("slug") || "");
-    const body = await c.req.json();
-    const { isHelpful, comment, turnstileToken } = body;
-
-    // SEC-DoW: Verify Turnstile challenge before D1 write
-    const valid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
-    if (!valid) {
-      return c.json({ error: "Security verification failed" }, 403);
-    }
-
-    // SEC-04: Validate comment length
-    if (comment && typeof comment === "string" && comment.length > 2000) {
-      return c.json({ error: "Comment too long" }, 400);
-    }
-
-    await c.env.DB.prepare(
-      "INSERT INTO docs_feedback (slug, is_helpful, comment) VALUES (?, ?, ?)"
-    ).bind(slug, isHelpful ? 1 : 0, comment || null).run();
-    return c.json({ success: true });
+    const { results } = await c.env.DB.prepare(
+      "SELECT id, title, category, description, author_email, created_at FROM docs_history WHERE slug = ? ORDER BY created_at DESC LIMIT 50"
+    ).bind(slug).all();
+    return c.json({ history: results ?? [] });
   } catch (err) {
-    console.error("D1 feedback error:", err);
-    return c.json({ error: "Feedback failed" }, 500);
+    console.error("D1 doc history error:", err);
+    return c.json({ history: [] });
   }
 });
 
@@ -137,61 +176,28 @@ docsRouter.get("/:slug", async (c) => {
   }
 });
 
-// ── GET /list — list all docs (admin) ──────────────────────
-docsRouter.get("/list", ensureAdmin, async (c) => {
-  try {
-    const { limit, offset } = parsePagination(c, 100, 500);
-    const { results } = await c.env.DB.prepare(
-      "SELECT slug, title, category, sort_order, description, is_portfolio, is_executive_summary, is_deleted, status, revision_of FROM docs ORDER BY category, sort_order ASC LIMIT ? OFFSET ?"
-    ).bind(limit, offset).all();
-    return c.json({ docs: results ?? [] });
-  } catch (err) {
-    console.error("D1 admin docs list error:", err);
-    return c.json({ docs: [] });
-  }
+// ── POST /docs/:slug/feedback — Submit doc feedback ───────────────────
+const feedbackSchema = z.object({
+  isHelpful: z.boolean(),
+  comment: z.string().max(2000).optional(),
+  turnstileToken: z.string().optional()
 });
 
-// ── GET /:slug/detail — single doc (admin, no status filter) ──────
-docsRouter.get("/:slug/detail", ensureAdmin, async (c) => {
-  const slug = (c.req.param("slug") || "");
-  try {
-    const row = await c.env.DB.prepare(
-      "SELECT slug, title, category, sort_order, description, content, is_portfolio, is_executive_summary, is_deleted, status, revision_of FROM docs WHERE slug = ?"
-    ).bind(slug).first();
+docsRouter.post(
+  "/:slug/feedback",
+  rateLimitMiddleware(10, 60),
+  turnstileMiddleware(),
+  zValidator("json", feedbackSchema),
+  async (c) => {
+    const slug = (c.req.param("slug") || "");
+    const { isHelpful, comment } = c.req.valid("json");
 
-    if (!row) return c.json({ error: "Doc not found" }, 404);
-    return c.json({ doc: row });
-  } catch (err) {
-    console.error("D1 admin doc detail error:", err);
-    return c.json({ error: "Database error" }, 500);
+    await c.env.DB.prepare(
+      "INSERT INTO docs_feedback (slug, is_helpful, comment) VALUES (?, ?, ?)"
+    ).bind(slug, isHelpful ? 1 : 0, comment || null).run();
+    return c.json({ success: true });
   }
-});
-
-// ── GET /export-all — export all docs (admin) ─────────────────
-docsRouter.get("/export-all", ensureAdmin, async (c) => {
-  try {
-    const { results } = await c.env.DB.prepare(
-      `SELECT slug, title, category, sort_order, description, content, is_portfolio, is_executive_summary, status FROM docs WHERE is_deleted = 0 OR is_deleted IS NULL ORDER BY category, sort_order`
-    ).all();
-
-    const backup = {
-      exportedAt: new Date().toISOString(),
-      version: "aresweb-docs-v1",
-      count: results.length,
-      docs: results,
-    };
-
-    return new Response(JSON.stringify(backup, null, 2), {
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="aresweb-docs-backup-${new Date().toISOString().slice(0, 10)}.json"`,
-      },
-    });
-  } catch (err) {
-    console.error("Docs export error:", err);
-    return c.json({ error: "Export failed" }, 500);
-  }
-});
+);
 
 // ── POST /save — create/update a doc (auth required) ────────────────────
 docsRouter.post("/save", ensureAuth, async (c) => {
@@ -289,73 +295,24 @@ async function handleDocSave(c: Context<AppEnv>) {
   }
 }
 
-// ── DELETE /:slug — soft-delete (admin) ─────────────────────
-docsRouter.delete("/:slug", ensureAdmin, async (c) => {
-  return handleDocDelete(c);
-});
-
-async function handleDocDelete(c: Context<AppEnv>) {
-  try {
-    const slug = (c.req.param("slug") || "");
-    await c.env.DB.prepare("UPDATE docs SET is_deleted = 1 WHERE slug = ?").bind(slug).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 soft-delete error (docs):", err);
-    return c.json({ error: "Soft-delete failed" }, 500);
-  }
-}
-
-// ── PATCH /:slug/undelete — restore (admin) ────────────────
-docsRouter.patch("/:slug/undelete", ensureAdmin, async (c) => {
-  try {
-    const slug = (c.req.param("slug") || "");
-    await c.env.DB.prepare("UPDATE docs SET is_deleted = 0 WHERE slug = ?").bind(slug).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 undelete error (docs):", err);
-    return c.json({ error: "Undelete failed" }, 500);
-  }
-});
-
-// ── DELETE /:slug/purge — PERMANENTLY delete (admin) ────────
-docsRouter.delete("/:slug/purge", ensureAdmin, async (c) => {
-  try {
-    const slug = (c.req.param("slug") || "");
-    await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 purge error (docs):", err);
-    return c.json({ error: "Purge failed" }, 500);
-  }
-});
-
 // ── PATCH /:slug/sort — update sort order (admin) ───────────────
 docsRouter.patch("/:slug/sort", ensureAdmin, async (c) => {
-  try {
-    const slug = (c.req.param("slug") || "");
-    const { sortOrder } = await c.req.json();
-    if (typeof sortOrder !== 'number') {
-      return c.json({ error: "Invalid sortOrder" }, 400);
-    }
-    await c.env.DB.prepare("UPDATE docs SET sort_order = ? WHERE slug = ?").bind(sortOrder, slug).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 doc sort update error:", err);
-    return c.json({ error: "Sort update failed" }, 500);
+  const slug = (c.req.param("slug") || "");
+  const { sortOrder } = await c.req.json();
+  if (typeof sortOrder !== 'number') {
+    return c.json({ error: "Invalid sortOrder" }, 400);
   }
+  await c.env.DB.prepare("UPDATE docs SET sort_order = ? WHERE slug = ?").bind(sortOrder, slug).run();
+  return c.json({ success: true });
 });
 
-// ── PATCH /:slug/approve — approve pending doc (admin) ─────
-docsRouter.patch("/:slug/approve", ensureAdmin, async (c) => {
-  try {
-    const user = await getSessionUser(c);
-    if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const slug = (c.req.param("slug") || "");
-
+// ── Generic Lifecycle Operations ──────────────────────────────────
+docsRouter.route("/", createContentLifecycleRouter("docs", {
+  onApprove: async (c, slug) => {
+    // Merge logic
     type DocRow = { revision_of?: string; title: string; category: string; sort_order: number; description: string; content: string; is_portfolio: number; is_executive_summary: number; cf_email: string };
     const row = await c.env.DB.prepare("SELECT revision_of, title, category, sort_order, description, content, is_portfolio, is_executive_summary, cf_email FROM docs WHERE slug = ?").bind(slug).first<DocRow>();
-
-    if (!row) return c.json({ error: "Doc not found" }, 404);
+    if (!row) return;
 
     if (row.revision_of) {
       await c.env.DB.prepare(
@@ -363,7 +320,6 @@ docsRouter.patch("/:slug/approve", ensureAdmin, async (c) => {
       ).bind(row.title, row.category, row.sort_order, row.description, row.content, row.is_portfolio ? 1 : 0, row.is_executive_summary ? 1 : 0, row.revision_of).run();
       await c.env.DB.prepare("DELETE FROM docs WHERE slug = ?").bind(slug).run();
 
-      // Notify original author of the MERGE
       if (row.cf_email) {
         const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
         if (author) {
@@ -376,95 +332,48 @@ docsRouter.patch("/:slug/approve", ensureAdmin, async (c) => {
           }));
         }
       }
-
-      return c.json({ success: true });
-    }
-
-    await c.env.DB.prepare("UPDATE docs SET status = 'published' WHERE slug = ?").bind(slug).run();
-
-    // Notify original author of the APPROVAL
-    if (row.cf_email) {
-      const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
-      if (author) {
-        c.executionCtx.waitUntil(emitNotification(c, {
-          userId: author.id,
-
-          title: "Doc Approved",
-          message: `Your technical document "${row.title}" has been published.`,
-          link: `/docs/${slug}`,
-          priority: "medium"
-        }));
+    } else {
+      if (row.cf_email) {
+        const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
+        if (author) {
+          c.executionCtx.waitUntil(emitNotification(c, {
+            userId: author.id,
+            title: "Doc Approved",
+            message: `Your technical document "${row.title}" has been published.`,
+            link: `/docs/${slug}`,
+            priority: "medium"
+          }));
+        }
       }
+      try {
+        c.executionCtx.waitUntil(
+          sendZulipMessage(
+            c.env,
+            "content-review",
+            "Approvals",
+            `✅ **Doc approved:** [${slug}](${siteConfig.urls.base}/docs/${slug})`
+          ).catch(err => console.error("[Docs] Zulip approval notification failed:", err))
+        );
+      } catch { /* ignore */ }
     }
-
-
-    // ── Zulip Content Review ──
-    try {
-      c.executionCtx.waitUntil(
-        sendZulipMessage(
-          c.env,
-          "content-review",
-          "Approvals",
-          `✅ **Doc approved:** [${slug}](${siteConfig.urls.base}/docs/${slug})`
-        ).catch(err => console.error("[Docs] Zulip approval notification failed:", err))
-      );
-    } catch { /* ignore */ }
-
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 approve error (docs):", err);
-    return c.json({ error: "Approval failed" }, 500);
-  }
-});
-
-// ── PATCH /:slug/reject — reject pending doc (admin) ─────
-docsRouter.patch("/:slug/reject", ensureAdmin, async (c) => {
-  try {
-    const user = await getSessionUser(c);
-    if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const slug = (c.req.param("slug") || "");
-    const body = await c.req.json().catch(() => ({})) as { reason?: string };
-    
+  },
+  onReject: async (c, slug, reason) => {
     const row = await c.env.DB.prepare("SELECT title, cf_email FROM docs WHERE slug = ?").bind(slug).first<{ title: string, cf_email: string }>();
-    
-    await c.env.DB.prepare(
-      "UPDATE docs SET status = 'rejected' WHERE slug = ?"
-    ).bind(slug).run();
-
     if (row?.cf_email) {
       const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
       if (author) {
         c.executionCtx.waitUntil(emitNotification(c, {
           userId: author.id,
           title: "Doc Rejected",
-          message: `Your technical document "${row.title}" was rejected${body.reason ? `: "${body.reason}"` : "."}`,
+          message: `Your technical document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`,
           link: "/dashboard?tab=docs",
           priority: "high"
         }));
       }
     }
-
-    return c.json({ success: true, reason: body.reason || "No reason provided" });
-
-  } catch (err) {
-    console.error("D1 reject error (docs):", err);
-    return c.json({ error: "Rejection failed" }, 500);
   }
-});
+}));
 
-// ── GET /:slug/history — list doc history (admin) ──────────
-docsRouter.get("/:slug/history", ensureAdmin, async (c) => {
-  try {
-    const slug = (c.req.param("slug") || "");
-    const { results } = await c.env.DB.prepare(
-      "SELECT id, title, category, description, author_email, created_at FROM docs_history WHERE slug = ? ORDER BY created_at DESC LIMIT 50"
-    ).bind(slug).all();
-    return c.json({ history: results ?? [] });
-  } catch (err) {
-    console.error("D1 doc history error:", err);
-    return c.json({ history: [] });
-  }
-});
 
 // ── PATCH /:slug/history/:id/restore — restore from history (admin) ──
 docsRouter.patch("/:slug/history/:id/restore", ensureAdmin, async (c) => {

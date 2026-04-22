@@ -1,7 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, MessageSquare, Utensils, BarChart3, Gem, Target, Trophy, MapPin } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { DashboardSession, DashboardPermissions } from "../../hooks/useDashboardSession";
 
 // ── Lazy-loaded Tab Components ───────────────────────────────────────
@@ -79,144 +79,40 @@ export default function DashboardRoutes({
               <Route path="users" element={isAdmin ? <AdminUsers /> : <div className="text-center py-20">Access Denied</div>} />
               <Route
                 path="inquiries"
-                element={
-                  canSeeInquiries ? (
-                    <>
-                      <div className="mb-6 pb-6 border-b border-white/5">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                          <MessageSquare className="text-ares-gold" /> Team Inquiries
-                        </h2>
-                        <p className="text-marble/60 text-sm mt-1">Review student, mentor, and sponsor applications.</p>
-                      </div>
-                      <AdminInquiries />
-                    </>
-                  ) : (
-                    <div className="text-center py-20">Access Denied</div>
-                  )
-                }
+                element={canSeeInquiries ? <AdminInquiries /> : <div className="text-center py-20">Access Denied</div>}
               />
               <Route path="impact_roster" element={isAdmin ? <MemberImpactOverview /> : <div className="text-center py-20">Access Denied</div>} />
               <Route
                 path="badges"
-                element={
-                  isAdmin ? (
-                    <>
-                      <div className="mb-6 pb-6 border-b border-white/5">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-3">Badge Management</h2>
-                        <p className="text-zinc-500 text-sm mt-1">Define platform-wide awards and distribute them to members.</p>
-                      </div>
-                      <BadgeManager />
-                    </>
-                  ) : (
-                    <div className="text-center py-20">Access Denied</div>
-                  )
-                }
+                element={isAdmin ? <BadgeManager /> : <div className="text-center py-20">Access Denied</div>}
               />
               <Route
                 path="logistics"
-                element={
-                  canSeeLogistics ? (
-                    <>
-                      <div className="mb-6 pb-6 border-b border-white/5">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                          <Utensils className="text-ares-gold" /> Team Logistics Summary
-                        </h2>
-                        <p className="text-marble/60 text-sm mt-1">Aggregated dietary data for event planning and team management.</p>
-                      </div>
-                      <DietarySummary />
-                    </>
-                  ) : (
-                    <div className="text-center py-20">Access Denied</div>
-                  )
-                }
+                element={canSeeLogistics ? <DietarySummary /> : <div className="text-center py-20">Access Denied</div>}
               />
               <Route
                 path="analytics"
-                element={
-                  <>
-                    <div className="mb-6 pb-6 border-b border-white/5">
-                      <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                        <BarChart3 className="text-ares-cyan" /> Community Engagement
-                      </h2>
-                      <p className="text-zinc-500 text-sm mt-1">Real-time data on documentation and blog utility.</p>
-                    </div>
-                    <AnalyticsDashboard />
-                  </>
-                }
+                element={<AnalyticsDashboard />}
               />
               <Route
                 path="sponsors"
-                element={
-                  <>
-                    <div className="mb-6 pb-6 border-b border-white/5">
-                      <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                        <Gem className="text-ares-cyan" /> Sponsor Recognition
-                      </h2>
-                      <p className="text-zinc-500 text-sm mt-1">Manage and showcase our funding partners.</p>
-                    </div>
-                    <SponsorEditor />
-                  </>
-                }
+                element={<SponsorEditor />}
               />
               <Route
                 path="sponsor_tokens"
-                element={
-                  isAdmin ? (
-                    <>
-                      <div className="mb-6 pb-6 border-b border-white/5">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                          <Gem className="text-ares-cyan" /> Sponsor ROI Tokens
-                        </h2>
-                        <p className="text-zinc-500 text-sm mt-1">Generate secure magic links for sponsors to view their impact report.</p>
-                      </div>
-                      <SponsorTokensManager />
-                    </>
-                  ) : (
-                    <div className="text-center py-20">Access Denied</div>
-                  )
-                }
+                element={isAdmin ? <SponsorTokensManager /> : <div className="text-center py-20">Access Denied</div>}
               />
               <Route
                 path="outreach"
-                element={
-                  <>
-                    <div className="mb-6 pb-6 border-b border-white/5">
-                      <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                        <Target className="text-ares-cyan" /> Community Impact Tracker
-                      </h2>
-                      <p className="text-zinc-500 text-sm mt-1">Log outreach events and student service hours.</p>
-                    </div>
-                    <OutreachTracker />
-                  </>
-                }
+                element={<OutreachTracker />}
               />
               <Route
                 path="legacy"
-                element={
-                  <>
-                    <div className="mb-6 pb-6 border-b border-white/5">
-                      <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                        <Trophy className="text-ares-gold" /> Team Legacy Archive
-                      </h2>
-                      <p className="text-zinc-500 text-sm mt-1">Manage seasonal achievements and awards.</p>
-                    </div>
-                    <AwardEditor />
-                  </>
-                }
+                element={<AwardEditor />}
               />
               <Route
                 path="locations"
-                element={
-                  <>
-                    <div className="mb-6 pb-6 border-b border-white/5">
-                      <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                        <MapPin className="text-ares-gold" /> Team Locations
-                      </h2>
-                      <p className="text-marble/60 text-sm mt-1">Manage physical meeting points, shops, and outreach sites.</p>
-                    </div>
-                    <LocationsManager />
-                  </>
-                }
+                element={<LocationsManager />}
               />
               <Route path="command_center" element={isAdmin ? <CommandCenter /> : <div className="text-center py-20">Access Denied</div>} />
             </Routes>

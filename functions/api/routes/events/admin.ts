@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination  } from "../_shared";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination, createContentLifecycleRouter  } from "../_shared";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -210,62 +210,9 @@ adminRouter.put("/:id", async (c) => {
   }
 });
 
-// ── DELETE /admin/events/:id — soft-delete (admin) ──────────────────────
-adminRouter.delete("/:id", async (c) => {
-  try {
-    const id = (c.req.param("id") || "");
-    await c.env.DB.prepare("UPDATE events SET is_deleted = 1 WHERE id = ?").bind(id).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 soft-delete error (events):", err);
-    return c.json({ error: "Soft-delete failed" }, 500);
-  }
-});
-
-// ── PATCH /admin/events/:id/undelete — restore (admin) ──────────────────
-adminRouter.patch("/:id/undelete", async (c) => {
-  try {
-    const id = (c.req.param("id") || "");
-    await c.env.DB.prepare("UPDATE events SET is_deleted = 0 WHERE id = ?").bind(id).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 undelete error (events):", err);
-    return c.json({ error: "Undelete failed" }, 500);
-  }
-});
-
-// ── DELETE /admin/events/:id/purge — PERMANENTLY delete (admin) ────────
-adminRouter.delete("/:id/purge", async (c) => {
-  try {
-    const id = (c.req.param("id") || "");
-    const dbSettings = await getDbSettings(c);
-    const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
-    const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
-    const row = await c.env.DB.prepare("SELECT gcal_event_id, category FROM events WHERE id = ?").bind(id).first<{gcal_event_id: string, category: string}>();
-
-    const calId = dbSettings[`CALENDAR_ID_${row?.category.toUpperCase()}`] || dbSettings["CALENDAR_ID"];
-
-    if (gcalEmail && gcalKey && calId && row?.gcal_event_id) {
-      try {
-        await deleteEventFromGcal(row.gcal_event_id, { email: gcalEmail, privateKey: gcalKey, calendarId: calId as string });
-      } catch (err) { console.warn("GCal purge cleanup failed:", err); }
-    }
-
-    await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 purge error (events):", err);
-    return c.json({ error: "Purge failed" }, 500);
-  }
-});
-
-// ── PATCH /admin/events/:id/approve — approve pending event (admin) ───
-adminRouter.patch("/:id/approve", async (c) => {
-  try {
-    const user = await getSessionUser(c);
-    if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const id = (c.req.param("id") || "");
-
+// ── Generic Lifecycle Operations ──────────────────────────────────
+adminRouter.route("/", createContentLifecycleRouter("events", {
+  onApprove: async (c, id) => {
     interface EventRevisionRow { 
       revision_of: string; 
       title: string; 
@@ -285,31 +232,34 @@ adminRouter.patch("/:id/approve", async (c) => {
         "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = 'published', is_potluck = ?, is_volunteer = ? WHERE id = ?"
       ).bind(row.title, row.date_start, row.date_end, row.location, row.description, row.cover_image, row.gcal_event_id, row.is_potluck, row.is_volunteer, row.revision_of).run();
       await c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
-      return c.json({ success: true });
+      return true; // DB logic handled
     }
+    // Let generic router handle simple status update
+  },
+  onDelete: async (c, id, type) => {
+    if (type === "purged") {
+      const dbSettings = await getDbSettings(c);
+      const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
+      const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
+      const row = await c.env.DB.prepare("SELECT gcal_event_id, category FROM events WHERE id = ?").bind(id).first<{gcal_event_id: string, category: string}>();
 
-    await c.env.DB.prepare("UPDATE events SET status = 'published' WHERE id = ?").bind(id).run();
-    return c.json({ success: true });
-  } catch (err) {
-    console.error("D1 approve error (events):", err);
-    return c.json({ error: "Approval failed" }, 500);
-  }
-});
+      const calId = dbSettings[`CALENDAR_ID_${row?.category.toUpperCase()}`] || dbSettings["CALENDAR_ID"];
 
-// ── PATCH /admin/events/:id/reject — reject pending event (admin) ───
-adminRouter.patch("/:id/reject", async (c) => {
-  try {
-    const user = await getSessionUser(c);
-    if (user?.role !== "admin") return c.json({ error: "Unauthorized" }, 401);
-    const id = (c.req.param("id") || "");
-    const body = (await c.req.json().catch(() => ({}))) as { reason?: string };
-    await c.env.DB.prepare("UPDATE events SET status = 'rejected' WHERE id = ?").bind(id).run();
-    return c.json({ success: true, reason: body.reason || "No reason provided" });
-  } catch (err) {
-    console.error("D1 reject error (events):", err);
-    return c.json({ error: "Rejection failed" }, 500);
+      if (gcalEmail && gcalKey && calId && row?.gcal_event_id) {
+        try {
+          await deleteEventFromGcal(row.gcal_event_id, { email: gcalEmail, privateKey: gcalKey, calendarId: calId as string });
+        } catch (err) { console.warn("GCal purge cleanup failed:", err); }
+      }
+    }
+  },
+  onRestore: async (c, id) => {
+    // Override the restore route because events frontend expects `/undelete` behavior for restore
+    // Wait, the generic route /restore sets is_deleted = 0 AND status = 'draft'
+    // But events frontend expects just is_deleted = 0
+    await c.env.DB.prepare("UPDATE events SET is_deleted = 0 WHERE id = ?").bind(id).run();
+    return true; // We handled the DB update manually
   }
-});
+}));
 
 // ── POST /admin/events/:id/repush — manual social broadcast (admin) ──
 adminRouter.post("/:id/repush", async (c) => {

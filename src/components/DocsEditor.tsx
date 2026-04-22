@@ -7,6 +7,7 @@ import { useEntityFetch } from "../hooks/useEntityFetch";
 import { docSchema } from "../schemas/docSchema";
 import { adminApi } from "../api/adminApi";
 import { useModal } from "../contexts/ModalContext";
+import EditorFooter from "./editor/EditorFooter";
 
 interface DocData {
   slug: string;
@@ -114,8 +115,8 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
       } else {
         setErrorMsg(data.error || "Failed to publish");
       }
-    } catch {
-      setErrorMsg("Network error — could not reach the API.");
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "Network error — could not reach the API.");
     } finally {
       setIsPending(false);
     }
@@ -254,44 +255,30 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
         {editor && <RichEditorToolbar editor={editor} documentTitle={title} />}
       </div>
 
-      {errorMsg && (
-        <div className="p-4 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-danger-soft text-sm">
-          {errorMsg}
-        </div>
-      )}
-
-      <div className="flex justify-end gap-4 mt-4 border-t border-white/10 pt-6">
+      <div className="mt-4 pt-6">
         {editSlug && (
-          <>
-            <button
-              onClick={handleDelete}
-              disabled={isPending}
-              className="px-6 py-2 ares-cut-sm text-ares-red/80 hover:text-white hover:bg-ares-red font-bold tracking-wider text-sm transition-colors border border-ares-red/30"
-            >
-              DELETE
-            </button>
+          <div className="flex justify-end mb-4">
             <button
               onClick={() => navigate('/dashboard/manage_docs')}
               className="px-6 py-2 ares-cut-sm text-white/50 hover:text-white font-bold tracking-wider text-sm transition-colors"
             >
-              Cancel
+              Cancel Edit
             </button>
-          </>
+          </div>
         )}
-        <button
-          onClick={() => handlePublish(true)}
-          disabled={isPending}
-          className="bg-black border border-zinc-700 hover:bg-zinc-800 text-white px-8 py-3 ares-cut-sm font-bold uppercase tracking-widest text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isPending ? "Connecting..." : "Save as Draft"}
-        </button>
-        <button
-          onClick={() => handlePublish(false)}
-          disabled={isPending}
-          className="bg-ares-gold hover:bg-white text-obsidian px-8 py-3 ares-cut-sm font-bold uppercase tracking-widest text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(255,184,28,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]"
-        >
-          {isPending ? "Connecting..." : editSlug ? "Update Document" : (userRole === "author" ? "Submit for Review" : "Publish Document")}
-        </button>
+        <EditorFooter 
+          errorMsg={errorMsg}
+          isPending={isPending}
+          isEditing={!!editSlug}
+          onDelete={handleDelete}
+          onSaveDraft={() => handlePublish(true)}
+          onPublish={() => handlePublish(false)}
+          deleteText="DELETE DOC"
+          updateText="UPDATE DOC"
+          publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH DOC"}
+          userRole={userRole}
+          roundedClass="ares-cut-sm"
+        />
       </div>
     </div>
   );

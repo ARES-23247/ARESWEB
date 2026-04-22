@@ -1,4 +1,8 @@
 import { useState } from "react";
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+import DashboardEmptyState from "./dashboard/DashboardEmptyState";
+import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
+import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package } from "lucide-react";
 import { toast } from "sonner";
@@ -71,25 +75,23 @@ export default function SponsorEditor() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-3">
-            <Gem className="text-ares-cyan" />
-            Sponsor Management
-          </h2>
-          <p className="text-zinc-500 text-sm">Recognize the partners who make ARES possible.</p>
-        </div>
-        <button
-          onClick={() => {
-            if (!isFormOpen) setFormData({ id: "", name: "", tier: "Gold", logo_url: "", website_url: "", is_active: 1 });
-            setIsFormOpen(!isFormOpen);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
-        >
-          {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
-          {isFormOpen ? "Cancel" : "Add Partner"}
-        </button>
-      </div>
+      <DashboardPageHeader
+        title="Sponsor Management"
+        subtitle="Recognize the partners who make ARES possible."
+        icon={<Gem className="text-ares-cyan" />}
+        action={
+          <button
+            onClick={() => {
+              if (!isFormOpen) setFormData({ id: "", name: "", tier: "Gold", logo_url: "", website_url: "", is_active: 1 });
+              setIsFormOpen(!isFormOpen);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
+          >
+            {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
+            {isFormOpen ? "Cancel" : "Add Partner"}
+          </button>
+        }
+      />
 
       <AnimatePresence>
         {isFormOpen && (
@@ -101,63 +103,55 @@ export default function SponsorEditor() {
             className="bg-black/40 border border-white/10 ares-cut-lg p-6 space-y-4 overflow-hidden"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DashboardInput
+                id="sponsor-name"
+                label="Partner Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Google DeepMind"
+                focusColor="ares-red"
+                required
+              />
               <div className="space-y-1">
-                <label htmlFor="sponsor-name" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Partner Name</label>
-                <input
-                  id="sponsor-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
-                  placeholder="e.g. Google DeepMind"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="sponsor-tier" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tier</label>
+                <label htmlFor="sponsor-tier" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Tier</label>
                 <select
                   id="sponsor-tier"
                   value={formData.tier}
                   onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
                 >
                   {TIERS.map(t => <option key={t.name} value={t.name} className="bg-zinc-900">{t.name}</option>)}
                 </select>
               </div>
-              <div className="space-y-1">
-                <label htmlFor="sponsor-logo" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Logo URL</label>
-                <input
-                  id="sponsor-logo"
-                  value={formData.logo_url || ""}
-                  onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="sponsor-link" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Website URL</label>
-                <input
-                  id="sponsor-link"
-                  value={formData.website_url || ""}
-                  onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-2.5 text-white focus:border-ares-red outline-none transition-colors"
-                  placeholder="https://..."
-                />
-              </div>
+              <DashboardInput
+                id="sponsor-logo"
+                label="Logo URL"
+                value={formData.logo_url || ""}
+                onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
+                placeholder="https://..."
+                focusColor="ares-red"
+              />
+              <DashboardInput
+                id="sponsor-link"
+                label="Website URL"
+                value={formData.website_url || ""}
+                onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                placeholder="https://..."
+                focusColor="ares-red"
+              />
             </div>
-            <button
-              type="submit"
-              disabled={saveMutation.isPending}
-              className="w-full py-3 bg-gradient-to-r from-ares-red to-red-800 text-white font-bold ares-cut-sm hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
-            >
-              {saveMutation.isPending ? "Syncing..." : formData.id ? "Update Partner in D1" : "Commit Partner to D1"}
-            </button>
+            <DashboardSubmitButton 
+              isPending={saveMutation.isPending} 
+              defaultText={formData.id ? "Update Partner in D1" : "Commit Partner to D1"} 
+              theme="red" 
+            />
           </motion.form>
         )}
       </AnimatePresence>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-           [1,2,3].map(i => <div key={i} className="h-32 bg-white/5 ares-cut-lg animate-pulse" />)
+           <DashboardLoadingGrid count={3} heightClass="h-32" gridClass="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
         ) : sponsors.map((s) => (
           <div key={s.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 relative group transition-all hover:border-white/20">
             <div className="flex justify-between items-start mb-4">
@@ -206,9 +200,11 @@ export default function SponsorEditor() {
           </div>
         ))}
         {sponsors.length === 0 && !isLoading && !isFormOpen && (
-          <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 ares-cut-lg outline-none">
-            <p className="text-zinc-600 font-medium italic">No sponsors logged. Start by adding your titanium partners.</p>
-          </div>
+          <DashboardEmptyState
+            className="col-span-full py-12 text-center border-2 border-dashed border-white/5 ares-cut-lg outline-none"
+            icon={<Package size={48} />}
+            message="No sponsors logged. Start by adding your titanium partners."
+          />
         )}
       </div>
     </div>

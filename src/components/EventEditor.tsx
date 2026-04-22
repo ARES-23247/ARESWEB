@@ -4,8 +4,9 @@ import RichEditorToolbar from "./editor/RichEditorToolbar";
 import AssetPickerModal from "./AssetPickerModal";
 import { MapPin } from "lucide-react";
 import EventPotluckVolunteerFlags from "./events/EventPotluckVolunteerFlags";
-import EventSocialSyndication from "./events/EventSocialSyndication";
-import EventCoverPicker from "./events/EventCoverPicker";
+import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
+import CoverAssetPicker from "./editor/CoverAssetPicker";
+import EditorFooter from "./editor/EditorFooter";
 import { useEventEditor } from "../hooks/useEventEditor";
 
 export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
@@ -153,7 +154,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         {editor && <RichEditorToolbar editor={editor} documentTitle={form.title} />}
       </div>
 
-      <EventCoverPicker 
+      <CoverAssetPicker 
         coverImage={form.coverImage}
         isUploading={isUploading}
         onUrlChange={(url) => setForm({ ...form, coverImage: url })}
@@ -162,7 +163,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         onFileChange={handleFileUpload}
       />
 
-      <EventSocialSyndication 
+      <SocialSyndicationGrid 
         availableSocials={availableSocials}
         socials={socials}
         onChange={(platform, val) => setSocials(prev => ({ ...prev, [platform]: val }))}
@@ -200,32 +201,19 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           </div>
         )}
 
-        <div className="flex items-center justify-end pt-4 border-t border-zinc-800/50 gap-4">
-          {editId && (
-            <button
-              onClick={handleDelete}
-              disabled={isPending}
-              className={`px-8 py-4 ares-cut font-black tracking-widest transition-all shadow-xl disabled:opacity-50 border border-ares-red/30 bg-ares-red/10 text-ares-red hover:bg-ares-red hover:text-white mr-auto`}
-            >
-              DELETE
-            </button>
-          )}
-          <button
-            onClick={() => handlePublish(true)}
-            disabled={isPending}
-            className={`px-8 py-4 ares-cut font-black tracking-widest transition-all shadow-xl disabled:opacity-50 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800`}
-          >
-            {isPending ? "SAVING..." : "SAVE AS DRAFT"}
-          </button>
-          <button
-            onClick={() => handlePublish(false)}
-            disabled={isPending}
-            className={`px-10 py-4 ares-cut font-black tracking-widest transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
-              ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse cursor-wait" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-1 active:translate-y-0"}`}
-          >
-            {isPending ? "COMMITTING..." : editId ? "UPDATE EVENT" : (userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH EVENT")}
-          </button>
-        </div>
+        <EditorFooter 
+          errorMsg={errorMsg}
+          isPending={isPending}
+          isEditing={!!editId}
+          onDelete={handleDelete}
+          onSaveDraft={() => handlePublish(true)}
+          onPublish={() => handlePublish(false)}
+          deleteText="DELETE"
+          updateText="UPDATE EVENT"
+          publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH EVENT"}
+          userRole={userRole}
+          roundedClass="ares-cut-sm"
+        />
       </div>
 
       <AssetPickerModal 

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { BarChart3, TrendingUp, Users, Clock, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../api/adminApi";
@@ -9,6 +8,9 @@ interface AnalyticsSummary {
   recentViews: { path: string; category: string; user_agent: string; referrer: string; timestamp: string }[];
   totals: { category: string; total: number }[];
 }
+
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 
 export default function AnalyticsDashboard() {
   const { data, isLoading } = useQuery<AnalyticsSummary>({
@@ -44,23 +46,19 @@ export default function AnalyticsDashboard() {
 
   return (
     <div className="space-y-8">
+      <DashboardPageHeader 
+        title="Community Engagement" 
+        subtitle="Real-time data on documentation and blog utility."
+        icon={<BarChart3 className="text-ares-cyan" />}
+      />
       {/* Overview Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {data?.totals.map((t) => (
-          <motion.div 
-            key={t.category}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-black/40 border border-white/5 p-6 ares-cut-lg"
-          >
-            <div className="flex items-center gap-2 mb-2 opacity-50">
-              {categoryIcons[t.category] || <BarChart3 size={16} />}
-              <span className="text-[10px] font-bold uppercase tracking-widest">{t.category} Views</span>
-            </div>
-            <div className="text-3xl font-black text-white">{t.total.toLocaleString()}</div>
-          </motion.div>
-        ))}
-      </div>
+      <DashboardMetricsGrid 
+        metrics={data?.totals.map(t => ({
+          label: `${t.category} Views`,
+          value: t.total.toLocaleString(),
+          icon: categoryIcons[t.category] || <BarChart3 size={16} />
+        })) || []}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Top Pages */}

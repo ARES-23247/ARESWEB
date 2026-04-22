@@ -129,4 +129,57 @@ describe('imageProcessor utility', () => {
     const pngFile = new File(['dummy'], 'robot.png', { type: 'image/png' });
     await expect(compressImage(pngFile)).rejects.toThrow('CANVAS_OUTPUT_TOO_SMALL');
   });
+
+  it('rejects if the image loads with zero dimensions', async () => {
+    vi.stubGlobal('Image', function() {
+      const img = new MockImage();
+      img.naturalWidth = 0;
+      img.naturalHeight = 0;
+      return new Proxy(img, {
+        set(target, prop, value) {
+          if (prop === 'src') {
+            target[prop] = value;
+            setTimeout(() => target.onload?.(), 0);
+            return true;
+          }
+          target[prop] = value;
+          return true;
+        }
+      });
+    });
+
+    const pngFile = new File(['dummy'], 'robot.png', { type: 'image/png' });
+    await expect(compressImage(pngFile)).rejects.toThrow('DECODED_ZERO_SIZE');
+  });
+
+  it('rejects if the canvas context is unavailable', async () => {
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => null as any);
+
+    const pngFile = new File(['dummy'], 'robot.png', { type: 'image/png' });
+    await expect(compressImage(pngFile)).rejects.toThrow('Canvas 2D context unavailable');
+  });
+
+  it('handles software decode failure gracefully', async () => {
+    const heic2any = await import('heic2any');
+    (heic2any.default as any).mockRejectedValue(new Error('Software failure'));
+
+    // Force native failure
+    vi.stubGlobal('Image', function() {
+      const img = new MockImage();
+      return new Proxy(img, {
+        set(target, prop, value) {
+          if (prop === 'src') {
+            target[prop] = value;
+            setTimeout(() => target.onerror?.(), 0);
+            return true;
+          }
+          target[prop] = value;
+          return true;
+        }
+      });
+    });
+
+    const heicFile = new File(['dummy'], 'photo.heic', { type: 'image/heic' });
+    await expect(compressImage(heicFile)).rejects.toThrow('Cannot process this HEIC file');
+  });
 });

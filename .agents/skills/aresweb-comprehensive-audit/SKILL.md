@@ -32,6 +32,7 @@ You are the Lead Code Reviewer for Team ARES 23247. When asked to audit a file, 
 
 ## 5. Refactoring Needs ♻️
 - **DRY violations:** Does the code duplicate logic that already exists in a utility function (e.g., `parsePagination()`, custom rate limiters)?
+- **UI/Component Consolidation:** Are there duplicated UI blocks (like custom page headers, social grids, common footers) that should be abstracted into a single, generic `<SharedComponent>`? Prevent double-rendering and inline HTML bloat.
 - **Component Bloat:** Should a massive 500-line React file be broken down into subcomponents or distinct logical hooks?
 - **Dead Code:** Are there unused imports, variables, or commented-out chunks of beta attempts?
 

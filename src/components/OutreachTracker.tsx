@@ -1,4 +1,9 @@
 import { useState } from "react";
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
+import DashboardEmptyState from "./dashboard/DashboardEmptyState";
+import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
+import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, MapPin, Users, Clock, Target, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -83,37 +88,30 @@ export default function OutreachTracker() {
   return (
     <div className="space-y-8">
       {/* Metrics Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Community Reach", val: totals.reach.toLocaleString(), icon: <Target className="text-ares-red" /> },
-          { label: "Service Hours", val: totals.hours.toLocaleString(), icon: <Clock className="text-ares-gold" /> },
-          { label: "Student Leads", val: totals.students.toLocaleString(), icon: <Users className="text-ares-cyan" /> },
-          { label: "Total Events", val: totals.events, icon: <CheckCircle className="text-emerald-500" /> },
-        ].map(m => (
-          <div key={m.label} className="bg-white/5 border border-white/5 p-6 ares-cut-lg">
-            <div className="flex items-center gap-2 mb-2 opacity-50 uppercase text-[10px] font-bold tracking-widest text-zinc-400">
-              {m.icon} {m.label}
-            </div>
-            <div className="text-3xl font-black text-white">{m.val}</div>
-          </div>
-        ))}
-      </div>
+      <DashboardMetricsGrid 
+        metrics={[
+          { label: "Community Reach", value: totals.reach.toLocaleString(), icon: <Target className="text-ares-red" /> },
+          { label: "Service Hours", value: totals.hours.toLocaleString(), icon: <Clock className="text-ares-gold" /> },
+          { label: "Student Leads", value: totals.students.toLocaleString(), icon: <Users className="text-ares-cyan" /> },
+          { label: "Total Events", value: totals.events, icon: <CheckCircle className="text-emerald-500" /> },
+        ]}
+      />
 
-      <div className="flex justify-between items-center bg-black/40 border border-white/10 p-6 rounded-[2.5rem]">
-        <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-3 italic">
-            <Target className="text-ares-red" /> Impact Logging
-          </h2>
-          <p className="text-zinc-500 text-sm">Document every interaction for the FIRST Impact Award.</p>
-        </div>
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
-        >
-          {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
-          {isAdding ? "Cancel" : "Log Outreach"}
-        </button>
-      </div>
+      <DashboardPageHeader
+        title="Impact Logging"
+        subtitle="Document every interaction for the FIRST Impact Award."
+        icon={<Target className="text-ares-red" />}
+        italicTitle={true}
+        action={
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
+          >
+            {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
+            {isAdding ? "Cancel" : "Log Outreach"}
+          </button>
+        }
+      />
 
       <AnimatePresence>
         {isAdding && (
@@ -125,84 +123,73 @@ export default function OutreachTracker() {
             className="bg-zinc-900 border border-ares-red/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-1">
-                <label htmlFor="outreach-title" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Event Title</label>
-                <input
-                  id="outreach-title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
-                  placeholder="e.g. Robot Demo at City Library"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="outreach-date" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Date</label>
-                <input
-                  id="outreach-date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="outreach-reach" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Reach Count (Estimated)</label>
-                <input
-                  id="outreach-reach"
-                  type="number"
-                  value={formData.reach_count || 0}
-                  onChange={(e) => setFormData({ ...formData, reach_count: parseInt(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="outreach-hours" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Hours Logged</label>
-                <input
-                  id="outreach-hours"
-                  type="number"
-                  step="0.5"
-                  value={formData.hours_logged || 0}
-                  onChange={(e) => setFormData({ ...formData, hours_logged: parseFloat(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="outreach-students" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Students Participating</label>
-                <input
-                  id="outreach-students"
-                  type="number"
-                  value={formData.students_count || 0}
-                  onChange={(e) => setFormData({ ...formData, students_count: parseInt(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
-                />
-              </div>
-              <div className="lg:col-span-3 space-y-1">
-                <label htmlFor="outreach-desc" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Description / Impact Summary</label>
-                <textarea
-                  id="outreach-desc"
-                  value={formData.description || ""}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors min-h-[100px]"
-                  placeholder="Summarize the community impact..."
-                />
-              </div>
+              <DashboardInput
+                id="outreach-title"
+                label="Event Title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Robot Demo at City Library"
+                focusColor="ares-red"
+                fullWidth
+                required
+              />
+              <DashboardInput
+                id="outreach-date"
+                type="date"
+                label="Date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                focusColor="ares-red"
+                required
+              />
+              <DashboardInput
+                id="outreach-reach"
+                type="number"
+                label="Reach Count (Estimated)"
+                value={formData.reach_count || 0}
+                onChange={(e) => setFormData({ ...formData, reach_count: parseInt(e.target.value) })}
+                focusColor="ares-red"
+              />
+              <DashboardInput
+                id="outreach-hours"
+                type="number"
+                step="0.5"
+                label="Hours Logged"
+                value={formData.hours_logged || 0}
+                onChange={(e) => setFormData({ ...formData, hours_logged: parseFloat(e.target.value) })}
+                focusColor="ares-red"
+              />
+              <DashboardInput
+                id="outreach-students"
+                type="number"
+                label="Students Participating"
+                value={formData.students_count || 0}
+                onChange={(e) => setFormData({ ...formData, students_count: parseInt(e.target.value) })}
+                focusColor="ares-red"
+              />
+              <DashboardTextarea
+                id="outreach-desc"
+                label="Description / Impact Summary"
+                value={formData.description || ""}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Summarize the community impact..."
+                focusColor="ares-red"
+                fullWidth
+              />
             </div>
-            <button
-              type="submit"
-              disabled={saveMutation.isPending}
-              className="w-full py-4 bg-ares-red text-white font-black ares-cut hover:shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all flex items-center justify-center gap-2"
-            >
-              {saveMutation.isPending ? "Syncing..." : <><Save size={20} /> Finalize Impact Entry</>}
-            </button>
+            <DashboardSubmitButton 
+              isPending={saveMutation.isPending} 
+              defaultText="Finalize Impact Entry" 
+              icon={<Save size={20} />} 
+              theme="red" 
+            />
           </motion.form>
         )}
       </AnimatePresence>
 
       <div className="space-y-4">
         {isLoading ? (
-          <div className="h-48 bg-white/5 ares-cut-lg animate-pulse" />
+          <DashboardLoadingGrid count={2} heightClass="h-48" gridClass="grid-cols-1 lg:grid-cols-2" />
         ) : logs.map((log) => (
           <div key={log.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 group hover:border-white/20 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex-1">
@@ -258,9 +245,10 @@ export default function OutreachTracker() {
           </div>
         ))}
         {logs.length === 0 && !isLoading && !isAdding && (
-          <div className="py-20 text-center border-2 border-dashed border-white/5 ares-cut-lg">
-             <p className="text-zinc-600 font-medium italic">No outreach records found. Start logging your team&apos;s impact.</p>
-          </div>
+          <DashboardEmptyState
+            icon={<Target size={48} />}
+            message="No outreach records found. Start logging your team's impact."
+          />
         )}
       </div>
     </div>

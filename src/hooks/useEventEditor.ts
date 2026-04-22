@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAdminSettings } from "./useAdminSettings";
@@ -109,7 +109,7 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
           try {
             editor.commands.setContent(JSON.parse(data.event.description));
           } catch {
-            editor.commands.setContent(`<p>\${data.event.description}</p>`);
+            editor.commands.setContent(`<p>${data.event.description}</p>`);
           }
         }
       }

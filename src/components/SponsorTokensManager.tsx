@@ -14,6 +14,8 @@ interface Token {
   created_at: string;
 }
 
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+
 export default function SponsorTokensManager() {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -71,6 +73,11 @@ export default function SponsorTokensManager() {
 
   return (
     <div className="space-y-8">
+      <DashboardPageHeader 
+        title="ROI Links" 
+        subtitle="Generate magic links for sponsors to view impact data."
+        icon={<FileKey2 className="text-ares-cyan" />}
+      />
       {/* Generate Action */}
       <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
         <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-widest flex items-center gap-2">

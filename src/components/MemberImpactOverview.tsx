@@ -14,6 +14,8 @@ interface RosterMember {
   event_volunteer_hours: number;
 }
 
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+
 export default function MemberImpactOverview() {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -58,6 +60,11 @@ export default function MemberImpactOverview() {
 
   return (
     <div className="space-y-12">
+      <DashboardPageHeader 
+        title="Impact Overview" 
+        subtitle="Track member attendance and outreach hours across the season."
+        icon={<Users className="text-ares-cyan" />}
+      />
       {/* MVP Podiums */}
       {students.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

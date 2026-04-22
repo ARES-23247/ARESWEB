@@ -5,7 +5,7 @@ interface AssetSyndicateModalProps {
   setSyndicateKey: (key: string | null) => void;
   syndicateCaption: string;
   setSyndicateCaption: (caption: string) => void;
-  syndicateMutation: UseMutationResult<any, Error, { key: string; caption: string }, unknown>;
+  syndicateMutation: UseMutationResult<unknown, Error, { key: string; caption: string }, unknown>;
 }
 
 export default function AssetSyndicateModal({

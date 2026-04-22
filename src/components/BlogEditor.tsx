@@ -12,6 +12,9 @@ import { useEntityFetch } from "../hooks/useEntityFetch";
 import { postSchema } from "../schemas/postSchema";
 import { adminApi } from "../api/adminApi";
 import { useModal } from "../contexts/ModalContext";
+import CoverAssetPicker from "./editor/CoverAssetPicker";
+import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
+import EditorFooter from "./editor/EditorFooter";
 
 export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
   const { editSlug } = useParams<{ editSlug?: string }>();
@@ -112,8 +115,8 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
       } else {
         setErrorMsg(data.error || "Failed to publish");
       }
-    } catch {
-      setErrorMsg("Network error — could not reach the API.");
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "Network error — could not reach the API.");
     } finally {
       setIsPending(false);
     }
@@ -169,46 +172,22 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
           />
         </div>
         <div className="flex-1">
-          <label htmlFor="cover-asset" className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Cover Asset</label>
-          <div className="flex gap-2 relative">
-            <input
-              id="cover-asset"
-              type="text"
-              value={coverImageUrl}
-              onChange={(e) => setCoverImageUrl(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 ares-cut-sm px-4 py-3 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600 transition-all shadow-inner lg:text-lg"
-              placeholder="https://..."
-            />
-            <button 
-              className={`px-4 py-3 ares-cut-sm text-sm font-bold border border-zinc-700 transition-all focus:outline-none focus:ring-2 focus:ring-ares-red ${isUploadingCover ? "bg-zinc-800 text-zinc-300 animate-pulse" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}
-              onClick={() => document.getElementById('cover-upload')?.click()}
-            >
-              UPL
-            </button>
-            <button 
-              className="px-6 py-3 ares-cut-sm text-sm font-bold border border-ares-gold/30 transition-all focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-zinc-900 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold hover:text-black whitespace-nowrap"
-              onClick={() => setIsCoverPickerOpen(true)}
-            >
-              Library
-            </button>
-            <input 
-              id="cover-upload" 
-              type="file" 
-              accept="image/*,.heic,.heif" 
-              className="hidden" 
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                try {
-                  setUploadError("");
-                  const { url } = await uploadFile(file);
-                  setCoverImageUrl(url);
-                } catch {
-                  // error is handled by hook
-                }
-              }} 
-            />
-          </div>
+          <CoverAssetPicker 
+            coverImage={coverImageUrl}
+            isUploading={isUploadingCover}
+            onUploadClick={() => document.getElementById('cover-upload-input-Cover-Asset')?.click()}
+            onLibraryClick={() => setIsCoverPickerOpen(true)}
+            onUrlChange={setCoverImageUrl}
+            onFileChange={async (file) => {
+              try {
+                setUploadError("");
+                const { url } = await uploadFile(file);
+                setCoverImageUrl(url);
+              } catch {
+                // handled by hook
+              }
+            }}
+          />
         </div>
       </div>
       
@@ -224,32 +203,12 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
       </div>
 
       {/* Social Syndication Controls */}
-      {availableSocials.length > 0 && (
-        <div className="bg-zinc-900/30 border border-zinc-800/50 ares-cut-sm p-4 shadow-inner">
-          <div className="flex items-center gap-2 mb-3">
-             <div className="w-2 h-2 rounded-full bg-ares-cyan animate-pulse"></div>
-             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Broadcast & Social Syndication</span>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            {availableSocials.map(platform => (
-              <label key={platform} className="flex items-center gap-2 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  checked={socials[platform] || false}
-                  onChange={(e) => setSocials(prev => ({ ...prev, [platform]: e.target.checked }))}
-                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-ares-red focus:ring-ares-red transition-all cursor-pointer"
-                />
-                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors capitalize">
-                  {platform}
-                </span>
-              </label>
-            ))}
-          </div>
-          <p className="text-[10px] text-zinc-500 mt-2 italic font-mono uppercase tracking-tighter">
-            * Selected platforms will receive a preview card and link immediately upon publication.
-          </p>
-        </div>
-      )}
+      <SocialSyndicationGrid 
+        availableSocials={availableSocials}
+        socials={socials}
+        onChange={(platform, val) => setSocials(prev => ({ ...prev, [platform]: val }))}
+        isEdit={!!editSlug}
+      />
 
       {/* ===== Unified Rich Editor ===== */}
       <RichEditorToolbar editor={editor} documentTitle={title} />
@@ -264,36 +223,19 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
         }}
       />
 
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-800">
-        <span className="text-ares-red text-sm font-medium">{errorMsg}</span>
-        <div className="flex gap-4">
-          {editSlug && (
-            <button
-              onClick={handleDelete}
-              disabled={isPending}
-              className="px-6 py-3.5 rounded-full font-bold transition-all shadow-xl disabled:opacity-50 border border-ares-red/30 bg-ares-red/10 text-ares-red hover:bg-ares-red hover:text-white"
-            >
-              DELETE
-            </button>
-          )}
-          <button
-            onClick={() => handlePublish(true)}
-            disabled={isPending}
-            className={`px-6 py-3.5 rounded-full font-bold transition-all shadow-xl disabled:opacity-50 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800`}
-          >
-            {isPending ? "SAVING..." : "SAVE AS DRAFT"}
-          </button>
-          <button
-            onClick={() => handlePublish(false)}
-            disabled={isPending}
-            className={`flex items-center justify-center min-w-[200px] px-8 py-3.5 rounded-full font-bold tracking-wide transition-all shadow-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-zinc-900
-              ${isPending ? "bg-zinc-800 text-zinc-300 animate-pulse" : "bg-white text-zinc-950 hover:bg-ares-red hover:text-white hover:-translate-y-0.5"}`}
-          >
-            {isPending ? "COMMITTING..." : editSlug ? "UPDATE ENTRY" : (userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY")}
-          </button>
-        </div>
-      </div>
+      <EditorFooter 
+        errorMsg={errorMsg}
+        isPending={isPending}
+        isEditing={!!editSlug}
+        onDelete={handleDelete}
+        onSaveDraft={() => handlePublish(true)}
+        onPublish={() => handlePublish(false)}
+        deleteText="DELETE"
+        updateText="UPDATE ENTRY"
+        publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY"}
+        userRole={userRole}
+        roundedClass="rounded-full"
+      />
     </div>
   );
 }

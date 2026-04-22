@@ -1,4 +1,8 @@
 import { useState } from "react";
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+import DashboardEmptyState from "./dashboard/DashboardEmptyState";
+import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
+import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Trophy, Star, Calendar, MapPin, XCircle, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -66,21 +70,21 @@ export default function AwardEditor() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center bg-black/40 border border-white/10 p-6 rounded-[2.5rem]">
-        <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-3 italic">
-            <Trophy className="text-ares-gold" /> Trophy Case Management
-          </h2>
-          <p className="text-zinc-500 text-sm">Archiving the milestones of ARES 23247.</p>
-        </div>
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
-        >
-          {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
-          {isAdding ? "Cancel" : "Add Award"}
-        </button>
-      </div>
+      <DashboardPageHeader
+        title="Trophy Case Management"
+        subtitle="Archiving the milestones of ARES 23247."
+        icon={<Trophy className="text-ares-gold" />}
+        italicTitle={true}
+        action={
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
+          >
+            {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
+            {isAdding ? "Cancel" : "Add Award"}
+          </button>
+        }
+      />
 
       <AnimatePresence>
         {isAdding && (
@@ -92,73 +96,65 @@ export default function AwardEditor() {
             className="bg-zinc-900 border border-ares-gold/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-1">
-                <label htmlFor="award-title" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Award Title</label>
-                <input
-                  id="award-title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
-                  placeholder="e.g. Excellence in Engineering"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="award-year" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Year</label>
-                <input
-                  id="award-year"
-                  type="number"
-                  value={formData.year}
-                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="award-eventName" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Event Name</label>
-                <input
-                  id="award-eventName"
-                  value={formData.event_name || ""}
-                  onChange={(e) => setFormData({ ...formData, event_name: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
-                  placeholder="e.g. West Virginia State Championship"
-                />
-              </div>
-              <div className="md:col-span-2 space-y-1">
-                <label htmlFor="award-image" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Image URL (Optional)</label>
-                <input
-                  id="award-image"
-                  value={formData.image_url || ""}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors"
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="lg:col-span-3 space-y-1">
-                <label htmlFor="award-desc" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Description</label>
-                <textarea
-                  id="award-desc"
-                  value={formData.description || ""}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold outline-none transition-colors min-h-[100px]"
-                  placeholder="Tell the story of how we won..."
-                />
-              </div>
+              <DashboardInput
+                id="award-title"
+                label="Award Title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Excellence in Engineering"
+                focusColor="ares-gold"
+                fullWidth
+                required
+              />
+              <DashboardInput
+                id="award-year"
+                type="number"
+                label="Year"
+                value={formData.year}
+                onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                focusColor="ares-gold"
+                required
+              />
+              <DashboardInput
+                id="award-eventName"
+                label="Event Name"
+                value={formData.event_name || ""}
+                onChange={(e) => setFormData({ ...formData, event_name: e.target.value })}
+                placeholder="e.g. West Virginia State Championship"
+                focusColor="ares-gold"
+              />
+              <DashboardInput
+                id="award-image"
+                label="Image URL (Optional)"
+                value={formData.image_url || ""}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://..."
+                focusColor="ares-gold"
+                fullWidth
+              />
+              <DashboardTextarea
+                id="award-desc"
+                label="Description"
+                value={formData.description || ""}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Tell the story of how we won..."
+                focusColor="ares-gold"
+                fullWidth
+              />
             </div>
-            <button
-              type="submit"
-              disabled={saveMutation.isPending}
-              className="w-full py-4 bg-gradient-to-r from-ares-gold to-yellow-600 text-black font-black ares-cut hover:shadow-[0_0_30px_rgba(255,191,0,0.3)] transition-all flex items-center justify-center gap-2"
-            >
-              {saveMutation.isPending ? "Syncing..." : <><Save size={20} /> Commemorate Achievement</>}
-            </button>
+            <DashboardSubmitButton 
+              isPending={saveMutation.isPending} 
+              defaultText="Commemorate Achievement" 
+              icon={<Save size={20} />} 
+              theme="gold" 
+            />
           </motion.form>
         )}
       </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {isLoading ? (
-          <div className="h-48 bg-white/5 ares-cut-lg animate-pulse" />
+          <DashboardLoadingGrid count={2} heightClass="h-48" gridClass="grid-cols-1 lg:grid-cols-2" />
         ) : awards.map((award) => (
           <div key={award.id} className="bg-black/40 border border-white/5 rounded-[2.5rem] p-8 group hover:border-ares-gold/30 transition-all flex flex-col md:flex-row gap-8 relative overflow-hidden">
             {/* Background Glow */}
@@ -195,9 +191,11 @@ export default function AwardEditor() {
           </div>
         ))}
         {awards.length === 0 && !isLoading && !isAdding && (
-          <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 ares-cut-lg">
-             <p className="text-zinc-600 font-medium italic">The trophy case is currently empty. Go win some banners!</p>
-          </div>
+          <DashboardEmptyState
+            className="col-span-full py-20 text-center border-2 border-dashed border-white/5 ares-cut-lg"
+            icon={<Trophy size={48} />}
+            message="The trophy case is currently empty. Go win some banners!"
+          />
         )}
       </div>
     </div>

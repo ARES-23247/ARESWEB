@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation } from "lucide-react";
 import { adminApi } from "../api/adminApi";
@@ -22,6 +23,7 @@ export default function LocationsManager() {
   const [addressQuery, setAddressQuery] = useState("");
   const [suggestions, setSuggestions] = useState<{ display_name: string }[]>([]);
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const { data: locations = [], isLoading } = useQuery<LocationRow[]>({
     queryKey: ["admin_locations"],
@@ -33,18 +35,23 @@ export default function LocationsManager() {
 
   const saveMut = useMutation({
     mutationFn: async (payload: Partial<LocationRow> & { id?: string }) => {
-      if (payload.id) {
+      setErrorMsg("");
+      const res = payload.id
         // @ts-expect-error - partial payload matches schema
-        return adminApi.updateLocation(payload.id, payload);
-      } else {
+        ? await adminApi.updateLocation(payload.id, payload)
         // @ts-expect-error - partial payload matches schema
-        return adminApi.createLocation(payload);
-      }
+        : await adminApi.createLocation(payload);
+        
+      if (!res.success) throw new Error("Failed to save venue");
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
       queryClient.invalidateQueries({ queryKey: ["locations"] });
       resetForm();
+    },
+    onError: (err) => {
+      setErrorMsg(err instanceof Error ? err.message : "Network error — could not reach the API.");
     }
   });
 
@@ -87,6 +94,7 @@ export default function LocationsManager() {
     setForm({ name: "", address: "", maps_url: "" });
     setAddressQuery("");
     setSuggestions([]);
+    setErrorMsg("");
   };
 
   const handleEdit = (l: LocationRow) => {
@@ -110,11 +118,15 @@ export default function LocationsManager() {
   const filtered = locations.filter(l => l.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className="w-full flex justify-center items-center h-full p-4 md:p-8 overflow-y-auto">
+    <div className="w-full flex flex-col items-center h-full p-4 md:p-8 overflow-y-auto">
+      <div className="w-full max-w-4xl">
+        <DashboardPageHeader 
+          title="Location Registry" 
+          subtitle="Manage physical meeting points, shops, and outreach sites."
+          icon={<MapPin className="text-ares-red" />}
+        />
+      </div>
       <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 ares-cut-sm shadow-2xl p-6 relative">
-        <h2 className="text-2xl font-bold font-heading text-white mb-6 flex items-center gap-3">
-          <MapPin className="text-ares-red" /> Location Registry
-        </h2>
 
         {!isAdding ? (
           <>
@@ -233,6 +245,12 @@ export default function LocationsManager() {
                   )}
                 </div>
               </div>
+
+              {errorMsg && (
+                <div className="p-3 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-danger-soft text-sm">
+                  {errorMsg}
+                </div>
+              )}
 
               <div className="flex gap-3 justify-end mt-4 pt-4 border-t border-zinc-800">
                 <button 

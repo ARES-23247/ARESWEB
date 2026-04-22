@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, MAX_INPUT_LENGTHS, validateLength, getSocialConfig, parsePagination, getSessionUser, ensureAuth, logAuditAction, checkWriteRateLimit, verifyTurnstile } from "./_shared";
+import { AppEnv, MAX_INPUT_LENGTHS, getSocialConfig, parsePagination, getSessionUser, ensureAuth, logAuditAction, rateLimitMiddleware, turnstileMiddleware } from "./_shared";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import { notifyByRole, NotifyAudience } from "../../utils/notifications";
 import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 
 const inquiriesRouter = new Hono<AppEnv>();
@@ -47,32 +49,21 @@ inquiriesRouter.get("/", ensureAuth, async (c) => {
 });
 
 // ── POST /inquiries — Submit a new inquiry ─────────────────────────────
-inquiriesRouter.post("/", async (c) => {
-  // SEC-DoW: Unauthenticated D1 write + external webhook fan-out — enforce strict IP limit
-  const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  if (!checkWriteRateLimit(`inquiry:${ip}`, 5, 60)) {
-    return c.json({ error: "Too many submissions. Please try again later." }, 429);
-  }
+const inquirySchema = z.object({
+  type: z.enum(["sponsor", "join", "outreach", "support"]),
+  name: z.string().min(1).max(MAX_INPUT_LENGTHS.name),
+  email: z.string().email().max(MAX_INPUT_LENGTHS.email),
+  metadata: z.record(z.unknown()).optional(),
+  turnstileToken: z.string().optional()
+});
 
-  try {
-    const body = await c.req.json();
-    const { type, name, email, metadata, turnstileToken } = body;
-
-    // SEC-DoW: Verify Turnstile challenge before any D1 operations
-    const valid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
-    if (!valid) {
-      return c.json({ error: "Security verification failed. Please try again." }, 403);
-    }
-
-    if (!type || !name || !email) {
-      return c.json({ error: "Missing required fields" }, 400);
-    }
-
-    // SEC-04: Input length validation
-    const nameErr = validateLength(name, MAX_INPUT_LENGTHS.name, "Name");
-    const emailErr = validateLength(email, MAX_INPUT_LENGTHS.email, "Email");
-    if (nameErr) return c.json({ error: nameErr }, 400);
-    if (emailErr) return c.json({ error: emailErr }, 400);
+inquiriesRouter.post(
+  "/",
+  rateLimitMiddleware(5, 60),
+  turnstileMiddleware(),
+  zValidator("json", inquirySchema),
+  async (c) => {
+    const { type, name, email, metadata } = c.req.valid("json");
 
     // SEC-07: Simple time-based cooldown — prevent rapid-fire spam from same email
     const recentSubmission = await c.env.DB.prepare(
@@ -214,66 +205,54 @@ inquiriesRouter.post("/", async (c) => {
     } catch { /* ignore GitHub Error */ }
 
     return c.json({ success: true, id });
-  } catch (err) {
-    console.error("D1 inquiry submit error:", err);
-    return c.json({ error: "Submission failed" }, 500);
   }
-});
+);
 
 // ── PATCH /:id/status — update status (authorized) ──────────────────────────────────
-inquiriesRouter.patch("/:id/status", ensureAuth, async (c) => {
-  try {
-    const user = await getSessionUser(c);
-    if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 403);
-    
-    if (user.role !== "admin") {
-      const profile = await c.env.DB.prepare("SELECT member_type FROM user_profiles WHERE user_id = ?").bind(user.id).first<{member_type: string}>();
-      const memberType = profile?.member_type || "student";
-      if (memberType !== "coach" && memberType !== "mentor") {
-        return c.json({ error: "Unauthorized" }, 403);
-      }
+const statusSchema = z.object({
+  status: z.enum(["pending", "approved", "resolved", "rejected"])
+});
+
+inquiriesRouter.patch("/:id/status", ensureAuth, zValidator("json", statusSchema), async (c) => {
+  const user = await getSessionUser(c);
+  if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 403);
+  
+  if (user.role !== "admin") {
+    const profile = await c.env.DB.prepare("SELECT member_type FROM user_profiles WHERE user_id = ?").bind(user.id).first<{member_type: string}>();
+    const memberType = profile?.member_type || "student";
+    if (memberType !== "coach" && memberType !== "mentor") {
+      return c.json({ error: "Unauthorized" }, 403);
     }
-
-    const id = (c.req.param("id") || "");
-    const { status } = await c.req.json();
-    
-    const VALID_STATUSES = ["pending", "approved", "resolved", "rejected"];
-    if (!status || !VALID_STATUSES.includes(status)) {
-      return c.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` }, 400);
-    }
-
-    await c.env.DB.prepare(
-      "UPDATE inquiries SET status = ? WHERE id = ?"
-    ).bind(status, id).run();
-
-    await logAuditAction(c, "inquiry_status_change", "inquiries", id, `Status changed to ${status}`);
-    return c.json({ success: true });
-  } catch {
-    return c.json({ error: "Update failed" }, 500);
   }
+
+  const id = (c.req.param("id") || "");
+  const { status } = c.req.valid("json");
+
+  await c.env.DB.prepare(
+    "UPDATE inquiries SET status = ? WHERE id = ?"
+  ).bind(status, id).run();
+
+  await logAuditAction(c, "inquiry_status_change", "inquiries", id, `Status changed to ${status}`);
+  return c.json({ success: true });
 });
 
 // ── DELETE /:id — delete inquiry (authorized) ────────────────────────────────────────
 inquiriesRouter.delete("/:id", ensureAuth, async (c) => {
-  try {
-    const user = await getSessionUser(c);
-    if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 403);
-    
-    if (user.role !== "admin") {
-      const profile = await c.env.DB.prepare("SELECT member_type FROM user_profiles WHERE user_id = ?").bind(user.id).first<{member_type: string}>();
-      const memberType = profile?.member_type || "student";
-      if (memberType !== "coach" && memberType !== "mentor") {
-        return c.json({ error: "Unauthorized" }, 403);
-      }
+  const user = await getSessionUser(c);
+  if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 403);
+  
+  if (user.role !== "admin") {
+    const profile = await c.env.DB.prepare("SELECT member_type FROM user_profiles WHERE user_id = ?").bind(user.id).first<{member_type: string}>();
+    const memberType = profile?.member_type || "student";
+    if (memberType !== "coach" && memberType !== "mentor") {
+      return c.json({ error: "Unauthorized" }, 403);
     }
-
-    const id = (c.req.param("id") || "");
-    await c.env.DB.prepare("DELETE FROM inquiries WHERE id = ?").bind(id).run();
-    await logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry permanently deleted");
-    return c.json({ success: true });
-  } catch {
-    return c.json({ error: "Delete failed" }, 500);
   }
+
+  const id = (c.req.param("id") || "");
+  await c.env.DB.prepare("DELETE FROM inquiries WHERE id = ?").bind(id).run();
+  await logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry permanently deleted");
+  return c.json({ success: true });
 });
 
 export async function purgeOldInquiries(db: D1Database, days: number) {

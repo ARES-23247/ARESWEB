@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Radio } from "lucide-react";
+import { Radio, FileText } from "lucide-react";
+import DashboardEmptyState from "../dashboard/DashboardEmptyState";
 import { useQuery } from "@tanstack/react-query";
 import { useContentMutation } from "../../hooks/useContentMutation";
 import { PostItem, ViewType, ClickToDeleteButton, contentFilter, ContentMutationResult } from "./shared";
@@ -58,7 +59,11 @@ export default function PostManagerTab({
       </h3>
       <div className="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0 pr-2 custom-scrollbar">
         {filtered.length === 0 ? (
-          <div className="text-zinc-500 text-xs italic py-4 text-center border border-dashed border-zinc-800/50 ares-cut-sm">No {view} posts found.</div>
+          <DashboardEmptyState
+            className="text-zinc-500 text-xs italic py-8 text-center border border-dashed border-zinc-800/50 ares-cut-sm"
+            icon={<FileText size={24} />}
+            message={`No ${view} posts found.`}
+          />
         ) : (
           filtered.map((post) => (
             <div key={post.slug} className={`bg-black/40 border ${Number(post.is_deleted) === 1 ? 'border-ares-red/30 bg-ares-red/[0.02]' : 'border-zinc-800/60'} ares-cut-sm p-4 flex flex-col justify-between gap-4 hover:border-zinc-700 transition-colors`}>

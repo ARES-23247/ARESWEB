@@ -73,7 +73,7 @@ export const adminApi = {
 
   // --- POSTS ---
   createPost: async (payload: PostPayload) => {
-    return fetchJson<{ success?: boolean, slug?: string, warning?: string, error?: string }>("/api/admin/posts", {
+    return fetchJson<{ success?: boolean, slug?: string, warning?: string, error?: string }>("/api/admin/posts/save", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -104,20 +104,20 @@ export const adminApi = {
     });
   },
   deleteEvent: async (id: string) => {
-    return fetchJson<{ success?: boolean, error?: string }>(`/api/events/admin/${id}`, {
+    return fetchJson<{ success?: boolean, error?: string }>(`/api/admin/events/${id}`, {
       method: "DELETE",
     });
   },
 
   // --- DOCS ---
   createDoc: async (payload: DocPayload) => {
-    return fetchJson<{ success?: boolean, slug?: string, error?: string }>("/api/admin/docs", {
+    return fetchJson<{ success?: boolean, slug?: string, error?: string }>("/api/admin/docs/save", {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
   updateDoc: async (payload: DocPayload) => {
-    return fetchJson<{ success?: boolean, slug?: string, error?: string }>("/api/admin/docs", {
+    return fetchJson<{ success?: boolean, slug?: string, error?: string }>("/api/admin/docs/save", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -162,7 +162,7 @@ export const adminApi = {
 
   // --- BADGES ---
   createBadge: async (payload: BadgePayload) => {
-    return fetchJson<{ success?: boolean }>("/api/admin/badges", {
+    return fetchJson<{ success?: boolean }>("/api/admin/badges/save", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -173,13 +173,13 @@ export const adminApi = {
     });
   },
   grantBadge: async (userId: string, badgeId: string) => {
-    return fetchJson<{ success?: boolean }>(`/api/badges/admin/users/${userId}/badges`, {
+    return fetchJson<{ success?: boolean }>(`/api/admin/badges/users/${userId}/award`, {
       method: "POST",
       body: JSON.stringify({ badge_id: badgeId }),
     });
   },
   revokeBadge: async (userId: string, badgeId: string) => {
-    return fetchJson<{ success?: boolean }>(`/api/badges/admin/users/${userId}/badges/${badgeId}`, {
+    return fetchJson<{ success?: boolean }>(`/api/admin/badges/users/${userId}/${badgeId}/revoke`, {
       method: "DELETE",
     });
   },
@@ -192,8 +192,8 @@ export const adminApi = {
     });
   },
   updateSponsor: async (id: string, payload: SponsorPayload) => {
-    return fetchJson<{ success?: boolean }>(`/api/sponsors/admin/${id}`, {
-      method: "PUT",
+    return fetchJson<{ success?: boolean }>("/api/sponsors/admin", {
+      method: "POST",
       body: JSON.stringify(payload),
     });
   },

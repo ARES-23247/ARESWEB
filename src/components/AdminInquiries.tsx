@@ -12,6 +12,10 @@ type Inquiry = {
   created_at: string;
 };
 
+import DashboardPageHeader from "./dashboard/DashboardPageHeader";
+import DashboardEmptyState from "./dashboard/DashboardEmptyState";
+import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
+
 export default function AdminInquiries() {
   const queryClient = useQueryClient();
 
@@ -39,9 +43,14 @@ export default function AdminInquiries() {
 
   return (
     <div className="space-y-6">
+      <DashboardPageHeader 
+        title="Team Inquiries" 
+        subtitle="Review student, mentor, and sponsor applications."
+        icon={<MessageSquare className="text-ares-gold" />}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {isLoading ? (
-           [1,2,3].map(i => <div key={i} className="h-40 bg-white/5 ares-cut-lg animate-pulse" />)
+           <DashboardLoadingGrid count={3} heightClass="h-40" />
         ) : inquiries.map((iq) => {
           let meta: Record<string, string | string[]> = {};
           try {
@@ -113,10 +122,11 @@ export default function AdminInquiries() {
         })}
 
         {inquiries.length === 0 && !isLoading && (
-          <div className="col-span-1 lg:col-span-2 py-16 text-center border-2 border-dashed border-white/5 ares-cut-lg">
-            <MessageSquare className="mx-auto text-zinc-600 mb-3" size={32} />
-            <p className="text-zinc-500 font-medium tracking-wide">No active inquiries or applications.</p>
-          </div>
+          <DashboardEmptyState
+            className="col-span-1 lg:col-span-2 py-16 text-center border-2 border-dashed border-white/5 ares-cut-lg"
+            icon={<MessageSquare size={32} />}
+            message="No active inquiries or applications."
+          />
         )}
       </div>
     </div>
