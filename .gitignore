@@ -94,7 +94,7 @@ migrate_bench*.sql
 migrate_quiz.sql
 migrate_trouble.sql
 test_admin_query.sql
-schema.sql
+# NOTE: schema.sql is intentionally tracked — it is the authoritative DB schema for CI bootstrapping.
 
 # Coverage / test reports
 coverage/
