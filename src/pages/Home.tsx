@@ -73,6 +73,8 @@ export default function Home() {
                 body: "We build advanced, reliable software and custom hardware. Our robot is a model of West Virginia engineering and speed.",
                 link: "/about",
                 linkText: "Subsystem Specs",
+                externalLink: "https://www.printables.com/@ARESFTC_3784306",
+                externalLinkText: "View 3D Models",
               },
               {
                 title: "Outreach & Impact",
@@ -90,9 +92,16 @@ export default function Home() {
               <div key={card.title} className="marble-card hero-card p-10 flex flex-col h-full group">
                 <h3 className="text-ares-red text-2xl font-bold mb-6 font-heading group-hover:text-ares-bronze transition-colors">{card.title}</h3>
                 <p className="text-obsidian/70 text-base leading-relaxed mb-8 flex-grow" dangerouslySetInnerHTML={{ __html: card.body }} />
-                <Link to={card.link} className="text-ares-red font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
-                  <span className="bg-marble text-ares-red">{card.linkText}</span> <ArrowRight size={16} className="text-ares-red" />
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <Link to={card.link} className="text-ares-red font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
+                    <span className="bg-marble text-ares-red">{card.linkText}</span> <ArrowRight size={16} className="text-ares-red" />
+                  </Link>
+                  {card.externalLink && (
+                    <a href={card.externalLink} target="_blank" rel="noopener noreferrer" className="text-ares-bronze font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
+                      <span className="bg-marble text-ares-bronze">{card.externalLinkText}</span> <ArrowRight size={16} className="text-ares-bronze" />
+                    </a>
+                  )}
+                </div>
               </div>
             ))}
           </div>

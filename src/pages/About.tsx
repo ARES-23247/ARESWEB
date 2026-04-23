@@ -120,15 +120,25 @@ export default function About() {
                 <h3 className="bg-ares-red py-1 px-3 rounded inline-block font-bold text-xs tracking-widest uppercase mb-6 font-heading text-white">What You&apos;ll Learn</h3>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-bold uppercase tracking-wider text-obsidian/60">
                   {[
-                    "Mechanical Systems", "Electrical Engineering", "Java Programming", "CAD & 3D Design", 
+                    "Mechanical Systems", "Electrical Engineering", "Java Programming", 
+                    { name: "CAD & 3D Design", link: "https://www.printables.com/@ARESFTC_3784306" }, 
                     "Technical Writing", "Strategic Game Theory", "Graphic Design", "Project Logistics", 
-                    "Community Outreach", "Marketing & Branding", "Video Production", "Rapid Prototyping"
-                  ].map((skill) => (
-                    <li key={skill} className="flex items-center gap-3">
-                      <span className="w-1.5 h-1.5 bg-ares-bronze rotate-45"></span>
-                      {skill}
-                    </li>
-                  ))}
+                    "Community Outreach", "Marketing & Branding", "Video Production", 
+                    { name: "Rapid Prototyping", link: "https://www.printables.com/@ARESFTC_3784306" }
+                  ].map((skill) => {
+                    const isObj = typeof skill === "object";
+                    const name = isObj ? skill.name : skill;
+                    return (
+                      <li key={name} className="flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 bg-ares-bronze rotate-45"></span>
+                        {isObj ? (
+                          <a href={skill.link} target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4">
+                            {name}
+                          </a>
+                        ) : skill}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>
