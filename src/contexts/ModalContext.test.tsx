@@ -43,12 +43,11 @@ const renderWithProvider = () => {
 
 describe("ModalContext", () => {
   it("throws an error if useModal is used outside of ModalProvider", () => {
-    const originalConsoleError = console.error;
-    console.error = vi.fn(); // Suppress React error boundary log
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => render(<TestConsumer />)).toThrowError("useModal must be used within a ModalProvider");
 
-    console.error = originalConsoleError;
+    spy.mockRestore();
   });
 
   describe("ConfirmModal", () => {

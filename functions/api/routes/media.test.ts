@@ -4,6 +4,18 @@ import mediaRouter, { adminMediaRouter } from "./media";
 // unused import removed
 import { mockExecutionContext } from "../../../src/test/utils";
 
+vi.mock("../../utils/socialSync", () => ({
+  dispatchPhotoSocials: vi.fn().mockResolvedValue(true)
+}));
+
+vi.mock("../../middleware", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware")>();
+  return {
+    ...actual,
+    getDbSettings: vi.fn().mockResolvedValue({}),
+  };
+});
+
 describe("Hono Backend - /media Router", () => {
   const mockR2 = {
     list: vi.fn(),
@@ -275,16 +287,6 @@ describe("Hono Backend - /media Router", () => {
   });
 
   it("POST /syndicate should succeed", async () => {
-    vi.mock("../../utils/socialSync", () => ({
-      dispatchPhotoSocials: vi.fn().mockResolvedValue(true)
-    }));
-    vi.mock("../../middleware", async (importOriginal) => {
-      const actual = await importOriginal<typeof import("../../middleware")>();
-      return {
-        ...actual,
-        getDbSettings: vi.fn().mockResolvedValue({}),
-      };
-    });
     const req = new Request("http://localhost/syndicate", {
       method: "POST",
       body: JSON.stringify({ key: "img.png", caption: "hello" }),

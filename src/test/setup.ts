@@ -13,6 +13,9 @@ afterAll(() => server.close());
 
 export { server };
 
+// Mock jsdom missing methods
+window.scrollTo = vi.fn();
+
 // Mock Cloudflare-specific globals
 vi.stubGlobal("caches", {
   default: {
