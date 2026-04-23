@@ -143,12 +143,9 @@ adminRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
         coverImageUrl: coverImage || "/gallery_1.png",
         baseUrl: baseUrl
       };
-      try {
-        await dispatchSocials(c.env.DB, payload, socialConfig, socials);
-      } catch (err) {
-        console.error("Event social dispatch failed:", err);
-        warnings.push(`Social Syndication Failed: ${(err as Error).message}`);
-      }
+      c.executionCtx.waitUntil(
+        dispatchSocials(c.env.DB, payload, socialConfig, socials).catch(err => console.error("Event social dispatch failed:", err))
+      );
     }
 
     // ── Zulip Calendar Notification ──

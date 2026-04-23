@@ -1,26 +1,12 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
+
+const WRANGLER_COMMAND = 'cross-env CLOUDFLARE_API_TOKEN=dummy DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
-  timeout: 60000,
-  use: {
-    baseURL: process.env.CI ? 'http://localhost:8788' : 'http://localhost:5173',
-    trace: 'on-first-retry',
-  },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
   webServer: process.env.CI 
     ? {
-        command: 'cross-env CLOUDFLARE_API_TOKEN=dummy DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist',
+        command: `${WRANGLER_COMMAND} dist`,
         url: 'http://localhost:8788',
         reuseExistingServer: false,
         timeout: 120 * 1000,
@@ -32,7 +18,7 @@ export default defineConfig({
           reuseExistingServer: true,
         },
         {
-          command: 'cross-env DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev',
+          command: WRANGLER_COMMAND,
           url: 'http://localhost:8788',
           reuseExistingServer: true,
         }

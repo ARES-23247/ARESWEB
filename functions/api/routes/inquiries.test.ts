@@ -147,7 +147,7 @@ describe("Hono Backend - /inquiries Router", () => {
     (notifyByRole as any).mockRejectedValueOnce(new Error("Notify fail"));
     (createProjectItem as any).mockRejectedValueOnce(new Error("GH fail"));
 
-    const payload = { type: "outreach", name: "Corp", email: "corp@example.com", metadata: { level: "Gold" } };
+    const payload = { type: "sponsor", name: "Corp", email: "corp@example.com", metadata: { level: "Gold" } };
     const req = new Request("http://localhost/", {
       method: "POST",
       body: JSON.stringify(payload),

@@ -214,8 +214,8 @@ async function handlePostSave(c: Context<AppEnv>) {
       const socialsFilter = (body as { socials?: Record<string, boolean> }).socials || null;
       const baseUrl = new URL(c.req.url).origin;
 
-      c.executionCtx.waitUntil(
-        dispatchSocials(
+      try {
+        await dispatchSocials(
           c.env.DB,
           {
             title: body.title,
@@ -226,20 +226,26 @@ async function handlePostSave(c: Context<AppEnv>) {
           },
           socialConfig,
           socialsFilter
-        ).catch(err => console.error("Social dispatch failed:", err))
-      );
+        );
+      } catch (err) {
+        console.error("Social dispatch failed:", err);
+        warnings.push("Social Syndication Failed");
+      }
     }
 
     // ── Zulip Announcement ──
     if (status === "published") {
-      c.executionCtx.waitUntil(
-        sendZulipMessage(
+      try {
+        await sendZulipMessage(
           c.env,
           "announcements",
           "Website Updates",
           `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
-        ).catch(err => console.error("[Posts] Zulip announcement failed:", err))
-      );
+        );
+      } catch (err) {
+        console.error("[Posts] Zulip announcement failed:", err);
+        warnings.push("Zulip Notification Failed");
+      }
     }
 
     // ── Notify admins and mentors of pending content ──

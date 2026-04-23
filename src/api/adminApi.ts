@@ -6,7 +6,7 @@ import { LocationPayload } from "../schemas/locationSchema";
 import { BadgePayload } from "../schemas/badgeSchema";
 import { SponsorPayload } from "../schemas/sponsorSchema";
 import { IntegrationPayload } from "../schemas/integrationSchema";
-import { fetchJson } from "../utils/apiClient";
+import { fetchJson, uploadFile, fetchBlob } from "../utils/apiClient";
 
 export const adminApi = {
   // --- DATA FETCHERS (Generic GET/REQUEST wrapper) ---
@@ -17,34 +17,10 @@ export const adminApi = {
     return fetchJson<T>(url, options);
   },
   uploadFile: async <T>(url: string, formData: FormData): Promise<T> => {
-    const res = await fetch(url, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
-    
-    if (!res.ok && res.status !== 207) {
-      let errorMessage = `HTTP error! status: ${res.status}`;
-      try {
-        const errorData = await res.json() as { error?: string };
-        if (errorData.error) errorMessage = errorData.error;
-      } catch {
-        // Ignored
-      }
-      throw new Error(errorMessage);
-    }
-    
-    return res.json() as Promise<T>;
+    return uploadFile<T>(url, formData);
   },
   downloadFile: async (url: string, options?: RequestInit): Promise<Blob> => {
-    const res = await fetch(url, {
-      ...options,
-      credentials: "include",
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    return res.blob();
+    return fetchBlob(url, options);
   },
 
   // --- POSTS ---

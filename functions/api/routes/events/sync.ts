@@ -70,23 +70,25 @@ syncRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
     }
 
     // Process batch updates
-    const BATCH_SIZE = 50;
-    for (let i = 0; i < stmts.length; i += BATCH_SIZE) {
-      await c.env.DB.batch(stmts.slice(i, i + BATCH_SIZE));
-    }
+    c.executionCtx.waitUntil((async () => {
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < stmts.length; i += BATCH_SIZE) {
+        await c.env.DB.batch(stmts.slice(i, i + BATCH_SIZE));
+      }
 
-    // Update Last Sync Timestamp
-    const now = new Date().toISOString();
-    await c.env.DB.prepare(
-      "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)"
-    ).bind("LAST_CALENDAR_SYNC", now, now).run();
+      // Update Last Sync Timestamp
+      const nowTs = new Date().toISOString();
+      await c.env.DB.prepare(
+        "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)"
+      ).bind("LAST_CALENDAR_SYNC", nowTs, nowTs).run();
+    })());
 
     return c.json({ 
       success: true, 
       synced: totalNew + totalUpdated, 
       newEvents: totalNew, 
       updatedEvents: totalUpdated,
-      lastSyncedAt: now
+      lastSyncedAt: new Date().toISOString()
     });
 
   } catch (err: unknown) {

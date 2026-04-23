@@ -7,12 +7,12 @@ interface CoreValueCalloutProps {
 }
 
 const valueConfig = {
-  discovery: { title: 'Discovery', icon: '/img/core-values/discovery.png', color: 'var(--ares-danger, #EF4444)' },
-  innovation: { title: 'Innovation', icon: '/img/core-values/innovation.png', color: 'var(--ares-cyan, #00E5FF)' },
-  impact: { title: 'Impact', icon: '/img/core-values/impact.png', color: 'var(--ares-bronze, #CD7F32)' },
-  teamwork: { title: 'Teamwork', icon: '/img/core-values/teamwork.png', color: 'var(--ares-bronze-light, #E69B4D)' },
-  inclusion: { title: 'Inclusion', icon: '/img/core-values/inclusion.png', color: 'var(--brand-discord, #5865F2)' },
-  fun: { title: 'Fun', icon: '/img/core-values/fun.png', color: 'var(--ares-gold, #FFB81C)' },
+  discovery: { title: 'Discovery', icon: '/img/core-values/discovery.png', color: 'var(--ares-danger)' },
+  innovation: { title: 'Innovation', icon: '/img/core-values/innovation.png', color: 'var(--ares-cyan)' },
+  impact: { title: 'Impact', icon: '/img/core-values/impact.png', color: 'var(--ares-bronze)' },
+  teamwork: { title: 'Teamwork', icon: '/img/core-values/teamwork.png', color: 'var(--ares-bronze-light)' },
+  inclusion: { title: 'Inclusion', icon: '/img/core-values/inclusion.png', color: 'var(--brand-discord)' },
+  fun: { title: 'Fun', icon: '/img/core-values/fun.png', color: 'var(--ares-gold)' },
 };
 
 export const CoreValueCallout = ({ value, children }: CoreValueCalloutProps) => {
