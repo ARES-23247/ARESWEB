@@ -13,10 +13,10 @@ const trackSchema = z.object({
 });
 
 analyticsRouter.post("/track", turnstileMiddleware(), zValidator("json", trackSchema), async (c) => {
-  // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit
+  // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit (20 req / 10 min)
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  if (!checkWriteRateLimit(`track:${ip}`, 20, 60)) {
-    return c.json({ success: false }, 429);
+  if (!checkWriteRateLimit(`track:${ip}`, 20, 600)) {
+    return c.json({ success: false, error: "Rate limit exceeded" }, 429);
   }
 
   try {
@@ -45,10 +45,10 @@ const clickSchema = z.object({
 });
 
 analyticsRouter.post("/sponsor-click", turnstileMiddleware(), zValidator("json", clickSchema), async (c) => {
-  // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit
+  // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit (10 req / 10 min)
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  if (!checkWriteRateLimit(`click:${ip}`, 10, 60)) {
-    return c.json({ success: false }, 429);
+  if (!checkWriteRateLimit(`click:${ip}`, 10, 600)) {
+    return c.json({ success: false, error: "Rate limit exceeded" }, 429);
   }
 
   try {

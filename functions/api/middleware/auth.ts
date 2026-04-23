@@ -83,6 +83,7 @@ export const ensureAuth = async (c: Context<AppEnv>, next: Next) => {
     return c.json({ error: "Unauthorized: Please log in." }, 401);
   }
 
+  // EFF-F05: Store fetched user in context to satisfy subsequent getSessionUser() calls
   c.set("sessionUser", user);
   await next();
 };
