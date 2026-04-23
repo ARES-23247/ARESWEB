@@ -7,7 +7,7 @@ const mockExecutionContext = {
 };
 
 describe("Seasons Public Router", () => {
-  let mockDb: any;
+  let mockDb: Record<string, ReturnType<typeof vi.fn>>;
   let env: { DB: unknown };
 
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe("Seasons Public Router", () => {
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { seasons: any[] };
+    const body = await res.json() as { seasons: Record<string, unknown>[] };
     expect(body.seasons).toHaveLength(2);
     expect(body.seasons[0].id).toBe("2023-2024");
     expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining("SELECT * FROM seasons"));
@@ -45,7 +45,7 @@ describe("Seasons Public Router", () => {
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { seasons: any[] };
+    const body = await res.json() as { seasons: Record<string, unknown>[] };
     expect(body.seasons).toHaveLength(0);
   });
 
@@ -63,7 +63,7 @@ describe("Seasons Public Router", () => {
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as any;
+    const body = await res.json() as { season: { id: string }, awards: unknown[], events: unknown[] };
     expect(body.season.id).toBe("2024-2025");
     expect(body.awards).toHaveLength(1);
     expect(body.events).toHaveLength(1);
@@ -79,7 +79,7 @@ describe("Seasons Public Router", () => {
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as any;
+    const body = await res.json() as { awards: unknown[], events: unknown[] };
     expect(body.awards).toEqual([]);
     expect(body.events).toEqual([]);
   });
@@ -91,7 +91,7 @@ describe("Seasons Public Router", () => {
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { seasons: any[] };
+    const body = await res.json() as { seasons: Record<string, unknown>[] };
     expect(body.seasons).toHaveLength(0);
   });
 
