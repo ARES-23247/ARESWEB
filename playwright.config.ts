@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
   timeout: process.env.CI ? 30_000 : 60_000,
   use: {
-    baseURL: process.env.CI ? 'http://localhost:8788' : 'http://localhost:5173',
+    baseURL: 'http://localhost:4173',
     trace: 'on-first-retry',
     navigationTimeout: 15_000,
     actionTimeout: 10_000,
@@ -20,23 +20,10 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: process.env.CI 
-    ? {
-        command: 'cross-env CLOUDFLARE_API_TOKEN=dummy npx wrangler pages dev dist --binding DEV_BYPASS=true --binding ENVIRONMENT=test',
-        url: 'http://localhost:8788',
-        reuseExistingServer: false,
-        timeout: 120_000,
-      }
-    : [
-        {
-          command: 'npm run dev',
-          url: 'http://localhost:5173',
-          reuseExistingServer: true,
-        },
-        {
-          command: 'npx wrangler pages dev --binding DEV_BYPASS=true --binding ENVIRONMENT=test',
-          url: 'http://localhost:8788',
-          reuseExistingServer: true,
-        }
-      ],
+  webServer: {
+    command: 'npx vite preview --port 4173 --strictPort',
+    url: 'http://localhost:4173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 30_000,
+  },
 });

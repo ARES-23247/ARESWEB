@@ -12,7 +12,6 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "db:setup:local": "wrangler d1 execute ares-db --file=./schema.sql --local -y",
-    "pretest:e2e": "npm run db:setup:local",
     "test:e2e": "playwright test",
     "pa11y": "pa11y-ci",
     "audit:security": "npm audit --audit-level=high"
