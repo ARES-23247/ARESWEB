@@ -185,6 +185,31 @@ describe('notifications utility', () => {
       );
     });
 
+    it('chunks notifications into batches of 100 to respect D1 limits', async () => {
+      // Create 150 fake users to trigger chunking
+      const mockUsers = Array.from({ length: 150 }).map((_, i) => ({ id: `user-${i}` }));
+      
+      const { env, batchFn } = createMockContext({
+        dbResults: mockUsers,
+      });
+      const { notifyByRole } = await import('./notifications');
+      
+      const mockContext = { env } as unknown as import('hono').Context;
+      
+      await notifyByRole(mockContext, ['student'], {
+        title: 'Chunk Alert',
+        message: 'Testing chunking',
+      });
+
+      // 150 users / 100 max batch size = 2 chunks
+      expect(batchFn).toHaveBeenCalledTimes(2);
+      
+      // First chunk should have 100 statements
+      expect(batchFn.mock.calls[0][0].length).toBe(100);
+      // Second chunk should have 50 statements
+      expect(batchFn.mock.calls[1][0].length).toBe(50);
+    });
+
     it('handles combined admin + profile type audiences', async () => {
       const { env, prepareMock } = createMockContext({
         dbResults: [{ id: 'user-1' }],

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination, createContentLifecycleRouter, rateLimitMiddleware  } from "../../middleware";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination, createContentLifecycleRouter, rateLimitMiddleware, ensureAdmin } from "../../middleware";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials, PostPayload, SocialConfig } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -8,6 +8,8 @@ import { notifyByRole } from "../../../utils/notifications";
 
 const adminRouter = new Hono<AppEnv>();
 
+// Enforce admin privileges across all manual event operations
+adminRouter.use("*", ensureAdmin);
 // ── GET /admin/events — list all events (admin) ─────────────────────────
 adminRouter.get("/", async (c) => {
   try {

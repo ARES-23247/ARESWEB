@@ -98,20 +98,29 @@ export async function notifyByRole(
     if (!results || results.length === 0) return;
 
     // PERF: Batch all notification inserts to prevent connection pool exhaustion
-    const batch = results.map((row: Record<string, unknown>) => {
-      return c.env.DB.prepare(
-        "INSERT INTO notifications (id, user_id, title, message, link, priority) VALUES (?, ?, ?, ?, ?, ?)"
-      ).bind(
-        crypto.randomUUID(),
-        row.id as string,
-        payload.title,
-        payload.message,
-        payload.link || null,
-        payload.priority || "low"
-      );
-    });
-
-    await c.env.DB.batch(batch);
+    // D1 has a 100 statement limit per batch call. Chunk them.
+    const MAX_BATCH_SIZE = 100;
+    for (let i = 0; i < results.length; i += MAX_BATCH_SIZE) {
+      const chunk = results.slice(i, i + MAX_BATCH_SIZE);
+      const batch = chunk.map((row: Record<string, unknown>) => {
+        return c.env.DB.prepare(
+          "INSERT INTO notifications (id, user_id, title, message, link, priority) VALUES (?, ?, ?, ?, ?, ?)"
+        ).bind(
+          crypto.randomUUID(),
+          row.id as string,
+          payload.title,
+          payload.message,
+          payload.link || null,
+          payload.priority || "low"
+        );
+      });
+      
+      try {
+        await c.env.DB.batch(batch);
+      } catch (chunkErr) {
+        console.error(`[Notification] Batch chunk starting at index ${i} failed:`, chunkErr);
+      }
+    }
 
     // External broadcasting (Sequential background dispatch)
     if (payload.external && c.env.ZULIP_BOT_EMAIL && c.env.ZULIP_API_KEY) {
@@ -138,4 +147,5 @@ export async function notifyAdmins(
 ) {
   return notifyByRole(c, ["admin"], payload);
 }
+
 
