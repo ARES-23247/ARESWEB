@@ -109,9 +109,13 @@ export default function EventManagerTab({
         )}
       </div>
 
-      {/* Sub-tabs removed as they are now top-level tabs */}
+      <div className="text-[10px] text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
+        <span>VIEW: {view} | RAW: {events.length} | FILTERED: {filtered.length}</span>
+        {isError && <span className="text-ares-red font-bold">API ERROR!</span>}
+      </div>
 
       <div className="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0 pr-2 custom-scrollbar">
+
         {filtered.length === 0 ? (
           <DashboardEmptyState
             className="text-marble/50 text-xs italic py-8 text-center border border-dashed border-white/5 ares-cut-sm"
