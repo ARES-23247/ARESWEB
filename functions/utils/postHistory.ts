@@ -134,7 +134,7 @@ export async function captureHistory(
  */
 export async function getPostHistory(c: Context<AppEnv>, slug: string) {
   const { results } = await c.env.DB.prepare(
-    "SELECT id, title, author, author_email, created_at FROM posts_history WHERE slug = ? ORDER BY created_at DESC LIMIT 50"
+    "SELECT id, title, author, author_email, created_at, season_id FROM posts_history WHERE slug = ? ORDER BY created_at DESC LIMIT 50"
   ).bind(slug).all();
   return results ?? [];
 }

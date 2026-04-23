@@ -21,7 +21,7 @@ postsRouter.get("/list", ensureAdmin, async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 50, 200);
     const { results } = await c.env.DB.prepare(
-      "SELECT slug, title, date, snippet, thumbnail, cf_email, is_deleted, status, revision_of, published_at FROM posts ORDER BY date DESC LIMIT ? OFFSET ?"
+      "SELECT slug, title, date, snippet, thumbnail, cf_email, is_deleted, status, revision_of, published_at, season_id FROM posts ORDER BY date DESC LIMIT ? OFFSET ?"
     ).bind(limit, offset).all();
     return c.json({ posts: results ?? [] });
   } catch (err) {
@@ -33,7 +33,7 @@ postsRouter.get("/list", ensureAdmin, async (c) => {
 // ── GET /export-all — export all posts (admin) ───────────────────
 postsRouter.get("/export-all", ensureAdmin, async (c) => {
   try {
-    const { results } = await c.env.DB.prepare("SELECT slug, title, date, snippet, thumbnail, author, ast, is_deleted, status, revision_of, published_at, is_portfolio FROM posts").all();
+    const { results } = await c.env.DB.prepare("SELECT slug, title, date, snippet, thumbnail, author, ast, is_deleted, status, revision_of, published_at, is_portfolio, season_id FROM posts").all();
     return c.json({ posts: results ?? [] });
   } catch (err) {
     console.error("D1 export error (posts):", err);
@@ -50,7 +50,7 @@ postsRouter.get("/", async (c) => {
     if (q) {
       // FTS5 Search Route (Using JOIN rule for metadata)
       const { results } = await c.env.DB.prepare(
-        `SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail,
+        `SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.season_id,
                 uP.nickname as author_nickname, u.image as author_avatar
          FROM posts_fts f
          JOIN posts p ON f.slug = p.slug
@@ -65,7 +65,7 @@ postsRouter.get("/", async (c) => {
 
     // Standard Route
     const { results } = await c.env.DB.prepare(
-      `SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail,
+      `SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.season_id,
               uP.nickname as author_nickname, u.image as author_avatar
        FROM posts p
        LEFT JOIN user u ON p.cf_email = u.email
@@ -112,7 +112,7 @@ postsRouter.get("/:slug", async (c) => {
   const slug = (c.req.param("slug") || "");
   try {
     const row = await c.env.DB.prepare(
-      `SELECT p.slug, p.title, p.date, p.ast, p.thumbnail,
+      `SELECT p.slug, p.title, p.date, p.ast, p.thumbnail, p.season_id,
               uP.nickname as author_nickname, u.image as author_avatar
        FROM posts p
        LEFT JOIN user u ON p.cf_email = u.email
