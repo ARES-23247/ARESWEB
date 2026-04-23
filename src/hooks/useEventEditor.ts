@@ -32,6 +32,7 @@ export interface EventData {
   status: string;
   revision_of?: string;
   published_at?: string;
+  season_id?: string;
 }
 
 export function useEventEditor(editId: string | undefined, editor: Editor | null, userRole?: string | unknown) {
@@ -71,10 +72,12 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
     location: "",
     description: "",
     coverImage: DEFAULT_COVER_IMAGE,
-    category: "internal",
+    category: "internal" as "internal" | "outreach" | "external",
+    tbaEventKey: "",
     isPotluck: false,
     isVolunteer: false,
     publishedAt: "",
+    seasonId: "",
   });
 
   const handleFileUpload = async (file: File) => {
@@ -99,11 +102,12 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
           location: data.event.location || "",
           description: data.event.description || "",
           coverImage: data.event.cover_image || DEFAULT_COVER_IMAGE,
-          category: data.event.category || "internal",
+          category: (data.event.category || "internal") as "internal" | "outreach" | "external",
           tbaEventKey: data.event.tba_event_key || "",
           isPotluck: data.event.is_potluck === 1,
           isVolunteer: data.event.is_volunteer === 1,
           publishedAt: data.event.published_at || "",
+          seasonId: data.event.season_id || "",
         });
         if (editor) {
           try {
@@ -150,7 +154,8 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
         setForm({ 
           title: "", dateStart: "", dateEnd: "", location: "", 
           description: "", coverImage: DEFAULT_COVER_IMAGE, 
-          category: "internal", isPotluck: false, isVolunteer: false, publishedAt: "" 
+          category: "internal", tbaEventKey: "", isPotluck: false, 
+          isVolunteer: false, publishedAt: "", seasonId: ""
         });
         if (editor) editor.commands.clearContent();
       }

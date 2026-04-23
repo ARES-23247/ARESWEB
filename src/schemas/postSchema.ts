@@ -7,6 +7,7 @@ export const postSchema = z.object({
   socials: z.record(z.string(), z.boolean()).optional(),
   isDraft: z.boolean().optional(),
   publishedAt: z.string().optional(),
+  seasonId: z.string().optional(),
 });
 
 export type PostPayload = z.infer<typeof postSchema>;

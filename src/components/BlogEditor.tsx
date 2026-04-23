@@ -16,6 +16,8 @@ import CoverAssetPicker from "./editor/CoverAssetPicker";
 import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import EditorFooter from "./editor/EditorFooter";
 
+import SeasonPicker from "./SeasonPicker";
+
 export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
   const { editSlug } = useParams<{ editSlug?: string }>();
   const queryClient = useQueryClient();
@@ -30,6 +32,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   const [isPending, setIsPending] = useState(false);
   const [title, setTitle] = useState("");
   const [publishedAt, setPublishedAt] = useState("");
+  const [seasonId, setSeasonId] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState(DEFAULT_COVER_IMAGE);
   const [errorMsg, setErrorMsg] = useState("");
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
@@ -46,12 +49,13 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
 
   const editor = useRichEditor({ placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>" });
 
-  useEntityFetch<{ post?: { title: string, published_at: string, thumbnail: string, ast: string } }>(
+  useEntityFetch<{ post?: { title: string, published_at: string, thumbnail: string, ast: string, season_id?: string } }>(
     editSlug ? `/api/admin/posts/${editSlug}/detail` : null,
     (data) => {
       if (data?.post) {
         setTitle(data.post.title || "");
         setPublishedAt(data.post.published_at || "");
+        setSeasonId(data.post.season_id || "");
         if (data.post.thumbnail) setCoverImageUrl(data.post.thumbnail);
         if (editor && data.post.ast) {
           try {
@@ -89,6 +93,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
         socials,
         isDraft,
         publishedAt: publishedAt || undefined,
+        seasonId: seasonId || undefined,
       });
 
       if (!payloadResult.success) {
@@ -212,6 +217,9 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
             value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)}
             className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
           />
+        </div>
+        <div className="flex-1 md:max-w-xs">
+          <SeasonPicker value={seasonId} onChange={setSeasonId} />
         </div>
       </div>
 

@@ -7,7 +7,7 @@ const outreachRouter = new Hono<AppEnv>();
 async function fetchVolunteerEvents(db: D1Database) {
   try {
     const { results } = await db.prepare(
-      "SELECT id, title, date_start as date, location, 'volunteer' as type FROM events WHERE is_volunteer = 1 AND is_deleted = 0 AND status = 'published' ORDER BY date_start DESC"
+      "SELECT id, title, date_start as date, location, 'volunteer' as type, season_id FROM events WHERE is_volunteer = 1 AND is_deleted = 0 AND status = 'published' ORDER BY date_start DESC"
     ).all();
     return (results || []) as Record<string, unknown>[];
   } catch (err) {
@@ -27,7 +27,7 @@ outreachRouter.get("/", async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 50, 200);
     const { results: logs } = await c.env.DB.prepare(
-        "SELECT id, title, date, location, COALESCE(hours, 0) as hours_logged, COALESCE(people_reached, 0) as reach_count, COALESCE(students_count, 0) as students_count, impact_summary as description FROM outreach_logs WHERE is_deleted = 0 ORDER BY date DESC LIMIT ? OFFSET ?"
+        "SELECT id, title, date, location, COALESCE(hours, 0) as hours_logged, COALESCE(people_reached, 0) as reach_count, COALESCE(students_count, 0) as students_count, impact_summary as description, season_id FROM outreach_logs WHERE is_deleted = 0 ORDER BY date DESC LIMIT ? OFFSET ?"
     ).bind(limit, offset).all();
     
     const volunteerEvents = await fetchVolunteerEvents(c.env.DB);

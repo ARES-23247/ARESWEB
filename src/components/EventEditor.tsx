@@ -8,6 +8,7 @@ import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import EditorFooter from "./editor/EditorFooter";
 import { useEventEditor } from "../hooks/useEventEditor";
+import SeasonPicker from "./SeasonPicker";
 
 export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
   const { editId } = useParams<{ editId?: string }>();
@@ -83,7 +84,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           <select
             id="event-category"
             value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            onChange={(e) => setForm({ ...form, category: e.target.value as "internal" | "outreach" | "external" })}
             className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
           >
             <option value="internal">ARES Practices</option>
@@ -102,6 +103,9 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
             placeholder="e.g. 2024wvcmp"
           />
+        </div>
+        <div className="flex-1">
+          <SeasonPicker value={form.seasonId} onChange={(val) => setForm({ ...form, seasonId: val })} />
         </div>
         <div className="flex-1">
           <label htmlFor="event-location" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">

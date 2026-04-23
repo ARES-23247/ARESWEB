@@ -13,6 +13,7 @@ export const eventSchema = z.object({
   isVolunteer: z.boolean().default(false),
   publishedAt: z.string().optional(),
   isDraft: z.boolean().optional(),
+  seasonId: z.string().optional(),
   socials: z.record(z.string(), z.boolean()).optional(),
 });
 

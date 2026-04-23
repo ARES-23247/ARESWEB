@@ -30,20 +30,20 @@ seasonsRouter.get("/:id", async (c) => {
       return c.json({ error: "Season not found" }, 404);
     }
 
-    // Fetch related awards
-    const { results: awards } = await c.env.DB.prepare(
-      "SELECT id, title, date as year, event_name, description, icon_type as image_url FROM awards WHERE season_id = ? AND is_deleted = 0"
-    ).bind(id).all();
-
-    // Fetch related events
-    const { results: events } = await c.env.DB.prepare(
-      "SELECT id, title, date_start, location, status FROM events WHERE season_id = ? AND is_deleted = 0"
-    ).bind(id).all();
+    // Get related records in a batch
+    const [{ results: awards }, { results: events }, { results: posts }, { results: outreach }] = await c.env.DB.batch([
+      c.env.DB.prepare("SELECT id, title, date as year, event_name, description, icon_type as image_url FROM awards WHERE season_id = ? AND is_deleted = 0").bind(id),
+      c.env.DB.prepare("SELECT id, title, category, date_start, date_end, location, description, cover_image FROM events WHERE season_id = ? AND is_deleted = 0 AND status = 'published'").bind(id),
+      c.env.DB.prepare("SELECT slug, title, date, snippet, thumbnail FROM posts WHERE season_id = ? AND is_deleted = 0 AND status = 'published'").bind(id),
+      c.env.DB.prepare("SELECT id, title, date, location, hours, people_reached, students_count, impact_summary as description FROM outreach_logs WHERE season_id = ? AND is_deleted = 0").bind(id)
+    ]);
 
     return c.json({
       season,
       awards: awards || [],
-      events: events || []
+      events: events || [],
+      posts: posts || [],
+      outreach: outreach || []
     });
   } catch (err) {
     console.error("D1 season details error:", err);
