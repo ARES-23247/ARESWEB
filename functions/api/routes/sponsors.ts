@@ -1,5 +1,5 @@
-import { Context, Hono } from "hono";
-import { AppEnv, ensureAdmin, logAuditAction, parsePagination, validateLength, MAX_INPUT_LENGTHS, rateLimitMiddleware } from "../middleware";
+import { Hono } from "hono";
+import { AppEnv, ensureAdmin, logAuditAction, parsePagination, rateLimitMiddleware } from "../middleware";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { sponsorContract } from "../../../src/schemas/contracts/sponsorContract";
@@ -15,7 +15,7 @@ const sponsorTsRestRouter = s.router(sponsorContract, {
       ).all();
       return {
         status: 200,
-        body: { sponsors: results as any || [] },
+        body: { sponsors: (results as unknown) || [] },
       };
     } catch (err) {
       console.error("D1 sponsors list error:", err);
@@ -28,7 +28,7 @@ const sponsorTsRestRouter = s.router(sponsorContract, {
       const { results } = await c.env.DB.prepare("SELECT id, name, tier, logo_url, website_url, is_active FROM sponsors ORDER BY created_at DESC LIMIT ? OFFSET ?").bind(limit, offset).all();
       return {
         status: 200,
-        body: { sponsors: results as any || [] },
+        body: { sponsors: (results as unknown) || [] },
       };
     } catch (err) {
       console.error("D1 admin sponsors list error:", err);

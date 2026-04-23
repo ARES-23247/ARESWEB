@@ -35,20 +35,20 @@ describe("Hono Backend - /sponsors Router", () => {
   it("GET / should list all sponsors", async () => {
     const mockSponsors = [createMockSponsor(), createMockSponsor()];
     env.DB.all.mockResolvedValue({ results: mockSponsors });
-    const req = new Request("http://localhost/", { method: "GET" });
+    const req = new Request("http://localhost/api/sponsors", { method: "GET" });
     const res = await sponsorsRouter.request(req, {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("GET /admin should list admin sponsors", async () => {
     env.DB.all.mockResolvedValue({ results: [] });
-    const req = new Request("http://localhost/admin", { method: "GET" });
+    const req = new Request("http://localhost/api/sponsors/admin", { method: "GET" });
     const res = await sponsorsRouter.request(req, {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("POST /admin should save sponsor", async () => {
-    const req = new Request("http://localhost/admin", {
+    const req = new Request("http://localhost/api/sponsors/admin", {
       method: "POST",
       body: JSON.stringify({ id: "s1", name: "Sponsor", tier: "Gold" }),
       headers: { "Content-Type": "application/json" }
@@ -58,7 +58,7 @@ describe("Hono Backend - /sponsors Router", () => {
   });
 
   it("POST /admin should reject missing fields", async () => {
-    const req = new Request("http://localhost/admin", {
+    const req = new Request("http://localhost/api/sponsors/admin", {
       method: "POST",
       body: JSON.stringify({ name: "Sponsor" }),
       headers: { "Content-Type": "application/json" }
@@ -68,7 +68,7 @@ describe("Hono Backend - /sponsors Router", () => {
   });
 
   it("POST /admin should reject invalid tier", async () => {
-    const req = new Request("http://localhost/admin", {
+    const req = new Request("http://localhost/api/sponsors/admin", {
       method: "POST",
       body: JSON.stringify({ id: "s1", name: "Sponsor", tier: "Diamond" }),
       headers: { "Content-Type": "application/json" }
@@ -78,7 +78,11 @@ describe("Hono Backend - /sponsors Router", () => {
   });
 
   it("DELETE /admin/:id should deactivate sponsor", async () => {
-    const req = new Request("http://localhost/admin/s1", { method: "DELETE" });
+    const req = new Request("http://localhost/api/sponsors/admin/s1", { 
+      method: "DELETE",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    });
     const res = await sponsorsRouter.request(req, {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });

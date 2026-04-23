@@ -5,8 +5,10 @@ import { Search, FileText, Calendar, ShieldCheck, HelpCircle, Terminal, Home, Ar
 import { authClient } from "../utils/auth-client";
 import { sanitizeHtml } from "../utils/security";
 import { publicApi } from "../api/publicApi";
+import { Command } from "cmdk";
 
 interface SearchResult {
+  id: string; // Add id for cmdk value tracking
   slug?: string;
   url?: string;
   title: string;
@@ -19,13 +21,10 @@ export default function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   
   const { data: session } = authClient.useSession();
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
   const lastActiveElement = useRef<HTMLElement | null>(null);
 
   // Toggle Command Palette with Ctrl+K or Cmd+K
@@ -35,37 +34,13 @@ export default function CommandPalette() {
         e.preventDefault();
         setIsOpen((open) => {
           if (!open) {
-            // ACC-F11: Capture current focus before opening
             lastActiveElement.current = document.activeElement as HTMLElement;
           }
           return !open;
         });
       }
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && isOpen) {
         setIsOpen(false);
-      }
-      // ACC-D01: Focus trapping for Command Palette
-      if (isOpen && e.key === "Tab") {
-        const focusableElements = modalRef.current?.querySelectorAll(
-          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
-        ) as NodeListOf<HTMLElement>;
-        
-        if (focusableElements && focusableElements.length > 0) {
-          const firstElement = focusableElements[0];
-          const lastElement = focusableElements[focusableElements.length - 1];
-
-          if (e.shiftKey) {
-            if (document.activeElement === firstElement) {
-              lastElement.focus();
-              e.preventDefault();
-            }
-          } else {
-            if (document.activeElement === lastElement) {
-              firstElement.focus();
-              e.preventDefault();
-            }
-          }
-        }
       }
     };
     
@@ -83,29 +58,28 @@ export default function CommandPalette() {
     };
   }, [isOpen]);
 
-  // ACC-F11: Restore focus when palette closes
+  // Restore focus when palette closes
   useEffect(() => {
     if (!isOpen && lastActiveElement.current) {
       lastActiveElement.current.focus();
     }
   }, [isOpen]);
 
-   
   // @ts-expect-error - BetterAuth session typing
   const userRole = session?.user?.role;
 
   // Static Quick Links routes
   const staticLinks = useMemo(() => {
     const links: SearchResult[] = [
-      { title: "Home Base", category: "Navigation", url: "/", icon: <Home size={16} /> },
-      { title: "Team Dashboard", category: "Navigation", url: "/dashboard", icon: <Terminal size={16} /> },
-      { title: "Technical Documentation", category: "Navigation", url: "/docs", icon: <FileText size={16} /> },
-      { title: "Team Activity & Events", category: "Navigation", url: "/events", icon: <Calendar size={16} /> },
-      { title: "Sponsorships & ROI", category: "Navigation", url: "/sponsors", icon: <ShieldCheck size={16} /> },
-      { title: "Join The Team", category: "Navigation", url: "/join", icon: <HelpCircle size={16} /> },
+      { id: "static-home", title: "Home Base", category: "Navigation", url: "/", icon: <Home size={16} /> },
+      { id: "static-dash", title: "Team Dashboard", category: "Navigation", url: "/dashboard", icon: <Terminal size={16} /> },
+      { id: "static-docs", title: "Technical Documentation", category: "Navigation", url: "/docs", icon: <FileText size={16} /> },
+      { id: "static-events", title: "Team Activity & Events", category: "Navigation", url: "/events", icon: <Calendar size={16} /> },
+      { id: "static-sponsors", title: "Sponsorships & ROI", category: "Navigation", url: "/sponsors", icon: <ShieldCheck size={16} /> },
+      { id: "static-join", title: "Join The Team", category: "Navigation", url: "/join", icon: <HelpCircle size={16} /> },
     ];
     if (userRole === "admin") {
-      links.push({ title: "Judges Hub Console", category: "Admin", url: "/judges", icon: <ShieldCheck size={16} /> });
+      links.push({ id: "static-admin", title: "Judges Hub Console", category: "Admin", url: "/judges", icon: <ShieldCheck size={16} /> });
     }
     return links;
   }, [userRole]);
@@ -147,6 +121,7 @@ export default function CommandPalette() {
           }
 
           return {
+            id: `d1-${r.type}-${r.id}`,
             title: r.title,
             category: r.type.charAt(0).toUpperCase() + r.type.slice(1),
             url,
@@ -173,20 +148,6 @@ export default function CommandPalette() {
     return () => clearTimeout(timer);
   }, [query, userRole, staticLinks]);
 
-  // Handle Keyboard Navigation (Up/Down/Enter)
-  const handleKeyboardNav = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
-    } else if (e.key === "Enter" && results.length > 0) {
-      e.preventDefault();
-      handleSelect(results[selectedIndex]);
-    }
-  };
-
   const handleSelect = (item: SearchResult) => {
     setIsOpen(false);
     setQuery("");
@@ -204,15 +165,6 @@ export default function CommandPalette() {
     }
   };
 
-  // ACC-F03: HARDENED FOCUS TIMING
-  // Using requestAnimationFrame for deterministic focus on the input.
-  useEffect(() => {
-    if (isOpen) {
-      const raf = requestAnimationFrame(() => inputRef.current?.focus());
-      return () => cancelAnimationFrame(raf);
-    }
-  }, [isOpen]);
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -225,73 +177,67 @@ export default function CommandPalette() {
           onClick={handleBackdropClick}
         >
           <motion.div
-            ref={modalRef}
-            role="combobox"
-            aria-expanded="true"
-            aria-haspopup="listbox"
-            aria-controls="command-palette-results"
             initial={{ scale: 0.95, opacity: 0, y: -10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="w-full max-w-2xl bg-obsidian border border-white/5 rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-1 ring-white/10"
           >
-            {/* Input Header */}
-            <div className="flex items-center px-6 py-5 border-b border-white/5 bg-white/[0.02]">
-              <Search className="text-marble/40 mr-3 shrink-0" size={20} />
-              <input
-                ref={inputRef}
-                className="w-full bg-transparent border-none outline-none text-white placeholder-marble/30 font-mono text-lg"
-                placeholder="Search documentation, routes, workflows..."
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setSelectedIndex(0);
-                }}
-                onKeyDown={handleKeyboardNav}
-              />
-              <div className="flex shrink-0 items-center gap-1 ml-3 hidden sm:flex">
-                <kbd className="bg-white/10 text-marble/40 text-xs px-2 py-1 rounded font-mono border border-white/10">ESC</kbd>
-                <span className="text-xs text-marble/40 ml-1">to close</span>
-              </div>
-            </div>
-
-            {/* Results Body */}
-            <div 
-              id="command-palette-results" 
-              role="listbox" 
-              className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
-              aria-live="polite" // ACC-L04: Announce search updates to screen readers
+            <Command 
+              shouldFilter={false} 
+              loop
+              className="flex flex-col w-full h-full"
             >
-              {isSearching && query.length >= 2 && results.length === 0 ? (
-                 <div className="p-8 text-center text-marble/40 animate-pulse font-mono flex items-center justify-center gap-2">
-                   <Terminal className="text-ares-cyan" size={16} /> Scanning D1 nodes...
-                 </div>
-              ) : results.length === 0 ? (
-                <div className="p-8 text-center text-marble/40 font-bold uppercase tracking-widest text-sm">
-                  No vectors matched telemetry.
+              {/* Input Header */}
+              <div className="flex items-center px-6 py-5 border-b border-white/5 bg-white/[0.02]">
+                <Search className="text-marble/40 mr-3 shrink-0" size={20} />
+                <Command.Input
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                  className="w-full bg-transparent border-none outline-none text-white placeholder-marble/30 font-mono text-lg"
+                  placeholder="Search documentation, routes, workflows..."
+                  value={query}
+                  onValueChange={setQuery}
+                />
+                <div className="flex shrink-0 items-center gap-1 ml-3 hidden sm:flex">
+                  <kbd className="bg-white/10 text-marble/40 text-xs px-2 py-1 rounded font-mono border border-white/10">ESC</kbd>
+                  <span className="text-xs text-marble/40 ml-1">to close</span>
                 </div>
-              ) : (
-                results.map((res, idx) => (
-                  <button
-                    key={idx}
-                    role="option"
-                    aria-selected={selectedIndex === idx}
-                    onClick={() => handleSelect(res)}
-                    onMouseEnter={() => setSelectedIndex(idx)}
-                    className={`w-full text-left flex items-center px-4 py-3 rounded-lg mb-1 transition-colors ares-cut-sm group ${
-                      selectedIndex === idx
-                        ? "bg-ares-red/20 border-l-2 border-ares-red text-white"
-                        : "text-marble/40 hover:bg-white/5 border-l-2 border-transparent"
-                    }`}
+              </div>
+
+              {/* Results Body */}
+              <Command.List 
+                className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                aria-live="polite"
+              >
+                {isSearching && query.length >= 2 && results.length === 0 ? (
+                  <Command.Loading>
+                    <div className="p-8 text-center text-marble/40 animate-pulse font-mono flex items-center justify-center gap-2">
+                      <Terminal className="text-ares-cyan" size={16} /> Scanning D1 nodes...
+                    </div>
+                  </Command.Loading>
+                ) : (
+                  <Command.Empty>
+                    <div className="p-8 text-center text-marble/40 font-bold uppercase tracking-widest text-sm">
+                      No vectors matched telemetry.
+                    </div>
+                  </Command.Empty>
+                )}
+
+                {results.map((res) => (
+                  <Command.Item
+                    key={res.id}
+                    value={res.id}
+                    onSelect={() => handleSelect(res)}
+                    className="w-full text-left flex items-center px-4 py-3 rounded-lg mb-1 transition-colors ares-cut-sm cursor-pointer data-[selected=true]:bg-ares-red/20 data-[selected=true]:border-l-2 data-[selected=true]:border-ares-red data-[selected=true]:text-white border-l-2 border-transparent text-marble/40 hover:bg-white/5"
                   >
-                    <div className={`mr-4 shrink-0 transition-colors ${selectedIndex === idx ? "text-ares-red" : "text-marble/30"}`}>
+                    <div className="mr-4 shrink-0 transition-colors group-data-[selected=true]:text-ares-red text-marble/30">
                       {res.icon}
                     </div>
                     
                     <div className="flex-1 overflow-hidden">
                        <div className="flex items-center gap-2">
-                          <h4 className={`font-bold transition-colors ${selectedIndex === idx ? "text-white" : "text-marble"}`}>
+                          <h4 className="font-bold transition-colors group-data-[selected=true]:text-white text-marble">
                             {res.title}
                           </h4>
                           <span className="text-xs font-bold uppercase tracking-widest text-marble/30 bg-white/5 px-2 py-0.5 rounded-full border border-white/10 shrink-0">
@@ -306,11 +252,11 @@ export default function CommandPalette() {
                        )}
                     </div>
 
-                    <ArrowRight className={`shrink-0 ml-4 transition-all ${selectedIndex === idx ? "text-ares-red opacity-100 transform translate-x-1" : "text-marble/20 opacity-0 transform -translate-x-2"}`} size={16} />
-                  </button>
-                ))
-              )}
-            </div>
+                    <ArrowRight className="shrink-0 ml-4 transition-all group-data-[selected=true]:text-ares-red group-data-[selected=true]:opacity-100 group-data-[selected=true]:translate-x-1 text-marble/20 opacity-0 -translate-x-2" size={16} />
+                  </Command.Item>
+                ))}
+              </Command.List>
+            </Command>
           </motion.div>
         </motion.div>
       )}

@@ -43,7 +43,7 @@ export const sponsorContract = c.router({
     pathParams: z.object({
       id: z.string(),
     }),
-    body: z.any(),
+    body: c.type<null>(),
     responses: {
       200: z.object({
         success: z.boolean(),
