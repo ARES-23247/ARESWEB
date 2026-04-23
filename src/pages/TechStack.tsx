@@ -1,4 +1,4 @@
-import { Cloud, Zap, Database, GlobeLock, DollarSign, HardDrive, LayoutDashboard, MessageSquare } from "lucide-react";
+import { Cloud, Zap, Database, GlobeLock, DollarSign, HardDrive, LayoutDashboard, MessageSquare, Workflow, CheckCircle, Eye, ShieldCheck, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 import GitHubHeatmap from "../components/GitHubHeatmap";
 import SEO from "../components/SEO";
@@ -116,6 +116,76 @@ export default function TechStack() {
               For our team communications, we proudly use <strong>Zulip</strong>. Their generous donation of Zulip Cloud Standard provides our students and mentors with an organized, thread-based workspace that keeps our engineering and outreach discussions seamlessly coordinated.
             </p>
             <div className="text-xs font-bold uppercase tracking-widest text-ares-gray mt-auto">Cost: Sponsored</div>
+          </div>
+        </div>
+
+        {/* Engineering Standards Deep Dive */}
+        <div className="max-w-4xl mx-auto space-y-12 mb-24">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold font-heading mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-ares-cyan">Championship-Grade Engineering Standards</h2>
+            <p className="text-marble/80 text-lg leading-relaxed">
+              We hold our software to the same rigorous standards as our competition robots. Our entire development lifecycle is governed by automated systems that ensure absolute reliability, flawless accessibility, and zero downtime.
+            </p>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start gap-8">
+            <div className="w-16 h-16 shrink-0 ares-cut bg-gradient-to-br from-ares-red to-ares-bronze flex items-center justify-center text-white shadow-lg">
+              <Workflow size={28} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold font-heading mb-4">Continuous Integration & Deployment</h3>
+              <p className="text-marble/70 text-lg leading-relaxed mb-4">
+                Our pipeline uses automated <strong>Cloudflare Pages CI</strong> on every push to the master branch. The system enforces zero ESLint warnings and flawless TypeScript compilation. If a single strict type check fails, the deployment is autonomously rejected, mathematically guaranteeing our production dashboard never breaks.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start gap-8">
+            <div className="w-16 h-16 shrink-0 ares-cut bg-gradient-to-br from-ares-cyan to-ares-bronze flex items-center justify-center text-white shadow-lg">
+              <CheckCircle size={28} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold font-heading mb-4">100% Test Coverage Enforcement</h3>
+              <p className="text-marble/70 text-lg leading-relaxed mb-4">
+                We employ a test-driven architecture utilizing <strong>Vitest</strong> and <strong>Playwright</strong>. All backend routes and critical utilities must pass an 85% line and 100% functional coverage threshold. For major DOM flows and user interactions, end-to-end Playwright tests simulate actual user behavior with mocked authentication boundaries to prevent regressions.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start gap-8">
+            <div className="w-16 h-16 shrink-0 ares-cut bg-gradient-to-br from-ares-gold to-ares-red flex items-center justify-center text-white shadow-lg">
+              <Eye size={28} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold font-heading mb-4">WCAG 2.1 AA Web Accessibility</h3>
+              <p className="text-marble/70 text-lg leading-relaxed mb-4">
+                We believe in inclusion. Our frontend strictly adheres to <strong>WCAG 2.1 AA</strong> standards, verified by Axe and pa11y CI. We ensure flawless screen-reader context using semantic HTML, enforce minimum 4.5:1 color contrast ratios utilizing our &quot;Red Badge Pattern,&quot; and dynamically generate ARIA labels for mission-critical visual elements.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start gap-8">
+            <div className="w-16 h-16 shrink-0 ares-cut bg-gradient-to-br from-ares-red to-ares-gold flex items-center justify-center text-white shadow-lg">
+              <ShieldCheck size={28} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold font-heading mb-4">FIRST Youth Data Protection</h3>
+              <p className="text-marble/70 text-lg leading-relaxed mb-4">
+                We strictly enforce COPPA and <strong>FIRST Youth Protection Program (YPP)</strong> guidelines across our backend architecture. Student Personally Identifiable Information (PII) like email addresses, phone numbers, and precise locations are mathematically scrubbed on the Cloudflare Edge before ever reaching public APIs, guaranteeing total digital safety for our minors.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start gap-8">
+            <div className="w-16 h-16 shrink-0 ares-cut bg-gradient-to-br from-ares-cyan to-ares-bronze flex items-center justify-center text-white shadow-lg">
+              <Activity size={28} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold font-heading mb-4">Granular Failure Exposure</h3>
+              <p className="text-marble/70 text-lg leading-relaxed mb-4">
+                To maintain our zero-downtime philosophy, we ban &quot;silent failures.&quot; Network rejections, Cloudflare execution faults, and database constraints are intentionally bubbled up to the UI with exact HTTP status codes and structured telemetry, enabling lightning-fast administrative remediation in the Command Center.
+              </p>
+            </div>
           </div>
         </div>
 
