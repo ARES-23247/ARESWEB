@@ -99,6 +99,10 @@ export default defineConfig({
       }
     }
   },
+  preview: {
+    // No proxy — E2E tests run without a backend; API calls return 502 instantly
+    proxy: {}
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
