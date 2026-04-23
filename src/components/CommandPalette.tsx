@@ -26,13 +26,20 @@ export default function CommandPalette() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const lastActiveElement = useRef<HTMLElement | null>(null);
 
   // Toggle Command Palette with Ctrl+K or Cmd+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        setIsOpen((open) => !open);
+        setIsOpen((open) => {
+          if (!open) {
+            // ACC-F11: Capture current focus before opening
+            lastActiveElement.current = document.activeElement as HTMLElement;
+          }
+          return !open;
+        });
       }
       if (e.key === "Escape") {
         setIsOpen(false);
@@ -62,7 +69,10 @@ export default function CommandPalette() {
       }
     };
     
-    const handleCustomOpen = () => setIsOpen(true);
+    const handleCustomOpen = () => {
+      lastActiveElement.current = document.activeElement as HTMLElement;
+      setIsOpen(true);
+    };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("open-command-palette", handleCustomOpen);
@@ -71,6 +81,13 @@ export default function CommandPalette() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("open-command-palette", handleCustomOpen);
     };
+  }, [isOpen]);
+
+  // ACC-F11: Restore focus when palette closes
+  useEffect(() => {
+    if (!isOpen && lastActiveElement.current) {
+      lastActiveElement.current.focus();
+    }
   }, [isOpen]);
 
    

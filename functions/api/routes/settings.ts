@@ -101,6 +101,7 @@ settingsRouter.get("/admin/backup", ensureAdmin, async (c) => {
     const TABLE_COLUMNS: Record<string, string> = {
       user_profiles: "user_id, nickname, pronouns, subteams, member_type, bio, favorite_first_thing, fun_fact, show_on_about, favorite_robot_mechanism, pre_match_superstition, leadership_role, rookie_year, avatar, updated_at",
       inquiries: "id, type, SUBSTR(name, 1, 1) || '***' as name, '***@***.***' as email, status, created_at",
+      audit_log: "id, action, resource_type, resource_id, actor, created_at" // PII-S02: Exclude 'details' from full backup to prevent PII leak
     };
     
     const backup: Record<string, Record<string, unknown>[]> = {};

@@ -152,8 +152,6 @@ profilesRouter.get("/:userId", async (c) => {
               p.show_phone, p.phone, p.show_on_about,
               p.favorite_robot_mechanism, p.pre_match_superstition, p.leadership_role,
               p.rookie_year, p.colleges, p.employers, p.grade_year,
-              p.emergency_contact_name, p.emergency_contact_phone,
-              p.dietary_restrictions, p.tshirt_size,
               u.image as avatar, u.name
        FROM user_profiles p 
        LEFT JOIN user u ON p.user_id = u.id 
@@ -179,11 +177,19 @@ profilesRouter.get("/:userId", async (c) => {
     const isSelf = requester?.id === userId;
 
     if (isAdmin || isSelf) {
-      const secret = c.env.ENCRYPTION_SECRET;
-      sanitized.emergency_contact_name = await decrypt(profile.emergency_contact_name as string, secret);
-      sanitized.emergency_contact_phone = await decrypt(profile.emergency_contact_phone as string, secret);
-      sanitized.dietary_restrictions = profile.dietary_restrictions;
-      sanitized.tshirt_size = profile.tshirt_size;
+      // PII-F03: Only fetch sensitive PII fields when authorized — avoids unnecessary D1 reads + decryption
+      const sensitive = await c.env.DB.prepare(
+        `SELECT emergency_contact_name, emergency_contact_phone, dietary_restrictions, tshirt_size
+         FROM user_profiles WHERE user_id = ?`
+      ).bind(userId).first<Record<string, unknown>>();
+
+      if (sensitive) {
+        const secret = c.env.ENCRYPTION_SECRET;
+        sanitized.emergency_contact_name = await decrypt(sensitive.emergency_contact_name as string, secret);
+        sanitized.emergency_contact_phone = await decrypt(sensitive.emergency_contact_phone as string, secret);
+        sanitized.dietary_restrictions = sensitive.dietary_restrictions;
+        sanitized.tshirt_size = sensitive.tshirt_size;
+      }
     }
 
     const { results: rawBadges } = await c.env.DB.prepare(

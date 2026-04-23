@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
-import { Bindings, AppEnv, ensureAdmin, checkRateLimit, logSystemError } from "./middleware";
+import { Bindings, AppEnv, checkRateLimit, logSystemError } from "./middleware";
 
 // ── Domain Routers ───────────────────────────────────────────────────
 import authRouter from "./routes/auth";
@@ -84,8 +84,7 @@ apiRouter.use("*", cors({
   maxAge: 86400,
 }));
 
-// ── Auth middleware for admin routes ──────────────────────────────────
-apiRouter.use("/admin/*", ensureAdmin);
+// ── Admin routes self-enforce auth via ensureAdmin per-handler ────────
 
 // ── Mount Domain Routers ─────────────────────────────────────────────
 // ── Auth
@@ -255,19 +254,32 @@ export const scheduled = async (
   _ctx: ExecutionContext
 ) => {
   try {
-    // 1. Fetch Retention Policy from Database
-    const retentionRow = await env.DB.prepare(
-      "SELECT value FROM settings WHERE key = 'RETENTION_INQUIRY_DAYS'"
-    ).first<{ value: string }>();
+    // 1. Fetch Retention Policies from Database
+    const { results: settingsRows } = await env.DB.prepare(
+      "SELECT key, value FROM settings WHERE key IN ('RETENTION_INQUIRY_DAYS', 'RETENTION_AUDIT_LOG_DAYS')"
+    ).all();
 
-    const days = Number(retentionRow?.value || "30");
+    const settings: Record<string, string> = {};
+    if (settingsRows) {
+       for (const row of settingsRows as { key: string, value: string }[]) {
+         settings[row.key] = row.value;
+       }
+    }
 
-    console.log(`[Scheduled] Starting maintenance. Retention period: ${days} days.`);
+    const inquiryDays = Number(settings['RETENTION_INQUIRY_DAYS'] || "30");
+    const auditDays = Number(settings['RETENTION_AUDIT_LOG_DAYS'] || "90");
 
-    // 2. Execute Purge
-    const { deleted } = await purgeOldInquiries(env.DB, days);
+    console.log(`[Scheduled] Starting maintenance. Inquiry: ${inquiryDays}d, Audit: ${auditDays}d.`);
+
+    // 2. Execute Purges
+    const [inquiryRes, auditRes] = await Promise.all([
+      purgeOldInquiries(env.DB, inquiryDays),
+      env.DB.prepare(
+        "DELETE FROM audit_log WHERE created_at < datetime('now', '-' || ? || ' days')"
+      ).bind(auditDays).run()
+    ]);
     
-    console.log(`[Scheduled] Maintenance complete. Purged ${deleted} old inquiries.`);
+    console.log(`[Scheduled] Maintenance complete. Purged ${inquiryRes.deleted} inquiries and ${auditRes.meta.changes} logs.`);
   } catch (err) {
     console.error("[Scheduled] Maintenance failed:", err);
   }

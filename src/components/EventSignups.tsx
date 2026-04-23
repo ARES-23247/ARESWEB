@@ -174,7 +174,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                 className={`flex items-center gap-2 px-4 py-2 ares-cut-sm text-xs font-black uppercase tracking-widest transition-all ${
                   myEntry?.attended 
                   ? "bg-ares-gold/10 border border-ares-gold/20 text-ares-gold hover:bg-ares-gold/20" 
-                  : "bg-ares-gold hover:bg-yellow-400 text-black shadow-lg shadow-ares-gold/20"
+                  : "bg-ares-gold hover:brightness-110 text-black shadow-lg shadow-ares-gold/20"
                 }`}
               >
                 <CheckCircle2 size={14} />
@@ -294,7 +294,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
           </p>
           {!isAuthenticated ? (
             <div>
-              <a href="/login" className="px-6 py-3 bg-ares-gold hover:bg-yellow-400 text-black ares-cut-sm font-black text-xs uppercase tracking-widest inline-block transition-all shadow-lg shadow-ares-gold/20">Sign in with ARES ID</a>
+              <a href="/login" className="px-6 py-3 bg-ares-gold hover:brightness-110 text-black ares-cut-sm font-black text-xs uppercase tracking-widest inline-block transition-all shadow-lg shadow-ares-gold/20">Sign in with ARES ID</a>
               <p className="text-[10px] uppercase tracking-widest text-marble/20 mt-6 font-bold">
                 Don&apos;t have an ARES ID? <a href="/about" className="text-ares-gold hover:underline">Contact us</a>
               </p>

@@ -65,7 +65,16 @@ usersRouter.get("/:id", async (c) => {
   try {
     const userId = (c.req.param("id") || "");
     const profile = await c.env.DB.prepare(
-      `SELECT u.*, p.*, u.image as avatar 
+      `SELECT u.id, u.name, u.email, u.image as avatar, u.role, u.createdAt, u.updatedAt,
+              p.first_name, p.last_name, p.nickname, p.phone, p.contact_email,
+              p.show_email, p.show_phone, p.pronouns, p.grade_year, p.subteams,
+              p.member_type, p.bio, p.favorite_food, p.dietary_restrictions,
+              p.favorite_first_thing, p.fun_fact, p.colleges, p.employers,
+              p.show_on_about, p.favorite_robot_mechanism, p.pre_match_superstition,
+              p.leadership_role, p.rookie_year, p.tshirt_size,
+              p.emergency_contact_name, p.emergency_contact_phone,
+              p.parents_name, p.parents_email, p.students_name, p.students_email,
+              p.updated_at
        FROM user u
        LEFT JOIN user_profiles p ON u.id = p.user_id
        WHERE u.id = ?`

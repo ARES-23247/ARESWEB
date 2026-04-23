@@ -260,7 +260,8 @@ adminMediaRouter.post("/syndicate", ensureAdmin, rateLimitMiddleware(15, 60), as
 
     const config = await getDbSettings(c);
     
-    const imageUrl = `${siteConfig.urls.base}/api/media/${key}`;
+    const baseUrl = new URL(c.req.url).origin;
+    const imageUrl = `${baseUrl}/api/media/${key}`;
     const { dispatchPhotoSocials } = await import("../../utils/socialSync");
     
     c.executionCtx.waitUntil(

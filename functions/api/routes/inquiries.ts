@@ -127,11 +127,13 @@ inquiriesRouter.post(
     // EFF-01: Use DB.batch() for atomic/consolidated writes
     await c.env.DB.batch(batchRequests);
 
+    const baseUrl = new URL(c.req.url).origin;
+
     // Webhook or Email Notification
     try {
       const social = await getSocialConfig(c);
       // PII-03: Redact personal information from external webhook notifications
-      const msg = `🔔 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${siteConfig.urls.base}/dashboard?tab=inquiries`;
+      const msg = `🔔 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${baseUrl}/dashboard?tab=inquiries`;
       
       let notified = false;
 
@@ -179,9 +181,9 @@ inquiriesRouter.post(
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 personalizations: [{ to: [{ email: siteConfig.contact.email, name: `${siteConfig.team.name} Admissions` }] }],
-                from: { email: `noreply@${new URL(siteConfig.urls.base).hostname}`, name: `${siteConfig.team.name} Website Portal` },
+                from: { email: `noreply@${new URL(baseUrl).hostname}`, name: `${siteConfig.team.name} Website Portal` },
                 subject: `New ${type.toUpperCase()} Inquiry Submission`,
-                content: [{ type: "text/plain", value: `You received a new ${type} inquiry (ID: ${id}).\nPlease review it in the Dashboard: ${siteConfig.urls.base}/dashboard?tab=inquiries` }]
+                content: [{ type: "text/plain", value: `You received a new ${type} inquiry (ID: ${id}).\nPlease review it in the Dashboard: ${baseUrl}/dashboard?tab=inquiries` }]
               })
             }).catch(console.error)
          );
@@ -196,7 +198,7 @@ inquiriesRouter.post(
       
       const alertBody = [
         `📧 **Contact:** (see Dashboard for details)${phoneStr}`,
-        `🔗 [Review in Dashboard](${siteConfig.urls.base}/dashboard?tab=inquiries)`,
+        `🔗 [Review in Dashboard](${baseUrl}/dashboard?tab=inquiries)`,
       ].filter(Boolean).join("\n");
 
       c.executionCtx.waitUntil(
@@ -259,8 +261,7 @@ inquiriesRouter.patch("/:id/status", ensureAuth, zValidator("json", statusSchema
   if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 403);
   
   if (user.role !== "admin") {
-    const profile = await c.env.DB.prepare("SELECT member_type FROM user_profiles WHERE user_id = ?").bind(user.id).first<{member_type: string}>();
-    const memberType = profile?.member_type || "student";
+    const memberType = user.member_type || "student";
     if (memberType !== "coach" && memberType !== "mentor") {
       return c.json({ error: "Unauthorized" }, 403);
     }
@@ -283,8 +284,7 @@ inquiriesRouter.delete("/:id", ensureAuth, async (c) => {
   if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 403);
   
   if (user.role !== "admin") {
-    const profile = await c.env.DB.prepare("SELECT member_type FROM user_profiles WHERE user_id = ?").bind(user.id).first<{member_type: string}>();
-    const memberType = profile?.member_type || "student";
+    const memberType = user.member_type || "student";
     if (memberType !== "coach" && memberType !== "mentor") {
       return c.json({ error: "Unauthorized" }, 403);
     }

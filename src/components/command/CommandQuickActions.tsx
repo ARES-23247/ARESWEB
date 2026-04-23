@@ -11,7 +11,7 @@ export default function CommandQuickActions() {
       </h3>
       <div className="space-y-2">
         {[
-          { label: "Open Zulip Chat", icon: MessageCircle, href: "https://ares.zulipchat.com", color: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:border-blue-500/40" },
+          { label: "Open Zulip Chat", icon: MessageCircle, href: "https://ares.zulipchat.com", color: "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20 hover:border-ares-cyan/40" },
           { label: "Open GitHub Org", icon: GitBranch, href: `https://github.com/${siteConfig.urls.githubOrg}`, color: "bg-ares-gray-dark/60 text-white border-white/10 hover:border-white/20" },
           { label: "View Activity Heatmap", icon: Activity, href: "/about", color: "bg-ares-gold/10 text-ares-gold border-ares-gold/20 hover:border-ares-gold/40" },
         ].map(action => (

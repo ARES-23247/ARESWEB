@@ -42,7 +42,7 @@ describe("Hono Backend - /profiles Router", () => {
   });
 
   it("should handle /me fetch errors gracefully", async () => {
-    env.DB.first.mockRejectedValue(new Error("DB error"));
+    env.DB.first.mockRejectedValueOnce(new Error("DB error"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const req = new Request("http://localhost/me", { method: "GET" });

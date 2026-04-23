@@ -139,7 +139,7 @@ export default function DocManagerTab({
                   {doc.title}
                   {Number(doc.is_deleted) === 1 && <span className="text-[9px] font-bold text-ares-red bg-ares-red/10 border border-ares-red/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Deleted</span>}
                   {doc.revision_of && <span className="text-[9px] font-bold text-ares-gold bg-ares-gold/10 border border-ares-gold/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Revision</span>}
-                  {doc.status === 'rejected' && <span className="text-[9px] font-bold text-orange-400 bg-orange-400/10 border border-orange-400/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Rejected</span>}
+                  {doc.status === 'rejected' && <span className="text-[9px] font-bold text-ares-bronze bg-ares-bronze/10 border border-ares-bronze/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Rejected</span>}
                   {doc.status === 'draft' && <span className="text-[9px] font-bold text-ares-gold bg-ares-gold/10 border border-ares-gold/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Draft</span>}
                   {Number(doc.is_executive_summary) === 1 && <span className="text-[9px] font-bold text-ares-gold bg-ares-gold/10 border border-ares-gold/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Exec Summary</span>}
                   {Number(doc.is_portfolio) === 1 && <span className="text-[9px] font-bold text-ares-cyan bg-ares-cyan/10 border border-ares-cyan/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Portfolio</span>}

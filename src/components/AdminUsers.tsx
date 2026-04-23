@@ -113,6 +113,7 @@ export default function AdminUsers() {
                     <select
                       value={user.role || "user"}
                       onChange={e => changeRole(user.id, e.target.value)}
+                      aria-label={`Change role for ${user.nickname || user.name || "user"}`}
                       className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none ${
                         user.role === "admin" ? "border-ares-red/50 text-ares-red" :
                         user.role === "author" ? "border-ares-gold/50 text-ares-gold" :
@@ -129,6 +130,7 @@ export default function AdminUsers() {
                     <select
                       value={user.member_type || "student"}
                       onChange={e => changeMemberType(user.id, e.target.value)}
+                      aria-label={`Change member type for ${user.nickname || user.name || "user"}`}
                       className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
                         user.member_type === "alumni" ? "border-ares-gold/50 text-ares-gold" :
                         ["parent", "coach", "mentor", "sponsor"].includes(user.member_type || "") ? "border-ares-gold/30 text-ares-gold/70" :
@@ -144,11 +146,13 @@ export default function AdminUsers() {
                 <td className="py-3 px-2 text-right">
                   <button onClick={() => setEditUserId(user.id)}
                     title="Edit Member Profile"
+                    aria-label={`Edit profile for ${user.nickname || user.name || "user"}`}
                     className="p-2 mr-1 text-white/60 hover:text-ares-gold transition-all ares-cut-sm hover:bg-ares-gold/10 hover:scale-110">
                     <Edit3 size={18} />
                   </button>
                   <button onClick={() => removeUser(user.id, user.nickname || user.name || "user")}
                     title="Delete User"
+                    aria-label={`Delete user ${user.nickname || user.name || "user"}`}
                     className="p-2 text-white/60 hover:text-ares-red transition-all ares-cut-sm hover:bg-ares-red/10 hover:scale-110">
                     <Trash2 size={18} />
                   </button>
@@ -165,6 +169,7 @@ export default function AdminUsers() {
             <div className="sticky top-0 right-0 z-10 flex justify-end p-4 pointer-events-none">
               <button 
                 onClick={() => setEditUserId(null)} 
+                aria-label="Close edit profile modal"
                 className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/60 hover:text-white pointer-events-auto shadow-xl"
               >
                 <X size={20} />

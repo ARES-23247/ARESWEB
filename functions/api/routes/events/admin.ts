@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { siteConfig } from "../../../utils/site.config";
 import { AppEnv, getSocialConfig, extractAstText, getSessionUser, getDbSettings, parsePagination, createContentLifecycleRouter, rateLimitMiddleware  } from "../../middleware";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
-import { dispatchSocials } from "../../../utils/socialSync";
+import { dispatchSocials, PostPayload, SocialConfig } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { notifyByRole } from "../../../utils/notifications";
 
@@ -63,10 +63,12 @@ adminRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
     
     // Sync to GCal if enabled
     let gcalId: string | null = null;
-    const socialConfig = await getSocialConfig(c);
+    const socialConfig = await getSocialConfig(c) as SocialConfig;
     const gcalEmail = socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"];
     const gcalKey = socialConfig["GCAL_PRIVATE_KEY"];
-    const calId = socialConfig[`CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig] || socialConfig["CALENDAR_ID"];
+    
+    const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
+    const calId = socialConfig[calKey] || socialConfig["CALENDAR_ID"];
 
     if (gcalEmail && gcalKey && calId) {
       try {
@@ -81,7 +83,7 @@ adminRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
 
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
-    const status = isDraft ? "pending" : "published";
+    const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
     await c.env.DB.prepare(
       `INSERT INTO events (id, title, category, date_start, date_end, location, description, cover_image, gcal_event_id, cf_email, status, is_potluck, is_volunteer, published_at)
@@ -94,13 +96,14 @@ adminRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
     const baseUrl = new URL(c.req.url).origin;
 
     if (socials && status === "published") {
+      const payload: PostPayload = {
+        title: title, url: `${baseUrl}/events`,
+        snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
+        coverImageUrl: coverImage || "/gallery_1.png",
+        baseUrl: baseUrl
+      };
       c.executionCtx.waitUntil(
-        dispatchSocials(c.env.DB, {
-          title: title, url: `${baseUrl}/events`,
-          snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
-          coverImageUrl: coverImage || "/gallery_1.png",
-          baseUrl: baseUrl
-        } as any, socialConfig, socials).catch(err => console.error("Event social dispatch failed:", err))
+        dispatchSocials(c.env.DB, payload, socialConfig, socials).catch(err => console.error("Event social dispatch failed:", err))
       );
     }
 
@@ -157,10 +160,12 @@ adminRouter.put("/:id", rateLimitMiddleware(15, 60), async (c) => {
     if (!title || !dateStart) return c.json({ error: "Missing required fields" }, 400);
     const warnings: string[] = [];
 
-    const socialConfig = await getSocialConfig(c);
+    const socialConfig = await getSocialConfig(c) as SocialConfig;
     const gcalEmail = socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"];
     const gcalKey = socialConfig["GCAL_PRIVATE_KEY"];
-    const calId = socialConfig[`CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig] || socialConfig["CALENDAR_ID"];
+    
+    const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
+    const calId = socialConfig[calKey] || socialConfig["CALENDAR_ID"];
 
     let gcalId: string | null = null;
     if (gcalEmail && gcalKey && calId) {
@@ -203,13 +208,14 @@ adminRouter.put("/:id", rateLimitMiddleware(15, 60), async (c) => {
     const baseUrl = new URL(c.req.url).origin;
 
     if (socials && status === "published") {
+      const payload: PostPayload = {
+        title: title, url: `${baseUrl}/events`,
+        snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
+        coverImageUrl: coverImage || "/gallery_1.png",
+        baseUrl: baseUrl
+      };
       c.executionCtx.waitUntil(
-        dispatchSocials(c.env.DB, {
-          title: title, url: `${baseUrl}/events`,
-          snippet: extractAstText(description).substring(0, 250) || "New event scheduled!",
-          coverImageUrl: coverImage || "/gallery_1.png",
-          baseUrl: baseUrl
-        } as any, socialConfig, socials).catch(err => console.error("Event social update failed:", err))
+        dispatchSocials(c.env.DB, payload, socialConfig, socials).catch(err => console.error("Event social update failed:", err))
       );
     }
 
@@ -286,17 +292,19 @@ adminRouter.post("/:id/repush", rateLimitMiddleware(15, 60), async (c) => {
     const { socials } = json;
     const event = await c.env.DB.prepare("SELECT title, description, cover_image FROM events WHERE id = ?").bind(id).first<{title: string, description: string, cover_image: string}>();
     if (!event) return c.json({ error: "Event not found" }, 404);
-    const socialConfig = await getSocialConfig(c);
+    const socialConfig = await getSocialConfig(c) as SocialConfig;
     const baseUrl = new URL(c.req.url).origin;
     
+    const payload: PostPayload = { 
+      title: event.title, 
+      url: `${baseUrl}/events`, 
+      snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", 
+      coverImageUrl: event.cover_image || "/gallery_1.png", 
+      baseUrl: baseUrl
+    };
+
     c.executionCtx.waitUntil(
-      dispatchSocials(c.env.DB, { 
-        title: event.title, 
-        url: `${baseUrl}/events`, 
-        snippet: extractAstText(event.description || "").substring(0, 250) || "Join us for our upcoming event!", 
-        coverImageUrl: event.cover_image || "/gallery_1.png", 
-        baseUrl: baseUrl
-      } as any, socialConfig, socials).catch(err => console.error("Event social repush failed:", err))
+      dispatchSocials(c.env.DB, payload, socialConfig, socials).catch(err => console.error("Event social repush failed:", err))
     );
     
     return c.json({ success: true });

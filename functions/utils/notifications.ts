@@ -13,7 +13,6 @@ export async function emitNotification(
     message,
     link,
     external = false,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     priority = "low"
   }: {
     userId: string;
@@ -27,13 +26,14 @@ export async function emitNotification(
   try {
     // 1. Database Persistence
     await c.env.DB.prepare(
-      "INSERT INTO notifications (id, user_id, title, message, link) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO notifications (id, user_id, title, message, link, priority) VALUES (?, ?, ?, ?, ?, ?)"
     ).bind(
       crypto.randomUUID(),
       userId,
       title,
       message,
-      link || null
+      link || null,
+      priority
     ).run();
 
     // 2. External Broadcasting (Optional)
@@ -100,13 +100,14 @@ export async function notifyByRole(
     // PERF: Batch all notification inserts to prevent connection pool exhaustion
     const batch = results.map((row: Record<string, unknown>) => {
       return c.env.DB.prepare(
-        "INSERT INTO notifications (id, user_id, title, message, link) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO notifications (id, user_id, title, message, link, priority) VALUES (?, ?, ?, ?, ?, ?)"
       ).bind(
         crypto.randomUUID(),
         row.id as string,
         payload.title,
         payload.message,
-        payload.link || null
+        payload.link || null,
+        payload.priority || "low"
       );
     });
 

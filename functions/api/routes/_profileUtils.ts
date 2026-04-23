@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import { AppEnv } from "../middleware";
+import { AppEnv, getSessionUser } from "../middleware";
 import { encrypt } from "../../utils/crypto";
 
 export async function upsertProfile(
@@ -9,7 +9,25 @@ export async function upsertProfile(
   data: Record<string, any>
 ) {
   const secret = c.env.ENCRYPTION_SECRET;
+  const sessionUser = await getSessionUser(c);
   
+  // SEC-F09: Prevent self-escalation of member_type
+  // Fetch existing member_type to preserve it unless requester is admin
+  let memberType = data.member_type || "student";
+  
+  const existing = await c.env.DB.prepare("SELECT member_type FROM user_profiles WHERE user_id = ?").bind(userId).first<{ member_type: string }>();
+  
+  const isTargetingSelf = sessionUser?.id === userId;
+  const isAdmin = sessionUser?.role === "admin" || sessionUser?.member_type === "coach" || sessionUser?.member_type === "mentor";
+
+  // If user is editing their own profile and isn't an admin, they CANNOT change their member_type
+  if (isTargetingSelf && !isAdmin && existing) {
+    memberType = existing.member_type;
+  } else if (!isAdmin && !existing) {
+    // New profiles for non-admins default to student
+    memberType = "student";
+  }
+
   const encryptedName = await encrypt(data.emergency_contact_name || "", secret);
   const encryptedPhone = await encrypt(data.emergency_contact_phone || "", secret);
   const encryptedUserPhone = await encrypt(data.phone || "", secret);
@@ -61,7 +79,7 @@ export async function upsertProfile(
     encryptedUserPhone, encryptedContactEmail,
     data.bio || "", subteamsStr, dietaryStr,
     data.show_on_about ? 1 : 0, data.show_email ? 1 : 0, data.show_phone ? 1 : 0,
-    data.member_type || "student", data.grade_year || "", data.colleges || "", data.employers || "",
+    memberType, data.grade_year || "", data.colleges || "", data.employers || "",
     data.favorite_first_thing || "", data.fun_fact || "",
     data.favorite_robot_mechanism || "", data.pre_match_superstition || "",
     data.leadership_role || "", data.rookie_year || "",

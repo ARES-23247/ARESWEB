@@ -9,6 +9,7 @@ describe("Hono Backend - /users Router", () => {
     DB: {
       prepare: vi.fn().mockReturnThis(),
       bind: vi.fn().mockReturnThis(),
+      first: vi.fn(),
       all: vi.fn(),
       run: vi.fn(),
       batch: vi.fn(),
@@ -34,7 +35,7 @@ describe("Hono Backend - /users Router", () => {
   });
 
   it("should handle list errors gracefully", async () => {
-    env.DB.all.mockRejectedValue(new Error("DB error"));
+    env.DB.all.mockRejectedValueOnce(new Error("DB error"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const req = new Request("http://localhost/", { method: "GET" });
@@ -78,7 +79,7 @@ describe("Hono Backend - /users Router", () => {
   });
 
   it("should handle patch errors gracefully", async () => {
-    env.DB.batch.mockRejectedValue(new Error("Update failed"));
+    env.DB.batch.mockRejectedValueOnce(new Error("Update failed"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const req = new Request("http://localhost/1", {
@@ -110,7 +111,7 @@ describe("Hono Backend - /users Router", () => {
   });
 
   it("should handle profile update errors gracefully", async () => {
-    env.DB.run.mockRejectedValue(new Error("Upsert failed"));
+    env.DB.run.mockRejectedValueOnce(new Error("Upsert failed"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const req = new Request("http://localhost/1", {
@@ -140,7 +141,7 @@ describe("Hono Backend - /users Router", () => {
   });
 
   it("should handle delete errors gracefully", async () => {
-    env.DB.batch.mockRejectedValue(new Error("Delete failed"));
+    env.DB.batch.mockRejectedValueOnce(new Error("Delete failed"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const req = new Request("http://localhost/1", { method: "DELETE" });

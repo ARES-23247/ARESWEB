@@ -153,7 +153,7 @@ commentsRouter.put("/:id", rateLimitMiddleware(10, 60), async (c) => {
 // ── DELETE /comments/:id — delete a comment ──────────────────────────────
 commentsRouter.delete("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user || user.role === "unverified") return c.json({ error: "Forbidden" }, 401);
+  if (!user || user.role === "unverified") return c.json({ error: "Forbidden" }, 403);
 
   const id = (c.req.param("id") || "");
 

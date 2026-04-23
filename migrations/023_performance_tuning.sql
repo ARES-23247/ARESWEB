@@ -15,3 +15,6 @@ CREATE INDEX IF NOT EXISTS idx_user_badges_badge ON user_badges(badge_id);
 
 -- Improve performance for settings lookup
 CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key);
+
+-- EFF-D01: Optimize scheduled log purging
+CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at);

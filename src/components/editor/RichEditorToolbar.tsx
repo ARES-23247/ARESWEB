@@ -288,7 +288,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
           type="button"
           onClick={() => jsonImportRef.current?.click()}
           aria-label="Import JSON AST"
-          className="px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white shadow-sm"
+          className="px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black shadow-sm"
         >
           Import .JSON
         </button>
@@ -307,7 +307,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
           type="button"
           onClick={() => exportAsJson(editor, documentTitle || "")}
           aria-label="Export as JSON AST"
-          className="px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white shadow-sm"
+          className="px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black shadow-sm"
         >
           Export .JSON
         </button>

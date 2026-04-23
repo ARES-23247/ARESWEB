@@ -72,16 +72,28 @@ export default function AdminInquiries() {
                 </div>
                 <div className="flex items-center gap-2">
                   {iq.status === 'pending' && (
-                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'resolved' })} className="text-marble/40 hover:text-ares-cyan transition-colors" title="Mark Resolved">
+                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'resolved' })} 
+                      className="text-marble/40 hover:text-ares-cyan transition-colors" 
+                      title="Mark Resolved"
+                      aria-label={`Mark inquiry from ${iq.name} as resolved`}
+                    >
                       <CheckSquare size={16} />
                     </button>
                   )}
                   {iq.status === 'resolved' && (
-                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'pending' })} className="text-marble/40 hover:text-ares-gold transition-colors" title="Mark Pending">
+                    <button onClick={() => updateStatus.mutate({ id: iq.id, status: 'pending' })} 
+                      className="text-marble/40 hover:text-ares-gold transition-colors" 
+                      title="Mark Pending"
+                      aria-label={`Mark inquiry from ${iq.name} as pending`}
+                    >
                       <Clock size={16} />
                     </button>
                   )}
-                  <button onClick={() => { if(confirm("Delete inquiry?")) deleteInquiry.mutate(iq.id); }} className="text-marble/40 hover:text-ares-red transition-colors" title="Delete">
+                  <button onClick={() => { if(confirm("Delete inquiry?")) deleteInquiry.mutate(iq.id); }} 
+                    className="text-marble/40 hover:text-ares-red transition-colors" 
+                    title="Delete"
+                    aria-label={`Delete inquiry from ${iq.name}`}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>

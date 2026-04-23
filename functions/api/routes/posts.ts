@@ -1,6 +1,6 @@
 import { Context, Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, logAuditAction, rateLimitMiddleware } from "../middleware";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, rateLimitMiddleware } from "../middleware";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification, notifyByRole } from "../../utils/notifications";
@@ -127,24 +127,7 @@ postsRouter.get("/:slug", async (c) => {
   }
 });
 
-// ── Shared snippet extraction helper ─────────────────────────────────
-function buildSnippet(ast: unknown): string {
-  try {
-    type ASTNode = { text?: string; content?: ASTNode[] };
-    const extractText = (node: ASTNode, depth = 0): string => {
-      // PERF: Prevent stack overflow from deeply nested ASTs
-      if (depth > 10) return "";
-      if (node.text) return node.text;
-      if (node.content) return node.content.map(n => extractText(n, depth + 1)).join(" ");
-      return "";
-    };
-    const rawText = extractText(ast as ASTNode);
-    if (rawText) {
-      return rawText.length > 200 ? rawText.slice(0, 200).trim() + "..." : rawText.trim();
-    }
-  } catch { /* ignore */ }
-  return "";
-}
+
 
 // ── POST /save — create a new blog post (auth required) ────────────────
 postsRouter.post("/save", ensureAuth, rateLimitMiddleware(15, 60), async (c) => {
@@ -190,7 +173,7 @@ async function handlePostSave(c: Context<AppEnv>) {
     });
 
     const astStr = JSON.stringify(body.ast);
-    const snippet = buildSnippet(body.ast);
+    const snippet = extractAstText(JSON.stringify(body.ast)).substring(0, 200);
     
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_dashboard_user";
@@ -270,7 +253,7 @@ async function handlePostSave(c: Context<AppEnv>) {
         }).catch(err => console.error("[Posts] Admin notification failed:", err))
       );
     }
-    await logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`);
+
 
     return c.json({ success: true, slug });
   } catch (err: unknown) {
@@ -305,7 +288,7 @@ async function handlePostEdit(c: Context<AppEnv>) {
       return c.json({ success: false, error: "Title is required" }, 400);
     }
     const astStr = JSON.stringify(body.ast);
-    const snippet = buildSnippet(body.ast);
+    const snippet = extractAstText(JSON.stringify(body.ast)).substring(0, 200);
 
     const user = await getSessionUser(c);
     

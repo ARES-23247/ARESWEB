@@ -111,7 +111,7 @@ export default function IntegrationsManager() {
       </div>
 
       {successMsg && (
-        <div className="absolute top-0 right-0 -translate-y-full mb-4 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-2 ares-cut-sm font-medium text-sm">
+        <div className="absolute top-0 right-0 -translate-y-full mb-4 bg-ares-cyan/20 border border-ares-cyan/50 text-ares-cyan px-4 py-2 ares-cut-sm font-medium text-sm">
           {successMsg}
         </div>
       )}
