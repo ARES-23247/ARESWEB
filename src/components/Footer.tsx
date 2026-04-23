@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { GreekMeander } from "./GreekMeander";
 import { siteConfig } from "../site.config";
-import { Instagram, Youtube, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 
 export default function Footer() {
 
@@ -51,13 +51,13 @@ export default function Footer() {
           <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">Connect</h4>
           <div className="flex flex-wrap gap-4 mb-8">
             <a href="https://instagram.com/ares23247" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-red transition-colors text-white" aria-label="Instagram">
-              <Instagram className="w-5 h-5" />
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
             </a>
             <a href="https://bsky.app/profile/ares23247.bsky.social" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-brand-bluesky transition-colors text-white" aria-label="Bluesky">
               <svg className="w-5 h-5 fill-current" viewBox="0 0 512 512"><path d="M111.8 62.2C170.2 105.9 233 194.7 256 242.4c23-47.6 85.8-136.4 144.2-180.2c42.1-31.6 110.3-56 110.3 21.8c0 15.5-8.9 130.5-14.1 149.2C478.2 298.9 416 314.3 353.1 304.9c47.2 32.2 53.6 81.9 5.4 108.8C315.6 437.4 256 376 256 376s-59.6 61.4-102.5 37.7c-48.2-26.9-41.8-76.6 5.4-108.8c-62.9 9.4-125.1-6-143.3-71.7C10.5 214.6 1.6 99.5 1.6 84C1.6 6.2 69.9 30.6 111.8 62.2z"/></svg>
             </a>
             <a href="https://www.youtube.com/@ARESFTC" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-red transition-colors text-white" aria-label="YouTube">
-              <Youtube className="w-5 h-5" />
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.498 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.5 12 20.5 12 20.5s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
             </a>
             <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Email ${siteConfig.team.fullName}`} className="w-10 h-10 bg-marble/10 rounded flex items-center justify-center hover:bg-ares-bronze transition-colors text-white">
               <Mail className="w-5 h-5" aria-hidden="true" />
