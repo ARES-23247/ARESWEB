@@ -114,6 +114,23 @@ export const rateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
 };
 
 /**
+ * Middleware: Persistent Rate Limit (D1 Backed)
+ */
+export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
+  return async (c: Context<AppEnv>, next: Next) => {
+    if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1") {
+      return await next();
+    }
+    const ip = c.req.header("CF-Connecting-IP") || "unknown";
+    const allowed = await checkPersistentRateLimit(c.env.DB, ip, limit, windowSeconds);
+    if (!allowed) {
+      return c.json({ error: "Too many requests. Please try again later." }, 429);
+    }
+    await next();
+  };
+};
+
+/**
  * Middleware: Turnstile Verification
  */
 export const turnstileMiddleware = () => {

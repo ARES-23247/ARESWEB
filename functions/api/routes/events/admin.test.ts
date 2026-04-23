@@ -153,9 +153,9 @@ describe("Events Admin Router", () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     const req = new Request("http://localhost/");
     const res = await adminRouter.request(req, {}, env, mockExecutionContext);
-    expect(res.status).toBe(200);
-    const body = await res.json() as { events: unknown[] };
-    expect(body.events.length).toBe(0);
+    expect(res.status).toBe(500);
+    const body = await res.json() as any;
+    expect(body.error).toBeDefined();
   });
 
   it("GET /:id should handle DB errors", async () => {

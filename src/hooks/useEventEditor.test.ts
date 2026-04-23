@@ -364,7 +364,7 @@ describe("useEventEditor (MSW Integrated)", () => {
       })
     );
 
-    const { result } = renderWithProviders(() => useEventEditor(undefined, mockEditor));
+    const { result } = renderWithProviders(() => useEventEditor(undefined, mockEditor, "author"));
     
     act(() => {
       result.current.setForm({

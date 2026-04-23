@@ -40,9 +40,9 @@ describe("Hono Backend - /awards Router", () => {
     env.DB.all.mockRejectedValueOnce(new Error("DB Error"));
     const req = new Request("http://localhost/");
     const res = await awardsRouter.request(req, {}, env, mockExecutionContext);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const data = await res.json() as any;
-    expect(data.awards).toHaveLength(0);
+    expect(data.error).toBeDefined();
   });
 
   it("POST / should insert new award", async () => {

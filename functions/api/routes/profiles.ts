@@ -92,7 +92,7 @@ profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c) => {
 });
 
 // ── GET /team-roster — about page roster ──────────────────────────────
-profilesRouter.get("/team-roster", rateLimitMiddleware(15, 60), async (c) => {
+profilesRouter.get("/team-roster", rateLimitMiddleware(10, 60), async (c) => {
   try {
     const q = c.req.query("q") || "";
     

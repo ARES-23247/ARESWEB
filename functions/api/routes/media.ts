@@ -47,7 +47,9 @@ mediaRouter.get("/", async (c) => {
     // SEC-DoW: Check Edge CDN cache — saves R2 list() Class B op + D1 query
     // @ts-expect-error — Cloudflare Workers runtime: caches.default is the global Edge Cache
     const cache = caches.default;
-    const cacheKey = new Request(c.req.url, { method: "GET" });
+    const url = new URL(c.req.url);
+    url.search = ""; // Strip query params to prevent cache-busting attacks (?nocache=1)
+    const cacheKey = new Request(url.toString(), { method: "GET" });
     const cached = await cache.match(cacheKey);
     if (cached) return cached;
 
@@ -207,6 +209,14 @@ mediaRouter.get("/:key{.+$}", async (c) => {
       }
     }
 
+    // SEC-DoW: Edge-cache individual public images (stripped of query params to prevent busting)
+    const cache = caches.default;
+    const url = new URL(c.req.url);
+    url.search = "";
+    const cacheKey = new Request(url.toString(), { method: "GET" });
+    const cached = await cache.match(cacheKey);
+    if (cached && publicFolders.includes(folder)) return cached;
+
     const object = await c.env.ARES_STORAGE.get(key);
     if (!object) return c.text("Not Found", 404);
 
@@ -221,7 +231,11 @@ mediaRouter.get("/:key{.+$}", async (c) => {
       headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
     }
 
-    return new Response(object.body, { headers });
+    const response = new Response(object.body, { headers });
+    if (publicFolders.includes(folder)) {
+      c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
+    }
+    return response;
   } catch (err) {
     console.error("R2 fetch error:", err);
     return c.text("Internal Server Error", 500);

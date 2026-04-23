@@ -143,7 +143,11 @@ export function useEventEditor(editId: string | undefined, editor: Editor | null
       return data;
     },
     onSuccess: (data) => {
-      setSuccessMsg(editId ? "Event updated successfully!" : "Event published successfully!");
+      const isAuthor = userRole === "author";
+      const msg = editId 
+        ? (isAuthor ? "Event update submitted for review!" : "Event updated successfully!")
+        : (isAuthor ? "Event submitted for review!" : "Event published successfully!");
+      setSuccessMsg(msg);
       setWarningMsg(data.warning || "");
       
       queryClient.invalidateQueries({ queryKey: ["events"] });

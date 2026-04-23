@@ -98,7 +98,10 @@ signupsRouter.post("/:id/signups", turnstileMiddleware(), async (c) => {
     return c.json({ error: "Forbidden: Your account is pending team verification." }, 403);
   }
   const eventId = (c.req.param("id") || "");
-  const { bringing, notes, prep_hours } = await c.req.json() as { bringing: string; notes: string; prep_hours?: number };
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+
+  const { bringing, notes, prep_hours } = body as { bringing: string; notes: string; prep_hours?: number };
   try {
     await c.env.DB.prepare(
       `INSERT INTO event_signups (event_id, user_id, bringing, notes, prep_hours) VALUES (?, ?, ?, ?, ?)
@@ -107,7 +110,7 @@ signupsRouter.post("/:id/signups", turnstileMiddleware(), async (c) => {
     return c.json({ success: true });
   } catch (err) {
     console.error("[Signups POST]", err);
-    return c.json({ error: "Failed" }, 500);
+    return c.json({ error: "Database error" }, 500);
   }
 });
 
@@ -120,7 +123,7 @@ signupsRouter.delete("/:id/signups/me", async (c) => {
     return c.json({ success: true });
   } catch (err) {
     console.error("[Signups DELETE me]", err);
-    return c.json({ error: "Failed" }, 500);
+    return c.json({ error: "Database error" }, 500);
   }
 });
 
@@ -130,7 +133,8 @@ signupsRouter.patch("/:id/signups/me/attendance", async (c) => {
   if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 401);
 
   try {
-    const body = await c.req.json().catch(() => ({ attended: true }));
+    const body = await c.req.json().catch(() => null);
+    if (!body || body.attended === undefined) return c.json({ error: "Missing 'attended' field" }, 400);
     const attended = body.attended ? 1 : 0;
     
     await c.env.DB.prepare(
@@ -152,7 +156,8 @@ signupsRouter.patch("/:id/signups/:userId/attendance", async (c) => {
     if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
-    const body = await c.req.json().catch(() => ({ attended: true }));
+    const body = await c.req.json().catch(() => null);
+    if (!body || body.attended === undefined) return c.json({ error: "Missing 'attended' field" }, 400);
     const attended = body.attended ? 1 : 0;
     
     await c.env.DB.prepare(

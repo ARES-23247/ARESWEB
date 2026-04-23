@@ -12,7 +12,7 @@ seasonsRouter.get("/", async (c) => {
     return c.json({ seasons: results || [] });
   } catch (err) {
     console.error("D1 seasons list error:", err);
-    return c.json({ seasons: [] });
+    return c.json({ error: "Failed to fetch seasons" }, 500);
   }
 });
 

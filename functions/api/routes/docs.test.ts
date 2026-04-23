@@ -221,11 +221,11 @@ describe("Hono Backend - /docs Router", () => {
 
     it("GET /search - should handle database error in search", async () => {
       env.DB.all.mockRejectedValue(new Error("Search error"));
-      const req = new Request("http://localhost/search?q=test", { method: "GET" });
+      const req = new Request("http://localhost/search?q=error-test", { method: "GET" });
       const res = await docsRouter.request(req, {}, env, mockExecutionContext);
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(500);
       const body = await res.json() as any;
-      expect(body.results).toHaveLength(0);
+      expect(body.error).toBeDefined();
     });
 
     it("GET /search - should use cache for repeated queries", async () => {

@@ -1,6 +1,6 @@
 import { Context, Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, rateLimitMiddleware, validateLength, MAX_INPUT_LENGTHS } from "../middleware";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, rateLimitMiddleware, persistentRateLimitMiddleware, validateLength, MAX_INPUT_LENGTHS } from "../middleware";
 import { getStandardDate } from "../../utils/content";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -42,7 +42,7 @@ postsRouter.get("/export-all", ensureAdmin, async (c) => {
 });
 
 // ── GET /posts — list all blog posts (public) ─────────────────────────────
-postsRouter.get("/", rateLimitMiddleware(15, 60), async (c) => {
+postsRouter.get("/", persistentRateLimitMiddleware(10, 60), async (c) => {
   try {
     const { limit, offset } = parsePagination(c, 10, 100);
     const q = c.req.query("q") || "";

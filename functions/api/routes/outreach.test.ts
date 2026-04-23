@@ -101,9 +101,7 @@ describe("Hono Backend - /outreach Router", () => {
     env.DB.all.mockRejectedValueOnce(new Error("DB error"));
     const req = new Request("http://localhost/", { method: "GET" });
     const res = await outreachRouter.request(req, {}, env, mockExecutionContext);
-    expect(res.status).toBe(200);
-    const body = await res.json() as { logs: unknown[] };
-    expect(body.logs).toEqual([]);
+    expect(res.status).toBe(500);
   });
 
   it("GET / should handle volunteer events DB errors", async () => {

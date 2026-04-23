@@ -16,6 +16,7 @@ describe("Seasons Public Router", () => {
       bind: vi.fn().mockReturnThis(),
       all: vi.fn().mockResolvedValue({ results: [] }),
       first: vi.fn().mockResolvedValue(null),
+      batch: vi.fn().mockResolvedValue([{ results: [] }, { results: [] }, { results: [] }, { results: [] }]),
     };
     env = { DB: mockDb };
     vi.clearAllMocks();
@@ -38,15 +39,11 @@ describe("Seasons Public Router", () => {
     expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining("SELECT * FROM seasons"));
   });
 
-  it("GET / should return empty list on DB error", async () => {
+  it("GET / should return 500 on DB error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
-
     const req = new Request("http://localhost/");
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);
-
-    expect(res.status).toBe(200);
-    const body = await res.json() as { seasons: Record<string, unknown>[] };
-    expect(body.seasons).toHaveLength(0);
+    expect(res.status).toBe(500);
   });
 
   it("GET /:id should return season details with awards and events", async () => {
@@ -55,9 +52,12 @@ describe("Seasons Public Router", () => {
     const mockEvents = [{ id: "e1", title: "Qualifying Tournament" }];
 
     mockDb.first.mockResolvedValueOnce(mockSeason);
-    mockDb.all
-      .mockResolvedValueOnce({ results: mockAwards })
-      .mockResolvedValueOnce({ results: mockEvents });
+    mockDb.batch.mockResolvedValueOnce([
+      { results: mockAwards },
+      { results: mockEvents },
+      { results: [] }, // posts
+      { results: [] }  // outreach
+    ]);
 
     const req = new Request("http://localhost/2024-2025");
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);
@@ -71,9 +71,12 @@ describe("Seasons Public Router", () => {
 
   it("GET /:id should handle null awards/events", async () => {
     mockDb.first.mockResolvedValueOnce({ id: "2024-2025" });
-    mockDb.all
-      .mockResolvedValueOnce({ results: null }) // awards
-      .mockResolvedValueOnce({ results: null }); // events
+    mockDb.batch.mockResolvedValueOnce([
+      { results: null },
+      { results: null },
+      { results: null },
+      { results: null }
+    ]);
 
     const req = new Request("http://localhost/2024-2025");
     const res = await seasonsRouter.request(req, {}, env, mockExecutionContext);

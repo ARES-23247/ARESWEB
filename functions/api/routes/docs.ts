@@ -66,7 +66,7 @@ function setCache(key: string, value: { data: unknown; expiresAt: number }) {
   docSearchCache.set(key, value);
 }
 
-docsRouter.get("/search", rateLimitMiddleware(15, 60), async (c) => {
+docsRouter.get("/search", rateLimitMiddleware(10, 60), async (c) => {
   const q = c.req.query("q");
   if (!q || q.length < 3) return c.json({ results: [] });
   try {
@@ -101,12 +101,12 @@ docsRouter.get("/search", rateLimitMiddleware(15, 60), async (c) => {
     return c.json(payload);
   } catch (err) {
     console.error("D1 docs search error:", err);
-    return c.json({ results: [] });
+    return c.json({ error: "Search failed" }, 500);
   }
 });
 
 // ── GET /docs — list all docs grouped by category ─────────────────────
-docsRouter.get("/", async (c) => {
+docsRouter.get("/", rateLimitMiddleware(10, 60), async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
       `SELECT d.slug, d.title, d.category, d.sort_order, d.description, d.is_portfolio, d.is_executive_summary,
