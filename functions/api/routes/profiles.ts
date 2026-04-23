@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, getSessionUser, sanitizeProfileForPublic, rateLimitMiddleware } from "../middleware";
+import { AppEnv, getSessionUser, sanitizeProfileForPublic, rateLimitMiddleware, persistentRateLimitMiddleware } from "../middleware";
 import { getAuth } from "../../utils/auth";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";
@@ -92,7 +92,7 @@ profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c) => {
 });
 
 // ── GET /team-roster — about page roster ──────────────────────────────
-profilesRouter.get("/team-roster", rateLimitMiddleware(10, 60), async (c) => {
+profilesRouter.get("/team-roster", persistentRateLimitMiddleware(10, 60), async (c) => {
   try {
     const q = c.req.query("q") || "";
     
