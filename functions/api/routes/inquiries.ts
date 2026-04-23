@@ -129,6 +129,8 @@ inquiriesRouter.post(
 
     const baseUrl = new URL(c.req.url).origin;
 
+    const warnings: string[] = [];
+
     // Webhook or Email Notification
     try {
       const social = await getSocialConfig(c);
@@ -139,44 +141,56 @@ inquiriesRouter.post(
 
       // 1. Discord
       if (social.DISCORD_WEBHOOK_URL) {
-        c.executionCtx.waitUntil(
-          fetch(social.DISCORD_WEBHOOK_URL, {
+        try {
+          await fetch(social.DISCORD_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: msg })
-          }).catch(console.error)
-        );
-        notified = true;
+            body: JSON.stringify({ content: msg }),
+            signal: AbortSignal.timeout(5000)
+          });
+          notified = true;
+        } catch (err) {
+          console.error("Discord inquiry alert failed:", err);
+          warnings.push(`Discord alert failed: ${(err as Error).message}`);
+        }
       }
 
       // 2. Slack
       if (social.SLACK_WEBHOOK_URL) {
-        c.executionCtx.waitUntil(
-          fetch(social.SLACK_WEBHOOK_URL, {
+        try {
+          await fetch(social.SLACK_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: msg })
-          }).catch(console.error)
-        );
-        notified = true;
+            body: JSON.stringify({ text: msg }),
+            signal: AbortSignal.timeout(5000)
+          });
+          notified = true;
+        } catch (err) {
+          console.error("Slack inquiry alert failed:", err);
+          warnings.push(`Slack alert failed: ${(err as Error).message}`);
+        }
       }
       
       // 3. Teams
       if (social.TEAMS_WEBHOOK_URL) {
-        c.executionCtx.waitUntil(
-          fetch(social.TEAMS_WEBHOOK_URL, {
+        try {
+          await fetch(social.TEAMS_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: msg })
-          }).catch(console.error)
-        );
-        notified = true;
+            body: JSON.stringify({ text: msg }),
+            signal: AbortSignal.timeout(5000)
+          });
+          notified = true;
+        } catch (err) {
+          console.error("Teams inquiry alert failed:", err);
+          warnings.push(`Teams alert failed: ${(err as Error).message}`);
+        }
       }
 
       // Fallback to Cloudflare's free MailChannels if no webhooks are configured
-      if (!notified) {
-         c.executionCtx.waitUntil(
-            fetch("https://api.mailchannels.net/tx/v1/send", {
+      if (!notified && warnings.length === 0) {
+         try {
+            await fetch("https://api.mailchannels.net/tx/v1/send", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -184,12 +198,19 @@ inquiriesRouter.post(
                 from: { email: `noreply@${new URL(baseUrl).hostname}`, name: `${siteConfig.team.name} Website Portal` },
                 subject: `New ${type.toUpperCase()} Inquiry Submission`,
                 content: [{ type: "text/plain", value: `You received a new ${type} inquiry (ID: ${id}).\nPlease review it in the Dashboard: ${baseUrl}/dashboard?tab=inquiries` }]
-              })
-            }).catch(console.error)
-         );
+              }),
+              signal: AbortSignal.timeout(5000)
+            });
+         } catch (err) {
+            console.error("MailChannels fallback failed:", err);
+            warnings.push("Email notification failed.");
+         }
       }
 
-    } catch { /* ignore webhook error */ }
+    } catch (err) {
+      console.error("Inquiry notification process failed:", err);
+      warnings.push("Notification dispatch system error.");
+    }
 
     // ── Zulip Admin Alert ──
     try {
@@ -201,15 +222,16 @@ inquiriesRouter.post(
         `🔗 [Review in Dashboard](${baseUrl}/dashboard?tab=inquiries)`,
       ].filter(Boolean).join("\n");
 
-      c.executionCtx.waitUntil(
-        sendZulipAlert(
-          c.env,
-          type === "sponsor" ? "Sponsor" : (type === "student" || type === "mentor") ? "Applicant" : "Outreach",
-          `New ${type} inquiry received (ID: ${id.slice(0, 8)})`,
-          alertBody
-        ).catch(err => console.error("[Inquiry] Zulip alert failed:", err))
+      await sendZulipAlert(
+        c.env,
+        type === "sponsor" ? "Sponsor" : (type === "student" || type === "mentor") ? "Applicant" : "Outreach",
+        `New ${type} inquiry received (ID: ${id.slice(0, 8)})`,
+        alertBody
       );
-    } catch { /* ignore Zulip error */ }
+    } catch (err) {
+      console.error("[Inquiry] Zulip alert failed:", err);
+      warnings.push(`Zulip alert failed: ${(err as Error).message}`);
+    }
  
     // ── In-App Dashboard Notification ──
     try {
@@ -218,36 +240,42 @@ inquiriesRouter.post(
           ? ["admin", "coach", "mentor", "student"]
           : ["admin", "coach", "mentor"];
           
-      c.executionCtx.waitUntil(
-        notifyByRole(c, audiences, {
-          title: `New ${type.toUpperCase()} Inquiry`,
-          message: `${name} submitted a new inquiry.`,
-          link: "/dashboard?tab=inquiries",
-          priority: type === "sponsor" ? "high" : "medium"
-        }).catch(err => console.error("[Inquiry] In-App notification failed:", err))
-      );
-    } catch { /* ignore in-app error */ }
+      await notifyByRole(c, audiences, {
+        title: `New ${type.toUpperCase()} Inquiry`,
+        message: `${name} submitted a new inquiry.`,
+        link: "/dashboard?tab=inquiries",
+        priority: type === "sponsor" ? "high" : "medium"
+      });
+    } catch (err) {
+      console.error("[Inquiry] In-App notification failed:", err);
+    }
 
 
     // ── GitHub Auto-Escalation ──
-    try {
-      const social = await getSocialConfig(c);
-      const ghConfig = buildGitHubConfig(social as Record<string, string>);
-      if (ghConfig) {
-         // PII-S03: Redact personal information from GitHub task body
-         const redactedMeta = { ...(metadata as Record<string, unknown>) };
-         if (redactedMeta.email) redactedMeta.email = "***@***.***";
-         if (redactedMeta.phone) redactedMeta.phone = "***-***-****";
-         
-         const markdownBody = `**Details:**\n\`\`\`json\n${JSON.stringify(redactedMeta, null, 2)}\n\`\`\``;
-         c.executionCtx.waitUntil(
-           createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry (ID: ${id.slice(0, 8)})`, markdownBody)
-             .catch((err: unknown) => console.error("[Inquiry] GitHub task creation failed:", err))
-         );
+    if (type === "sponsor" || type === "student") {
+      try {
+        const social = await getSocialConfig(c);
+        const ghConfig = buildGitHubConfig(social as Record<string, string>);
+        if (ghConfig) {
+          // PII-S03: Redact personal information from GitHub task body
+          const redactedMeta = { ...(metadata as Record<string, unknown>) };
+          if (redactedMeta.email) redactedMeta.email = "***@***.***";
+          if (redactedMeta.phone) redactedMeta.phone = "***-***-****";
+          
+          const markdownBody = `**Details:**\n\`\`\`json\n${JSON.stringify(redactedMeta, null, 2)}\n\`\`\``;
+          await createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry (ID: ${id.slice(0, 8)})`, markdownBody);
+        }
+      } catch (err) {
+        console.error("[Inquiry] GitHub task creation failed:", err);
+        warnings.push("GitHub escalation failed.");
       }
-    } catch { /* ignore GitHub Error */ }
+    }
 
-    return c.json({ success: true, id });
+    return c.json({ 
+      success: true, 
+      id, 
+      warning: warnings.length > 0 ? warnings.join(" | ") : undefined 
+    }, warnings.length > 0 ? 207 : 200);
   }
 );
 

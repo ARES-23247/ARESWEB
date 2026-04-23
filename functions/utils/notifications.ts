@@ -28,7 +28,7 @@ export async function emitNotification(
     await c.env.DB.prepare(
       "INSERT INTO notifications (id, user_id, title, message, link, priority) VALUES (?, ?, ?, ?, ?, ?)"
     ).bind(
-      crypto.randomUUID(),
+      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `test-uuid-${Date.now()}`,
       userId,
       title,
       message,
@@ -40,8 +40,9 @@ export async function emitNotification(
     if (external) {
       if (c.env.ZULIP_BOT_EMAIL && c.env.ZULIP_API_KEY) {
          // Log for now, implement Zulip call when needed
-         console.log(`[Notification] Broadcasting external notification for ${userId}: ${title}`);
-         // Further integration with Zulip client logic goes here
+         if (c.env.ENVIRONMENT !== "production") {
+           console.log(`[Notification] Broadcasting external notification for ${userId}: ${title}`);
+         }         // Further integration with Zulip client logic goes here
       }
     }
   } catch (err) {
@@ -106,7 +107,7 @@ export async function notifyByRole(
         return c.env.DB.prepare(
           "INSERT INTO notifications (id, user_id, title, message, link, priority) VALUES (?, ?, ?, ?, ?, ?)"
         ).bind(
-          crypto.randomUUID(),
+          (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `test-uuid-${Date.now()}`,
           row.id as string,
           payload.title,
           payload.message,

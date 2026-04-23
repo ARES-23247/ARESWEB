@@ -5,13 +5,20 @@ import { ensureAdmin } from "./auth";
 // ── Generic Content Management Factory ────────────────────────────────
 
 export interface ContentLifecycleHooks {
-  onApprove?: (c: Context<AppEnv>, id: string) => Promise<boolean | void>;
+  onApprove?: (c: Context<AppEnv>, id: string) => Promise<boolean | { handled: boolean, warnings?: string[] } | void>;
   onReject?: (c: Context<AppEnv>, id: string, reason?: string) => Promise<boolean | void>;
   onRestore?: (c: Context<AppEnv>, id: string) => Promise<boolean | void>;
   onDelete?: (c: Context<AppEnv>, id: string, type: "trashed" | "purged") => Promise<boolean | void>;
 }
 
 export function createContentLifecycleRouter(tableName: string, hooks?: ContentLifecycleHooks, idColumn: string = "id") {
+  const ALLOWED_TABLES = ["posts", "events", "docs", "inquiries", "users", "comments", "media", "awards", "outreach", "sponsors", "judges", "locations", "badges", "user_profiles"];
+  const ALLOWED_COLUMNS = ["id", "slug", "user_id"];
+
+  if (!ALLOWED_TABLES.includes(tableName) || !ALLOWED_COLUMNS.includes(idColumn)) {
+    throw new Error(`[Security] Invalid table or column name in lifecycle router: ${tableName}.${idColumn}`);
+  }
+
   const router = new Hono<AppEnv>();
 
   // Use ensureAdmin for all lifecycle routes
@@ -22,7 +29,16 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     const id = c.req.param("id");
     
     let handled = false;
-    if (hooks?.onApprove) handled = (await hooks.onApprove(c, id)) === true;
+    let warnings: string[] = [];
+    if (hooks?.onApprove) {
+      const result = await hooks.onApprove(c, id);
+      if (typeof result === "object" && result !== null) {
+        handled = result.handled;
+        warnings = result.warnings || [];
+      } else {
+        handled = result === true;
+      }
+    }
 
     if (!handled) {
       const { success } = await c.env.DB.prepare(
@@ -32,6 +48,9 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     }
 
     await logAuditAction(c, `APPROVE_${tableName.toUpperCase()}`, tableName, id);
+    if (warnings.length > 0) {
+      return c.json({ success: true, warning: warnings.join(" | ") }, 207);
+    }
     return c.json({ success: true });
   });
 

@@ -108,7 +108,7 @@ export default function PostManagerTab({
                       <button
                         onClick={() => rejectMutation.mutate({ type: 'post', id: post.slug })}
                         disabled={rejectMutation.isPending}
-                        className="text-xs font-bold text-orange-400 hover:text-white bg-orange-400/10 hover:bg-orange-400/40 border border-orange-400/20 px-3 py-1 ares-cut-sm transition-colors disabled:opacity-50"
+                        className="text-xs font-bold text-ares-red hover:text-white bg-ares-red/10 hover:bg-ares-red/40 border border-ares-red/20 px-3 py-1 ares-cut-sm transition-colors disabled:opacity-50"
                       >
                         REJECT
                       </button>

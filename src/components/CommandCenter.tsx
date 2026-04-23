@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { RefreshCw, Radio, AlertTriangle } from "lucide-react";
 import TeamAvailability from "./TeamAvailability";
 import { ProjectBoard, IntegrationHealth } from "./command/types";
@@ -8,77 +8,66 @@ import PlatformQuickStats from "./command/PlatformQuickStats";
 import CommandQuickActions from "./command/CommandQuickActions";
 import ZulipBotCommands from "./command/ZulipBotCommands";
 import { adminApi } from "../api/adminApi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // -- Command Center Component -----------------------------------------
 export default function CommandCenter() {
-  const [board, setBoard] = useState<ProjectBoard | null>(null);
-  const [health, setHealth] = useState<IntegrationHealth[]>([]);
-  const [stats, setStats] = useState<Record<string, number>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // -- Data Fetching --------------------------------------------------
-  const fetchAll = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // -- Queries --------------------------------------------------------
+  const { data: board, isLoading: isBoardLoading, error: boardError } = useQuery<ProjectBoard | null>({
+    queryKey: ["command-board"],
+    queryFn: async () => {
+      const data = await adminApi.get<{ success: boolean; board: ProjectBoard }>("/api/github/projects");
+      return data.success ? data.board : null;
+    },
+    refetchInterval: 60000,
+  });
 
-    try {
-      const [boardRes, settingsRes, statsRes] = await Promise.allSettled([
-        adminApi.get<{ success: boolean; board: ProjectBoard }>("/api/github/projects"),
-        adminApi.get<{ success: boolean; settings: Record<string, string> }>("/api/admin/settings"),
-        adminApi.get<{ posts: number; events: number; docs: number }>("/api/admin/settings/stats"),
-      ]);
-
-      // GitHub Projects Board
-      if (boardRes.status === "fulfilled") {
-        const data = boardRes.value;
-        if (data.success) setBoard(data.board);
+  const { data: health = [], isLoading: isHealthLoading } = useQuery<IntegrationHealth[]>({
+    queryKey: ["command-health"],
+    queryFn: async () => {
+      const data = await adminApi.get<{ success: boolean; settings: Record<string, string> }>("/api/admin/settings");
+      if (data.success && data.settings) {
+        const cfg = data.settings;
+        return [
+          { name: "Zulip Chat", key: "zulip", icon: <img src="/icons/zulip.svg" alt="Zulip" className="w-8 h-8 mx-auto" />, configured: !!(cfg.ZULIP_BOT_EMAIL && cfg.ZULIP_API_KEY) },
+          { name: "GitHub Projects", key: "github", icon: <img src="/icons/github.svg" alt="GitHub" className="w-8 h-8 mx-auto" />, configured: !!(cfg.GITHUB_PAT && cfg.GITHUB_PROJECT_ID) },
+          { name: "Discord", key: "discord", icon: <img src="/icons/discord.svg" alt="Discord" className="w-8 h-8 mx-auto" />, configured: !!cfg.DISCORD_WEBHOOK_URL },
+          { name: "Bluesky", key: "bluesky", icon: <img src="/icons/bluesky.svg" alt="Bluesky" className="w-8 h-8 mx-auto" />, configured: !!(cfg.BLUESKY_HANDLE && cfg.BLUESKY_APP_PASSWORD) },
+          { name: "Slack", key: "slack", icon: <img src="/icons/slack.svg" alt="Slack" className="w-8 h-8 mx-auto" style={{ filter: "invert(100%)" }} />, configured: !!cfg.SLACK_WEBHOOK_URL },
+          { name: "Google Calendar", key: "gcal", icon: <img src="/icons/gcal.svg" alt="Google Calendar" className="w-8 h-8 mx-auto" />, configured: !!(cfg.GCAL_SERVICE_ACCOUNT_EMAIL && cfg.GCAL_PRIVATE_KEY) },
+        ];
       }
+      return [];
+    },
+    refetchInterval: 120000,
+  });
 
-      // Integration Health
-      if (settingsRes.status === "fulfilled") {
-        const data = settingsRes.value;
-        if (data.success && data.settings) {
-          const cfg = data.settings;
-          setHealth([
-            { name: "Zulip Chat", key: "zulip", icon: <img src="/icons/zulip.svg" alt="Zulip" className="w-8 h-8 mx-auto" />, configured: !!(cfg.ZULIP_BOT_EMAIL && cfg.ZULIP_API_KEY) },
-            { name: "GitHub Projects", key: "github", icon: <img src="/icons/github.svg" alt="GitHub" className="w-8 h-8 mx-auto" />, configured: !!(cfg.GITHUB_PAT && cfg.GITHUB_PROJECT_ID) },
-            { name: "Discord", key: "discord", icon: <img src="/icons/discord.svg" alt="Discord" className="w-8 h-8 mx-auto" />, configured: !!cfg.DISCORD_WEBHOOK_URL },
-            { name: "Bluesky", key: "bluesky", icon: <img src="/icons/bluesky.svg" alt="Bluesky" className="w-8 h-8 mx-auto" />, configured: !!(cfg.BLUESKY_HANDLE && cfg.BLUESKY_APP_PASSWORD) },
-            { name: "Slack", key: "slack", icon: <img src="/icons/slack.svg" alt="Slack" className="w-8 h-8 mx-auto" style={{ filter: "invert(100%)" }} />, configured: !!cfg.SLACK_WEBHOOK_URL },
-            { name: "Google Calendar", key: "gcal", icon: <img src="/icons/gcal.svg" alt="Google Calendar" className="w-8 h-8 mx-auto" />, configured: !!(cfg.GCAL_SERVICE_ACCOUNT_EMAIL && cfg.GCAL_PRIVATE_KEY) },
-          ]);
-        }
-      }
+  const { data: stats = { posts: 0, events: 0, docs: 0 }, isLoading: isStatsLoading } = useQuery({
+    queryKey: ["command-stats"],
+    queryFn: async () => {
+      const data = await adminApi.get<{ posts: number; events: number; docs: number }>("/api/admin/settings/stats");
+      return {
+        posts: data.posts || 0,
+        events: data.events || 0,
+        docs: data.docs || 0,
+      };
+    },
+    refetchInterval: 300000,
+  });
 
-      // Quick Stats
-      if (statsRes.status === "fulfilled") {
-        const data = statsRes.value;
-        setStats({
-          posts: data.posts || 0,
-          events: data.events || 0,
-          docs: data.docs || 0,
-        });
-      }
+  const isLoading = isBoardLoading || isHealthLoading || isStatsLoading;
+  const error = boardError ? (boardError as Error).message : null;
 
-      setLastRefresh(new Date());
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchAll();
-    const interval = setInterval(fetchAll, 60000); // Refresh every 60s
-    return () => clearInterval(interval);
-  }, [fetchAll]);
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["command-board"] });
+    queryClient.invalidateQueries({ queryKey: ["command-health"] });
+    queryClient.invalidateQueries({ queryKey: ["command-stats"] });
+  };
 
   // -- Create Task ----------------------------------------------------
   const handleCreateTask = async () => {
@@ -89,7 +78,7 @@ export default function CommandCenter() {
       if (data.success) {
         setNewTaskTitle("");
         setShowCreateForm(false);
-        fetchAll();
+        queryClient.invalidateQueries({ queryKey: ["command-board"] });
       }
     } catch (err) {
       console.error("Create task failed:", err);
@@ -118,11 +107,8 @@ export default function CommandCenter() {
             <div className="w-2 h-2 rounded-full bg-ares-gold animate-pulse" />
             D1 Connected
           </span>
-          <span className="text-[10px] font-mono text-marble/20 uppercase">
-            Last sync: {lastRefresh.toLocaleTimeString()}
-          </span>
           <button
-            onClick={fetchAll}
+            onClick={handleRefresh}
             disabled={isLoading}
             className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble/40 hover:text-white transition-all disabled:opacity-30"
           >
@@ -143,15 +129,15 @@ export default function CommandCenter() {
 
       {/* GitHub Project Board – Kanban View */}
       <ProjectBoardKanban 
-        board={board}
-        isLoading={isLoading}
+        board={board || null}
+        isLoading={isBoardLoading}
         isCreating={isCreating}
         newTaskTitle={newTaskTitle}
         setNewTaskTitle={setNewTaskTitle}
         showCreateForm={showCreateForm}
         setShowCreateForm={setShowCreateForm}
         onCreateTask={handleCreateTask}
-        onRefresh={fetchAll}
+        onRefresh={() => queryClient.invalidateQueries({ queryKey: ["command-board"] })}
       />
 
       {/* Platform Quick Stats + Quick Actions */}
@@ -170,3 +156,4 @@ export default function CommandCenter() {
     </div>
   );
 }
+

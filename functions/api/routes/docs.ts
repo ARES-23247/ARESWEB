@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Context } from "hono";
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkWriteRateLimit, verifyTurnstile, createContentLifecycleRouter, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, parsePagination, checkRateLimit, verifyTurnstile, createContentLifecycleRouter, rateLimitMiddleware } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification, notifyByRole } from "../../utils/notifications";
@@ -191,7 +191,7 @@ docsRouter.get("/:slug", async (c) => {
 docsRouter.post("/:slug/feedback", async (c) => {
   // SEC-DoW: Unauthenticated D1 write — enforce strict per-IP write limit
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  if (!checkWriteRateLimit(`feedback:${ip}`, 10, 60)) {
+  if (!checkRateLimit(`feedback:${ip}`, 10, 60)) {
     return c.json({ error: "Too many submissions" }, 429);
   }
 

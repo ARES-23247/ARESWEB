@@ -27,7 +27,7 @@ export default function Home() {
             />
             <div>
               <div className="inline-block mb-3 px-4 py-2 bg-obsidian rounded">
-                <p className="text-ares-bronze font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading m-0">
+                <p className="text-ares-gold font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading m-0">
                   Appalachian Robotics & Engineering Society
                 </p>
               </div>
@@ -97,8 +97,8 @@ export default function Home() {
                     <span className="bg-marble text-ares-red">{card.linkText}</span> <ArrowRight size={16} className="text-ares-red" />
                   </Link>
                   {card.externalLink && (
-                    <a href={card.externalLink} target="_blank" rel="noopener noreferrer" className="text-ares-bronze font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
-                      <span className="bg-marble text-ares-bronze">{card.externalLinkText}</span> <ArrowRight size={16} className="text-ares-bronze" />
+                    <a href={card.externalLink} target="_blank" rel="noopener noreferrer" className="text-obsidian font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
+                      <span className="bg-marble text-obsidian">{card.externalLinkText}</span> <ArrowRight size={16} className="text-ares-bronze" />
                     </a>
                   )}
                 </div>

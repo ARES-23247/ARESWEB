@@ -3,6 +3,10 @@ import { describe, it, expect, vi } from "vitest";
 import { mockExecutionContext } from "../../../src/test/utils";
 import usersRouter from "./users";
 import { createMockUser } from "../../../src/test/factories/userFactory";
+vi.mock("../../utils/crypto", () => ({ 
+  decrypt: vi.fn().mockImplementation(async (val: string) => "decrypted_" + val),
+  encrypt: vi.fn().mockImplementation(async (val: string) => "encrypted_" + val)
+}));
 
 describe("Hono Backend - /users Router", () => {
   const env = {
@@ -152,4 +156,55 @@ describe("Hono Backend - /users Router", () => {
     
     consoleSpy.mockRestore();
   });
+
+  describe("GET /:id", () => {
+    it("should return admin detail view of a user", async () => {
+      env.ENCRYPTION_SECRET = "0123456789abcdef0123456789abcdef";
+      const mockProfile = {
+        id: "1", name: "Test User", role: "user",
+        emergency_contact_name: "encrypted_name",
+        emergency_contact_phone: "encrypted_phone",
+        phone: "encrypted_phone",
+        contact_email: "encrypted_email",
+        parents_name: "encrypted_pname",
+        parents_email: "encrypted_pemail",
+        students_name: "encrypted_sname",
+        students_email: "encrypted_semail",
+      };
+      env.DB.first.mockResolvedValue(mockProfile);
+
+      const req = new Request("http://localhost/1");
+      const res = await usersRouter.request(req, {}, env, mockExecutionContext);
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.user.id).toBe("1");
+    });
+
+    it("should return 404 if user not found", async () => {
+      env.DB.first.mockResolvedValue(null);
+
+      const req = new Request("http://localhost/notfound");
+      const res = await usersRouter.request(req, {}, env, mockExecutionContext);
+
+      expect(res.status).toBe(404);
+      const body = await res.json() as any;
+      expect(body.error).toBe("User not found");
+    });
+
+    it("should handle get by id error", async () => {
+      env.DB.first.mockRejectedValue(new Error("DB Error"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const req = new Request("http://localhost/error");
+      const res = await usersRouter.request(req, {}, env, mockExecutionContext);
+
+      expect(res.status).toBe(500);
+      const body = await res.json() as any;
+      expect(body.error).toBe("Database error");
+
+      consoleSpy.mockRestore();
+    });
+  });
+
 });

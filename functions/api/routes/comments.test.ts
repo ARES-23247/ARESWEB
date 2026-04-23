@@ -126,4 +126,164 @@ describe("Hono Backend - /comments Router", () => {
 
     expect(res.status).toBe(404);
   });
+  it("should return 403 for unverified user on POST", async () => {
+    const req = new Request("http://localhost/blog/my-post", {
+      method: "POST",
+      body: JSON.stringify({ content: "test" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await commentsRouter.request(req, {}, { ...env, DEV_BYPASS: "unverified" }, mockExecutionContext);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should return 400 for malformed JSON payload on POST", async () => {
+    const req = new Request("http://localhost/blog/my-post", {
+      method: "POST",
+      body: "not json",
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(400);
+  });
+
+  it("should return 500 on POST DB error", async () => {
+    env.DB.run.mockRejectedValueOnce(new Error("DB error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/blog/my-post", {
+      method: "POST",
+      body: JSON.stringify({ content: "test" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(500);
+    consoleSpy.mockRestore();
+  });
+
+  it("should return 400 for malformed JSON payload on PUT", async () => {
+    const req = new Request("http://localhost/1", {
+      method: "PUT",
+      body: "not json",
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(400);
+  });
+
+  it("should return 500 on PUT DB error", async () => {
+    env.DB.first.mockRejectedValueOnce(new Error("DB error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/1", {
+      method: "PUT",
+      body: JSON.stringify({ content: "Updated content" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(500);
+    consoleSpy.mockRestore();
+  });
+
+  it("should handle zulip delete error gracefully", async () => {
+    env.DB.first.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: "zulip-1" });
+    env.DB.run.mockResolvedValue({ success: true });
+    const { deleteZulipMessage } = await import("../../utils/zulipSync");
+    (deleteZulipMessage as any).mockRejectedValueOnce(new Error("Zulip error"));
+    
+    // We need mockExecutionContext.waitUntil to actually execute the promise to cover the catch block
+    mockExecutionContext.waitUntil.mockImplementationOnce((p: Promise<any>) => p);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/1", { method: "DELETE" });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    consoleSpy.mockRestore();
+  });
+
+  it("should return 500 on DELETE DB error", async () => {
+    env.DB.first.mockRejectedValueOnce(new Error("DB error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/1", { method: "DELETE" });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(500);
+    consoleSpy.mockRestore();
+  });
+  it("should return 500 on GET DB error", async () => {
+    env.DB.all.mockRejectedValueOnce(new Error("DB error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/blog/my-post", { method: "GET" });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ comments: [] });
+    consoleSpy.mockRestore();
+  });
+
+  it("should handle POST zulip sync error gracefully", async () => {
+    env.DB.first.mockResolvedValueOnce({ id: 100 });
+    env.DB.all.mockResolvedValueOnce({ results: [] });
+    env.DB.first.mockResolvedValueOnce(null); // No author found
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
+    (sendZulipMessage as any).mockRejectedValueOnce(new Error("Zulip sync error"));
+    
+    mockExecutionContext.waitUntil.mockImplementationOnce((p: Promise<any>) => p);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/blog/my-post", {
+      method: "POST",
+      body: JSON.stringify({ content: "New comment content" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    consoleSpy.mockRestore();
+  });
+
+  it("should notify author on new post comment", async () => {
+    // Provide all properties so it doesn't matter what order `first` is called in
+    env.DB.first.mockResolvedValue({ id: "author-123", cf_email: "different@test.com" });
+    env.DB.all.mockResolvedValue({ results: [] });
+
+    const { emitNotification } = await import("../../utils/notifications");
+
+    const req = new Request("http://localhost/post/my-post", {
+      method: "POST",
+      body: JSON.stringify({ content: "New comment content" }),
+      headers: { "Content-Type": "application/json", "cf-connecting-ip": "192.168.1.100" },
+    });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    expect(emitNotification).toHaveBeenCalled();
+  });
+
+  it("should handle zulip update error gracefully", async () => {
+    env.DB.first.mockResolvedValueOnce({ user_id: "local-dev", user_name: "Local Dev", zulip_message_id: "zulip-1" });
+    env.DB.run.mockResolvedValue({ success: true });
+    const { updateZulipMessage } = await import("../../utils/zulipSync");
+    (updateZulipMessage as any).mockRejectedValueOnce(new Error("Zulip error"));
+    
+    mockExecutionContext.waitUntil.mockImplementationOnce((p: Promise<any>) => p);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/1", {
+      method: "PUT",
+      body: JSON.stringify({ content: "Updated content" }),
+      headers: { "Content-Type": "application/json", "cf-connecting-ip": "192.168.1.101" },
+    });
+    const res = await commentsRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    consoleSpy.mockRestore();
+  });
 });

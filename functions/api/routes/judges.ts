@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, checkWriteRateLimit, verifyTurnstile, rateLimitMiddleware  } from "../middleware";
+import { AppEnv, ensureAdmin, verifyTurnstile, rateLimitMiddleware  } from "../middleware";
 import { getSessionUser } from "../middleware";
 
 const judgesRouter = new Hono<AppEnv>();
@@ -8,7 +8,9 @@ const judgesRouter = new Hono<AppEnv>();
 judgesRouter.post("/login", async (c) => {
   // SEC-DoW: Brute-force code guessing burns D1 reads
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  if (!checkWriteRateLimit(`judge-login:${ip}`, 10, 60)) {
+  const { checkPersistentRateLimit } = await import("../middleware/security");
+  const allowed = await checkPersistentRateLimit(c.env.DB, `judge-login:${ip}`, 10, 60);
+  if (!allowed) {
     return c.json({ error: "Too many attempts. Please try again later." }, 429);
   }
 
@@ -54,7 +56,9 @@ judgesRouter.get("/portfolio", async (c) => {
 
     // SEC-DoW: Rate-limit code validation attempts
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
-    if (!checkWriteRateLimit(`judge-portfolio:${ip}`, 20, 60)) {
+    const { checkPersistentRateLimit } = await import("../middleware/security");
+    const allowed = await checkPersistentRateLimit(c.env.DB, `judge-portfolio:${ip}`, 20, 60);
+    if (!allowed) {
       return c.json({ error: "Too many requests" }, 429);
     }
 
@@ -72,7 +76,7 @@ judgesRouter.get("/portfolio", async (c) => {
 
     // Fetch portfolio & executive summary docs
     const { results: portfolioDocs } = await c.env.DB.prepare(
-      "SELECT slug, title, category, description, content FROM docs WHERE is_deleted = 0 AND (is_portfolio = 1 OR is_executive_summary = 1) ORDER BY is_executive_summary DESC, category, sort_order"
+      "SELECT slug, title, category, description, content FROM docs WHERE is_deleted = 0 AND status = 'published' AND (is_portfolio = 1 OR is_executive_summary = 1) ORDER BY is_executive_summary DESC, category, sort_order"
     ).all();
 
     // Fetch outreach data

@@ -116,10 +116,17 @@ profilesRouter.get("/team-roster", async (c) => {
          ORDER BY f.rank`
       ).bind(q).all();
 
-      const sanitized = (results || []).map((r: Record<string, unknown>) => {
+      const sanitized = await Promise.all((results || []).map(async (r: Record<string, unknown>) => {
         const memberType = String(r.member_type || "student");
+        const secret = c.env.ENCRYPTION_SECRET;
+        
+        // Decrypt contact email for mentors/coaches if it's there
+        if (r.contact_email && (memberType === "mentor" || memberType === "coach")) {
+          r.contact_email = await decrypt(r.contact_email as string, secret);
+        }
+
         return sanitizeProfileForPublic(r, memberType);
-      });
+      }));
 
       return c.json({ members: sanitized });
     }
@@ -131,10 +138,16 @@ profilesRouter.get("/team-roster", async (c) => {
        WHERE p.show_on_about = 1 AND u.role NOT IN ('unverified')`
     ).all();
 
-    const sanitized = (results || []).map((r: Record<string, unknown>) => {
+    const sanitized = await Promise.all((results || []).map(async (r: Record<string, unknown>) => {
       const memberType = String(r.member_type || "student");
+      const secret = c.env.ENCRYPTION_SECRET;
+
+      if (r.contact_email && (memberType === "mentor" || memberType === "coach")) {
+        r.contact_email = await decrypt(r.contact_email as string, secret);
+      }
+
       return sanitizeProfileForPublic(r, memberType);
-    });
+    }));
 
     return c.json({ members: sanitized });
   } catch (err) {
@@ -180,7 +193,7 @@ profilesRouter.get("/:userId", async (c) => {
     if (isAdmin || isSelf) {
       // PII-F03: Only fetch sensitive PII fields when authorized — avoids unnecessary D1 reads + decryption
       const sensitive = await c.env.DB.prepare(
-        `SELECT emergency_contact_name, emergency_contact_phone, dietary_restrictions, tshirt_size
+        `SELECT emergency_contact_name, emergency_contact_phone, dietary_restrictions, tshirt_size, phone, contact_email, parents_name, parents_email, students_name, students_email
          FROM user_profiles WHERE user_id = ?`
       ).bind(userId).first<Record<string, unknown>>();
 
@@ -190,6 +203,14 @@ profilesRouter.get("/:userId", async (c) => {
         sanitized.emergency_contact_phone = await decrypt(sensitive.emergency_contact_phone as string, secret);
         sanitized.dietary_restrictions = sensitive.dietary_restrictions;
         sanitized.tshirt_size = sensitive.tshirt_size;
+        
+        // Put back the decrypted contact/PII fields (sanitizeProfileForPublic removes them when they are encrypted)
+        sanitized.phone = await decrypt(sensitive.phone as string, secret);
+        sanitized.contact_email = await decrypt(sensitive.contact_email as string, secret);
+        sanitized.parents_name = await decrypt(sensitive.parents_name as string, secret);
+        sanitized.parents_email = await decrypt(sensitive.parents_email as string, secret);
+        sanitized.students_name = await decrypt(sensitive.students_name as string, secret);
+        sanitized.students_email = await decrypt(sensitive.students_email as string, secret);
       }
     }
 

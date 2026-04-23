@@ -19,7 +19,7 @@ interface GQLResponse<T> {
 
 // ── Core GraphQL executor ────────────────────────────────────────────
 async function gql<T>(config: GitHubProjectsConfig, query: string, variables: Record<string, unknown> = {}): Promise<T> {
-  const res = await fetch("https://api.github.com/graphql", { signal: AbortSignal.timeout(5000),
+  const res = await fetch("https://api.github.com/graphql", { signal: AbortSignal.timeout(10000),
     method: "POST",
     headers: {
       "Authorization": `Bearer ${config.pat}`,

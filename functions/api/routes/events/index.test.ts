@@ -96,4 +96,52 @@ describe("Hono Backend - /events Router", () => {
 
     consoleSpy.mockRestore();
   });
+
+  it("should handle FTS5 search with ?q=", async () => {
+    const mockDb = {
+      prepare: vi.fn().mockReturnThis(),
+      bind: vi.fn().mockReturnThis(),
+      all: vi.fn().mockResolvedValue({ results: [{ id: "evt-search", title: "Search Match" }] }),
+    } as any;
+    const env = { DB: mockDb };
+    
+    const req = new Request("http://localhost/?q=match", { method: "GET" });
+    const res = await eventsRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.events[0].id).toBe("evt-search");
+  });
+
+  it("should handle GET /calendar", async () => {
+    const mockDb = {
+      prepare: vi.fn().mockReturnThis(),
+      all: vi.fn().mockResolvedValue({ 
+        results: [
+          { key: "CALENDAR_ID_INTERNAL", value: "cal-int" },
+          { key: "CALENDAR_ID", value: "cal-main" }
+        ] 
+      }),
+    } as any;
+    const env = { DB: mockDb };
+
+    const req = new Request("http://localhost/calendar", { method: "GET" });
+    const res = await eventsRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.calendarIdInternal).toBe("cal-int");
+  });
+
+  it("should handle GET /calendar database error", async () => {
+    const mockDb = {
+      prepare: vi.fn().mockReturnThis(),
+      all: vi.fn().mockRejectedValue(new Error("DB Connection failed")),
+    } as any;
+    const env = { DB: mockDb };
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/calendar", { method: "GET" });
+    const res = await eventsRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+    consoleSpy.mockRestore();
+  });
 });

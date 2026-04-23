@@ -5,6 +5,8 @@ import { mockExecutionContext } from "../../../src/test/utils";
 describe("Zulip Webhook Router", () => {
   const env = {
     ZULIP_WEBHOOK_TOKEN: "test-token",
+    ZULIP_BOT_EMAIL: "test@test.com",
+    ZULIP_API_KEY: "test-key",
     DB: {
       prepare: vi.fn().mockReturnThis(),
       bind: vi.fn().mockReturnThis(),

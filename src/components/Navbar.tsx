@@ -189,42 +189,44 @@ export default function Navbar() {
                       </button>
                     )}
                   </div>
-                  <div className="flex-1 overflow-y-auto max-h-96 w-full">
+                  <ul className="flex-1 overflow-y-auto max-h-96 w-full list-none p-0 m-0">
                     {notifications.length === 0 ? (
-                      <div className="px-4 py-6 text-center text-sm text-marble/50">
+                      <li className="px-4 py-6 text-center text-sm text-marble/50">
                         No notifications yet.
-                      </div>
+                      </li>
                     ) : (
                       notifications.map((n) => (
-                        <div 
-                          key={n.id} 
-                          role="button"
-                          tabIndex={0}
-                          className={`px-4 py-3 border-b border-white/5 flex flex-col gap-1 hover:bg-white/5 cursor-pointer ${n.is_read ? 'opacity-60' : 'bg-ares-red/5'}`}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
+                        <li key={n.id}>
+                          <div 
+                            role="button"
+                            tabIndex={0}
+                            className={`px-4 py-3 border-b border-white/5 flex flex-col gap-1 hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:outline-none focus:ring-1 focus:ring-ares-cyan/50 ${n.is_read ? 'opacity-60' : 'bg-ares-red/5'}`}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                // @ts-expect-error custom flag
+                                if (!n.is_read && !n.is_inquiry) markRead.mutate(n.id);
+                                if (n.link) navigate(n.link);
+                                setShowNotifs(false);
+                              }
+                            }}
+                            onClick={() => {
                               // @ts-expect-error custom flag
                               if (!n.is_read && !n.is_inquiry) markRead.mutate(n.id);
                               if (n.link) navigate(n.link);
                               setShowNotifs(false);
-                            }
-                          }}
-                          onClick={() => {
-                            // @ts-expect-error custom flag
-                            if (!n.is_read && !n.is_inquiry) markRead.mutate(n.id);
-                            if (n.link) navigate(n.link);
-                            setShowNotifs(false);
-                          }}
-                        >
+                            }}
+                          >
                           <div className="flex justify-between items-start gap-2">
                              <span className="text-sm font-bold text-white">{n.title}</span>
                              {!n.is_read && <span className="h-2 w-2 rounded-full bg-ares-red flex-shrink-0 mt-1"></span>}
                           </div>
                           <span className="text-xs text-marble/40 line-clamp-2">{n.message}</span>
-                        </div>
+                          </div>
+                        </li>
                       ))
                     )}
-                  </div>
+                  </ul>
                 </div>
               )}
             </div>

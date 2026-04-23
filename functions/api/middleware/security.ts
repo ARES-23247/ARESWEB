@@ -35,28 +35,31 @@ export function checkRateLimit(ip: string, limit = 100, windowSeconds = 60): boo
   return record.count <= limit;
 }
 
-// ── Write-Endpoint Rate Limiting (Stricter) ────────────────────────────
-const writeRateLimitCache = new Map<string, { count: number; expiresAt: number }>();
+// ── Write-Endpoint Rate Limiting (Persistent D1) ────────────────────────────
 
-export function checkWriteRateLimit(ip: string, limit = 15, windowSeconds = 60): boolean {
-  const now = Date.now();
-
+export async function checkPersistentRateLimit(db: D1Database, ip: string, limit: number, windowSeconds: number): Promise<boolean> {
+  const now = Math.floor(Date.now() / 1000);
+  
+  // Cleanup old records occasionally to avoid table bloat
   if (Math.random() < 0.05) {
-    for (const [key, data] of writeRateLimitCache.entries()) {
-      if (data.expiresAt < now) writeRateLimitCache.delete(key);
+    db.prepare("DELETE FROM rate_limits WHERE expires_at < ?").bind(now).run().catch(console.error);
+  }
+
+  try {
+    const row = await db.prepare("SELECT count, expires_at FROM rate_limits WHERE ip = ?").bind(ip).first<{ count: number, expires_at: number }>();
+    if (!row || row.expires_at < now) {
+      await db.prepare("INSERT OR REPLACE INTO rate_limits (ip, count, expires_at) VALUES (?, 1, ?)").bind(ip, now + windowSeconds).run();
+      return true;
     }
+    if (row.count >= limit) return false;
+    
+    await db.prepare("UPDATE rate_limits SET count = count + 1 WHERE ip = ?").bind(ip).run();
+    return true;
+  } catch (err) {
+    console.error("[RateLimit] Persistent check failed:", err);
+    // Fall open on DB error or missing table so we don't bring down the API
+    return true;
   }
-
-  let record = writeRateLimitCache.get(ip);
-  if (!record || record.expiresAt < now) {
-    pruneCache(writeRateLimitCache);
-    record = { count: 0, expiresAt: now + windowSeconds * 1000 };
-  }
-
-  record.count += 1;
-  writeRateLimitCache.set(ip, record);
-
-  return record.count <= limit;
 }
 
 // ── SEC-DoW: Cloudflare Turnstile Verification ──────────────────────
@@ -98,7 +101,7 @@ export async function verifyTurnstile(
 export const rateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
   return async (c: Context<AppEnv>, next: Next) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
-    if (!checkWriteRateLimit(`mw:${ip}`, limit, windowSeconds)) {
+    if (!checkRateLimit(`mw:${ip}`, limit, windowSeconds)) {
       return c.json({ error: "Too many submissions. Please try again later." }, 429);
     }
     await next();

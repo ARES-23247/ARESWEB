@@ -1,6 +1,7 @@
 import { Context, Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, rateLimitMiddleware } from "../middleware";
+import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, parsePagination, createContentLifecycleRouter, rateLimitMiddleware, validateLength, MAX_INPUT_LENGTHS } from "../middleware";
+import { getStandardDate } from "../../utils/content";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { emitNotification, notifyByRole } from "../../utils/notifications";
@@ -154,6 +155,9 @@ async function handlePostSave(c: Context<AppEnv>) {
       return c.json({ success: false, error: "Title is required" }, 400);
     }
 
+    const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
+    if (titleError) return c.json({ success: false, error: titleError }, 400);
+
     let slug = body.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -166,14 +170,10 @@ async function handlePostSave(c: Context<AppEnv>) {
       slug = `${slug}-${suffix}`;
     }
 
-    const dateStr = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-    });
+    const dateStr = getStandardDate();
 
     const astStr = JSON.stringify(body.ast);
-    const snippet = extractAstText(JSON.stringify(body.ast)).substring(0, 200);
+    const snippet = extractAstText(body.ast).substring(0, 200);
     
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_dashboard_user";
@@ -199,7 +199,7 @@ async function handlePostSave(c: Context<AppEnv>) {
         `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
          VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
       ).bind(
-        crypto.randomUUID(),
+        (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `test-uuid-${Date.now()}`,
         email,
         "CREATE_POST",
         "posts",
@@ -208,14 +208,16 @@ async function handlePostSave(c: Context<AppEnv>) {
       )
     ]);
 
+    const warnings: string[] = [];
+
     // ── Phase 3: Omnichannel Social Media Integration ──
     if (status === "published") {
       const socialConfig = await getSocialConfig(c);
       const socialsFilter = (body as { socials?: Record<string, boolean> }).socials || null;
       const baseUrl = new URL(c.req.url).origin;
 
-      c.executionCtx.waitUntil(
-        dispatchSocials(
+      try {
+        await dispatchSocials(
           c.env.DB,
           {
             title: body.title,
@@ -226,36 +228,48 @@ async function handlePostSave(c: Context<AppEnv>) {
           },
           socialConfig,
           socialsFilter
-        ).catch(err => console.error("Social dispatch failed:", err))
-      );
+        );
+      } catch (err) {
+        console.error("Social dispatch failed:", err);
+        warnings.push(`Social Syndication Failed: ${(err as Error).message}`);
+      }
     }
 
     // ── Zulip Announcement ──
     if (status === "published") {
-      c.executionCtx.waitUntil(
-        sendZulipMessage(
+      try {
+        await sendZulipMessage(
           c.env,
           "announcements",
           "Website Updates",
           `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
-        ).catch(err => console.error("[Posts] Zulip announcement failed:", err))
-      );
+        );
+      } catch (err) {
+        console.error("[Posts] Zulip announcement failed:", err);
+        warnings.push(`Zulip Notification Failed: ${(err as Error).message}`);
+      }
     }
+
     // ── Notify admins and mentors of pending content ──
     if (status === "pending") {
-      c.executionCtx.waitUntil(
-        notifyByRole(c, ["admin", "coach", "mentor"], {
+      try {
+        await notifyByRole(c, ["admin", "coach", "mentor"], {
           title: "📝 Pending Blog Post",
           message: `"${body.title}" submitted by ${email} needs review.`,
           link: "/dashboard",
           external: true,
           priority: "medium"
-        }).catch(err => console.error("[Posts] Admin notification failed:", err))
-      );
+        });
+      } catch (err) {
+        console.error("[Posts] Admin notification failed:", err);
+      }
     }
 
-
-    return c.json({ success: true, slug });
+    return c.json({ 
+      success: true, 
+      slug, 
+      warning: warnings.length > 0 ? warnings.join(" | ") : undefined 
+    }, warnings.length > 0 ? 207 : 200);
   } catch (err: unknown) {
     console.error("D1 write error:", err);
     return c.json({ success: false, error: (err as Error)?.message || "Database write failed" }, 500);
@@ -288,7 +302,7 @@ async function handlePostEdit(c: Context<AppEnv>) {
       return c.json({ success: false, error: "Title is required" }, 400);
     }
     const astStr = JSON.stringify(body.ast);
-    const snippet = extractAstText(JSON.stringify(body.ast)).substring(0, 200);
+    const snippet = extractAstText(body.ast).substring(0, 200);
 
     const user = await getSessionUser(c);
     
@@ -325,7 +339,7 @@ async function handlePostEdit(c: Context<AppEnv>) {
         `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
          VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
       ).bind(
-        crypto.randomUUID(),
+        (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `test-uuid-${Date.now()}`,
         user?.email || "unknown",
         "UPDATE_POST",
         "posts",
@@ -346,7 +360,7 @@ postsRouter.route("/", createContentLifecycleRouter("posts", {
   onApprove: async (c, slug) => {
     const result = await approvePost(c, slug);
     if (!result.success) throw new Error(result.error);
-    return true; // We handled the DB update and notifications in approvePost
+    return { handled: true, warnings: result.warnings }; // We handled the DB update and notifications in approvePost
   },
   onReject: async (c, slug, reason) => {
     const row = await c.env.DB.prepare("SELECT title, cf_email FROM posts WHERE slug = ?").bind(slug).first<{ title: string, cf_email: string }>();

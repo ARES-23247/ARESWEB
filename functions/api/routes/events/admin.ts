@@ -104,9 +104,12 @@ adminRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
         coverImageUrl: coverImage || "/gallery_1.png",
         baseUrl: baseUrl
       };
-      c.executionCtx.waitUntil(
-        dispatchSocials(c.env.DB, payload, socialConfig, socials).catch(err => console.error("Event social dispatch failed:", err))
-      );
+      try {
+        await dispatchSocials(c.env.DB, payload, socialConfig, socials);
+      } catch (err) {
+        console.error("Event social dispatch failed:", err);
+        warnings.push(`Social Syndication Failed: ${(err as Error).message}`);
+      }
     }
 
     // ── Zulip Calendar Notification ──
@@ -114,29 +117,32 @@ adminRouter.post("/", rateLimitMiddleware(15, 60), async (c) => {
       try {
         const eventDate = new Date(dateStart).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
         const desc = extractAstText(description || "").substring(0, 200);
-        c.executionCtx.waitUntil(
-          sendZulipMessage(
-            c.env,
-            "announcements",
-            "Calendar",
-            `📅 **New Event:** ${title}\n📍 ${location || "TBD"} • 📆 ${eventDate}\n${desc ? `\n${desc}` : ""}\n\n[View on ${siteConfig.team.name}WEB](${baseUrl}/events)`
-          ).catch(err => console.error("[Events] Zulip notification failed:", err))
+        await sendZulipMessage(
+          c.env,
+          "announcements",
+          "Calendar",
+          `📅 **New Event:** ${title}\n📍 ${location || "TBD"} • 📆 ${eventDate}\n${desc ? `\n${desc}` : ""}\n\n[View on ${siteConfig.team.name}WEB](${baseUrl}/events)`
         );
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.error("[Events] Zulip notification failed:", err);
+        warnings.push(`Zulip Notification Failed: ${(err as Error).message}`);
+      }
     }
 
 
     // ── Notify admins and mentors of pending content ──
     if (status === "pending") {
-      c.executionCtx.waitUntil(
-        notifyByRole(c, ["admin", "coach", "mentor"], {
+      try {
+        await notifyByRole(c, ["admin", "coach", "mentor"], {
           title: "📅 Pending Event",
           message: `"${title}" submitted by ${email} needs review.`,
           link: "/dashboard",
           external: true,
           priority: "medium"
-        }).catch(err => console.error("[Events] Admin notification failed:", err))
-      );
+        });
+      } catch (err) {
+        console.error("[Events] Admin notification failed:", err);
+      }
     }
 
     return c.json({ success: true, id: genId, warning: warnings.length > 0 ? warnings.join(" | ") : undefined }, warnings.length > 0 ? 207 : 200);

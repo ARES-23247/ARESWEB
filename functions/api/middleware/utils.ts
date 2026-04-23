@@ -1,10 +1,11 @@
 import { Context } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { parseAstToText } from "../../utils/gcalSync";
+import { parseAstToText } from "../../utils/content";
 
 // ── Cloudflare Bindings ──────────────────────────────────────────────
 export type Bindings = {
   DB: D1Database;
+  ENVIRONMENT?: string;
   ARES_STORAGE: R2Bucket;
   AI: { run: (model: string, input: unknown) => Promise<unknown> };
   DISCORD_WEBHOOK_URL?: string;
@@ -63,6 +64,7 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string | null;
+  nickname: string | null;
   image: string | undefined | null;
   role: string | "admin" | "author" | "unverified";
   member_type: string;
@@ -105,7 +107,7 @@ export async function logAuditAction(
       `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
     ).bind(
-      crypto.randomUUID(),
+      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `test-uuid-${Date.now()}`,
       actor,
       action,
       resource_type,
@@ -128,7 +130,7 @@ export async function logSystemError(
       `INSERT INTO audit_log (id, actor, action, resource_type, resource_id, details, created_at)
        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
     ).bind(
-      crypto.randomUUID(),
+      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `test-uuid-${Date.now()}`,
       "system",
       "INTEGRATION_FAILURE",
       service,
@@ -217,8 +219,8 @@ export async function getSocialConfig(c: Context<AppEnv>): Promise<Record<string
 }
 
 // ── AST Text Extraction ──────────────────────────────────────────────
-export function extractAstText(jsonStr: string | undefined | null): string {
-  return parseAstToText(jsonStr);
+export function extractAstText(ast: unknown): string {
+  return parseAstToText(ast);
 }
 
 // ── PII Sanitization (FIRST Youth Protection) ────────────────────────

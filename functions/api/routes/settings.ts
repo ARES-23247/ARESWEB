@@ -108,6 +108,7 @@ settingsRouter.get("/admin/backup", ensureAdmin, async (c) => {
     for (const tableName of SAFE_TABLES) {
       try {
         const cols = TABLE_COLUMNS[tableName] || "*";
+        // SEC-SQL: Use literal table names from our hardcoded SAFE_TABLES whitelist.
         const { results } = await c.env.DB.prepare(`SELECT ${cols} FROM "${tableName}"`).all();
         backup[tableName] = results;
       } catch {

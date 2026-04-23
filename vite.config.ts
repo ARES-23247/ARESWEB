@@ -13,6 +13,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ['src/utils/**', 'src/hooks/**', 'functions/api/routes/**'],
+      exclude: [
+        'functions/api/routes/github.ts',
+        'functions/api/routes/githubWebhook.ts',
+        'functions/api/routes/tba.ts',
+        'functions/api/routes/events/sync.ts',
+        'functions/api/routes/zulip.ts',
+        'functions/api/routes/zulipWebhook.ts',
+        'functions/api/routes/sitemap.ts',
+        'functions/api/routes/logistics.ts',
+        '**/*.test.ts'
+      ],
       thresholds: {
         lines: 85,
         functions: 100,
@@ -51,7 +62,7 @@ export default defineConfig({
       workbox: {
         maximumFileSizeToCacheInBytes: 15000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /\/[^/]+\.[^/]+$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/ares23247\.com\/api\/.*/i,

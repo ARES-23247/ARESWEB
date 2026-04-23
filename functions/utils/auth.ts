@@ -131,10 +131,14 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                         const membership = await res.json() as { state: string, role: string };
                                         if (membership.state === "active") {
                                             if (membership.role === "admin") {
-                                                console.log(`[GitHub Auth] Verified ${session.userId} as ${siteConfig.urls.githubOrg} Org Owner. Promoting to Admin.`);
+                                                if (env.ENVIRONMENT !== "production") {
+                                                  console.log(`[GitHub Auth] Verified ${session.userId} as ${siteConfig.urls.githubOrg} Org Owner. Promoting to Admin.`);
+                                                }
                                                 await db.prepare("UPDATE user SET role = 'admin' WHERE id = ?").bind(session.userId).run();
                                             } else {
-                                                console.log(`[GitHub Auth] Verified ${session.userId} as ${siteConfig.urls.githubOrg} Org Member. Promoting to Author.`);
+                                                if (env.ENVIRONMENT !== "production") {
+                                                  console.log(`[GitHub Auth] Verified ${session.userId} as ${siteConfig.urls.githubOrg} Org Member. Promoting to Author.`);
+                                                }
                                                 await db.prepare("UPDATE user SET role = 'author' WHERE id = ?").bind(session.userId).run();
                                             }
                                         }

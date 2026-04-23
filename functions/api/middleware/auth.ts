@@ -36,10 +36,11 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
 
   // EFF-05: Store session in context so handlers don't need to re-fetch
   const profile = await c.env.DB.prepare(
-    "SELECT member_type FROM user_profiles WHERE user_id = ?"
-  ).bind(session.user.id).first<{ member_type: string }>();
+    "SELECT nickname, member_type FROM user_profiles WHERE user_id = ?"
+  ).bind(session.user.id).first<{ nickname: string, member_type: string }>();
 
   const memberType = profile?.member_type || "student";
+  const nickname = profile?.nickname || "ARES Member";
 
   // Authors and Adult Leaders can do everything EXCEPT manage users
   const isSuperAdminRoute = url.pathname.includes("/admin/users") || url.pathname.includes("/admin/roles");
@@ -63,6 +64,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
     id: session.user.id,
     email: session.user.email,
     name: session.user.name,
+    nickname,
     image: session.user.image,
     role,
     member_type: memberType,
@@ -101,15 +103,16 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (session && session.user) {
-      // Fetch member_type from profile
+      // Fetch member_type and nickname from profile
       const profile = await c.env.DB.prepare(
-        "SELECT member_type FROM user_profiles WHERE user_id = ?"
-      ).bind(session.user.id).first<{ member_type: string }>();
+        "SELECT nickname, member_type FROM user_profiles WHERE user_id = ?"
+      ).bind(session.user.id).first<{ nickname: string, member_type: string }>();
 
       return {
         id: session.user.id,
         email: session.user.email,
         name: session.user.name,
+        nickname: profile?.nickname || "ARES Member",
         image: session.user.image,
         role: (session.user as { role?: string }).role || UserRole.UNVERIFIED,
         member_type: profile?.member_type || "student",

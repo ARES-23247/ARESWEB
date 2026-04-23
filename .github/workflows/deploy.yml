@@ -39,6 +39,9 @@ jobs:
       - name: Build with Vite
         run: npm run build
 
+      - name: E2E Tests (Playwright)
+        run: npx playwright install --with-deps && npx start-server-and-test "npx vite preview --port 4173" http://localhost:4173 "npm run test:e2e"
+
       - name: E2E Accessibility Tests (pa11y-ci)
         run: npx start-server-and-test "npx vite preview --port 4173" http://localhost:4173 "npm run pa11y"
 

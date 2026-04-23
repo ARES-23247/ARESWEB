@@ -162,7 +162,9 @@ githubWebhookRouter.post("/", async (c) => {
       }
 
       default:
-        console.log(`[GitHubWebhook] Unhandled event: ${event}`);
+        if (c.env.ENVIRONMENT !== "production") {
+          console.log(`[GitHubWebhook] Unhandled event: ${event}`);
+        }
     }
   } catch (err) {
     console.error("[GitHubWebhook] Error processing event:", err);

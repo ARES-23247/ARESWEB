@@ -179,18 +179,20 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
   if (!row) return { success: false, error: "Post not found" };
 
   if (row.revision_of) {
-    await approveAndMergeRevision(c, slug, row.revision_of, row);
-    return { success: true };
+    const result = await approveAndMergeRevision(c, slug, row.revision_of, row);
+    return { success: true, warnings: result.warnings };
   }
 
   await c.env.DB.prepare("UPDATE posts SET status = 'published' WHERE slug = ?").bind(slug).run();
+
+  const warnings: string[] = [];
 
   // Social Syndication upon approval
   const socialConfig = await getSocialConfig(c);
   const baseUrl = new URL(c.req.url).origin;
 
-  c.executionCtx.waitUntil(
-    dispatchSocials(
+  try {
+    await dispatchSocials(
       c.env.DB,
       {
         title: row.title,
@@ -200,22 +202,30 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         baseUrl: baseUrl
       },
       socialConfig
-    ).catch(err => console.error("Social dispatch failed on approval:", err))
-  );
+    );
+  } catch (err) {
+    console.error("Social dispatch failed on approval:", err);
+    warnings.push(`Social Syndication Failed: ${(err as Error).message}`);
+  }
 
   // Notify original author
   if (row.cf_email) {
     const author = await c.env.DB.prepare("SELECT id FROM user WHERE email = ?").bind(row.cf_email).first<{ id: string }>();
     if (author) {
-      c.executionCtx.waitUntil(emitNotification(c, {
-        userId: author.id,
-        title: "Post Approved",
-        message: `Your post "${row.title}" has been published.`,
-        link: `/blog/${slug}`,
-        priority: "medium"
-      }));
+      try {
+        await emitNotification(c, {
+          userId: author.id,
+          title: "Post Approved",
+          message: `Your post "${row.title}" has been published.`,
+          link: `/blog/${slug}`,
+          priority: "medium"
+        });
+      } catch (err) {
+        console.error("Failed to notify author of approval:", err);
+        warnings.push(`Failed to notify author: ${(err as Error).message}`);
+      }
     }
   }
 
-  return { success: true };
+  return { success: true, warnings };
 }

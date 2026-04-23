@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import SEO from "../components/SEO";
-import { GraduationCap } from "lucide-react";
-import { BrandLogo } from "../components/BrandLogo";
 import { GreekMeander } from "../components/GreekMeander";
+import { MemberSection } from "../components/MemberSection";
 import { publicApi } from "../api/publicApi";
 
 interface TeamMember {
@@ -27,46 +26,6 @@ const SECTION_ORDER = [
   { type: "coach", title: "Our Coaches", icon: "🏆", desc: "The strategic leaders guiding ARES to championship-grade performance." },
 ];
 
-function MemberCard({ member }: { member: TeamMember }) {
-  const subteams = typeof member.subteams === "string" ? JSON.parse(member.subteams || "[]") : (member.subteams || []);
-  const colleges = typeof member.colleges === "string" ? JSON.parse(member.colleges || "[]") : [];
-
-  return (
-    <Link to={`/profile/${member.user_id}`} className="group block">
-      <div className="hero-card bg-white border border-ares-bronze/10 p-6 text-center transition-all duration-300 group-hover:border-ares-red/30 group-hover:shadow-lg">
-        <div className="w-20 h-20 mx-auto mb-4 ares-cut bg-marble border border-ares-bronze/20 overflow-hidden p-2 group-hover:scale-105 transition-transform">
-          <img
-            src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.user_id}`}
-            alt=""
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <h4 className="text-obsidian font-bold text-base mb-0.5 group-hover:text-ares-red transition-colors">
-          {member.nickname || "ARES Member"}
-        </h4>
-        {member.pronouns && (
-          <p className="text-obsidian/40 text-xs mb-2">{member.pronouns}</p>
-        )}
-        {subteams.length > 0 && (
-          <div className="flex flex-wrap gap-1 justify-center mb-2">
-            {(subteams as string[]).slice(0, 3).map((team: string) => (
-              <span key={team} className="px-2 py-0.5 bg-ares-red/5 text-ares-red/70 text-[9px] font-bold rounded-full uppercase tracking-wider">
-                {team}
-              </span>
-            ))}
-          </div>
-        )}
-        {member.member_type === "alumni" && colleges.length > 0 && (
-          <div className="flex justify-center gap-1.5 mt-2">
-            {(colleges as { domain: string }[]).slice(0, 3).map((col: { domain: string }, i: number) => (
-              <BrandLogo key={i} domain={col.domain} fallbackIcon={GraduationCap} className="w-5 h-5" />
-            ))}
-          </div>
-        )}
-      </div>
-    </Link>
-  );
-}
 
 export default function About() {
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -164,25 +123,7 @@ export default function About() {
 
       {/* ─── DYNAMIC TEAM ROSTER ─── */}
       {grouped.length > 0 && grouped.map(section => (
-        <section key={section.type} className={`py-24 ${section.type === "coach" || section.type === "student" ? "bg-white" : section.type === "alumni" ? "bg-obsidian text-marble" : "bg-marble"}`}>
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <span className="text-4xl mb-4 block">{section.icon}</span>
-              <h2 className={`text-4xl md:text-5xl font-bold mb-4 font-heading uppercase ${section.type === "alumni" ? "text-white" : "text-obsidian"}`}>
-                {section.title}
-              </h2>
-              <p className={`text-lg max-w-2xl mx-auto ${section.type === "alumni" ? "text-marble/60" : "text-obsidian/50"}`}>
-                {section.desc}
-              </p>
-              <div className="w-24 h-1 bg-ares-red mx-auto mt-6"></div>
-            </div>
-            <div className={`grid gap-6 ${section.items.length <= 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" : section.items.length <= 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"}`}>
-              {section.items.map(member => (
-                <MemberCard key={member.user_id} member={member} />
-              ))}
-            </div>
-          </div>
-        </section>
+        <MemberSection key={section.type} section={section} />
       ))}
 
       {/* Fallback if no profiles exist yet */}

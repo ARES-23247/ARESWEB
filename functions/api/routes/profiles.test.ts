@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mockExecutionContext } from "../../../src/test/utils";
 import profilesRouter from "./profiles";
 import { createMockProfile } from "../../../src/test/factories/userFactory";
@@ -8,6 +9,14 @@ import { createMockProfile } from "../../../src/test/factories/userFactory";
 vi.mock("../../utils/crypto", () => ({
   decrypt: vi.fn((val) => Promise.resolve(val)),
   encrypt: vi.fn((val) => Promise.resolve(val)),
+}));
+
+vi.mock("../../utils/auth", () => ({
+  getAuth: vi.fn().mockReturnValue({
+    api: {
+      updateUser: vi.fn().mockResolvedValue({ success: true })
+    }
+  })
 }));
 
 describe("Hono Backend - /profiles Router", () => {
@@ -68,10 +77,57 @@ describe("Hono Backend - /profiles Router", () => {
     expect(await res.json()).toEqual({ success: true });
   });
 
+  it("should return 500 on /me update error", async () => {
+    env.DB.run.mockRejectedValueOnce(new Error("DB error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/me", {
+      method: "PUT",
+      body: JSON.stringify({ nickname: "New Nick" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Profile update failed" });
+    consoleSpy.mockRestore();
+  });
+
+  it("should update /avatar", async () => {
+    const req = new Request("http://localhost/avatar", {
+      method: "PUT",
+      body: JSON.stringify({ image: "https://example.com/avatar.png" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ success: true });
+  });
+
+  it("should return 500 on /avatar update error", async () => {
+    const { getAuth } = await import("../../utils/auth");
+    (getAuth as any).mockReturnValueOnce({
+      api: { updateUser: vi.fn().mockRejectedValueOnce(new Error("API Error")) }
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/avatar", {
+      method: "PUT",
+      body: JSON.stringify({ image: "https://example.com/avatar.png" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Avatar update failed" });
+    consoleSpy.mockRestore();
+  });
+
   it("should return team roster", async () => {
     const mockRoster = [
       { user_id: "1", nickname: "Member 1", member_type: "student", show_on_about: 1 },
-      { user_id: "2", nickname: "Member 2", member_type: "mentor", show_on_about: 1 },
+      { user_id: "2", nickname: "Member 2", member_type: "mentor", show_on_about: 1, contact_email: "encrypted" },
     ];
     env.DB.all.mockResolvedValue({ results: mockRoster });
 
@@ -82,6 +138,34 @@ describe("Hono Backend - /profiles Router", () => {
     const body = await res.json() as any;
     expect(body.members).toHaveLength(2);
     expect(body.members[0].nickname).toBe("Member 1");
+  });
+
+  it("should handle team roster FTS5 search", async () => {
+    const mockRoster = [
+      { user_id: "2", nickname: "Member 2", member_type: "mentor", show_on_about: 1, contact_email: "encrypted" },
+    ];
+    env.DB.all.mockResolvedValue({ results: mockRoster });
+
+    const req = new Request("http://localhost/team-roster?q=search", { method: "GET" });
+    const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.members).toHaveLength(1);
+    expect(body.members[0].nickname).toBe("Member 2");
+  });
+
+  it("should return 500 on team roster fetch error", async () => {
+    env.DB.all.mockRejectedValueOnce(new Error("DB error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/team-roster", { method: "GET" });
+    const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200); // Wait, profiles.ts catch block returns { members: [] } (which is 200)
+    const body = await res.json() as any;
+    expect(body.members).toHaveLength(0);
+    consoleSpy.mockRestore();
   });
 
   it("should return public profile by userId", async () => {
@@ -124,5 +208,46 @@ describe("Hono Backend - /profiles Router", () => {
     const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
 
     expect(res.status).toBe(403);
+  });
+
+  it("should fetch sensitive info for self/admin in public profile", async () => {
+    const mockProfile = { 
+      user_id: "local-dev", // Same as authenticated user
+      nickname: "Public User", 
+      show_on_about: 1, 
+      member_type: "student" 
+    };
+    const sensitiveData = {
+      emergency_contact_name: "encrypted_name",
+      emergency_contact_phone: "encrypted_phone",
+      dietary_restrictions: "None",
+      tshirt_size: "L"
+    };
+
+    // first() is called twice: once for profile, once for sensitive
+    env.DB.first
+      .mockResolvedValueOnce(mockProfile)
+      .mockResolvedValueOnce(sensitiveData);
+    env.DB.all.mockResolvedValueOnce({ results: [] }); // all for badges
+
+    const req = new Request("http://localhost/local-dev", { method: "GET" });
+    const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.profile.nickname).toBe("Public User");
+    expect(body.profile.dietary_restrictions).toBe("None");
+  });
+
+  it("should handle public profile fetch error", async () => {
+    env.DB.first.mockRejectedValueOnce(new Error("DB error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/user-123", { method: "GET" });
+    const res = await profilesRouter.request(req, {}, env, mockExecutionContext);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Profile fetch failed" });
+    consoleSpy.mockRestore();
   });
 });

@@ -123,6 +123,47 @@ describe("Settings Router", () => {
       });
   });
 
+  describe("GET /stats", () => {
+    it("should return fast counting for Dashboard", async () => {
+      mockDb.batch = vi.fn().mockResolvedValue([
+        { results: [{ count: 10 }] },
+        { results: [{ count: 5 }] },
+        { results: [{ count: 20 }] },
+        { results: [{ count: 2 }] },
+        { results: [{ count: 50 }] },
+      ]);
+
+      const req = new Request("http://localhost/stats");
+      const res = await settingsRouter.request(req, {}, env, mockExecutionContext);
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.posts).toBe(10);
+      expect(body.events).toBe(5);
+      expect(body.docs).toBe(20);
+      expect(body.inquiries).toBe(2);
+      expect(body.users).toBe(50);
+    });
+
+    it("should handle D1 stats error", async () => {
+      mockDb.batch = vi.fn().mockRejectedValue(new Error("Stats error"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const req = new Request("http://localhost/stats");
+      const res = await settingsRouter.request(req, {}, env, mockExecutionContext);
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.posts).toBe(0);
+      expect(body.events).toBe(0);
+      expect(body.docs).toBe(0);
+      expect(body.inquiries).toBe(0);
+      expect(body.users).toBe(0);
+
+      consoleSpy.mockRestore();
+    });
+  });
+
   describe("GET /admin/backup", () => {
     it("should export database tables as JSON", async () => {
       mockDb.all.mockResolvedValue({ results: [{ id: 1, data: "test" }] });

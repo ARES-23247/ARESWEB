@@ -79,7 +79,7 @@ commentsRouter.post("/:targetType/:targetId", rateLimitMiddleware(10, 60), turns
          c.env, 
          zulipStream, 
          `${targetType.toUpperCase()}: ${targetId}`, 
-         `**${user.name || 'User'}** commented on ${targetType} \`${targetId}\`:\n\n${content}`
+         `**${user.nickname || 'ARES Member'}** commented on ${targetType} \`${targetId}\`:\n\n${content}`
        );
        if (msgId) {
          await c.env.DB.prepare("UPDATE comments SET zulip_message_id = ? WHERE id = ?").bind(msgId, id).run();
@@ -96,7 +96,7 @@ commentsRouter.post("/:targetType/:targetId", rateLimitMiddleware(10, 60), turns
             c.executionCtx.waitUntil(emitNotification(c, {
                userId: author.id,
                title: "New Comment",
-               message: `${user.name || 'Someone'} commented on your post "${targetId}"`,
+               message: `${user.nickname || 'Someone'} commented on your post "${targetId}"`,
                link: `/blog/${targetId}`,
                priority: "medium"
             }));

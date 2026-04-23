@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
-import { Bindings, AppEnv, checkRateLimit, logSystemError } from "./middleware";
+import { Bindings, AppEnv, checkRateLimit, logSystemError, ensureAdmin } from "./middleware";
 
 // ── Domain Routers ───────────────────────────────────────────────────
 import authRouter from "./routes/auth";
@@ -202,7 +202,7 @@ apiRouter.get("/search", async (c) => {
 });
 
 // ── GAP-01: Audit Log Viewer (admin only) ────────────────────────────
-apiRouter.get("/admin/audit-log", async (c) => {
+apiRouter.get("/admin/audit-log", ensureAdmin, async (c) => {
   try {
     const limit = Math.min(Number(c.req.query("limit") || "50"), 200);
     const offset = Number(c.req.query("offset") || "0");
@@ -269,7 +269,7 @@ export const scheduled = async (
     const inquiryDays = Number(settings['RETENTION_INQUIRY_DAYS'] || "30");
     const auditDays = Number(settings['RETENTION_AUDIT_LOG_DAYS'] || "90");
 
-    console.log(`[Scheduled] Starting maintenance. Inquiry: ${inquiryDays}d, Audit: ${auditDays}d.`);
+    console.info(`[Scheduled] Starting maintenance. Inquiry: ${inquiryDays}d, Audit: ${auditDays}d.`);
 
     // 2. Execute Purges
     const [inquiryRes, auditRes] = await Promise.all([
@@ -279,7 +279,7 @@ export const scheduled = async (
       ).bind(auditDays).run()
     ]);
     
-    console.log(`[Scheduled] Maintenance complete. Purged ${inquiryRes.deleted} inquiries and ${auditRes.meta.changes} logs.`);
+    console.info(`[Scheduled] Maintenance complete. Purged ${inquiryRes.deleted} inquiries and ${auditRes.meta.changes} logs.`);
   } catch (err) {
     console.error("[Scheduled] Maintenance failed:", err);
   }

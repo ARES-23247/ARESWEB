@@ -1,4 +1,5 @@
 import { SignJWT, importPKCS8 } from "jose";
+import { parseAstToText } from "./content";
 
 export interface GCalConfig {
   email: string;
@@ -50,43 +51,6 @@ export async function getGcalAccessToken(config: GCalConfig): Promise<string> {
   return data.access_token as string;
 }
 
-export function parseAstToText(ast: unknown): string {
-  if (!ast) return "";
-  
-  // If it's already a string, we assume it's legacy content or needs parsing
-  if (typeof ast === 'string') {
-    try {
-      const parsed = JSON.parse(ast);
-      return parseAstToText(parsed);
-    } catch {
-      return ast;
-    }
-  }
-
-  // Handle recursion for the ProseMirror JSON object
-  const extract = (node: unknown): string => {
-    if (!node) return "";
-    const n = node as Record<string, unknown>;
-    if (typeof n.text === 'string') return n.text;
-    
-    if (n.content && Array.isArray(n.content)) {
-      return n.content
-        .map((item: unknown) => extract(item))
-        .filter((t: string) => t.length > 0)
-        .join(" ");
-    }
-    
-    return "";
-  };
-
-  try {
-    return extract(ast).trim();
-  } catch (err) {
-    console.warn("AST Extraction failed:", err);
-    return "";
-  }
-}
-
 /**
  * Prepare ARES Event format for Google Calendar payload
  */
@@ -99,12 +63,32 @@ function prepareGcalPayload(event: ARES_Event) {
     const d = new Date(dateStr.includes("T") ? dateStr + (dateStr.endsWith("Z") ? "" : "Z") : dateStr + "T12:00:00Z");
     const parts = new Intl.DateTimeFormat("en-US", { 
       timeZone: "America/New_York", 
-      timeZoneName: "longOffset" 
+      timeZoneName: "shortOffset" 
     }).formatToParts(d);
     
-    const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value || "GMT-05:00";
-    const match = offsetPart.match(/[+-]\d\d:\d\d/);
-    return match ? match[0] : "-05:00";
+    const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value || "";
+    // offsetPart could be "GMT-4", "GMT-5", "GMT", "GMT-05:00", or "+00:00" depending on environment
+    
+    if (offsetPart === "GMT" || offsetPart === "UTC") return "+00:00";
+    
+    // eslint-disable-next-line security/detect-unsafe-regex
+    const match = offsetPart.match(/([+-]\d{1,2})(?::?(\d{2}))?/);
+    if (match) {
+      let hours = match[1];
+      if (hours.length === 2) {
+        hours = `${hours[0]}0${hours[1]}`; // Convert "-5" to "-05"
+      }
+      const minutes = match[2] || "00";
+      return `${hours}:${minutes}`;
+    }
+    
+    // Absolute dynamic fallback based on the system running the worker
+    const offsetMin = d.getTimezoneOffset();
+    const sign = offsetMin > 0 ? "-" : "+";
+    const absMin = Math.abs(offsetMin);
+    const h = String(Math.floor(absMin / 60)).padStart(2, "0");
+    const m = String(absMin % 60).padStart(2, "0");
+    return `${sign}${h}:${m}`;
   };
 
   const formatFloatingDateTime = (dt: string) => {

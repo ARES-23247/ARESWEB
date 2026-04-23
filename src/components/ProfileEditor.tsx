@@ -7,16 +7,8 @@ import { RoleForm } from "./profile/RoleForm";
 import { ContactForm } from "./profile/ContactForm";
 import { LogisticsForm } from "./profile/LogisticsForm";
 import { SecuritySettings } from "./profile/SecuritySettings";
-import { ProfileData, CollegeEntry, EmployerEntry } from "./profile/types";
+import { ProfileData } from "./profile/types";
 
-interface ProfileResponse extends Omit<Partial<ProfileData>, 'subteams' | 'dietary_restrictions' | 'colleges' | 'employers'> {
-  error?: string;
-  subteams?: string | string[];
-  dietary_restrictions?: string | string[];
-  colleges?: string | CollegeEntry[];
-  employers?: string | EmployerEntry[];
-  auth?: { email: string; name: string; image?: string; id: string; };
-}
 
 const DEFAULT_PROFILE: ProfileData = {
   email: "",
@@ -51,13 +43,15 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
   const isMinor = profile.member_type === "student"; // Only students get PII-hidden treatment
 
-  const fetchUrl = adminEditUserId ? `/api/profile/${adminEditUserId}` : "/api/profile/me";
+  const fetchUrl = adminEditUserId ? `/api/admin/users/${adminEditUserId}` : "/api/profile/me";
   const saveUrl = adminEditUserId ? `/api/admin/users/${adminEditUserId}` : "/api/profile/me";
 
   useEffect(() => {
-    adminApi.get<ProfileResponse>(fetchUrl)
-      .then((data) => {
-        if (data && !data.error) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    adminApi.get<any>(fetchUrl)
+      .then((res) => {
+        const data = adminEditUserId ? res.user : res;
+        if (data && !data.error && !res.error) {
           setProfile({
             ...DEFAULT_PROFILE,
             ...data,
@@ -88,7 +82,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
         setIsLoading(false);
       })
       .catch(() => setIsLoading(false));
-  }, [fetchUrl]);
+  }, [fetchUrl, adminEditUserId]);
 
   const handleSave = async () => {
     setIsSaving(true);

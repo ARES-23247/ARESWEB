@@ -138,4 +138,169 @@ describe("Hono Backend - /media Router", () => {
     expect(mockR2.list).toHaveBeenCalledTimes(2);
     expect(mockR2.list).toHaveBeenNthCalledWith(2, expect.objectContaining({ cursor: "c1" }));
   });
+
+  it("GET / should handle list errors", async () => {
+    mockR2.list.mockRejectedValueOnce(new Error("R2 Error"));
+    const req = new Request("http://localhost/", { method: "GET" });
+    const res = await mediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /admin/media should return 200", async () => {
+    mockR2.list.mockResolvedValue({ objects: [], truncated: false });
+    env.DB.all.mockResolvedValue({ results: [] });
+    const req = new Request("http://localhost/", { method: "GET" });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /admin/media should handle list errors", async () => {
+    mockR2.list.mockRejectedValueOnce(new Error("R2 Error"));
+    const req = new Request("http://localhost/", { method: "GET" });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /upload should reject missing file", async () => {
+    const formData = new FormData();
+    const { Hono } = await import("hono");
+    const app = new Hono<any>();
+    app.post("/upload", async (c, next) => {
+      c.req.formData = async () => formData;
+      await next();
+    });
+    app.route("/", adminMediaRouter);
+
+    const res = await app.request("http://localhost/upload", { method: "POST" }, env, mockExecutionContext);
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /upload should reject invalid file type", async () => {
+    const formData = new FormData();
+    const file = new File([new Uint8Array([0x00, 0x00])], "text.txt", { type: "text/plain" });
+    formData.append("file", file);
+    
+    const { Hono } = await import("hono");
+    const app = new Hono<any>();
+    app.post("/upload", async (c, next) => {
+      c.req.formData = async () => formData;
+      await next();
+    });
+    app.route("/", adminMediaRouter);
+
+    const res = await app.request("http://localhost/upload", { method: "POST" }, env, mockExecutionContext);
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /upload should handle R2 put errors", async () => {
+    mockR2.put.mockRejectedValueOnce(new Error("R2 Error"));
+    const formData = new FormData();
+    const pngMagicBytes = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x00, 0x00, 0x00, 0x00]);
+    const file = new File([pngMagicBytes], "robot.png", { type: "image/png" });
+    formData.append("file", file);
+
+    const { Hono } = await import("hono");
+    const app = new Hono<any>();
+    app.post("/upload", async (c, next) => {
+      c.req.formData = async () => formData;
+      await next();
+    });
+    app.route("/", adminMediaRouter);
+
+    const res = await app.request("http://localhost/upload", { method: "POST" }, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /:key should return 404 if object not found", async () => {
+    mockR2.get.mockResolvedValueOnce(null);
+    const req = new Request("http://localhost/notfound.png", { method: "GET" });
+    const res = await mediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(404);
+  });
+
+  it("GET /:key should return 500 on R2 error", async () => {
+    mockR2.get.mockRejectedValueOnce(new Error("R2 Error"));
+    const req = new Request("http://localhost/img.png", { method: "GET" });
+    const res = await mediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("PUT /move/:key should require folder", async () => {
+    const req = new Request("http://localhost/move/img.png", {
+      method: "PUT",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(400);
+  });
+
+  it("PUT /move/:key should return 404 if source not found", async () => {
+    mockR2.get.mockResolvedValueOnce(null);
+    const req = new Request("http://localhost/move/img.png", {
+      method: "PUT",
+      body: JSON.stringify({ folder: "Gallery" }),
+      headers: { "Content-Type": "application/json" }
+    });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(404);
+  });
+
+  it("PUT /move/:key should handle R2 errors", async () => {
+    mockR2.get.mockRejectedValueOnce(new Error("R2 Error"));
+    const req = new Request("http://localhost/move/img.png", {
+      method: "PUT",
+      body: JSON.stringify({ folder: "Gallery" }),
+      headers: { "Content-Type": "application/json" }
+    });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE /:key should handle R2 errors", async () => {
+    mockR2.delete.mockRejectedValueOnce(new Error("R2 Error"));
+    const req = new Request("http://localhost/img.png", { method: "DELETE" });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /syndicate should require key", async () => {
+    const req = new Request("http://localhost/syndicate", {
+      method: "POST",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /syndicate should succeed", async () => {
+    vi.mock("../../utils/socialSync", () => ({
+      dispatchPhotoSocials: vi.fn().mockResolvedValue(true)
+    }));
+    vi.mock("../../middleware", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("../../middleware")>();
+      return {
+        ...actual,
+        getDbSettings: vi.fn().mockResolvedValue({}),
+      };
+    });
+    const req = new Request("http://localhost/syndicate", {
+      method: "POST",
+      body: JSON.stringify({ key: "img.png", caption: "hello" }),
+      headers: { "Content-Type": "application/json" }
+    });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /syndicate should handle errors", async () => {
+    const req = new Request("http://localhost/syndicate", {
+      method: "POST",
+      body: "not-json",
+      headers: { "Content-Type": "application/json" }
+    });
+    const res = await adminMediaRouter.request(req, {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
 });

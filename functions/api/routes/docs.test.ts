@@ -12,6 +12,13 @@ vi.mock("../../utils/notifications", () => ({
   emitNotification: vi.fn().mockResolvedValue(true),
   notifyByRole: vi.fn().mockResolvedValue(true),
 }));
+vi.mock("../../utils/auth", () => ({
+  getAuth: vi.fn().mockReturnValue({
+    api: {
+      getSession: vi.fn().mockResolvedValue({ user: { id: "1", email: "student@test.com", name: "Student" } })
+    }
+  })
+}));
 
 describe("Hono Backend - /docs Router", () => {
   let env: any;
