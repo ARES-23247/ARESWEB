@@ -62,7 +62,7 @@ export default function SeasonManagerTab({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-4 px-1 flex items-center gap-2">
+      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40 mb-4 px-1 flex items-center gap-2">
         <History size={12} className={isLoading ? "animate-pulse text-ares-red" : "text-ares-red"} />
         Season Archive
         {isError && (
@@ -72,7 +72,7 @@ export default function SeasonManagerTab({
         )}
       </h3>
 
-      <div className="text-[10px] text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
+      <div className="text-xs text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
         <span>VIEW: {view} | RAW: {seasons.length} | FILTERED: {filtered.length}</span>
         {isError && <span className="text-ares-red font-bold">API ERROR!</span>}
       </div>
@@ -96,7 +96,7 @@ export default function SeasonManagerTab({
                     {season.status === 'draft' && <span className="text-[9px] font-bold text-ares-gold bg-ares-gold/10 border border-ares-gold/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Draft</span>}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-marble/40 bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm uppercase tracking-widest">{season.robot_name || 'No Robot Assigned'}</span>
+                    <span className="text-xs text-marble/40 bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm uppercase tracking-widest">{season.robot_name || 'No Robot Assigned'}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">

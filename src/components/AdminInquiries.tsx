@@ -70,7 +70,7 @@ export default function AdminInquiries() {
             <div className={`p-1.5 ares-cut-sm ${iq.type === 'student' ? 'bg-ares-red text-white' : iq.type === 'mentor' ? 'bg-ares-gold text-black' : 'bg-ares-cyan text-black'}`}>
               {iq.type} Form
             </div>
-            <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+            <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
               iq.status === 'pending' ? 'bg-ares-gold text-black shadow-lg shadow-ares-gold/20' : 'bg-ares-cyan text-black shadow-lg shadow-ares-cyan/20'
             }`}>
                     {iq.status}
@@ -107,19 +107,19 @@ export default function AdminInquiries() {
 
               <div className="mb-4 flex-shrink-0">
                 <h4 className="text-xl font-bold text-white mb-1">{iq.name}</h4>
-                <div className="flex items-center gap-2 text-sm text-marble/60">
+                <div className="flex items-center gap-2 text-sm text-marble/90">
                   <Mail size={14} /> <a href={`mailto:${iq.email}`} className="hover:text-white transition-colors">{iq.email}</a>
                   <span className="mx-2 text-marble/20">•</span>
                   <Calendar size={14} /> {new Date(iq.created_at).toLocaleDateString()}
                 </div>
               </div>
 
-              <div className="bg-white/5 ares-cut-sm p-4 text-sm text-marble/70 flex-1">
+              <div className="bg-white/5 ares-cut-sm p-4 text-sm text-marble flex-1">
                 <div className="grid grid-cols-2 gap-y-3 mb-2">
                   {Object.entries(meta).map(([k, v]) => (
                     k !== 'additional' && v && (
                       <div key={k}>
-                        <span className="block text-[10px] font-black uppercase text-marble/40 tracking-widest">{k}</span>
+                        <span className="block text-xs font-black uppercase text-marble/40 tracking-widest">{k}</span>
                         {k === 'phone' ? (
                           <a href={`tel:${String(v).replace(/[^0-9+]/g, '')}`} className="font-medium text-white hover:text-ares-cyan underline decoration-white/20 underline-offset-4">{String(v)}</a>
                         ) : (
@@ -131,8 +131,8 @@ export default function AdminInquiries() {
                 </div>
                 {meta.additional && (
                   <div className="mt-4 pt-4 border-t border-white/5">
-                    <span className="block text-[10px] font-black uppercase text-marble/40 tracking-widest">Additional Notes</span>
-                    <p className="mt-1 italic text-marble/60 whitespace-pre-wrap">{meta.additional}</p>
+                    <span className="block text-xs font-black uppercase text-marble/40 tracking-widest">Additional Notes</span>
+                    <p className="mt-1 italic text-marble/90 whitespace-pre-wrap">{meta.additional}</p>
                   </div>
                 )}
               </div>

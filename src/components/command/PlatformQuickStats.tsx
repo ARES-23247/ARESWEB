@@ -19,7 +19,7 @@ export default function PlatformQuickStats({ stats }: PlatformQuickStatsProps) {
         ].map(stat => (
           <div key={stat.label} className="text-center p-4 bg-ares-gray-dark/30 ares-cut-sm border border-white/5">
             <p className={`text-3xl font-black ${stat.color}`}>{stat.value}</p>
-            <p className="text-[10px] font-bold text-marble/40 uppercase tracking-wider mt-1">{stat.label}</p>
+            <p className="text-xs font-bold text-marble/40 uppercase tracking-wider mt-1">{stat.label}</p>
           </div>
         ))}
       </div>

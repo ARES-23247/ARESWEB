@@ -103,7 +103,7 @@ export default function JudgesHub() {
               <ShieldCheck className="text-white w-10 h-10" />
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight text-center">Judge&apos;s Hub</h1>
-            <p className="text-ares-gray text-center text-sm mt-3 leading-relaxed">
+            <p className="text-marble text-center text-sm mt-3 leading-relaxed">
               Secure, rapid-review portal for competition judges. <br/>
               Enter your unique access code below.
             </p>
@@ -111,7 +111,7 @@ export default function JudgesHub() {
 
           <div className="space-y-6">
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-ares-gray group-focus-within:text-ares-cyan transition-colors" size={18} />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-marble group-focus-within:text-ares-cyan transition-colors" size={18} />
               <input
                 type="text"
                 aria-label="Judges Passcode"
@@ -147,7 +147,7 @@ export default function JudgesHub() {
           </div>
 
           <div className="mt-10 pt-8 border-t border-white/5 text-center">
-            <p className="text-[10px] text-ares-gray uppercase tracking-[0.2em] font-bold">
+            <p className="text-xs text-marble uppercase tracking-[0.2em] font-bold">
               Property of Team 23247 ARES Robotics
             </p>
           </div>
@@ -167,7 +167,7 @@ export default function JudgesHub() {
             </div>
             <div>
               <h2 className="font-black text-sm uppercase tracking-widest leading-none">Judge&apos;s Hub</h2>
-              <span className="text-[10px] text-ares-gray font-bold uppercase tracking-tighter">Secure Rapid Review Protocol</span>
+              <span className="text-xs text-marble font-bold uppercase tracking-tighter">Secure Rapid Review Protocol</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -181,7 +181,7 @@ export default function JudgesHub() {
             </a>
             <button 
               onClick={logout}
-              className="text-xs font-bold text-ares-gray hover:text-ares-red transition-colors px-4 py-2 ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/20"
+              className="text-xs font-bold text-marble hover:text-ares-red transition-colors px-4 py-2 ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/20"
             >
               DISCONNECT
             </button>
@@ -217,10 +217,10 @@ export default function JudgesHub() {
                        <ShieldCheck size={12} /> Priority Document
                     </div>
                     <h4 className="text-xl font-bold group-hover:text-ares-gold transition-colors">{doc.title}</h4>
-                    <p className="text-ares-gray text-sm mt-2 line-clamp-2">{doc.description}</p>
+                    <p className="text-marble text-sm mt-2 line-clamp-2">{doc.description}</p>
                     <div className="mt-6 flex items-center justify-between">
-                      <span className="text-[10px] font-black bg-ares-gold/10 text-ares-gold px-3 py-1 rounded-full uppercase tracking-widest">RAPID REVIEW</span>
-                      <ChevronRight className="text-ares-gray group-hover:text-ares-gold transition-colors" />
+                      <span className="text-xs font-black bg-ares-gold/10 text-ares-gold px-3 py-1 rounded-full uppercase tracking-widest">RAPID REVIEW</span>
+                      <ChevronRight className="text-marble group-hover:text-ares-gold transition-colors" />
                     </div>
                   </motion.a>
                 ))}
@@ -245,14 +245,14 @@ export default function JudgesHub() {
                     whileHover={{ x: 4 }}
                     className="group flex items-center gap-4 p-5 bg-obsidian/30 border border-white/5 ares-cut hover:bg-black hover:border-ares-cyan/30 transition-all"
                   >
-                    <div className="w-12 h-12 bg-black ares-cut-sm flex items-center justify-center border border-white/10 text-ares-gray group-hover:text-ares-cyan group-hover:border-ares-cyan/50 transition-all">
+                    <div className="w-12 h-12 bg-black ares-cut-sm flex items-center justify-center border border-white/10 text-marble group-hover:text-ares-cyan group-hover:border-ares-cyan/50 transition-all">
                       <FileText size={24} />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold group-hover:text-ares-cyan transition-colors">{doc.title}</h4>
-                      <div className="text-[10px] uppercase tracking-widest text-ares-gray mt-0.5">{doc.category}</div>
+                      <div className="text-xs uppercase tracking-widest text-marble mt-0.5">{doc.category}</div>
                     </div>
-                    <ChevronRight size={18} className="text-ares-gray group-hover:text-ares-cyan transform transition-all group-hover:translate-x-1" />
+                    <ChevronRight size={18} className="text-marble group-hover:text-ares-cyan transform transition-all group-hover:translate-x-1" />
                   </motion.a>
                 ))}
               </div>
@@ -272,10 +272,10 @@ export default function JudgesHub() {
                   <div key={i} className="p-6 bg-black/40 border border-white/10 ares-cut-lg">
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-xs font-bold text-ares-gold bg-ares-gold/10 px-3 py-1 rounded-full uppercase tracking-widest">{format(new Date(log.date), 'MMM yyyy')}</div>
-                      <div className="text-lg font-black text-white">{log.total_hours} <span className="text-xs text-ares-gray uppercase tracking-tighter">Team Hours</span></div>
+                      <div className="text-lg font-black text-white">{log.total_hours} <span className="text-xs text-marble uppercase tracking-tighter">Team Hours</span></div>
                     </div>
-                    <h4 className="font-bold text-ares-offwhite">{log.event_name}</h4>
-                    <p className="text-ares-gray text-sm mt-2 leading-relaxed">{log.description}</p>
+                    <h4 className="font-bold text-white">{log.event_name}</h4>
+                    <p className="text-marble text-sm mt-2 leading-relaxed">{log.description}</p>
                   </div>
                 ))}
               </div>
@@ -305,9 +305,9 @@ export default function JudgesHub() {
                     className="p-5 bg-gradient-to-br from-obsidian to-black border border-white/5 ares-cut relative overflow-hidden group shadow-lg"
                   >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-ares-gold/5 blur-2xl rounded-full" />
-                    <div className="text-[10px] font-black text-ares-gold/70 uppercase tracking-widest mb-1">{award.event_name}</div>
+                    <div className="text-xs font-black text-ares-gold/70 uppercase tracking-widest mb-1">{award.event_name}</div>
                     <h4 className="font-bold text-white text-lg leading-tight group-hover:text-ares-gold transition-colors">{award.award_name}</h4>
-                    <div className="text-[10px] text-ares-gray mt-2 font-mono uppercase italic">{award.title}</div>
+                    <div className="text-xs text-marble mt-2 font-mono uppercase italic">{award.title}</div>
                   </motion.div>
                 ))}
               </div>
@@ -318,15 +318,15 @@ export default function JudgesHub() {
               <h3 className="text-xs font-black text-ares-cyan uppercase tracking-[0.2em] mb-6">Seasonal Efficiency</h3>
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-ares-gray text-sm">Outreach Frequency</span>
+                  <span className="text-marble text-sm">Outreach Frequency</span>
                   <span className="font-black text-white">{portfolio?.outreach.length || 0} Events</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-ares-gray text-sm">Engagement Reach</span>
+                  <span className="text-marble text-sm">Engagement Reach</span>
                   <span className="font-black text-white">~{portfolio?.outreach.reduce((acc, curr) => acc + (curr.total_hours * 5), 0)} Impacted</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-ares-cyan/20 pt-6">
-                  <span className="text-ares-gray font-bold uppercase tracking-tighter text-xs">Total Service Hours</span>
+                  <span className="text-marble font-bold uppercase tracking-tighter text-xs">Total Service Hours</span>
                   <span className="font-black text-2xl text-ares-cyan">{portfolio?.outreach.reduce((acc, curr) => acc + curr.total_hours, 0)}</span>
                 </div>
               </div>
@@ -338,7 +338,7 @@ export default function JudgesHub() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto p-12 mt-20 border-t border-white/5 text-center text-ares-gray">
+      <footer className="max-w-7xl mx-auto p-12 mt-20 border-t border-white/5 text-center text-marble">
         <p className="text-xs font-medium tracking-wide">
           Developed by Team 23247 ARES Robotics &middot; Appalachian Robotics & Engineering Society
         </p>

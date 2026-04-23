@@ -39,19 +39,19 @@ export function CareerSection({ profile, setProfile, inputClass, sectionClass }:
           <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-12 h-12" />
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-               <label htmlFor={`career-name-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">Company Name</label>
+               <label htmlFor={`career-name-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">Company Name</label>
                <input id={`career-name-${i}`} className={inputClass} placeholder="Company name" value={emp.name} onChange={e => updateEmployer(i, "name", e.target.value)} />
             </div>
             <div>
-               <label htmlFor={`career-domain-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">Domain (e.g. spacex.com)</label>
+               <label htmlFor={`career-domain-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">Domain (e.g. spacex.com)</label>
                <input id={`career-domain-${i}`} className={inputClass} placeholder="Domain" value={emp.domain} onChange={e => updateEmployer(i, "domain", e.target.value)} />
             </div>
             <div>
-               <label htmlFor={`career-title-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">Job Title</label>
+               <label htmlFor={`career-title-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">Job Title</label>
                <input id={`career-title-${i}`} className={inputClass} placeholder="Title" value={emp.title} onChange={e => updateEmployer(i, "title", e.target.value)} />
             </div>
             <div>
-               <label htmlFor={`career-years-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">Years</label>
+               <label htmlFor={`career-years-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">Years</label>
                <input id={`career-years-${i}`} className={inputClass} placeholder="Years" value={emp.years} onChange={e => updateEmployer(i, "years", e.target.value)} />
             </div>
           </div>

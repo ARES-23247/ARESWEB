@@ -32,11 +32,11 @@ const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; borde
     text: "text-ares-gold"
   },
   Silver: { 
-    icon: <ShieldCheck className="text-marble/80" size={24} />, 
+    icon: <ShieldCheck className="text-marble" size={24} />, 
     glass: "bg-white/5", 
     border: "border-white/10", 
     glow: "",
-    text: "text-marble/70"
+    text: "text-marble"
   },
   Bronze: { 
     icon: <Zap className="text-ares-bronze" size={20} />, 
@@ -207,28 +207,28 @@ export default function Sponsors() {
         </div>
 
         <footer 
-          className="mt-32 p-12 ares-cut-lg bg-ares-black-soft border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
+          className="mt-32 p-12 ares-cut-lg bg-obsidian border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative"
         >
           {/* Subtle grid pattern background */}
           <div className="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-5 mix-blend-overlay pointer-events-none z-0" aria-hidden="true"></div>
 
-          <div className="flex-1 relative z-10 flex flex-col justify-between">
+          <div className="flex-1 relative z-10 flex flex-col justify-between bg-obsidian p-6 rounded-xl border border-white/5">
             <div>
               <h2 className="text-4xl md:text-5xl font-black text-white mb-6 uppercase tracking-tighter">Join the<br/><span className="text-ares-gold italic">Engineering Journey.</span></h2>
-              <p className="text-marble/70 text-lg mb-8 max-w-xl leading-relaxed">
+              <p className="text-marble text-lg mb-8 max-w-xl leading-relaxed">
                 Help us build the next generation of robotics. We are always looking for partners who share our passion for excellence, education, and innovation. Whether you can provide mentorship, machining, material donations, or financial grants, your support is the foundation of our success.
               </p>
             </div>
             
             <div className="mt-12 lg:mt-0">
-              <p className="text-marble/80 font-bold uppercase tracking-widest text-xs mb-3">Or email the executive board directly</p>
+              <p className="text-marble font-bold uppercase tracking-widest text-xs mb-3">Or email the executive board directly</p>
               <a href={`mailto:${siteConfig.contact.email}`} className="text-2xl font-bold text-white hover:text-ares-gold transition-colors flex items-center gap-3 w-fit group">
                 {siteConfig.contact.email} <span className="group-hover:translate-x-1 transition-transform"><ArrowRight size={20} className="text-ares-red" /></span>
               </a>
             </div>
           </div>
           
-          <div className="flex-1 relative z-10 bg-obsidian/80 p-8 ares-cut border border-white/5 shadow-2xl backdrop-blur-md">
+          <div className="flex-1 relative z-10 bg-obsidian p-8 ares-cut border border-white/5 shadow-2xl ">
             <h4 className="text-xl font-black text-white mb-6 uppercase tracking-widest flex items-center gap-3">
               <Heart size={20} className="text-ares-red fill-ares-red/20" /> Become a Sponsor
             </h4>
@@ -246,23 +246,23 @@ export default function Sponsors() {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label htmlFor="name-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Company / Name *</label>
-                  <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
+                  <input id="name-input" type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="Stark Industries" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="email-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Email *</label>
-                    <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
+                    <input id="email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="you@stark.com" />
                   </div>
                   <div>
                     <label htmlFor="phone-input" className="block text-xs font-bold text-white uppercase tracking-widest mb-1.5 ml-1">Phone Number (Optional)</label>
-                    <input id="phone-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="(304) 555-1234" />
+                    <input id="phone-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-ares-gray focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" placeholder="(304) 555-1234" />
                   </div>
                 </div>
               </div>
               <div>
                 <label htmlFor="subject-select" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1">Sponsorship Level</label>
                 <div className="relative">
-                  <select id="subject-select" value={level} onChange={e => setLevel(e.target.value)} className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer" style={{ colorScheme: 'dark' }}>
+                  <select id="subject-select" value={level} onChange={e => setLevel(e.target.value)} className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer" style={{ colorScheme: 'dark' }}>
                     <option className="bg-obsidian text-white">Interested in Details</option>
                     {dropdownTiers.map(t => (
                       <option key={t} className="bg-obsidian text-white">{t} Tier Sponsor</option>
@@ -270,21 +270,21 @@ export default function Sponsors() {
                     <option className="bg-obsidian text-white">In-Kind Donation / Material</option>
                     <option className="bg-obsidian text-white">Mentorship / Engineering Support</option>
                   </select>
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-marble/80">
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-marble">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                   </div>
                 </div>
               </div>
               <div>
                 <label htmlFor="message-textarea" className="block text-xs font-bold text-marble uppercase tracking-widest mb-1.5 ml-1">Message</label>
-                <textarea id="message-textarea" value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full bg-ares-black-soft border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
+                <textarea id="message-textarea" value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-marble/50 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" placeholder="We'd love to partner with Team ARES to..."></textarea>
               </div>
               <div className="pt-2">
                 <Turnstile onVerify={setTurnstileToken} theme="dark" size="compact" className="mb-4" />
                 <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut hover:bg-ares-bronze hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
                   {isSubmitting ? "Sending..." : <><span className="flex items-center gap-2">Submit Interest Request <ArrowRight size={18} /></span></>}
                 </button>
-                <p className="text-center text-[10px] text-marble/70 font-mono uppercase tracking-tighter mt-4">
+                <p className="text-center text-xs text-marble font-mono uppercase tracking-tighter mt-4">
                   {siteConfig.team.fullName} operates under a 501(c)(3) nonprofit umbrella. All donations are tax-deductible.
                 </p>
               </div>

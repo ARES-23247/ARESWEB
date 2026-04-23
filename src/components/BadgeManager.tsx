@@ -158,7 +158,7 @@ export default function BadgeManager() {
                   <div>
                     <h4 className="text-white font-bold">{b.name}</h4>
                     <p className="text-xs text-white/60 mt-0.5">{b.description || "No description provided."}</p>
-                    <p className="text-[10px] text-white/20 font-mono mt-2">ID: {b.id}</p>
+                    <p className="text-xs text-white/20 font-mono mt-2">ID: {b.id}</p>
                   </div>
                 </div>
               );

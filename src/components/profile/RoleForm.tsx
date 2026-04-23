@@ -84,7 +84,7 @@ export function RoleForm({ profile, setProfile, inputClass, labelClass, sectionC
           <input id="pe-rookie" className={inputClass} placeholder="e.g. 2023" value={profile.rookie_year} onChange={e => setProfile({...profile, rookie_year: e.target.value})} />
         </div>
       </div>
-      <div className="flex items-center gap-3 mt-4 text-sm text-marble/80">
+      <div className="flex items-center gap-3 mt-4 text-sm text-marble">
         <input type="checkbox" id="showAbout" checked={profile.show_on_about} onChange={e => setProfile({...profile, show_on_about: e.target.checked})} className="w-4 h-4 accent-ares-red" />
         <label htmlFor="showAbout">Show me on the About Us page</label>
       </div>

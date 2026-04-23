@@ -164,7 +164,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   };
 
 
-  if (!editor) return <div className="text-marble/80 animate-pulse font-mono tracking-widest text-sm">Booting Editor System...</div>;
+  if (!editor) return <div className="text-marble animate-pulse font-mono tracking-widest text-sm">Booting Editor System...</div>;
 
   return (
     <div className="flex flex-col gap-6 w-full relative">

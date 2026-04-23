@@ -24,7 +24,7 @@ export default function ZulipBotCommands() {
         ].map(item => (
           <div key={item.cmd} className="p-3 bg-white/5 ares-cut-sm border border-white/5">
             <code className="text-ares-cyan text-xs font-bold">{item.cmd}</code>
-            <p className="text-marble/50 text-[10px] mt-1">{item.desc}</p>
+            <p className="text-marble/50 text-xs mt-1">{item.desc}</p>
           </div>
         ))}
       </div>

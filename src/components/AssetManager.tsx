@@ -84,7 +84,7 @@ export default function AssetManager() {
           <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
              <button 
                 onClick={() => setSelectedFolderFilter("All")}
-                className={`px-4 py-1.5 ares-cut-sm text-[10px] font-bold uppercase tracking-widest transition-all ${selectedFolderFilter === "All" ? "bg-white text-black" : "bg-white/5 text-marble/60 border border-white/5 hover:bg-white/10"}`}
+                className={`px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest transition-all ${selectedFolderFilter === "All" ? "bg-white text-black" : "bg-white/5 text-marble/90 border border-white/5 hover:bg-white/10"}`}
              >
                 All Assets
              </button>
@@ -92,7 +92,7 @@ export default function AssetManager() {
                 <button 
                   key={folder}
                   onClick={() => setSelectedFolderFilter(folder)}
-                  className={`px-4 py-1.5 ares-cut-sm text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${selectedFolderFilter === folder ? "bg-ares-gold text-black" : "bg-white/5 text-marble/60 border border-white/5 hover:bg-white/10"}`}
+                  className={`px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${selectedFolderFilter === folder ? "bg-ares-gold text-black" : "bg-white/5 text-marble/90 border border-white/5 hover:bg-white/10"}`}
                 >
                   <FolderOpen size={12} />
                   {folder}

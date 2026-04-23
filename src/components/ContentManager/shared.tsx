@@ -56,7 +56,7 @@ export const ClickToDeleteButton = ({
 
   if (isDeleting) {
     return (
-      <button disabled className="text-xs font-bold text-marble/60 bg-white/5 px-3 py-1 ares-cut-sm opacity-50 cursor-not-allowed">
+      <button disabled className="text-xs font-bold text-marble/90 bg-white/5 px-3 py-1 ares-cut-sm opacity-50 cursor-not-allowed">
         DELETING...
       </button>
     );

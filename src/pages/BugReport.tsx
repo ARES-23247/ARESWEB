@@ -35,7 +35,7 @@ export default function BugReport() {
               System <span aria-hidden="true" className="text-ares-gold before:content-['Diagnostics']"></span>
               <span className="sr-only">Diagnostics</span>
             </h1>
-            <p className="text-marble/80 text-lg md:text-xl max-w-2xl border-l-4 border-ares-red pl-4">
+            <p className="text-marble text-lg md:text-xl max-w-2xl border-l-4 border-ares-red pl-4">
               Thank you for reporting an issue! We use GitHub Issues to track and squash bugs across the ARES 23247 web infrastructure. 
             </p>
           </div>
@@ -103,7 +103,7 @@ export default function BugReport() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2 tracking-wide uppercase">No Silent Failures</h3>
-                  <p className="text-marble/70 text-sm leading-relaxed">
+                  <p className="text-marble text-sm leading-relaxed">
                     If you saw a red error box popup, please <strong>copy and paste the exact technical status code</strong> in your report. It helps our developers trace the error instantly!
                   </p>
                 </div>
@@ -115,7 +115,7 @@ export default function BugReport() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2 tracking-wide uppercase">GitHub Account Required</h3>
-                  <p className="text-marble/70 text-sm leading-relaxed">
+                  <p className="text-marble text-sm leading-relaxed">
                     This button will forward your draft to our public GitHub issue tracker. You will need to click &quot;Submit New Issue&quot; on the final page.
                   </p>
                 </div>
@@ -127,7 +127,7 @@ export default function BugReport() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2 tracking-wide uppercase">No Account? No Problem</h3>
-                  <p className="text-marble/70 text-sm leading-relaxed mb-3">
+                  <p className="text-marble text-sm leading-relaxed mb-3">
                     If you don&apos;t have a GitHub account, you can email us your bug report securely.
                   </p>
                   <a href={`mailto:${siteConfig.contact.email}?subject=${siteConfig.team.name}%20Bug%20Report`} className="text-ares-cyan hover:text-white font-bold text-sm tracking-wider uppercase inline-flex items-center gap-2 transition-colors">
@@ -139,7 +139,7 @@ export default function BugReport() {
           </div>
           
           <div className="mt-12 text-center pb-8">
-            <Link to="/" className="text-marble/70 hover:text-white text-sm font-bold uppercase tracking-widest transition-colors inline-block border-b border-transparent hover:border-white">
+            <Link to="/" className="text-marble hover:text-white text-sm font-bold uppercase tracking-widest transition-colors inline-block border-b border-transparent hover:border-white">
               Return to Base
             </Link>
           </div>

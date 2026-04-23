@@ -291,10 +291,10 @@ export default function CommandPalette() {
                     
                     <div className="flex-1 overflow-hidden">
                        <div className="flex items-center gap-2">
-                          <h4 className={`font-bold transition-colors ${selectedIndex === idx ? "text-white" : "text-marble/80"}`}>
+                          <h4 className={`font-bold transition-colors ${selectedIndex === idx ? "text-white" : "text-marble"}`}>
                             {res.title}
                           </h4>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-marble/30 bg-white/5 px-2 py-0.5 rounded-full border border-white/10 shrink-0">
+                          <span className="text-xs font-bold uppercase tracking-widest text-marble/30 bg-white/5 px-2 py-0.5 rounded-full border border-white/10 shrink-0">
                             {res.category}
                           </span>
                        </div>

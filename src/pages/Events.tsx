@@ -95,13 +95,13 @@ export default function Events() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="relative z-10 max-w-4xl mx-auto space-y-6"
+          className="relative z-10 max-w-4xl mx-auto space-y-6 bg-obsidian p-8 rounded-2xl border border-white/10 shadow-2xl"
         >
           {/* ACC-F01: Fixed H1 for screen readers while maintaining visual style */}
           <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight">
             Team <span className="text-ares-gold">Events</span>
           </h1>
-          <p className="text-xl md:text-2xl text-marble/70 font-medium max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-marble font-medium max-w-2xl mx-auto">
             Join us at our upcoming competitions, community outreach demos, and robotics workshops.
           </p>
         </motion.div>
@@ -160,7 +160,7 @@ export default function Events() {
                             href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(cal.id as string)}`}
                             target="_blank"
                             rel="noreferrer"
-                            className={`flex-1 text-center px-3 py-2 bg-${cal.color}/20 hover:bg-${cal.color}/40 text-${cal.color} border border-${cal.color}/30 ares-cut-sm text-[10px] font-black uppercase tracking-widest transition-all`}
+                            className={`flex-1 text-center px-3 py-2 bg-${cal.color}/20 hover:bg-${cal.color}/40 text-${cal.color} border border-${cal.color}/30 ares-cut-sm text-xs font-black uppercase tracking-widest transition-all`}
                           >
                             + Google
                           </a>
@@ -168,7 +168,7 @@ export default function Events() {
                             href={`https://calendar.google.com/calendar/ical/${encodeURIComponent(cal.id as string)}/public/basic.ics`}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex-1 text-center px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 ares-cut-sm text-[10px] font-black uppercase tracking-widest transition-all"
+                            className="flex-1 text-center px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 ares-cut-sm text-xs font-black uppercase tracking-widest transition-all"
                           >
                             + iCal
                           </a>
@@ -189,7 +189,7 @@ export default function Events() {
               
               {upcomingOutreach.length === 0 ? (
                 <div className="bg-white/5 border border-white/10 hero-card p-12 text-center">
-                  <p className="text-marble/70 text-lg">No upcoming outreach events are currently scheduled.</p>
+                  <p className="text-marble text-lg">No upcoming outreach events are currently scheduled.</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
@@ -202,7 +202,7 @@ export default function Events() {
             {upcomingExternal.length > 0 && (
               <div className="flex flex-col gap-8 mt-12">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-2xl font-bold text-white/90">External & Community Events</h2>
+                  <h2 className="text-2xl font-bold text-white">External & Community Events</h2>
                   <div className="h-px flex-1 bg-gradient-to-r from-ares-cyan/50 to-transparent"></div>
                 </div>
                 
@@ -216,7 +216,7 @@ export default function Events() {
             {upcomingPractices.length > 0 && (
               <div className="flex flex-col gap-8 mt-12">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-2xl font-bold text-white/90">Upcoming Practices</h2>
+                  <h2 className="text-2xl font-bold text-white">Upcoming Practices</h2>
                   <div className="h-px flex-1 bg-gradient-to-r from-ares-red/50 to-transparent"></div>
                 </div>
                 
@@ -229,7 +229,7 @@ export default function Events() {
             {/* Archival - Past Events */}
             {(pastOutreach.length > 0 || pastPractices.length > 0) && (
               <div className="mt-16 bg-white/5 border border-white/10 ares-cut p-8 backdrop-blur-sm">
-                <h2 className="text-4xl font-black text-white/80 tracking-tight mb-8">Event Archive</h2>
+                <h2 className="text-4xl font-black text-white tracking-tight mb-8">Event Archive</h2>
                 
                 {pastOutreach.length > 0 && (
                   <div className="flex flex-col gap-6 mb-12">

@@ -116,7 +116,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-bold text-white">{comment.nickname || "ARES Member"}</span>
-                      <span className="text-[10px] text-marble/30">{new Date(comment.created_at).toLocaleDateString()}</span>
+                      <span className="text-xs text-marble/30">{new Date(comment.created_at).toLocaleDateString()}</span>
                       {userCanModify && !isEditing && (
                         <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => { setEditingId(comment.id); setEditContent(comment.content); }}
@@ -149,7 +149,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-marble/70 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+                      <p className="text-sm text-marble leading-relaxed whitespace-pre-wrap">{comment.content}</p>
                     )}
                   </div>
                 </div>
@@ -159,7 +159,7 @@ export default function CommentSection({ targetType, targetId, isAdmin }: Commen
         </div>
       ) : (
         <div className="mb-8 p-6 bg-white/5 border border-white/10 ares-cut text-center">
-          <p className="text-sm text-marble/70 mb-2">
+          <p className="text-sm text-marble mb-2">
             <span className="text-ares-red font-bold">Verified Access Required</span>
           </p>
           <p className="text-sm text-marble/40 max-w-md mx-auto mb-6">

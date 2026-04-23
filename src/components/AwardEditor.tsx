@@ -183,7 +183,7 @@ export default function AwardEditor() {
             )}
 
             <div className="flex-1">
-              <div className="flex items-center gap-3 text-ares-gold text-[10px] font-black uppercase tracking-widest mb-2">
+              <div className="flex items-center gap-3 text-ares-gold text-xs font-black uppercase tracking-widest mb-2">
                  <span className="flex items-center gap-1"><Calendar size={12} /> {award.year}</span>
                  <span className="flex items-center gap-1">&middot; <Star size={12} className="fill-ares-gold" /> Blue Banner</span>
               </div>

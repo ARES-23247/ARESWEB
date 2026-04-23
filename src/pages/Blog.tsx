@@ -77,7 +77,7 @@ export default function Blog() {
                           alt="Author"
                           className="w-5 h-5 rounded-full object-cover border border-white/10"
                         />
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[100px]">{post.author_nickname || "ARES Author"}</span>
+                        <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[100px]">{post.author_nickname || "ARES Author"}</span>
                       </div>
                     )}
                   </div>
@@ -86,8 +86,8 @@ export default function Blog() {
             </Link>
           ))}
           {!isLoading && posts.length === 0 && (
-            <div className="text-white/80 p-6 glass-card hero-card col-span-full border-dashed">
-              No posts published yet. Head to the <Link to="/dashboard" className="text-ares-gold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">Dashboard</Link> to create one.
+            <div className="text-white p-6 glass-card hero-card col-span-full border-dashed">
+              No posts published yet. Head to the <Link to="/dashboard" className="text-ares-gold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">Dashboard</Link> to create one.
             </div>
           )}
           {isLoading && (

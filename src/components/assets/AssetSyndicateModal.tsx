@@ -23,7 +23,7 @@ export default function AssetSyndicateModal({
         <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/10 blur-3xl rounded-full pointer-events-none" />
         
         <h3 className="text-xl font-bold text-white mb-2">Broadcast Media</h3>
-        <p className="text-sm text-marble/70 mb-6">
+        <p className="text-sm text-marble mb-6">
           Dispatch this asset to Instagram, X, Facebook, and Discord securely. Make sure your Integration Keys are populated.
         </p>
         

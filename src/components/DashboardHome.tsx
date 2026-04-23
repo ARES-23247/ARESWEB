@@ -63,21 +63,21 @@ export default function DashboardHome() {
             <div className="grid grid-cols-2 gap-3">
               <Link to="/dashboard/profile" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
                 <User size={20} className="text-marble/40 group-hover:text-white mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">My Profile</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-marble">My Profile</span>
               </Link>
               <Link to="/dashboard/outreach" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
                 <Target size={20} className="text-marble/40 group-hover:text-white mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">Outreach</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-marble">Outreach</span>
               </Link>
               {canSeeInquiries && (
                 <Link to="/dashboard/inquiries" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
                   <MessageSquare size={20} className="text-marble/40 group-hover:text-white mb-2" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">Inquiries</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-marble">Inquiries</span>
                 </Link>
               )}
               <Link to="/docs" className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 ares-cut-sm transition-colors border border-white/5 group">
                 <BookOpen size={20} className="text-marble/40 group-hover:text-white mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-marble/70">ARESLib</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-marble">ARESLib</span>
               </Link>
             </div>
           </div>

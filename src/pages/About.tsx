@@ -51,7 +51,7 @@ export default function About() {
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <p className="text-ares-bronze uppercase tracking-[0.4em] text-xs font-bold mb-6 font-heading">Our Community</p>
           <h1 className="text-5xl md:text-8xl font-bold text-white mb-8 font-heading uppercase">About ARES</h1>
-          <p className="text-marble/70 text-xl max-w-2xl mx-auto leading-relaxed border-t border-ares-bronze/20 pt-8 mt-8">
+          <p className="text-marble text-xl max-w-2xl mx-auto leading-relaxed border-t border-ares-bronze/20 pt-8 mt-8">
             We are the <span className="text-white font-bold">Appalachian Robotics & Engineering Society</span>. 
             More than a team, we are a training ground for the next generation of West Virginia&apos;s technical elite.
           </p>
@@ -144,7 +144,7 @@ export default function About() {
             </div>
             <div className="bg-marble/5 border border-ares-bronze/20 hero-card p-12 text-center group hover:border-ares-red/50">
               <h3 className="text-4xl font-bold text-ares-bronze mb-6 font-heading group-hover:text-white transition-colors">Dave Huss & Kelley Burd-Huss</h3>
-              <div className="space-y-6 text-lg text-marble/60 leading-relaxed max-w-2xl mx-auto italic">
+              <div className="space-y-6 text-lg text-marble/90 leading-relaxed max-w-2xl mx-auto italic">
                 <p>
                   Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>®</a> ecosystem, and robotics has since redefined their community impact.
                 </p>

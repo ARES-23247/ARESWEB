@@ -76,7 +76,7 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
           <div>
             <h3 className="text-xl font-black text-white italic tracking-tighter flex items-center gap-2">
               LIVE COMPETITION INTEL
-              <span className="text-[10px] not-italic font-bold bg-ares-red text-white px-2 py-0.5 rounded-full uppercase tracking-widest ml-2 shadow-lg shadow-ares-red/20">Active</span>
+              <span className="text-xs not-italic font-bold bg-ares-red text-white px-2 py-0.5 rounded-full uppercase tracking-widest ml-2 shadow-lg shadow-ares-red/20">Active</span>
             </h3>
             <p className="text-marble/40 text-sm font-medium flex items-center gap-4 mt-1">
               {myRanking ? (
@@ -88,7 +88,7 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
               )}
               <span className="w-1 h-1 bg-white/20 rounded-full" />
               {nextMatch ? (
-                <span className="flex items-center gap-1.5 text-marble/80">
+                <span className="flex items-center gap-1.5 text-marble">
                   <Clock size={14} /> Next Match: {nextMatch.comp_level.toUpperCase()}{nextMatch.match_number}
                 </span>
               ) : (
@@ -103,7 +103,7 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
             href={`https://www.thebluealliance.com/event/${eventKey}`}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 ares-cut text-sm font-bold text-marble/80 hover:bg-white/10 transition-all"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 ares-cut text-sm font-bold text-marble hover:bg-white/10 transition-all"
           >
             Full Stats <ExternalLink size={14} />
           </a>

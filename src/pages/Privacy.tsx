@@ -21,7 +21,7 @@ export default function Privacy() {
           <h1 className="text-4xl lg:text-5xl font-bold font-heading mb-6 tracking-tight">
             Privacy Policy
           </h1>
-          <p className="text-xl text-marble/80 border-l-2 border-ares-cyan/30 pl-6">
+          <p className="text-xl text-marble border-l-2 border-ares-cyan/30 pl-6">
             ARES 23247 is committed to engineering privacy. We employ <strong>Cookie-Free Analytics</strong> to protect our students and global visitors.
           </p>
         </div>
@@ -35,10 +35,10 @@ export default function Privacy() {
               </div>
               <h2 className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
             </div>
-            <p className="text-marble/70 leading-relaxed mb-4">
+            <p className="text-marble leading-relaxed mb-4">
               We do not use invasive tracking pipelines like Google Analytics or Meta Pixels. Instead, we use <strong>Cloudflare Web Analytics</strong>.
             </p>
-            <ul className="list-disc pl-6 text-marble/70 space-y-2">
+            <ul className="list-disc pl-6 text-marble space-y-2">
               <li>No unique user IP addresses are stored or fingerprinted.</li>
               <li>No cookies or client-side persistent storage mechanisms are used to track you.</li>
               <li>We only measure aggregate traffic metrics (e.g., total hits, country of origin, and loading performance) to ensure our Edge network remains functional.</li>
@@ -53,10 +53,10 @@ export default function Privacy() {
               </div>
               <h2 className="text-2xl font-bold font-heading">2. COPPA & Student Privacy</h2>
             </div>
-            <p className="text-marble/70 leading-relaxed mb-4">
+            <p className="text-marble leading-relaxed mb-4">
               As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
             </p>
-            <ul className="list-disc pl-6 text-marble/70 space-y-2">
+            <ul className="list-disc pl-6 text-marble space-y-2">
               <li>We <strong>never</strong> collect Personally Identifiable Information (PII) from general web portal visitors.</li>
               <li>Robotics team member names, photographs, and media are only published with explicit written consent and release forms signed by legal guardians.</li>
             </ul>
@@ -70,7 +70,7 @@ export default function Privacy() {
               </div>
               <h2 className="text-2xl font-bold font-heading">3. Edge AI Processing</h2>
             </div>
-            <p className="text-marble/70 leading-relaxed">
+            <p className="text-marble leading-relaxed">
               When ARES leadership uploads media via our Publisher Dashboard, we utilize Cloudflare Workers AI (LLaMa 3.1, LLava 1.5) to automatically generate Accessibility (ARIA) tags. This processing happens ephemerally entirely on Cloudflare&apos;s Edge network. The raw data is never sold, shared, or utilized to train external foundation models.
             </p>
           </section>
@@ -83,15 +83,15 @@ export default function Privacy() {
               </div>
               <h2 className="text-2xl font-bold font-heading">4. Secure Administration</h2>
             </div>
-            <p className="text-marble/70 leading-relaxed">
+            <p className="text-marble leading-relaxed">
               Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized FIRST Robotics team identity providers.
             </p>
           </section>
         </div>
 
-        <div className="mt-16 text-center text-marble/80 text-sm">
+        <div className="mt-16 text-center text-marble text-sm">
           <p>This privacy policy is actively maintained by ARES 23247.</p>
-          <p>For inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Send an email to ${siteConfig.team.name} robotics team`} className="text-marble/80 hover:text-ares-red transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
+          <p>For inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Send an email to ${siteConfig.team.name} robotics team`} className="text-marble hover:text-ares-red transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
         </div>
       </div>
     </motion.div>

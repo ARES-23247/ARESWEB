@@ -19,13 +19,13 @@ interface ProjectBoardKanbanProps {
 }
 
 const statusConfig: Record<string, { bg: string; text: string; border: string; icon: React.ElementType }> = {
-  "Todo":        { bg: "bg-ares-gray-dark/60",   text: "text-ares-offwhite/60", border: "border-ares-gray/30", icon: Circle },
+  "Todo":        { bg: "bg-ares-gray-dark/60",   text: "text-white/60", border: "border-ares-gray/30", icon: Circle },
   "In Progress": { bg: "bg-ares-cyan/10",         text: "text-ares-cyan",  border: "border-ares-cyan/30", icon: Clock },
   "Done":        { bg: "bg-ares-gold/10",         text: "text-ares-gold",  border: "border-ares-gold/30", icon: CheckCircle2 },
   "Blocked":     { bg: "bg-ares-red",           text: "text-white",    border: "border-ares-red/30",  icon: AlertTriangle },
 };
 
-const defaultStatus = { bg: "bg-ares-gray-dark/60", text: "text-ares-offwhite/60", border: "border-ares-gray/30", icon: Circle };
+const defaultStatus = { bg: "bg-ares-gray-dark/60", text: "text-white/60", border: "border-ares-gray/30", icon: Circle };
 
 function getStatusConfig(status?: string) {
   if (!status) return defaultStatus;
@@ -62,8 +62,8 @@ export default function ProjectBoardKanban({
           <div className="hidden sm:flex bg-ares-gray-dark/50 ares-cut-sm p-0.5 border border-white/5">
             <button
               onClick={() => setActiveKanbanFilter(null)}
-              className={`px-2.5 py-1 text-[10px] font-bold ares-cut-sm transition-all ${
-                !activeKanbanFilter ? "bg-white/10 text-white" : "text-ares-gray hover:text-ares-offwhite"
+              className={`px-2.5 py-1 text-xs font-bold ares-cut-sm transition-all ${
+                !activeKanbanFilter ? "bg-white/10 text-white" : "text-ares-gray hover:text-white"
               }`}
             >
               All
@@ -72,8 +72,8 @@ export default function ProjectBoardKanban({
               <button
                 key={col}
                 onClick={() => setActiveKanbanFilter(activeKanbanFilter === col ? null : col)}
-                className={`px-2.5 py-1 text-[10px] font-bold ares-cut-sm transition-all ${
-                  activeKanbanFilter === col ? "bg-white/10 text-white" : "text-ares-gray hover:text-ares-offwhite"
+                className={`px-2.5 py-1 text-xs font-bold ares-cut-sm transition-all ${
+                  activeKanbanFilter === col ? "bg-white/10 text-white" : "text-ares-gray hover:text-white"
                 }`}
               >
                 {col}
@@ -129,7 +129,7 @@ export default function ProjectBoardKanban({
             <div className="flex flex-col items-center gap-3">
               <GitBranch className="text-ares-gray" size={32} />
               <p className="text-ares-gray text-sm font-bold">GitHub Projects not configured</p>
-              <p className="text-ares-offwhite/50 text-xs max-w-sm mx-auto">
+              <p className="text-white/50 text-xs max-w-sm mx-auto">
                 Set your <code className="text-ares-cyan">GITHUB_PAT</code> and <code className="text-ares-cyan">GITHUB_PROJECT_ID</code> in System Integrations to enable the project board.
               </p>
             </div>
@@ -150,7 +150,7 @@ export default function ProjectBoardKanban({
                       {status}
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 rounded-full">
                     {items.length}
                   </span>
                 </div>

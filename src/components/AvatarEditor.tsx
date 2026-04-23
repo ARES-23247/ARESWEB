@@ -186,7 +186,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
   const renderSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
+      <label className="text-xs font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -201,7 +201,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
   const renderColorSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
+      <label className="text-xs font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
       <div className="flex flex-wrap gap-2">
         {options.map((hex) => (
           <button
@@ -218,7 +218,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
 
   const renderToggle = (label: string, value: boolean, onChange: (val: boolean) => void) => (
     <div className="flex items-center justify-between py-2">
-      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-bold text-white/60 uppercase tracking-wider">{label}</label>
       <button onClick={() => onChange(!value)} className="text-white">
         {value ? <ToggleRight size={28} className="text-ares-red" /> : <ToggleLeft size={28} className="text-white/60" />}
       </button>

@@ -16,11 +16,11 @@ export default function EventPotluckVolunteerFlags({ isPotluck, isVolunteer, onC
             onChange={(e) => onChange('isPotluck', e.target.checked)}
             className="w-5 h-5 rounded border-white/10 bg-obsidian text-ares-red focus:ring-ares-red transition-all cursor-pointer"
           />
-          <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors uppercase tracking-wider">
+          <span className="text-sm font-bold text-white group-hover:text-white transition-colors uppercase tracking-wider">
             Enable Potluck Coordination
           </span>
         </label>
-        <p className="text-[10px] text-white/50 font-mono uppercase tracking-tighter ml-7">
+        <p className="text-xs text-white/50 font-mono uppercase tracking-tighter ml-7">
           * Allows members to sign up for specific food/drink items.
         </p>
         </div>
@@ -33,11 +33,11 @@ export default function EventPotluckVolunteerFlags({ isPotluck, isVolunteer, onC
             onChange={(e) => onChange('isVolunteer', e.target.checked)}
             className="w-5 h-5 rounded border-white/10 bg-obsidian text-ares-red focus:ring-ares-red transition-all cursor-pointer"
           />
-          <span className="text-sm font-bold text-white/70 group-hover:text-white transition-colors uppercase tracking-wider">
+          <span className="text-sm font-bold text-white group-hover:text-white transition-colors uppercase tracking-wider">
             Enable Volunteer Roles
           </span>
         </label>
-        <p className="text-[10px] text-white/50 font-mono uppercase tracking-tighter ml-7">
+        <p className="text-xs text-white/50 font-mono uppercase tracking-tighter ml-7">
           * Allows members to sign up for specific roles (e.g., Setup, Teardown).
         </p>
         </div>

@@ -34,7 +34,7 @@ export function DataBackupCard() {
       
       <div className="flex items-start gap-4">
         <div className="p-3 bg-obsidian border border-ares-gray-dark/50 ares-cut-sm shadow-inner group-hover:bg-ares-gray-dark transition-colors shrink-0">
-          <Database size={24} className="text-ares-offwhite/70 group-hover:text-ares-gold transition-colors" />
+          <Database size={24} className="text-white/70 group-hover:text-ares-gold transition-colors" />
         </div>
         <div>
           <h3 className="text-lg font-bold text-white tracking-wide uppercase">Data Management & Backup</h3>

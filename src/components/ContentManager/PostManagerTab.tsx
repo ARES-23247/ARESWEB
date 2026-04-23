@@ -55,7 +55,7 @@ export default function PostManagerTab({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-4 px-1 flex items-center gap-2">
+      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40 mb-4 px-1 flex items-center gap-2">
         <Radio size={12} className={isLoading ? "animate-pulse text-ares-red" : "text-ares-red"} />
         Post Registry
         {isError && (
@@ -65,7 +65,7 @@ export default function PostManagerTab({
         )}
       </h3>
 
-      <div className="text-[10px] text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
+      <div className="text-xs text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
         <span>VIEW: {view} | RAW: {posts.length} | FILTERED: {filtered.length}</span>
         {isError && <span className="text-ares-red font-bold">API ERROR!</span>}
       </div>

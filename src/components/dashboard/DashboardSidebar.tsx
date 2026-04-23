@@ -36,7 +36,7 @@ const NavButton = ({
       ? "bg-ares-red/10 text-white border border-ares-red/30 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
       : hasPending
       ? "text-ares-danger hover:bg-ares-danger/10 border border-ares-danger/20 shadow-[0_0_10px_rgba(239,68,68,0.05)]"
-      : "text-marble/70 hover:bg-white/5 hover:text-white border border-transparent"
+      : "text-marble hover:bg-white/5 hover:text-white border border-transparent"
   } ${sub ? "pl-11 text-sm font-bold" : "text-sm"} ${disabled ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`;
 
   if (disabled) {
@@ -63,7 +63,7 @@ const NavButton = ({
             e.stopPropagation();
             navigate(`/dashboard/${tab}?view=pending`);
           }}
-          className="shrink-0 bg-ares-danger text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(192,0,0,0.5)] hover:brightness-110 hover:scale-110 transition-all z-10 relative cursor-pointer"
+          className="shrink-0 bg-ares-danger text-white text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(192,0,0,0.5)] hover:brightness-110 hover:scale-110 transition-all z-10 relative cursor-pointer"
         >
           {pendingCount}
         </button>
@@ -113,7 +113,7 @@ export default function DashboardSidebar({
         </div>
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble/70 transition-colors"
+          className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble transition-colors"
         >
           <Menu size={20} />
         </button>
@@ -137,7 +137,7 @@ export default function DashboardSidebar({
         {/* Profile Header */}
         <div className="p-6 border-b border-white/5 shrink-0 flex flex-col gap-4">
           <div className="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-white/5">
-            <span className="text-[10px] font-black text-marble/40 uppercase tracking-widest">Navigation Menu</span>
+            <span className="text-xs font-black text-marble/40 uppercase tracking-widest">Navigation Menu</span>
             <button className="text-marble/50 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={() => setIsSidebarOpen(false)}>
               <X size={16} />
             </button>
@@ -161,7 +161,7 @@ export default function DashboardSidebar({
             <div className="flex flex-col min-w-0">
               <span className="text-white text-sm font-bold truncate tracking-tight">{(session?.user?.name as string) || "ARES Member"}</span>
               <div className="flex flex-col gap-1">
-                <span className="text-ares-gold text-[10px] font-black uppercase tracking-widest truncate">
+                <span className="text-ares-gold text-xs font-black uppercase tracking-widest truncate">
                   {role} • {memberType}
                 </span>
                 {permissions.isUnverified && (
@@ -177,7 +177,7 @@ export default function DashboardSidebar({
         {/* Scrollable Navigation */}
         <div className="flex-1 overflow-y-auto py-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           <div>
-            <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Personal</h4>
+            <h4 className="text-xs uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Personal</h4>
             <div className="space-y-1 px-3">
               <NavButton tab="" icon={LayoutDashboard} label="Dashboard Home" currentPath={location.pathname} />
               <NavButton tab="profile" icon={User} label="My Profile" currentPath={location.pathname} />
@@ -186,7 +186,7 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/60 mb-2 px-6 flex items-center gap-2">
+              <h4 className="text-xs uppercase font-black tracking-widest text-marble/90 mb-2 px-6 flex items-center gap-2">
                 <PlusCircle size={12} className="text-ares-cyan" /> Quick Create
               </h4>
               <div className="space-y-1 px-3">
@@ -200,7 +200,7 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Content Hub</h4>
+              <h4 className="text-xs uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Content Hub</h4>
               <div className="space-y-1 px-3">
                 <div className="flex items-center gap-3 px-4 py-2 mt-1 mb-1 text-[11px] font-black uppercase tracking-wider text-marble/40">
                   <Folders size={14} className="text-marble/30" /> Database Manager
@@ -218,7 +218,7 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Operations</h4>
+              <h4 className="text-xs uppercase font-black tracking-widest text-marble/30 mb-2 px-6">Operations</h4>
               <div className="space-y-1 px-3">
                 {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} pendingCount={pendingInquiriesCount} />}
                 <NavButton tab="outreach" icon={Target} label="Outreach Tracker" currentPath={location.pathname} />
@@ -232,7 +232,7 @@ export default function DashboardSidebar({
 
           {(isAdmin || canSeeLogistics) && (
             <div>
-              <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Administration</h4>
+              <h4 className="text-xs uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
                 {isAdmin && <NavButton tab="command_center" icon={Radio} label="Command Center" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" currentPath={location.pathname} />}

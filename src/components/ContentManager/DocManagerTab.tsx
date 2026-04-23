@@ -110,7 +110,7 @@ export default function DocManagerTab({
                         .then((data) => toast.info(`JUDGE ACCESS CODE: ${data.code}\nExpires: ${new Date(data.expiresAt).toLocaleDateString()}`));
                     }
                   }}
-                  className="text-[10px] font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-2 py-1 ares-cut-sm transition-colors border border-ares-gold/20"
+                  className="text-xs font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-2 py-1 ares-cut-sm transition-colors border border-ares-gold/20"
                 >
                   GENERATE JUDGE CODE
                 </button>
@@ -127,7 +127,7 @@ export default function DocManagerTab({
         </span>
       </h3>
 
-      <div className="text-[10px] text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
+      <div className="text-xs text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
         <span>VIEW: {view} | RAW: {docs.length} | FILTERED: {filtered.length}</span>
         {isError && <span className="text-ares-red font-bold">API ERROR!</span>}
       </div>
@@ -153,11 +153,11 @@ export default function DocManagerTab({
                   {Number(doc.is_portfolio) === 1 && <span className="text-[9px] font-bold text-ares-cyan bg-ares-cyan/10 border border-ares-cyan/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Portfolio</span>}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] text-ares-cyan/70 bg-ares-cyan/10 border border-ares-cyan/20 px-2 py-0.5 ares-cut-sm truncate max-w-[120px]">
+                  <span className="text-xs text-ares-cyan/70 bg-ares-cyan/10 border border-ares-cyan/20 px-2 py-0.5 ares-cut-sm truncate max-w-[120px]">
                     {doc.category}
                   </span>
                   {view === 'active' && (
-                    <span className="flex items-center text-[10px] text-marble/40 bg-obsidian border border-white/10 ares-cut-sm overflow-hidden">
+                    <span className="flex items-center text-xs text-marble/40 bg-obsidian border border-white/10 ares-cut-sm overflow-hidden">
                       <button 
                         onClick={() => sortDocMutation.mutate({ slug: doc.slug, sortOrder: doc.sort_order - 1 })}
                         disabled={sortDocMutation.isPending}

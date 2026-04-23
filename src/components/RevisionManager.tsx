@@ -63,7 +63,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
             </div>
             <div>
               <h3 className="text-xl font-bold text-white tracking-tight">Revision History</h3>
-              <p className="text-white/60 text-xs">Viewing legacy versions for <span className="text-white/80 font-mono italic">&quot;{displayTitle}&quot;</span></p>
+              <p className="text-white/60 text-xs">Viewing legacy versions for <span className="text-white font-mono italic">&quot;{displayTitle}&quot;</span></p>
             </div>
           </div>
           <button onClick={onClose} className="text-white/60 hover:text-white transition-colors p-2 bg-white/5 border border-white/10 ares-cut-sm">
@@ -86,19 +86,19 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
             <div className="h-48 flex flex-col items-center justify-center text-white/60">
                <Clock size={32} className="mb-2 opacity-20" />
                <p className="text-sm italic">No legacy revisions found for this entry.</p>
-               <p className="text-[10px] mt-1 text-white/60">History is captured automatically whenever an admin modifies content.</p>
+               <p className="text-xs mt-1 text-white/60">History is captured automatically whenever an admin modifies content.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {revisions.map((rev) => (
                 <div key={rev.id} className="bg-white/5 border border-white/10 ares-cut p-4 flex items-center justify-between hover:border-white/20 transition-colors">
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-white/90 truncate">{rev.title}</div>
+                    <div className="font-bold text-white truncate">{rev.title}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-white/60 bg-black/40 border border-white/10 px-2 py-0.5 ares-cut-sm">
+                      <span className="text-xs text-white/60 bg-black/40 border border-white/10 px-2 py-0.5 ares-cut-sm">
                         {format(new Date(rev.created_at), 'MMM do, yyyy @ HH:mm')}
                       </span>
-                      <span className="text-[10px] text-ares-cyan truncate max-w-[150px]">
+                      <span className="text-xs text-ares-cyan truncate max-w-[150px]">
                         By {rev.author_email}
                       </span>
                     </div>
@@ -122,7 +122,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
         </div>
 
         <div className="p-4 bg-white/5 border-t border-white/10 flex items-center justify-center">
-            <p className="text-[10px] text-white/60 uppercase tracking-widest font-mono">End of Revision Timeline</p>
+            <p className="text-xs text-white/60 uppercase tracking-widest font-mono">End of Revision Timeline</p>
         </div>
       </div>
     </div>

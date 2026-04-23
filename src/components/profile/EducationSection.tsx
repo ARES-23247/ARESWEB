@@ -45,19 +45,19 @@ export function EducationSection({ profile, setProfile, inputClass, sectionClass
           <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-12 h-12" />
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-               <label htmlFor={`edu-name-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">University / Institution</label>
+               <label htmlFor={`edu-name-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">University / Institution</label>
                <input id={`edu-name-${i}`} className={inputClass} placeholder="University name" value={col.name} onChange={e => updateCollege(i, "name", e.target.value)} />
             </div>
             <div>
-               <label htmlFor={`edu-domain-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">Domain (e.g. rice.edu)</label>
+               <label htmlFor={`edu-domain-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">Domain (e.g. rice.edu)</label>
                <input id={`edu-domain-${i}`} className={inputClass} placeholder="Domain" value={col.domain} onChange={e => updateCollege(i, "domain", e.target.value)} />
             </div>
             <div>
-               <label htmlFor={`edu-degree-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">Degree / Major</label>
+               <label htmlFor={`edu-degree-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">Degree / Major</label>
                <input id={`edu-degree-${i}`} className={inputClass} placeholder="Degree (BS ME)" value={col.degree} onChange={e => updateCollege(i, "degree", e.target.value)} />
             </div>
             <div>
-               <label htmlFor={`edu-years-${i}`} className="text-[10px] text-marble/50 uppercase font-black ml-1 mb-0.5 block">Years attended</label>
+               <label htmlFor={`edu-years-${i}`} className="text-xs text-marble/50 uppercase font-black ml-1 mb-0.5 block">Years attended</label>
                <input id={`edu-years-${i}`} className={inputClass} placeholder="Years (2020-2024)" value={col.years} onChange={e => updateCollege(i, "years", e.target.value)} />
             </div>
           </div>

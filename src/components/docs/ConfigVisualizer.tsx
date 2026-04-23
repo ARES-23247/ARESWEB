@@ -31,7 +31,7 @@ export default function ConfigVisualizer() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`text-left px-3 py-2 rounded text-sm font-mono transition-colors ${activeTab === tab ? "bg-white/10 text-white font-bold" : "text-white/50 hover:text-white/80 hover:bg-white/5"}`}
+              className={`text-left px-3 py-2 rounded text-sm font-mono transition-colors ${activeTab === tab ? "bg-white/10 text-white font-bold" : "text-white/50 hover:text-white hover:bg-white/5"}`}
             >
               {tab}.yaml
             </button>

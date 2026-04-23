@@ -54,7 +54,7 @@ export function useRichEditor(options?: UseRichEditorOptions): Editor | null {
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         codeBlock: false,
-        blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white/70 italic rounded-r-lg' } }
+        blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white italic rounded-r-lg' } }
       }),
       Typography,
       Highlight.configure({ HTMLAttributes: { class: 'bg-ares-gold/30 text-black rounded-sm px-1' } }),
@@ -66,8 +66,8 @@ export function useRichEditor(options?: UseRichEditorOptions): Editor | null {
       Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-ares-gray-dark ares-cut-sm hidden-border-corners shadow-lg table-auto my-6' } }),
       TableRow.configure({ HTMLAttributes: { class: 'border-b border-ares-gray-dark hover:bg-obsidian/50 transition-colors odd:bg-black/20 even:bg-black/40' } }),
       TableHeader.configure({ HTMLAttributes: { class: 'bg-obsidian border border-ares-gray-dark p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm' } }),
-      TableCell.configure({ HTMLAttributes: { class: 'border border-ares-gray-dark p-3 text-ares-offwhite align-top' } }),
-      TaskList.configure({ HTMLAttributes: { class: 'list-none pl-0 space-y-2 my-4 text-ares-offwhite/80' } }),
+      TableCell.configure({ HTMLAttributes: { class: 'border border-ares-gray-dark p-3 text-white align-top' } }),
+      TaskList.configure({ HTMLAttributes: { class: 'list-none pl-0 space-y-2 my-4 text-white/80' } }),
       TaskItem.configure({ nested: true, HTMLAttributes: { class: 'flex items-start gap-2 mb-1' } }),
       Mathematics,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-ares-cyan underline hover:text-white transition-colors' } }),

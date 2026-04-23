@@ -47,7 +47,7 @@ export default function EventDetail() {
   });
 
   if (isLoading) return <div className="w-full min-h-[50vh] flex items-center justify-center text-ares-gold animate-pulse font-heading tracking-widest">Consulting the Oracle...</div>;
-  if (isError || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80 font-mono text-center">Event Record Erased or Unfound.</div>;
+  if (isError || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white font-mono text-center">Event Record Erased or Unfound.</div>;
 
   const isPast = isBefore(new Date(event.date_start), new Date());
   
@@ -101,7 +101,7 @@ export default function EventDetail() {
             {!isPast && (
               <button 
                 onClick={handleSaveToCalendar}
-                className="w-fit flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-obsidian/80 hover:bg-ares-gold text-white/80 hover:text-black border border-white/10 hover:border-ares-gold transition-all shadow-lg backdrop-blur-sm"
+                className="w-fit flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-obsidian/80 hover:bg-ares-gold text-white hover:text-black border border-white/10 hover:border-ares-gold transition-all shadow-lg backdrop-blur-sm"
               >
                 <Calendar size={14} /> Add to Calendar
               </button>
@@ -120,11 +120,11 @@ export default function EventDetail() {
           </h1>
           <div className="mt-8 flex flex-col md:flex-row gap-6 text-ares-bronze font-medium text-lg lg:text-xl">
             <p className="flex items-center gap-2">
-              <span className="text-white/70">Date:</span> {format(startDate, 'EEEE, MMMM do, yyyy')}
+              <span className="text-white">Date:</span> {format(startDate, 'EEEE, MMMM do, yyyy')}
             </p>
             {event.location && (
               <p className="flex items-center gap-2">
-                <span className="text-white/70">Location:</span> {event.location}
+                <span className="text-white">Location:</span> {event.location}
               </p>
             )}
           </div>
@@ -144,7 +144,7 @@ export default function EventDetail() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="prose prose-invert lg:prose-lg max-w-none w-full prose-headings:text-white prose-headings:font-heading prose-headings:uppercase prose-p:text-white/80 prose-a:text-ares-gold prose-img:ares-cut prose-img:border prose-img:border-white/10"
+          className="prose prose-invert lg:prose-lg max-w-none w-full prose-headings:text-white prose-headings:font-heading prose-headings:uppercase prose-p:text-white prose-a:text-ares-gold prose-img:ares-cut prose-img:border prose-img:border-white/10"
         >
           {parsedAst ? (
             <TiptapRenderer node={parsedAst} />

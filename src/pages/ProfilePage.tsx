@@ -84,7 +84,7 @@ export default function ProfilePage() {
           <ShieldAlert size={40} className="text-ares-red" />
         </div>
         <h1 className="text-2xl font-black">{error?.status === 403 ? "Private Profile" : "Profile Not Found"}</h1>
-        <p className="text-marble/80 max-w-md">
+        <p className="text-marble max-w-md">
           {error?.message || "The profile you are looking for does not exist or has been hidden by the user."}
         </p>
         <Link to="/about" className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm transition-all text-sm font-bold">
@@ -105,7 +105,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-obsidian">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <div className="flex justify-between items-center mb-8 print:hidden">
-          <Link to="/about" className="inline-flex items-center gap-2 text-marble/80 hover:text-white text-sm font-bold transition-colors">
+          <Link to="/about" className="inline-flex items-center gap-2 text-marble hover:text-white text-sm font-bold transition-colors">
             <ArrowLeft size={16} /> Back to Team
           </Link>
           <button 
@@ -126,7 +126,7 @@ export default function ProfilePage() {
               <h1 className="text-3xl font-black text-white mb-1">
                 {profile.first_name && profile.last_name ? `${profile.first_name} "${profile.nickname}" ${profile.last_name}` : (profile.nickname || "ARES Member")}
               </h1>
-              {profile.pronouns && <p className="text-marble/80 text-sm mb-3">{profile.pronouns}</p>}
+              {profile.pronouns && <p className="text-marble text-sm mb-3">{profile.pronouns}</p>}
               <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-4">
                 <span className="px-3 py-1 bg-ares-red/20 border border-ares-red/30 rounded-full text-xs font-bold text-ares-red">
                   {memberIcon} {memberLabel}
@@ -137,7 +137,7 @@ export default function ProfilePage() {
                   </span>
                 ))}
               </div>
-              {profile.bio && <p className="text-marble/80 text-sm leading-relaxed">{profile.bio}</p>}
+              {profile.bio && <p className="text-marble text-sm leading-relaxed">{profile.bio}</p>}
             </div>
           </div>
 
@@ -154,14 +154,14 @@ export default function ProfilePage() {
                   return (
                     <div key={b.id} className="relative group cursor-help bg-obsidian border border-white/10 hover:border-ares-gold ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">
                       <IconComp size={40} className={`mb-2 ${colorClass}`} />
-                      <span className="text-[10px] font-bold text-center text-marble/80 leading-tight block">{b.name}</span>
+                      <span className="text-xs font-bold text-center text-marble leading-tight block">{b.name}</span>
                       
                       {/* Tooltip */}
                       <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-black border border-white/10 text-white text-xs ares-cut-sm p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">
                         <p className="font-bold mb-1">{b.name}</p>
-                        <p className="text-marble/80 text-[10px] leading-relaxed">{b.description}</p>
+                        <p className="text-marble text-xs leading-relaxed">{b.description}</p>
                         {b.awarded_at && (
-                          <p className="text-marble/70 text-[9px] mt-2 border-t border-white/10 pt-2">
+                          <p className="text-marble text-[9px] mt-2 border-t border-white/10 pt-2">
                             Awarded: {new Date(b.awarded_at).toLocaleDateString()}
                           </p>
                         )}
@@ -182,21 +182,21 @@ export default function ProfilePage() {
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                  {(profile.emergency_contact_name || profile.emergency_contact_phone) && (
                    <div>
-                     <p className="text-[10px] font-bold text-marble/80 uppercase">Emergency Contact</p>
-                     <p className="text-marble/80 text-sm">{profile.emergency_contact_name || "Unknown"}</p>
-                     <p className="text-marble/70 text-xs">{profile.emergency_contact_phone}</p>
+                     <p className="text-xs font-bold text-marble uppercase">Emergency Contact</p>
+                     <p className="text-marble text-sm">{profile.emergency_contact_name || "Unknown"}</p>
+                     <p className="text-marble text-xs">{profile.emergency_contact_phone}</p>
                    </div>
                  )}
                  {profile.dietary_restrictions && (
                    <div>
-                     <p className="text-[10px] font-bold text-marble/80 uppercase">Dietary Info</p>
-                     <p className="text-marble/80 text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>
+                     <p className="text-xs font-bold text-marble uppercase">Dietary Info</p>
+                     <p className="text-marble text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>
                    </div>
                  )}
                  {profile.tshirt_size && (
                    <div>
-                     <p className="text-[10px] font-bold text-marble/80 uppercase">T-Shirt Size</p>
-                     <p className="text-marble/80 text-sm uppercase">{profile.tshirt_size}</p>
+                     <p className="text-xs font-bold text-marble uppercase">T-Shirt Size</p>
+                     <p className="text-marble text-sm uppercase">{profile.tshirt_size}</p>
                    </div>
                  )}
                </div>
@@ -207,57 +207,57 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {profile.rookie_year && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-marble/80 uppercase tracking-wider mb-2">Rookie Year</p>
-                <p className="text-marble/80 text-sm">{profile.rookie_year}</p>
+                <p className="text-xs font-bold text-marble uppercase tracking-wider mb-2">Rookie Year</p>
+                <p className="text-marble text-sm">{profile.rookie_year}</p>
               </div>
             )}
             {profile.leadership_role && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Leadership Role</p>
-                <p className="text-marble/80 text-sm">{profile.leadership_role}</p>
+                <p className="text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Leadership Role</p>
+                <p className="text-marble text-sm">{profile.leadership_role}</p>
               </div>
             )}
             {profile.favorite_first_thing && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Favorite Thing About FIRST</p>
-                <p className="text-marble/80 text-sm">{profile.favorite_first_thing}</p>
+                <p className="text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Favorite Thing About FIRST</p>
+                <p className="text-marble text-sm">{profile.favorite_first_thing}</p>
               </div>
             )}
             {profile.favorite_robot_mechanism && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-ares-gold uppercase tracking-wider mb-2">Favorite Robot Mechanism</p>
-                <p className="text-marble/80 text-sm">{profile.favorite_robot_mechanism}</p>
+                <p className="text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Favorite Robot Mechanism</p>
+                <p className="text-marble text-sm">{profile.favorite_robot_mechanism}</p>
               </div>
             )}
             {profile.pre_match_superstition && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-ares-red uppercase tracking-wider mb-2">Pre-Match Superstition</p>
-                <p className="text-marble/80 text-sm">{profile.pre_match_superstition}</p>
+                <p className="text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Pre-Match Superstition</p>
+                <p className="text-marble text-sm">{profile.pre_match_superstition}</p>
               </div>
             )}
             {profile.fun_fact && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-ares-gold uppercase tracking-wider mb-2">Fun Fact</p>
-                <p className="text-marble/80 text-sm">{profile.fun_fact}</p>
+                <p className="text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Fun Fact</p>
+                <p className="text-marble text-sm">{profile.fun_fact}</p>
               </div>
             )}
             {profile.favorite_food && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-ares-cyan uppercase tracking-wider mb-2">Favorite Food</p>
-                <p className="text-marble/80 text-sm">{profile.favorite_food}</p>
+                <p className="text-xs font-bold text-ares-cyan uppercase tracking-wider mb-2">Favorite Food</p>
+                <p className="text-marble text-sm">{profile.favorite_food}</p>
               </div>
             )}
             {profile.grade_year && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-marble/80 uppercase tracking-wider mb-2">Class</p>
-                <p className="text-marble/80 text-sm">{profile.grade_year}</p>
+                <p className="text-xs font-bold text-marble uppercase tracking-wider mb-2">Class</p>
+                <p className="text-marble text-sm">{profile.grade_year}</p>
               </div>
             )}
             {(profile.email || profile.phone) && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
-                <p className="text-[10px] font-bold text-marble/80 uppercase tracking-wider mb-2">Contact</p>
-                {profile.email && <p className="text-marble/80 text-sm">{profile.email}</p>}
-                {profile.phone && <p className="text-marble/70 text-sm">{profile.phone}</p>}
+                <p className="text-xs font-bold text-marble uppercase tracking-wider mb-2">Contact</p>
+                {profile.email && <p className="text-marble text-sm">{profile.email}</p>}
+                {profile.phone && <p className="text-marble text-sm">{profile.phone}</p>}
               </div>
             )}
           </div>
@@ -273,7 +273,7 @@ export default function ProfilePage() {
                     <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-8 h-8" />
                     <div>
                       <p className="text-white text-sm font-bold">{col.name}</p>
-                      <p className="text-marble/70 text-xs">{[col.degree, col.years].filter(Boolean).join(" · ")}</p>
+                      <p className="text-marble text-xs">{[col.degree, col.years].filter(Boolean).join(" · ")}</p>
                     </div>
                   </div>
                 ))}
@@ -291,8 +291,8 @@ export default function ProfilePage() {
                   <div key={i} className="flex items-center gap-3">
                     <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-8 h-8" />
                     <div>
-                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-ares-gold text-[10px] ml-1">● Current</span>}</p>
-                      <p className="text-marble/70 text-xs">{[emp.title, emp.years].filter(Boolean).join(" · ")}</p>
+                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-ares-gold text-xs ml-1">● Current</span>}</p>
+                      <p className="text-marble text-xs">{[emp.title, emp.years].filter(Boolean).join(" · ")}</p>
                     </div>
                   </div>
                 ))}

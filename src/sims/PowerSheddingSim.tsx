@@ -61,7 +61,7 @@ export default function PowerSheddingSim() {
       <div className="flex p-6 gap-8 flex-wrap justify-center">
         {/* LOAD TOGGLES */}
         <div className="flex-1 min-w-[300px] flex flex-col gap-3">
-          <div className="text-[10px] text-white/60 mb-1">LOAD CONTROL (ACTIVATE MECHANISMS)</div>
+          <div className="text-xs text-white/60 mb-1">LOAD CONTROL (ACTIVATE MECHANISMS)</div>
           
           <button 
             onClick={() => toggleLoad('swerve')}
@@ -129,7 +129,7 @@ export default function PowerSheddingSim() {
           )}
 
           {isBrownout && (
-            <div className="px-3 py-2 bg-ares-red text-black font-black text-[10px] rounded-sm mt-2">
+            <div className="px-3 py-2 bg-ares-red text-black font-black text-xs rounded-sm mt-2">
               ROBORIO DISCONNECT RISK
             </div>
           )}

@@ -95,7 +95,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         <div className="flex-1">
           <label htmlFor="event-tba-key" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
             <span>TBA Event Key</span>
-            <span className="text-[10px] text-white/60 font-normal normal-case">Optional</span>
+            <span className="text-xs text-white/60 font-normal normal-case">Optional</span>
           </label>
           <input
             id="event-tba-key" type="text"
@@ -110,7 +110,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         <div className="flex-1">
           <label htmlFor="event-location" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
             <span>Location</span>
-            <span className="text-[10px] text-white/60 font-normal normal-case">Pick from registry</span>
+            <span className="text-xs text-white/60 font-normal normal-case">Pick from registry</span>
           </label>
           <div className="relative group">
             <select
@@ -140,7 +140,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
                    if (e.target.value.trim()) setForm({...form, location: e.target.value});
                  }}
                />
-               <p className="text-[10px] text-white/60 mt-1 italic">Tip: Use the &apos;Location Manager&apos; tab to permanently save venues.</p>
+               <p className="text-xs text-white/60 mt-1 italic">Tip: Use the &apos;Location Manager&apos; tab to permanently save venues.</p>
              </div>
           )}
         </div>
@@ -202,7 +202,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             <div className="text-ares-gold mt-0.5">⚠️</div>
             <div>
               <h4 className="text-ares-gold font-bold text-xs tracking-wide uppercase">Syndication Warning</h4>
-              <p className="text-white/80 text-sm mt-1">Event saved, but: {warningMsg}</p>
+              <p className="text-white text-sm mt-1">Event saved, but: {warningMsg}</p>
             </div>
           </div>
         )}

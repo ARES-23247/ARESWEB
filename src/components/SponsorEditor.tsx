@@ -22,7 +22,7 @@ interface Sponsor {
 const TIERS = [
   { name: "Titanium", icon: <Gem className="text-ares-cyan" />, color: "text-ares-cyan", border: "border-ares-cyan/30" },
   { name: "Gold", icon: <Award className="text-ares-gold" />, color: "text-ares-gold", border: "border-ares-gold/30" },
-  { name: "Silver", icon: <ShieldCheck className="text-marble/60" />, color: "text-marble/60", border: "border-marble/20" },
+  { name: "Silver", icon: <ShieldCheck className="text-marble/90" />, color: "text-marble/90", border: "border-marble/20" },
   { name: "Bronze", icon: <Zap className="text-ares-bronze" />, color: "text-ares-bronze", border: "border-ares-bronze/30" },
   { name: "In-Kind", icon: <Package className="text-marble/40" />, color: "text-marble/40", border: "border-marble/10" },
 ];
@@ -166,7 +166,7 @@ export default function SponsorEditor() {
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2">
                 {TIERS.find(t => t.name === s.tier)?.icon}
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${TIERS.find(t => t.name === s.tier)?.color}`}>
+                <span className={`text-xs font-bold uppercase tracking-widest ${TIERS.find(t => t.name === s.tier)?.color}`}>
                   {s.tier}
                 </span>
               </div>
@@ -211,7 +211,7 @@ export default function SponsorEditor() {
                 <div className="h-6 w-px bg-white/5" />
               )}
               {s.logo_url && (
-                <div className="text-[10px] font-bold uppercase tracking-widest text-ares-gold flex items-center gap-1">
+                <div className="text-xs font-bold uppercase tracking-widest text-ares-gold flex items-center gap-1">
                   <CheckCircle2 size={12} /> Logo Linked
                 </div>
               )}

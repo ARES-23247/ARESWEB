@@ -37,7 +37,7 @@ function TabLoader() {
       >
         <RefreshCw size={32} className="text-ares-cyan/70" />
       </motion.div>
-      <p className="text-sm font-bold text-marble/60 animate-pulse uppercase tracking-widest">Loading Module...</p>
+      <p className="text-sm font-bold text-marble/90 animate-pulse uppercase tracking-widest">Loading Module...</p>
     </div>
   );
 }

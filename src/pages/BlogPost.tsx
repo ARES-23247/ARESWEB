@@ -50,8 +50,8 @@ export default function BlogPost() {
     }
   }, [post, slug]);
 
-  if (isLoading) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80 animate-pulse">Loading post...</div>;
-  if (isError || !post) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white/80">Post not found.</div>;
+  if (isLoading) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white animate-pulse">Loading post...</div>;
+  if (isError || !post) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white">Post not found.</div>;
 
   let parsedAst: ASTNode = { type: "doc", content: [] };
   try { parsedAst = JSON.parse(post.ast); } catch { /* Ignore parse error */ }
@@ -91,7 +91,7 @@ export default function BlogPost() {
                    alt="Author"
                    className="w-6 h-6 rounded-full object-cover border border-white/20"
                  />
-                 <span className="text-sm text-white/80">{post.author_nickname || "ARES Author"}</span>
+                 <span className="text-sm text-white">{post.author_nickname || "ARES Author"}</span>
                </div>
              )}
             {isEditor && (
@@ -115,7 +115,7 @@ export default function BlogPost() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="prose prose-invert lg:prose-lg max-w-none prose-headings:text-white prose-p:text-white/80 prose-a:text-ares-gold prose-a:focus-visible:outline-none prose-a:focus-visible:ring-2 prose-a:focus-visible:ring-ares-cyan prose-a:rounded"
+          className="prose prose-invert lg:prose-lg max-w-none prose-headings:text-white prose-p:text-white prose-a:text-ares-gold prose-a:focus-visible:outline-none prose-a:focus-visible:ring-2 prose-a:focus-visible:ring-ares-cyan prose-a:rounded"
         >
           <TiptapRenderer node={parsedAst} />
 

@@ -32,7 +32,7 @@ export default function CoverAssetPicker({
         />
         <button 
           type="button"
-          className={`px-6 py-3 ares-cut-sm text-sm font-bold border border-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-obsidian ${isUploading ? "bg-white/5 animate-pulse text-marble/50" : "bg-white/5 text-marble/70 hover:bg-white/10 hover:text-white"}`}
+          className={`px-6 py-3 ares-cut-sm text-sm font-bold border border-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-ares-red ring-offset-2 ring-offset-obsidian ${isUploading ? "bg-white/5 animate-pulse text-marble/50" : "bg-white/5 text-marble hover:bg-white/10 hover:text-white"}`}
           onClick={() => fileInputRef.current?.click()}
         >
           UPL

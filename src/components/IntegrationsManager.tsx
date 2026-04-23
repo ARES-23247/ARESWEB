@@ -77,7 +77,7 @@ export default function IntegrationsManager() {
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Settings className="text-marble/40" /> API &amp; Integrations
           </h2>
-          <p className="text-marble/60 mt-1">
+          <p className="text-marble/90 mt-1">
             Manage your Zero Trust configuration tokens securely. Keys are safely obscured upon save.
           </p>
         </div>

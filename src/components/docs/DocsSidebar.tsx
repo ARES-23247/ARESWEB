@@ -83,11 +83,11 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
 
         <button
           onClick={onSearchOpen}
-          className="w-full flex items-center gap-2 px-3 py-2 mb-6 ares-cut-sm bg-white/5 border border-white/10 text-white/70 text-sm hover:border-ares-red/40 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 mb-6 ares-cut-sm bg-white/5 border border-white/10 text-white text-sm hover:border-ares-red/40 transition-colors"
         >
           <Search size={14} />
           <span className="flex-1 text-left">Search docs...</span>
-          <kbd className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+          <kbd className="text-xs bg-white/10 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
         </button>
 
         <nav className="space-y-1">
@@ -95,7 +95,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
             <div key={category}>
               <button
                 onClick={() => toggleCat(category)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-bold uppercase tracking-widest text-white/70 hover:text-ares-gold transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-bold uppercase tracking-widest text-white hover:text-ares-gold transition-colors"
               >
                 {expandedCats.has(category) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                 {category}
@@ -133,7 +133,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
             href={`https://${siteConfig.urls.githubOrg}.github.io/ARESLib/javadoc/index.html`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-white/70 hover:text-ares-gold transition-colors"
+            className="flex items-center gap-2 text-sm text-white hover:text-ares-gold transition-colors"
           >
             <ExternalLink size={14} />
             API Javadoc

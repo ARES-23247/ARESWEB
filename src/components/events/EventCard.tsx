@@ -38,14 +38,14 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
           className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${isPast ? '' : 'group-hover:scale-105'} ${!event.cover_image ? 'object-contain p-8 bg-black/80' : ''}`} 
         />
         <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 ares-cut-sm border border-white/10 text-center z-10">
-          <div className={`text-2xl font-bold ${isPast ? 'text-white/80' : 'text-ares-gold'}`}>{formattedDay}</div>
-          <div className={`text-xs font-bold uppercase tracking-widest ${isPast ? 'text-white/80' : 'text-ares-red'}`}>{formattedMonth}</div>
+          <div className={`text-2xl font-bold ${isPast ? 'text-white' : 'text-ares-gold'}`}>{formattedDay}</div>
+          <div className={`text-xs font-bold uppercase tracking-widest ${isPast ? 'text-white' : 'text-ares-red'}`}>{formattedMonth}</div>
         </div>
       </div>
 
       {/* Content Block */}
       <div className="p-6 md:p-8 flex-1 flex flex-col justify-center relative">
-        <div className="flex items-center gap-4 mb-3 text-sm font-semibold uppercase tracking-wider text-marble/60">
+        <div className="flex items-center gap-4 mb-3 text-sm font-semibold uppercase tracking-wider text-marble/90">
           <span className="flex items-center gap-1.5">
             <span className={`w-2.5 h-2.5 rounded-full ${event.category === 'internal' ? 'bg-ares-red' : event.category === 'outreach' ? 'bg-ares-gold' : 'bg-ares-cyan'}`}></span> 
             {formattedTime}
@@ -59,13 +59,13 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
         </div>
         
         {/* ACC-F01: Use pseudo-element link to make card clickable without nesting interactive elements */}
-        <h3 className={`text-2xl md:text-3xl font-bold mb-4 ${isPast ? 'text-white/90' : 'text-white'} group-hover:text-ares-gold transition-colors`}>
+        <h3 className={`text-2xl md:text-3xl font-bold mb-4 ${isPast ? 'text-white' : 'text-white'} group-hover:text-ares-gold transition-colors`}>
           <Link to={`/events/${event.id}`} className="after:absolute after:inset-0 focus:outline-none">
             {event.title}
           </Link>
         </h3>
         
-        <p className="text-marble/70 text-base leading-relaxed line-clamp-3 relative z-10 pointer-events-none">
+        <p className="text-marble text-base leading-relaxed line-clamp-3 relative z-10 pointer-events-none">
           {plainDescription}
         </p>
         
@@ -81,7 +81,7 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
                 e.stopPropagation();
                 downloadICS(event);
               }}
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest bg-ares-gold/10 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/30 hover:border-ares-gold transition-all relative z-20"
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest bg-ares-gold/10 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/30 hover:border-ares-gold transition-all relative z-20"
               aria-label={`Add ${event.title} to calendar`}
             >
               <Calendar size={12} aria-hidden="true" /> Add to Calendar

@@ -197,7 +197,7 @@ export default function OutreachTracker() {
         ) : logs.map((log) => (
           <div key={log.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 group hover:border-white/20 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex-1">
-              <div className="flex items-center gap-3 text-marble/50 text-[10px] font-bold uppercase tracking-widest mb-2">
+              <div className="flex items-center gap-3 text-marble/50 text-xs font-bold uppercase tracking-widest mb-2">
                  <span className="flex items-center gap-1"><Calendar size={12} /> {log.date}</span>
                  {log.location && <span className="flex items-center gap-1">&middot; <MapPin size={12} /> {log.location}</span>}
               </div>
@@ -225,17 +225,17 @@ export default function OutreachTracker() {
             
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[80px]">
-                <span className="text-[10px] font-black text-ares-gold uppercase tracking-tighter">Reach</span>
+                <span className="text-xs font-black text-ares-gold uppercase tracking-tighter">Reach</span>
                 <span className="text-lg font-black text-white">{log.reach_count || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[80px]">
-                <span className="text-[10px] font-black text-ares-cyan uppercase tracking-tighter">Hours</span>
+                <span className="text-xs font-black text-ares-cyan uppercase tracking-tighter">Hours</span>
                 <span className="text-lg font-black text-white">{(log.hours_logged || 0).toFixed(1)}</span>
               </div>
               
               {log.is_dynamic ? (
                 <div className="flex items-center px-3 py-1 bg-ares-gold/10 border border-ares-gold/20 ares-cut-sm">
-                  <span className="text-[10px] font-bold text-ares-gold uppercase tracking-widest text-center leading-tight">Synced<br/>Event</span>
+                  <span className="text-xs font-bold text-ares-gold uppercase tracking-widest text-center leading-tight">Synced<br/>Event</span>
                 </div>
               ) : (
                 <button

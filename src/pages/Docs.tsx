@@ -36,7 +36,7 @@ export default function Docs() {
   } = useDocs(slug);
 
   return (
-    <div className="min-h-screen bg-ares-gray-deep text-ares-offwhite flex flex-col">
+    <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col">
       <SEO title={currentDoc?.title ? `${currentDoc.title} — ARESLib` : "ARESLib Documentation"} description={currentDoc?.description || "ARESLib documentation for the ARES 23247 FTC framework."} />
 
       {/* ── Search Overlay ─────────────────────────────────────────── */}
@@ -64,7 +64,7 @@ export default function Docs() {
                   placeholder="Search documentation..."
                   className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/60"
                 />
-                <kbd className="text-[10px] bg-white/10 text-white/60 px-2 py-0.5 rounded font-mono">ESC</kbd>
+                <kbd className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded font-mono">ESC</kbd>
               </div>
               {searchResults.length > 0 && (
                 <div className="max-h-80 overflow-y-auto">
@@ -129,8 +129,8 @@ export default function Docs() {
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2 text-xs text-white/60">
                   <Link to="/docs" className="flex items-center shadow-lg ares-cut-sm overflow-hidden group">
-                    <span className="bg-ares-red px-2 py-0.5 text-[10px] font-heading font-bold uppercase text-white tracking-wider border-r border-white/10">ARES</span>
-                    <span className="bg-white/10 text-white font-heading font-medium px-2 py-0.5 text-[10px] uppercase tracking-widest group-hover:bg-white/20 transition-colors">Lib</span>
+                    <span className="bg-ares-red px-2 py-0.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10">ARES</span>
+                    <span className="bg-white/10 text-white font-heading font-medium px-2 py-0.5 text-xs uppercase tracking-widest group-hover:bg-white/20 transition-colors">Lib</span>
                   </Link>
                   <ChevronRight size={12} />
                   <span className="text-ares-gold/60">{currentDoc.category}</span>
@@ -186,7 +186,7 @@ export default function Docs() {
               {currentDoc && (
                 <div className="mt-12 pt-6 border-t border-white/8 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 text-xs">
                   <div className="flex flex-col gap-1">
-                    <span className="text-white/60 font-bold uppercase tracking-widest text-[10px]">Document Lifecycle</span>
+                    <span className="text-white/60 font-bold uppercase tracking-widest text-xs">Document Lifecycle</span>
                     <span className="text-white/50">
                       {currentDoc.updated_at ? `Last updated: ${new Date(currentDoc.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : 'Not yet updated'}
                     </span>
@@ -202,8 +202,8 @@ export default function Docs() {
                         />
                       </div>
                       <div className="ml-2 flex flex-col justify-center">
-                        <span className="text-[10px] uppercase font-bold text-ares-gold/80 tracking-wider leading-none">Created By</span>
-                        <span className="text-white/80 font-medium">{currentDoc.original_author_nickname || currentDoc.cf_email?.split('@')[0] || "Author"}</span>
+                        <span className="text-xs uppercase font-bold text-ares-gold/80 tracking-wider leading-none">Created By</span>
+                        <span className="text-white font-medium">{currentDoc.original_author_nickname || currentDoc.cf_email?.split('@')[0] || "Author"}</span>
                       </div>
                     </div>
                     
@@ -211,7 +211,7 @@ export default function Docs() {
                       <>
                         <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] uppercase font-bold text-ares-cyan/80 tracking-wider mb-1">Contributors</span>
+                          <span className="text-xs uppercase font-bold text-ares-cyan/80 tracking-wider mb-1">Contributors</span>
                           <div className="flex -space-x-2">
                             {contributors.slice(0, 5).map((c, idx) => (
                               <div key={idx} className="w-6 h-6 rounded-full border border-ares-gray-deep overflow-hidden bg-ares-gray-dark" title={c.nickname || c.author_email}>
@@ -219,7 +219,7 @@ export default function Docs() {
                               </div>
                             ))}
                             {contributors.length > 5 && (
-                              <div className="w-6 h-6 rounded-full border border-ares-gray-deep bg-ares-gray-dark flex items-center justify-center text-[10px] font-bold text-white z-10">
+                              <div className="w-6 h-6 rounded-full border border-ares-gray-deep bg-ares-gray-dark flex items-center justify-center text-xs font-bold text-white z-10">
                                 +{contributors.length - 5}
                               </div>
                             )}

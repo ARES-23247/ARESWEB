@@ -70,7 +70,7 @@ export default function EventManagerTab({
   });
 
   if (isLoading) return <div className="h-32 flex items-center justify-center"><div className="w-6 h-6 border-2 border-white/10 border-t-ares-red rounded-full animate-spin"></div></div>;
-  if (eventsResult === undefined) return <div className="h-32 flex flex-col items-center justify-center text-ares-red gap-2"><p className="font-bold">FAILED TO LOAD EVENTS</p><p className="text-[10px] text-marble/40">Check console for details or ensure database is up to date.</p></div>;
+  if (eventsResult === undefined) return <div className="h-32 flex flex-col items-center justify-center text-ares-red gap-2"><p className="font-bold">FAILED TO LOAD EVENTS</p><p className="text-xs text-marble/40">Check console for details or ensure database is up to date.</p></div>;
 
 
   const lifecycleFiltered = events.filter(e => {
@@ -94,7 +94,7 @@ export default function EventManagerTab({
           {view === 'trash' ? 'Trashed Events' : view === 'pending' ? 'Pending Events' : view === 'internal' ? 'Practices' : view === 'outreach' ? 'Outreach Events' : view === 'external' ? 'Community Events' : 'All Events'}
         </h3>
         {view !== 'trash' && view !== 'pending' && lastSyncedAt && !isNaN(new Date(lastSyncedAt).getTime()) && (
-            <span className="text-[10px] text-marble/50 font-medium uppercase tracking-tight bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm">
+            <span className="text-xs text-marble/50 font-medium uppercase tracking-tight bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm">
               Last Sync: {format(new Date(lastSyncedAt), 'MMM do, h:mm a')}
             </span>
           )}
@@ -110,7 +110,7 @@ export default function EventManagerTab({
         )}
       </div>
 
-      <div className="text-[10px] text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
+      <div className="text-xs text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
         <span>VIEW: {view} | RAW: {events.length} | FILTERED: {filtered.length}</span>
         {isError && <span className="text-ares-red font-bold">API ERROR!</span>}
       </div>

@@ -24,13 +24,13 @@ export default function EventSocialSyndication({ availableSocials, socials, onCh
               onChange={(e) => onChange(platform, e.target.checked)}
               className="w-4 h-4 rounded border-white/10 bg-obsidian text-ares-red focus:ring-ares-red transition-all cursor-pointer"
             />
-            <span className="text-sm font-medium text-white/70 group-hover:text-white transition-colors capitalize">
+            <span className="text-sm font-medium text-white group-hover:text-white transition-colors capitalize">
               {platform}
             </span>
           </label>
         ))}
       </div>
-      <p className="text-[10px] text-white/50 mt-2 italic font-mono uppercase tracking-tighter">
+      <p className="text-xs text-white/50 mt-2 italic font-mono uppercase tracking-tighter">
         * Selected platforms will receive a preview card and link immediately upon {isEdit ? "updating" : "publication"}.
       </p>
     </div>

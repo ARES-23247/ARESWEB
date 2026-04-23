@@ -118,7 +118,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       if (level === 1) className = "text-3xl " + className + " mt-10";
       if (level === 2) className = "text-2xl font-bold font-heading mt-8 mb-3 text-ares-gold scroll-m-24 group relative border-none pb-0";
       if (level === 3) className = "text-xl font-bold font-heading mt-6 mb-2 text-ares-red scroll-m-24 group relative border-none pb-0";
-      if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white/80 border-none pb-0";
+      if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white border-none pb-0";
 
       const textValue = node.content ? node.content.map(c => c.text || "").join("") : "";
       const id = textValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -134,9 +134,9 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
         </Tag>
       );
     }
-    case "paragraph": return <p className="text-ares-offwhite/80 leading-relaxed mb-4">{children}</p>;
-    case "bulletList": return <ul className="list-disc list-inside space-y-1 mb-4 text-ares-offwhite/70 ml-2">{children}</ul>;
-    case "orderedList": return <ol className="list-decimal list-inside space-y-1 mb-4 text-ares-offwhite/70 ml-2">{children}</ol>;
+    case "paragraph": return <p className="text-white/80 leading-relaxed mb-4">{children}</p>;
+    case "bulletList": return <ul className="list-disc list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ul>;
+    case "orderedList": return <ol className="list-decimal list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ol>;
     case "listItem": return <li className="leading-relaxed">{children}</li>;
     case "image": {
       const srcStr = validateUrl((node.src || node.attrs?.src || "") as string, 'image');
@@ -168,7 +168,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       );
     }
     case "blockquote": return (
-      <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white/70 italic rounded-r-lg">
+      <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic rounded-r-lg">
         {children}
       </blockquote>
     );
@@ -181,7 +181,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     );
     case "tableRow": return <tr className="border-b border-white/5 hover:bg-white/5 transition-colors odd:bg-black/20 even:bg-black/40">{children}</tr>;
     case "tableHeader": return <th className="bg-obsidian border border-white/10 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
-    case "tableCell": return <td className="border border-white/5 p-3 text-marble/80 align-top">{children}</td>;
+    case "tableCell": return <td className="border border-white/5 p-3 text-marble align-top">{children}</td>;
     case "youtube": {
       const src = validateUrl(node.attrs?.src as string, 'video');
       if (!src) return null;
@@ -191,7 +191,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
         </div>
       );
     }
-    case "taskList": return <ul className="list-none pl-0 space-y-2 my-4 text-ares-offwhite/80">{children}</ul>;
+    case "taskList": return <ul className="list-none pl-0 space-y-2 my-4 text-white/80">{children}</ul>;
     case "taskItem": return (
       <li className="flex items-start gap-3">
         <div className="mt-1 flex-shrink-0">
@@ -217,13 +217,13 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       let icon = "ℹ️";
       
       if (type === "info") {
-        baseClass += " bg-ares-cyan/10 border-ares-cyan/30 text-ares-offwhite";
+        baseClass += " bg-ares-cyan/10 border-ares-cyan/30 text-white";
         icon = "ℹ️";
       } else if (type === "warning") {
-        baseClass += " bg-ares-red/10 border-ares-red/30 text-ares-offwhite";
+        baseClass += " bg-ares-red/10 border-ares-red/30 text-white";
         icon = "⚠️";
       } else if (type === "tip") {
-        baseClass += " bg-ares-gold/10 border-ares-gold/30 text-ares-offwhite";
+        baseClass += " bg-ares-gold/10 border-ares-gold/30 text-white";
         icon = "💡";
       }
 
@@ -255,7 +255,7 @@ function RevealBlock({ summary, children }: { summary: string, children: ReactNo
           <div className={`p-2 ares-cut-sm transition-colors ${isOpen ? 'bg-ares-gold text-black' : 'bg-white/5 text-ares-gold'}`}>
             <Eye size={18} />
           </div>
-          <span className={`font-bold tracking-wide transition-colors ${isOpen ? 'text-white' : 'text-white/70 group-hover:text-ares-gold'}`}>
+          <span className={`font-bold tracking-wide transition-colors ${isOpen ? 'text-white' : 'text-white group-hover:text-ares-gold'}`}>
             {summary}
           </span>
         </div>

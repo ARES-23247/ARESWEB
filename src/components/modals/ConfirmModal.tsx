@@ -109,7 +109,7 @@ export default function ConfirmModal({
                 <h3 id="confirm-modal-title" className="text-xl font-heading font-bold text-white mb-2 uppercase tracking-wide">
                   {title}
                 </h3>
-                <p id="confirm-modal-desc" className="text-sm text-marble/60 leading-relaxed">
+                <p id="confirm-modal-desc" className="text-sm text-marble/90 leading-relaxed">
                   {description}
                 </p>
               </div>
@@ -118,7 +118,7 @@ export default function ConfirmModal({
             <div className="flex items-center justify-end gap-3 mt-8">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 text-sm font-bold text-marble/60 hover:text-white bg-white/5 hover:bg-white/10 transition-colors uppercase tracking-widest ares-cut-sm"
+                className="px-4 py-2 text-sm font-bold text-marble/90 hover:text-white bg-white/5 hover:bg-white/10 transition-colors uppercase tracking-widest ares-cut-sm"
               >
                 {cancelText}
               </button>

@@ -106,7 +106,7 @@ export default function TeamAvailability() {
           Team Availability
         </h3>
         {presences && (
-          <span className="text-[10px] font-bold text-marble/40 uppercase tracking-wider">
+          <span className="text-xs font-bold text-marble/40 uppercase tracking-wider">
             {sortedMembers.filter(m => m.status === "active").length} Online
           </span>
         )}

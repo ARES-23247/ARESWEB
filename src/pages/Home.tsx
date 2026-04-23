@@ -39,7 +39,7 @@ export default function Home() {
           </div>
 
           <div className="max-w-2xl mb-10 border-l-4 border-ares-bronze pl-6">
-            <div id="hero-mountaineer-mindset" className="text-xl md:text-2xl font-medium leading-relaxed text-marble/80 px-4 py-3 bg-obsidian rounded-lg">
+            <div id="hero-mountaineer-mindset" className="text-xl md:text-2xl font-medium leading-relaxed text-marble px-4 py-3 bg-obsidian rounded-lg">
               Building the future of West Virginia robotics with the <strong className="text-white">Mountaineer Mindset</strong>. Proudly competing as <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-all underline decoration-ares-red decoration-2 underline-offset-8 font-black italic tracking-tight">FIRST® Tech Challenge</a> Team #23247.
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function Home() {
           <h2 className="text-4xl md:text-6xl font-bold mb-8 font-heading">
             Join <span className="bg-ares-red px-3 py-1 pb-2 ares-cut-sm text-white">ARES</span>
           </h2>
-          <p className="text-marble/80 text-xl mb-12 leading-relaxed">
+          <p className="text-marble text-xl mb-12 leading-relaxed">
             Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future of WV technology, there is a place for you at the table.
           </p>
           <div className="flex flex-wrap justify-center gap-6">

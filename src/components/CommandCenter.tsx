@@ -103,7 +103,7 @@ export default function CommandCenter() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="px-3 py-1.5 bg-white/5 border border-white/10 ares-cut-sm text-xs font-bold text-marble/80 flex items-center gap-2 shadow-inner">
+          <span className="px-3 py-1.5 bg-white/5 border border-white/10 ares-cut-sm text-xs font-bold text-marble flex items-center gap-2 shadow-inner">
             <div className="w-2 h-2 rounded-full bg-ares-gold animate-pulse" />
             D1 Connected
           </span>

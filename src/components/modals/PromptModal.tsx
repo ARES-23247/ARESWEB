@@ -118,7 +118,7 @@ export default function PromptModal({
                 <h3 id="prompt-modal-title" className="text-xl font-heading font-bold text-white mb-2 uppercase tracking-wide">
                   {title}
                 </h3>
-                <p id="prompt-modal-desc" className="text-sm text-marble/60 leading-relaxed mb-4">
+                <p id="prompt-modal-desc" className="text-sm text-marble/90 leading-relaxed mb-4">
                   {description}
                 </p>
                 <input
@@ -135,7 +135,7 @@ export default function PromptModal({
             <div className="flex items-center justify-end gap-3 mt-4">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 text-sm font-bold text-marble/60 hover:text-white bg-white/5 hover:bg-white/10 transition-colors uppercase tracking-widest ares-cut-sm"
+                className="px-4 py-2 text-sm font-bold text-marble/90 hover:text-white bg-white/5 hover:bg-white/10 transition-colors uppercase tracking-widest ares-cut-sm"
               >
                 {cancelText}
               </button>

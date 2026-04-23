@@ -59,14 +59,15 @@ export default function Join() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
+            className="bg-obsidian p-8 rounded-2xl border border-white/10 shadow-2xl inline-block"
           >
-            <p aria-hidden="true" className="bg-ares-red text-white inline-block px-4 py-1 rounded-full uppercase tracking-[0.3em] font-bold text-[10px] mb-6 shadow-lg shadow-ares-red/20 before:content-['Enrollment_Open']"></p>
+            <p aria-hidden="true" className="bg-ares-red text-white inline-block px-4 py-1 rounded-full uppercase tracking-[0.3em] font-bold text-xs mb-6 shadow-lg shadow-ares-red/20 before:content-['Enrollment_Open']"></p>
             <p className="sr-only">Enrollment Open</p>
             <h1 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter italic">
               Join <span aria-hidden="true" className="bg-ares-red px-6 py-1 ares-cut shadow-xl inline-block text-white ml-2 before:content-['ARES.']"></span>
               <span className="sr-only">ARES.</span>
             </h1>
-            <p className="text-marble/80 text-xl max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-8">
+            <p className="text-marble text-xl max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-8">
               We are actively looking for forward-thinking students and dedicated mentors to expand our operations. No prior experience is required—only the drive to learn and the grit to succeed.
             </p>
           </motion.div>
@@ -92,7 +93,7 @@ export default function Join() {
                 </div>
                 <div>
                   <h3 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Industrial Tooling</h3>
-                  <p className="text-marble/60 text-sm leading-relaxed">Operate advanced CNC mills, 3D printers, and CAD software used in top engineering firms.</p>
+                  <p className="text-marble/90 text-sm leading-relaxed">Operate advanced CNC mills, 3D printers, and CAD software used in top engineering firms.</p>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -101,7 +102,7 @@ export default function Join() {
                 </div>
                 <div>
                   <h3 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Autonomous Systems</h3>
-                  <p className="text-marble/60 text-sm leading-relaxed">Learn Java, path planning, computer vision, and machine learning telemetry systems.</p>
+                  <p className="text-marble/90 text-sm leading-relaxed">Learn Java, path planning, computer vision, and machine learning telemetry systems.</p>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -110,14 +111,14 @@ export default function Join() {
                 </div>
                 <div>
                   <h3 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Business & Logistics</h3>
-                  <p className="text-marble/60 text-sm leading-relaxed">Develop championship-grade portfolios, execute marketing pipelines, and secure sponsorships.</p>
+                  <p className="text-marble/90 text-sm leading-relaxed">Develop championship-grade portfolios, execute marketing pipelines, and secure sponsorships.</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-12 p-6 ares-cut bg-white/5 border border-white/10 backdrop-blur-sm">
               <h3 className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2"><CheckCircle size={14} /> Eligibility</h3>
-              <ul className="text-sm text-marble/80 space-y-2">
+              <ul className="text-sm text-marble space-y-2">
                 <li>• Students in grades 6-12</li>
                 <li>• Serving Monongalia, Harrison, and Preston Counties, SW PA, and anyone within driving distance of Morgantown</li>
                 <li>• No cost to join or compete</li>

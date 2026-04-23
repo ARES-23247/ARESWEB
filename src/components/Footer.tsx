@@ -18,14 +18,14 @@ export default function Footer() {
               <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-red transition-colors">ARES</h3>
               <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">Appalachian Robotics & Engineering Society</p>
             </Link>
-            <p className="text-marble/70 text-xs font-medium uppercase tracking-[0.2em] mt-2 px-1">
+            <p className="text-marble text-xs font-medium uppercase tracking-[0.2em] mt-2 px-1">
               <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4">
                 <em>FIRST</em>® Tech Challenge
               </a> 
               {" "}Team #23247
             </p>
           </div>
-          <p className="text-marble/70 text-base leading-relaxed max-w-md border-l-2 border-ares-bronze/30 pl-6">
+          <p className="text-marble text-base leading-relaxed max-w-md border-l-2 border-ares-bronze/30 pl-6">
             We are proud members of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:text-ares-red transition-colors italic">MARS Family</a>. 
             Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><em>FIRST</em>®</a>.
           </p>
@@ -34,14 +34,14 @@ export default function Footer() {
         {/* Quick Links */}
         <div>
           <h4 className="text-white font-bold uppercase text-xs tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 inline-block">Navigation</h4>
-          <ul className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest text-marble/80">
+          <ul className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest text-marble">
             <li><Link to="/" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Home</Link></li>
             <li><Link to="/about" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Who We Are</Link></li>
             <li><Link to="/seasons" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Seasons</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Outreach</Link></li>
             <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
             <li><a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> 3D Models</a></li>
-            <li><Link to="/docs" className="hover:opacity-80 transition-colors flex items-center gap-2 group"><span>{"//"}</span> <span className="flex items-center shadow-lg ares-cut-sm overflow-hidden"><span className="bg-ares-red px-2.5 py-0.5 text-[10px] font-heading font-bold uppercase text-white tracking-wider border-r border-white/10">ARES</span><span className="bg-white/10 text-white font-heading font-medium px-2.5 py-0.5 text-[10px] uppercase tracking-widest group-hover:bg-white/20 transition-colors">Lib</span></span></Link></li>
+            <li><Link to="/docs" className="hover:opacity-80 transition-colors flex items-center gap-2 group"><span>{"//"}</span> <span className="flex items-center shadow-lg ares-cut-sm overflow-hidden"><span className="bg-ares-red px-2.5 py-0.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10">ARES</span><span className="bg-white/10 text-white font-heading font-medium px-2.5 py-0.5 text-xs uppercase tracking-widest group-hover:bg-white/20 transition-colors">Lib</span></span></Link></li>
             <li><Link to="/join" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Join Us</Link></li>
             <li><Link to="/tech-stack" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Tech Stack</Link></li>
           </ul>
@@ -67,8 +67,8 @@ export default function Footer() {
               <Mail className="w-5 h-5" aria-hidden="true" />
             </a>
           </div>
-          <p className="text-marble/70 text-xs font-bold uppercase tracking-widest">ARES HQ</p>
-          <a href={`mailto:${siteConfig.contact.email}`} className="text-marble/80 hover:text-ares-red text-sm font-bold transition-colors block mb-4">
+          <p className="text-marble text-xs font-bold uppercase tracking-widest">ARES HQ</p>
+          <a href={`mailto:${siteConfig.contact.email}`} className="text-marble hover:text-ares-red text-sm font-bold transition-colors block mb-4">
             {siteConfig.contact.email}
           </a>
           <Link to="/bug-report" className="bg-ares-red text-white hover:bg-white hover:text-ares-red px-4 py-2 ares-cut-sm transition-all font-bold uppercase tracking-widest text-xs inline-flex items-center gap-2 shadow-lg shadow-ares-red/20 w-fit mt-2">
@@ -79,11 +79,11 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col lg:flex-row justify-between items-center gap-8">
-        <p className="text-marble/80 text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap">
+        <p className="text-marble text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">
           © {new Date().getFullYear()} <span className="bg-ares-red text-white px-1 rounded-sm">ARES</span> 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
         </p>
         
-        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-x-8 gap-y-4 text-[10px] font-bold uppercase tracking-[0.2em] text-marble/80">
+        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-x-8 gap-y-4 text-xs font-bold uppercase tracking-[0.2em] text-marble">
           <Link to="/accessibility" className="hover:text-white transition-colors flex items-center gap-2 group whitespace-nowrap">
             <svg className="w-3.5 h-3.5 text-ares-red group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

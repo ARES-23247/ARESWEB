@@ -100,7 +100,7 @@ export default function AssetGrid({
                 ) : (
                   <button
                     onClick={() => setConfirmKey(asset.key)}
-                    className="px-3 py-1.5 bg-white/10 text-marble/70 text-xs font-bold ares-cut-sm hover:bg-ares-red hover:text-white transition-colors flex-1 text-center"
+                    className="px-3 py-1.5 bg-white/10 text-marble text-xs font-bold ares-cut-sm hover:bg-ares-red hover:text-white transition-colors flex-1 text-center"
                   >
                     Delete
                   </button>
@@ -139,11 +139,11 @@ export default function AssetGrid({
               {asset.key}
             </p>
             <div className="flex justify-between items-center mt-2 border-t border-white/5 pt-2">
-              <p className="text-marble/30 text-[10px] tracking-widest uppercase">
+              <p className="text-marble/30 text-xs tracking-widest uppercase">
                 {formatSize(asset.size)}
               </p>
               {asset.folder && (
-                <span className="bg-white/5 text-marble/60 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">
+                <span className="bg-white/5 text-marble/90 px-2 py-0.5 rounded text-xs uppercase font-bold tracking-wider">
                   {asset.folder}
                 </span>
               )}

@@ -116,7 +116,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
   }
 
   const inputClass = "w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-red transition-colors";
-  const labelClass = "text-xs font-bold text-marble/60 uppercase tracking-wider mb-1.5 block";
+  const labelClass = "text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block";
   const sectionClass = "bg-obsidian/50 border border-white/10 ares-cut p-6 space-y-4";
 
   return (
@@ -132,7 +132,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
       {isMinor && (
         <div className="flex items-start gap-3 p-4 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut">
           <Shield className="text-ares-cyan flex-shrink-0 mt-0.5" size={20} />
-          <p className="text-sm text-marble/80">
+          <p className="text-sm text-marble">
             <strong>FIRST Youth Protection:</strong> Your contact information (email, phone) is protected and never shown publicly. Only your nickname and avatar are visible to others.
           </p>
         </div>

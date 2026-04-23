@@ -77,7 +77,7 @@ export default function MemberImpactOverview() {
           {/* Attendance MVP */}
           <div className="bg-obsidian/40 border border-white/10 ares-cut-lg p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-ares-red/10 blur-[80px] rounded-full pointer-events-none" />
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-ares-red flex items-center gap-2 mb-6">
+            <h3 className="text-xs font-black uppercase tracking-widest text-ares-red flex items-center gap-2 mb-6">
               <Users size={14} /> Attendance MVPs
             </h3>
             
@@ -90,7 +90,7 @@ export default function MemberImpactOverview() {
                 }`}>
                   <div className={`w-10 h-10 ares-cut-sm flex items-center justify-center font-black ${
                      idx === 0 ? "bg-ares-gold/20 text-ares-gold" : 
-                     idx === 1 ? "bg-white/20 text-white/80" : 
+                     idx === 1 ? "bg-white/20 text-white" : 
                      "bg-ares-bronze/20 text-ares-bronze"
                   }`}>
                     #{idx + 1}
@@ -101,7 +101,7 @@ export default function MemberImpactOverview() {
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-black text-white">{mvp.attended_events}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Events</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/60">Events</p>
                   </div>
                 </div>
               ))}
@@ -111,7 +111,7 @@ export default function MemberImpactOverview() {
           {/* Outreach MVP */}
           <div className="bg-obsidian/40 border border-white/10 ares-cut-lg p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-ares-cyan/10 blur-[80px] rounded-full pointer-events-none" />
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-ares-cyan flex items-center gap-2 mb-6">
+            <h3 className="text-xs font-black uppercase tracking-widest text-ares-cyan flex items-center gap-2 mb-6">
               <Clock size={14} /> Outreach MVPs
             </h3>
             
@@ -124,7 +124,7 @@ export default function MemberImpactOverview() {
                 }`}>
                   <div className={`w-10 h-10 ares-cut-sm flex items-center justify-center font-black ${
                      idx === 0 ? "bg-ares-gold/20 text-ares-gold" : 
-                     idx === 1 ? "bg-white/20 text-white/80" : 
+                     idx === 1 ? "bg-white/20 text-white" : 
                      "bg-ares-bronze/20 text-ares-bronze"
                   }`}>
                     #{idx + 1}
@@ -135,7 +135,7 @@ export default function MemberImpactOverview() {
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-black text-white">{mvp.total_hours.toFixed(1)}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Hours</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/60">Hours</p>
                   </div>
                 </div>
               ))}
@@ -168,10 +168,10 @@ export default function MemberImpactOverview() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/10 bg-white/5">
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Member</th>
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Type</th>
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Events Attended</th>
-                <th className="text-left py-4 px-6 text-[10px] font-black uppercase tracking-widest text-white/60">Volunteer Hours</th>
+                <th className="text-left py-4 px-6 text-xs font-black uppercase tracking-widest text-white/60">Member</th>
+                <th className="text-left py-4 px-6 text-xs font-black uppercase tracking-widest text-white/60">Type</th>
+                <th className="text-left py-4 px-6 text-xs font-black uppercase tracking-widest text-white/60">Events Attended</th>
+                <th className="text-left py-4 px-6 text-xs font-black uppercase tracking-widest text-white/60">Volunteer Hours</th>
               </tr>
             </thead>
             <tbody>
@@ -184,7 +184,7 @@ export default function MemberImpactOverview() {
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="px-2 py-1 bg-white/5 border border-white/10 ares-cut-sm text-[10px] uppercase font-bold text-white/60">
+                    <span className="px-2 py-1 bg-white/5 border border-white/10 ares-cut-sm text-xs uppercase font-bold text-white/60">
                       {m.member_type}
                     </span>
                   </td>

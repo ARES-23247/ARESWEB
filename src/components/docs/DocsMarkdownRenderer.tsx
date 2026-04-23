@@ -147,8 +147,8 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
             </h3>
           );
         },
-        h4: ({ children }) => <h4 className="text-lg font-bold mt-4 mb-2 text-white/80">{children}</h4>,
-        p: ({ children }) => <p className="text-ares-offwhite/80 leading-relaxed mb-4">{children}</p>,
+        h4: ({ children }) => <h4 className="text-lg font-bold mt-4 mb-2 text-white">{children}</h4>,
+        p: ({ children }) => <p className="text-white/80 leading-relaxed mb-4">{children}</p>,
         a: ({ href, children }) => {
           const safeHref = validateUrl(href);
           return (
@@ -157,11 +157,11 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
             </a>
           );
         },
-        ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-4 text-ares-offwhite/70 ml-2">{children}</ul>,
-        ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-4 text-ares-offwhite/70 ml-2">{children}</ol>,
+        ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ol>,
         li: ({ children }) => <li className="leading-relaxed">{children}</li>,
         blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white/70 italic rounded-r-lg">{children}</blockquote>
+          <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic rounded-r-lg">{children}</blockquote>
         ),
         code: ({ className, children, ...props }) => {
           const match = /language-(\w+)/.exec(className || '');
@@ -179,7 +179,7 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
           </div>
         ),
         th: ({ children }) => <th className="border border-white/10 bg-ares-red/10 px-4 py-2 text-left font-bold text-ares-gold">{children}</th>,
-        td: ({ children }) => <td className="border border-white/10 px-4 py-2 text-ares-offwhite/70">{children}</td>,
+        td: ({ children }) => <td className="border border-white/10 px-4 py-2 text-white/70">{children}</td>,
         hr: () => <hr className="border-white/10 my-8" />,
         img: ({ src, alt }) => {
           const safeSrc = validateUrl(src);

@@ -78,7 +78,7 @@ export default function AdminUsers() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/10 text-[10px] font-bold text-white/60 uppercase tracking-wider">
+            <tr className="border-b border-white/10 text-xs font-bold text-white/60 uppercase tracking-wider">
               <th className="text-left py-3 px-2">User</th>
               <th className="text-left py-3 px-2">Email</th>
               <th className="text-left py-3 px-2">Role</th>
@@ -97,7 +97,7 @@ export default function AdminUsers() {
                     <div>
                       <span className="text-sm font-bold text-white block hover:text-ares-red">{user.nickname || user.name || "ARES Member"}</span>
                       {(user.first_name || user.last_name) && (
-                        <span className="text-[10px] uppercase tracking-wider text-white/60 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
+                        <span className="text-xs uppercase tracking-wider text-white/60 block">{[user.first_name, user.last_name].filter(Boolean).join(" ")}</span>
                       )}
                     </div>
                   </a>

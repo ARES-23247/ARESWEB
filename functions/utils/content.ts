@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 /**
  * Centralized content utilities for ARESWEB.
  */
@@ -46,5 +48,5 @@ export function parseAstToText(ast: unknown): string {
  * Standardizes date strings to ISO-8601 (YYYY-MM-DD) for SQL compatibility.
  */
 export function getStandardDate(): string {
-  return new Date().toISOString().split('T')[0];
+  return format(new Date(), 'yyyy-MM-dd');
 }

@@ -116,7 +116,7 @@ export default function SimPickerModal({
                      <p className="text-white text-sm font-black tracking-wider uppercase">{sim.name}</p>
                   </div>
                   <div className="mt-auto pt-3 border-t border-white/10 w-full flex justify-between items-center">
-                    <p className="text-white/60 text-[10px] font-mono">&lt;{sim.id} /&gt;</p>
+                    <p className="text-white/60 text-xs font-mono">&lt;{sim.id} /&gt;</p>
                   </div>
                 </button>
               ))}

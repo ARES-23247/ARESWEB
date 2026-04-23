@@ -108,9 +108,9 @@ export default function SponsorTokensManager() {
           <table className="w-full text-left">
             <thead className="bg-black/40 border-b border-white/5">
               <tr>
-                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/60">Sponsor</th>
-                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/60">Magic URL</th>
-                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/60">Created</th>
+                <th className="px-6 py-3 text-xs font-black uppercase tracking-widest text-white/60">Sponsor</th>
+                <th className="px-6 py-3 text-xs font-black uppercase tracking-widest text-white/60">Magic URL</th>
+                <th className="px-6 py-3 text-xs font-black uppercase tracking-widest text-white/60">Created</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -123,7 +123,7 @@ export default function SponsorTokensManager() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <input readOnly value={url} className="bg-black text-[10px] text-white/60 font-mono px-3 py-1.5 rounded-lg border border-white/5 w-64 focus:outline-none" />
+                        <input readOnly value={url} className="bg-black text-xs text-white/60 font-mono px-3 py-1.5 rounded-lg border border-white/5 w-64 focus:outline-none" />
                         <a href={url} target="_blank" rel="noreferrer" className="text-ares-gold hover:text-white transition-colors">
                           <ExternalLink size={14} />
                         </a>

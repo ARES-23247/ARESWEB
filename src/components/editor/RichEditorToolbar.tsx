@@ -317,18 +317,18 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       {editor.isActive('table') && (
         <div className="flex flex-wrap items-center gap-2 bg-ares-cyan/10 border-x border-b border-ares-cyan/30 px-3 py-2 w-full text-xs shadow-sm">
           <span className="text-ares-cyan font-bold mr-2 tracking-wider">TABLE</span>
-          <button type="button" onClick={() => editor.chain().focus().addColumnBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">+ Col Before</button>
-          <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">+ Col After</button>
-          <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">- Col</button>
+          <button type="button" onClick={() => editor.chain().focus().addColumnBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">+ Col Before</button>
+          <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">+ Col After</button>
+          <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">- Col</button>
           <div className="w-px h-4 bg-ares-cyan/30 mx-1" />
-          <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">+ Row Before</button>
-          <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">+ Row After</button>
-          <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">- Row</button>
+          <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">+ Row Before</button>
+          <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">+ Row After</button>
+          <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">- Row</button>
           <div className="w-px h-4 bg-ares-cyan/30 mx-1" />
-          <button type="button" onClick={() => editor.chain().focus().mergeCells().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">Merge</button>
-          <button type="button" onClick={() => editor.chain().focus().splitCell().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">Split</button>
+          <button type="button" onClick={() => editor.chain().focus().mergeCells().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">Merge</button>
+          <button type="button" onClick={() => editor.chain().focus().splitCell().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">Split</button>
           <div className="w-px h-4 bg-ares-cyan/30 mx-1" />
-          <button type="button" onClick={() => editor.chain().focus().toggleHeaderRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble/80 border border-white/10">Toggle Header</button>
+          <button type="button" onClick={() => editor.chain().focus().toggleHeaderRow().run()} className="px-2 py-1 rounded bg-black/40 hover:bg-ares-cyan hover:text-black transition-colors text-marble border border-white/10">Toggle Header</button>
           <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} className="px-2 py-1 rounded bg-ares-red/10 hover:bg-ares-red hover:text-white transition-colors text-ares-red ml-auto border border-ares-red/30">Delete Table</button>
         </div>
       )}

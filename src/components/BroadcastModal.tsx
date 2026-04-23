@@ -85,7 +85,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
           <div className="mb-6">
             <p className="text-xs font-bold text-marble/40 uppercase tracking-widest mb-1">Target Content</p>
             <p className="text-lg font-bold text-white leading-tight">{title}</p>
-            <p className="text-xs text-marble/60 mt-1 italic capitalize">{type} Entry</p>
+            <p className="text-xs text-marble/90 mt-1 italic capitalize">{type} Entry</p>
           </div>
 
           {status === "idle" && (
@@ -144,7 +144,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
                 <CheckCircle2 size={32} />
               </div>
               <h4 className="text-xl font-bold text-white mb-1">Broadcast Sent!</h4>
-              <p className="text-marble/60 text-sm">Synchronizing across {Object.values(selectedsocials).filter(Boolean).length} platforms...</p>
+              <p className="text-marble/90 text-sm">Synchronizing across {Object.values(selectedsocials).filter(Boolean).length} platforms...</p>
             </div>
           )}
 
@@ -166,7 +166,7 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
         </div>
 
         <div className="p-4 bg-white/[0.02] border-t border-white/5">
-          <p className="text-[10px] text-marble/40 italic text-center font-mono uppercase tracking-tighter">
+          <p className="text-xs text-marble/40 italic text-center font-mono uppercase tracking-tighter">
             Omnichannel content delivery managed by ARES Content Pipeline
           </p>
         </div>

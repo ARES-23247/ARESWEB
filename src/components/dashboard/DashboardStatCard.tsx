@@ -16,7 +16,7 @@ export default function DashboardStatCard({ label, value, icon, delay = 0 }: Das
       transition={{ delay }}
       className="bg-black/40 border border-white/5 p-6 ares-cut-lg"
     >
-      <div className="flex items-center gap-2 mb-2 opacity-50 uppercase text-[10px] font-bold tracking-widest text-marble/40">
+      <div className="flex items-center gap-2 mb-2 opacity-50 uppercase text-xs font-bold tracking-widest text-marble/40">
         {icon}
         <span>{label}</span>
       </div>

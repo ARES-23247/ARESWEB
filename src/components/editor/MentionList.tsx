@@ -62,7 +62,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
   return (
     <div className="bg-obsidian border border-ares-gray-dark ares-cut-sm shadow-2xl overflow-hidden min-w-[200px] backdrop-blur-xl animate-in fade-in zoom-in duration-200">
       <div className="p-2 border-b border-ares-gray-dark bg-ares-red/5">
-        <span className="text-[10px] font-bold text-ares-red uppercase tracking-widest px-2">Team Members</span>
+        <span className="text-xs font-bold text-ares-red uppercase tracking-widest px-2">Team Members</span>
       </div>
       <div className="p-1">
         {teamMembers.map((item, index) => (
@@ -74,7 +74,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
             }`}
           >
             <div className="text-sm font-bold">{item.label}</div>
-            <div className="text-[10px] opacity-50">{item.email}</div>
+            <div className="text-xs opacity-50">{item.email}</div>
           </button>
         ))}
       </div>

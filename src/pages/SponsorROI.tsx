@@ -63,7 +63,7 @@ export default function SponsorROI() {
           <ShieldAlert size={48} className="text-ares-red" />
         </div>
         <h1 className="text-3xl font-black uppercase tracking-tighter">Access Denied</h1>
-        <p className="text-marble/60 max-w-md">
+        <p className="text-marble/90 max-w-md">
           {error || "The secure link you are trying to access is invalid or has expired."}
         </p>
         <Link to="/" className="mt-8 px-8 py-3 bg-ares-red hover:bg-ares-bronze rounded-xl transition-all font-bold uppercase tracking-widest text-xs">
@@ -103,7 +103,7 @@ export default function SponsorROI() {
               )}
             </div>
             <div>
-              <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-[10px] font-black uppercase tracking-widest mb-3">
+              <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-xs font-black uppercase tracking-widest mb-3">
                 {sponsor.tier} Partner
               </div>
               <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
@@ -165,7 +165,7 @@ export default function SponsorROI() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 uppercase tracking-widest text-[10px] text-ares-gray">
+                  <tr className="border-b border-white/10 uppercase tracking-widest text-xs text-ares-gray">
                     <th className="py-4 font-bold">Month</th>
                     <th className="py-4 font-bold text-right">Impressions</th>
                     <th className="py-4 font-bold text-right">Link Clicks</th>

@@ -117,7 +117,7 @@ export default function SeasonEditor() {
     }
   };
 
-  if (!editor) return <div className="text-marble/80 animate-pulse font-mono tracking-widest text-sm">Booting Legacy Systems...</div>;
+  if (!editor) return <div className="text-marble animate-pulse font-mono tracking-widest text-sm">Booting Legacy Systems...</div>;
 
   return (
     <div className="flex flex-col gap-6 w-full relative">
@@ -134,7 +134,7 @@ export default function SeasonEditor() {
         <div className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1">
-              <label htmlFor="start-year" className="block text-[10px] font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Start Year</label>
+              <label htmlFor="start-year" className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Start Year</label>
               <input
                 id="start-year"
                 type="number"
@@ -146,7 +146,7 @@ export default function SeasonEditor() {
               />
             </div>
             <div className="flex-1">
-              <label htmlFor="end-year" className="block text-[10px] font-black text-ares-gold uppercase tracking-[0.2em] mb-2">End Year</label>
+              <label htmlFor="end-year" className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em] mb-2">End Year</label>
               <input
                 id="end-year"
                 type="number"
@@ -158,7 +158,7 @@ export default function SeasonEditor() {
             </div>
           </div>
           <div>
-            <label htmlFor="challenge-name" className="block text-[10px] font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Challenge Name</label>
+            <label htmlFor="challenge-name" className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Challenge Name</label>
             <input
               id="challenge-name"
               type="text"
@@ -171,7 +171,7 @@ export default function SeasonEditor() {
         </div>
 
         <div>
-          <span className="block text-[10px] font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Robot / Season Cover</span>
+          <span className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Robot / Season Cover</span>
           <CoverAssetPicker 
             coverImage={robotImageUrl}
             isUploading={isUploadingCover}
@@ -188,7 +188,7 @@ export default function SeasonEditor() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <label htmlFor="album-url" className="block text-[10px] font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Google Photos Album Link</label>
+            <label htmlFor="album-url" className="block text-xs font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Google Photos Album Link</label>
             <input
               id="album-url"
               type="text"
@@ -199,7 +199,7 @@ export default function SeasonEditor() {
             />
           </div>
           <div>
-            <label htmlFor="robot-name" className="block text-[10px] font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Robot Name</label>
+            <label htmlFor="robot-name" className="block text-xs font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Robot Name</label>
             <input
               id="robot-name"
               type="text"
@@ -210,7 +210,7 @@ export default function SeasonEditor() {
             />
           </div>
           <div>
-            <label htmlFor="cad-link" className="block text-[10px] font-black text-marble/40 uppercase tracking-[0.2em] mb-2">CAD Link</label>
+            <label htmlFor="cad-link" className="block text-xs font-black text-marble/40 uppercase tracking-[0.2em] mb-2">CAD Link</label>
             <input
               id="cad-link"
               type="text"
@@ -222,7 +222,7 @@ export default function SeasonEditor() {
           </div>
         </div>
         <div>
-          <span className="block text-[10px] font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Album Cover / Hero Card</span>
+          <span className="block text-xs font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Album Cover / Hero Card</span>
           <CoverAssetPicker 
             coverImage={albumCoverUrl}
             isUploading={isUploadingAlbumCover}
@@ -237,7 +237,7 @@ export default function SeasonEditor() {
       </div>
 
       <div>
-        <label htmlFor="summary" className="block text-[10px] font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Brief Summary</label>
+        <label htmlFor="summary" className="block text-xs font-black text-marble/40 uppercase tracking-[0.2em] mb-2">Brief Summary</label>
         <textarea
           id="summary"
           value={summary}
@@ -248,7 +248,7 @@ export default function SeasonEditor() {
       </div>
 
       <div className="space-y-2">
-        <span className="block text-[10px] font-black text-ares-gold uppercase tracking-[0.2em]">Robot Design & Season Highlights</span>
+        <span className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em]">Robot Design & Season Highlights</span>
         <RichEditorToolbar editor={editor} documentTitle={challengeName} />
       </div>
 

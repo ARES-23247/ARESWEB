@@ -164,7 +164,7 @@ export default function AssetPickerModal({
                   <div className="p-3">
                     <p className="text-white/60 text-xs font-mono truncate">{asset.key}</p>
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-                      <span className="text-[10px] text-white/60 uppercase font-bold tracking-widest">
+                      <span className="text-xs text-white/60 uppercase font-bold tracking-widest">
                         {(asset.size / 1024).toFixed(0)} KB
                       </span>
                       {asset.folder && (

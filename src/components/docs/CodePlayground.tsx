@@ -30,7 +30,7 @@ export default function CodePlayground() {
           <Play size={14} className={running ? "animate-pulse" : ""} /> {running ? "RUNNING" : "RUN"}
         </button>
       </div>
-      <div className="p-4 bg-obsidian text-marble/80 whitespace-pre-wrap overflow-x-auto min-h-[160px]">
+      <div className="p-4 bg-obsidian text-marble whitespace-pre-wrap overflow-x-auto min-h-[160px]">
         <div className="text-ares-cyan">{defaultCode}</div>
       </div>
       <div className="border-t border-white/10 bg-black min-h-[120px] max-h-[120px] p-3 text-xs overflow-y-auto">

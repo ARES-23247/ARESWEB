@@ -17,7 +17,7 @@ export function MemberSection({ section }: { section: SectionConfig }) {
           <h2 className={`text-4xl md:text-5xl font-bold mb-4 font-heading uppercase ${section.type === "alumni" ? "text-white" : "text-obsidian"}`}>
             {section.title}
           </h2>
-          <p className={`text-lg max-w-2xl mx-auto ${section.type === "alumni" ? "text-marble/80" : "text-obsidian/70"}`}>
+          <p className={`text-lg max-w-2xl mx-auto ${section.type === "alumni" ? "text-marble" : "text-obsidian/70"}`}>
             {section.desc}
           </p>
           <div className="w-24 h-1 bg-ares-red mx-auto mt-6"></div>
