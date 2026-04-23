@@ -153,8 +153,8 @@ export default function Navbar() {
             <span className="text-[10px] sm:text-xs font-mono flex items-center gap-2 whitespace-nowrap">
               Search... 
               <span className="hidden lg:flex items-center gap-1 opacity-60">
-                <kbd className="bg-black/40 text-marble/80 px-1.5 py-0.5 rounded border border-white/20 leading-none">Ctrl</kbd>
-                <kbd className="bg-black/40 text-marble/80 px-1.5 py-0.5 rounded border border-white/20 leading-none">K</kbd>
+                <kbd className="bg-black/40 text-white px-1.5 py-0.5 rounded border border-white/20 leading-none">Ctrl</kbd>
+                <kbd className="bg-black/40 text-white px-1.5 py-0.5 rounded border border-white/20 leading-none">K</kbd>
               </span>
             </span>
           </button>
@@ -165,7 +165,7 @@ export default function Navbar() {
                 className="relative flex items-center justify-center p-2 ares-cut-sm bg-white/5 hover:bg-white/10 border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 aria-label="Notifications"
               >
-                <Bell size={18} className="text-marble/80" />
+                <Bell size={18} className="text-white" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
@@ -221,7 +221,7 @@ export default function Navbar() {
                              <span className="text-sm font-bold text-white">{n.title}</span>
                              {!n.is_read && <span className="h-2 w-2 rounded-full bg-ares-red flex-shrink-0 mt-1"></span>}
                           </div>
-                          <span className="text-xs text-marble/40 line-clamp-2">{n.message}</span>
+                          <span className="text-xs text-marble/60 line-clamp-2">{n.message}</span>
                           </div>
                         </li>
                       ))
@@ -238,13 +238,13 @@ export default function Navbar() {
                 alt="" 
                 className="w-6 h-6 rounded-full bg-black/40" 
               />
-              <span className="text-xs font-bold text-marble/80 group-hover:text-white uppercase tracking-wider">Dashboard</span>
+              <span className="text-xs font-bold text-white group-hover:text-white uppercase tracking-wider">Dashboard</span>
             </Link>
           )}
           {!isPending && !isSignedIn && (
             <Link to="/login" className="flex items-center gap-2 px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-ares-gold/30 ares-cut-sm transition-all group" aria-label="Sign In">
               <LogIn size={14} className="text-ares-gold" />
-              <span className="text-xs font-bold text-marble/80 group-hover:text-ares-gold uppercase tracking-wider">Sign In</span>
+              <span className="text-xs font-bold text-white group-hover:text-ares-gold uppercase tracking-wider">Sign In</span>
             </Link>
           )}
 

@@ -2,6 +2,46 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Event Editor E2E", () => {
   test.beforeEach(async ({ page }) => {
+    // Mock the authentication session
+    await page.route('**/api/auth/get-session', async route => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          session: {
+            id: "mockup-session-id",
+            userId: "admin-user",
+            expiresAt: new Date(Date.now() + 10000000).toISOString(),
+          },
+          user: {
+            id: "admin-user",
+            name: "Admin User",
+            email: "admin@ares.org",
+            role: "admin"
+          }
+        }
+      });
+    });
+
+    await page.route('**/api/profile/me', async route => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          user_id: "admin-user",
+          nickname: "Admin User",
+          member_type: "mentor",
+          auth: { id: "admin-user", role: "admin" }
+        }
+      });
+    });
+
+    // Add a fake cookie to ensure better-auth doesn't short circuit
+    await page.context().addCookies([{
+      name: 'better-auth.session_token',
+      value: 'mockup-session-id',
+      domain: 'localhost',
+      path: '/'
+    }]);
+
     // Mock API for locations
     await page.route("**/api/locations", async (route) => {
       await route.fulfill({

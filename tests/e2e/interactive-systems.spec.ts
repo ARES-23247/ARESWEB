@@ -31,6 +31,11 @@ test.describe('Interactive Systems & Workflows', () => {
   });
 
   test('Join the Team inquiry flow submits successfully', async ({ page }) => {
+    // SEC-03: Enable Turnstile bypass for E2E
+    await page.addInitScript(() => {
+      (window as any).ARES_E2E_BYPASS = true;
+    });
+
     // Intercept the API submission so we don't pollute the database,
     // and instead force a success response.
     await page.route('/api/inquiries', async route => {

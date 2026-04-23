@@ -18,7 +18,7 @@ export default function Accessibility() {
         >
           <div className="flex items-center gap-3 mb-6">
             <span className="w-8 h-1 bg-ares-red"></span>
-            <span className="text-marble/40 font-mono text-sm tracking-widest uppercase">Digital Manifesto</span>
+            <span className="text-marble/60 font-mono text-sm tracking-widest uppercase">Digital Manifesto</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
             Championship-Grade <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Accessibility</span>
@@ -109,7 +109,7 @@ export default function Accessibility() {
           className="text-center p-8 hero-card border border-dashed border-white/10"
         >
           <div className="flex gap-6 justify-center items-center mb-6 border-b border-white/5 pb-4 max-w-sm mx-auto">
-            <span className="font-mono text-sm tracking-widest text-marble/40 mr-2">SCANNED BY</span>
+            <span className="font-mono text-sm tracking-widest text-marble/60 mr-2">SCANNED BY</span>
             <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity flex items-center font-bold text-sm gap-1.5" title="pa11y CI Integrated">
               <svg className="w-5 h-5 text-ares-cyan" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>

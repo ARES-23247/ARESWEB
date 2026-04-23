@@ -65,6 +65,14 @@ export default function Turnstile({ onVerify, onExpire, theme = "dark", size = "
   }, [onVerify, onExpire, theme, size]);
 
   useEffect(() => {
+    // SEC-03: Bypass Turnstile for E2E tests and local development if requested
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const hasBypass = localStorage.getItem("ARES_DEV_BYPASS") === "true" || (window as any).ARES_E2E_BYPASS;
+    if (isLocal && hasBypass) {
+      onVerify("test-bypass-token");
+      return;
+    }
+
     // If turnstile is already loaded, render immediately
     if (window.turnstile) {
       renderWidget();

@@ -15,11 +15,10 @@ test.describe('ARESWEB Authentication Flow', () => {
 
   test('Dashboard shows Restricted Access gate when unauthenticated', async ({ page }) => {
     await page.goto('/dashboard');
-    
-    // Check that we hit the Restricted Access gate component
-    await expect(page.locator('h1').filter({ hasText: 'Restricted Access' })).toBeVisible();
-    
-    // There should be a button routing to the login
-    await expect(page.locator('button', { hasText: /Sign In with ARES ID/i })).toBeVisible();
-  });
-});
+
+    // Check that we hit the Authentication Required gate component
+    await expect(page.locator('h1').filter({ hasText: 'Authentication Required' })).toBeVisible();
+
+    // There should be a link routing to the login
+    await expect(page.locator('a', { hasText: /Return to Login/i })).toBeVisible();
+  });});

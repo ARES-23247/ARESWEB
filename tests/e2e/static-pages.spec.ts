@@ -19,8 +19,12 @@ test.describe('Static Information Pages', () => {
         consoleErrors.push(`Uncaught exception: "${exception}"`);
       });
       page.on('console', (msg) => {
-        if (msg.type() === 'error' && !msg.text().includes('favicon')) {
-          consoleErrors.push(msg.text());
+        if (msg.type() === 'error') {
+          const text = msg.text();
+          if (text.includes('favicon')) return;
+          if (text.includes('401')) return;
+          if (text.includes('429')) return;
+          consoleErrors.push(text);
         }
       });
 

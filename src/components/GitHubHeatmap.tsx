@@ -102,7 +102,7 @@ export default function GitHubHeatmap() {
       <div className="overflow-x-auto pb-2">
         <div className="min-w-[720px]">
           {/* Month labels */}
-          <div className="flex ml-8 mb-1 text-[10px] text-marble/40 font-bold uppercase tracking-wider">
+          <div className="flex ml-8 mb-1 text-[10px] text-marble/60 font-bold uppercase tracking-wider">
             {monthLabels.map((m) => (
               <div
                 key={`${m.label}-${m.col}`}
@@ -120,7 +120,7 @@ export default function GitHubHeatmap() {
                 {DAYS.map((day, i) => (
                   <div
                     key={day}
-                    className="h-[12px] flex items-center text-[9px] text-marble/30 font-bold uppercase"
+                    className="h-[12px] flex items-center text-[9px] text-marble/60 font-bold uppercase"
                     style={{ visibility: i % 2 === 1 ? "visible" : "hidden" }}
                   >
                     {day}
@@ -150,7 +150,7 @@ export default function GitHubHeatmap() {
 
           {/* Legend */}
           <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-2 text-[10px] text-marble/40 font-bold">
+            <div className="flex items-center gap-2 text-[10px] text-marble/60 font-bold">
               <span>Less</span>
               {LEVEL_COLORS.map((color, i) => (
                 <div key={i} className={`w-[12px] h-[12px] rounded-[2px] ${color}`} />

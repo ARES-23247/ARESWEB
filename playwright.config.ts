@@ -19,7 +19,7 @@ export default defineConfig({
   ],
   webServer: process.env.CI 
     ? {
-        command: 'cross-env CLOUDFLARE_API_TOKEN=dummy npm run preview',
+        command: 'cross-env CLOUDFLARE_API_TOKEN=dummy npx wrangler pages dev --binding DEV_BYPASS=true',
         url: 'http://localhost:8788',
         reuseExistingServer: false,
         timeout: 120 * 1000,
@@ -31,7 +31,7 @@ export default defineConfig({
           reuseExistingServer: true,
         },
         {
-          command: 'npm run preview',
+          command: 'npx wrangler pages dev --binding DEV_BYPASS=true',
           url: 'http://localhost:8788',
           reuseExistingServer: true,
         }

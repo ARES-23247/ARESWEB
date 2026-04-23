@@ -36,7 +36,9 @@ const apiRouter = new Hono<AppEnv>();
 app.use("*", async (c, next) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   if (ip !== "unknown" && !c.req.path.startsWith("/assets")) {
-    const allowed = checkRateLimit(ip, 150, 60); // 150 requests per minute
+    // SEC-03: Bypass rate limiting in local dev/test if DEV_BYPASS is enabled
+    const isBypass = c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1";
+    const allowed = isBypass || checkRateLimit(ip, 150, 60); // 150 requests per minute
     if (!allowed) {
       console.warn(`[Local Rate Limit] Blocked IP ${ip}`);
       return c.json({ error: "Too many requests. Please try again later." }, 429);

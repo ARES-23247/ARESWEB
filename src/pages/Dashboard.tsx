@@ -29,7 +29,7 @@ export default function Dashboard() {
         <ShieldAlert size={64} className="text-ares-red mb-4 opacity-50" />
         <h1 className="text-2xl font-black text-white mb-2">Authentication Required</h1>
         <p className="text-marble/60 mb-8 max-w-md">You must be signed in with a verified ARES account to access the administrative dashboard.</p>
-        <Link to="/auth" className="px-6 py-3 bg-ares-red text-white font-bold ares-cut hover:bg-ares-bronze transition-colors">
+        <Link to="/login" className="px-6 py-3 bg-ares-red text-white font-bold ares-cut hover:bg-ares-bronze transition-colors">
           Return to Login
         </Link>
       </div>
@@ -48,7 +48,7 @@ export default function Dashboard() {
           <div className="mb-4" /> {/* Spacer replaced header */}
           <DashboardRoutes session={session} permissions={permissions} notifications={notifications} />
 
-          <div className="mt-6 flex items-center justify-between text-marble/40 text-[10px] font-bold uppercase tracking-widest px-4 pb-4">
+          <div className="mt-6 flex items-center justify-between text-marble/60 text-[10px] font-bold uppercase tracking-widest px-4 pb-4">
              <span>ARES Robotics 23247</span>
              <span>D1 Edge Server</span>
           </div>
