@@ -118,15 +118,16 @@ CREATE INDEX IF NOT EXISTS idx_events_season ON events(season_id);
 -- ── Seasons ──────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS seasons (
-    id TEXT PRIMARY KEY, -- e.g. '2025-2026'
-    challenge_name TEXT NOT NULL, -- e.g. 'DECODE'
+    start_year INTEGER PRIMARY KEY, -- e.g. 2025
+    end_year INTEGER, -- e.g. 2026
+    challenge_name TEXT NOT NULL, -- e.g. 'INTO THE DEEP'
     robot_name TEXT,
     robot_image TEXT,
     robot_description TEXT, -- JSON AST for rich text
     robot_cad_url TEXT,
     summary TEXT,
-    start_date TEXT,
-    end_date TEXT,
+    album_url TEXT,
+    album_cover TEXT,
     status TEXT DEFAULT 'published',
     is_deleted INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
@@ -330,16 +331,17 @@ CREATE INDEX IF NOT EXISTS idx_awards_date ON awards(date);
 -- ── Outreach ─────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS outreach_logs (
-    id TEXT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     date TEXT NOT NULL,
     location TEXT,
-    hours REAL DEFAULT 0,
-    people_reached INTEGER DEFAULT 0,
+    hours INTEGER,
+    people_reached INTEGER,
     students_count INTEGER DEFAULT 0,
     impact_summary TEXT,
+    cf_email TEXT,
     is_deleted INTEGER DEFAULT 0,
-    season_id TEXT REFERENCES seasons(id) ON DELETE SET NULL,
+    season_id TEXT,
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_outreach_season ON outreach_logs(season_id);
@@ -404,6 +406,18 @@ CREATE TABLE IF NOT EXISTS media_tags (
 
 
 -- ── Platform Settings ────────────────────────────────────────────────────
+
+-- ── Judge Access Codes ───────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS judge_access_codes (
+    id TEXT PRIMARY KEY,
+    code TEXT NOT NULL,
+    label TEXT DEFAULT 'Judge Access',
+    created_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_judge_codes_code ON judge_access_codes(code);
+
 
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
