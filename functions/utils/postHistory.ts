@@ -1,6 +1,7 @@
 import { Context } from "hono";
-import { AppEnv, SessionUser } from "../api/middleware";
+import { AppEnv, SessionUser, getSocialConfig } from "../api/middleware";
 import { emitNotification } from "./notifications";
+import { dispatchSocials } from "./socialSync";
 
 export interface PostHistoryRow {
   id: string;
@@ -183,6 +184,24 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
   }
 
   await c.env.DB.prepare("UPDATE posts SET status = 'published' WHERE slug = ?").bind(slug).run();
+
+  // Social Syndication upon approval
+  const socialConfig = await getSocialConfig(c);
+  const baseUrl = new URL(c.req.url).origin;
+
+  c.executionCtx.waitUntil(
+    dispatchSocials(
+      c.env.DB,
+      {
+        title: row.title,
+        url: `${baseUrl}/blog/${slug}`,
+        snippet: row.snippet || "Read the latest engineering update from ARES 23247!",
+        coverImageUrl: row.thumbnail || "/gallery_1.png",
+        baseUrl: baseUrl
+      },
+      socialConfig
+    ).catch(err => console.error("Social dispatch failed on approval:", err))
+  );
 
   // Notify original author
   if (row.cf_email) {

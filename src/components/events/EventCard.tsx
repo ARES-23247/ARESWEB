@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { DEFAULT_COVER_IMAGE } from "../../utils/constants";
+import { downloadICS } from "../../utils/calendar";
+import { Calendar } from "lucide-react";
 
 export interface EventItem {
   id: string;
@@ -64,8 +66,22 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
         <p className="text-marble/70 text-base leading-relaxed line-clamp-3">
           {extractPlainText(event.description)}
         </p>
-        <div className="mt-6 text-ares-gold uppercase tracking-widest text-xs font-bold flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit">
-          {isPast ? "Read Recap" : "View Details"} <span className="text-lg leading-none">&rarr;</span>
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-ares-gold uppercase tracking-widest text-xs font-bold flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit">
+            {isPast ? "Read Recap" : "View Details"} <span className="text-lg leading-none">&rarr;</span>
+          </div>
+          {!isPast && (
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                downloadICS(event);
+              }}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest bg-ares-gold/10 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/30 hover:border-ares-gold transition-all"
+            >
+              <Calendar size={12} /> Add to Calendar
+            </button>
+          )}
         </div>
       </div>
     </Link>
