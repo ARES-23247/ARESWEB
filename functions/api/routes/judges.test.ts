@@ -134,8 +134,6 @@ describe("Judges Router", () => {
     });
 
     it("POST /admin/codes should create code and log audit", async () => {
-      mockDb.batch.mockResolvedValue([{ success: true }, { success: true }]);
-      
       const req = new Request("http://localhost/admin/codes", {
         method: "POST",
         body: JSON.stringify({ label: "New Judge" }),
@@ -147,7 +145,7 @@ describe("Judges Router", () => {
       const body = await res.json() as any;
       expect(body.success).toBe(true);
       expect(body.code.length).toBe(12);
-      expect(mockDb.batch).toHaveBeenCalled();
+      expect(mockDb.run).toHaveBeenCalled();
     });
 
     it("DELETE /admin/codes/:id should delete code", async () => {

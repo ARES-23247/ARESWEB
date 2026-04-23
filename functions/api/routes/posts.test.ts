@@ -398,7 +398,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("PUT /:slug - handles DB error (admin edit)", async () => {
-    env.DB.batch.mockRejectedValueOnce(new Error("DB error"));
+    env.DB.run.mockRejectedValueOnce(new Error("DB error"));
     const req = new Request("http://localhost/test", {
       method: "PUT",
       body: JSON.stringify({ title: "Updated", ast: {} }),
