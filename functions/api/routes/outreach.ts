@@ -34,7 +34,7 @@ outreachRouter.get("/", async (c) => {
     return c.json({ logs: mergeAndSort((logs || []) as Record<string, unknown>[], volunteerEvents) });
   } catch (err) {
     console.error("D1 outreach list error:", err);
-    return c.json({ logs: [] });
+    return c.json({ error: "Failed to fetch outreach logs", details: (err as Error).message }, 500);
   }
 });
 

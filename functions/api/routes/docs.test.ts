@@ -170,4 +170,82 @@ describe("Hono Backend - /docs Router", () => {
     const res = await docsRouter.request(req, {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
+
+  describe("Negative Paths", () => {
+    it("GET /:slug - should return 404 for missing doc", async () => {
+      env.DB.first.mockResolvedValue(null);
+      const req = new Request("http://localhost/missing", { method: "GET" });
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(404);
+    });
+
+    it("GET /:slug - should handle database error", async () => {
+      env.DB.first.mockRejectedValue(new Error("DB error"));
+      const req = new Request("http://localhost/error", { method: "GET" });
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(500);
+    });
+
+    it("POST /:slug/feedback - should return 403 for invalid turnstile", async () => {
+      (globalThis as any).fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: false }),
+      });
+
+      const req = new Request("http://localhost/test/feedback", {
+        method: "POST",
+        body: JSON.stringify({ turnstileToken: "bad" }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(403);
+    });
+
+    it("POST /save - should return 400 for missing fields", async () => {
+      const req = new Request("http://localhost/save", {
+        method: "POST",
+        body: JSON.stringify({ slug: "test" }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(400);
+    });
+
+    it("GET /search - should handle search with less than 3 chars", async () => {
+      const req = new Request("http://localhost/search?q=te", { method: "GET" });
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.results).toHaveLength(0);
+    });
+
+    it("GET /search - should handle database error in search", async () => {
+      env.DB.all.mockRejectedValue(new Error("Search error"));
+      const req = new Request("http://localhost/search?q=test", { method: "GET" });
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.results).toHaveLength(0);
+    });
+
+    it("GET /search - should use cache for repeated queries", async () => {
+      env.DB.all.mockResolvedValue({ results: [{ slug: "cached" }] });
+      const req = new Request("http://localhost/search?q=cachetest", { method: "GET" });
+      
+      // First call - sets cache
+      await docsRouter.request(req, {}, env, mockExecutionContext);
+      
+      // Second call - should hit cache (mock DB should only be called once)
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(200);
+      expect(env.DB.prepare).toHaveBeenCalledTimes(1);
+    });
+
+    it("GET /export-all - should handle database error", async () => {
+      env.DB.all.mockRejectedValue(new Error("Export failed"));
+      const req = new Request("http://localhost/export-all", { method: "GET" });
+      const res = await docsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(500);
+    });
+  });
 });

@@ -15,7 +15,7 @@ awardsRouter.get("/", async (c) => {
     return c.json({ awards: results || [] });
   } catch (err) {
     console.error("D1 awards list error:", err);
-    return c.json({ awards: [] });
+    return c.json({ error: "Failed to fetch awards", details: (err as Error).message }, 500);
   }
 });
 

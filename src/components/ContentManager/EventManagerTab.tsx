@@ -70,6 +70,8 @@ export default function EventManagerTab({
   });
 
   if (isLoading) return <div className="h-32 flex items-center justify-center"><div className="w-6 h-6 border-2 border-white/10 border-t-ares-red rounded-full animate-spin"></div></div>;
+  if (eventsResult === undefined) return <div className="h-32 flex flex-col items-center justify-center text-ares-red gap-2"><p className="font-bold">FAILED TO LOAD EVENTS</p><p className="text-[10px] text-marble/40">Check console for details or ensure database is up to date.</p></div>;
+
 
   const lifecycleFiltered = events.filter(e => {
     const isDeleted = Number(e.is_deleted) === 1;

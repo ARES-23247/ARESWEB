@@ -31,7 +31,7 @@ export default function DocManagerTab({
   purgeMutation
 }: DocManagerTabProps) {
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
-  const { data: docs = [], isLoading } = useQuery<DocItem[]>({
+  const { data: docs = [], isLoading, isError } = useQuery<DocItem[]>({
     queryKey: ["docs"],
     queryFn: async () => {
       const data = await adminApi.get<{ docs?: DocItem[] }>("/api/admin/docs/list");
@@ -84,7 +84,10 @@ export default function DocManagerTab({
     }
   };
 
+
   if (isLoading) return <div className="h-32 flex items-center justify-center"><div className="w-6 h-6 border-2 border-white/10 border-t-ares-red rounded-full animate-spin"></div></div>;
+  if (isError) return <div className="h-32 flex flex-col items-center justify-center text-ares-red gap-2"><p className="font-bold">FAILED TO LOAD DOCUMENTS</p><p className="text-[10px] text-marble/40">The database query failed. Check console for details.</p></div>;
+
 
   const filtered = docs.filter(contentFilter(view));
 

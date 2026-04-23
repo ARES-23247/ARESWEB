@@ -34,7 +34,7 @@ export default function PostManagerTab({
   purgeMutation
 }: PostManagerTabProps) {
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
-  const { data: posts = [], isLoading } = useQuery<PostItem[]>({
+  const { data: posts = [], isLoading, isError } = useQuery<PostItem[]>({
     queryKey: ["posts"],
     queryFn: async () => {
       const data = await adminApi.get<{ posts?: PostItem[] }>("/api/admin/posts/list");
@@ -49,6 +49,8 @@ export default function PostManagerTab({
   });
 
   if (isLoading) return <div className="h-32 flex items-center justify-center"><div className="w-6 h-6 border-2 border-white/10 border-t-ares-red rounded-full animate-spin"></div></div>;
+  if (isError) return <div className="h-32 flex flex-col items-center justify-center text-ares-red gap-2"><p className="font-bold">FAILED TO LOAD POSTS</p><p className="text-[10px] text-marble/40">The database query failed. Check console for details.</p></div>;
+
 
   const filtered = posts.filter(contentFilter(view));
 

@@ -351,4 +351,35 @@ describe("useEventEditor (MSW Integrated)", () => {
 
     expect(mockConfirm).not.toHaveBeenCalled();
   });
+
+  it("should handle author role publish path", async () => {
+    // Mock the session to be an author
+    server.use(
+      http.get("*/api/profile/me", () => {
+        return HttpResponse.json({
+          authenticated: true,
+          auth: { role: "author" },
+          member_type: "student",
+        });
+      })
+    );
+
+    const { result } = renderWithProviders(() => useEventEditor(undefined, mockEditor));
+    
+    act(() => {
+      result.current.setForm({
+        ...result.current.form,
+        title: "Author Event",
+        dateStart: "2024-05-01T10:00:00.000Z",
+      });
+    });
+
+    act(() => {
+      result.current.handlePublish();
+    });
+
+    await waitFor(() => {
+      expect(result.current.successMsg).toBe("Event submitted for review!");
+    });
+  });
 });

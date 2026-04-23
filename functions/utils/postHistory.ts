@@ -17,6 +17,7 @@ export interface PostHistoryContent {
   thumbnail: string;
   snippet: string;
   ast: string;
+  season_id?: string;
 }
 
 /**
@@ -118,11 +119,11 @@ export async function pruneHistory(c: Context<AppEnv>, slug: string, limit = 10)
 export async function captureHistory(
   c: Context<AppEnv>,
   slug: string,
-  data: { title: string; author: string; thumbnail: string; snippet: string; ast: string; cf_email: string }
+  data: { title: string; author: string; thumbnail: string; snippet: string; ast: string; cf_email: string; season_id?: string }
 ) {
   await c.env.DB.prepare(
-    "INSERT INTO posts_history (slug, title, author, thumbnail, snippet, ast, author_email) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).bind(slug, data.title, data.author, data.thumbnail, data.snippet, data.ast, data.cf_email || "unknown").run();
+    "INSERT INTO posts_history (slug, title, author, thumbnail, snippet, ast, author_email, season_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(slug, data.title, data.author, data.thumbnail, data.snippet, data.ast, data.cf_email || "unknown", data.season_id || null).run();
 
   // EFF-N05: Prune old versions to prevent D1 bloat
   c.executionCtx.waitUntil(pruneHistory(c, slug, 10));
@@ -148,23 +149,23 @@ export async function restorePostFromHistory(
   restorerEmail: string
 ) {
   const row = await c.env.DB.prepare(
-    "SELECT title, author, thumbnail, snippet, ast FROM posts_history WHERE id = ? AND slug = ?"
+    "SELECT title, author, thumbnail, snippet, ast, season_id FROM posts_history WHERE id = ? AND slug = ?"
   ).bind(id, slug).first<PostHistoryContent>();
 
   if (!row) return { success: false, error: "Version not found" };
 
   // Capture CURRENT as history before restoring
   const current = await c.env.DB.prepare(
-    "SELECT slug, title, author, thumbnail, snippet, ast, cf_email FROM posts WHERE slug = ?"
-  ).bind(slug).first<{ title: string; author: string; thumbnail: string; snippet: string; ast: string; cf_email: string }>();
+    "SELECT slug, title, author, thumbnail, snippet, ast, cf_email, season_id FROM posts WHERE slug = ?"
+  ).bind(slug).first<{ title: string; author: string; thumbnail: string; snippet: string; ast: string; cf_email: string; season_id?: string }>();
   
   if (current) {
     await captureHistory(c, slug, current);
   }
 
   await c.env.DB.prepare(
-    "UPDATE posts SET title = ?, author = ?, thumbnail = ?, snippet = ?, ast = ?, cf_email = ? WHERE slug = ?"
-  ).bind(row.title, row.author, row.thumbnail, row.snippet, row.ast, restorerEmail, slug).run();
+    "UPDATE posts SET title = ?, author = ?, thumbnail = ?, snippet = ?, ast = ?, cf_email = ?, season_id = ? WHERE slug = ?"
+  ).bind(row.title, row.author, row.thumbnail, row.snippet, row.ast, restorerEmail, row.season_id || null, slug).run();
 
   return { success: true };
 }

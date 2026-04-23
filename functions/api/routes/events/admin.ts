@@ -26,7 +26,7 @@ adminRouter.get("/", async (c) => {
     });
   } catch (err) {
     console.error("D1 admin list error (events):", err);
-    return c.json({ events: [], lastSyncedAt: null });
+    return c.json({ error: "Failed to fetch events from database", details: (err as Error).message }, 500);
   }
 });
 
@@ -250,13 +250,13 @@ adminRouter.route("/", createContentLifecycleRouter("events", {
       is_potluck: number; 
       is_volunteer: number; 
     }
-    const row = await c.env.DB.prepare("SELECT revision_of, title, date_start, date_end, location, description, cover_image, tba_event_key, gcal_event_id, is_potluck, is_volunteer FROM events WHERE id = ?").bind(id).first<EventRevisionRow>();
+    const row = await c.env.DB.prepare("SELECT revision_of, title, date_start, date_end, location, description, cover_image, tba_event_key, gcal_event_id, is_potluck, is_volunteer, season_id FROM events WHERE id = ?").bind(id).first<EventRevisionRow & { season_id: string }>();
 
     if (row && row.revision_of) {
       await c.env.DB.batch([
         c.env.DB.prepare(
-          "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, tba_event_key = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = 'published', is_potluck = ?, is_volunteer = ? WHERE id = ?"
-        ).bind(row.title, row.date_start, row.date_end, row.location, row.description, row.cover_image, row.tba_event_key, row.gcal_event_id, row.is_potluck, row.is_volunteer, row.revision_of),
+          "UPDATE events SET title = ?, date_start = ?, date_end = ?, location = ?, description = ?, cover_image = ?, tba_event_key = ?, gcal_event_id = COALESCE(?, gcal_event_id), status = 'published', is_potluck = ?, is_volunteer = ?, season_id = ? WHERE id = ?"
+        ).bind(row.title, row.date_start, row.date_end, row.location, row.description, row.cover_image, row.tba_event_key, row.gcal_event_id, row.is_potluck, row.is_volunteer, row.season_id, row.revision_of),
         c.env.DB.prepare("DELETE FROM events WHERE id = ?").bind(id)
       ]);
       return true; // DB logic handled

@@ -129,4 +129,44 @@ describe("Events Signups Router", () => {
     const res = await signupsRouter.request(req, {}, env, mockExecutionContext);
     expect(res.status).toBe(401);
   });
+
+  describe("Negative Paths", () => {
+    it("POST /:id/signups - should return 400 for malformed JSON", async () => {
+      const req = new Request("http://localhost/e1/signups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not json"
+      });
+      const res = await signupsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(400);
+    });
+
+    it("POST /:id/signups - should handle database error", async () => {
+      mockDb.run.mockRejectedValue(new Error("Write error"));
+      const req = new Request("http://localhost/e1/signups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: "test" })
+      });
+      const res = await signupsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(500);
+    });
+
+    it("DELETE /:id/signups/me - should handle database error", async () => {
+      mockDb.run.mockRejectedValue(new Error("Delete error"));
+      const req = new Request("http://localhost/e1/signups/me", { method: "DELETE" });
+      const res = await signupsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(500);
+    });
+
+    it("PATCH /:id/signups/:userId/attendance - should return 400 for missing attended field", async () => {
+      const req = new Request("http://localhost/e1/signups/u2/attendance", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const res = await signupsRouter.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(400);
+    });
+  });
 });
