@@ -81,7 +81,8 @@ export default function Seasons() {
                  <div className="w-10 h-10 border-2 border-white/10 border-t-ares-red rounded-full animate-spin" />
                </div>
              ) : seasons.length > 0 ? (
-               seasons.map((season, idx: number) => {
+               // eslint-disable-next-line @typescript-eslint/no-explicit-any
+               seasons.map((season: any, idx: number) => {
                  const isEven = idx % 2 === 0;
                  return (
                    <motion.div 
@@ -166,7 +167,8 @@ export default function Seasons() {
             {isLoadingAwards ? (
               [1,2,3].map(i => <div key={i} className="h-64 bg-white/5 rounded-[2.5rem] animate-pulse" />)
             ) : awards.length > 0 ? (
-              awards.map((award, idx: number) => (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              awards.map((award: any, idx: number) => (
                 <motion.div
                   key={award.id}
                   initial={{ opacity: 0, y: 30 }}
