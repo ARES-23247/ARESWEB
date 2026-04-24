@@ -10,16 +10,12 @@ import { EventCard, EventItem } from "../components/events/EventCard";
 import CompetitionBanner from "../components/CompetitionBanner";
 
 export default function Events() {
-  const { data: eventsRes, isLoading } = api.events.getEvents.useQuery({}, {
-    queryKey: ["events"],
-  });
+  const { data: eventsRes, isLoading } = api.events.getEvents.useQuery(["events"], {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rawBody = (eventsRes as any)?.body;
   const events = eventsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.events) ? rawBody.events : [])) as unknown as EventItem[] : [];
 
-  const { data: calendarRes } = api.events.getCalendarSettings.useQuery({}, {
-    queryKey: ["calendar_config"],
-  });
+  const { data: calendarRes } = api.events.getCalendarSettings.useQuery(["calendar_config"], {});
   const calendarData = calendarRes?.status === 200 ? calendarRes.body : null;
 
   // EFF-N01: Memoize calendar configuration mapping

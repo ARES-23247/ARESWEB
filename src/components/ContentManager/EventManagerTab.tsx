@@ -26,10 +26,8 @@ export default function EventManagerTab({
 }: EventManagerTabProps) {
   const queryClient = useQueryClient();
 
-  const { data: eventsData, isLoading, isError } = api.events.getAdminEvents.useQuery({
+  const { data: eventsData, isLoading, isError } = api.events.getAdminEvents.useQuery(["admin_events"], {
     query: { limit: 100, offset: 0 }
-  }, {
-    queryKey: ["admin_events"]
   });
 
   const rawBody = (eventsData as any)?.body;

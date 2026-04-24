@@ -10,13 +10,9 @@ export default function SponsorTokensManager() {
   const queryClient = useQueryClient();
   const [selectedSponsor, setSelectedSponsor] = useState("");
 
-  const { data: sponsorsData, isLoading: loadingSponsors, isError: isSponsorsError } = api.sponsors.adminList.useQuery({}, {
-    queryKey: ["admin_sponsors"],
-  });
+  const { data: sponsorsData, isLoading: loadingSponsors, isError: isSponsorsError } = api.sponsors.adminList.useQuery(["admin_sponsors"], {});
 
-  const { data: tokensData, isLoading: loadingTokens, isError: isTokensError } = api.sponsors.getAdminTokens.useQuery({}, {
-    queryKey: ["admin_sponsor_tokens"],
-  });
+  const { data: tokensData, isLoading: loadingTokens, isError: isTokensError } = api.sponsors.getAdminTokens.useQuery(["admin_sponsor_tokens"], {});
 
   const generateMutation = api.sponsors.generateToken.useMutation({
     onSuccess: (res: any) => {

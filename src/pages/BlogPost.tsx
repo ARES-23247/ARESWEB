@@ -31,10 +31,9 @@ export default function BlogPost() {
   const userRole = (session?.user as Record<string, unknown>)?.role || "user";
   const isEditor = userRole === "admin" || userRole === "author";
 
-  const { data: postRes, isLoading, isError } = api.posts.getPost.useQuery({
+  const { data: postRes, isLoading, isError } = api.posts.getPost.useQuery(["post", slug], {
     params: { slug: slug || "" },
   }, {
-    queryKey: ["post", slug],
     enabled: !!slug,
     retry: false,
   });

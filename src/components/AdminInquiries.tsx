@@ -37,10 +37,8 @@ export default function AdminInquiries() {
   const [globalFilter, setGlobalFilter] = useQueryState("q", { defaultValue: "" });
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const { data: inquiriesData, isLoading, isError } = api.inquiries.list.useQuery({
+  const { data: inquiriesData, isLoading, isError } = api.inquiries.list.useQuery(["admin-inquiries"], {
     query: { limit: 200, offset: 0 }
-  }, {
-    queryKey: ["admin-inquiries"],
   });
 
   const inquiries = useMemo(() => {

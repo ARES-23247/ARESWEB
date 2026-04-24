@@ -23,17 +23,13 @@ interface TBAMatch {
 
 export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: CompetitionBannerProps) {
   // Fetch Rankings
-  const { data: rankingsRes } = api.tba.getRankings.useQuery({
+  const { data: rankingsRes } = api.tba.getRankings.useQuery(["tba-rankings", eventKey], {
     params: { eventKey }
-  }, {
-    queryKey: ["tba-rankings", eventKey],
   });
 
   // Fetch Matches
-  const { data: matchesRes } = api.tba.getMatches.useQuery({
+  const { data: matchesRes } = api.tba.getMatches.useQuery(["tba-matches", eventKey], {
     params: { eventKey }
-  }, {
-    queryKey: ["tba-matches", eventKey],
   });
 
   const rankingsData = rankingsRes?.status === 200 ? rankingsRes.body : null;

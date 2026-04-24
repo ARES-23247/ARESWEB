@@ -29,9 +29,7 @@ export default function PostManagerTab({
   const queryClient = useQueryClient();
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
   
-  const { data, isLoading, isError } = api.posts.getAdminPosts.useQuery({}, {
-    queryKey: ["admin_posts"],
-  });
+  const { data, isLoading, isError } = api.posts.getAdminPosts.useQuery(["admin_posts"], {});
 
   const rawBody = (data as any)?.body;
   const posts = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.posts) ? rawBody.posts : [])) as unknown as PostItem[] : [];

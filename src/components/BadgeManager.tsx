@@ -22,13 +22,9 @@ export default function BadgeManager() {
   const [selectedBadge, setSelectedBadge] = useState<string>("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const { data: badgesData, isLoading: badgesLoading, isError: isBadgesError } = api.badges.list.useQuery({}, {
-    queryKey: ["admin_badges"]
-  });
+  const { data: badgesData, isLoading: badgesLoading, isError: isBadgesError } = api.badges.list.useQuery(["admin_badges"], {});
 
-  const { data: usersData, isError: isUsersError } = api.users.getUsers.useQuery({}, {
-    queryKey: ["admin_users_list"]
-  });
+  const { data: usersData, isError: isUsersError } = api.users.getUsers.useQuery(["admin_users_list"], {});
 
   const createBadgeMutation = api.badges.create.useMutation({
     onSuccess: (res: any) => {

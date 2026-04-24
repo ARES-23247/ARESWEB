@@ -21,9 +21,7 @@ interface PostRecord {
 }
 
 export default function Blog() {
-  const { data: postsRes, isLoading } = api.posts.getPosts.useQuery({}, {
-    queryKey: ["posts"],
-  });
+  const { data: postsRes, isLoading } = api.posts.getPosts.useQuery(["posts"], {});
    
   const rawBody = (postsRes as any)?.body;
   const posts = postsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.posts) ? rawBody.posts : [])) : [];

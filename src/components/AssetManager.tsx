@@ -13,9 +13,7 @@ export default function AssetManager() {
   const [syndicateCaption, setSyndicateCaption] = useState("");
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
 
-  const { data: mediaResponse, isLoading, isError } = api.media.adminList.useQuery({}, {
-    queryKey: ['media'],
-  });
+  const { data: mediaResponse, isLoading, isError } = api.media.adminList.useQuery(['media'], {});
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawBody = (mediaResponse?.body as any);

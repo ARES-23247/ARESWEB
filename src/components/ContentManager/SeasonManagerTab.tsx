@@ -21,9 +21,7 @@ export default function SeasonManagerTab({
 }: SeasonManagerTabProps) {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError } = api.seasons.adminList.useQuery({}, {
-    queryKey: ["admin-seasons"],
-  });
+  const { data, isLoading, isError } = api.seasons.adminList.useQuery(["admin-seasons"], {});
 
   const rawBody = (data as any)?.body;
   const seasons = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.seasons) ? rawBody.seasons : [])) : [];

@@ -7,9 +7,7 @@ import { BarList, Card, Title, Text, DonutChart, Flex } from "@tremor/react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
 export default function AnalyticsDashboard() {
-  const { data: analyticsData, isLoading, isError } = api.analytics.getSummary.useQuery({}, {
-    queryKey: ["analytics-summary"],
-  });
+  const { data: analyticsData, isLoading, isError } = api.analytics.getSummary.useQuery(["analytics-summary"], {});
 
   const rawBody = (analyticsData as any)?.body;
   const data = analyticsData?.status === 200 && rawBody && !Array.isArray(rawBody) ? rawBody : null;

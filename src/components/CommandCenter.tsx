@@ -17,14 +17,12 @@ export default function CommandCenter() {
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   // -- Queries --------------------------------------------------------
-  const { data: boardRes, isLoading: isBoardLoading, isError: isBoardError } = api.github.getBoard.useQuery({}, {
-    queryKey: ["command-board"],
+  const { data: boardRes, isLoading: isBoardLoading, isError: isBoardError } = api.github.getBoard.useQuery(["command-board"], {}, {
     refetchInterval: 60000,
   });
   const board = boardRes?.status === 200 ? boardRes.body.board : null;
 
-  const { data: analyticsData, isLoading: isStatsLoading, isError: isStatsError } = api.analytics.getStats.useQuery({}, {
-    queryKey: ["command-stats"],
+  const { data: analyticsData, isLoading: isStatsLoading, isError: isStatsError } = api.analytics.getStats.useQuery(["command-stats"], {}, {
     refetchInterval: 300000,
   });
 

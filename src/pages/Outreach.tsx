@@ -97,9 +97,7 @@ export default function Outreach() {
     }
   };
 
-  const { data: logsRes, isLoading } = api.outreach.adminList.useQuery({}, {
-    queryKey: ["public-outreach"],
-  });
+  const { data: logsRes, isLoading } = api.outreach.adminList.useQuery(["public-outreach"], {});
    
   const rawBody = (logsRes as any)?.body;
   const logs = logsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.logs) ? rawBody.logs : [])) : [];

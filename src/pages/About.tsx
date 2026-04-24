@@ -28,18 +28,22 @@ const SECTION_ORDER = [
 
 
 export default function About() {
-  const { data: rosterRes, isLoading } = api.profiles.getTeamRoster.useQuery({}, {
-    queryKey: ["team-roster"],
-  });
+  const { data: rosterRes, isLoading } = api.profiles.getTeamRoster.useQuery(["team-roster"], {});
 
   const members = useMemo(() => {
     const rawBody = (rosterRes as any)?.body;
-    return rosterRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.members) ? rawBody.members : [])) : [];
+    // Robust check for members array in different possible response formats
+    const list = rosterRes?.status === 200 
+      ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.members) ? rawBody.members : [])) 
+      : [];
+    return list as TeamMember[];
   }, [rosterRes]);
 
   const grouped = useMemo(() => SECTION_ORDER.map(section => ({
     ...section,
-    items: members.filter((m: TeamMember) => m.member_type === section.type),
+    items: members.filter((m: TeamMember) => 
+      String(m.member_type || "").toLowerCase() === section.type.toLowerCase()
+    ),
   })).filter(section => section.items.length > 0), [members]);
 
   return (
@@ -126,7 +130,7 @@ export default function About() {
         <MemberSection key={section.type} section={section} />
       ))}
 
-      {/* Fallback if no profiles exist yet */}
+      {/* Fallback if no profiles exist yet or loading */}
       {isLoading && (
         <section className="py-24 bg-obsidian text-marble">
           <div className="max-w-4xl mx-auto px-6 text-center">

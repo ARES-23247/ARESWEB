@@ -55,9 +55,7 @@ export default function OutreachTracker() {
 
   const seasonId = useWatch({ control, name: "season_id" });
 
-  const { data: outreachData, isLoading } = api.outreach.adminList.useQuery({}, {
-    queryKey: ["admin-outreach"]
-  });
+  const { data: outreachData, isLoading } = api.outreach.adminList.useQuery(["admin-outreach"], {});
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const logs: OutreachLog[] = useMemo(() => (outreachData?.body as any)?.logs || [], [outreachData]);

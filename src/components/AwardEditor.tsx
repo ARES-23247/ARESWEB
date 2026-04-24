@@ -54,9 +54,7 @@ export default function AwardEditor() {
 
   const seasonId = useWatch({ control, name: "season_id" });
 
-  const { data: awardsData, isLoading, isError } = api.awards.getAwards.useQuery({}, {
-    queryKey: ["admin-awards"],
-  });
+  const { data: awardsData, isLoading, isError } = api.awards.getAwards.useQuery(["admin-awards"], {});
   const awards = (awardsData?.body?.awards || []) as Award[];
 
   const saveMutation = api.awards.saveAward.useMutation({

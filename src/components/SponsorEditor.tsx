@@ -39,9 +39,7 @@ export default function SponsorEditor() {
     }
   });
 
-  const { data, isLoading, isError } = api.sponsors.adminList.useQuery({}, {
-    queryKey: ["admin-sponsors"],
-  });
+  const { data, isLoading, isError } = api.sponsors.adminList.useQuery(["admin-sponsors"], {});
   const rawBody = (data as any)?.body;
   const sponsors = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.sponsors) ? rawBody.sponsors : [])) : [];
 

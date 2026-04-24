@@ -48,31 +48,26 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
   const profileValues = useWatch({ control });
 
-  const { isLoading, isError } = api.profiles.getMe.useQuery({}, {
-    queryKey: ["profile", adminEditUserId || "me"],
-    // Logic for admin fetch would go here if we had an adminContract for users
-  });
+  const { data: profileRes, isLoading, isError } = api.profiles.getMe.useQuery(["profile", adminEditUserId || "me"], {});
 
   useEffect(() => {
-    // If it's a "me" fetch
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!adminEditUserId && (api.profiles.getMe as any).data?.body) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = (api.profiles.getMe as any).data.body;
+    // If it's a "me" fetch and we have data
+    if (!adminEditUserId && profileRes?.status === 200) {
+      const data = profileRes.body;
       reset({
         ...DEFAULT_PROFILE,
-        ...data.profile,
-        email: data.user?.email || "",
-        subteams: safeJSONParse(data.profile?.subteams, []),
-        dietary_restrictions: safeJSONParse(data.profile?.dietary_restrictions, []),
-        colleges: safeJSONParse(data.profile?.colleges, []),
-        employers: safeJSONParse(data.profile?.employers, []),
-        show_email: Boolean(data.profile?.show_email),
-        show_phone: Boolean(data.profile?.show_phone),
-        show_on_about: data.profile?.show_on_about !== undefined ? Boolean(data.profile.show_on_about) : true,
+        ...data,
+        email: data.auth?.email || "",
+        subteams: safeJSONParse(data.subteams, []),
+        dietary_restrictions: safeJSONParse(data.dietary_restrictions, []),
+        colleges: safeJSONParse(data.colleges, []),
+        employers: safeJSONParse(data.employers, []),
+        show_email: Boolean(data.show_email),
+        show_phone: Boolean(data.show_phone),
+        show_on_about: data.show_on_about !== undefined ? Boolean(data.show_on_about) : true,
       });
     }
-  }, [adminEditUserId, reset]);
+  }, [adminEditUserId, reset, profileRes]);
 
   const saveMutation = api.profiles.updateMe.useMutation({
     onSuccess: () => {

@@ -27,15 +27,11 @@ interface Award {
 }
 
 export default function Seasons() {
-  const { data: seasonsRes, isLoading: isLoadingSeasons } = api.seasons.list.useQuery({}, {
-    queryKey: ["public-seasons"],
-  });
+  const { data: seasonsRes, isLoading: isLoadingSeasons } = api.seasons.list.useQuery(["public-seasons"], {});
   const rawBody = (seasonsRes as any)?.body;
   const seasons = seasonsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.seasons) ? rawBody.seasons : [])) : [];
 
-  const { data: awardsRes, isLoading: isLoadingAwards } = api.awards.getAwards.useQuery({}, {
-    queryKey: ["public-awards"],
-  });
+  const { data: awardsRes, isLoading: isLoadingAwards } = api.awards.getAwards.useQuery(["public-awards"], {});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const awards = (awardsRes?.body as any)?.awards || [];
 

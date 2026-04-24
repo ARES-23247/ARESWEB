@@ -42,9 +42,7 @@ export default function LocationsManager() {
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const { data: locationsData, isLoading, isError } = api.locations.adminList.useQuery({}, {
-    queryKey: ["admin_locations"]
-  });
+  const { data: locationsData, isLoading, isError } = api.locations.adminList.useQuery(["admin_locations"], {});
 
    
   const locations = useMemo(() => (locationsData?.body as any)?.locations || [], [locationsData]);

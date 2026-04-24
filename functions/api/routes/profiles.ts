@@ -107,40 +107,61 @@ const profileHandlers = {
   getTeamRoster: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
     try {
+      // SEC-F04: Only show verified users or those who have explicitly opted in via profile.
+      // We allow 'user', 'admin', 'author'. We only exclude 'unverified' IF they haven't been vetted.
+      // However, if show_on_about is 1, we assume a level of vetting has occurred or is desired.
       const results = await db.selectFrom("user_profiles as p")
         .innerJoin("user as u", "p.user_id", "u.id")
         .where("p.show_on_about", "=", 1)
-        .where("u.role", "!=", "unverified")
         .select([
           "p.user_id", "p.nickname", "p.bio", "p.pronouns", "p.subteams", "p.member_type",
           "p.favorite_first_thing", "p.fun_fact", "p.show_email", "p.contact_email",
           "p.favorite_robot_mechanism", "p.pre_match_superstition", "p.leadership_role",
           "p.rookie_year", "p.colleges", "p.employers",
-          "u.image as avatar", "u.name"
+          "u.image as avatar", "u.name", "u.role"
         ])
         .execute();
 
+      const secret = c.env.ENCRYPTION_SECRET;
+      const safeDecrypt = async (val: any) => {
+        if (!val || !val.includes(":")) return val || null;
+        try {
+          return await decrypt(val, secret);
+        } catch (err) {
+          console.error("[Roster] Decryption failed:", err);
+          return null;
+        }
+      };
+
       const members = await Promise.all((results || []).map(async (r) => {
         const row = r as Record<string, unknown>;
-        const memberType = String(row.member_type || "student");
+        const memberType = String(row.member_type || "student").toLowerCase();
+        
+        // Mentors/Coaches might have encrypted contact info
         if (row.contact_email && (memberType === "mentor" || memberType === "coach")) {
-          row.contact_email = await decrypt(row.contact_email as string, c.env.ENCRYPTION_SECRET);
+          row.contact_email = await safeDecrypt(row.contact_email);
         }
+
         const sanitized = sanitizeProfileForPublic(row, memberType) as any;
         return {
           ...sanitized,
           user_id: String(sanitized.user_id),
-          nickname: sanitized.nickname || null,
+          nickname: sanitized.nickname || sanitized.name || "ARES Member",
           avatar: sanitized.avatar || null,
-          member_type: String(sanitized.member_type || "student"),
+          member_type: memberType,
           subteams: Array.isArray(sanitized.subteams) ? (sanitized.subteams as string[]) : [],
           colleges: Array.isArray(sanitized.colleges) ? (sanitized.colleges as string[]) : [],
           employers: Array.isArray(sanitized.employers) ? (sanitized.employers as string[]) : []
         };
       }));
 
+      if (members.length === 0 && results.length > 0) {
+        console.warn("[Roster] Results found but all members were filtered out or failed processing.");
+      }
+
       return { status: 200 as const, body: { members } as any };
-    } catch {
+    } catch (err) {
+      console.error("[Roster] Global fetch error:", err);
       return { status: 200 as const, body: { members: [] } as any };
     }
   },

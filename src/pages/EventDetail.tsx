@@ -34,10 +34,9 @@ export default function EventDetail() {
   const userRole = (session?.user as Record<string, unknown>)?.role || "user";
   const isEditor = userRole === "admin" || userRole === "author";
 
-  const { data: eventRes, isLoading, isError } = api.events.getEvent.useQuery({
+  const { data: eventRes, isLoading, isError } = api.events.getEvent.useQuery(["event", id], {
     params: { id: id || "" },
   }, {
-    queryKey: ["event", id],
     enabled: !!id,
     retry: false,
   });

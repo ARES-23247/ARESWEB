@@ -41,8 +41,7 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const { data: notifRes } = api.notifications.getNotifications.useQuery({}, {
-    queryKey: ["notifications"],
+  const { data: notifRes } = api.notifications.getNotifications.useQuery(["notifications"], {}, {
     enabled: !!isSignedIn,
     refetchInterval: 30000 // Poll every 30s
   });

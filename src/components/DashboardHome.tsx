@@ -14,7 +14,7 @@ export default function DashboardHome() {
   const role = session?.user?.role || "unverified";
   const canSeeInquiries = role !== "unverified";
 
-  const { data: statsRes } = api.analytics.getStats.useQuery({}, { enabled: canSeeInquiries });
+  const { data: statsRes } = api.analytics.getStats.useQuery(["admin-stats"], {}, { enabled: canSeeInquiries });
 
   const stats = {
     posts: statsRes?.status === 200 ? statsRes.body.posts : 0,
