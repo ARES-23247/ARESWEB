@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Hono } from "hono";
 import analyticsRouter from "./analytics";
 
 const mockExecutionContext = {
@@ -9,22 +10,51 @@ const mockExecutionContext = {
 
 describe("Analytics Router", () => {
   let mockDb: any;
+  let testApp: Hono;
   let env: any;
 
   beforeEach(() => {
     mockDb = {
-      prepare: vi.fn().mockReturnThis(),
-      bind: vi.fn().mockReturnThis(),
-      all: vi.fn().mockResolvedValue({ results: [] }),
-      run: vi.fn().mockResolvedValue({ success: true }),
-      batch: vi.fn().mockResolvedValue([{ results: [] }, { results: [] }, { results: [] }]),
+      selectFrom: vi.fn().mockReturnThis(),
+      selectAll: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      groupBy: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      execute: vi.fn().mockResolvedValue([]),
+      executeTakeFirst: vi.fn().mockResolvedValue(null),
+      insertInto: vi.fn().mockReturnThis(),
+      values: vi.fn().mockReturnThis(),
+      onConflict: vi.fn().mockReturnThis(),
+      doUpdateSet: vi.fn().mockReturnThis(),
+      fn: {
+        count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
+        sum: vi.fn().mockReturnThis(),
+        coalesce: vi.fn().mockReturnThis(),
+        case: vi.fn().mockReturnValue({
+          when: vi.fn().mockReturnThis(),
+          and: vi.fn().mockReturnThis(),
+          then: vi.fn().mockReturnThis(),
+          else: vi.fn().mockReturnThis(),
+          end: vi.fn().mockReturnThis()
+        })
+      }
     };
     env = {
-      DB: mockDb,
+      DB: {},
       TURNSTILE_SECRET_KEY: "test-secret",
       DEV_BYPASS: "true",
     };
     vi.clearAllMocks();
+
+    testApp = new Hono();
+    testApp.use("*", async (c, next) => {
+      c.set("db", mockDb);
+      c.set("user", { id: "1", role: "admin" });
+      await next();
+    });
+    testApp.route("/", analyticsRouter);
     
     // Mock turnstile fetch
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -40,11 +70,11 @@ describe("Analytics Router", () => {
         headers: { "Content-Type": "application/json", "CF-Connecting-IP": "1.2.3.4" },
       });
 
-      const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
       const body = await res.json() as any;
       expect(body.success).toBe(true);
-      expect(mockDb.run).toHaveBeenCalled();
+      expect(mockDb.execute).toHaveBeenCalled();
     });
 
     it("should return 429 on rate limit exceeded", async () => {
@@ -62,7 +92,7 @@ describe("Analytics Router", () => {
     });
 
     it("should handle DB errors gracefully", async () => {
-      mockDb.run.mockRejectedValue(new Error("DB Error"));
+      mockDb.execute.mockRejectedValue(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       const req = new Request("http://localhost/track", {
@@ -71,7 +101,7 @@ describe("Analytics Router", () => {
         headers: { "Content-Type": "application/json", "CF-Connecting-IP": "5.6.7.8" },
       });
 
-      const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(500);
       
       consoleSpy.mockRestore();
@@ -86,9 +116,9 @@ describe("Analytics Router", () => {
         headers: { "Content-Type": "application/json", "CF-Connecting-IP": "10.0.0.1" },
       });
 
-      const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      expect(mockDb.run).toHaveBeenCalled();
+      expect(mockDb.execute).toHaveBeenCalled();
     });
 
     it("should return 429 on rate limit exceeded", async () => {
@@ -106,7 +136,7 @@ describe("Analytics Router", () => {
     });
 
     it("should handle DB errors gracefully", async () => {
-      mockDb.run.mockRejectedValue(new Error("DB Error"));
+      mockDb.execute.mockRejectedValue(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       const req = new Request("http://localhost/sponsor-click", {
@@ -115,7 +145,7 @@ describe("Analytics Router", () => {
         headers: { "Content-Type": "application/json", "CF-Connecting-IP": "11.0.0.1" },
       });
 
-      const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(500);
       
       consoleSpy.mockRestore();
@@ -124,13 +154,13 @@ describe("Analytics Router", () => {
 
   describe("Admin Endpoints", () => {
     it("GET /summary should return analytics data", async () => {
-      mockDb.all
-        .mockResolvedValueOnce({ results: [{ path: "/", views: 10 }] })
-        .mockResolvedValueOnce({ results: [{ path: "/about" }] })
-        .mockResolvedValueOnce({ results: [{ total: 5 }] });
+      mockDb.execute
+        .mockResolvedValueOnce([{ path: "/", views: 10 }])
+        .mockResolvedValueOnce([{ path: "/about" }])
+        .mockResolvedValueOnce([{ total: 5 }]);
 
-      const req = new Request("http://localhost/summary");
-      const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+      const req = new Request("http://localhost/admin/summary");
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
 
       expect(res.status).toBe(200);
       const body = await res.json() as any;
@@ -138,10 +168,10 @@ describe("Analytics Router", () => {
     });
 
     it("GET /roster-stats should return member impact data", async () => {
-      mockDb.all.mockResolvedValue({ results: [{ user_id: "1", nickname: "Test User" }] });
+      mockDb.execute.mockResolvedValue([{ user_id: "1", nickname: "Test User" }]);
 
-      const req = new Request("http://localhost/roster-stats");
-      const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+      const req = new Request("http://localhost/admin/roster-stats");
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
 
       expect(res.status).toBe(200);
       const body = await res.json() as any;
@@ -149,21 +179,21 @@ describe("Analytics Router", () => {
     });
 
     it("GET /summary should handle DB errors", async () => {
-      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.execute.mockRejectedValueOnce(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-      const req = new Request("http://localhost/summary");
-      const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+      const req = new Request("http://localhost/admin/summary");
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
 
       expect(res.status).toBe(500);
 
       consoleSpy.mockRestore();
     });
     it("GET /roster-stats should handle DB errors", async () => {
-      mockDb.all.mockRejectedValue(new Error("DB Error"));
+      mockDb.execute.mockRejectedValue(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-      const req = new Request("http://localhost/roster-stats");
+      const req = new Request("http://localhost/admin/roster-stats");
       const res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
       
       expect(res.status).toBe(500);

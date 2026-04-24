@@ -41,7 +41,12 @@ export function useDashboardSession() {
     let isMounted = true;
     api.profiles.getMe.query()
       .then((res) => {
-        if (!isMounted || res.status !== 200) return;
+        if (!isMounted) return;
+        if (res.status !== 200) {
+          setSession(null);
+          setIsPending(false);
+          return;
+        }
         const data = res.body;
         setSession({
           authenticated: true,

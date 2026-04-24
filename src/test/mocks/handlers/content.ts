@@ -9,22 +9,22 @@ export const mockContentState = {
 
 export const contentHandlers = [
   // Posts
-  http.get("*/api/posts", () => HttpResponse.json({ posts: mockContentState.posts })),
-  http.get("*/api/posts/:slug", ({ params }) => {
+  http.get("*/posts", () => HttpResponse.json({ posts: mockContentState.posts })),
+  http.get("*/posts/:slug", ({ params }) => {
     const post = mockContentState.posts.find(p => p.slug === params.slug) || mockContentState.posts[0];
     return HttpResponse.json({ post });
   }),
 
   // Docs
-  http.get("*/api/docs", () => HttpResponse.json({ docs: mockContentState.docs })),
-  http.get("*/api/docs/:slug", ({ params }) => {
+  http.get("*/docs", () => HttpResponse.json({ docs: mockContentState.docs })),
+  http.get("*/docs/:slug", ({ params }) => {
     const doc = mockContentState.docs.find(d => d.slug === params.slug) || mockContentState.docs[0];
     return HttpResponse.json({ doc });
   }),
 
   // Media
-  http.get("*/api/media", () => HttpResponse.json({ assets: mockContentState.media })),
-  http.delete("*/api/admin/media/:key", ({ params }) => {
+  http.get("*/media", () => HttpResponse.json({ assets: mockContentState.media })),
+  http.delete("*/admin/media/:key", ({ params }) => {
     mockContentState.media = mockContentState.media.filter(m => m.key !== params.key);
     return HttpResponse.json({ success: true });
   }),

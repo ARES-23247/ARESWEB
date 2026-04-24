@@ -8,7 +8,7 @@ export const mockAuthState = {
 
 export const authHandlers = [
   // Session / Profile
-  http.get("*/api/profile/me", () => {
+  http.get("*/me", () => {
     const s = mockAuthState.session;
     return HttpResponse.json({
       ...s.user,
@@ -17,20 +17,20 @@ export const authHandlers = [
   }),
 
   // Auth check
-  http.get("*/api/auth/auth-check", () => {
+  http.get("*/auth/auth-check", () => {
     return HttpResponse.json(mockAuthState.session);
   }),
 
   // Settings
-  http.get("*/api/admin/settings", () => {
+  http.get("*/settings/admin/settings", () => {
     return HttpResponse.json({ success: true, settings: mockAuthState.settings });
   }),
 
-  http.get("*/api/settings", () => {
+  http.get("*/settings", () => {
     return HttpResponse.json({ success: true, settings: mockAuthState.settings });
   }),
 
-  http.post("*/api/admin/settings", async ({ request }) => {
+  http.post("*/settings/admin/settings", async ({ request }) => {
     const body = await request.json() as Record<string, string>;
     mockAuthState.settings = { ...mockAuthState.settings, ...body };
     return HttpResponse.json({ success: true, updated: Object.keys(body).length });

@@ -71,7 +71,7 @@ describe("useAdminSettings", () => {
 
   it("should handle fetch failure gracefully", async () => {
     server.use(
-      http.get("*/api/admin/settings", () => {
+      http.get("*/settings/admin/settings", () => {
         return new HttpResponse(null, { status: 500 });
       })
     );
@@ -87,7 +87,7 @@ describe("useAdminSettings", () => {
 
   it("should handle success: false response", async () => {
     server.use(
-      http.get("*/api/admin/settings", () => {
+      http.get("*/settings/admin/settings", () => {
         return HttpResponse.json({ success: false, settings: {} });
       })
     );

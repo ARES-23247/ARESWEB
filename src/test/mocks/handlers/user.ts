@@ -9,8 +9,8 @@ export const mockUserState = {
 };
 
 export const userHandlers = [
-  http.get("*/api/admin/users", () => HttpResponse.json({ users: mockUserState.users })),
-  http.get("*/api/profiles", () => HttpResponse.json({ profiles: mockUserState.profiles })),
-  http.get("*/api/badges", () => HttpResponse.json({ badges: mockUserState.badges })),
-  http.get("*/api/comments/:type/:id", () => HttpResponse.json({ comments: mockUserState.comments })),
+  http.get("*/users/admin/list", () => HttpResponse.json({ users: mockUserState.users })),
+  http.get("*/profiles", () => HttpResponse.json({ profiles: mockUserState.profiles })),
+  http.get("*/badges", () => HttpResponse.json({ badges: mockUserState.badges })),
+  http.get("*/comments/:type/:id", () => HttpResponse.json({ comments: mockUserState.comments })),
 ];

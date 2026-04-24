@@ -7,6 +7,6 @@ export const mockSystemState = {
 };
 
 export const systemHandlers = [
-  http.get("*/api/notifications", () => HttpResponse.json({ notifications: mockSystemState.notifications })),
-  http.get("*/api/analytics", () => HttpResponse.json(mockSystemState.analytics)),
+  http.get("*/notifications", () => HttpResponse.json({ notifications: mockSystemState.notifications })),
+  http.get("*/analytics", () => HttpResponse.json(mockSystemState.analytics)),
 ];

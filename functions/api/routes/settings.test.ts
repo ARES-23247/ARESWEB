@@ -58,7 +58,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET / - list settings (masked)", async () => {
-    const res = await testApp.request("/", {}, env, mockExecutionContext);
+    const res = await testApp.request("/admin/settings", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;
     expect(body.settings.site_name).toBe("ARES");
@@ -67,7 +67,7 @@ describe("Hono Backend - /settings Router", () => {
 
   it("POST / - update settings", async () => {
     const payload = { site_name: "New Name" };
-    const res = await testApp.request("/", {
+    const res = await testApp.request("/admin/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -79,7 +79,7 @@ describe("Hono Backend - /settings Router", () => {
 
   it("GET /stats - get platform stats", async () => {
     mockDb.executeTakeFirst.mockResolvedValue({ count: 10 });
-    const res = await testApp.request("/stats", {}, env, mockExecutionContext);
+    const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;
     expect(body.posts).toBe(10);

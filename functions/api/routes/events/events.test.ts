@@ -101,7 +101,9 @@ describe("Hono Backend - Events Router", () => {
 
   it("DELETE /admin/:id - delete event", async () => {
     const res = await testApp.request("/admin/1", {
-      method: "DELETE"
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
     }, env, mockExecutionContext);
 
     expect(res.status).toBe(200);

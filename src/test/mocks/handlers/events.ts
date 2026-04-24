@@ -8,23 +8,23 @@ export const mockEventState = {
 };
 
 export const eventHandlers = [
-  http.get("*/api/locations", () => {
+  http.get("*/locations", () => {
     return HttpResponse.json({ locations: mockEventState.locations });
   }),
 
-  http.get("*/api/admin/events/:id", ({ params }) => {
+  http.get("*/events/admin/:id", ({ params }) => {
     const event = mockEventState.events.find((e) => e.id === params.id) || mockEventState.events[0];
     return HttpResponse.json({ event });
   }),
 
-  http.post("*/api/admin/events", async ({ request }) => {
+  http.post("*/events/admin/save", async ({ request }) => {
     const body = await request.json() as Partial<ReturnType<typeof createMockEvent>>;
     const newEvent = { id: "new-id", ...body };
     mockEventState.events.push(newEvent as ReturnType<typeof createMockEvent>);
     return HttpResponse.json({ success: true, id: newEvent.id });
   }),
 
-  http.put("*/api/admin/events/:id", async ({ params, request }) => {
+  http.patch("*/events/admin/:id", async ({ params, request }) => {
     const body = await request.json() as Partial<ReturnType<typeof createMockEvent>>;
     const index = mockEventState.events.findIndex((e) => e.id === params.id);
     if (index > -1) {
@@ -33,7 +33,7 @@ export const eventHandlers = [
     return HttpResponse.json({ success: true });
   }),
 
-  http.delete("*/api/admin/events/:id", ({ params }) => {
+  http.delete("*/events/admin/:id", ({ params }) => {
     mockEventState.events = mockEventState.events.filter((e) => e.id !== params.id);
     return HttpResponse.json({ success: true });
   }),

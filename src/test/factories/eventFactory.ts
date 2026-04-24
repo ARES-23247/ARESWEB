@@ -1,7 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { EventData } from "../../hooks/useEventEditor";
-
-export const createMockEvent = (overrides?: Partial<EventData>): EventData => {
+export const createMockEvent = (overrides?: any): any => {
   return {
     id: faker.string.uuid(),
     title: faker.company.catchPhrase(),

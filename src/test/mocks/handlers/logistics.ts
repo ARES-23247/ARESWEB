@@ -9,8 +9,8 @@ export const mockLogisticsState = {
 };
 
 export const logisticsHandlers = [
-  http.get("*/api/outreach", () => HttpResponse.json({ outreach: mockLogisticsState.outreach })),
-  http.get("*/api/sponsors", () => HttpResponse.json({ sponsors: mockLogisticsState.sponsors })),
-  http.get("*/api/awards", () => HttpResponse.json({ awards: mockLogisticsState.awards })),
-  http.get("*/api/inquiries", () => HttpResponse.json({ inquiries: mockLogisticsState.inquiries })),
+  http.get("*/outreach", () => HttpResponse.json({ outreach: mockLogisticsState.outreach })),
+  http.get("*/sponsors", () => HttpResponse.json({ sponsors: mockLogisticsState.sponsors })),
+  http.get("*/awards", () => HttpResponse.json({ awards: mockLogisticsState.awards })),
+  http.get("*/inquiries", () => HttpResponse.json({ inquiries: mockLogisticsState.inquiries })),
 ];

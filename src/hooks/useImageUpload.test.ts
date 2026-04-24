@@ -15,7 +15,7 @@ vi.mock("../utils/imageProcessor", () => ({
 describe("useImageUpload", () => {
   it("uploads a file successfully", async () => {
     server.use(
-      http.post("*/api/admin/upload", () => {
+      http.post("*/admin/upload", () => {
         return HttpResponse.json({ url: "/api/media/test.webp", altText: "Test image" });
       })
     );
@@ -35,7 +35,7 @@ describe("useImageUpload", () => {
 
   it("handles upload failure", async () => {
     server.use(
-      http.post("*/api/admin/upload", () => {
+      http.post("*/admin/upload", () => {
         return HttpResponse.json({ error: "Storage full" }, { status: 507 });
       })
     );
@@ -57,8 +57,8 @@ describe("useImageUpload", () => {
 
   it("handles missing url in response", async () => {
     server.use(
-      http.post("*/api/admin/upload", () => {
-        return HttpResponse.json({ success: true }); // Missing url
+      http.post("*/admin/upload", () => {
+        return HttpResponse.json({ success: true }, { status: 500 }); // Missing url
       })
     );
 

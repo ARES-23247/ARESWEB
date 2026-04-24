@@ -18,7 +18,7 @@ describe("useContentMutation", () => {
     const setConfirmId = vi.fn();
     
     server.use(
-      http.delete("*/api/admin/test/:id", ({ params }) => {
+      http.delete("*/admin/test/:id", ({ params }) => {
         return HttpResponse.json({ success: true, id: params.id });
       })
     );
@@ -42,7 +42,7 @@ describe("useContentMutation", () => {
     const onSuccess = vi.fn();
     
     server.use(
-      http.post("*/api/admin/test", async ({ request }) => {
+      http.post("*/admin/test", async ({ request }) => {
         const body = await request.json() as { name: string };
         return HttpResponse.json({ success: true, name: body.name });
       })
@@ -64,7 +64,7 @@ describe("useContentMutation", () => {
 
   it("handles errors correctly", async () => {
     server.use(
-      http.delete("*/api/admin/test/:id", () => {
+      http.delete("*/admin/test/:id", () => {
         return new HttpResponse(null, { status: 500 });
       })
     );
@@ -82,7 +82,7 @@ describe("useContentMutation", () => {
 
   it("uses custom error message from response", async () => {
     server.use(
-      http.delete("*/api/admin/test/:id", () => {
+      http.delete("*/admin/test/:id", () => {
         return HttpResponse.json({ error: "Custom Error" }, { status: 400 });
       })
     );
@@ -100,7 +100,7 @@ describe("useContentMutation", () => {
 
   it("uses fallback error message if none provided", async () => {
     server.use(
-      http.delete("*/api/admin/test/:id", () => {
+      http.delete("*/admin/test/:id", () => {
         return new HttpResponse("Something went wrong but not an error message", { status: 500 });
       })
     );

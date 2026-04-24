@@ -13,7 +13,7 @@ describe("useEntityFetch", () => {
   it("fetches data successfully", async () => {
     const mockData = { id: "1", name: "Test Entity" };
     server.use(
-      http.get("*/api/admin/test/1", () => {
+      http.get("*/admin/test/1", () => {
         return HttpResponse.json(mockData);
       })
     );
@@ -31,7 +31,7 @@ describe("useEntityFetch", () => {
 
   it("handles fetch errors", async () => {
     server.use(
-      http.get("*/api/admin/test/error", () => {
+      http.get("*/admin/test/error", () => {
         return HttpResponse.json({ error: "Custom Server Error" }, { status: 500 });
       })
     );
@@ -48,7 +48,7 @@ describe("useEntityFetch", () => {
 
   it("resets data when endpoint is null", async () => {
     server.use(
-      http.get("*/api/admin/test/reset", () => {
+      http.get("*/admin/test/reset", () => {
         return HttpResponse.json({ id: "1" });
       })
     );
@@ -67,8 +67,8 @@ describe("useEntityFetch", () => {
 
   it("refetches when endpoint changes", async () => {
     server.use(
-      http.get("*/api/admin/test/v1", () => HttpResponse.json({ id: "1" })),
-      http.get("*/api/admin/test/v2", () => HttpResponse.json({ id: "2" }))
+      http.get("*/admin/test/v1", () => HttpResponse.json({ id: "1" })),
+      http.get("*/admin/test/v2", () => HttpResponse.json({ id: "2" }))
     );
 
     const { result, rerender } = renderWithProviders(

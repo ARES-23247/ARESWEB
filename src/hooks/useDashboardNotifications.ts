@@ -25,14 +25,11 @@ export function useDashboardNotifications(
     refetchInterval: 30000,
   });
 
-  // Docs contract currently missing getAdminDocs list, will use generic if needed or just skip
-  // For now I'll use the existing one or assuming it exists in contract
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: docsRes } = (api as any).docs?.getAdminDocs?.useQuery({
+  const { data: docsRes } = api.docs.adminList.useQuery({
     queryKey: ["admin_docs_notifs"],
     enabled: !!(session && permissions.isAuthorized),
     refetchInterval: 30000,
-  }) || { data: null };
+  });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const inquiriesData = (inquiriesRes?.body as any)?.inquiries || [];
