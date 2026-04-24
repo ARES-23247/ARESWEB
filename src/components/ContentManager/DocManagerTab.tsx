@@ -28,7 +28,8 @@ export default function DocManagerTab({
     queryKey: ["admin-docs"],
   });
 
-  const docs = (((data as any)?.status)) === 200 ? ((data as any).body.docs as unknown as DocItem[]) : [];
+  const rawBody = (data as any)?.body;
+  const docs = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.docs) ? rawBody.docs : [])) as unknown as DocItem[] : [];
 
   const deleteMutation = api.docs.deleteDoc.useMutation({
     onSuccess: () => {

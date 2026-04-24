@@ -49,14 +49,34 @@ const profileHandlers = {
           }
         };
 
-        p.emergency_contact_name = await safeDecrypt(p.emergency_contact_name);
-        p.emergency_contact_phone = await safeDecrypt(p.emergency_contact_phone);
-        p.phone = await safeDecrypt(p.phone);
-        p.contact_email = await safeDecrypt(p.contact_email);
-        p.parents_name = await safeDecrypt(p.parents_name);
-        p.parents_email = await safeDecrypt(p.parents_email);
-        p.students_name = await safeDecrypt(p.students_name);
-        p.students_email = await safeDecrypt(p.students_email);
+        const [
+          emergency_contact_name,
+          emergency_contact_phone,
+          phone,
+          contact_email,
+          parents_name,
+          parents_email,
+          students_name,
+          students_email
+        ] = await Promise.all([
+          safeDecrypt(p.emergency_contact_name),
+          safeDecrypt(p.emergency_contact_phone),
+          safeDecrypt(p.phone),
+          safeDecrypt(p.contact_email),
+          safeDecrypt(p.parents_name),
+          safeDecrypt(p.parents_email),
+          safeDecrypt(p.students_name),
+          safeDecrypt(p.students_email)
+        ]);
+
+        p.emergency_contact_name = emergency_contact_name;
+        p.emergency_contact_phone = emergency_contact_phone;
+        p.phone = phone;
+        p.contact_email = contact_email;
+        p.parents_name = parents_name;
+        p.parents_email = parents_email;
+        p.students_name = students_name;
+        p.students_email = students_email;
       }
 
       return { 

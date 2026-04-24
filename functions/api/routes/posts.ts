@@ -19,6 +19,26 @@ import {
 const s = initServer<AppEnv>();
 export const postsRouter = new Hono<AppEnv>();
 
+async function prunePostHistory(db: Kysely<DB>, slug: string, limit = 10) {
+  try {
+    const results = await db.selectFrom("posts_history")
+      .select("id")
+      .where("slug", "=", slug)
+      .orderBy("created_at", "desc")
+      .offset(limit - 1)
+      .limit(1)
+      .execute();
+
+    if (results.length > 0) {
+      const oldestId = results[0].id;
+      await db.deleteFrom("posts_history")
+        .where("slug", "=", slug)
+        .where("id", "<", oldestId)
+        .execute();
+    }
+  } catch { /* ignore */ }
+}
+
 const postHandlers = {
   getPosts: async ({ query }: { query: any }, c: Context<AppEnv>) => {
     try {
@@ -318,6 +338,7 @@ const postHandlers = {
         .where("slug", "=", slug)
         .execute();
 
+      c.executionCtx.waitUntil(prunePostHistory(db, slug, 10));
       c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`));
       return { status: 200 as const, body: { success: true, slug } as any };
     } catch {

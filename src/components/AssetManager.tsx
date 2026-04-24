@@ -18,7 +18,8 @@ export default function AssetManager() {
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const assets = (mediaResponse?.body as any)?.media ?? [];
+  const rawBody = (mediaResponse?.body as any);
+  const assets = (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.media) ? rawBody.media : [])) ?? [];
 
   const deleteMutation = api.media.delete.useMutation({
     onSuccess: () => {

@@ -33,7 +33,8 @@ export default function PostManagerTab({
     queryKey: ["admin_posts"],
   });
 
-  const posts = data?.status === 200 ? (data.body.posts as unknown as PostItem[]) : [];
+  const rawBody = (data as any)?.body;
+  const posts = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.posts) ? rawBody.posts : [])) as unknown as PostItem[] : [];
 
   const deleteMutation = api.posts.deletePost.useMutation({
     onSuccess: () => {

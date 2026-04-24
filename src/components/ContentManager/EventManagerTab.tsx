@@ -32,7 +32,8 @@ export default function EventManagerTab({
     queryKey: ["admin_events"]
   });
 
-  const events = eventsData?.status === 200 ? (eventsData.body.events as unknown as EventItem[]) : [];
+  const rawBody = (eventsData as any)?.body;
+  const events = eventsData?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.events) ? rawBody.events : [])) as unknown as EventItem[] : [];
   const lastSyncedAt = eventsData?.status === 200 ? eventsData.body.lastSyncedAt : null;
 
   const deleteMutation = api.events.deleteEvent.useMutation({
