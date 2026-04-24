@@ -101,7 +101,8 @@ export default function Outreach() {
     queryKey: ["public-outreach"],
   });
    
-  const logs = (logsRes?.body as any)?.logs || [];
+  const rawBody = (logsRes as any)?.body;
+  const logs = logsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.logs) ? rawBody.logs : [])) : [];
 
   const totals = logs.reduce((acc: any, l: any) => ({
     hours: acc.hours + (l.hours_logged || 0),
