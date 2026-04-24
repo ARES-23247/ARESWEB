@@ -74,6 +74,9 @@ describe("Hono Backend - /posts Router", () => {
       deleteFrom: vi.fn().mockReturnThis(),
       onConflict: vi.fn().mockReturnThis(),
       doUpdateSet: vi.fn().mockReturnThis(),
+      transaction: vi.fn().mockImplementation(() => ({
+        execute: vi.fn().mockImplementation((callback) => callback(mockDb)),
+      })),
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
