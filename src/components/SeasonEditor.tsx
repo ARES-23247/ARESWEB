@@ -65,7 +65,8 @@ export default function SeasonEditor() {
   }, [detailData, editor]);
 
   const saveMutation = api.seasons.save.useMutation({
-    onSuccess: (res) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onSuccess: (res: any) => {
       if (res.status === 200 && res.body.success) {
         toast.success(`Season ${startYear}-${endYear} saved successfully.`);
         queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
@@ -75,7 +76,8 @@ export default function SeasonEditor() {
         setErrorMsg("Save failed");
       }
     },
-    onError: (err) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
       setErrorMsg(err.message || "Failed to save season.");
     },
     onSettled: () => setIsPending(false)

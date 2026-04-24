@@ -205,7 +205,7 @@ export default function CommandPalette() {
                   value={query}
                   onValueChange={setQuery}
                 />
-                <div className="flex shrink-0 items-center gap-1 ml-3 hidden sm:flex">
+                <div className="shrink-0 items-center gap-1 ml-3 hidden sm:flex">
                   <kbd className="bg-white/10 text-marble/40 text-xs px-2 py-1 rounded font-mono border border-white/10">ESC</kbd>
                   <span className="text-xs text-marble/40 ml-1">to close</span>
                 </div>

@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createMockEvent = (overrides?: any): any => {
   return {
     id: faker.string.uuid(),

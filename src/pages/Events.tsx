@@ -123,8 +123,7 @@ export default function Events() {
                   <iframe 
                     title="Google Calendar"
                     src={iframeSrc} 
-                    className="w-full h-[600px] md:h-[700px] border-0"
-                    style={{ filter: "invert(1) hue-rotate(180deg) opacity(0.85) contrast(1.05)" }}
+                    className="w-full h-[600px] md:h-[700px] border-0 invert hue-rotate-180 opacity-85 contrast-105"
                     allowFullScreen
                     // SEC-F04: Added sandbox for security hardening
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
