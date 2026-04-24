@@ -123,10 +123,42 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
     }
   });
 
+  const updateMutation = api.posts.updatePost.useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onSuccess: (data: any) => {
+      if (data.status === 200 || data.status === 207) {
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
+        if (editSlug) queryClient.invalidateQueries({ queryKey: ["post", editSlug] });
+        
+        if (data.body?.warning) {
+          toast.info("Post updated successfully, but social syndication had issues:\n\n" + data.body.warning);
+        }
+
+        if (data.body?.isDraft || userRole === "author") {
+          navigate("/dashboard");
+        } else {
+          navigate(`/blog/${data.body?.slug || editSlug}`);
+        }
+      } else {
+        setErrorMsg(data.body?.error || "Failed to update");
+      }
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
+      setErrorMsg(err.message || "Update failed");
+    }
+  });
+
   const onFormSubmit = (data: PostPayload, isDraft = false) => {
     if (!editor) return;
     const ast = editor.getJSON();
-    saveMutation.mutate({ body: { ...data, ast, isDraft, coverImageUrl: data.coverImageUrl === DEFAULT_COVER_IMAGE ? "" : data.coverImageUrl } });
+    const payload = { ...data, ast, isDraft, coverImageUrl: data.coverImageUrl === DEFAULT_COVER_IMAGE ? "" : data.coverImageUrl };
+    if (editSlug) {
+      updateMutation.mutate({ params: { slug: editSlug }, body: payload });
+    } else {
+      saveMutation.mutate({ body: payload });
+    }
   };
 
   const handleDelete = async () => {

@@ -133,7 +133,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSuccess: (data: any) => {
       if (data.status === 200) {
-        toast.success(editId ? "Event updated!" : "Event published!");
+        toast.success("Event published!");
         if (data.body.warning) toast.info(data.body.warning);
 
         queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -149,9 +149,35 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
     }
   });
 
+  const updateMutation = api.events.updateEvent.useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onSuccess: (data: any) => {
+      if (data.status === 200) {
+        toast.success("Event updated!");
+        if (data.body?.warning) toast.info(data.body.warning);
+
+        queryClient.invalidateQueries({ queryKey: ["events"] });
+        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+        if (editId) queryClient.invalidateQueries({ queryKey: ["event", editId] });
+        navigate("/dashboard");
+      } else {
+        setErrorMsg(data.body?.error || "Event update failed.");
+      }
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
+      setErrorMsg(err.message || "Network error.");
+    }
+  });
+
   const onFormSubmit = (data: EventPayload, isDraft = false) => {
     const finalDescription = editor ? JSON.stringify(editor.getJSON()) : data.description;
-    saveMutation.mutate({ body: { ...data, description: finalDescription, isDraft } });
+    const payload = { ...data, description: finalDescription, isDraft };
+    if (editId) {
+      updateMutation.mutate({ params: { id: editId }, body: payload });
+    } else {
+      saveMutation.mutate({ body: payload });
+    }
   };
 
   const handleDelete = async () => {

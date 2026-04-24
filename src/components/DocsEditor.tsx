@@ -90,6 +90,7 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
       if (res.status === 200) {
         queryClient.invalidateQueries({ queryKey: ["docs"] });
         queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
+        if (editSlug) queryClient.invalidateQueries({ queryKey: ["doc", editSlug] });
         if (formValues.isDraft || userRole === "author") {
           navigate("/dashboard");
         } else {
