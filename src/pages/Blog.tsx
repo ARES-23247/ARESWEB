@@ -21,7 +21,7 @@ interface PostRecord {
 }
 
 export default function Blog() {
-  const { data: postsRes, isLoading } = api.posts.getPosts.useQuery({
+  const { data: postsRes, isLoading } = api.posts.getPosts.useQuery({}, {
     queryKey: ["posts"],
   });
    

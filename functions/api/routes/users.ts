@@ -1,17 +1,18 @@
-import { Hono } from "hono";
+import { Hono, Context } from "hono";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
-import { RecursiveRouterObj } from "@ts-rest/hono";
 import { userContract } from "../../../src/schemas/contracts/userContract";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 import { upsertProfile } from "./_profileUtils";
+import { Kysely } from "kysely";
+import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
-const usersRouter = new Hono<AppEnv>();
+export const usersRouter = new Hono<AppEnv>();
 
-const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
-  getUsers: async ({ query }, c) => {
+const userHandlers = {
+  getUsers: async ({ query }: { query: any }, c: Context<AppEnv>) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const { limit = 50, offset = 0 } = query;
       const results = await db.selectFrom("user as u")
         .leftJoin("user_profiles as p", "u.id", "p.user_id")
@@ -24,14 +25,14 @@ const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
         .offset(offset || 0)
         .execute();
 
-      const users = results.map(u => {
+      const users = results.map((u) => {
         const isStudent = u.member_type === "student" || u.role === "user";
         const maskedEmail = isStudent 
           ? u.email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => `${a}${"*".repeat(b.length)}`)
           : u.email;
 
         return {
-          id: u.id,
+          id: String(u.id),
           name: u.name || null,
           email: maskedEmail,
           emailVerified: !!u.emailVerified,
@@ -44,14 +45,14 @@ const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
         };
       });
 
-      return { status: 200, body: { users } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Database error" } };
+      return { status: 200 as const, body: { users } as any };
+    } catch {
+      return { status: 500 as const, body: { error: "Database error" } as any };
     }
   },
-  adminDetail: async ({ params }, c) => {
+  adminDetail: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("user as u")
         .leftJoin("user_profiles as p", "u.id", "p.user_id")
         .select([
@@ -61,13 +62,13 @@ const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
         .where("u.id", "=", params.id)
         .executeTakeFirst();
 
-      if (!row) return { status: 404, body: { error: "User not found" } };
+      if (!row) return { status: 404 as const, body: { error: "User not found" } as any };
 
       return { 
-        status: 200, 
+        status: 200 as const, 
         body: { 
           user: {
-            id: row.id,
+            id: String(row.id),
             name: row.name || null,
             email: row.email,
             emailVerified: !!row.emailVerified,
@@ -78,15 +79,15 @@ const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
             nickname: row.nickname || null,
             member_type: row.member_type || null
           }
-        } 
+        } as any
       };
-    } catch (_err) {
-      return { status: 500, body: { error: "Database error" } };
+    } catch {
+      return { status: 500 as const, body: { error: "Database error" } as any };
     }
   },
-  patchUser: async ({ params, body }, c) => {
+  patchUser: async ({ params, body }: { params: any, body: any }, c: Context<AppEnv>) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const { role, member_type } = body;
 
       if (role) {
@@ -96,28 +97,28 @@ const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
       if (member_type) {
         await db.insertInto("user_profiles")
           .values({ user_id: params.id, member_type })
-          .onConflict(oc => oc.column("user_id").doUpdateSet({ member_type }))
+          .onConflict((oc) => oc.column("user_id").doUpdateSet({ member_type }))
           .execute();
       }
 
       c.executionCtx.waitUntil(logAuditAction(c, "PATCH_USER", "user", params.id, `Updated user ${params.id}: role=${role}, type=${member_type}`));
 
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Update failed" } };
+      return { status: 200 as const, body: { success: true } as any };
+    } catch {
+      return { status: 500 as const, body: { error: "Update failed" } as any };
     }
   },
-  updateUserProfile: async ({ params, body }, c) => {
+  updateUserProfile: async ({ params, body }: { params: any, body: any }, c: Context<AppEnv>) => {
     try {
-      await upsertProfile(c as any, params.id, body);
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Profile update failed" } };
+      await upsertProfile(c as any, params.id, body as any);
+      return { status: 200 as const, body: { success: true } as any };
+    } catch {
+      return { status: 500 as const, body: { error: "Profile update failed" } as any };
     }
   },
-  deleteUser: async ({ params }, c) => {
+  deleteUser: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const id = params.id;
       
       await db.deleteFrom("comments").where("user_id", "=", id).execute();
@@ -130,16 +131,17 @@ const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
 
       c.executionCtx.waitUntil(logAuditAction(c, "DELETE_USER", "user", id, `Deleted user ${id}`));
 
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Delete failed" } };
+      return { status: 200 as const, body: { success: true } as any };
+    } catch {
+      return { status: 500 as const, body: { error: "Delete failed" } as any };
     }
   },
 };
 
-const userTsRestRouter = s.router(userContract, userHandlers);
-createHonoEndpoints(userContract, userTsRestRouter, usersRouter);
+const userTsRestRouter = s.router(userContract, userHandlers as any);
 
 usersRouter.use("/*", ensureAdmin);
+
+createHonoEndpoints(userContract, userTsRestRouter, usersRouter);
 
 export default usersRouter;

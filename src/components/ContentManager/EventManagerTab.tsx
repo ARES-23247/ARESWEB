@@ -28,6 +28,8 @@ export default function EventManagerTab({
 
   const { data: eventsData, isLoading, isError } = api.events.getAdminEvents.useQuery({
     query: { limit: 100, offset: 0 }
+  }, {
+    queryKey: ["admin_events"]
   });
 
   const events = eventsData?.status === 200 ? (eventsData.body.events as unknown as EventItem[]) : [];

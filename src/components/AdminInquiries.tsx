@@ -38,8 +38,9 @@ export default function AdminInquiries() {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const { data: inquiriesData, isLoading, isError } = api.inquiries.list.useQuery({
-    queryKey: ["admin-inquiries"],
     query: { limit: 200, offset: 0 }
+  }, {
+    queryKey: ["admin-inquiries"],
   });
 
   const inquiries = useMemo(() => inquiriesData?.body?.inquiries || [], [inquiriesData]);

@@ -7,12 +7,12 @@ import { AppEnv, ensureAdmin, getSessionUser, rateLimitMiddleware } from "../mid
 import { sendZulipMessage } from "../../utils/zulipSync";
 
 const s = initServer<AppEnv>();
-const badgesRouter = new Hono<AppEnv>();
+export const badgesRouter = new Hono<AppEnv>();
 
-const badgesTsRestRouter = s.router(badgeContract, {
-  list: async (_, c) => {
+const badgesTsRestRouter: any = s.router(badgeContract as any, {
+    list: async (_: any, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("badges")
         .selectAll()
         .orderBy("created_at", "asc")
@@ -27,14 +27,14 @@ const badgesTsRestRouter = s.router(badgeContract, {
         created_at: String(b.created_at)
       }));
 
-      return { status: 200, body: { badges } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to fetch badges" } };
+      return { status: 200 as const, body: { badges } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to fetch badges" } };
     }
   },
-  create: async ({ body }, c) => {
+    create: async ({ body }: { body: any }, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.insertInto("badges")
         .values({
           id: body.id,
@@ -44,14 +44,14 @@ const badgesTsRestRouter = s.router(badgeContract, {
           color_theme: body.color_theme,
         })
         .execute();
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to create badge" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to create badge" } };
     }
   },
-  grant: async ({ body }, c) => {
+    grant: async ({ body }: { body: any }, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
       const sessionId = user?.id || "system";
 
@@ -89,37 +89,37 @@ const badgesTsRestRouter = s.router(badgeContract, {
         } catch { /* ignore */ }
       })());
 
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to award badge" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to award badge" } };
     }
   },
-  revoke: async ({ params }, c) => {
+    revoke: async ({ params }: { params: any }, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("user_badges")
         .where("user_id", "=", params.userId)
         .where("badge_id", "=", params.badgeId)
         .execute();
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to revoke badge" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to revoke badge" } };
     }
   },
-  delete: async ({ params }, c) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("badges")
         .where("id", "=", params.id)
         .execute();
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to delete badge definition" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to delete badge definition" } };
     }
   },
-});
+} as any);
 
-createHonoEndpoints(badgeContract, badgesTsRestRouter, badgesRouter);
+
 
 // Middlewares
 badgesRouter.use("/admin/*", ensureAdmin);
@@ -128,7 +128,7 @@ badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 badgesRouter.use("/admin", rateLimitMiddleware(15, 60));
 
 // Public Leaderboard
-badgesRouter.get("/leaderboard", async (c) => {
+badgesRouter.get("/leaderboard", async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("user_profiles as u")
@@ -141,9 +141,11 @@ badgesRouter.get("/leaderboard", async (c) => {
       .limit(20)
       .execute();
     return c.json({ leaderboard: results });
-  } catch (_err) {
+  } catch {
     return c.json({ leaderboard: [] }, 500);
   }
 });
 
+
+createHonoEndpoints(badgeContract, badgesTsRestRouter, badgesRouter);
 export default badgesRouter;

@@ -1,21 +1,22 @@
-import { Hono } from "hono";
+import { Hono, Context } from "hono";
 import { AppEnv, getSessionUser, sanitizeProfileForPublic, rateLimitMiddleware } from "../middleware";
 import { getAuth } from "../../utils/auth";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
-import { RecursiveRouterObj } from "@ts-rest/hono";
 import { profileContract } from "../../../src/schemas/contracts/userContract";
+import { Kysely } from "kysely";
+import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
-const profilesRouter = new Hono<AppEnv>();
+export const profilesRouter = new Hono<AppEnv>();
 
-const profileHandlers: RecursiveRouterObj<typeof profileContract, AppEnv> = {
-  getMe: async (_, c) => {
+const profileHandlers = {
+  getMe: async (_: any, c: Context<AppEnv>) => {
     const user = await getSessionUser(c);
-    if (!user) return { status: 200, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
+    if (!user) return { status: 200 as const, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
 
-    const db = c.get("db");
+    const db = c.get("db") as Kysely<DB>;
 
     try {
       const profileRow = await db.selectFrom("user_profiles as p")
@@ -38,18 +39,28 @@ const profileHandlers: RecursiveRouterObj<typeof profileContract, AppEnv> = {
 
       if (profileRow) {
         const secret = c.env.ENCRYPTION_SECRET;
-        p.emergency_contact_name = await decrypt(p.emergency_contact_name as string, secret);
-        p.emergency_contact_phone = await decrypt(p.emergency_contact_phone as string, secret);
-        p.phone = await decrypt(p.phone as string, secret);
-        p.contact_email = await decrypt(p.contact_email as string, secret);
-        p.parents_name = await decrypt(p.parents_name as string, secret);
-        p.parents_email = await decrypt(p.parents_email as string, secret);
-        p.students_name = await decrypt(p.students_name as string, secret);
-        p.students_email = await decrypt(p.students_email as string, secret);
+        const safeDecrypt = async (val: any) => {
+          if (!val) return null;
+          try {
+            return await decrypt(val as string, secret);
+          } catch (err) {
+            console.error("[Crypto] Decryption failed for field:", err);
+            return "[Decryption Failed]";
+          }
+        };
+
+        p.emergency_contact_name = await safeDecrypt(p.emergency_contact_name);
+        p.emergency_contact_phone = await safeDecrypt(p.emergency_contact_phone);
+        p.phone = await safeDecrypt(p.phone);
+        p.contact_email = await safeDecrypt(p.contact_email);
+        p.parents_name = await safeDecrypt(p.parents_name);
+        p.parents_email = await safeDecrypt(p.parents_email);
+        p.students_name = await safeDecrypt(p.students_name);
+        p.students_email = await safeDecrypt(p.students_email);
       }
 
       return { 
-        status: 200, 
+        status: 200 as const, 
         body: {
           ...p,
           member_type: String(p.member_type || "student"),
@@ -59,22 +70,22 @@ const profileHandlers: RecursiveRouterObj<typeof profileContract, AppEnv> = {
           auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role }
         } as any
       };
-    } catch (_err) {
-      return { status: 200, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
+    } catch {
+      return { status: 200 as const, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
     }
   },
-  updateMe: async ({ body }, c) => {
+  updateMe: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     const user = await getSessionUser(c);
-    if (!user) return { status: 200, body: { success: false } };
+    if (!user) return { status: 200 as const, body: { success: false } };
     try {
-      await upsertProfile(c as any, user.id, body);
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 200, body: { success: false } };
+      await upsertProfile(c as any, user.id, body as any);
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 200 as const, body: { success: false } };
     }
   },
-  getTeamRoster: async (_, c) => {
-    const db = c.get("db");
+  getTeamRoster: async (_: any, c: Context<AppEnv>) => {
+    const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("user_profiles as p")
         .innerJoin("user as u", "p.user_id", "u.id")
@@ -95,27 +106,27 @@ const profileHandlers: RecursiveRouterObj<typeof profileContract, AppEnv> = {
         if (row.contact_email && (memberType === "mentor" || memberType === "coach")) {
           row.contact_email = await decrypt(row.contact_email as string, c.env.ENCRYPTION_SECRET);
         }
-        const sanitized = sanitizeProfileForPublic(row, memberType);
+        const sanitized = sanitizeProfileForPublic(row, memberType) as any;
         return {
           ...sanitized,
           user_id: String(sanitized.user_id),
           nickname: sanitized.nickname || null,
           avatar: sanitized.avatar || null,
           member_type: String(sanitized.member_type || "student"),
-          subteams: Array.isArray(sanitized.subteams) ? sanitized.subteams : [],
-          colleges: Array.isArray(sanitized.colleges) ? sanitized.colleges : [],
-          employers: Array.isArray(sanitized.employers) ? sanitized.employers : []
+          subteams: Array.isArray(sanitized.subteams) ? (sanitized.subteams as string[]) : [],
+          colleges: Array.isArray(sanitized.colleges) ? (sanitized.colleges as string[]) : [],
+          employers: Array.isArray(sanitized.employers) ? (sanitized.employers as string[]) : []
         };
       }));
 
-      return { status: 200, body: { members: members as any[] } };
-    } catch (_err) {
-      return { status: 200, body: { members: [] } };
+      return { status: 200 as const, body: { members } as any };
+    } catch {
+      return { status: 200 as const, body: { members: [] } as any };
     }
   },
-  getPublicProfile: async ({ params }, c) => {
+  getPublicProfile: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { userId } = params;
-    const db = c.get("db");
+    const db = c.get("db") as Kysely<DB>;
     try {
       const profileRow = await db.selectFrom("user_profiles as p")
         .leftJoin("user as u", "p.user_id", "u.id")
@@ -130,11 +141,11 @@ const profileHandlers: RecursiveRouterObj<typeof profileContract, AppEnv> = {
         .where("p.user_id", "=", userId)
         .executeTakeFirst();
 
-      if (!profileRow) return { status: 404, body: { error: "Profile not found" } };
-      if (Number(profileRow.show_on_about || 0) !== 1) return { status: 403, body: { error: "This profile is private." } };
+      if (!profileRow) return { status: 404 as const, body: { error: "Profile not found" } as any };
+      if (Number(profileRow.show_on_about || 0) !== 1) return { status: 403 as const, body: { error: "This profile is private." } as any };
 
       const memberType = String(profileRow.member_type || "student");
-      const sanitized = sanitizeProfileForPublic(profileRow as any, memberType) as Record<string, unknown>;
+      const sanitized = sanitizeProfileForPublic(profileRow, memberType) as Record<string, unknown>;
 
       const requester = await getSessionUser(c);
       const isAdmin = requester?.role === "admin" || requester?.role === "author" || requester?.member_type === "coach" || requester?.member_type === "mentor";
@@ -168,17 +179,17 @@ const profileHandlers: RecursiveRouterObj<typeof profileContract, AppEnv> = {
         .orderBy("ub.awarded_at", "desc")
         .execute();
 
-      return { status: 200, body: { profile: sanitized as any, badges: rawBadges as any[] } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Profile fetch failed" } };
+      return { status: 200 as const, body: { profile: sanitized as any, badges: rawBadges as any[] } as any };
+    } catch {
+      return { status: 500 as const, body: { error: "Profile fetch failed" } as any };
     }
   },
 };
 
-const profileTsRestRouter = s.router(profileContract, profileHandlers);
+const profileTsRestRouter = s.router(profileContract, profileHandlers as any);
 createHonoEndpoints(profileContract, profileTsRestRouter, profilesRouter);
 
-profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c) => {
+profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c: any) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
   try {
@@ -187,7 +198,7 @@ profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c) => {
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     await auth.api.updateUser({ headers: c.req.raw.headers, body: { image: image || null } });
     return c.json({ success: true });
-  } catch (_err) {
+  } catch {
     return c.json({ error: "Avatar update failed" }, 500);
   }
 });

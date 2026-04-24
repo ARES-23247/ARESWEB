@@ -37,7 +37,7 @@ export default function AdminUsers() {
   const parentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError } = api.users.getUsers.useQuery({
+  const { data, isLoading, isError } = api.users.getUsers.useQuery({}, {
     queryKey: ["admin_users"],
   });
 

@@ -11,6 +11,7 @@ export const contentHandlers = [
   // Posts
   http.get("*/posts", () => HttpResponse.json({ posts: mockContentState.posts })),
   http.get("*/posts/:slug", ({ params }) => {
+    console.log("MATCHED POSTS SLUG IN CONTENT.TS", params.slug);
     const post = mockContentState.posts.find(p => p.slug === params.slug) || mockContentState.posts[0];
     return HttpResponse.json({ post });
   }),

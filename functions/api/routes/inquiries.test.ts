@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 declare const global: typeof globalThis;
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
@@ -93,7 +93,7 @@ describe("Hono Backend - /inquiries Router", () => {
   });
 
   it("GET /admin/list - list all", async () => {
-    const res = await testApp.request("/admin/list", {
+    const res = await testApp.request("/admin/list?page=1&limit=50", {
       headers: { "DEV_BYPASS": "true" }
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
@@ -148,5 +148,45 @@ describe("Hono Backend - /inquiries Router", () => {
 
     expect(res.status).toBe(200);
     expect(mockDb.deleteFrom).toHaveBeenCalled();
+  });
+
+  it("GET /admin/list - masks PII for students", async () => {
+    // Setup a new app instance to override sessionUser for this test
+    const studentApp = new Hono<any>();
+    studentApp.use("*", async (c: any, next: any) => {
+      c.set("db", mockDb);
+      c.set("sessionUser", { id: "2", role: "user", member_type: "student", email: "student@test.com" });
+      await next();
+    });
+    studentApp.route("/", inquiriesRouter);
+
+    mockDb.execute.mockResolvedValue([
+      {
+        id: "1",
+        type: "support",
+        name: "John Doe",
+        email: "john.doe@example.com",
+        status: "pending",
+        created_at: "2023-01-01T00:00:00Z",
+        metadata: JSON.stringify({ level: "Gold", secret: "private" })
+      }
+    ]);
+
+    const res = await studentApp.request("/admin/list", {
+      headers: { "DEV_BYPASS": "true" }
+    }, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    const inquiry = body.inquiries[0];
+
+    // name: J******* (1 + length-1 stars)
+    expect(inquiry.name).toBe("J" + "*".repeat("John Doe".length - 1));
+    // email: jo******@example.com
+    expect(inquiry.email).toBe("jo" + "*".repeat("hn.doe".length) + "@example.com");
+    // metadata: only whitelisted keys
+    const meta = JSON.parse(inquiry.metadata);
+    expect(meta.level).toBe("Gold");
+    expect(meta.secret).toBeUndefined();
   });
 });

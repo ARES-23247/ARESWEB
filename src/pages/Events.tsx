@@ -10,13 +10,13 @@ import { EventCard, EventItem } from "../components/events/EventCard";
 import CompetitionBanner from "../components/CompetitionBanner";
 
 export default function Events() {
-  const { data: eventsRes, isLoading } = api.events.getEvents.useQuery({
+  const { data: eventsRes, isLoading } = api.events.getEvents.useQuery({}, {
     queryKey: ["events"],
   });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const events = (eventsRes?.body as unknown as { events: EventItem[] })?.events || [];
 
-  const { data: calendarRes } = api.events.getCalendarSettings.useQuery({
+  const { data: calendarRes } = api.events.getCalendarSettings.useQuery({}, {
     queryKey: ["calendar_config"],
   });
   const calendarData = calendarRes?.status === 200 ? calendarRes.body : null;

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../../src/test/utils";
@@ -36,9 +36,10 @@ describe("Hono Backend - Events Router", () => {
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockReturnThis(),
       leftJoin: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
       join: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
+      executeTakeFirst: vi.fn().mockResolvedValue({ id: "1", title: "Test" }),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       onConflict: vi.fn().mockReturnThis(),

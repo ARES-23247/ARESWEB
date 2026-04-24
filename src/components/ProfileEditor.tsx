@@ -48,7 +48,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
   const profileValues = useWatch({ control });
 
-  const { isLoading, isError } = api.profiles.getMe.useQuery({
+  const { isLoading, isError } = api.profiles.getMe.useQuery({}, {
     queryKey: ["profile", adminEditUserId || "me"],
     // Logic for admin fetch would go here if we had an adminContract for users
   });

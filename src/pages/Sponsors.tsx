@@ -57,7 +57,7 @@ const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; borde
 };
 
 export default function Sponsors() {
-  const { data: sponsorsRes } = api.sponsors.getSponsors.useQuery({
+  const { data: sponsorsRes } = api.sponsors.getSponsors.useQuery({}, {
     queryKey: ["public-sponsors"],
   });
   const sponsors = (sponsorsRes?.status === 200 ? sponsorsRes.body.sponsors : []) || [];

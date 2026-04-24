@@ -14,25 +14,12 @@ export default function DashboardHome() {
   const role = session?.user?.role || "unverified";
   const canSeeInquiries = role !== "unverified";
 
-  const { data: postsRes } = api.posts.getAdminPosts.useQuery({
-    query: { limit: 1 }
-  }, { enabled: canSeeInquiries });
-
-  const { data: eventsRes } = api.events.getAdminEvents.useQuery({
-    query: { limit: 1 }
-  }, { enabled: canSeeInquiries });
-
-  const { data: docsRes } = api.docs.adminList.useQuery({
-    query: { limit: 1 }
-  }, { enabled: canSeeInquiries });
+  const { data: statsRes } = api.analytics.getStats.useQuery({}, { enabled: canSeeInquiries });
 
   const stats = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    posts: postsRes?.status === 200 ? (postsRes.body as any).posts?.length || 0 : 0,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    events: eventsRes?.status === 200 ? (eventsRes.body as any).events?.length || 0 : 0,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    docs: docsRes?.status === 200 ? (docsRes.body as any).docs?.length || 0 : 0,
+    posts: statsRes?.status === 200 ? statsRes.body.posts : 0,
+    events: statsRes?.status === 200 ? statsRes.body.events : 0,
+    docs: statsRes?.status === 200 ? statsRes.body.docs : 0,
   };
    
   // @ts-expect-error - BetterAuth session typing

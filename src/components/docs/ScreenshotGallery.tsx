@@ -17,7 +17,7 @@ interface R2MediaResponse {
 }
 
 export default function ScreenshotGallery() {
-  const { data: mediaRes, isLoading } = api.media.getMedia.useQuery({
+  const { data: mediaRes, isLoading } = api.media.getMedia.useQuery({}, {
     queryKey: ["media"],
   });
 

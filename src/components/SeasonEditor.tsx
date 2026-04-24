@@ -38,9 +38,11 @@ export default function SeasonEditor() {
   const editor = useRichEditor({ placeholder: "<p>Describe the robot's design, mechanisms, and season highlights...</p>" });
 
   const { data: detailData } = api.seasons.adminDetail.useQuery({
-    queryKey: ["admin-season-detail", editId],
     params: { id: editId || "" },
-  }, { enabled: !!editId });
+  }, {
+    queryKey: ["admin-season-detail", editId],
+    enabled: !!editId
+  });
 
   useEffect(() => {
     if (detailData?.status === 200 && detailData.body.season) {

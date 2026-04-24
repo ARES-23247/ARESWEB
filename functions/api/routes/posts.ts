@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, Context } from "hono";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
@@ -17,10 +17,10 @@ import {
 } from "../../utils/postHistory";
 
 const s = initServer<AppEnv>();
-const postsRouter = new Hono<AppEnv>();
+export const postsRouter = new Hono<AppEnv>();
 
-const postTsRestRouter = s.router(postContract, {
-  getPosts: async ({ query }: { query: any }, c: any) => {
+const postHandlers = {
+  getPosts: async ({ query }: { query: any }, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 10, offset = 0, q } = query;
@@ -43,7 +43,7 @@ const postTsRestRouter = s.router(postContract, {
           season_id: p.season_id ? Number(p.season_id) : null
         }));
 
-        return { status: 200, body: { posts: posts as any[] } };
+        return { status: 200 as const, body: { posts } as any };
       }
 
       const results = await db.selectFrom("posts")
@@ -69,8 +69,8 @@ const postTsRestRouter = s.router(postContract, {
           eb("published_at", "<=", new Date().toISOString())
         ]))
         .orderBy("posts.date", "desc")
-        .limit(limit || 10)
-        .offset(offset || 0)
+        .limit(Number(limit) || 10)
+        .offset(Number(offset) || 0)
         .execute();
 
       const posts = results.map(p => ({
@@ -78,12 +78,12 @@ const postTsRestRouter = s.router(postContract, {
         season_id: p.season_id ? Number(p.season_id) : null
       }));
 
-      return { status: 200, body: { posts: posts as any[] } };
-    } catch (_err) {
-      return { status: 200, body: { posts: [] } };
+      return { status: 200 as const, body: { posts } as any };
+    } catch {
+      return { status: 200 as const, body: { posts: [] } as any };
     }
   },
-  getPost: async ({ params }: { params: any }, c: any) => {
+  getPost: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -114,10 +114,10 @@ const postTsRestRouter = s.router(postContract, {
         ]))
         .executeTakeFirst();
 
-      if (!row) return { status: 404, body: { error: "Post not found" } };
+      if (!row) return { status: 404 as const, body: { error: "Post not found" } as any };
 
       return { 
-        status: 200, 
+        status: 200 as const, 
         body: { 
           post: {
             ...row,
@@ -125,24 +125,24 @@ const postTsRestRouter = s.router(postContract, {
           },
           is_editor: user?.role === "admin" || user?.role === "author",
           author: {
-            nickname: row.author_nickname,
-            avatar: row.author_avatar
+            nickname: row.author_nickname || null,
+            avatar: row.author_avatar || null
           }
         } as any
       };
-    } catch (_err) {
-      return { status: 404, body: { error: "Database error" } };
+    } catch {
+      return { status: 404 as const, body: { error: "Database error" } as any };
     }
   },
-  getAdminPosts: async ({ query }: { query: any }, c: any) => {
+  getAdminPosts: async ({ query }: { query: any }, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 50, offset = 0 } = query;
       const results = await db.selectFrom("posts")
         .select(["slug", "title", "date", "snippet", "thumbnail", "cf_email", "is_deleted", "status", "revision_of", "published_at", "season_id", "author"])
         .orderBy("date", "desc")
-        .limit(limit || 50)
-        .offset(offset || 0)
+        .limit(Number(limit) || 50)
+        .offset(Number(offset) || 0)
         .execute();
       
       const posts = results.map(p => ({
@@ -151,12 +151,12 @@ const postTsRestRouter = s.router(postContract, {
         is_deleted: Number(p.is_deleted)
       }));
 
-      return { status: 200, body: { posts: posts as any[] } };
-    } catch (_err) {
-      return { status: 200, body: { posts: [] } };
+      return { status: 200 as const, body: { posts } as any };
+    } catch {
+      return { status: 200 as const, body: { posts: [] } as any };
     }
   },
-  getAdminPost: async ({ params }: { params: any }, c: any) => {
+  getAdminPost: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -165,10 +165,10 @@ const postTsRestRouter = s.router(postContract, {
         .where("slug", "=", slug)
         .executeTakeFirst();
 
-      if (!row) return { status: 404, body: { error: "Post not found" } };
+      if (!row) return { status: 404 as const, body: { error: "Post not found" } as any };
       
       return { 
-        status: 200, 
+        status: 200 as const, 
         body: { 
           post: {
             ...row,
@@ -177,15 +177,15 @@ const postTsRestRouter = s.router(postContract, {
           }
         } as any
       };
-    } catch (_err) {
-      return { status: 404, body: { error: "Database error" } };
+    } catch {
+      return { status: 404 as const, body: { error: "Database error" } as any };
     }
   },
-  savePost: async ({ body }: { body: any }, c: any) => {
+  savePost: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
-      if (titleError) return { status: 200, body: { success: false, warning: titleError } };
+      if (titleError) return { status: 200 as const, body: { success: false, warning: titleError } as any };
 
       let slug = body.title
         .toLowerCase()
@@ -218,7 +218,7 @@ const postTsRestRouter = s.router(postContract, {
           cf_email: email,
           status,
           published_at: body.publishedAt || null,
-          season_id: body.seasonId ? Number(body.seasonId) : null
+          season_id: body.seasonId ? String(body.seasonId) : null
         })
         .execute();
 
@@ -231,23 +231,24 @@ const postTsRestRouter = s.router(postContract, {
         const socialsFilter = body.socials || null;
         const baseUrl = new URL(c.req.url).origin;
 
-        try {
-          await dispatchSocials(
-            c.env.DB,
-            {
-              title: body.title,
-              url: `${baseUrl}/blog/${slug}`,
-              snippet: snippet || "Read the latest engineering update from ARES 23247!",
-              coverImageUrl: body.coverImageUrl || "/gallery_1.png",
-              baseUrl: baseUrl
-            },
-            socialConfig,
-            socialsFilter
-          );
-        } catch (err) {
-          console.error("Social dispatch failed:", err);
-          warnings.push("Social Syndication Failed");
-        }
+        c.executionCtx.waitUntil((async () => {
+          try {
+            await dispatchSocials(
+              c.env.DB,
+              {
+                title: body.title,
+                url: `${baseUrl}/blog/${slug}`,
+                snippet: snippet || "Read the latest engineering update from ARES 23247!",
+                coverImageUrl: body.coverImageUrl || "/gallery_1.png",
+                baseUrl: baseUrl
+              },
+              socialConfig,
+              socialsFilter
+            );
+          } catch (err) {
+            console.error("Social dispatch failed:", err);
+          }
+        })());
 
         try {
           await sendZulipMessage(
@@ -264,7 +265,7 @@ const postTsRestRouter = s.router(postContract, {
 
       if (status === "pending") {
         c.executionCtx.waitUntil(
-          notifyByRole(c, ["admin", "coach", "mentor"], {
+          notifyByRole(c, ["admin", "author", "coach", "mentor"] as any[], {
             title: "📝 Pending Blog Post",
             message: `"${body.title}" submitted by ${email} needs review.`,
             link: "/dashboard",
@@ -275,14 +276,14 @@ const postTsRestRouter = s.router(postContract, {
       }
 
       return { 
-        status: 200, 
-        body: { success: true, slug, warning: warnings.join(" | ") } 
+        status: 200 as const, 
+        body: { success: true, slug, warning: warnings.join(" | ") } as any
       };
     } catch (err) {
-      return { status: 200, body: { success: false, warning: (err as Error)?.message || "Database write failed" } };
+      return { status: 200 as const, body: { success: false, warning: (err as Error)?.message || "Database write failed" } as any };
     }
   },
-  updatePost: async ({ params, body }: { params: any, body: any }, c: any) => {
+  updatePost: async ({ params, body }: { params: any, body: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -300,7 +301,7 @@ const postTsRestRouter = s.router(postContract, {
           publishedAt: body.publishedAt,
           seasonId: body.seasonId
         });
-        return { status: 200, body: { success: true, slug: revSlug } };
+        return { status: 200 as const, body: { success: true, slug: revSlug } as any };
       }
 
       const status = body.isDraft ? "pending" : "published";
@@ -312,61 +313,61 @@ const postTsRestRouter = s.router(postContract, {
           ast: astStr,
           status,
           published_at: body.publishedAt || null,
-          season_id: body.seasonId ? Number(body.seasonId) : null
+          season_id: body.seasonId ? String(body.seasonId) : null
         })
         .where("slug", "=", slug)
         .execute();
 
       c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`));
-      return { status: 200, body: { success: true, slug } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Database write failed" } };
+      return { status: 200 as const, body: { success: true, slug } as any };
+    } catch {
+      return { status: 500 as const, body: { error: "Database write failed" } as any };
     }
   },
-  deletePost: async ({ params }: { params: any }, c: any) => {
+  deletePost: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("posts").set({ is_deleted: 1, status: "draft" }).where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 200, body: { success: false } };
+      return { status: 200 as const, body: { success: true } as any };
+    } catch {
+      return { status: 200 as const, body: { success: false } as any };
     }
   },
-  undeletePost: async ({ params }: { params: any }, c: any) => {
+  undeletePost: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("posts").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 200, body: { success: false } };
+      return { status: 200 as const, body: { success: true } as any };
+    } catch {
+      return { status: 200 as const, body: { success: false } as any };
     }
   },
-  purgePost: async ({ params }: { params: any }, c: any) => {
+  purgePost: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("posts").where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 200, body: { success: false } };
+      return { status: 200 as const, body: { success: true } as any };
+    } catch {
+      return { status: 200 as const, body: { success: false } as any };
     }
   },
-  approvePost: async ({ params }: { params: any }, c: any) => {
+  approvePost: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const result = await approvePost(c, slug);
-      if (!result.success) return { status: 404, body: { error: result.error || "Approval failed" } };
-      return { status: 200, body: { success: true, warnings: result.warnings } };
-    } catch (_err) {
-      return { status: 404, body: { error: "Approval failed" } };
+      if (!result.success) return { status: 404 as const, body: { error: result.error || "Approval failed" } as any };
+      return { status: 200 as const, body: { success: true, warnings: result.warnings } as any };
+    } catch {
+      return { status: 404 as const, body: { error: "Approval failed" } as any };
     }
   },
-  rejectPost: async ({ params, body }: { params: any, body: any }, c: any) => {
+  rejectPost: async ({ params, body }: { params: any, body: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     const { reason } = body;
     try {
@@ -379,7 +380,7 @@ const postTsRestRouter = s.router(postContract, {
         const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
         if (author) {
           c.executionCtx.waitUntil(emitNotification(c, {
-            userId: author.id,
+            userId: String(author.id),
             title: "Post Rejected",
             message: `Your post "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`,
             link: "/dashboard?tab=posts",
@@ -388,12 +389,12 @@ const postTsRestRouter = s.router(postContract, {
         }
       }
       c.executionCtx.waitUntil(logAuditAction(c, "REJECT_POST", "posts", slug));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 404, body: { error: "Reject failed" } };
+      return { status: 200 as const, body: { success: true } as any };
+    } catch {
+      return { status: 404 as const, body: { error: "Reject failed" } as any };
     }
   },
-  getPostHistory: async ({ params }: { params: any }, c: any) => {
+  getPostHistory: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     try {
       const historyRows = await getPostHistory(c, slug);
@@ -401,25 +402,25 @@ const postTsRestRouter = s.router(postContract, {
         ...h,
         id: Number(h.id)
       }));
-      return { status: 200, body: { history: history as any[] } };
-    } catch (_err) {
-      return { status: 200, body: { history: [] } };
+      return { status: 200 as const, body: { history } as any };
+    } catch {
+      return { status: 200 as const, body: { history: [] } as any };
     }
   },
-  restorePostHistory: async ({ params }: { params: any }, c: any) => {
+  restorePostHistory: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     const { slug, id } = params;
     const user = await getSessionUser(c);
     const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
-    if (!result.success) return { status: 404, body: { error: result.error || "Restore failed" } };
-    return { status: 200, body: { success: true } };
+    if (!result.success) return { status: 404 as const, body: { error: result.error || "Restore failed" } as any };
+    return { status: 200 as const, body: { success: true } as any };
   },
-  repushSocials: async ({ params, body }: { params: any, body: any }, c: any) => {
+  repushSocials: async ({ params, body }: { params: any, body: any }, c: Context<AppEnv>) => {
     const { slug } = params;
     const { socials } = body;
     try {
       const db = c.get("db") as Kysely<DB>;
       const post = await db.selectFrom("posts").select(["title", "snippet", "thumbnail"]).where("slug", "=", slug).executeTakeFirst();
-      if (!post) return { status: 404, body: { error: "Post not found" } };
+      if (!post) return { status: 404 as const, body: { error: "Post not found" } as any };
 
       const socialConfig = await getSocialConfig(c);
       const baseUrl = new URL(c.req.url).origin;
@@ -427,24 +428,26 @@ const postTsRestRouter = s.router(postContract, {
       await dispatchSocials(
         c.env.DB,
         {
-          title: post.title,
+          title: String(post.title),
           url: `${baseUrl}/blog/${slug}`,
-          snippet: extractAstText(post.snippet || "").substring(0, 250) || "Read the latest update from ARES 23247!",
+          snippet: post.snippet || "Read the latest update from ARES 23247!",
           coverImageUrl: post.thumbnail || "",
           baseUrl: baseUrl
         }, socialConfig, socials);
-      return { status: 200, body: { success: true } };
+      return { status: 200 as const, body: { success: true } as any };
     } catch (err) {
-      return { status: 502, body: { error: (err as Error).message } };
+      return { status: 502 as const, body: { error: (err as Error).message } as any };
     }
   },
-});
+};
 
-createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
+const postTsRestRouter = s.router(postContract, postHandlers as any);
 
 // Apply middleware/protections
 postsRouter.use("/admin", ensureAdmin);
 postsRouter.use("/admin/*", ensureAdmin);
 postsRouter.use("/admin/save", ensureAuth);
+
+createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
 
 export default postsRouter;

@@ -82,6 +82,12 @@ export async function verifyTurnstile(
   clientIp: string
 ): Promise<boolean> {
   if (!secretKey) {
+    // SEC-F01: Harden Turnstile. Fail closed in production.
+    // @ts-expect-error - ENVIRONMENT might not be in AppEnv type but exists at runtime
+    if (globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production") {
+      console.error("[Turnstile] CRITICAL: TURNSTILE_SECRET_KEY is missing in production! Failing closed.");
+      return false;
+    }
     console.warn("[Turnstile] TURNSTILE_SECRET_KEY is not configured — CAPTCHA verification is disabled. This is expected in local development but should be resolved in production.");
     return true;
   }

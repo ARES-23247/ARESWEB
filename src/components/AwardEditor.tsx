@@ -54,7 +54,7 @@ export default function AwardEditor() {
 
   const seasonId = useWatch({ control, name: "season_id" });
 
-  const { data: awardsData, isLoading, isError } = api.awards.getAwards.useQuery({
+  const { data: awardsData, isLoading, isError } = api.awards.getAwards.useQuery({}, {
     queryKey: ["admin-awards"],
   });
   const awards = (awardsData?.body?.awards || []) as Award[];
@@ -202,6 +202,8 @@ export default function AwardEditor() {
             </div>
 
             <button
+              title="Delete Award"
+              aria-label="Delete Award"
               onClick={() => { if(confirm("Purge this achievement from history?")) deleteMutation.mutate({ params: { id: award.id }, body: {} }); }}
               className="absolute top-4 right-4 p-3 text-ares-gray hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
             >

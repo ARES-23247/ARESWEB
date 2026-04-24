@@ -6,11 +6,9 @@ import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
-const seasonsRouter = new Hono<AppEnv>();
-
-// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
-const seasonsTsRestRouter = s.router(seasonsContract, {
-  list: async (_: any, c: any) => {
+export const seasonsRouter = new Hono<AppEnv>();
+const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
+    list: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("seasons")
@@ -23,17 +21,17 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
       const seasons = results.map(r => ({
         ...r,
         start_year: Number(r.start_year),
-        end_year: Number(r.end_year || r.start_year + 1),
+                end_year: Number(r.end_year || Number(r.start_year) + 1),
         is_deleted: Number(r.is_deleted || 0),
         status: r.status as "published" | "draft"
       }));
 
-      return { status: 200, body: { seasons: seasons as any[] } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to fetch seasons" } };
+      return { status: 200 as const, body: { seasons: seasons as any[] } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to fetch seasons" } };
     }
   },
-  adminList: async (_: any, c: any) => {
+    adminList: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("seasons")
@@ -44,17 +42,17 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
       const seasons = results.map(r => ({
         ...r,
         start_year: Number(r.start_year),
-        end_year: Number(r.end_year || r.start_year + 1),
+                end_year: Number(r.end_year || Number(r.start_year) + 1),
         is_deleted: Number(r.is_deleted || 0),
         status: r.status as "published" | "draft"
       }));
 
-      return { status: 200, body: { seasons: seasons as any[] } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to list seasons" } };
+      return { status: 200 as const, body: { seasons: seasons as any[] } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to list seasons" } };
     }
   },
-  adminDetail: async ({ params }: { params: any }, c: any) => {
+    adminDetail: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
@@ -63,29 +61,29 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
         .where("start_year", "=", year)
         .executeTakeFirst();
 
-      if (!row) return { status: 404, body: { error: "Season not found" } };
+      if (!row) return { status: 404 as const, body: { error: "Season not found" } };
       
       return { 
-        status: 200, 
+        status: 200 as const, 
         body: { 
           season: {
             ...row,
             start_year: Number(row.start_year),
-            end_year: Number(row.end_year || row.start_year + 1),
+                        end_year: Number(row.end_year || Number(row.start_year) + 1),
             is_deleted: Number(row.is_deleted || 0),
             status: row.status as "published" | "draft"
           }
         } as any
       };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to fetch season" } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to fetch season" } };
     }
   },
-  getDetail: async ({ params }: { params: any }, c: any) => {
+    getDetail: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.year);
-      if (isNaN(year)) return { status: 404, body: { error: "Invalid year" } };
+      if (isNaN(year)) return { status: 404 as const, body: { error: "Invalid year" } };
 
       const [seasonRow, awards, events, posts, outreach] = await Promise.all([
         db.selectFrom("seasons").selectAll().where("start_year", "=", year).executeTakeFirst(),
@@ -95,15 +93,15 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
         db.selectFrom("outreach_logs").selectAll().where("season_id", "=", Number(year) as any).execute(),
       ]);
 
-      if (!seasonRow) return { status: 404, body: { error: "Season not found" } };
+      if (!seasonRow) return { status: 404 as const, body: { error: "Season not found" } };
 
       return {
-        status: 200,
+        status: 200 as const,
         body: {
           season: {
             ...seasonRow,
             start_year: Number(seasonRow.start_year),
-            end_year: Number(seasonRow.end_year || seasonRow.start_year + 1),
+                        end_year: Number(seasonRow.end_year || Number(seasonRow.start_year) + 1),
             is_deleted: Number(seasonRow.is_deleted || 0),
             status: seasonRow.status as "published" | "draft"
           },
@@ -113,11 +111,11 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
           outreach: outreach as any[],
         } as any
       };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to fetch season details" } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to fetch season details" } };
     }
   },
-  save: async ({ body }: { body: any }, c: any) => {
+    save: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const existing = await db.selectFrom("seasons")
@@ -152,12 +150,12 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
           .execute();
         c.executionCtx.waitUntil(logAuditAction(c, "season_created", "seasons", body.start_year.toString(), `Season "${body.start_year}" created`));
       }
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Save failed" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Save failed" } };
     }
   },
-  delete: async ({ params }: { params: any }, c: any) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
@@ -166,12 +164,12 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
         .where("start_year", "=", year)
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "season_deleted", "seasons", params.id, `Season "${params.id}" soft-deleted`));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Delete failed" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-  undelete: async ({ params }: { params: any }, c: any) => {
+    undelete: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
@@ -180,12 +178,12 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
         .where("start_year", "=", year)
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "season_restored", "seasons", params.id, `Season "${params.id}" restored`));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Restore failed" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Restore failed" } };
     }
   },
-  purge: async ({ params }: { params: any }, c: any) => {
+    purge: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
@@ -193,12 +191,12 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
         .where("start_year", "=", year)
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "season_purged", "seasons", params.id, `Season "${params.id}" permanently deleted`));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Purge failed" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Purge failed" } };
     }
   },
-});
+} as any);
 
 seasonsRouter.use("/admin", ensureAdmin);
 seasonsRouter.use("/admin/*", ensureAdmin);
@@ -206,5 +204,4 @@ seasonsRouter.use("/admin", rateLimitMiddleware(15, 60));
 
 createHonoEndpoints(seasonsContract, seasonsTsRestRouter, seasonsRouter);
 
-export { seasonsRouter };
 export default seasonsRouter;

@@ -550,4 +550,9 @@ CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author);
 CREATE INDEX IF NOT EXISTS idx_posts_cf_email ON posts(cf_email);
 CREATE INDEX IF NOT EXISTS idx_comments_is_deleted ON comments(is_deleted);
 
+-- Championship-Grade Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_docs_category_sort ON docs(category, sort_order);
+CREATE INDEX IF NOT EXISTS idx_docs_history_slug_created ON docs_history(slug, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_outreach_date_desc ON outreach_logs(date DESC);
+
 

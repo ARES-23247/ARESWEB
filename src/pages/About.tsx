@@ -28,7 +28,7 @@ const SECTION_ORDER = [
 
 
 export default function About() {
-  const { data: rosterRes, isLoading } = api.profiles.getTeamRoster.useQuery({
+  const { data: rosterRes, isLoading } = api.profiles.getTeamRoster.useQuery({}, {
     queryKey: ["team-roster"],
   });
 

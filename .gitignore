@@ -21,6 +21,8 @@ Thumbs.db
 
 # Build / lint / test artifacts
 *.log
+*.txt
+*.json
 build_log.txt
 build_output.log
 server.log
@@ -32,6 +34,9 @@ lint-out.txt
 lint-output.txt
 lint_output.txt
 tsc_errors.txt
+test_results.json
+test-output.txt
+vitest_*.txt
 
 # pa11y reports
 pa11y_report*.json

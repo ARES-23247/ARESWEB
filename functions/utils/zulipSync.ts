@@ -31,7 +31,7 @@ export async function sendZulipMessage(
   content: string
 ): Promise<string | null> {
   const runDispatch = async () => {
-    const url = `${(env.ZULIP_BASE_URL || "")(env)}/api/v1/messages`;
+    const url = `${(env.ZULIP_URL || "https://ares.zulipchat.com")}/api/v1/messages`;
     const formData = new URLSearchParams();
     formData.append("type", "stream");
     formData.append("to", stream);
@@ -88,7 +88,7 @@ export async function updateZulipMessage(
   newContent: string
 ): Promise<boolean> {
   const runUpdate = async () => {
-    const url = `${(env.ZULIP_BASE_URL || "")(env)}/api/v1/messages/${messageId}`;
+    const url = `${(env.ZULIP_URL || "https://ares.zulipchat.com")}/api/v1/messages/${messageId}`;
     const formData = new URLSearchParams();
     formData.append("content", newContent);
 
@@ -131,7 +131,7 @@ export async function deleteZulipMessage(
   messageId: string
 ): Promise<boolean> {
   const runDelete = async () => {
-    const url = `${(env.ZULIP_BASE_URL || "")(env)}/api/v1/messages/${messageId}`;
+    const url = `${(env.ZULIP_URL || "https://ares.zulipchat.com")}/api/v1/messages/${messageId}`;
     const headers = getZulipAuthHeaders(env);
 
     const res = await fetch(url, { signal: AbortSignal.timeout(5000),

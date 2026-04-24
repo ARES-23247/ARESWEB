@@ -6,12 +6,12 @@ import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { awardContract } from "../../../src/schemas/contracts/awardContract";
 
 const s = initServer<AppEnv>();
-const awardsRouter = new Hono<AppEnv>();
+export const awardsRouter = new Hono<AppEnv>();
 
-const awardsTsRestRouter = s.router(awardContract, {
-  getAwards: async ({ query }: { query: any }, c: any) => {
+const awardsTsRestRouter: any = s.router(awardContract as any, {
+    getAwards: async ({ query }: { query: any }, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const { limit = 50, offset = 0 } = query;
       const results = await db.selectFrom("awards")
         .select(["id", "title", "date", "event_name", "description", "icon_type as image_url", "season_id", "created_at"])
@@ -34,17 +34,17 @@ const awardsTsRestRouter = s.router(awardContract, {
         updated_at: a.created_at || new Date().toISOString()
       }));
 
-      return { status: 200, body: { awards } };
-    } catch (_err) {
-      return { status: 200, body: { awards: [] } };
+      return { status: 200 as const, body: { awards } };
+    } catch {
+      return { status: 200 as const, body: { awards: [] } };
     }
   },
-  saveAward: async ({ body }: { body: any }, c: any) => {
+    saveAward: async ({ body }: { body: any }, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const { id, title, year, event_name, description, image_url, season_id } = body;
 
-      let finalId = id;
+      let finalId: string | undefined = id;
       let exists = false;
       if (id) {
         const row = await db.selectFrom("awards").select("id").where("id", "=", Number(id) as any).executeTakeFirst();
@@ -67,30 +67,29 @@ const awardsTsRestRouter = s.router(awardContract, {
         await db.updateTable("awards").set(values).where("id", "=", Number(finalId) as any).execute();
         c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", finalId, `Award "${title}" (${year}) updated`));
       } else if (finalId) {
-        // @ts-expect-error - SQLite primary key handling
         await db.insertInto("awards").values({ ...values, id: undefined }).execute();
         c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", finalId, `Award "${title}" (${year}) created`));
       }
 
-      return { status: 200, body: { success: true, id: finalId || "" } };
-    } catch (_err) {
-      return { status: 200, body: { success: false } };
+      return { status: 200 as const, body: { success: true, id: finalId || "" } };
+    } catch {
+      return { status: 200 as const, body: { success: false } };
     }
   },
-  deleteAward: async ({ params }: { params: any }, c: any) => {
+    deleteAward: async ({ params, body: _body }: { params: any, body: any }, c: any) => {
+
     try {
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.updateTable("awards").set({ is_deleted: 1 }).where("id", "=", Number(params.id) as any).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 200, body: { success: false } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 200 as const, body: { success: false } };
     }
   },
-});
+} as any);
 
 awardsRouter.use("/admin/*", ensureAdmin);
 createHonoEndpoints(awardContract, awardsTsRestRouter, awardsRouter);
 
-export { awardsRouter };
 export default awardsRouter;

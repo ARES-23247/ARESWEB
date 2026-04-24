@@ -22,17 +22,17 @@ describe("useDashboardNotifications Hook", () => {
 
     // Setup MSW handlers for the various list endpoints
     server.use(
-      http.get("*/inquiries/admin/list", () => {
+      http.get(/\/api\/inquiries\/admin\/list/, () => {
         return HttpResponse.json({ inquiries: [{ status: "pending" }, { status: "resolved" }] });
       }),
-      http.get("*/posts/admin/list", () => {
-        return HttpResponse.json({ posts: [{ status: "pending", is_deleted: 0 }] });
+      http.get(/\/api\/posts\/admin\/list/, () => {
+        return HttpResponse.json({ posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, published_at: null, season_id: null, is_deleted: 0 }] });
       }),
-      http.get("*/events/admin/list", () => {
-        return HttpResponse.json({ events: [{ status: "pending", is_deleted: 0 }] });
+      http.get(/\/api\/events\/admin\/list/, () => {
+        return HttpResponse.json({ events: [{ status: "pending", id: "dummy", title: "dummy", date_start: "dummy", date_end: null, location: null, description: null, cover_image: null, category: "dummy", season_id: null, is_deleted: 0 }] });
       }),
-      http.get("*/docs/admin", () => {
-        return HttpResponse.json({ docs: [{ status: "pending", is_deleted: 0 }] });
+      http.get(/\/api\/docs\/admin/, () => {
+        return HttpResponse.json({ docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", created_at: "dummy", is_deleted: 0 }] });
       })
     );
 
@@ -59,7 +59,7 @@ describe("useDashboardNotifications Hook", () => {
     };
 
     server.use(
-      http.get("*/inquiries/admin/list", () => {
+      http.get(/\/api\/inquiries\/admin\/list/, () => {
         return HttpResponse.json({ inquiries: [{ status: "pending" }] });
       })
     );
@@ -96,7 +96,7 @@ describe("useDashboardNotifications Hook", () => {
     const mockPermissions: any = { isAuthorized: true, canSeeInquiries: true };
 
     server.use(
-      http.get("*/docs/admin", () => {
+      http.get(/\/api\/docs\/admin/, () => {
         return HttpResponse.json({ docs: null });
       })
     );
@@ -113,10 +113,10 @@ describe("useDashboardNotifications Hook", () => {
     const mockPermissions: any = { isAuthorized: true, canSeeInquiries: true };
 
     server.use(
-      http.get("*/inquiries/admin/list", () => HttpResponse.json({ inquiries: [{ status: "pending" }] })),
-      http.get("*/posts/admin/list", () => HttpResponse.json({ posts: [{ status: "pending", is_deleted: 0 }] })),
-      http.get("*/events/admin/list", () => HttpResponse.json({ events: [{ status: "pending", is_deleted: 0 }] })),
-      http.get("*/docs/admin", () => HttpResponse.json({ docs: [{ status: "pending", is_deleted: 0 }] }))
+      http.get(/\/api\/inquiries\/admin\/list/, () => HttpResponse.json({ inquiries: [{ status: "pending" }] })),
+      http.get(/\/api\/posts\/admin\/list/, () => HttpResponse.json({ posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, published_at: null, season_id: null, is_deleted: 0 }] })),
+      http.get(/\/api\/events\/admin\/list/, () => HttpResponse.json({ events: [{ status: "pending", id: "dummy", title: "dummy", date_start: "dummy", date_end: null, location: null, description: null, cover_image: null, category: "dummy", season_id: null, is_deleted: 0 }] })),
+      http.get(/\/api\/docs\/admin/, () => HttpResponse.json({ docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", created_at: "dummy", is_deleted: 0 }] }))
     );
 
     const { result } = renderWithProviders(() => useDashboardNotifications(mockSession, mockPermissions));
@@ -134,10 +134,10 @@ describe("useDashboardNotifications Hook", () => {
     const mockPermissions: any = { isAuthorized: true, canSeeInquiries: true };
 
     server.use(
-      http.get("*/inquiries/admin/list", () => HttpResponse.json({ inquiries: null })),
-      http.get("*/posts/admin/list", () => HttpResponse.json({ posts: null })),
-      http.get("*/events/admin/list", () => HttpResponse.json({ events: null })),
-      http.get("*/docs/admin", () => HttpResponse.json({ docs: null }))
+      http.get(/\/api\/inquiries\/admin\/list/, () => HttpResponse.json({ inquiries: null })),
+      http.get(/\/api\/posts\/admin\/list/, () => HttpResponse.json({ posts: null })),
+      http.get(/\/api\/events\/admin\/list/, () => HttpResponse.json({ events: null })),
+      http.get(/\/api\/docs\/admin/, () => HttpResponse.json({ docs: null }))
     );
 
     const { result } = renderWithProviders(() => useDashboardNotifications(mockSession, mockPermissions));

@@ -35,8 +35,9 @@ export default function EventDetail() {
   const isEditor = userRole === "admin" || userRole === "author";
 
   const { data: eventRes, isLoading, isError } = api.events.getEvent.useQuery({
-    queryKey: ["event", id],
     params: { id: id || "" },
+  }, {
+    queryKey: ["event", id],
     enabled: !!id,
     retry: false,
   });

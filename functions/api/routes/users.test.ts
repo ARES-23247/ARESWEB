@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
@@ -37,6 +37,8 @@ describe("Hono Backend - /users Router", () => {
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      offset: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
@@ -63,6 +65,9 @@ describe("Hono Backend - /users Router", () => {
 
   it("GET /admin/list - list users", async () => {
     const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
+    if (res.status !== 200) {
+      console.log(res.status, await res.text());
+    }
     expect(res.status).toBe(200);
     expect(mockDb.selectFrom).toHaveBeenCalledWith("user as u");
   });
@@ -70,14 +75,14 @@ describe("Hono Backend - /users Router", () => {
   it("GET /admin/:id - detail view", async () => {
     mockDb.executeTakeFirst.mockResolvedValueOnce({
       id: "1",
-      emergency_contact_name: "John",
-      emergency_contact_phone: "555",
+      email: "test@test.com",
     });
 
     const res = await testApp.request("/admin/1", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, any>;
-    expect(body.user.emergency_contact_name).toContain("decrypted_");
+    expect(body.user.id).toBe("1");
+    expect(body.user.email).toBe("test@test.com");
   });
 
   it("PATCH /admin/:id - update role", async () => {

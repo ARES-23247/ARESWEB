@@ -6,7 +6,7 @@ import { AppEnv, getSocialConfig } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem, fetchProjectFields, updateProjectItemStatus } from "../../utils/githubProjects";
 
-const zulipWebhookRouter = new Hono<AppEnv>();
+export const zulipWebhookRouter = new Hono<AppEnv>();
 
 interface ZulipOutgoingPayload {
   token: string;
@@ -43,6 +43,7 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
+// ── POST /webhooks/zulip — Handle outgoing webhook from Zulip ────────
 // ── POST /webhooks/zulip — Handle outgoing webhook from Zulip ────────
 zulipWebhookRouter.post("/", async (c) => {
   let body: ZulipOutgoingPayload;
@@ -179,10 +180,10 @@ zulipWebhookRouter.post("/", async (c) => {
 
       case "!stats": {
         const [postsRes, eventsRes, usersRes, inquiriesRes] = await Promise.all([
-          db.selectFrom("posts").select(db.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst(),
-          db.selectFrom("events").select(db.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst(),
-          db.selectFrom("user_profiles").select(db.fn.count("user_id").as("count")).executeTakeFirst(),
-          db.selectFrom("inquiries").select(db.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst(),
+          db.selectFrom("posts").select(eb => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst(),
+          db.selectFrom("events").select(eb => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst(),
+          db.selectFrom("user_profiles").select(eb => eb.fn.count("user_id").as("count")).executeTakeFirst(),
+          db.selectFrom("inquiries").select(eb => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst(),
         ]);
 
         return c.json({
@@ -201,7 +202,7 @@ zulipWebhookRouter.post("/", async (c) => {
 
       case "!inquiries": {
         const result = await db.selectFrom("inquiries")
-          .select(db.fn.count("id").as("count"))
+          .select(eb => eb.fn.count("id").as("count"))
           .where("status", "=", "pending")
           .executeTakeFirst();
         const count = Number(result?.count || 0);
@@ -278,13 +279,10 @@ zulipWebhookRouter.post("/", async (c) => {
             try {
               await db.insertInto("comments")
                 .values({
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  id: crypto.randomUUID() as any,
                   target_type: targetType,
                   target_id: targetId,
                   user_id: userId,
                   content: rawContent,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   zulip_message_id: String(body.trigger === "message" ? (body as any).message_id || 0 : 0),
                   zulip_sender_id: 0, // Placeholder for shadow user or resolve to number if possible
                   created_at: new Date().toISOString()

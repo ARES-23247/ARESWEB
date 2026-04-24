@@ -1,17 +1,26 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
+
+const mockUser = { id: "1", email: "admin@test.com", role: "admin" };
+let authBypass = true;
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
     ...actual,
-    ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
-    ensureAuth: async (_c: unknown, next: () => Promise<void>) => next(),
-    getSessionUser: vi.fn().mockResolvedValue({ id: "1", email: "admin@test.com", role: "admin" }),
+    ensureAdmin: async (c: any, next: () => Promise<void>) => {
+      if (authBypass) return next();
+      return c.json({ error: "Forbidden" }, 403);
+    },
+    ensureAuth: async (c: any, next: () => Promise<void>) => {
+      if (authBypass) return next();
+      return c.json({ error: "Unauthorized" }, 401);
+    },
+    getSessionUser: vi.fn().mockImplementation(() => Promise.resolve(mockUser)),
     checkRateLimit: vi.fn().mockReturnValue(true),
     verifyTurnstile: vi.fn().mockResolvedValue(true),
     logAuditAction: vi.fn().mockResolvedValue(true),
@@ -96,5 +105,17 @@ describe("Hono Backend - /docs Router", () => {
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
 
     expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - block unauthorized user", async () => {
+    authBypass = false;
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ slug: "fail" }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "false" }, mockExecutionContext);
+
+    expect(res.status).toBe(403);
+    authBypass = true; // reset for other tests
   });
 });

@@ -7,29 +7,41 @@ export function useDashboardNotifications(
   session: DashboardSession | null,
   permissions: DashboardPermissions
 ) {
-  const { data: inquiriesRes } = api.inquiries.list.useQuery({
-    queryKey: ["admin-inquiries-notifs"],
-    enabled: !!(session && permissions.canSeeInquiries),
-    refetchInterval: 30000,
-  });
+  const { data: inquiriesRes } = api.inquiries.list.useQuery(
+    ["admin", "inquiries", "notifs"],
+    { query: {} }, 
+    {
+      enabled: !!(session && permissions.canSeeInquiries),
+      refetchInterval: 30000,
+    }
+  );
 
-  const { data: postsRes } = api.posts.getAdminPosts.useQuery({
-    queryKey: ["admin_posts_notifs"],
-    enabled: !!(session && permissions.isAuthorized),
-    refetchInterval: 30000,
-  });
+  const { data: postsRes } = api.posts.getAdminPosts.useQuery(
+    ["admin", "posts", "notifs"],
+    { query: {} }, 
+    {
+      enabled: !!(session && permissions.isAuthorized),
+      refetchInterval: 30000,
+    }
+  );
 
-  const { data: eventsRes } = api.events.getAdminEvents.useQuery({
-    queryKey: ["admin_events_notifs"],
-    enabled: !!(session && permissions.isAuthorized),
-    refetchInterval: 30000,
-  });
+  const { data: eventsRes } = api.events.getAdminEvents.useQuery(
+    ["admin", "events", "notifs"],
+    { query: {} }, 
+    {
+      enabled: !!(session && permissions.isAuthorized),
+      refetchInterval: 30000,
+    }
+  );
 
-  const { data: docsRes } = api.docs.adminList.useQuery({
-    queryKey: ["admin_docs_notifs"],
-    enabled: !!(session && permissions.isAuthorized),
-    refetchInterval: 30000,
-  });
+  const { data: docsRes } = api.docs.adminList.useQuery(
+    ["admin", "docs", "notifs"],
+    { query: {} }, 
+    {
+      enabled: !!(session && permissions.isAuthorized),
+      refetchInterval: 30000,
+    }
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const inquiriesData = (inquiriesRes?.body as any)?.inquiries || [];

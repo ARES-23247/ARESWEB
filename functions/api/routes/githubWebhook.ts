@@ -37,7 +37,7 @@ async function verifyGitHubSignature(
 }
 
 // ── POST /webhooks/github — Receive GitHub webhook events ────────────
-githubWebhookRouter.post("/", async (c) => {
+githubWebhookRouter.post("/", async (c: any) => {
   const secret = c.env.GITHUB_WEBHOOK_SECRET;
   const rawBody = await c.req.text();
 

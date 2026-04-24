@@ -1,13 +1,12 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, ensureAdmin, getSocialConfig, rateLimitMiddleware  } from "../middleware";
+import { AppEnv, ensureAdmin, getSocialConfig } from "../middleware";
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem } from "../../utils/githubProjects";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
-import { RecursiveRouterObj } from "@ts-rest/hono";
 import { githubContract } from "../../../src/schemas/contracts/githubContract";
 
 const s = initServer<AppEnv>();
-const githubRouter = new Hono<AppEnv>();
+export const githubRouter = new Hono<AppEnv>();
 
 interface WeekData {
   total: number;
@@ -15,50 +14,48 @@ interface WeekData {
   days: number[];
 }
 
-const githubHandlers: RecursiveRouterObj<typeof githubContract, AppEnv> = {
-  getBoard: async (_, c) => {
-    try {
+const githubHandlers = {
+  getBoard: async (_: any, c: any) => {
+            try {
       const config = await getSocialConfig(c);
       const ghConfig = buildGitHubConfig(config);
-      if (!ghConfig) return { status: 200, body: { success: false, board: [] } };
+      if (!ghConfig) return { status: 200 as const, body: { success: false, board: [] } };
       
       const boardResults = await fetchProjectBoard(ghConfig);
-      const board = boardResults.map(i => ({
+      const board = (boardResults as any as any[]).map((i: any) => ({
         id: String(i.id),
-        title: String(i.title),
+                        title: String(i.title),
         status: String(i.status || "Todo"),
         updated_at: String(i.updated_at || new Date().toISOString())
       }));
 
-      return { status: 200, body: { success: true, board: board as any[] } };
-    } catch (_err) {
-      return { status: 200, body: { success: false, board: [] } };
+      return { status: 200 as const, body: { success: true, board: board as any[] } };
+    } catch {
+      return { status: 200 as const, body: { success: false, board: [] } };
     }
   },
-  createItem: async ({ body }, c) => {
+  createItem: async ({ body }: { body: any }, c: any) => {
     try {
       const config = await getSocialConfig(c);
       const ghConfig = buildGitHubConfig(config);
-      if (!ghConfig) return { status: 200, body: { success: false } };
+      if (!ghConfig) return { status: 200 as const, body: { success: false } };
       
       await createProjectItem(ghConfig, body.title);
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 200, body: { success: false } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 200 as const, body: { success: false } };
     }
   },
-  getActivity: async (_, c) => {
+  getActivity: async (_: any, c: any) => {
     const org = siteConfig.urls.githubOrg;
     const cacheUrl = new URL(c.req.url);
     const cacheKey = new Request(cacheUrl.toString(), c.req.raw);
-    
-    // @ts-expect-error - Cloudflare caches global
     const cache = await caches.open("ares-github-activity");
     
     const cachedResponse = await cache.match(cacheKey);
-    if (cachedResponse) {
+            if (cachedResponse) {
       const data = await cachedResponse.json() as any;
-      return { status: 200, body: data };
+      return { status: 200 as const, body: data };
     }
 
     try {
@@ -132,16 +129,18 @@ const githubHandlers: RecursiveRouterObj<typeof githubContract, AppEnv> = {
       });
       c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
       
-      return { status: 200, body: payload as any };
-    } catch (_err) {
-      return { status: 200, body: { grid: [], totalCommits: 0, repoCount: 0 } as any };
+      return { status: 200 as const, body: payload as any };
+    } catch {
+      return { status: 200 as const, body: { grid: [], totalCommits: 0, repoCount: 0 } as any };
     }
   }
 };
 
-const githubTsRestRouter = s.router(githubContract, githubHandlers);
-createHonoEndpoints(githubContract, githubTsRestRouter, githubRouter);
+const githubTsRestRouter: any = s.router(githubContract as any, githubHandlers as any);
+
 
 githubRouter.use("/projects/*", ensureAdmin);
 
+
+createHonoEndpoints(githubContract, githubTsRestRouter, githubRouter);
 export default githubRouter;

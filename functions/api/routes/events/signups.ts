@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { Hono } from "hono";
 import { AppEnv, getSessionUser, turnstileMiddleware  } from "../../middleware";
 
 const signupsRouter = new Hono<AppEnv>();
 
 // ── Event Sign-Ups ────────────────────────────────────────────────────
-signupsRouter.get("/:id/signups", async (c) => {
+signupsRouter.get("/:id/signups", async (c: any) => {
   const eventId = (c.req.param("id") || "");
   const user = await getSessionUser(c);
   const db = c.get("db");
@@ -85,7 +85,7 @@ signupsRouter.get("/:id/signups", async (c) => {
   }
 });
 
-signupsRouter.post("/:id/signups", turnstileMiddleware(), async (c) => {
+signupsRouter.post("/:id/signups", turnstileMiddleware(), async (c: any) => {
   const user = await getSessionUser(c);
   if (!user || user.role === "unverified") return c.json({ error: "Forbidden" }, 403);
   const eventId = (c.req.param("id") || "");
@@ -116,7 +116,7 @@ signupsRouter.post("/:id/signups", turnstileMiddleware(), async (c) => {
   }
 });
 
-signupsRouter.delete("/:id/signups/me", async (c) => {
+signupsRouter.delete("/:id/signups/me", async (c: any) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
   const eventId = (c.req.param("id") || "");
@@ -132,7 +132,7 @@ signupsRouter.delete("/:id/signups/me", async (c) => {
   }
 });
 
-signupsRouter.patch("/:id/signups/me/attendance", async (c) => {
+signupsRouter.patch("/:id/signups/me/attendance", async (c: any) => {
   const eventId = (c.req.param("id") || "");
   const user = await getSessionUser(c);
   if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 401);
@@ -152,7 +152,7 @@ signupsRouter.patch("/:id/signups/me/attendance", async (c) => {
   }
 });
 
-signupsRouter.patch("/:id/signups/:userId/attendance", async (c) => {
+signupsRouter.patch("/:id/signups/:userId/attendance", async (c: any) => {
   const eventId = (c.req.param("id") || "");
   const userId = (c.req.param("userId") || "");
   const user = await getSessionUser(c);

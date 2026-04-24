@@ -28,11 +28,13 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
   const historyQuery = type === "post" 
     ? api.posts.getPostHistory.useQuery({
         params: { slug },
+      }, {
         queryKey: ["history", "post", slug],
         enabled: isOpen && !!slug && type === "post"
       })
     : api.docs.getHistory.useQuery({
         params: { slug },
+      }, {
         queryKey: ["history", "doc", slug],
         enabled: isOpen && !!slug && type === "doc"
       });

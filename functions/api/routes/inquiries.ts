@@ -9,15 +9,13 @@ import { sql, Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
-const inquiriesRouter = new Hono<AppEnv>();
-
-// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
-const inquiriesTsRestRouter = s.router(inquiryContract, {
-  list: async ({ query }, c) => {
+export const inquiriesRouter = new Hono<AppEnv>();
+const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
+    list: async ({ query }: { query: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = c.get("sessionUser");
-      if (!user) return { status: 401, body: { error: "Unauthorized" } };
+      if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
 
       const limit = query.limit || 50;
       const offset = query.offset || 0;
@@ -36,7 +34,6 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
       let dbQuery = db.selectFrom("inquiries").selectAll().orderBy("created_at", "desc").limit(limit).offset(offset);
       
       if (filterOutreach) {
-        // @ts-expect-error - Kysely type narrowing
         dbQuery = dbQuery.where("type", "in", ["outreach", "support"]);
       }
 
@@ -50,8 +47,8 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
         let metadata = r.metadata;
 
         if (maskPII) {
-          name = name.substring(0, 1) + "***";
-          email = "***@***.***";
+          name = name.substring(0, 1) + "*".repeat(name.length - 1);
+          email = email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + "*".repeat(b.length));
           if (metadata) {
             try {
               const meta = JSON.parse(metadata) as Record<string, unknown>;
@@ -73,12 +70,12 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
         };
       });
 
-      return { status: 200, body: { inquiries: inquiries as any[] } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Failed to fetch inquiries" } };
+      return { status: 200 as const, body: { inquiries: inquiries as any[] } };
+    } catch {
+      return { status: 500 as const, body: { error: "Failed to fetch inquiries" } };
     }
   },
-  submit: async ({ body }, c) => {
+    submit: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { type, name, email, metadata } = body;
@@ -86,10 +83,10 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
       const recent = await db.selectFrom("inquiries")
         .select("id")
         .where("email", "=", email)
-        .where("created_at", ">", sql`datetime('now', '-2 minutes')`)
+                .where("created_at", ">", sql<string>`datetime('now', '-2 minutes')`)
         .executeTakeFirst();
 
-      if (recent) return { status: 429, body: { error: "Please wait a few minutes before submitting another inquiry." } };
+      if (recent) return { status: 429 as const, body: { error: "Please wait a few minutes before submitting another inquiry." } };
 
       const id = crypto.randomUUID();
       
@@ -144,12 +141,12 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
         }
       })());
 
-      return { status: 200, body: { success: true, id } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Submission failed" } };
+      return { status: 200 as const, body: { success: true, id } };
+    } catch {
+      return { status: 500 as const, body: { error: "Submission failed" } };
     }
   },
-  updateStatus: async ({ params, body }, c) => {
+    updateStatus: async ({ params, body }: { params: any, body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("inquiries")
@@ -158,24 +155,24 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
         .execute();
 
       c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", params.id, `Status changed to ${body.status}`));
-      return { status: 200, body: { success: true, status: body.status as any } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Update failed" } };
+      return { status: 200 as const, body: { success: true, status: body.status as any } };
+    } catch {
+      return { status: 500 as const, body: { error: "Update failed" } };
     }
   },
-  delete: async ({ params }, c) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("inquiries").where("id", "=", params.id).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", params.id, "Inquiry deleted"));
-      return { status: 200, body: { success: true } };
-    } catch (_err) {
-      return { status: 500, body: { error: "Delete failed" } };
+      return { status: 200 as const, body: { success: true } };
+    } catch {
+      return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-});
+} as any);
 
-createHonoEndpoints(inquiryContract, inquiriesTsRestRouter, inquiriesRouter);
+
 
 // Admin protection
 inquiriesRouter.use("/admin", ensureAdmin);
@@ -192,10 +189,12 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   if (days <= 0) return { deleted: 0 };
   const res = await db.deleteFrom("inquiries")
     .where("status", "in", ["resolved", "rejected"])
-    .where("created_at", "<", sql`datetime('now', '-' || ${days} || ' days')`)
+        .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
     .execute();
   return { deleted: res.length };
 }
 
-export { inquiriesRouter };
+
+createHonoEndpoints(inquiryContract, inquiriesTsRestRouter, inquiriesRouter);
+
 export default inquiriesRouter;

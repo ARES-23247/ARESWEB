@@ -42,7 +42,7 @@ describe('analytics utility', () => {
     await trackPageView('/events', 'event');
     
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith('/analytics/track', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/analytics/track', expect.objectContaining({
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: expect.stringContaining('"category":"event"'),
