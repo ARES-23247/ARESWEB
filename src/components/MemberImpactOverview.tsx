@@ -22,7 +22,7 @@ import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 export default function MemberImpactOverview() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: rosterRes, isLoading, isError } = api.analytics.getRosterStats.useQuery({
+  const { data: rosterRes, isLoading, isError } = api.analytics.getRosterStats.useQuery({}, {
     queryKey: ["admin-roster-stats"],
   });
    

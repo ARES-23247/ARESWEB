@@ -13,7 +13,7 @@ export default function AssetManager() {
   const [syndicateCaption, setSyndicateCaption] = useState("");
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
 
-  const { data: mediaResponse, isLoading, isError } = api.media.adminList.useQuery({
+  const { data: mediaResponse, isLoading, isError } = api.media.adminList.useQuery({}, {
     queryKey: ['media'],
   });
 

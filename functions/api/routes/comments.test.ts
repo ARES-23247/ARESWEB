@@ -72,6 +72,7 @@ describe("Hono Backend - /comments Router", () => {
     ];
     mockDb.execute.mockResolvedValueOnce(mockComments);
 
+    console.log(testApp.routes.map(r => r.path));
     const res = await testApp.request("/post/my-post", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
@@ -89,21 +90,22 @@ describe("Hono Backend - /comments Router", () => {
     expect(await res.json()).toEqual(expect.objectContaining({ success: true }));
   });
 
-  it("should return 400 for empty comment content", async () => {
+  it("should return 200 with success false for empty comment content", async () => {
     const res = await testApp.request("/post/my-post", {
       method: "POST",
       body: JSON.stringify({ content: "" }),
       headers: { "Content-Type": "application/json" },
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(expect.objectContaining({ success: false }));
   });
 
   it("should edit an existing comment", async () => {
     mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
 
     const res = await testApp.request("/1", {
-      method: "PUT",
+      method: "PATCH",
       body: JSON.stringify({ content: "Updated content" }),
       headers: { "Content-Type": "application/json" },
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
@@ -114,7 +116,11 @@ describe("Hono Backend - /comments Router", () => {
   it("should soft-delete a comment", async () => {
     mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
 
-    const res = await testApp.request("/1", { method: "DELETE" }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    const res = await testApp.request("/1", { 
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 });

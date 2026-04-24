@@ -55,7 +55,7 @@ export default function OutreachTracker() {
 
   const seasonId = useWatch({ control, name: "season_id" });
 
-  const { data: outreachData, isLoading } = api.outreach.adminList.useQuery({
+  const { data: outreachData, isLoading } = api.outreach.adminList.useQuery({}, {
     queryKey: ["admin-outreach"]
   });
 

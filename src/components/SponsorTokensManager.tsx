@@ -10,11 +10,11 @@ export default function SponsorTokensManager() {
   const queryClient = useQueryClient();
   const [selectedSponsor, setSelectedSponsor] = useState("");
 
-  const { data: sponsorsData, isLoading: loadingSponsors, isError: isSponsorsError } = api.sponsors.adminList.useQuery({
+  const { data: sponsorsData, isLoading: loadingSponsors, isError: isSponsorsError } = api.sponsors.adminList.useQuery({}, {
     queryKey: ["admin_sponsors"],
   });
 
-  const { data: tokensData, isLoading: loadingTokens, isError: isTokensError } = api.sponsors.getAdminTokens.useQuery({
+  const { data: tokensData, isLoading: loadingTokens, isError: isTokensError } = api.sponsors.getAdminTokens.useQuery({}, {
     queryKey: ["admin_sponsor_tokens"],
   });
 

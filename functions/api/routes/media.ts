@@ -110,9 +110,9 @@ const mediaTsRestRouter = s.router(mediaContract, {
   },
   upload: async (_: any, c: any) => {
     try {
-      const formData = await c.req.formData();
-      const file = formData.get("file") as File;
-      const folder = (formData.get("folder") as string) || "Library";
+      const formData = await c.req.parseBody();
+      const file = formData["file"] as File;
+      const folder = (formData["folder"] as string) || "Library";
 
       if (!file) return { status: 400, body: { error: "No file uploaded" } };
 
@@ -134,10 +134,13 @@ const mediaTsRestRouter = s.router(mediaContract, {
       await c.env.DB.prepare("INSERT OR REPLACE INTO media_tags (key, folder, tags) VALUES (?, ?, ?)").bind(key, folder, altText).run();
       
       // @ts-expect-error - Global cache
-      c.executionCtx.waitUntil(caches.default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+      if (c.executionCtx?.waitUntil) {
+        c.executionCtx.waitUntil(caches.default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+      }
 
       return { status: 200, body: { success: true, key, url: `/api/media/${key}`, altText } };
     } catch (_err) {
+      console.error("UPLOAD ERROR", _err);
       return { status: 500, body: { error: "Upload failed" } };
     }
   },

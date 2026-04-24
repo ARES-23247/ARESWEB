@@ -7,7 +7,7 @@ import { BarList, Card, Title, Text, DonutChart, Flex } from "@tremor/react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
 export default function AnalyticsDashboard() {
-  const { data: analyticsData, isLoading, isError } = api.analytics.getSummary.useQuery({
+  const { data: analyticsData, isLoading, isError } = api.analytics.getSummary.useQuery({}, {
     queryKey: ["analytics-summary"],
   });
 

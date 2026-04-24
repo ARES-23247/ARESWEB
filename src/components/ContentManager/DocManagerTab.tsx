@@ -24,7 +24,7 @@ export default function DocManagerTab({
   const queryClient = useQueryClient();
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
 
-  const { data, isLoading, isError } = api.docs.adminList.useQuery({
+  const { data, isLoading, isError } = api.docs.adminList.useQuery({}, {
     queryKey: ["admin-docs"],
   });
 

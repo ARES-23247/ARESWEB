@@ -36,7 +36,7 @@ export default function Gallery() {
       <div className="mb-12">
         <h3 className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-2">Build Season &amp; Comps</h3>
         <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter shadow-sm">
-          Team <span className="text-ares-red">Gallery</span>
+          Team <span className="text-red-500">Gallery</span>
         </h1>
         <p className="text-white/60 mt-4 max-w-2xl text-balance">
           Explore behind the scenes of ARES 23247. From raw CAD prototypes and machining all the way to performing under the bright lights of our qualification arenas.
@@ -48,7 +48,7 @@ export default function Gallery() {
           <div className="w-12 h-12 border-4 border-white/10 border-t-ares-red rounded-full animate-spin"></div>
         </div>
       ) : isError ? (
-        <div className="text-ares-red bg-ares-red/10 border border-ares-red ares-cut-sm p-4 font-bold text-center">
+        <div className="text-white bg-red-900/40 border border-red-500/50 ares-cut-sm p-4 font-bold text-center">
           Failed to load gallery images. Please try again later.
         </div>
       ) : photos.length === 0 ? (

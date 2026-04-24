@@ -25,7 +25,7 @@ export default function AssetPickerModal({
 }) {
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
 
-  const { data: mediaResponse, isLoading } = api.media.adminList.useQuery({
+  const { data: mediaResponse, isLoading } = api.media.adminList.useQuery({}, {
     queryKey: ["assets"],
     enabled: isOpen,
   });

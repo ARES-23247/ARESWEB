@@ -22,17 +22,17 @@ describe("useDashboardNotifications Hook", () => {
 
     // Setup MSW handlers for the various list endpoints
     server.use(
-      http.get("*/inquiries/admin/list", () => {
+      http.get("http://localhost:3000/api/inquiries/admin/list", () => {
         return HttpResponse.json({ inquiries: [{ status: "pending" }, { status: "resolved" }] });
       }),
-      http.get("*/posts/admin/list", () => {
-        return HttpResponse.json({ posts: [{ status: "pending", is_deleted: 0 }] });
+      http.get("http://localhost:3000/api/posts/admin/list", () => {
+        return HttpResponse.json({ posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, published_at: null, season_id: null, is_deleted: 0 }] });
       }),
-      http.get("*/events/admin/list", () => {
-        return HttpResponse.json({ events: [{ status: "pending", is_deleted: 0 }] });
+      http.get("http://localhost:3000/api/events/admin/list", () => {
+        return HttpResponse.json({ events: [{ status: "pending", id: "dummy", title: "dummy", date_start: "dummy", date_end: null, location: null, description: null, cover_image: null, category: "dummy", season_id: null, is_deleted: 0 }] });
       }),
-      http.get("*/docs/admin", () => {
-        return HttpResponse.json({ docs: [{ status: "pending", is_deleted: 0 }] });
+      http.get("http://localhost:3000/api/docs/admin", () => {
+        return HttpResponse.json({ docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", created_at: "dummy", is_deleted: 0 }] });
       })
     );
 
@@ -59,7 +59,7 @@ describe("useDashboardNotifications Hook", () => {
     };
 
     server.use(
-      http.get("*/inquiries/admin/list", () => {
+      http.get("http://localhost:3000/api/inquiries/admin/list", () => {
         return HttpResponse.json({ inquiries: [{ status: "pending" }] });
       })
     );
@@ -96,7 +96,7 @@ describe("useDashboardNotifications Hook", () => {
     const mockPermissions: any = { isAuthorized: true, canSeeInquiries: true };
 
     server.use(
-      http.get("*/docs/admin", () => {
+      http.get("http://localhost:3000/api/docs/admin", () => {
         return HttpResponse.json({ docs: null });
       })
     );
@@ -113,15 +113,16 @@ describe("useDashboardNotifications Hook", () => {
     const mockPermissions: any = { isAuthorized: true, canSeeInquiries: true };
 
     server.use(
-      http.get("*/inquiries/admin/list", () => HttpResponse.json({ inquiries: [{ status: "pending" }] })),
-      http.get("*/posts/admin/list", () => HttpResponse.json({ posts: [{ status: "pending", is_deleted: 0 }] })),
-      http.get("*/events/admin/list", () => HttpResponse.json({ events: [{ status: "pending", is_deleted: 0 }] })),
-      http.get("*/docs/admin", () => HttpResponse.json({ docs: [{ status: "pending", is_deleted: 0 }] }))
+      http.get("http://localhost:3000/api/inquiries/admin/list", () => HttpResponse.json({ inquiries: [{ status: "pending" }] })),
+      http.get("http://localhost:3000/api/posts/admin/list", () => HttpResponse.json({ posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, published_at: null, season_id: null, is_deleted: 0 }] })),
+      http.get("http://localhost:3000/api/events/admin/list", () => HttpResponse.json({ events: [{ status: "pending", id: "dummy", title: "dummy", date_start: "dummy", date_end: null, location: null, description: null, cover_image: null, category: "dummy", season_id: null, is_deleted: 0 }] })),
+      http.get("http://localhost:3000/api/docs/admin", () => HttpResponse.json({ docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", created_at: "dummy", is_deleted: 0 }] }))
     );
 
     const { result } = renderWithProviders(() => useDashboardNotifications(mockSession, mockPermissions));
     
     await vi.waitFor(() => {
+      console.log('inquiries:', result.current.pendingInquiriesCount, 'posts:', result.current.pendingPostsCount, 'events:', result.current.pendingEventsCount, 'docs:', result.current.pendingDocsCount);
       expect(result.current.pendingInquiriesCount).toBe(1);
       expect(result.current.pendingPostsCount).toBe(1);
       expect(result.current.pendingEventsCount).toBe(1);
@@ -134,10 +135,10 @@ describe("useDashboardNotifications Hook", () => {
     const mockPermissions: any = { isAuthorized: true, canSeeInquiries: true };
 
     server.use(
-      http.get("*/inquiries/admin/list", () => HttpResponse.json({ inquiries: null })),
-      http.get("*/posts/admin/list", () => HttpResponse.json({ posts: null })),
-      http.get("*/events/admin/list", () => HttpResponse.json({ events: null })),
-      http.get("*/docs/admin", () => HttpResponse.json({ docs: null }))
+      http.get("http://localhost:3000/api/inquiries/admin/list", () => HttpResponse.json({ inquiries: null })),
+      http.get("http://localhost:3000/api/posts/admin/list", () => HttpResponse.json({ posts: null })),
+      http.get("http://localhost:3000/api/events/admin/list", () => HttpResponse.json({ events: null })),
+      http.get("http://localhost:3000/api/docs/admin", () => HttpResponse.json({ docs: null }))
     );
 
     const { result } = renderWithProviders(() => useDashboardNotifications(mockSession, mockPermissions));

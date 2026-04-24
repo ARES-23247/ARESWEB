@@ -5,7 +5,7 @@ export function useAdminSettings() {
   const [availableSocials, setAvailableSocials] = useState<string[]>([]);
   const [isPending, setIsPending] = useState(true);
 
-  const { data, isLoading } = api.settings.getSettings.useQuery({
+  const { data, isLoading } = api.settings.getSettings.useQuery({}, {
     queryKey: ["admin_settings_hook"],
   });
 

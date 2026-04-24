@@ -7,25 +7,27 @@ export function useDashboardNotifications(
   session: DashboardSession | null,
   permissions: DashboardPermissions
 ) {
-  const { data: inquiriesRes } = api.inquiries.list.useQuery({
+  const { data: inquiriesRes } = api.inquiries.list.useQuery({}, {
     queryKey: ["admin-inquiries-notifs"],
     enabled: !!(session && permissions.canSeeInquiries),
     refetchInterval: 30000,
   });
 
-  const { data: postsRes } = api.posts.getAdminPosts.useQuery({
+  const { data: postsRes } = api.posts.getAdminPosts.useQuery({}, {
     queryKey: ["admin_posts_notifs"],
     enabled: !!(session && permissions.isAuthorized),
     refetchInterval: 30000,
   });
 
-  const { data: eventsRes } = api.events.getAdminEvents.useQuery({
+  console.log("postsRes", postsRes);
+
+  const { data: eventsRes } = api.events.getAdminEvents.useQuery({}, {
     queryKey: ["admin_events_notifs"],
     enabled: !!(session && permissions.isAuthorized),
     refetchInterval: 30000,
   });
 
-  const { data: docsRes } = api.docs.adminList.useQuery({
+  const { data: docsRes } = api.docs.adminList.useQuery({}, {
     queryKey: ["admin_docs_notifs"],
     enabled: !!(session && permissions.isAuthorized),
     refetchInterval: 30000,

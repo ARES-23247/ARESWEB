@@ -93,7 +93,7 @@ describe("Hono Backend - /inquiries Router", () => {
   });
 
   it("GET /admin/list - list all", async () => {
-    const res = await testApp.request("/admin/list", {
+    const res = await testApp.request("/admin/list?page=1&limit=50", {
       headers: { "DEV_BYPASS": "true" }
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);

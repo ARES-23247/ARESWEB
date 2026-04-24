@@ -19,7 +19,7 @@ export default function IntegrationsManager() {
   const { register, handleSubmit, reset, setValue, control, formState: { isDirty } } = useForm<SettingsData>();
   const localSettings = useWatch({ control });
 
-  const { data, isLoading, isError } = api.settings.getSettings.useQuery({
+  const { data, isLoading, isError } = api.settings.getSettings.useQuery({}, {
     queryKey: ["admin_settings"],
   });
 
