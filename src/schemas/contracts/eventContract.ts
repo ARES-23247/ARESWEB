@@ -164,6 +164,19 @@ export const eventContract = c.router({
     },
     summary: "Permanently delete an event",
   },
+  repushEvent: {
+    method: "POST",
+    path: "/admin/:id/repush",
+    body: z.object({
+      socials: z.array(z.string()).optional()
+    }),
+    responses: {
+      200: z.object({ success: z.boolean() }),
+      404: z.object({ error: z.string() }),
+      502: z.object({ error: z.string() }),
+    },
+    summary: "Re-broadcast event to social media",
+  },
   getCalendarSettings: {
     method: "GET",
     path: "/calendar-settings",
