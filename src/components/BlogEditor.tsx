@@ -64,12 +64,15 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   const editor = useRichEditor({ placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>" });
 
   // Use standard API query instead of custom useEntityFetch
-  const { data: postRes, isLoading, isError } = api.posts.getAdminPost.useQuery({ 
-    params: { slug: editSlug || "" } 
-  }, { 
-    enabled: !!editSlug,
-    queryKey: ["admin_post_detail", editSlug]
-  });
+  const { data: postRes, isLoading, isError } = api.posts.getAdminPost.useQuery(
+    ["admin_post_detail", editSlug || ""],
+    { 
+      params: { slug: editSlug || "" } 
+    },
+    { 
+      enabled: !!editSlug
+    }
+  );
 
   useEffect(() => {
     if (postRes?.status === 200 && postRes.body.post) {

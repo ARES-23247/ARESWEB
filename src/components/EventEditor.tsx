@@ -89,12 +89,15 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
   });
 
   // Use standard API query instead of useEntityFetch
-  const { data: eventRes, isLoading, isError } = api.events.adminDetail.useQuery({
-    params: { id: editId || "" }
-  }, {
-    enabled: !!editId,
-    queryKey: ["admin_event_detail", editId]
-  });
+  const { data: eventRes, isLoading, isError } = api.events.adminDetail.useQuery(
+    ["admin_event_detail", editId || ""],
+    {
+      params: { id: editId || "" }
+    },
+    {
+      enabled: !!editId
+    }
+  );
 
   useEffect(() => {
     if (eventRes?.status === 200 && eventRes.body.event) {

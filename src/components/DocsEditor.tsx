@@ -50,12 +50,15 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
   const formValues = useWatch({ control });
 
   // Use standard API query instead of useEntityFetch
-  const { data: docRes, isLoading, isError } = api.docs.adminDetail.useQuery({
-    params: { slug: editSlug || "" }
-  }, {
-    enabled: !!editSlug,
-    queryKey: ["admin_doc_detail", editSlug]
-  });
+  const { data: docRes, isLoading, isError } = api.docs.adminDetail.useQuery(
+    ["admin_doc_detail", editSlug || ""],
+    {
+      params: { slug: editSlug || "" }
+    },
+    {
+      enabled: !!editSlug
+    }
+  );
 
   useEffect(() => {
     if (docRes?.status === 200 && docRes.body.doc) {
