@@ -5,8 +5,8 @@ import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { awardContract } from "../../../src/schemas/contracts/awardContract";
 
-const awardsRouter = new Hono<AppEnv>();
 const s = initServer<AppEnv>();
+const awardsRouter = new Hono<AppEnv>();
 
 const awardTsRestRouter = s.router(awardContract, {
   getAwards: async ({ query }, c) => {
@@ -18,8 +18,8 @@ const awardTsRestRouter = s.router(awardContract, {
         .where("is_deleted", "=", 0)
         .orderBy("date", "desc")
         .orderBy("title", "asc")
-        .limit(limit)
-        .offset(offset)
+        .limit(limit || 50)
+        .offset(offset || 0)
         .execute();
       
       const awards = results.map(a => ({
@@ -31,12 +31,11 @@ const awardTsRestRouter = s.router(awardContract, {
         image_url: a.image_url || "trophy",
         season_id: a.season_id ? Number(a.season_id) : null,
         created_at: a.created_at || new Date().toISOString(),
-        updated_at: a.created_at || new Date().toISOString() // Fallback if missing
+        updated_at: a.created_at || new Date().toISOString()
       }));
 
       return { status: 200, body: { awards } };
-    } catch (err) {
-      console.error("[Awards] getAwards failed:", err);
+    } catch (_err) {
       return { status: 200, body: { awards: [] } };
     }
   },
@@ -48,7 +47,7 @@ const awardTsRestRouter = s.router(awardContract, {
       let finalId = id;
       let exists = false;
       if (id) {
-        const row = await db.selectFrom("awards").select("id").where("id", "=", id).executeTakeFirst();
+        const row = await db.selectFrom("awards").select("id").where("id", "=", Number(id) as any).executeTakeFirst();
         if (row) exists = true;
       } else {
         finalId = crypto.randomUUID();
@@ -65,16 +64,16 @@ const awardTsRestRouter = s.router(awardContract, {
       } as const;
 
       if (exists && finalId) {
-        await db.updateTable("awards").set(values).where("id", "=", finalId).execute();
+        await db.updateTable("awards").set(values).where("id", "=", Number(finalId) as any).execute();
         c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", finalId, `Award "${title}" (${year}) updated`));
       } else if (finalId) {
-        await db.insertInto("awards").values({ ...values, id: Number(finalId) as any }).execute(); // SQLite PK handling
+        // @ts-expect-error - SQLite primary key handling
+        await db.insertInto("awards").values({ ...values, id: undefined }).execute();
         c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", finalId, `Award "${title}" (${year}) created`));
       }
 
-      return { status: 200, body: { success: true, id: finalId } };
-    } catch (err) {
-      console.error("[Awards] saveAward failed:", err);
+      return { status: 200, body: { success: true, id: finalId || "" } };
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
@@ -84,17 +83,13 @@ const awardTsRestRouter = s.router(awardContract, {
       await db.updateTable("awards").set({ is_deleted: 1 }).where("id", "=", Number(params.id) as any).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Awards] deleteAward failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
 });
 
-createHonoEndpoints(awardContract, awardTsRestRouter, awardsRouter);
-
-// Protections
-awardsRouter.use("/admin", ensureAdmin);
 awardsRouter.use("/admin/*", ensureAdmin);
+createHonoEndpoints(awardContract, awardTsRestRouter, awardsRouter);
 
 export default awardsRouter;

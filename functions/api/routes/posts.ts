@@ -69,8 +69,8 @@ const postTsRestRouter = s.router(postContract, {
           eb("published_at", "<=", new Date().toISOString())
         ]))
         .orderBy("posts.date", "desc")
-        .limit(limit)
-        .offset(offset)
+        .limit(limit || 10)
+        .offset(offset || 0)
         .execute();
 
       const posts = results.map(p => ({
@@ -143,8 +143,8 @@ const postTsRestRouter = s.router(postContract, {
       const results = await db.selectFrom("posts")
         .select(["slug", "title", "date", "snippet", "thumbnail", "cf_email", "is_deleted", "status", "revision_of", "published_at", "season_id", "author"])
         .orderBy("date", "desc")
-        .limit(limit)
-        .offset(offset)
+        .limit(limit || 50)
+        .offset(offset || 0)
         .execute();
       
       const posts = results.map(p => ({
@@ -189,7 +189,7 @@ const postTsRestRouter = s.router(postContract, {
     try {
       const db = c.get("db") as Kysely<DB>;
       const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
-      if (titleError) return { status: 200, body: { success: false, warning: titleError } }; // Contract expects 200 with error in some flows, but here we'll use warning
+      if (titleError) return { status: 200, body: { success: false, warning: titleError } };
 
       let slug = body.title
         .toLowerCase()
@@ -446,18 +446,6 @@ const postTsRestRouter = s.router(postContract, {
   },
 });
 
-createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
-
-// Apply middleware/protections
-postsRouter.use("/admin", ensureAdmin);
-postsRouter.use("/admin/*", ensureAdmin);
-
-// Special case: non-admins can submit drafts (handled inside savePost)
-// We use ensureAuth for /admin/save specifically to allow verified members
-postsRouter.use("/admin/save", ensureAuth);
-
-export default postsRouter;
-const postTsRestRouter = s.router(postContract, postHandlers);
 createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
 
 // Apply middleware/protections

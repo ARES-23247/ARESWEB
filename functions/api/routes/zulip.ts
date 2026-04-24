@@ -26,18 +26,14 @@ const zulipTsRestRouter = s.router(zulipContract, {
         return { status: 500, body: { success: false, error: await res.text() } };
       }
 
-      const data = await res.json() as { result: string; presences: Record<string, any> };
+      const data = await res.json() as { result: string; presences: any };
       return { status: 200, body: { success: true, presence: data.presences } };
-    } catch (err) {
-      console.error("[Zulip] getPresence failed:", err);
-      return { status: 500, body: { success: false, error: (err as Error).message } };
+    } catch (_err) {
+      return { status: 500, body: { success: false, error: (_err as Error).message } };
     }
   },
 });
 
-// Enforce admin for presence
 zulipRouter.use("/presence", ensureAdmin);
-
 createHonoEndpoints(zulipContract, zulipTsRestRouter, zulipRouter);
-
 export default zulipRouter;

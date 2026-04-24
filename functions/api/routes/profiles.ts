@@ -3,8 +3,6 @@ import { AppEnv, getSessionUser, sanitizeProfileForPublic, rateLimitMiddleware }
 import { getAuth } from "../../utils/auth";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";
-import { Kysely } from "kysely";
-import { DB } from "../../../src/schemas/database";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
 import { profileContract } from "../../../src/schemas/contracts/userContract";
 
@@ -16,7 +14,7 @@ const profileTsRestRouter = s.router(profileContract, {
     const user = await getSessionUser(c);
     if (!user) return { status: 200, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
 
     try {
       const profileRow = await db.selectFrom("user_profiles as p")
@@ -35,7 +33,7 @@ const profileTsRestRouter = s.router(profileContract, {
           avatar: null,
           member_type: "student",
         })
-      } as Record<string, any>;
+      } as Record<string, unknown>;
 
       if (profileRow) {
         const secret = c.env.ENCRYPTION_SECRET;
@@ -58,7 +56,7 @@ const profileTsRestRouter = s.router(profileContract, {
           last_name: String(p.last_name || ""),
           nickname: String(p.nickname || ""),
           auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role }
-        }
+        } as any
       };
     } catch (_err) {
       return { status: 200, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
@@ -75,7 +73,7 @@ const profileTsRestRouter = s.router(profileContract, {
     }
   },
   getTeamRoster: async (_, c) => {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     try {
       const results = await db.selectFrom("user_profiles as p")
         .innerJoin("user as u", "p.user_id", "u.id")
@@ -84,14 +82,14 @@ const profileTsRestRouter = s.router(profileContract, {
         .select([
           "p.user_id", "p.nickname", "p.bio", "p.pronouns", "p.subteams", "p.member_type",
           "p.favorite_first_thing", "p.fun_fact", "p.show_email", "p.contact_email",
-          "p.favorite_robot_mechanism", "p.pre_match_super superstitions", "p.leadership_role",
+          "p.favorite_robot_mechanism", "p.pre_match_superstition", "p.leadership_role",
           "p.rookie_year", "p.colleges", "p.employers",
           "u.image as avatar", "u.name"
         ])
         .execute();
 
       const members = await Promise.all((results || []).map(async (r) => {
-        const row = r as Record<string, any>;
+        const row = r as Record<string, unknown>;
         const memberType = String(row.member_type || "student");
         if (row.contact_email && (memberType === "mentor" || memberType === "coach")) {
           row.contact_email = await decrypt(row.contact_email as string, c.env.ENCRYPTION_SECRET);
@@ -106,17 +104,17 @@ const profileTsRestRouter = s.router(profileContract, {
           subteams: Array.isArray(sanitized.subteams) ? sanitized.subteams : [],
           colleges: Array.isArray(sanitized.colleges) ? sanitized.colleges : [],
           employers: Array.isArray(sanitized.employers) ? sanitized.employers : []
-        } as any;
+        };
       }));
 
-      return { status: 200, body: { members } };
+      return { status: 200, body: { members: members as any[] } };
     } catch (_err) {
       return { status: 200, body: { members: [] } };
     }
   },
   getPublicProfile: async ({ params }, c) => {
     const { userId } = params;
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     try {
       const profileRow = await db.selectFrom("user_profiles as p")
         .leftJoin("user as u", "p.user_id", "u.id")
@@ -135,7 +133,7 @@ const profileTsRestRouter = s.router(profileContract, {
       if (Number(profileRow.show_on_about || 0) !== 1) return { status: 403, body: { error: "This profile is private." } };
 
       const memberType = String(profileRow.member_type || "student");
-      const sanitized = sanitizeProfileForPublic(profileRow as any, memberType) as Record<string, any>;
+      const sanitized = sanitizeProfileForPublic(profileRow as any, memberType) as Record<string, unknown>;
 
       const requester = await getSessionUser(c);
       const isAdmin = requester?.role === "admin" || requester?.role === "author" || requester?.member_type === "coach" || requester?.member_type === "mentor";
@@ -169,7 +167,7 @@ const profileTsRestRouter = s.router(profileContract, {
         .orderBy("ub.awarded_at", "desc")
         .execute();
 
-      return { status: 200, body: { profile: sanitized as any, badges: rawBadges || [] } };
+      return { status: 200, body: { profile: sanitized as any, badges: rawBadges as any[] } };
     } catch (_err) {
       return { status: 500, body: { error: "Profile fetch failed" } };
     }

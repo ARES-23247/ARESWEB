@@ -1,6 +1,4 @@
 import { Hono } from "hono";
-import { Kysely } from "kysely";
-import { DB } from "../../../src/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { userContract } from "../../../src/schemas/contracts/userContract";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
@@ -10,9 +8,10 @@ const s = initServer<AppEnv>();
 const usersRouter = new Hono<AppEnv>();
 
 const userTsRestRouter = s.router(userContract, {
-  getUsers: async ({ query: _ }, c) => {
+  getUsers: async ({ query }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
+      const { limit = 50, offset = 0 } = query;
       const results = await db.selectFrom("user as u")
         .leftJoin("user_profiles as p", "u.id", "p.user_id")
         .select([
@@ -20,6 +19,8 @@ const userTsRestRouter = s.router(userContract, {
           "p.nickname", "p.member_type"
         ])
         .orderBy("u.createdAt", "desc")
+        .limit(limit || 50)
+        .offset(offset || 0)
         .execute();
 
       const users = results.map(u => {
@@ -49,7 +50,7 @@ const userTsRestRouter = s.router(userContract, {
   },
   adminDetail: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const row = await db.selectFrom("user as u")
         .leftJoin("user_profiles as p", "u.id", "p.user_id")
         .select([
@@ -84,7 +85,7 @@ const userTsRestRouter = s.router(userContract, {
   },
   patchUser: async ({ params, body }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const { role, member_type } = body;
 
       if (role) {
@@ -115,7 +116,7 @@ const userTsRestRouter = s.router(userContract, {
   },
   deleteUser: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const id = params.id;
       
       await db.deleteFrom("comments").where("user_id", "=", id).execute();

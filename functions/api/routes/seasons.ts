@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { seasonContract as seasonsContract } from "../../../src/schemas/contracts/seasonContract";
-import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
-import { Kysely } from "kysely";
-import { DB } from "../../../src/schemas/database";
+import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 
 const s = initServer<AppEnv>();
 const seasonsRouter = new Hono<AppEnv>();
@@ -11,7 +9,7 @@ const seasonsRouter = new Hono<AppEnv>();
 const seasonsTsRestRouter = s.router(seasonsContract, {
   list: async (_, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const results = await db.selectFrom("seasons")
         .selectAll()
         .where("is_deleted", "=", 0)
@@ -34,7 +32,7 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
   adminList: async (_, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const results = await db.selectFrom("seasons")
         .selectAll()
         .orderBy("start_year", "desc")
@@ -55,7 +53,7 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
   adminDetail: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const year = parseInt(params.id);
       const row = await db.selectFrom("seasons")
         .selectAll()
@@ -82,7 +80,7 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
   getDetail: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const year = parseInt(params.year);
       if (isNaN(year)) return { status: 404, body: { error: "Invalid year" } };
 
@@ -118,7 +116,7 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
   save: async ({ body }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const existing = await db.selectFrom("seasons")
         .select("start_year")
         .where("start_year", "=", body.start_year)
@@ -158,7 +156,7 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
   delete: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const year = parseInt(params.id);
       await db.updateTable("seasons")
         .set({ is_deleted: 1 })
@@ -172,7 +170,7 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
   undelete: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const year = parseInt(params.id);
       await db.updateTable("seasons")
         .set({ is_deleted: 0 })
@@ -186,7 +184,7 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
   purge: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const year = parseInt(params.id);
       await db.deleteFrom("seasons")
         .where("start_year", "=", year)

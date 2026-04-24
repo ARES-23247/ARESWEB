@@ -1,18 +1,17 @@
 import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, AppEnv } from "../../middleware";
 import { pushEventToGcal, pullEventsFromGcal } from "../../../utils/gcalSync";
-import { dispatchSocials, SocialConfig } from "../../../utils/socialSync";
+import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { eventContract } from "../../../../src/schemas/contracts/eventContract";
 import { initServer } from "ts-rest-hono";
-import { sql, Kysely } from "kysely";
-import { DB } from "../../../../src/schemas/database";
+import { sql } from "kysely";
 
 const s = initServer<AppEnv>();
 
 export const eventHandlers = s.router(eventContract, {
   getEvents: async ({ query }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const { limit = 50, offset = 0, q } = query;
 
       if (q) {
@@ -28,7 +27,7 @@ export const eventHandlers = s.router(eventContract, {
         const events = results.rows.map(e => ({
           ...e,
           season_id: e.season_id ? Number(e.season_id) : null,
-          is_deleted: Number(e.is_deleted)
+          is_deleted: Number(e.is_deleted || 0)
         }));
 
         return { status: 200, body: { events } };
@@ -50,7 +49,7 @@ export const eventHandlers = s.router(eventContract, {
       const events = results.map(e => ({
         ...e,
         season_id: e.season_id ? Number(e.season_id) : null,
-        is_deleted: Number(e.is_deleted)
+        is_deleted: Number(e.is_deleted || 0)
       }));
 
       return { status: 200, body: { events } };
@@ -59,13 +58,9 @@ export const eventHandlers = s.router(eventContract, {
       return { status: 200, body: { events: [] } };
     }
   },
-  repushEvent: async (_: any, c: any) => {
-    // Stub implementation to prevent 500 errors
-    return { status: 200, body: { success: true } };
-  },
   getCalendarSettings: async (_, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const results = await db.selectFrom("settings")
         .select(["key", "value"])
         .where("key", "in", ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"])
@@ -80,13 +75,13 @@ export const eventHandlers = s.router(eventContract, {
       }};
     } catch (err) {
       console.error("[Events] getCalendarSettings failed:", err);
-      return { status: 200, body: { calendarIdInternal: "", calendarIdOutreach: "", calendarIdExternal: "" } }; // Fallback to empty
+      return { status: 200, body: { calendarIdInternal: "", calendarIdOutreach: "", calendarIdExternal: "" } };
     }
   },
   getEvent: async ({ params }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const user = await getSessionUser(c);
 
       const row = await db.selectFrom("events")
@@ -104,7 +99,7 @@ export const eventHandlers = s.router(eventContract, {
           event: {
             ...row,
             season_id: row.season_id ? Number(row.season_id) : null,
-            is_deleted: Number(row.is_deleted)
+            is_deleted: Number(row.is_deleted || 0)
           },
           is_editor: user?.role === "admin"
         } 
@@ -116,13 +111,13 @@ export const eventHandlers = s.router(eventContract, {
   },
   getAdminEvents: async ({ query }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const { limit = 100, offset = 0 } = query;
       const results = await db.selectFrom("events")
         .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id"])
         .orderBy("date_start", "desc")
-        .limit(limit)
-        .offset(offset)
+        .limit(limit || 100)
+        .offset(offset || 0)
         .execute();
       
       const lastSyncRow = await db.selectFrom("settings").select("value").where("key", "=", "LAST_CALENDAR_SYNC").executeTakeFirst();
@@ -130,7 +125,7 @@ export const eventHandlers = s.router(eventContract, {
       const events = results.map(e => ({
         ...e,
         season_id: e.season_id ? Number(e.season_id) : null,
-        is_deleted: Number(e.is_deleted)
+        is_deleted: Number(e.is_deleted || 0)
       }));
 
       return { status: 200, body: { events, lastSyncedAt: lastSyncRow?.value || null } };
@@ -142,7 +137,7 @@ export const eventHandlers = s.router(eventContract, {
   adminDetail: async ({ params }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const row = await db.selectFrom("events")
         .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id"])
         .where("id", "=", id)
@@ -156,7 +151,7 @@ export const eventHandlers = s.router(eventContract, {
           event: {
             ...row,
             season_id: row.season_id ? Number(row.season_id) : null,
-            is_deleted: Number(row.is_deleted)
+            is_deleted: Number(row.is_deleted || 0)
           }
         } 
       };
@@ -167,7 +162,7 @@ export const eventHandlers = s.router(eventContract, {
   },
   saveEvent: async ({ body }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const { title, category, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft, publishedAt, seasonId } = body;
       const cat = category || 'internal';
       const genId = crypto.randomUUID();
@@ -183,7 +178,7 @@ export const eventHandlers = s.router(eventContract, {
             { id: genId, title, date_start: dateStart, date_end: dateEnd || undefined, location: location || undefined, description: description || undefined, cover_image: coverImage || undefined },
             { email: socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] as string, privateKey: socialConfig["GCAL_PRIVATE_KEY"] as string, calendarId: calId as string }
           );
-        } catch { /* ignore GCal failure */ void 0; }
+        } catch { /* ignore GCal failure */ }
       }
 
       const user = await getSessionUser(c);
@@ -193,7 +188,7 @@ export const eventHandlers = s.router(eventContract, {
         .values({
           id: genId, title, category: cat, date_start: dateStart, date_end: dateEnd || null,
           location: location || "", description: description || "", cover_image: coverImage || "",
-          gcal_event_id: gcalId || null, status,
+          gcal_event_id: gcalId || null, cf_email: user?.email || "anonymous_admin", status,
           is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0,
           published_at: publishedAt || null, season_id: seasonId || null
         })
@@ -218,7 +213,7 @@ export const eventHandlers = s.router(eventContract, {
   updateEvent: async ({ params, body }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId } = body;
       const cat = category || 'internal';
       
@@ -226,11 +221,10 @@ export const eventHandlers = s.router(eventContract, {
       const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
       if (user?.role !== "admin") {
-        // Revision logic
         const revId = `${id}-rev-${Math.random().toString(36).substring(2, 6)}`;
         await db.insertInto("events")
           .values({
-            id: revId, title, category: cat, date_start: dateStart!, date_end: dateEnd || null,
+            id: revId, title: title || "", category: cat, date_start: dateStart!, date_end: dateEnd || null,
             location: location || "", description: description || "", cover_image: coverImage || "",
             tba_event_key: tbaEventKey || null, status: 'pending',
             is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0,
@@ -260,7 +254,7 @@ export const eventHandlers = s.router(eventContract, {
   deleteEvent: async ({ params }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       await db.updateTable("events").set({ is_deleted: 1 }).where("id", "=", id).execute();
       return { status: 200, body: { success: true } };
     } catch (err) {
@@ -271,7 +265,7 @@ export const eventHandlers = s.router(eventContract, {
   approveEvent: async ({ params }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const row = await db.selectFrom("events").selectAll().where("id", "=", id).executeTakeFirst();
       if (row && row.revision_of) {
         await db.updateTable("events")
@@ -291,7 +285,7 @@ export const eventHandlers = s.router(eventContract, {
   rejectEvent: async ({ params }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       await db.updateTable("events").set({ status: 'rejected' }).where("id", "=", id).execute();
       return { status: 200, body: { success: true } };
     } catch (err) {
@@ -302,7 +296,7 @@ export const eventHandlers = s.router(eventContract, {
   undeleteEvent: async ({ params }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       await db.updateTable("events").set({ is_deleted: 0 }).where("id", "=", id).execute();
       return { status: 200, body: { success: true } };
     } catch (err) {
@@ -313,7 +307,7 @@ export const eventHandlers = s.router(eventContract, {
   purgeEvent: async ({ params }, c) => {
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       await db.deleteFrom("events").where("id", "=", id).execute();
       return { status: 200, body: { success: true } };
     } catch (err) {
@@ -323,7 +317,7 @@ export const eventHandlers = s.router(eventContract, {
   },
   syncEvents: async (_, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const dbSettings = await getDbSettings(c);
       const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
       const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
@@ -342,7 +336,7 @@ export const eventHandlers = s.router(eventContract, {
         const events = await pullEventsFromGcal({ email: gcalEmail as string, privateKey: gcalKey as string, calendarId: cal.id as string });
         for (const ev of events) {
           await db.insertInto("events")
-            .values({ id: crypto.randomUUID(), title: ev.title, date_start: ev.date_start, date_end: ev.date_end || null, location: ev.location, description: ev.description, gcal_event_id: ev.gcal_event_id, status: 'published', category: cal.category })
+            .values({ id: crypto.randomUUID(), title: ev.title, date_start: ev.date_start, date_end: ev.date_end || null, location: ev.location, description: ev.description, gcal_event_id: ev.gcal_event_id, cf_email: user?.email || "sync", status: 'published', category: cal.category })
             .onConflict((oc) => oc.column("gcal_event_id").doUpdateSet({ title: ev.title, date_start: ev.date_start, date_end: ev.date_end || null, location: ev.location, description: ev.description, category: cal.category }))
             .execute();
           total++;
@@ -357,7 +351,7 @@ export const eventHandlers = s.router(eventContract, {
   getSignups: async ({ params }, c) => {
     const eventId = params.id;
     const user = await getSessionUser(c);
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const isVerified = user && user.role !== "unverified";
     const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.member_type || ""));
 
@@ -381,7 +375,6 @@ export const eventHandlers = s.router(eventContract, {
       is_own: user ? rec.user_id === user.id : false,
     })) : [];
 
-    // Simple dietary summary calculation
     const dietarySummary: Record<string, number> = {};
     results.forEach(r => {
       if (r.dietary_restrictions) {
@@ -405,7 +398,7 @@ export const eventHandlers = s.router(eventContract, {
   submitSignup: async ({ params, body }, c) => {
     const user = await getSessionUser(c);
     if (!user || user.role === "unverified") return { status: 403, body: { error: "Forbidden" } };
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     await db.insertInto("event_signups")
       .values({ event_id: params.id, user_id: user.id, bringing: body.bringing || "", notes: body.notes || "", prep_hours: body.prep_hours || 0 })
       .onConflict((oc) => oc.columns(["event_id", "user_id"]).doUpdateSet({ bringing: body.bringing || "", notes: body.notes || "", prep_hours: body.prep_hours || 0 }))
@@ -415,14 +408,14 @@ export const eventHandlers = s.router(eventContract, {
   deleteMySignup: async ({ params }, c) => {
     const user = await getSessionUser(c);
     if (!user) return { status: 401, body: { error: "Unauthorized" } };
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     await db.deleteFrom("event_signups").where("event_id", "=", params.id).where("user_id", "=", user.id).execute();
     return { status: 200, body: { success: true } };
   },
   updateMyAttendance: async ({ params, body }, c) => {
     const user = await getSessionUser(c);
     if (!user) return { status: 401, body: { error: "Unauthorized" } };
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     await db.insertInto("event_signups")
       .values({ event_id: params.id, user_id: user.id, attended: body.attended ? 1 : 0 })
       .onConflict((oc) => oc.columns(["event_id", "user_id"]).doUpdateSet({ attended: body.attended ? 1 : 0 }))
@@ -432,7 +425,7 @@ export const eventHandlers = s.router(eventContract, {
   updateUserAttendance: async ({ params, body }, c) => {
     const user = await getSessionUser(c);
     if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) return { status: 401, body: { error: "Unauthorized" } };
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     await db.insertInto("event_signups")
       .values({ event_id: params.id, user_id: params.userId, attended: body.attended ? 1 : 0 })
       .onConflict((oc) => oc.columns(["event_id", "user_id"]).doUpdateSet({ attended: body.attended ? 1 : 0 }))

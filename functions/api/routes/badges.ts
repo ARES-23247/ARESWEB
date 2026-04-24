@@ -13,13 +13,12 @@ const badgesTsRestRouter = s.router(badgeContract, {
    
   list: async (_, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const results = await db.selectFrom("badges")
         .selectAll()
         .orderBy("created_at", "asc")
         .execute();
       
-      // Ensure results match the contract schema (handling null/undefined if necessary)
       const badges = results.map(b => ({
         id: b.id,
         name: b.name,
@@ -38,7 +37,7 @@ const badgesTsRestRouter = s.router(badgeContract, {
    
   create: async ({ body }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       await db.insertInto("badges")
         .values({
           id: body.id,
@@ -57,7 +56,7 @@ const badgesTsRestRouter = s.router(badgeContract, {
    
   grant: async ({ body }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       const user = await getSessionUser(c);
       const sessionId = user?.id || "system";
 
@@ -69,7 +68,6 @@ const badgesTsRestRouter = s.router(badgeContract, {
         })
         .execute();
 
-      // Zulip sync
       c.executionCtx.waitUntil((async () => {
         try {
           const userProfile = await db.selectFrom("user_profiles")
@@ -93,7 +91,7 @@ const badgesTsRestRouter = s.router(badgeContract, {
               `${icon} **${userName}** was just awarded the **${badge.name}** badge!`
             );
           }
-        } catch { /* ignore zulip fail */ void 0; }
+        } catch { /* ignore zulip fail */ }
       })());
 
       return { status: 200, body: { success: true } };
@@ -105,7 +103,7 @@ const badgesTsRestRouter = s.router(badgeContract, {
    
   revoke: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       await db.deleteFrom("user_badges")
         .where("user_id", "=", params.userId)
         .where("badge_id", "=", params.badgeId)
@@ -119,7 +117,7 @@ const badgesTsRestRouter = s.router(badgeContract, {
    
   delete: async ({ params }, c) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       await db.deleteFrom("badges")
         .where("id", "=", params.id)
         .execute();
