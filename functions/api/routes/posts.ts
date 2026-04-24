@@ -20,7 +20,7 @@ const s = initServer<AppEnv>();
 const postsRouter = new Hono<AppEnv>();
 
 const postTsRestRouter = s.router(postContract, {
-  getPosts: async ({ query }, c) => {
+  getPosts: async ({ query }: { query: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 10, offset = 0, q } = query;
@@ -43,7 +43,7 @@ const postTsRestRouter = s.router(postContract, {
           season_id: p.season_id ? Number(p.season_id) : null
         }));
 
-        return { status: 200, body: { posts } };
+        return { status: 200, body: { posts: posts as any[] } };
       }
 
       const results = await db.selectFrom("posts")
@@ -78,13 +78,12 @@ const postTsRestRouter = s.router(postContract, {
         season_id: p.season_id ? Number(p.season_id) : null
       }));
 
-      return { status: 200, body: { posts } };
-    } catch (err) {
-      console.error("[Posts] getPosts failed:", err);
+      return { status: 200, body: { posts: posts as any[] } };
+    } catch (_err) {
       return { status: 200, body: { posts: [] } };
     }
   },
-  getPost: async ({ params }, c) => {
+  getPost: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -129,14 +128,13 @@ const postTsRestRouter = s.router(postContract, {
             nickname: row.author_nickname,
             avatar: row.author_avatar
           }
-        } 
+        } as any
       };
-    } catch (err) {
-      console.error("[Posts] getPost failed:", err);
+    } catch (_err) {
       return { status: 404, body: { error: "Database error" } };
     }
   },
-  getAdminPosts: async ({ query }, c) => {
+  getAdminPosts: async ({ query }: { query: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 50, offset = 0 } = query;
@@ -153,13 +151,12 @@ const postTsRestRouter = s.router(postContract, {
         is_deleted: Number(p.is_deleted)
       }));
 
-      return { status: 200, body: { posts } };
-    } catch (err) {
-      console.error("[Posts] getAdminPosts failed:", err);
+      return { status: 200, body: { posts: posts as any[] } };
+    } catch (_err) {
       return { status: 200, body: { posts: [] } };
     }
   },
-  getAdminPost: async ({ params }, c) => {
+  getAdminPost: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -178,14 +175,13 @@ const postTsRestRouter = s.router(postContract, {
             season_id: row.season_id ? Number(row.season_id) : null,
             is_deleted: Number(row.is_deleted)
           }
-        } 
+        } as any
       };
-    } catch (err) {
-      console.error("[Posts] getAdminPost failed:", err);
+    } catch (_err) {
       return { status: 404, body: { error: "Database error" } };
     }
   },
-  savePost: async ({ body }, c) => {
+  savePost: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
@@ -204,7 +200,7 @@ const postTsRestRouter = s.router(postContract, {
 
       const dateStr = getStandardDate();
       const astStr = JSON.stringify(body.ast);
-      const snippet = extractAstText(body.ast).substring(0, 200);
+      const snippet = extractAstText(body.ast as any).substring(0, 200);
       
       const user = await getSessionUser(c);
       const email = user?.email || "anonymous_dashboard_user";
@@ -283,16 +279,15 @@ const postTsRestRouter = s.router(postContract, {
         body: { success: true, slug, warning: warnings.join(" | ") } 
       };
     } catch (err) {
-      console.error("[Posts] savePost failed:", err);
       return { status: 200, body: { success: false, warning: (err as Error)?.message || "Database write failed" } };
     }
   },
-  updatePost: async ({ params, body }, c) => {
+  updatePost: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       const astStr = JSON.stringify(body.ast);
-      const snippet = extractAstText(body.ast).substring(0, 200);
+      const snippet = extractAstText(body.ast as any).substring(0, 200);
       const user = await getSessionUser(c);
       
       if (user?.role !== "admin") {
@@ -324,55 +319,54 @@ const postTsRestRouter = s.router(postContract, {
 
       c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`));
       return { status: 200, body: { success: true, slug } };
-    } catch (err) {
-      console.error("[Posts] updatePost failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Database write failed" } };
     }
   },
-  deletePost: async ({ params }, c) => {
+  deletePost: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("posts").set({ is_deleted: 1, status: "draft" }).where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
       return { status: 200, body: { success: true } };
-    } catch {
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  undeletePost: async ({ params }, c) => {
+  undeletePost: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("posts").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
       return { status: 200, body: { success: true } };
-    } catch {
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  purgePost: async ({ params }, c) => {
+  purgePost: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("posts").where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
       return { status: 200, body: { success: true } };
-    } catch {
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  approvePost: async ({ params }, c) => {
+  approvePost: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const result = await approvePost(c, slug);
       if (!result.success) return { status: 404, body: { error: result.error || "Approval failed" } };
       return { status: 200, body: { success: true, warnings: result.warnings } };
-    } catch {
+    } catch (_err) {
       return { status: 404, body: { error: "Approval failed" } };
     }
   },
-  rejectPost: async ({ params, body }, c) => {
+  rejectPost: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
     const { reason } = body;
     try {
@@ -395,11 +389,11 @@ const postTsRestRouter = s.router(postContract, {
       }
       c.executionCtx.waitUntil(logAuditAction(c, "REJECT_POST", "posts", slug));
       return { status: 200, body: { success: true } };
-    } catch {
+    } catch (_err) {
       return { status: 404, body: { error: "Reject failed" } };
     }
   },
-  getPostHistory: async ({ params }, c) => {
+  getPostHistory: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const historyRows = await getPostHistory(c, slug);
@@ -407,19 +401,19 @@ const postTsRestRouter = s.router(postContract, {
         ...h,
         id: Number(h.id)
       }));
-      return { status: 200, body: { history } };
-    } catch {
+      return { status: 200, body: { history: history as any[] } };
+    } catch (_err) {
       return { status: 200, body: { history: [] } };
     }
   },
-  restorePostHistory: async ({ params }, c) => {
+  restorePostHistory: async ({ params }: { params: any }, c: any) => {
     const { slug, id } = params;
     const user = await getSessionUser(c);
-    const result = await restorePostFromHistory(c, slug, Number(id), user?.email || "anonymous_admin");
+    const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
     if (!result.success) return { status: 404, body: { error: result.error || "Restore failed" } };
     return { status: 200, body: { success: true } };
   },
-  repushSocials: async ({ params, body }, c) => {
+  repushSocials: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
     const { socials } = body;
     try {
@@ -451,9 +445,6 @@ createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
 // Apply middleware/protections
 postsRouter.use("/admin", ensureAdmin);
 postsRouter.use("/admin/*", ensureAdmin);
-
-// Special case: non-admins can submit drafts (handled inside savePost)
-// We use ensureAuth for /admin/save specifically to allow verified members
 postsRouter.use("/admin/save", ensureAuth);
 
 export default postsRouter;

@@ -9,7 +9,7 @@ const s = initServer<AppEnv>();
 const analyticsRouter = new Hono<AppEnv>();
 
 const analyticsTsRestRouter = s.router(analyticsContract, {
-  trackPageView: async ({ body }, c) => {
+  trackPageView: async ({ body }: { body: any }, c: any) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     if (!checkRateLimit(`track:${ip}`, 20, 600)) {
       return { status: 429, body: { success: false, error: "Rate limit exceeded" } };
@@ -31,12 +31,11 @@ const analyticsTsRestRouter = s.router(analyticsContract, {
         .execute();
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Analytics] trackPageView failed:", err);
+    } catch (_err) {
       return { status: 500, body: { success: false } };
     }
   },
-  trackSponsorClick: async ({ body }, c) => {
+  trackSponsorClick: async ({ body }: { body: any }, c: any) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     if (!checkRateLimit(`click:${ip}`, 10, 600)) {
       return { status: 429, body: { success: false, error: "Rate limit exceeded" } };
@@ -56,17 +55,16 @@ const analyticsTsRestRouter = s.router(analyticsContract, {
           impressions: 0
         })
         .onConflict((oc) => oc.columns(["sponsor_id", "year_month"]).doUpdateSet({
-          clicks: (eb) => eb.bxp("clicks", "+", 1)
+          clicks: sql`clicks + 1`
         }))
         .execute();
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Analytics] trackSponsorClick failed:", err);
+    } catch (_err) {
       return { status: 500, body: { success: false } };
     }
   },
-  getSummary: async (_, c) => {
+  getSummary: async (_: any, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const [topPagesRow, recentViewsRow, totalsRow] = await Promise.all([
@@ -107,12 +105,11 @@ const analyticsTsRestRouter = s.router(analyticsContract, {
       }));
 
       return { status: 200, body: { topPages, recentViews, totals } };
-    } catch (err) {
-      console.error("[Analytics] getSummary failed:", err);
+    } catch (_err) {
       return { status: 500, body: { topPages: [], recentViews: [], totals: [] } };
     }
   },
-  getRosterStats: async (_, c) => {
+  getRosterStats: async (_: any, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("user_profiles as u")
@@ -152,12 +149,11 @@ const analyticsTsRestRouter = s.router(analyticsContract, {
       }));
 
       return { status: 200, body: { roster } };
-    } catch (err) {
-      console.error("[Analytics] getRosterStats failed:", err);
+    } catch (_err) {
       return { status: 500, body: { roster: [] } };
     }
   },
-  getLeaderboard: async (_, c) => {
+  getLeaderboard: async (_: any, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("user as u")
@@ -187,19 +183,16 @@ const analyticsTsRestRouter = s.router(analyticsContract, {
       }));
 
       return { status: 200, body: { leaderboard } };
-    } catch (err) {
-      console.error("[Analytics] getLeaderboard failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Failed to fetch leaderboard" } };
     }
   },
-  getStats: async (_, c) => {
+  getStats: async (_: any, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
-      const [postsCount, eventsCount, docsCount] = await Promise.all([
-        db.selectFrom("posts").select((eb) => eb.fn.count("slug").as("total")).where("is_deleted", "=", 0).executeTakeFirst(),
-        db.selectFrom("events").select((eb) => eb.fn.count("id").as("total")).where("is_deleted", "=", 0).executeTakeFirst(),
-        db.selectFrom("docs").select((eb) => eb.fn.count("slug").as("total")).where("is_deleted", "=", 0).executeTakeFirst(),
-      ]);
+      const postsCount = await db.selectFrom("posts").select((eb) => eb.fn.count("slug").as("total")).where("is_deleted", "=", 0).executeTakeFirst();
+      const eventsCount = await db.selectFrom("events").select((eb) => eb.fn.count("id").as("total")).where("is_deleted", "=", 0).executeTakeFirst();
+      const docsCount = await db.selectFrom("docs").select((eb) => eb.fn.count("slug").as("total")).where("is_deleted", "=", 0).executeTakeFirst();
 
       const dbSettings = await getDbSettings(c);
 
@@ -219,20 +212,19 @@ const analyticsTsRestRouter = s.router(analyticsContract, {
           }
         }
       };
-    } catch (err) {
-      console.error("[Analytics] getStats failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Failed to fetch stats" } };
     }
   },
-  search: async ({ query }, c) => {
+  search: async ({ query }: { query: any }, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     const { q } = query;
     try {
       const ftsQ = `"${q.replace(/"/g, '""')}"*`;
       const [postsReq, eventsReq, docsReq] = await Promise.all([
-        sql<{ slug: string, title: string }>`SELECT slug as id, title FROM posts_fts WHERE posts_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
+        sql<{ id: string, title: string }>`SELECT slug as id, title FROM posts_fts WHERE posts_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
         sql<{ id: string, title: string }>`SELECT id, title FROM events_fts WHERE events_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
-        sql<{ slug: string, title: string }>`SELECT slug as id, title FROM docs_fts WHERE docs_fts MATCH ${ftsQ} LIMIT 5`.execute(db)
+        sql<{ id: string, title: string }>`SELECT slug as id, title FROM docs_fts WHERE docs_fts MATCH ${ftsQ} LIMIT 5`.execute(db)
       ]);
 
       const results = [
@@ -241,23 +233,18 @@ const analyticsTsRestRouter = s.router(analyticsContract, {
         ...(docsReq.rows || []).map(r => ({ type: "doc", id: r.id, title: r.title }))
       ];
 
-      return { status: 200, body: { results } };
-    } catch (err) {
-      console.error("[Analytics] Search failed:", err);
+      return { status: 200, body: { results: results as any[] } };
+    } catch (_err) {
       return { status: 500, body: { error: "Search failed" } };
     }
   }
 });
 
-// Middleware for public tracking (Turnstile)
 analyticsRouter.use("/track", turnstileMiddleware());
 analyticsRouter.use("/sponsor-click", turnstileMiddleware());
-
-// Middleware for admin reporting
 analyticsRouter.use("/admin", ensureAdmin);
 analyticsRouter.use("/admin/*", ensureAdmin);
 
 createHonoEndpoints(analyticsContract, analyticsTsRestRouter, analyticsRouter);
 
 export default analyticsRouter;
-

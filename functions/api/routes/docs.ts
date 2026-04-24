@@ -40,13 +40,11 @@ async function pruneDocHistory(c: Context<AppEnv>, slug: string, limit = 10) {
         .where("id", "<", oldestId)
         .execute();
     }
-  } catch (err) {
-    console.error("[DocsHistory] Prune failed:", err);
-  }
+  } catch (_err) { /* ignore */ }
 }
 
 const docTsRestRouter = s.router(docContract, {
-  getDocs: async (_, c) => {
+  getDocs: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("docs")
@@ -82,13 +80,12 @@ const docTsRestRouter = s.router(docContract, {
         original_author_avatar: d.original_author_avatar || undefined
       }));
 
-      return { status: 200, body: { docs } };
-    } catch (err) {
-      console.error("[Docs] getDocs failed:", err);
+      return { status: 200, body: { docs: docs as any[] } };
+    } catch (_err) {
       return { status: 200, body: { docs: [] } };
     }
   },
-  getDoc: async ({ params }, c) => {
+  getDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -129,9 +126,9 @@ const docTsRestRouter = s.router(docContract, {
         .where("h.author_email", "is not", null)
         .execute();
 
-      const contributors = contributorRows.map(c => ({
-        nickname: c.nickname || null,
-        avatar: c.avatar || null
+      const contributors = contributorRows.map(cnt => ({
+        nickname: cnt.nickname || null,
+        avatar: cnt.avatar || null
       }));
 
       return { 
@@ -147,14 +144,13 @@ const docTsRestRouter = s.router(docContract, {
             original_author_avatar: row.original_author_avatar || undefined
           }, 
           contributors 
-        } 
+        } as any
       };
-    } catch (err) {
-      console.error("[Docs] getDoc failed:", err);
+    } catch (_err) {
       return { status: 404, body: { error: "Database error" } };
     }
   },
-  searchDocs: async ({ query }, c) => {
+  searchDocs: async ({ query }: { query: any }, c: any) => {
     const { q } = query;
     if (!q || q.length < 3) return { status: 200, body: { results: [] } };
     try {
@@ -184,13 +180,12 @@ const docTsRestRouter = s.router(docContract, {
 
       const payload = { results: mapped };
       setCache(q, { data: payload, expiresAt: now + 60000 });
-      return { status: 200, body: payload };
-    } catch (err) {
-      console.error("[Docs] searchDocs failed:", err);
+      return { status: 200, body: payload as any };
+    } catch (_err) {
       return { status: 500, body: { error: "Search failed" } };
     }
   },
-  adminList: async (_, c) => {
+  adminList: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("docs")
@@ -207,13 +202,12 @@ const docTsRestRouter = s.router(docContract, {
         is_deleted: Number(d.is_deleted || 0)
       }));
 
-      return { status: 200, body: { docs } };
-    } catch (err) {
-      console.error("[Docs] adminList failed:", err);
+      return { status: 200, body: { docs: docs as any[] } };
+    } catch (_err) {
       return { status: 200, body: { docs: [] } };
     }
   },
-  adminDetail: async ({ params }, c) => {
+  adminDetail: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -234,14 +228,13 @@ const docTsRestRouter = s.router(docContract, {
             is_executive_summary: Number(row.is_executive_summary || 0),
             is_deleted: Number(row.is_deleted || 0)
           } 
-        } 
+        } as any
       };
-    } catch (err) {
-      console.error("[Docs] adminDetail failed:", err);
+    } catch (_err) {
       return { status: 404, body: { error: "Database error" } };
     }
   },
-  saveDoc: async ({ body }, c) => {
+  saveDoc: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft } = body;
@@ -259,7 +252,7 @@ const docTsRestRouter = s.router(docContract, {
             slug: existing.slug,
             title: existing.title,
             category: existing.category,
-            description: existing.description,
+            description: existing.description || "",
             content: existing.content,
             author_email: existing.cf_email || "unknown"
           })
@@ -272,11 +265,11 @@ const docTsRestRouter = s.router(docContract, {
         await db.insertInto("docs")
           .values({
             slug: revSlug,
-            title,
-            category,
+            title: title || "",
+            category: category || "",
             sort_order: sortOrder || 0,
             description: description || "",
-            content,
+            content: content || "",
             cf_email: email,
             updated_at: new Date().toISOString(),
             is_portfolio: isPortfolio ? 1 : 0,
@@ -301,11 +294,11 @@ const docTsRestRouter = s.router(docContract, {
       await db.insertInto("docs")
         .values({
           slug,
-          title,
-          category,
+          title: title || "",
+          category: category || "",
           sort_order: sortOrder || 0,
           description: description || "",
-          content,
+          content: content || "",
           cf_email: email,
           updated_at: new Date().toISOString(),
           is_portfolio: isPortfolio ? 1 : 0,
@@ -313,11 +306,11 @@ const docTsRestRouter = s.router(docContract, {
           status
         })
         .onConflict((oc) => oc.column("slug").doUpdateSet({
-          title,
-          category,
+          title: title || "",
+          category: category || "",
           sort_order: sortOrder || 0,
           description: description || "",
-          content,
+          content: content || "",
           cf_email: email,
           updated_at: new Date().toISOString(),
           is_portfolio: isPortfolio ? 1 : 0,
@@ -342,30 +335,28 @@ const docTsRestRouter = s.router(docContract, {
       }
 
       return { status: 200, body: { success: true, slug } };
-    } catch (err) {
-      console.error("[Docs] saveDoc failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Write failed" } };
     }
   },
-  updateSort: async ({ params, body }, c) => {
+  updateSort: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
     const { sortOrder } = body;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ sort_order: sortOrder }).where("slug", "=", slug).execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Docs] updateSort failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  submitFeedback: async ({ params, body }, c) => {
+  submitFeedback: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
     const { isHelpful, comment, turnstileToken } = body;
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     if (!checkRateLimit(`feedback:${ip}`, 10, 60)) return { status: 429, body: { error: "Too many submissions" } };
 
-    const valid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+    const valid = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
     if (!valid) return { status: 403, body: { error: "Security verification failed" } };
 
     if (comment && comment.length > 2000) return { status: 400, body: { error: "Comment too long" } };
@@ -374,12 +365,11 @@ const docTsRestRouter = s.router(docContract, {
       const db = c.get("db") as Kysely<DB>;
       await db.insertInto("docs_feedback").values({ slug, is_helpful: isHelpful ? 1 : 0, comment: comment || null }).execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Docs] submitFeedback failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Feedback failed" } };
     }
   },
-  getHistory: async ({ params }, c) => {
+  getHistory: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -395,14 +385,13 @@ const docTsRestRouter = s.router(docContract, {
         id: Number(h.id)
       }));
 
-      return { status: 200, body: { history } };
-    } catch (err) {
-      console.error("[Docs] getHistory failed:", err);
+      return { status: 200, body: { history: history as any[] } };
+    } catch (_err) {
       return { status: 200, body: { history: [] } };
     }
   },
-  restoreHistory: async ({ params }, c) => {
-    const { slug, id } = params;
+  restoreHistory: async ({ params, id }: { params: any, id: any }, c: any) => {
+    const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("docs_history").select(["title", "category", "description", "content"]).where("id", "=", Number(id)).where("slug", "=", slug).executeTakeFirst();
@@ -418,7 +407,7 @@ const docTsRestRouter = s.router(docContract, {
             slug: current.slug,
             title: current.title,
             category: current.category,
-            description: current.description,
+            description: current.description || "",
             content: current.content,
             author_email: current.cf_email || "unknown"
           })
@@ -426,14 +415,13 @@ const docTsRestRouter = s.router(docContract, {
         c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
       }
 
-      await db.updateTable("docs").set({ title: row.title, category: row.category, description: row.description, content: row.content, cf_email: email, updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
+      await db.updateTable("docs").set({ title: row.title || "", category: row.category || "", description: row.description, content: row.content || "", cf_email: email, updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Docs] restoreHistory failed:", err);
+    } catch (_err) {
       return { status: 404, body: { error: "Restore failed" } };
     }
   },
-  approveDoc: async ({ params }, c) => {
+  approveDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -459,12 +447,11 @@ const docTsRestRouter = s.router(docContract, {
         }
       }
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Docs] approveDoc failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  rejectDoc: async ({ params, body }, c) => {
+  rejectDoc: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
     const { reason } = body;
     try {
@@ -476,30 +463,27 @@ const docTsRestRouter = s.router(docContract, {
         if (author) await emitNotification(c, { userId: author.id, title: "Doc Rejected", message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`, link: "/dashboard?tab=docs", priority: "high" });
       }
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Docs] rejectDoc failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  undeleteDoc: async ({ params }, c) => {
+  undeleteDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Docs] undeleteDoc failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  purgeDoc: async ({ params }, c) => {
+  purgeDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("docs").where("slug", "=", slug).execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Docs] purgeDoc failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
@@ -510,9 +494,6 @@ createHonoEndpoints(docContract, docTsRestRouter, docsRouter);
 // Apply middleware/protections
 docsRouter.use("/admin", ensureAdmin);
 docsRouter.use("/admin/*", ensureAdmin);
-
-// Special case: non-admins can submit drafts (handled inside saveDoc)
-// We use ensureAuth for /admin/save specifically to allow verified members
 docsRouter.use("/admin/save", ensureAuth);
 
 export default docsRouter;

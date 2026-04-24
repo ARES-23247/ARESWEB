@@ -4,12 +4,13 @@ import { getAuth } from "../../utils/auth";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
+import { RecursiveRouterObj } from "@ts-rest/hono";
 import { profileContract } from "../../../src/schemas/contracts/userContract";
 
 const s = initServer<AppEnv>();
 const profilesRouter = new Hono<AppEnv>();
 
-const profileTsRestRouter = s.router(profileContract, {
+const profileHandlers: RecursiveRouterObj<typeof profileContract, AppEnv> = {
   getMe: async (_, c) => {
     const user = await getSessionUser(c);
     if (!user) return { status: 200, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
@@ -172,8 +173,9 @@ const profileTsRestRouter = s.router(profileContract, {
       return { status: 500, body: { error: "Profile fetch failed" } };
     }
   },
-});
+};
 
+const profileTsRestRouter = s.router(profileContract, profileHandlers);
 createHonoEndpoints(profileContract, profileTsRestRouter, profilesRouter);
 
 profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c) => {

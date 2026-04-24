@@ -31,16 +31,16 @@ async function listAllObjects(bucket: R2Bucket, options?: R2ListOptions) {
   return { objects };
 }
 
+// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
 const mediaTsRestRouter = s.router(mediaContract, {
-  getMedia: async (_, c) => {
+  getMedia: async (_: any, c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     if (c.env.DEV_BYPASS !== "true" && !checkRateLimit(ip, 30, 60)) {
-      return { status: 429, body: "Too many requests" };
+      return { status: 429, body: "Too many requests" as any };
     }
 
     try {
-      // SEC-DoW: Global Edge Cache
-      // @ts-expect-error - Cloudflare Workers runtime global
+      // @ts-expect-error - Global edge cache
       const cache = caches.default;
       const url = new URL(c.req.url);
       url.search = "";
@@ -82,7 +82,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  adminList: async (_, c) => {
+  adminList: async (_: any, c: any) => {
     try {
       const [objects, dbRes] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
@@ -103,12 +103,12 @@ const mediaTsRestRouter = s.router(mediaContract, {
         ...metaMap.get(obj.key) || { folder: "Uncategorized", tags: "" }
       }));
 
-      return { status: 200, body: { media } };
+      return { status: 200, body: { media: media as any[] } };
     } catch (_err) {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  upload: async (_, c) => {
+  upload: async (_: any, c: any) => {
     try {
       const formData = await c.req.formData();
       const file = formData.get("file") as File;
@@ -133,7 +133,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
 
       await c.env.DB.prepare("INSERT OR REPLACE INTO media_tags (key, folder, tags) VALUES (?, ?, ?)").bind(key, folder, altText).run();
       
-      // @ts-expect-error - Cloudflare global cache
+      // @ts-expect-error - Global cache
       c.executionCtx.waitUntil(caches.default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
 
       return { status: 200, body: { success: true, key, url: `/api/media/${key}`, altText } };
@@ -141,7 +141,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500, body: { error: "Upload failed" } };
     }
   },
-  move: async ({ params, body }, c) => {
+  move: async ({ params, body }: { params: any, body: any }, c: any) => {
     const oldKey = params.key;
     const { folder } = body;
     try {
@@ -161,7 +161,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500, body: { error: "Move failed" } };
     }
   },
-  delete: async ({ params }, c) => {
+  delete: async ({ params }: { params: any }, c: any) => {
     try {
       await c.env.ARES_STORAGE.delete(params.key);
       await c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(params.key).run();
@@ -170,7 +170,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  syndicate: async ({ body }, c) => {
+  syndicate: async ({ body }: { body: any }, c: any) => {
     try {
       const { key, caption } = body;
       const config = await getDbSettings(c);
@@ -198,7 +198,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
       if (!user) return c.text("Unauthorized", 401);
     }
 
-    // @ts-expect-error - Global edge cache
+    // @ts-expect-error - Global cache
     const cache = caches.default;
     const url = new URL(c.req.url);
     url.search = "";
@@ -229,4 +229,5 @@ mediaRouter.use("/admin", ensureAdmin);
 
 createHonoEndpoints(mediaContract, mediaTsRestRouter, mediaRouter);
 
+export { mediaRouter };
 export default mediaRouter;

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
+import { RecursiveRouterObj } from "@ts-rest/hono";
 import { userContract } from "../../../src/schemas/contracts/userContract";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 import { upsertProfile } from "./_profileUtils";
@@ -7,7 +8,7 @@ import { upsertProfile } from "./_profileUtils";
 const s = initServer<AppEnv>();
 const usersRouter = new Hono<AppEnv>();
 
-const userTsRestRouter = s.router(userContract, {
+const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
   getUsers: async ({ query }, c) => {
     try {
       const db = c.get("db");
@@ -134,9 +135,11 @@ const userTsRestRouter = s.router(userContract, {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-});
+};
+
+const userTsRestRouter = s.router(userContract, userHandlers);
+createHonoEndpoints(userContract, userTsRestRouter, usersRouter);
 
 usersRouter.use("/*", ensureAdmin);
-createHonoEndpoints(userContract, userTsRestRouter, usersRouter);
 
 export default usersRouter;

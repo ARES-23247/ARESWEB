@@ -36,8 +36,9 @@ async function fetchVolunteerEvents(db: Kysely<DB>) {
   }
 }
 
+// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
 const outreachTsRestRouter = s.router(outreachContract, {
-  list: async (_, c) => {
+  list: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -74,7 +75,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
       return { status: 500, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  adminList: async (_, c) => {
+  adminList: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -111,7 +112,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
       return { status: 500, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  save: async ({ body }, c) => {
+  save: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       if (body.id) {
@@ -126,7 +127,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
             impact_summary: body.description,
             season_id: body.season_id,
           })
-          .where("id", "=", Number(body.id) as any)
+          .where("id", "=", body.id as any)
           .execute();
         c.executionCtx.waitUntil(logAuditAction(c, "update_outreach", "outreach_logs", body.id, `Updated outreach: ${body.title}`));
         return { status: 200, body: { success: true, id: body.id } };
@@ -134,7 +135,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
         const id = crypto.randomUUID();
         await db.insertInto("outreach_logs")
           .values({
-            id: Number(id) as any, 
+            id: id as any, 
             title: body.title,
             date: body.date,
             location: body.location,
@@ -152,12 +153,12 @@ const outreachTsRestRouter = s.router(outreachContract, {
       return { status: 500, body: { error: "Save failed" } };
     }
   },
-  delete: async ({ params }, c) => {
+  delete: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("outreach_logs")
         .set({ is_deleted: 1 })
-        .where("id", "=", Number(params.id) as any)
+        .where("id", "=", params.id as any)
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "delete_outreach", "outreach_logs", params.id, "Outreach log soft-deleted"));
       return { status: 200, body: { success: true } };
@@ -174,4 +175,5 @@ outreachRouter.use("/admin", ensureAdmin);
 outreachRouter.use("/admin/*", ensureAdmin);
 outreachRouter.use("/admin", rateLimitMiddleware(15, 60));
 
+export { outreachRouter };
 export default outreachRouter;

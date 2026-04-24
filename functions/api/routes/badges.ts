@@ -10,10 +10,9 @@ const s = initServer<AppEnv>();
 const badgesRouter = new Hono<AppEnv>();
 
 const badgesTsRestRouter = s.router(badgeContract, {
-   
   list: async (_, c) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("badges")
         .selectAll()
         .orderBy("created_at", "asc")
@@ -29,15 +28,13 @@ const badgesTsRestRouter = s.router(badgeContract, {
       }));
 
       return { status: 200, body: { badges } };
-    } catch (err) {
-      console.error("[Badges] List failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Failed to fetch badges" } };
     }
   },
-   
   create: async ({ body }, c) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       await db.insertInto("badges")
         .values({
           id: body.id,
@@ -48,15 +45,13 @@ const badgesTsRestRouter = s.router(badgeContract, {
         })
         .execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Badges] Create failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Failed to create badge" } };
     }
   },
-   
   grant: async ({ body }, c) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
       const sessionId = user?.id || "system";
 
@@ -91,39 +86,34 @@ const badgesTsRestRouter = s.router(badgeContract, {
               `${icon} **${userName}** was just awarded the **${badge.name}** badge!`
             );
           }
-        } catch { /* ignore zulip fail */ }
+        } catch { /* ignore */ }
       })());
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Badges] Grant failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Failed to award badge" } };
     }
   },
-   
   revoke: async ({ params }, c) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("user_badges")
         .where("user_id", "=", params.userId)
         .where("badge_id", "=", params.badgeId)
         .execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Badges] Revoke failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Failed to revoke badge" } };
     }
   },
-   
   delete: async ({ params }, c) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("badges")
         .where("id", "=", params.id)
         .execute();
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Badges] Delete failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Failed to delete badge definition" } };
     }
   },
@@ -137,7 +127,7 @@ badgesRouter.use("/admin", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 badgesRouter.use("/admin", rateLimitMiddleware(15, 60));
 
-// Public Leaderboard (not yet in contract, keeping as standard Hono for now)
+// Public Leaderboard
 badgesRouter.get("/leaderboard", async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -151,8 +141,7 @@ badgesRouter.get("/leaderboard", async (c) => {
       .limit(20)
       .execute();
     return c.json({ leaderboard: results });
-  } catch (err) {
-    console.error("[Badges] Leaderboard failed:", err);
+  } catch (_err) {
     return c.json({ leaderboard: [] }, 500);
   }
 });

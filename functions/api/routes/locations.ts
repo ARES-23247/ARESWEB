@@ -20,12 +20,12 @@ const locationsTsRestRouter = s.router(locationContract, {
       
       const locations = results.map(r => ({
         ...r,
+        id: r.id || undefined,
         is_deleted: Number(r.is_deleted || 0)
       }));
 
-      return { status: 200, body: { locations } };
-    } catch (err) {
-      console.error("[Locations] list failed:", err);
+      return { status: 200, body: { locations: locations as any[] } };
+    } catch (_err) {
       return { status: 200, body: { locations: [] } };
     }
   },
@@ -39,12 +39,12 @@ const locationsTsRestRouter = s.router(locationContract, {
 
       const locations = results.map(r => ({
         ...r,
+        id: r.id || undefined,
         is_deleted: Number(r.is_deleted || 0)
       }));
 
-      return { status: 200, body: { locations } };
-    } catch (err) {
-      console.error("[Locations] adminList failed:", err);
+      return { status: 200, body: { locations: locations as any[] } };
+    } catch (_err) {
       return { status: 200, body: { locations: [] } };
     }
   },
@@ -71,8 +71,7 @@ const locationsTsRestRouter = s.router(locationContract, {
 
       c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${body.name}`));
       return { status: 200, body: { success: true, id } };
-    } catch (err) {
-      console.error("[Locations] save failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
@@ -85,8 +84,7 @@ const locationsTsRestRouter = s.router(locationContract, {
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", params.id, "Location soft-deleted"));
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Locations] delete failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },

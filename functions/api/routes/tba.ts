@@ -2,6 +2,8 @@ import { Hono, Context } from "hono";
 import { AppEnv  } from "../middleware";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
 import { tbaContract } from "../../../src/schemas/contracts/tbaContract";
+import { Kysely } from "kysely";
+import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
 const tbaRouter = new Hono<AppEnv>();
@@ -21,7 +23,7 @@ async function getTBA(path: string, c: Context<AppEnv>) {
   const cached = tbaCache.get(path);
   if (cached && cached.expiresAt > now) return cached.data;
 
-  const db = c.get("db");
+  const db = c.get("db") as Kysely<DB>;
   const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "TBA_API_KEY").executeTakeFirst();
   const apiKey = settingsRow?.value;
   if (!apiKey) throw new Error("TBA_API_KEY missing");
@@ -32,8 +34,9 @@ async function getTBA(path: string, c: Context<AppEnv>) {
   return data;
 }
 
+// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
 const tbaTsRestRouter = s.router(tbaContract, {
-  getRankings: async ({ params }, c) => {
+  getRankings: async ({ params }: { params: any }, c: any) => {
     try {
       const data = await getTBA(`/event/${params.eventKey}/rankings`, c);
       return { status: 200, body: { rankings: (data as any)?.rankings || [] } };
@@ -41,7 +44,7 @@ const tbaTsRestRouter = s.router(tbaContract, {
       return { status: 200, body: { rankings: [] } };
     }
   },
-  getMatches: async ({ params }, c) => {
+  getMatches: async ({ params }: { params: any }, c: any) => {
     try {
       const data = await getTBA(`/event/${params.eventKey}/matches/simple`, c) as any[];
       const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));

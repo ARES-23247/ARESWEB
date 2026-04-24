@@ -8,8 +8,8 @@ import { awardContract } from "../../../src/schemas/contracts/awardContract";
 const s = initServer<AppEnv>();
 const awardsRouter = new Hono<AppEnv>();
 
-const awardTsRestRouter = s.router(awardContract, {
-  getAwards: async ({ query }, c) => {
+const awardsTsRestRouter = s.router(awardContract, {
+  getAwards: async ({ query }: { query: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 50, offset = 0 } = query;
@@ -39,7 +39,7 @@ const awardTsRestRouter = s.router(awardContract, {
       return { status: 200, body: { awards: [] } };
     }
   },
-  saveAward: async ({ body }, c) => {
+  saveAward: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { id, title, year, event_name, description, image_url, season_id } = body;
@@ -77,7 +77,7 @@ const awardTsRestRouter = s.router(awardContract, {
       return { status: 200, body: { success: false } };
     }
   },
-  deleteAward: async ({ params }, c) => {
+  deleteAward: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("awards").set({ is_deleted: 1 }).where("id", "=", Number(params.id) as any).execute();
@@ -90,6 +90,7 @@ const awardTsRestRouter = s.router(awardContract, {
 });
 
 awardsRouter.use("/admin/*", ensureAdmin);
-createHonoEndpoints(awardContract, awardTsRestRouter, awardsRouter);
+createHonoEndpoints(awardContract, awardsTsRestRouter, awardsRouter);
 
+export { awardsRouter };
 export default awardsRouter;

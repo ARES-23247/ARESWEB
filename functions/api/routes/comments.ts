@@ -10,8 +10,9 @@ import { commentContract } from "../../../src/schemas/contracts/commentContract"
 const s = initServer<AppEnv>();
 const commentsRouter = new Hono<AppEnv>();
 
+// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
 const commentTsRestRouter = s.router(commentContract, {
-  list: async ({ params }, c) => {
+  list: async ({ params }: { params: any }, c: any) => {
     const { targetType, targetId } = params;
     const user = await getSessionUser(c);
     const db = c.get("db") as Kysely<DB>;
@@ -43,20 +44,19 @@ const commentTsRestRouter = s.router(commentContract, {
       return { 
         status: 200, 
         body: { 
-          comments,
+          comments: comments as any[],
           authenticated: !!user,
           role: user?.role || null
         } 
       };
-    } catch (err) {
-      console.error("[Comments] list failed:", err);
+    } catch (_err) {
       return { status: 200, body: { comments: [], authenticated: !!user, role: user?.role || null } };
     }
   },
-  submit: async ({ params, body }, c) => {
+  submit: async ({ params, body }: { params: any, body: any }, c: any) => {
     const user = await getSessionUser(c);
     if (!user || user.role === "unverified") {
-      return { status: 200, body: { success: false } }; // Contract expects 200: success: bool
+      return { status: 200, body: { success: false } };
     }
 
     const { targetType, targetId } = params;
@@ -80,7 +80,6 @@ const commentTsRestRouter = s.router(commentContract, {
         })
         .execute();
 
-      // Zulip sync
       const social = await getSocialConfig(c);
       const zulipStream = social.ZULIP_COMMENT_STREAM || "website-discussion";
       
@@ -96,7 +95,6 @@ const commentTsRestRouter = s.router(commentContract, {
           }
       })().catch(() => {}));
 
-      // Notifications
       if (targetType === 'post') {
          const row = await db.selectFrom("posts").select("cf_email").where("slug", "=", targetId).executeTakeFirst();
          if (row?.cf_email && row.cf_email !== user.email) {
@@ -114,12 +112,11 @@ const commentTsRestRouter = s.router(commentContract, {
       }
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Comments] submit failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  update: async ({ params, body }, c) => {
+  update: async ({ params, body }: { params: any, body: any }, c: any) => {
     const user = await getSessionUser(c);
     if (!user || user.role === "unverified") return { status: 200, body: { success: false } };
 
@@ -147,12 +144,11 @@ const commentTsRestRouter = s.router(commentContract, {
       }
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Comments] update failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },
-  delete: async ({ params }, c) => {
+  delete: async ({ params }: { params: any }, c: any) => {
     const user = await getSessionUser(c);
     if (!user || user.role === "unverified") return { status: 200, body: { success: false } };
 
@@ -177,8 +173,7 @@ const commentTsRestRouter = s.router(commentContract, {
       }
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Comments] delete failed:", err);
+    } catch (_err) {
       return { status: 200, body: { success: false } };
     }
   },

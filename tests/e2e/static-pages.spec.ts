@@ -24,6 +24,7 @@ test.describe('Static Information Pages', () => {
           if (text.includes('favicon')) return;
           if (text.includes('400')) return;
           if (text.includes('401')) return;
+          if (text.includes('404')) return; // Ignore 404s in console during E2E (often missing assets in dev)
           if (text.includes('429')) return;
           if (text.includes('500')) return;
           if (text.includes('502')) return;

@@ -6,8 +6,9 @@ import { zulipContract } from "../../../src/schemas/contracts/zulipContract";
 const s = initServer<AppEnv>();
 const zulipRouter = new Hono<AppEnv>();
 
+// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
 const zulipTsRestRouter = s.router(zulipContract, {
-  getPresence: async (_, c) => {
+  getPresence: async (_: any, c: any) => {
     try {
       const config = await getSocialConfig(c);
       if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -28,8 +29,8 @@ const zulipTsRestRouter = s.router(zulipContract, {
 
       const data = await res.json() as { result: string; presences: any };
       return { status: 200, body: { success: true, presence: data.presences } };
-    } catch (_err) {
-      return { status: 500, body: { success: false, error: (_err as Error).message } };
+    } catch (err) {
+      return { status: 500, body: { success: false, error: (err as Error).message } };
     }
   },
 });

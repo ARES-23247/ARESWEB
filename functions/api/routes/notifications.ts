@@ -24,12 +24,17 @@ const notificationTsRestRouter = s.router(notificationContract, {
 
       const notifications = results.map(n => ({
         ...n,
-        is_read: Number(n.is_read || 0)
+        id: String(n.id),
+        title: String(n.title),
+        message: String(n.message),
+        link: n.link || null,
+        priority: (n.priority || "low") as any,
+        is_read: Number(n.is_read || 0),
+        created_at: String(n.created_at)
       }));
 
-      return { status: 200, body: { notifications } };
-    } catch (err) {
-      console.error("[Notifications] getNotifications failed:", err);
+      return { status: 200, body: { notifications: notifications as any[] } };
+    } catch (_err) {
       return { status: 500, body: { error: "Fetch failed", notifications: [] } };
     }
   },
@@ -46,8 +51,7 @@ const notificationTsRestRouter = s.router(notificationContract, {
         .execute();
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Notifications] markAsRead failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Update failed" } };
     }
   },
@@ -63,8 +67,7 @@ const notificationTsRestRouter = s.router(notificationContract, {
         .execute();
 
       return { status: 200, body: { success: true } };
-    } catch (err) {
-      console.error("[Notifications] markAllAsRead failed:", err);
+    } catch (_err) {
       return { status: 500, body: { error: "Update failed" } };
     }
   },

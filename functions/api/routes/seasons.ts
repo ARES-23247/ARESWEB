@@ -1,15 +1,18 @@
 import { Hono } from "hono";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { seasonContract as seasonsContract } from "../../../src/schemas/contracts/seasonContract";
-import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
+import { Kysely } from "kysely";
+import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
 const seasonsRouter = new Hono<AppEnv>();
 
+// @ts-expect-error - ts-rest-hono inference quirk with complex AppEnv
 const seasonsTsRestRouter = s.router(seasonsContract, {
-  list: async (_, c) => {
+  list: async (_: any, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("seasons")
         .selectAll()
         .where("is_deleted", "=", 0)
@@ -25,14 +28,14 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
         status: r.status as "published" | "draft"
       }));
 
-      return { status: 200, body: { seasons } };
+      return { status: 200, body: { seasons: seasons as any[] } };
     } catch (_err) {
       return { status: 500, body: { error: "Failed to fetch seasons" } };
     }
   },
-  adminList: async (_, c) => {
+  adminList: async (_: any, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("seasons")
         .selectAll()
         .orderBy("start_year", "desc")
@@ -46,14 +49,14 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
         status: r.status as "published" | "draft"
       }));
 
-      return { status: 200, body: { seasons } };
+      return { status: 200, body: { seasons: seasons as any[] } };
     } catch (_err) {
       return { status: 500, body: { error: "Failed to list seasons" } };
     }
   },
-  adminDetail: async ({ params }, c) => {
+  adminDetail: async ({ params }: { params: any }, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
       const row = await db.selectFrom("seasons")
         .selectAll()
@@ -72,24 +75,24 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
             is_deleted: Number(row.is_deleted || 0),
             status: row.status as "published" | "draft"
           }
-        } 
+        } as any
       };
     } catch (_err) {
       return { status: 500, body: { error: "Failed to fetch season" } };
     }
   },
-  getDetail: async ({ params }, c) => {
+  getDetail: async ({ params }: { params: any }, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.year);
       if (isNaN(year)) return { status: 404, body: { error: "Invalid year" } };
 
       const [seasonRow, awards, events, posts, outreach] = await Promise.all([
         db.selectFrom("seasons").selectAll().where("start_year", "=", year).executeTakeFirst(),
-        db.selectFrom("awards").selectAll().where("season_id", "=", year).execute(),
-        db.selectFrom("events").selectAll().where("season_id", "=", year).where("is_deleted", "=", 0).execute(),
-        db.selectFrom("posts").selectAll().where("season_id", "=", year).where("is_deleted", "=", 0).execute(),
-        db.selectFrom("outreach_logs").selectAll().where("season_id", "=", year).execute(),
+        db.selectFrom("awards").selectAll().where("season_id", "=", Number(year) as any).execute(),
+        db.selectFrom("events").selectAll().where("season_id", "=", Number(year) as any).where("is_deleted", "=", 0).execute(),
+        db.selectFrom("posts").selectAll().where("season_id", "=", Number(year) as any).where("is_deleted", "=", 0).execute(),
+        db.selectFrom("outreach_logs").selectAll().where("season_id", "=", Number(year) as any).execute(),
       ]);
 
       if (!seasonRow) return { status: 404, body: { error: "Season not found" } };
@@ -108,15 +111,15 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
           events: events as any[],
           posts: posts as any[],
           outreach: outreach as any[],
-        }
+        } as any
       };
     } catch (_err) {
       return { status: 500, body: { error: "Failed to fetch season details" } };
     }
   },
-  save: async ({ body }, c) => {
+  save: async ({ body }: { body: any }, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const existing = await db.selectFrom("seasons")
         .select("start_year")
         .where("start_year", "=", body.start_year)
@@ -154,9 +157,9 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
       return { status: 500, body: { error: "Save failed" } };
     }
   },
-  delete: async ({ params }, c) => {
+  delete: async ({ params }: { params: any }, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
       await db.updateTable("seasons")
         .set({ is_deleted: 1 })
@@ -168,9 +171,9 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  undelete: async ({ params }, c) => {
+  undelete: async ({ params }: { params: any }, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
       await db.updateTable("seasons")
         .set({ is_deleted: 0 })
@@ -182,9 +185,9 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
       return { status: 500, body: { error: "Restore failed" } };
     }
   },
-  purge: async ({ params }, c) => {
+  purge: async ({ params }: { params: any }, c: any) => {
     try {
-      const db = c.get("db");
+      const db = c.get("db") as Kysely<DB>;
       const year = parseInt(params.id);
       await db.deleteFrom("seasons")
         .where("start_year", "=", year)
@@ -197,7 +200,11 @@ const seasonsTsRestRouter = s.router(seasonsContract, {
   },
 });
 
+seasonsRouter.use("/admin", ensureAdmin);
 seasonsRouter.use("/admin/*", ensureAdmin);
+seasonsRouter.use("/admin", rateLimitMiddleware(15, 60));
+
 createHonoEndpoints(seasonsContract, seasonsTsRestRouter, seasonsRouter);
 
+export { seasonsRouter };
 export default seasonsRouter;

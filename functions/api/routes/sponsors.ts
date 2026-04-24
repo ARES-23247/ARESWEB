@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "kysely";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
+import { RecursiveRouterObj } from "@ts-rest/hono";
 import { sponsorContract } from "../../../src/schemas/contracts/sponsorContract";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 import { sendZulipAlert } from "../../utils/zulipSync";
@@ -8,7 +9,7 @@ import { sendZulipAlert } from "../../utils/zulipSync";
 const s = initServer<AppEnv>();
 const sponsorsRouter = new Hono<AppEnv>();
 
-const sponsorTsRestRouter = s.router(sponsorContract, {
+const sponsorHandlers: RecursiveRouterObj<typeof sponsorContract, AppEnv> = {
   getSponsors: async (_, c) => {
     try {
       const db = c.get("db");
@@ -21,10 +22,11 @@ const sponsorTsRestRouter = s.router(sponsorContract, {
       const sponsors = results.map(s => ({
         ...s,
         id: s.id || "",
-        is_active: !!s.is_active
+        is_active: !!s.is_active,
+        tier: s.tier as any
       }));
 
-      return { status: 200, body: { sponsors } };
+      return { status: 200, body: { sponsors: sponsors as any[] } };
     } catch (_err) {
       return { status: 200, body: { sponsors: [] } };
     }
@@ -57,14 +59,15 @@ const sponsorTsRestRouter = s.router(sponsorContract, {
       const sponsor = { 
         ...sponsorRow, 
         id: sponsorRow.id || "",
-        is_active: !!sponsorRow.is_active 
+        is_active: !!sponsorRow.is_active,
+        tier: sponsorRow.tier as any
       };
       const metrics = metricsRow.map(m => ({
         ...m,
         metric_value: Number(m.metric_value)
       }));
 
-      return { status: 200, body: { sponsor, metrics } };
+      return { status: 200, body: { sponsor, metrics } as any };
     } catch (_err) {
       return { status: 500, body: { error: "Failed to fetch ROI" } };
     }
@@ -80,10 +83,11 @@ const sponsorTsRestRouter = s.router(sponsorContract, {
       const sponsors = results.map(s => ({
         ...s,
         id: s.id || "",
-        is_active: !!s.is_active
+        is_active: !!s.is_active,
+        tier: s.tier as any
       }));
 
-      return { status: 200, body: { sponsors } };
+      return { status: 200, body: { sponsors: sponsors as any[] } };
     } catch (_err) {
       return { status: 200, body: { sponsors: [] } };
     }
@@ -152,7 +156,9 @@ const sponsorTsRestRouter = s.router(sponsorContract, {
       const db = c.get("db");
       const { sponsor_id } = body;
       const token = crypto.randomUUID();
-      await db.insertInto("sponsor_tokens").values({ token, sponsor_id }).execute();
+      const id = crypto.randomUUID();
+      // @ts-expect-error - SQLite primary key handling
+      await db.insertInto("sponsor_tokens").values({ id, token, sponsor_id }).execute();
 
       c.executionCtx.waitUntil(logAuditAction(c, "GENERATE_TOKEN", "sponsor_tokens", token, `Generated token for ${sponsor_id}`));
       
@@ -166,9 +172,11 @@ const sponsorTsRestRouter = s.router(sponsorContract, {
       return { status: 500, body: { error: "Failed to generate" } };
     }
   },
-});
+};
+
+const sponsorTsRestRouter = s.router(sponsorContract, sponsorHandlers);
+createHonoEndpoints(sponsorContract, sponsorTsRestRouter, sponsorsRouter);
 
 sponsorsRouter.use("/admin", ensureAdmin);
-createHonoEndpoints(sponsorContract, sponsorTsRestRouter, sponsorsRouter);
 
 export default sponsorsRouter;
