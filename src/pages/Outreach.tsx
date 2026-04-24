@@ -120,29 +120,16 @@ export default function Outreach() {
       {/* Hero */}
       <section className="py-32 px-6 relative z-10 bg-ares-gray-deep">
         <div className="max-w-5xl mx-auto text-center bg-obsidian p-10 rounded-3xl border border-white/5 shadow-2xl relative z-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-6 py-2 ares-cut-sm bg-ares-red text-white text-xs font-black uppercase tracking-widest mb-8 shadow-lg shadow-ares-red/20"
-          >
+          <div className="inline-flex items-center gap-2 px-6 py-2 ares-cut-sm bg-ares-red text-white text-xs font-black uppercase tracking-widest mb-8 shadow-lg shadow-ares-red/20">
             <Activity size={14} className="animate-pulse" />
             Active Impact Reporting
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter italic"
-          >
+          </div>
+          <h1 className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter italic">
             Engineering <br/> <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Change</span>.
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-marble text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium"
-          >
+          </h1>
+          <p className="text-marble text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium">
             ARES 23247 isn&apos;t just about building robots. We&apos;re building a community that values curiosity, innovation, and service.
-          </motion.p>
+          </p>
         </div>
       </section>
 
