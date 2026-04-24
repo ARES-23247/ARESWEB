@@ -86,7 +86,7 @@ const settingsHandlers: any = {
 
 const settingsTsRestRouter = s.router(settingsContract, settingsHandlers);
 
-createHonoEndpoints(settingsContract, settingsTsRestRouter, settingsRouter);
+
 
 // Admin protection
 settingsRouter.use("/*", ensureAdmin);
@@ -143,6 +143,8 @@ settingsRouter.get("/admin/backup", async (c) => {
   }
 });
 
+
+createHonoEndpoints(settingsContract, settingsTsRestRouter, settingsRouter);
 export default settingsRouter;
 
 

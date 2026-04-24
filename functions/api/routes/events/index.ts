@@ -10,12 +10,12 @@ const eventsRouter = new Hono<AppEnv>();
 
 const eventTsRestRouter = s.router(eventContract, eventHandlers);
 
-createHonoEndpoints(eventContract, eventTsRestRouter, eventsRouter);
-
 // Apply protections
 eventsRouter.use("/admin", ensureAdmin);
 eventsRouter.use("/admin/*", ensureAdmin);
 eventsRouter.use("/:id/signups", ensureAuth);
+
+createHonoEndpoints(eventContract, eventTsRestRouter, eventsRouter);
 
 // legacy exports removed
 

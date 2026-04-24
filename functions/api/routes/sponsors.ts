@@ -175,8 +175,10 @@ const sponsorHandlers: RecursiveRouterObj<typeof sponsorContract, AppEnv> = {
 };
 
 const sponsorTsRestRouter = s.router(sponsorContract, sponsorHandlers);
-createHonoEndpoints(sponsorContract, sponsorTsRestRouter, sponsorsRouter);
+
 
 sponsorsRouter.use("/admin", ensureAdmin);
 
+
+createHonoEndpoints(sponsorContract, sponsorTsRestRouter, sponsorsRouter);
 export default sponsorsRouter;

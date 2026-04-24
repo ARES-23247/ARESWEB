@@ -15,7 +15,7 @@ interface LeaderboardUser {
 }
 
 export default function Leaderboard() {
-  const { data: leaderboardRes, isLoading } = api.analytics.getLeaderboard.useQuery({
+  const { data: leaderboardRes, isLoading } = api.analytics.getLeaderboard.useQuery({}, {
     queryKey: ["leaderboard"],
   });
 

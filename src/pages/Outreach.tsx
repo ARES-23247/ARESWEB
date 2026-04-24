@@ -97,7 +97,7 @@ export default function Outreach() {
     }
   };
 
-  const { data: logsRes, isLoading } = api.outreach.adminList.useQuery({
+  const { data: logsRes, isLoading } = api.outreach.adminList.useQuery({}, {
     queryKey: ["public-outreach"],
   });
    

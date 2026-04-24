@@ -119,7 +119,7 @@ const badgesTsRestRouter = s.router(badgeContract, {
   },
 });
 
-createHonoEndpoints(badgeContract, badgesTsRestRouter, badgesRouter);
+
 
 // Middlewares
 badgesRouter.use("/admin/*", ensureAdmin);
@@ -146,4 +146,6 @@ badgesRouter.get("/leaderboard", async (c) => {
   }
 });
 
+
+createHonoEndpoints(badgeContract, badgesTsRestRouter, badgesRouter);
 export default badgesRouter;

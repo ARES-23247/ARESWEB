@@ -138,8 +138,9 @@ const userHandlers: RecursiveRouterObj<typeof userContract, AppEnv> = {
 };
 
 const userTsRestRouter = s.router(userContract, userHandlers);
-createHonoEndpoints(userContract, userTsRestRouter, usersRouter);
 
 usersRouter.use("/*", ensureAdmin);
+
+createHonoEndpoints(userContract, userTsRestRouter, usersRouter);
 
 export default usersRouter;

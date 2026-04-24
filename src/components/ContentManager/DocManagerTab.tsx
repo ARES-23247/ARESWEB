@@ -24,26 +24,26 @@ export default function DocManagerTab({
   const queryClient = useQueryClient();
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
 
-  const { data, isLoading, isError } = api.docs.getDocs.useQuery({
-    queryKey: ["docs"],
+  const { data, isLoading, isError } = api.docs.adminList.useQuery({
+    queryKey: ["admin-docs"],
   });
 
   const docs = (((data as any)?.status)) === 200 ? ((data as any).body.docs as unknown as DocItem[]) : [];
 
-  const deleteMutation = api.docs.undeleteDoc.useMutation({
+  const deleteMutation = api.docs.deleteDoc.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       setConfirmId(null);
-      toast.success("Doc deleted");
+      toast.success("Doc soft-deleted");
     },
     onError: (err: any) => {
       toast.error(err.message || "Delete failed");
     }
   });
 
-  const sortMutation = api.docs.undeleteDoc.useMutation({
+  const sortMutation = api.docs.updateSort.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
     },
     onError: (err: any) => {
       toast.error(err.message || "Sort failed");
@@ -52,28 +52,28 @@ export default function DocManagerTab({
 
   const localApproveMutation = api.docs.approveDoc.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       toast.success("Doc approved");
     }
   });
 
   const localRejectMutation = api.docs.rejectDoc.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       toast.success("Doc rejected");
     }
   });
 
   const localRestoreMutation = api.docs.undeleteDoc.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       toast.success("Doc restored");
     }
   });
 
   const localPurgeMutation = api.docs.purgeDoc.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       toast.success("Doc purged");
     }
   });

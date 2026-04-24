@@ -140,8 +140,10 @@ const githubHandlers: RecursiveRouterObj<typeof githubContract, AppEnv> = {
 };
 
 const githubTsRestRouter = s.router(githubContract, githubHandlers);
-createHonoEndpoints(githubContract, githubTsRestRouter, githubRouter);
+
 
 githubRouter.use("/projects/*", ensureAdmin);
 
+
+createHonoEndpoints(githubContract, githubTsRestRouter, githubRouter);
 export default githubRouter;

@@ -99,6 +99,14 @@ export const docContract = c.router({
       404: z.object({ error: z.string() }),
     },
   },
+  deleteDoc: {
+    method: "DELETE",
+    path: "/admin/:slug",
+    body: z.object({}),
+    responses: {
+      200: z.object({ success: z.boolean() }),
+    },
+  },
   saveDoc: {
     method: "POST",
     path: "/admin/save",

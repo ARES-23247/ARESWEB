@@ -175,7 +175,7 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
   },
 });
 
-createHonoEndpoints(inquiryContract, inquiriesTsRestRouter, inquiriesRouter);
+
 
 // Admin protection
 inquiriesRouter.use("/admin", ensureAdmin);
@@ -197,5 +197,7 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   return { deleted: res.length };
 }
 
+
+createHonoEndpoints(inquiryContract, inquiriesTsRestRouter, inquiriesRouter);
 export { inquiriesRouter };
 export default inquiriesRouter;

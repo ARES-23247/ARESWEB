@@ -5,6 +5,9 @@ const PUBLIC_ROUTES = [
   '/',
   '/about',
   '/seasons',
+  '/events',
+  '/blog',
+  '/gallery',
   '/outreach',
   '/tech-stack',
   '/accessibility',
@@ -46,6 +49,15 @@ test.describe('ARESWEB Global Smoke Tests', () => {
 
       // Wait for framer-motion entry animations to settle before a11y scan
       await page.waitForTimeout(1000);
+      await page.addStyleTag({
+        content: `
+          *, *::before, *::after {
+            transition: none !important;
+            animation: none !important;
+            opacity: 1 !important;
+          }
+        `
+      });
 
       // Ensure no uncaught frontend exceptions crashed the client
       expect(errors).toHaveLength(0);

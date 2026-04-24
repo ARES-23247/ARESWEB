@@ -234,6 +234,16 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 404, body: { error: "Database error" } };
     }
   },
+  deleteDoc: async ({ params }: { params: any }, c: any) => {
+    const { slug } = params;
+    try {
+      const db = c.get("db") as Kysely<DB>;
+      await db.updateTable("docs").set({ is_deleted: 1 }).where("slug", "=", slug).execute();
+      return { status: 200, body: { success: true } };
+    } catch (_err) {
+      return { status: 200, body: { success: false } };
+    }
+  },
   saveDoc: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -489,11 +499,13 @@ const docTsRestRouter = s.router(docContract, {
   },
 });
 
-createHonoEndpoints(docContract, docTsRestRouter, docsRouter);
+
 
 // Apply middleware/protections
 docsRouter.use("/admin", ensureAdmin);
 docsRouter.use("/admin/*", ensureAdmin);
 docsRouter.use("/admin/save", ensureAuth);
 
+
+createHonoEndpoints(docContract, docTsRestRouter, docsRouter);
 export default docsRouter;

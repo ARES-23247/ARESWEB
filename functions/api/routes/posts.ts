@@ -440,11 +440,11 @@ const postTsRestRouter = s.router(postContract, {
   },
 });
 
-createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
-
 // Apply middleware/protections
 postsRouter.use("/admin", ensureAdmin);
 postsRouter.use("/admin/*", ensureAdmin);
 postsRouter.use("/admin/save", ensureAuth);
+
+createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
 
 export default postsRouter;

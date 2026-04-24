@@ -18,7 +18,7 @@ interface R2MediaResponse {
 }
 
 export default function Gallery() {
-  const { data: mediaRes, isLoading, isError } = api.media.getMedia.useQuery({
+  const { data: mediaRes, isLoading, isError } = api.media.getMedia.useQuery({}, {
     queryKey: ["media"],
   });
 

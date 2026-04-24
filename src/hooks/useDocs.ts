@@ -49,14 +49,15 @@ export function useDocs(slug: string | undefined) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [feedbackToken, setFeedbackToken] = useState("");
 
-  const { data: allDocsRes } = api.docs.getDocs.useQuery({
+  const { data: allDocsRes } = api.docs.getDocs.useQuery({}, {
     queryKey: ["docs-list"],
   });
   const allDocs = useMemo(() => allDocsRes?.status === 200 ? allDocsRes.body.docs : [], [allDocsRes]);
 
   const ObjectQuery = api.docs.getDoc.useQuery({
-    queryKey: ["doc", slug],
     params: { slug: slug || "" },
+  }, {
+    queryKey: ["doc", slug],
     enabled: !!slug,
   });
 
@@ -65,8 +66,9 @@ export function useDocs(slug: string | undefined) {
   const docLoading = ObjectQuery.isLoading;
 
   const { data: searchRes } = api.docs.searchDocs.useQuery({
-    queryKey: ["docs-search", searchQuery],
     query: { q: searchQuery },
+  }, {
+    queryKey: ["docs-search", searchQuery],
     enabled: searchQuery.length >= 2,
   });
   const searchResults = searchRes?.status === 200 ? searchRes.body.results : [];

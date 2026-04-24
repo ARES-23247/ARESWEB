@@ -168,12 +168,14 @@ const outreachTsRestRouter = s.router(outreachContract, {
   },
 });
 
-createHonoEndpoints(outreachContract, outreachTsRestRouter, outreachRouter);
+
 
 // Middlewares
 outreachRouter.use("/admin", ensureAdmin);
 outreachRouter.use("/admin/*", ensureAdmin);
 outreachRouter.use("/admin", rateLimitMiddleware(15, 60));
 
+
+createHonoEndpoints(outreachContract, outreachTsRestRouter, outreachRouter);
 export { outreachRouter };
 export default outreachRouter;
