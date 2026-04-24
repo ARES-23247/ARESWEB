@@ -40,7 +40,7 @@ const logisticsTsRestRouter = s.router(logisticsContract, {
       }
 
       return {
-        status: 200,
+        status: 200 as const,
         body: {
           totalCount: totalMembers,
           memberCounts,
@@ -50,7 +50,7 @@ const logisticsTsRestRouter = s.router(logisticsContract, {
       };
     } catch (err) {
       console.error("D1 logistics summary error:", err);
-      return { status: 500, body: { error: "Logistics fetch failed" } };
+      return { status: 500 as const, body: { error: "Logistics fetch failed" } };
     }
   },
 });
