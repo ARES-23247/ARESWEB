@@ -246,35 +246,65 @@ const docTsRestRouter: any = s.router(docContract as any, {
   },
     saveDoc: async ({ body }: { body: any }, c: any) => {
     try {
-                  const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as Kysely<DB>;
       const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft } = body;
       const user = await getSessionUser(c);
       const email = user?.email || "anonymous_admin";
 
-      const existing = await db.selectFrom("docs")
-        .select(["slug", "title", "category", "description", "content", "cf_email", "is_portfolio", "is_executive_summary"])
-        .where("slug", "=", slug)
-        .executeTakeFirst();
-      
-      if (existing) {
-        await db.insertInto("docs_history")
-          .values({
-                        slug: String(existing.slug),
-            title: existing.title,
-                                    category: existing.category,
-            description: existing.description || "",
-            content: existing.content,
-            author_email: existing.cf_email || "unknown"
-          })
-          .execute();
-        c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
-      }
+      return await db.transaction().execute(async (trx) => {
+        const existing = await trx.selectFrom("docs")
+          .select(["slug", "title", "category", "description", "content", "cf_email", "is_portfolio", "is_executive_summary"])
+          .where("slug", "=", slug)
+          .executeTakeFirst();
 
-      if (user?.role !== "admin" && existing) {
-        const revSlug = `${slug}-rev-${Math.random().toString(36).substring(2, 6)}`;
-        await db.insertInto("docs")
+        if (existing) {
+          await trx.insertInto("docs_history")
+            .values({
+              slug: String(existing.slug),
+              title: existing.title,
+              category: existing.category,
+              description: existing.description || "",
+              content: existing.content,
+              author_email: existing.cf_email || "unknown"
+            })
+            .execute();
+          c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
+        }
+
+        if (user?.role !== "admin" && existing) {
+          const revSlug = `${slug}-rev-${Math.random().toString(36).substring(2, 6)}`;
+          await trx.insertInto("docs")
+            .values({
+              slug: revSlug,
+              title: title || "",
+              category: category || "",
+              sort_order: sortOrder || 0,
+              description: description || "",
+              content: content || "",
+              cf_email: email,
+              updated_at: new Date().toISOString(),
+              is_portfolio: isPortfolio ? 1 : 0,
+              is_executive_summary: isExecutiveSummary ? 1 : 0,
+              status: "pending",
+              revision_of: slug
+            })
+            .execute();
+
+          c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
+            title: "📝 Doc Revision Pending",
+            message: `"${title}" revised by ${email} needs admin approval.`,
+            link: "/dashboard",
+            external: true,
+            priority: "medium"
+          }));
+          return { status: 200 as const, body: { success: true, slug: revSlug } };
+        }
+
+        const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
+
+        await trx.insertInto("docs")
           .values({
-            slug: revSlug,
+            slug,
             title: title || "",
             category: category || "",
             sort_order: sortOrder || 0,
@@ -284,70 +314,43 @@ const docTsRestRouter: any = s.router(docContract as any, {
             updated_at: new Date().toISOString(),
             is_portfolio: isPortfolio ? 1 : 0,
             is_executive_summary: isExecutiveSummary ? 1 : 0,
-            status: "pending",
-            revision_of: slug
+            status
           })
+          .onConflict((oc) => oc.column("slug").doUpdateSet({
+            title: title || "",
+            category: category || "",
+            sort_order: sortOrder || 0,
+            description: description || "",
+            content: content || "",
+            cf_email: email,
+            updated_at: new Date().toISOString(),
+            is_portfolio: isPortfolio ? 1 : 0,
+            is_executive_summary: isExecutiveSummary ? 1 : 0,
+            status
+          }))
           .execute();
-        
-        c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
-          title: "📝 Doc Revision Pending",
-          message: `"${title}" revised by ${email} needs admin approval.`,
-          link: "/dashboard",
-          external: true,
-          priority: "medium"
-        }));
-        return { status: 200 as const, body: { success: true, slug: revSlug } };
-      }
 
-      const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
-      
-      await db.insertInto("docs")
-        .values({
-          slug,
-          title: title || "",
-          category: category || "",
-          sort_order: sortOrder || 0,
-          description: description || "",
-          content: content || "",
-          cf_email: email,
-          updated_at: new Date().toISOString(),
-          is_portfolio: isPortfolio ? 1 : 0,
-          is_executive_summary: isExecutiveSummary ? 1 : 0,
-          status
-        })
-        .onConflict((oc) => oc.column("slug").doUpdateSet({
-          title: title || "",
-          category: category || "",
-          sort_order: sortOrder || 0,
-          description: description || "",
-          content: content || "",
-          cf_email: email,
-          updated_at: new Date().toISOString(),
-          is_portfolio: isPortfolio ? 1 : 0,
-          is_executive_summary: isExecutiveSummary ? 1 : 0,
-          status
-        }))
-        .execute();
+        if (status === "published") {
+          const action = existing ? "updated" : "created";
+          c.executionCtx.waitUntil(sendZulipMessage(c.env, "engineering", "Engineering Docs", `📝 **Doc ${action}:** [${title}](${siteConfig.urls.base}/docs/${slug}) (${category})`));
+        }
 
-      if (status === "published") {
-        const action = existing ? "updated" : "created";
-        c.executionCtx.waitUntil(sendZulipMessage(c.env, "engineering", "Engineering Docs", `📝 **Doc ${action}:** [${title}](${siteConfig.urls.base}/docs/${slug}) (${category})`));
-      }
+        if (status === "pending") {
+          c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
+            title: "📝 Pending Document",
+            message: `"${title}" submitted by ${email} needs review.`,
+            link: "/dashboard",
+            external: true,
+            priority: "medium"
+          }));
+        }
 
-      if (status === "pending") {
-        c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
-          title: "📝 Pending Document",
-          message: `"${title}" submitted by ${email} needs review.`,
-          link: "/dashboard",
-          external: true,
-          priority: "medium"
-        }));
-      }
-
-      return { status: 200 as const, body: { success: true, slug } };
+        return { status: 200 as const, body: { success: true, slug } };
+      });
     } catch {
       return { status: 500 as const, body: { error: "Write failed" } };
     }
+
   },
     updateSort: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
@@ -402,31 +405,53 @@ const docTsRestRouter: any = s.router(docContract as any, {
   },
     restoreHistory: async ({ params, id }: { params: any, id: any }, c: any) => {
     const { slug } = params;
-            try {
+    try {
       const db = c.get("db") as Kysely<DB>;
-      const row = await db.selectFrom("docs_history").select(["title", "category", "description", "content"]).where("id", "=", Number(id)).where("slug", "=", slug).executeTakeFirst();
-      if (!row) return { status: 404 as const, body: { error: "Version not found" } };
+      return await db.transaction().execute(async (trx) => {
+        const row = await trx.selectFrom("docs_history")
+          .select(["title", "category", "description", "content"])
+          .where("id", "=", Number(id))
+          .where("slug", "=", slug)
+          .executeTakeFirst();
+        
+        if (!row) return { status: 404 as const, body: { error: "Version not found" } };
 
-      const user = await getSessionUser(c);
-      const email = user?.email || "anonymous_admin";
+        const user = await getSessionUser(c);
+        const email = user?.email || "anonymous_admin";
 
-      const current = await db.selectFrom("docs").select(["slug", "title", "category", "description", "content", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
-      if (current) {
-        await db.insertInto("docs_history")
-          .values({
-                        slug: String(current.slug),
-            title: current.title,
-                                    category: current.category,
-            description: current.description || "",
-            content: current.content,
-            author_email: current.cf_email || "unknown"
+        const current = await trx.selectFrom("docs")
+          .select(["slug", "title", "category", "description", "content", "cf_email"])
+          .where("slug", "=", slug)
+          .executeTakeFirst();
+          
+        if (current) {
+          await trx.insertInto("docs_history")
+            .values({
+              slug: String(current.slug),
+              title: current.title,
+              category: current.category,
+              description: current.description || "",
+              content: current.content,
+              author_email: current.cf_email || "unknown"
+            })
+            .execute();
+          c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
+        }
+
+        await trx.updateTable("docs")
+          .set({ 
+            title: row.title || "", 
+            category: row.category || "", 
+            description: row.description, 
+            content: row.content || "", 
+            cf_email: email, 
+            updated_at: new Date().toISOString() 
           })
+          .where("slug", "=", slug)
           .execute();
-        c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
-      }
 
-      await db.updateTable("docs").set({ title: row.title || "", category: row.category || "", description: row.description, content: row.content || "", cf_email: email, updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
-      return { status: 200 as const, body: { success: true } };
+        return { status: 200 as const, body: { success: true } };
+      });
     } catch {
       return { status: 404 as const, body: { error: "Restore failed" } };
     }

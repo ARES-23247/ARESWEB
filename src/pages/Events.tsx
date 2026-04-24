@@ -14,7 +14,8 @@ export default function Events() {
     queryKey: ["events"],
   });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const events = (eventsRes?.body as unknown as { events: EventItem[] })?.events || [];
+  const rawBody = (eventsRes as any)?.body;
+  const events = eventsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.events) ? rawBody.events : [])) as unknown as EventItem[] : [];
 
   const { data: calendarRes } = api.events.getCalendarSettings.useQuery({}, {
     queryKey: ["calendar_config"],

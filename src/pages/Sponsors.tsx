@@ -60,7 +60,8 @@ export default function Sponsors() {
   const { data: sponsorsRes } = api.sponsors.getSponsors.useQuery({}, {
     queryKey: ["public-sponsors"],
   });
-  const sponsors = (sponsorsRes?.status === 200 ? sponsorsRes.body.sponsors : []) || [];
+  const rawBody = (sponsorsRes as any)?.body;
+  const sponsors = sponsorsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.sponsors) ? rawBody.sponsors : [])) : [];
 
   const grouped = sponsors.reduce((acc: Record<string, Sponsor[]>, s: Sponsor) => {
     if (!acc[s.tier]) acc[s.tier] = [];

@@ -25,7 +25,8 @@ export default function Blog() {
     queryKey: ["posts"],
   });
    
-  const posts = (postsRes?.body as any)?.posts || [];
+  const rawBody = (postsRes as any)?.body;
+  const posts = postsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.posts) ? rawBody.posts : [])) : [];
 
   return (
     <motion.div 

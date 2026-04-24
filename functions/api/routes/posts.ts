@@ -212,93 +212,96 @@ const postHandlers = {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
 
-      const existing = await db.selectFrom("posts").select("slug").where("slug", "=", slug).executeTakeFirst();
-      if (existing) {
-        const suffix = Math.random().toString(36).substring(2, 6);
-        slug = `${slug}-${suffix}`;
-      }
+      return await db.transaction().execute(async (trx) => {
+        const existing = await trx.selectFrom("posts").select("slug").where("slug", "=", slug).executeTakeFirst();
+        if (existing) {
+          const suffix = Math.random().toString(36).substring(2, 6);
+          slug = `${slug}-${suffix}`;
+        }
 
-      const dateStr = getStandardDate();
-      const astStr = JSON.stringify(body.ast);
-      const snippet = extractAstText(body.ast as any).substring(0, 200);
-      
-      const user = await getSessionUser(c);
-      const email = user?.email || "anonymous_dashboard_user";
-      const status = body.isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
+        const dateStr = getStandardDate();
+        const astStr = JSON.stringify(body.ast);
+        const snippet = extractAstText(body.ast as any).substring(0, 200);
+        
+        const user = await getSessionUser(c);
+        const email = user?.email || "anonymous_dashboard_user";
+        const status = body.isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
-      await db.insertInto("posts")
-        .values({
-          slug,
-          title: body.title,
-          author: "ARES Team", 
-          date: dateStr,
-          thumbnail: body.coverImageUrl || "",
-          snippet,
-          ast: astStr,
-          cf_email: email,
-          status,
-          published_at: body.publishedAt || null,
-          season_id: body.seasonId ? String(body.seasonId) : null
-        })
-        .execute();
+        await trx.insertInto("posts")
+          .values({
+            slug,
+            title: body.title,
+            author: "ARES Team", 
+            date: dateStr,
+            thumbnail: body.coverImageUrl || "",
+            snippet,
+            ast: astStr,
+            cf_email: email,
+            status,
+            published_at: body.publishedAt || null,
+            season_id: body.seasonId ? String(body.seasonId) : null
+          })
+          .execute();
 
-      c.executionCtx.waitUntil(logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`));
+        c.executionCtx.waitUntil(prunePostHistory(db, slug, 10));
+        c.executionCtx.waitUntil(logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`));
 
-      const warnings: string[] = [];
+        const warnings: string[] = [];
 
-      if (status === "published") {
-        const socialConfig = await getSocialConfig(c);
-        const socialsFilter = body.socials || null;
-        const baseUrl = new URL(c.req.url).origin;
+        if (status === "published") {
+          const socialConfig = await getSocialConfig(c);
+          const socialsFilter = body.socials || null;
+          const baseUrl = new URL(c.req.url).origin;
 
-        c.executionCtx.waitUntil((async () => {
+          c.executionCtx.waitUntil((async () => {
+            try {
+              await dispatchSocials(
+                c.env.DB,
+                {
+                  title: body.title,
+                  url: `${baseUrl}/blog/${slug}`,
+                  snippet: snippet || "Read the latest engineering update from ARES 23247!",
+                  coverImageUrl: body.coverImageUrl || "/gallery_1.png",
+                  baseUrl: baseUrl
+                },
+                socialConfig,
+                socialsFilter
+              );
+            } catch (err) {
+              console.error("Social dispatch failed:", err);
+            }
+          })());
+
           try {
-            await dispatchSocials(
-              c.env.DB,
-              {
-                title: body.title,
-                url: `${baseUrl}/blog/${slug}`,
-                snippet: snippet || "Read the latest engineering update from ARES 23247!",
-                coverImageUrl: body.coverImageUrl || "/gallery_1.png",
-                baseUrl: baseUrl
-              },
-              socialConfig,
-              socialsFilter
+            await sendZulipMessage(
+              c.env,
+              "announcements",
+              "Website Updates",
+              `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
             );
           } catch (err) {
-            console.error("Social dispatch failed:", err);
+            console.error("[Posts] Zulip announcement failed:", err);
+            warnings.push("Zulip Notification Failed");
           }
-        })());
-
-        try {
-          await sendZulipMessage(
-            c.env,
-            "announcements",
-            "Website Updates",
-            `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
-          );
-        } catch (err) {
-          console.error("[Posts] Zulip announcement failed:", err);
-          warnings.push("Zulip Notification Failed");
         }
-      }
 
-      if (status === "pending") {
-        c.executionCtx.waitUntil(
-          notifyByRole(c, ["admin", "author", "coach", "mentor"] as any[], {
-            title: "📝 Pending Blog Post",
-            message: `"${body.title}" submitted by ${email} needs review.`,
-            link: "/dashboard",
-            external: true,
-            priority: "medium"
-          }).catch(() => {})
-        );
-      }
+        if (status === "pending") {
+          c.executionCtx.waitUntil(
+            notifyByRole(c, ["admin", "author", "coach", "mentor"] as any[], {
+              title: "📝 Pending Blog Post",
+              message: `"${body.title}" submitted by ${email} needs review.`,
+              link: "/dashboard",
+              external: true,
+              priority: "medium"
+            }).catch(() => {})
+          );
+        }
 
-      return { 
-        status: 200 as const, 
-        body: { success: true, slug, warning: warnings.join(" | ") } as any
-      };
+        return { 
+          status: 200 as const, 
+          body: { success: true, slug, warning: warnings.join(" | ") } as any
+        };
+      });
     } catch (err) {
       return { status: 200 as const, body: { success: false, warning: (err as Error)?.message || "Database write failed" } as any };
     }
@@ -462,7 +465,7 @@ const postHandlers = {
   },
 };
 
-const postTsRestRouter = s.router(postContract, postHandlers as any);
+const postTsRestRouter: any = s.router(postContract as any, postHandlers as any);
 
 // Apply middleware/protections
 postsRouter.use("/admin", ensureAdmin);

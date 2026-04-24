@@ -52,7 +52,10 @@ export function useDocs(slug: string | undefined) {
   const { data: allDocsRes } = api.docs.getDocs.useQuery({}, {
     queryKey: ["docs-list"],
   });
-  const allDocs = useMemo(() => allDocsRes?.status === 200 ? allDocsRes.body.docs : [], [allDocsRes]);
+  const allDocs = useMemo(() => {
+    const rawBody = (allDocsRes as any)?.body;
+    return allDocsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.docs) ? rawBody.docs : [])) : [];
+  }, [allDocsRes]);
 
   const ObjectQuery = api.docs.getDoc.useQuery({
     params: { slug: slug || "" },

@@ -43,7 +43,11 @@ export default function AdminInquiries() {
     queryKey: ["admin-inquiries"],
   });
 
-  const inquiries = useMemo(() => inquiriesData?.body?.inquiries || [], [inquiriesData]);
+  const inquiries = useMemo(() => {
+    const rawBody = (inquiriesData as any)?.body;
+    if (inquiriesData?.status !== 200) return [];
+    return Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.inquiries) ? rawBody.inquiries : []);
+  }, [inquiriesData]);
 
   const updateStatusMutation = api.inquiries.updateStatus.useMutation({
     onSuccess: (res: any) => {
