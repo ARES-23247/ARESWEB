@@ -39,7 +39,7 @@ const tbaHandlers = {
     try {
       const data = await getTBA(`/event/${params.eventKey}/rankings`, c);
       return { status: 200 as const, body: { rankings: (data as any)?.rankings as any[] || [] } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { rankings: [] } as any };
     }
   },
@@ -48,7 +48,7 @@ const tbaHandlers = {
       const data = await getTBA(`/event/${params.eventKey}/matches/simple`, c) as any[];
       const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
       return { status: 200 as const, body: { matches: sorted as any[] } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { matches: [] } as any };
     }
   },

@@ -2,12 +2,9 @@ import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, AppEnv 
 import { pushEventToGcal, pullEventsFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
-import { initServer } from "ts-rest-hono";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../../src/schemas/database";
 import { Context } from "hono";
-
-const s = initServer<AppEnv>();
 
 export const eventHandlers = {
   getEvents: async ({ query }: { query: any }, c: Context<AppEnv>) => {
@@ -54,7 +51,7 @@ export const eventHandlers = {
       }));
 
       return { status: 200 as const, body: { events } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { events: [] } as any };
     }
   },
@@ -73,7 +70,7 @@ export const eventHandlers = {
         calendarIdOutreach: map["CALENDAR_ID_OUTREACH"] || "",
         calendarIdExternal: map["CALENDAR_ID_EXTERNAL"] || "",
       } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { calendarIdInternal: "", calendarIdOutreach: "", calendarIdExternal: "" } as any };
     }
   },
@@ -103,7 +100,7 @@ export const eventHandlers = {
           is_editor: user?.role === "admin"
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Database error" } as any };
     }
   },
@@ -127,7 +124,7 @@ export const eventHandlers = {
       }));
 
       return { status: 200 as const, body: { events, lastSyncedAt: lastSyncRow?.value || null } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch events" } as any };
     }
   },
@@ -152,7 +149,7 @@ export const eventHandlers = {
           }
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Database error" } as any };
     }
   },
@@ -181,17 +178,16 @@ export const eventHandlers = {
         .execute();
 
       c.executionCtx.waitUntil((async () => {
-        let gcalId = null;
         if (socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] && socialConfig["GCAL_PRIVATE_KEY"] && calId) {
           try {
-            gcalId = await pushEventToGcal(
+            const gcalId = await pushEventToGcal(
               { id: genId, title: title || "", date_start: dateStart, date_end: dateEnd || undefined, location: location || undefined, description: description || undefined, cover_image: coverImage || undefined },
               { email: socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] as string, privateKey: socialConfig["GCAL_PRIVATE_KEY"] as string, calendarId: calId as string }
             );
             if (gcalId) {
               await db.updateTable("events").set({ gcal_event_id: gcalId }).where("id", "=", genId).execute();
             }
-          } catch (_err) { /* ignore GCal failure */ }
+          } catch { /* ignore GCal failure */ }
         }
 
         if (status === "published") {
@@ -206,7 +202,7 @@ export const eventHandlers = {
       c.executionCtx.waitUntil(logAuditAction(c, "CREATE_EVENT", "events", genId, `Created event: ${title} (${status})`));
 
       return { status: 200 as const, body: { success: true, id: genId } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false, error: "Write failed" } as any };
     }
   },
@@ -246,7 +242,7 @@ export const eventHandlers = {
         .execute();
 
       return { status: 200 as const, body: { success: true, id } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false, error: "Update failed" } as any };
     }
   },
@@ -256,7 +252,7 @@ export const eventHandlers = {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("events").set({ is_deleted: 1 }).where("id", "=", id).execute();
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -275,7 +271,7 @@ export const eventHandlers = {
         await db.updateTable("events").set({ status: 'published' }).where("id", "=", id).execute();
       }
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -285,7 +281,7 @@ export const eventHandlers = {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("events").set({ status: 'rejected' }).where("id", "=", id).execute();
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -295,7 +291,7 @@ export const eventHandlers = {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("events").set({ is_deleted: 0 }).where("id", "=", id).execute();
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -305,7 +301,7 @@ export const eventHandlers = {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("events").where("id", "=", id).execute();
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -336,7 +332,7 @@ export const eventHandlers = {
         }
       }
       return { status: 200 as const, body: { success: true, count: total } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },

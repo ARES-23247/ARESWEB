@@ -28,7 +28,7 @@ const badgesTsRestRouter: any = s.router(badgeContract as any, {
       }));
 
       return { status: 200 as const, body: { badges } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch badges" } };
     }
   },
@@ -45,7 +45,7 @@ const badgesTsRestRouter: any = s.router(badgeContract as any, {
         })
         .execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to create badge" } };
     }
   },
@@ -90,7 +90,7 @@ const badgesTsRestRouter: any = s.router(badgeContract as any, {
       })());
 
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to award badge" } };
     }
   },
@@ -102,7 +102,7 @@ const badgesTsRestRouter: any = s.router(badgeContract as any, {
         .where("badge_id", "=", params.badgeId)
         .execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to revoke badge" } };
     }
   },
@@ -113,7 +113,7 @@ const badgesTsRestRouter: any = s.router(badgeContract as any, {
         .where("id", "=", params.id)
         .execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to delete badge definition" } };
     }
   },
@@ -141,7 +141,7 @@ badgesRouter.get("/leaderboard", async (c: any) => {
       .limit(20)
       .execute();
     return c.json({ leaderboard: results });
-  } catch (_err) {
+  } catch {
     return c.json({ leaderboard: [] }, 500);
   }
 });

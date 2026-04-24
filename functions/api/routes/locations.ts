@@ -25,7 +25,7 @@ const locationsTsRestRouter: any = s.router(locationContract as any, {
       }));
 
       return { status: 200 as const, body: { locations: locations as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { locations: [] } };
     }
   },
@@ -44,7 +44,7 @@ const locationsTsRestRouter: any = s.router(locationContract as any, {
       }));
 
       return { status: 200 as const, body: { locations: locations as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { locations: [] } };
     }
   },
@@ -71,7 +71,7 @@ const locationsTsRestRouter: any = s.router(locationContract as any, {
 
       c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${body.name}`));
       return { status: 200 as const, body: { success: true, id } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -84,7 +84,7 @@ const locationsTsRestRouter: any = s.router(locationContract as any, {
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", params.id, "Location soft-deleted"));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },

@@ -31,7 +31,7 @@ async function fetchVolunteerEvents(db: Kysely<DB>) {
       season_id: r.season_id ? Number(r.season_id) : null,
       is_dynamic: true
     }));
-  } catch (_err) {
+  } catch {
     return [];
   }
 }
@@ -69,7 +69,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
       );
 
       return { status: 200 as const, body: { logs: combined } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
@@ -106,7 +106,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
       );
 
       return { status: 200 as const, body: { logs: combined } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
@@ -147,7 +147,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", id, `Created outreach: ${body.title}`));
         return { status: 200 as const, body: { success: true, id } };
       }
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Save failed" } };
     }
   },
@@ -160,7 +160,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "delete_outreach", "outreach_logs", params.id, "Outreach log soft-deleted"));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },

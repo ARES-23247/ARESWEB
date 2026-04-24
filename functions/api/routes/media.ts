@@ -75,7 +75,7 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
 
       return { status: 200 as const, body: payload };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "List failed", media: [] } };
     }
   },
@@ -101,7 +101,7 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       }));
 
       return { status: 200 as const, body: { media: media as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "List failed", media: [] } };
     }
   },
@@ -134,7 +134,7 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       }
 
       return { status: 200 as const, body: { success: true, key, url: `/api/media/${key}`, altText } };
-    } catch (_err) {
+    } catch {
       console.error("UPLOAD ERROR", _err);
       return { status: 500 as const, body: { error: "Upload failed" } };
     }
@@ -155,7 +155,7 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       await c.env.DB.prepare("UPDATE media_tags SET key = ?, folder = ? WHERE key = ?").bind(newKey, folder, oldKey).run();
 
       return { status: 200 as const, body: { success: true, newKey } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Move failed" } };
     }
   },
@@ -164,7 +164,7 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       await c.env.ARES_STORAGE.delete(params.key);
       await c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(params.key).run();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
@@ -178,7 +178,7 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       
       c.executionCtx.waitUntil(dispatchPhotoSocials(imageUrl, caption || "", config));
       return { status: 200 as const, body: { success: true, message: "Dispatched" } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Syndicate failed" } };
     }
   },
@@ -214,7 +214,7 @@ mediaRouter.get("/:key{.+$}", async (c: any) => {
     const response = new Response(object.body, { headers });
     if (publicFolders.includes(folder)) c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
     return response;
-  } catch (_err) {
+  } catch {
     return c.text("Internal Error", 500);
   }
 });

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, ensureAdmin, getSocialConfig, rateLimitMiddleware  } from "../middleware";
+import { AppEnv, ensureAdmin, getSocialConfig } from "../middleware";
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem } from "../../utils/githubProjects";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
 import { githubContract } from "../../../src/schemas/contracts/githubContract";
@@ -30,7 +30,7 @@ const githubHandlers = {
       }));
 
       return { status: 200 as const, body: { success: true, board: board as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false, board: [] } };
     }
   },
@@ -42,7 +42,7 @@ const githubHandlers = {
       
       await createProjectItem(ghConfig, body.title);
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -130,7 +130,7 @@ const githubHandlers = {
       c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
       
       return { status: 200 as const, body: payload as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { grid: [], totalCommits: 0, repoCount: 0 } as any };
     }
   }

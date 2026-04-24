@@ -37,7 +37,7 @@ const judgesTsRestRouter: any = s.router(judgeContract as any, {
       if (!row) return { status: 403 as const, body: { error: "Invalid or expired access code" } };
 
       return { status: 200 as const, body: { success: true, label: row.label } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Login failed" } };
     }
   },
@@ -101,7 +101,7 @@ const judgesTsRestRouter: any = s.router(judgeContract as any, {
 
       portfolioCache.set("portfolio", { data: payload, expiresAt: now + 300000 });
       return { status: 200 as const, body: payload as any };
-    } catch (_err) {
+    } catch {
       console.error("[Judges] Portfolio failed:", _err);
       return { status: 500 as const, body: { error: "Portfolio fetch failed" } };
     }
@@ -121,14 +121,14 @@ const judgesTsRestRouter: any = s.router(judgeContract as any, {
       }));
 
       return { status: 200 as const, body: { codes: codes as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch codes" } };
     }
   },
     createCode: async ({ body }: { body: any }, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
-      const { label, expiresAt } = body;
+      const { label, expiresAt: _expiresAt } = body;
       const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
       const id = crypto.randomUUID();
 
@@ -136,14 +136,14 @@ const judgesTsRestRouter: any = s.router(judgeContract as any, {
         .values({
           id,
           code,
-                    
-          
-        })
+          label: label || "Judges",
+          expires_at: expiresAt || null
+        } as any)
         .execute();
 
       c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
       return { status: 200 as const, body: { success: true, code, id } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Create failed" } };
     }
   },
@@ -152,7 +152,7 @@ const judgesTsRestRouter: any = s.router(judgeContract as any, {
     try {
       await db.deleteFrom("judge_access_codes").where("id", "=", params.id).execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },

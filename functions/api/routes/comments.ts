@@ -48,7 +48,7 @@ const commentHandlers = {
           role: user?.role || null
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { comments: [], authenticated: !!user, role: user?.role || null } as any };
     }
   },
@@ -111,7 +111,7 @@ const commentHandlers = {
       }
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -143,7 +143,7 @@ const commentHandlers = {
       }
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -172,7 +172,7 @@ const commentHandlers = {
       }
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },

@@ -46,7 +46,7 @@ const userHandlers = {
       });
 
       return { status: 200 as const, body: { users } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Database error" } as any };
     }
   },
@@ -81,7 +81,7 @@ const userHandlers = {
           }
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Database error" } as any };
     }
   },
@@ -104,7 +104,7 @@ const userHandlers = {
       c.executionCtx.waitUntil(logAuditAction(c, "PATCH_USER", "user", params.id, `Updated user ${params.id}: role=${role}, type=${member_type}`));
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Update failed" } as any };
     }
   },
@@ -112,7 +112,7 @@ const userHandlers = {
     try {
       await upsertProfile(c as any, params.id, body as any);
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Profile update failed" } as any };
     }
   },
@@ -132,7 +132,7 @@ const userHandlers = {
       c.executionCtx.waitUntil(logAuditAction(c, "DELETE_USER", "user", id, `Deleted user ${id}`));
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Delete failed" } as any };
     }
   },

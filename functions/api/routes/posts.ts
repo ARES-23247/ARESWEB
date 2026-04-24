@@ -79,7 +79,7 @@ const postHandlers = {
       }));
 
       return { status: 200 as const, body: { posts } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { posts: [] } as any };
     }
   },
@@ -130,7 +130,7 @@ const postHandlers = {
           }
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Database error" } as any };
     }
   },
@@ -152,7 +152,7 @@ const postHandlers = {
       }));
 
       return { status: 200 as const, body: { posts } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { posts: [] } as any };
     }
   },
@@ -177,7 +177,7 @@ const postHandlers = {
           }
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Database error" } as any };
     }
   },
@@ -320,7 +320,7 @@ const postHandlers = {
 
       c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`));
       return { status: 200 as const, body: { success: true, slug } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Database write failed" } as any };
     }
   },
@@ -331,7 +331,7 @@ const postHandlers = {
       await db.updateTable("posts").set({ is_deleted: 1, status: "draft" }).where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -342,7 +342,7 @@ const postHandlers = {
       await db.updateTable("posts").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -353,7 +353,7 @@ const postHandlers = {
       await db.deleteFrom("posts").where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } as any };
     }
   },
@@ -363,7 +363,7 @@ const postHandlers = {
       const result = await approvePost(c, slug);
       if (!result.success) return { status: 404 as const, body: { error: result.error || "Approval failed" } as any };
       return { status: 200 as const, body: { success: true, warnings: result.warnings } as any };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Approval failed" } as any };
     }
   },
@@ -390,7 +390,7 @@ const postHandlers = {
       }
       c.executionCtx.waitUntil(logAuditAction(c, "REJECT_POST", "posts", slug));
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Reject failed" } as any };
     }
   },
@@ -403,7 +403,7 @@ const postHandlers = {
         id: Number(h.id)
       }));
       return { status: 200 as const, body: { history } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { history: [] } as any };
     }
   },

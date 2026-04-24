@@ -35,7 +35,7 @@ const awardsTsRestRouter: any = s.router(awardContract as any, {
       }));
 
       return { status: 200 as const, body: { awards } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { awards: [] } };
     }
   },
@@ -72,17 +72,18 @@ const awardsTsRestRouter: any = s.router(awardContract as any, {
       }
 
       return { status: 200 as const, body: { success: true, id: finalId || "" } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
-    deleteAward: async ({ params, body }: { params: any, body: any }, c: any) => {
+    undeleteAward: async ({ params, body: _body }: { params: any, body: any }, c: any) => {
+
     try {
                   const db = c.get("db") as Kysely<DB>;
       await db.updateTable("awards").set({ is_deleted: 1 }).where("id", "=", Number(params.id) as any).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },

@@ -33,7 +33,7 @@ const analyticsHandlers = {
         .execute();
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { success: false } as any };
     }
   },
@@ -62,7 +62,7 @@ const analyticsHandlers = {
         .execute();
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { success: false } as any };
     }
   },
@@ -107,7 +107,7 @@ const analyticsHandlers = {
       }));
 
       return { status: 200 as const, body: { topPages, recentViews, totals } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { topPages: [], recentViews: [], totals: [] } as any };
     }
   },
@@ -150,7 +150,7 @@ const analyticsHandlers = {
       }));
 
       return { status: 200 as const, body: { roster } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { roster: [] } as any };
     }
   },
@@ -184,7 +184,7 @@ const analyticsHandlers = {
       }));
 
       return { status: 200 as const, body: { leaderboard } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch leaderboard" } as any };
     }
   },
@@ -213,7 +213,7 @@ const analyticsHandlers = {
           }
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch stats" } as any };
     }
   },
@@ -235,7 +235,7 @@ const analyticsHandlers = {
       ];
 
       return { status: 200 as const, body: { results } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Search failed" } as any };
     }
   }

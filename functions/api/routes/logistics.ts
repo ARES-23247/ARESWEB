@@ -49,7 +49,7 @@ const logisticsHandlers = {
           tshirts: tshirtSummary,
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Logistics fetch failed" } as any };
     }
   },

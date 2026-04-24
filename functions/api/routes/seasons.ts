@@ -27,7 +27,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
       }));
 
       return { status: 200 as const, body: { seasons: seasons as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch seasons" } };
     }
   },
@@ -48,7 +48,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
       }));
 
       return { status: 200 as const, body: { seasons: seasons as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to list seasons" } };
     }
   },
@@ -75,7 +75,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
           }
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch season" } };
     }
   },
@@ -111,7 +111,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
           outreach: outreach as any[],
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch season details" } };
     }
   },
@@ -151,7 +151,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
         c.executionCtx.waitUntil(logAuditAction(c, "season_created", "seasons", body.start_year.toString(), `Season "${body.start_year}" created`));
       }
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Save failed" } };
     }
   },
@@ -165,7 +165,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "season_deleted", "seasons", params.id, `Season "${params.id}" soft-deleted`));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
@@ -179,7 +179,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "season_restored", "seasons", params.id, `Season "${params.id}" restored`));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Restore failed" } };
     }
   },
@@ -192,7 +192,7 @@ const seasonsTsRestRouter: any = s.router(seasonsContract as any, {
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "season_purged", "seasons", params.id, `Season "${params.id}" permanently deleted`));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Purge failed" } };
     }
   },

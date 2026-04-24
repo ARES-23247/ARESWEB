@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { Hono, Context } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";

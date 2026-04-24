@@ -25,7 +25,7 @@ authRouter.on(["POST", "GET"], "/*", rateLimitMiddleware(20, 60), async (c: any)
     console.error("[Auth Handler] Internal Exception:", err);
     return c.json({ 
       message: err.message || "Internal Server Error during Authentication", 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       stack: (c.env as any).ENVIRONMENT === "development" ? err.stack : undefined
     }, 500);
   }

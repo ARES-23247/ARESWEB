@@ -71,7 +71,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
       });
 
       return { status: 200 as const, body: { inquiries: inquiries as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch inquiries" } };
     }
   },
@@ -142,7 +142,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
       })());
 
       return { status: 200 as const, body: { success: true, id } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Submission failed" } };
     }
   },
@@ -156,7 +156,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
 
       c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", params.id, `Status changed to ${body.status}`));
       return { status: 200 as const, body: { success: true, status: body.status as any } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Update failed" } };
     }
   },
@@ -166,7 +166,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
       await db.deleteFrom("inquiries").where("id", "=", params.id).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", params.id, "Inquiry deleted"));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },

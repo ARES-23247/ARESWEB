@@ -12,7 +12,7 @@ const s = initServer<AppEnv>();
 export const profilesRouter = new Hono<AppEnv>();
 
 const profileHandlers = {
-  getMe: async ({}, c: Context<AppEnv>) => {
+  getMe: async (_: any, c: Context<AppEnv>) => {
     const user = await getSessionUser(c);
     if (!user) return { status: 200 as const, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
 
@@ -60,7 +60,7 @@ const profileHandlers = {
           auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role }
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
     }
   },
@@ -70,11 +70,11 @@ const profileHandlers = {
     try {
       await upsertProfile(c as any, user.id, body as any);
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
-  getTeamRoster: async ({}, c: Context<AppEnv>) => {
+  getTeamRoster: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("user_profiles as p")
@@ -110,7 +110,7 @@ const profileHandlers = {
       }));
 
       return { status: 200 as const, body: { members } as any };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { members: [] } as any };
     }
   },
@@ -170,7 +170,7 @@ const profileHandlers = {
         .execute();
 
       return { status: 200 as const, body: { profile: sanitized as any, badges: rawBadges as any[] } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Profile fetch failed" } as any };
     }
   },
@@ -188,7 +188,7 @@ profilesRouter.put("/avatar", rateLimitMiddleware(15, 60), async (c: any) => {
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     await auth.api.updateUser({ headers: c.req.raw.headers, body: { image: image || null } });
     return c.json({ success: true });
-  } catch (_err) {
+  } catch {
     return c.json({ error: "Avatar update failed" }, 500);
   }
 });

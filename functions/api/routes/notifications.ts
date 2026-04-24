@@ -34,7 +34,7 @@ const notificationHandlers = {
       }));
 
       return { status: 200 as const, body: { notifications } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Fetch failed", notifications: [] } as any };
     }
   },
@@ -51,7 +51,7 @@ const notificationHandlers = {
         .execute();
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Update failed" } as any };
     }
   },
@@ -67,7 +67,7 @@ const notificationHandlers = {
         .execute();
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Update failed" } as any };
     }
   },

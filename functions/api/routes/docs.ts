@@ -40,7 +40,7 @@ async function pruneDocHistory(c: Context<AppEnv>, slug: string, limit = 10) {
         .where("id", "<", oldestId)
         .execute();
     }
-  } catch (_err) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 const docTsRestRouter: any = s.router(docContract as any, {
@@ -81,7 +81,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       }));
 
       return { status: 200 as const, body: { docs: docs as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { docs: [] } };
     }
   },
@@ -146,7 +146,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
           contributors 
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
@@ -181,7 +181,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       const payload = { results: mapped };
       setCache(q, { data: payload, expiresAt: now + 60000 });
       return { status: 200 as const, body: payload as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Search failed" } };
     }
   },
@@ -203,7 +203,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       }));
 
       return { status: 200 as const, body: { docs: docs as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { docs: [] } };
     }
   },
@@ -230,7 +230,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
           } 
         } as any
       };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
@@ -240,7 +240,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ is_deleted: 1 }).where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -345,7 +345,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       }
 
       return { status: 200 as const, body: { success: true, slug } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Write failed" } };
     }
   },
@@ -356,7 +356,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ sort_order: sortOrder }).where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -375,7 +375,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       const db = c.get("db") as Kysely<DB>;
       await db.insertInto("docs_feedback").values({ slug, is_helpful: isHelpful ? 1 : 0, comment: comment || null }).execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Feedback failed" } };
     }
   },
@@ -396,7 +396,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       }));
 
       return { status: 200 as const, body: { history: history as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { history: [] } };
     }
   },
@@ -427,7 +427,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
 
       await db.updateTable("docs").set({ title: row.title || "", category: row.category || "", description: row.description, content: row.content || "", cf_email: email, updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 404 as const, body: { error: "Restore failed" } };
     }
   },
@@ -457,7 +457,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
         }
                   }
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -473,7 +473,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
                 if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Rejected", message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`, link: "/dashboard?tab=docs", priority: "high" });
       }
                   return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -483,7 +483,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -493,7 +493,7 @@ const docTsRestRouter: any = s.router(docContract as any, {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("docs").where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },

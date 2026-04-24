@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { Hono } from "hono";
 import { AppEnv, getSessionUser, turnstileMiddleware  } from "../../middleware";
 

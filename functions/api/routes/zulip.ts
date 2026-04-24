@@ -12,7 +12,7 @@ import { z } from "zod";
 import { zulipPresenceSchema } from "../../../src/schemas/contracts/zulipContract";
 
 const zulipHandlers = {
-  getPresence: async ({}: {}, c: Context<AppEnv>) => {
+  getPresence: async (_: any, c: Context<AppEnv>) => {
     try {
       const config = await getSocialConfig(c);
       if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {

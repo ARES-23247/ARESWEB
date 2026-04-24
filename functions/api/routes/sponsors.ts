@@ -26,7 +26,7 @@ const sponsorHandlers = {
       }));
 
       return { status: 200 as const, body: { sponsors: sponsors as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { sponsors: [] } };
     }
   },
@@ -67,7 +67,7 @@ const sponsorHandlers = {
       }));
 
       return { status: 200 as const, body: { sponsor, metrics } as any };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to fetch ROI" } };
     }
   },
@@ -87,7 +87,7 @@ const sponsorHandlers = {
       }));
 
       return { status: 200 as const, body: { sponsors: sponsors as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { sponsors: [] } };
     }
   },
@@ -117,7 +117,7 @@ const sponsorHandlers = {
 
       c.executionCtx.waitUntil(logAuditAction(c, "SAVE_SPONSOR", "sponsors", finalId, `Saved sponsor: ${name}`));
       return { status: 200 as const, body: { success: true, id: finalId } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -127,7 +127,7 @@ const sponsorHandlers = {
       await db.updateTable("sponsors").set({ is_active: 0 }).where("id", "=", params.id).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "DEACTIVATE_SPONSOR", "sponsors", params.id, `Deactivated sponsor ${params.id}`));
       return { status: 200 as const, body: { success: true } };
-    } catch (_err) {
+    } catch {
       return { status: 200 as const, body: { success: false } };
     }
   },
@@ -146,7 +146,7 @@ const sponsorHandlers = {
       }));
 
       return { status: 200 as const, body: { tokens: tokens as any[] } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { tokens: [] } };
     }
   },
@@ -166,7 +166,7 @@ const sponsorHandlers = {
       })());
 
       return { status: 200 as const, body: { success: true, token } };
-    } catch (_err) {
+    } catch {
       return { status: 500 as const, body: { error: "Failed to generate" } };
     }
   },
