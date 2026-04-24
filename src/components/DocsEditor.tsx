@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
-import { useEntityFetch } from "../hooks/useEntityFetch";
 import { docSchema } from "../schemas/docSchema";
 import { api } from "../api/client";
 import { useModal } from "../contexts/ModalContext";
 import EditorFooter from "./editor/EditorFooter";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { RefreshCw } from "lucide-react";
 
 interface DocData {
   slug: string;
@@ -49,33 +49,37 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
 
   const formValues = useWatch({ control });
 
-  // Custom Hooks
-  useEntityFetch<{ doc?: DocData }>(
-    editSlug ? `/api/admin/docs/${editSlug}/detail` : null,
-    (data) => {
-      if (data?.doc) {
-        const doc = data.doc;
-        reset({
-          slug: doc.slug || "",
-          title: doc.title || "",
-          category: doc.category || "Getting Started",
-          sortOrder: doc.sort_order || 10,
-          description: doc.description || "",
-          isPortfolio: !!doc.is_portfolio,
-          isExecutiveSummary: !!doc.is_executive_summary,
-          content: doc.content || "{}"
-        });
-        
-        if (editor && doc.content) {
-          try {
-            editor.commands.setContent(JSON.parse(doc.content));
-          } catch {
-            editor.commands.setContent(doc.content);
-          }
+  // Use standard API query instead of useEntityFetch
+  const { data: docRes, isLoading, isError } = api.docs.adminDetail.useQuery({
+    params: { slug: editSlug || "" }
+  }, {
+    enabled: !!editSlug,
+    queryKey: ["admin_doc_detail", editSlug]
+  });
+
+  useEffect(() => {
+    if (docRes?.status === 200 && docRes.body.doc) {
+      const doc = docRes.body.doc as unknown as DocData;
+      reset({
+        slug: doc.slug || "",
+        title: doc.title || "",
+        category: doc.category || "Getting Started",
+        sortOrder: doc.sort_order || 10,
+        description: doc.description || "",
+        isPortfolio: !!doc.is_portfolio,
+        isExecutiveSummary: !!doc.is_executive_summary,
+        content: doc.content || "{}"
+      });
+      
+      if (editor && doc.content) {
+        try {
+          editor.commands.setContent(JSON.parse(doc.content));
+        } catch {
+          editor.commands.setContent(doc.content);
         }
       }
     }
-  );
+  }, [docRes, reset, editor]);
 
   const saveMutation = api.docs.saveDoc.useMutation({
      
@@ -124,6 +128,8 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
     }
   };
 
+  if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
+
   return (
     <div className="flex flex-col gap-6 w-full relative">
       <div>
@@ -134,6 +140,13 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
           {editSlug ? "Modify an existing ARESLib documentation page." : "Draft a new Markdown/Tiptap documentation page for the hub."}
         </p>
       </div>
+
+      {isError && (
+        <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-ares-red animate-pulse" />
+          COMMUNICATION FAULT: Failed to retrieve record from server.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-2">
         <div className="col-span-1 lg:col-span-2">

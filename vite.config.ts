@@ -60,6 +60,8 @@ export default defineConfig({
         ]
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         maximumFileSizeToCacheInBytes: 15000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
         navigateFallbackDenylist: [/^\/api\//, /\/[^/]+\.[^/]+$/],

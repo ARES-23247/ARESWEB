@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import AssetPickerModal from "./AssetPickerModal";
-import { MapPin } from "lucide-react";
+import { MapPin, RefreshCw } from "lucide-react";
 import EventPotluckVolunteerFlags from "./events/EventPotluckVolunteerFlags";
 import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
@@ -18,9 +18,8 @@ import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { useModal } from "../contexts/ModalContext";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
-import { useEntityFetch } from "../hooks/useEntityFetch";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface LocationRow {
   id: string;
@@ -36,11 +35,10 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
   const editor = useRichEditor({ placeholder: "<p>Describe your upcoming event or write a full recap here...</p>" });
   
   const { availableSocials } = useAdminSettings();
-  const { uploadFile, isUploading, errorMsg: uploadError, setErrorMsg: setUploadError } = useImageUpload();
+  const { uploadFile, isUploading, setErrorMsg: setUploadError } = useImageUpload();
 
   const [isDeleted, setIsDeleted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [warningMsg] = useState("");
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<z.input<typeof eventSchema>>({
@@ -90,39 +88,43 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
     }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useEntityFetch<{ event?: any }>(
-    editId ? `/api/admin/events/${editId}` : null,
-    (data) => {
-      if (data?.event) {
-        setIsDeleted(data.event.is_deleted === 1);
-        reset({
-          title: data.event.title || "",
-          dateStart: data.event.date_start || "",
-          dateEnd: data.event.date_end || "",
-          location: data.event.location || "",
-          description: data.event.description || "",
-          coverImage: data.event.cover_image || DEFAULT_COVER_IMAGE,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          category: (data.event.category || "internal") as any,
-          tbaEventKey: data.event.tba_event_key || "",
-          isPotluck: data.event.is_potluck === 1,
-          isVolunteer: data.event.is_volunteer === 1,
-          publishedAt: data.event.published_at || "",
-          seasonId: data.event.season_id || "",
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          socials: (socials as any) || {}
-        });
-        if (editor) {
-          try {
-            editor.commands.setContent(JSON.parse(data.event.description));
-          } catch {
-            editor.commands.setContent(`<p>${data.event.description}</p>`);
-          }
+  // Use standard API query instead of useEntityFetch
+  const { data: eventRes, isLoading, isError } = api.events.adminDetail.useQuery({
+    params: { id: editId || "" }
+  }, {
+    enabled: !!editId,
+    queryKey: ["admin_event_detail", editId]
+  });
+
+  useEffect(() => {
+    if (eventRes?.status === 200 && eventRes.body.event) {
+      const event = eventRes.body.event;
+      setIsDeleted(event.is_deleted === 1);
+      reset({
+        title: event.title || "",
+        dateStart: event.date_start || "",
+        dateEnd: event.date_end || "",
+        location: event.location || "",
+        description: event.description || "",
+        coverImage: event.cover_image || DEFAULT_COVER_IMAGE,
+        category: (event.category || "internal") as any,
+        tbaEventKey: event.tba_event_key || "",
+        isPotluck: event.is_potluck === 1,
+        isVolunteer: event.is_volunteer === 1,
+        publishedAt: event.published_at || "",
+        seasonId: event.season_id ? String(event.season_id) : "",
+        socials: (socials as any) || {}
+      });
+      if (editor) {
+        try {
+          editor.commands.setContent(JSON.parse(event.description));
+        } catch {
+          editor.commands.setContent(`<p>${event.description}</p>`);
         }
       }
     }
-  );
+  }, [eventRes, reset, editor]);
+
 
   const saveMutation = api.events.saveEvent.useMutation({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -173,9 +175,11 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
       const { url } = await uploadFile(file);
       setValue("coverImage", url);
     } catch(err) {
-      setErrorMsg(uploadError || String(err));
+      setErrorMsg(String(err));
     }
   };
+
+  if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
 
   return (
     <div className="flex flex-col gap-6 w-full relative">
@@ -187,6 +191,13 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           {editId ? "Update existing competition or outreach details." : "Add upcoming competitions or outreach events to the portal."}
         </p>
       </div>
+
+      {isError && (
+        <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-ares-red animate-pulse" />
+          COMMUNICATION FAULT: Failed to retrieve record from server.
+        </div>
+      )}
       
       {isDeleted && (
         <div className="bg-ares-danger/10 border-l-4 border-ares-danger p-4 rounded-r-lg mb-6 flex items-start gap-3">
@@ -323,16 +334,6 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             <div>
               <h4 className="text-white font-bold text-xs tracking-wide uppercase">Critical Error</h4>
               <p id="event-error-msg" className="text-white text-sm mt-1 font-bold">{errorMsg}</p>
-            </div>
-          </div>
-        )}
-
-        {warningMsg && (
-          <div className="p-4 bg-ares-gold/10 border border-ares-gold/20 ares-cut flex items-start gap-3">
-            <div className="text-ares-gold mt-0.5">⚠️</div>
-            <div>
-              <h4 className="text-ares-gold font-bold text-xs tracking-wide uppercase">Syndication Warning</h4>
-              <p className="text-white text-sm mt-1">Event saved, but: {warningMsg}</p>
             </div>
           </div>
         )}

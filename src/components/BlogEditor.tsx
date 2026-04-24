@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,7 +8,6 @@ import AssetPickerModal from "./AssetPickerModal";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
-import { useEntityFetch } from "../hooks/useEntityFetch";
 import { postSchema, PostPayload } from "../schemas/postSchema";
 import { api } from "../api/client";
 import { useModal } from "../contexts/ModalContext";
@@ -18,6 +16,7 @@ import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import EditorFooter from "./editor/EditorFooter";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { RefreshCw } from "lucide-react";
 
 import SeasonPicker from "./SeasonPicker";
 
@@ -29,7 +28,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   
   // Custom Hooks
   const { availableSocials } = useAdminSettings();
-  const { uploadFile, isUploading: isUploadingCover, errorMsg: uploadError, setErrorMsg: setUploadError } = useImageUpload();
+  const { uploadFile, isUploading: isUploadingCover, setErrorMsg: setUploadError } = useImageUpload();
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<PostPayload>({
     resolver: zodResolver(postSchema),
@@ -64,29 +63,35 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
 
   const editor = useRichEditor({ placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>" });
 
-  useEntityFetch<{ post?: { title: string, published_at: string, thumbnail: string, ast: string, season_id?: string } }>(
-    editSlug ? `/api/admin/posts/${editSlug}/detail` : null,
-    (data) => {
-      if (data?.post) {
-        reset({
-          title: data.post.title || "",
-          publishedAt: data.post.published_at || "",
-          seasonId: data.post.season_id || "",
-          coverImageUrl: data.post.thumbnail || DEFAULT_COVER_IMAGE,
-          ast: data.post.ast ? JSON.parse(data.post.ast) : {},
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          socials: (socials as any) || {}
-        });
-        if (editor && data.post.ast) {
-          try {
-            editor.commands.setContent(JSON.parse(data.post.ast));
-          } catch (e) {
-            console.error("Failed to parse existing AST", e);
-          }
+  // Use standard API query instead of custom useEntityFetch
+  const { data: postRes, isLoading, isError } = api.posts.getAdminPost.useQuery({ 
+    params: { slug: editSlug || "" } 
+  }, { 
+    enabled: !!editSlug,
+    queryKey: ["admin_post_detail", editSlug]
+  });
+
+  useEffect(() => {
+    if (postRes?.status === 200 && postRes.body.post) {
+      const post = postRes.body.post;
+      reset({
+        title: post.title || "",
+        publishedAt: post.published_at || "",
+        seasonId: post.season_id ? String(post.season_id) : "",
+        coverImageUrl: post.thumbnail || DEFAULT_COVER_IMAGE,
+        ast: post.ast ? JSON.parse(post.ast) : {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        socials: (socials as any) || {}
+      });
+      if (editor && post.ast) {
+        try {
+          editor.commands.setContent(JSON.parse(post.ast));
+        } catch (e) {
+          console.error("Failed to parse existing AST", e);
         }
       }
     }
-  );
+  }, [postRes, reset, editor]); // Correct dependencies
 
 
   const saveMutation = api.posts.savePost.useMutation({
@@ -140,6 +145,8 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   };
 
 
+  if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
+
   if (!editor) return <div className="text-marble animate-pulse font-mono tracking-widest text-sm">Booting Editor System...</div>;
 
   return (
@@ -152,6 +159,13 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
           {editSlug ? "Modify an existing engineering or outreach update." : "Draft rich-text engineering and outreach updates."}
         </p>
       </div>
+
+      {isError && (
+        <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-ares-red animate-pulse" />
+          COMMUNICATION FAULT: Failed to retrieve record from server.
+        </div>
+      )}
 
       {/* Settings Grid */}
       <div className="flex flex-col md:flex-row gap-4 mt-2">
@@ -215,7 +229,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
       />
 
       <EditorFooter 
-        errorMsg={errorMsg || uploadError || (errors.ast?.message as unknown as string) || ""}
+        errorMsg={errorMsg || (errors.ast?.message as unknown as string) || ""}
         isPending={saveMutation.isPending}
         isEditing={!!editSlug}
         onDelete={handleDelete}
