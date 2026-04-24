@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
+import { trimTrailingSlash } from "hono/trailing-slash";
 import { Bindings, AppEnv, checkRateLimit, logSystemError, ensureAdmin, dbMiddleware, envMiddleware, parsePagination } from "./middleware";
 import { sql } from "kysely";
 import { DB } from "../../src/schemas/database";
@@ -38,6 +39,11 @@ import notificationsRouter from "./routes/notifications";
 const app = new Hono<AppEnv>();
 app.use("*", envMiddleware);
 app.use("*", dbMiddleware);
+
+// ── Trailing Slash Normalization ─────────────────────────────────────
+// ts-rest client appends trailing slashes to root contract paths (e.g.
+// GET /api/events/ instead of /api/events), which produces 404s.
+app.use(trimTrailingSlash());
 
 const apiRouter = new Hono<AppEnv>();
 // ── Isolate-Memory Rate Limiting ─────────────────────────────────────
