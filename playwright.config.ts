@@ -11,7 +11,7 @@ export default defineConfig({
   reporter: 'html',
   timeout: 60000,
   use: {
-    baseURL: process.env.CI ? 'http://localhost:8788' : 'http://localhost:5173',
+    baseURL: process.env.CI ? 'http://127.0.0.1:8788' : 'http://localhost:5173',
     trace: 'on-first-retry',
   },
   projects: [
@@ -23,7 +23,7 @@ export default defineConfig({
   webServer: process.env.CI 
     ? {
         command: WRANGLER_COMMAND,
-        url: 'http://localhost:8788',
+        url: 'http://127.0.0.1:8788',
         reuseExistingServer: false,
         timeout: 120 * 1000,
       }
@@ -35,7 +35,7 @@ export default defineConfig({
         },
         {
           command: WRANGLER_COMMAND,
-          url: 'http://localhost:8788',
+          url: 'http://127.0.0.1:8788',
           reuseExistingServer: true,
         }
       ],
