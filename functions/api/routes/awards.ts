@@ -76,7 +76,7 @@ const awardsTsRestRouter: any = s.router(awardContract as any, {
       return { status: 200 as const, body: { success: false } };
     }
   },
-    undeleteAward: async ({ params, body: _body }: { params: any, body: any }, c: any) => {
+    deleteAward: async ({ params, body: _body }: { params: any, body: any }, c: any) => {
 
     try {
                   const db = c.get("db") as Kysely<DB>;

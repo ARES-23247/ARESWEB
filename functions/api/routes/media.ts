@@ -134,8 +134,8 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       }
 
       return { status: 200 as const, body: { success: true, key, url: `/api/media/${key}`, altText } };
-    } catch {
-      console.error("UPLOAD ERROR", _err);
+    } catch (err) {
+      console.error("UPLOAD ERROR", err);
       return { status: 500 as const, body: { error: "Upload failed" } };
     }
   },

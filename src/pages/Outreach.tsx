@@ -110,7 +110,7 @@ export default function Outreach() {
   }), { hours: 0, reach: 0, events: 0 });
 
   return (
-    <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden bg-ares-gray-deep">
+    <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">
       <SEO title="Community Impact" description="Empowering Morgantown and beyond through STEM outreach. Track our service hours, community reach, and impact initiatives." />
       
       {/* Background Ambience */}
@@ -184,7 +184,7 @@ export default function Outreach() {
               Together, we are developing a new rotating exhibit structure that highlights STEM stories unique to West Virginia. Our first project is the <strong>WV Bridge Exhibit</strong>, using the Engineering Design Process to teach children about structural integrity and local history.
             </p>
             <div className="mt-10 flex gap-4">
-               <a href="https://sparkwv.org" target="_blank" rel="noreferrer" className="px-6 py-3 bg-ares-red text-white font-black ares-cut-sm hover:scale-105 transition-all shadow-lg shadow-ares-red/20">Support Spark!</a>
+               <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-ares-red text-white font-black ares-cut-sm hover:scale-105 transition-all shadow-lg shadow-ares-red/20">Support Spark!</a>
                <a href="/join" className="px-6 py-3 bg-marble border border-white/10 text-ares-black font-black ares-cut-sm hover:bg-ares-gray transition-all">Join the Mission</a>
             </div>
           </div>
@@ -275,6 +275,8 @@ export default function Outreach() {
               className="relative w-full max-w-xl bg-obsidian border border-white/10 p-8 md:p-12 ares-cut-lg shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <button 
+                title="Close"
+                aria-label="Close"
                 onClick={() => setIsModalOpen(false)} 
                 className="absolute top-6 right-6 text-ares-gray hover:text-white transition-colors"
                 disabled={isSubmitting}

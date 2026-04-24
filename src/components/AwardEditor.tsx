@@ -202,6 +202,8 @@ export default function AwardEditor() {
             </div>
 
             <button
+              title="Delete Award"
+              aria-label="Delete Award"
               onClick={() => { if(confirm("Purge this achievement from history?")) deleteMutation.mutate({ params: { id: award.id }, body: {} }); }}
               className="absolute top-4 right-4 p-3 text-ares-gray hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
             >

@@ -101,8 +101,8 @@ const judgesTsRestRouter: any = s.router(judgeContract as any, {
 
       portfolioCache.set("portfolio", { data: payload, expiresAt: now + 300000 });
       return { status: 200 as const, body: payload as any };
-    } catch {
-      console.error("[Judges] Portfolio failed:", _err);
+    } catch (err) {
+      console.error("[Judges] Portfolio failed:", err);
       return { status: 500 as const, body: { error: "Portfolio fetch failed" } };
     }
   },
@@ -128,7 +128,7 @@ const judgesTsRestRouter: any = s.router(judgeContract as any, {
     createCode: async ({ body }: { body: any }, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
-      const { label, expiresAt: _expiresAt } = body;
+      const { label, expiresAt } = body;
       const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
       const id = crypto.randomUUID();
 
