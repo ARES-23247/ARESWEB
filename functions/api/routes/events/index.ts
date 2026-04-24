@@ -8,8 +8,7 @@ import { eventHandlers } from "./handlers";
 const s = initServer<AppEnv>();
 const eventsRouter = new Hono<AppEnv>();
 
-// @ts-ignore
-const eventTsRestRouter = s.router(eventContract, eventHandlers);
+const eventTsRestRouter = s.router(eventContract, eventHandlers as any);
 
 // Apply protections
 eventsRouter.use("/admin", ensureAdmin);

@@ -46,7 +46,7 @@ describe("Hono Backend - /comments Router", () => {
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
+      executeTakeFirst: vi.fn().mockResolvedValue({ numInsertedOrUpdatedRows: 1n, insertId: 1n }),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       updateTable: vi.fn().mockReturnThis(),

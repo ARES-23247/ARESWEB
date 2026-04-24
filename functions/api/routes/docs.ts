@@ -43,14 +43,10 @@ async function pruneDocHistory(c: Context<AppEnv>, slug: string, limit = 10) {
   } catch (_err) { /* ignore */ }
 }
 
-// @ts-ignore
-const docTsRestRouter = s.router(docContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  getDocs: async (_: any, c: any) => {
+const docTsRestRouter: any = s.router(docContract as any, {
+    getDocs: async (_: any, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("docs")
         .leftJoin("user as u", "docs.cf_email", "u.email")
         .leftJoin("user_profiles as p", "u.id", "p.user_id")
@@ -89,12 +85,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 200 as const, body: { docs: [] } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  getDoc: async ({ params }: { params: any }, c: any) => {
+    getDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("docs")
         .leftJoin("user as u", "docs.cf_email", "u.email")
@@ -157,12 +150,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  searchDocs: async ({ query }: { query: any }, c: any) => {
+    searchDocs: async ({ query }: { query: any }, c: any) => {
     const { q } = query;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    if (!q || q.length < 3) return { status: 200 as const, body: { results: [] } };
+            if (!q || q.length < 3) return { status: 200 as const, body: { results: [] } };
     try {
       const now = Date.now();
       const cached = docSearchCache.get(q);
@@ -195,12 +185,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 500 as const, body: { error: "Search failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  adminList: async (_: any, c: any) => {
+    adminList: async (_: any, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("docs")
         .select(["slug", "title", "category", "sort_order", "description", "is_portfolio", "is_executive_summary", "is_deleted", "status", "revision_of"])
         .orderBy("category")
@@ -220,12 +207,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 200 as const, body: { docs: [] } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  adminDetail: async ({ params }: { params: any }, c: any) => {
+    adminDetail: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("docs")
         .select(["slug", "title", "category", "sort_order", "description", "content", "is_portfolio", "is_executive_summary", "is_deleted", "status", "revision_of"])
@@ -250,12 +234,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  deleteDoc: async ({ params }: { params: any }, c: any) => {
+    deleteDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ is_deleted: 1 }).where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
@@ -263,12 +244,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 200 as const, body: { success: false } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  saveDoc: async ({ body }: { body: any }, c: any) => {
+    saveDoc: async ({ body }: { body: any }, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft } = body;
       const user = await getSessionUser(c);
       const email = user?.email || "anonymous_admin";
@@ -281,12 +259,9 @@ const docTsRestRouter = s.router(docContract, {
       if (existing) {
         await db.insertInto("docs_history")
           .values({
-            // @ts-ignore - Auto-generated to fix strict typing
-            slug: existing.slug,
+                        slug: String(existing.slug),
             title: existing.title,
-            // @ts-ignore - Auto-generated to fix strict typing
-            // @ts-ignore - Auto-generated to fix strict typing
-            category: existing.category,
+                                    category: existing.category,
             description: existing.description || "",
             content: existing.content,
             author_email: existing.cf_email || "unknown"
@@ -374,12 +349,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 500 as const, body: { error: "Write failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  updateSort: async ({ params, body }: { params: any, body: any }, c: any) => {
+    updateSort: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    const { sortOrder } = body;
+            const { sortOrder } = body;
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ sort_order: sortOrder }).where("slug", "=", slug).execute();
@@ -388,12 +360,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 200 as const, body: { success: false } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  submitFeedback: async ({ params, body }: { params: any, body: any }, c: any) => {
+    submitFeedback: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    const { isHelpful, comment, turnstileToken } = body;
+            const { isHelpful, comment, turnstileToken } = body;
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     if (!checkRateLimit(`feedback:${ip}`, 10, 60)) return { status: 429 as const, body: { error: "Too many submissions" } };
 
@@ -410,12 +379,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 500 as const, body: { error: "Feedback failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  getHistory: async ({ params }: { params: any }, c: any) => {
+    getHistory: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("docs_history")
         .selectAll()
@@ -434,12 +400,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 200 as const, body: { history: [] } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  restoreHistory: async ({ params, id }: { params: any, id: any }, c: any) => {
+    restoreHistory: async ({ params, id }: { params: any, id: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("docs_history").select(["title", "category", "description", "content"]).where("id", "=", Number(id)).where("slug", "=", slug).executeTakeFirst();
       if (!row) return { status: 404 as const, body: { error: "Version not found" } };
@@ -451,12 +414,9 @@ const docTsRestRouter = s.router(docContract, {
       if (current) {
         await db.insertInto("docs_history")
           .values({
-            // @ts-ignore - Auto-generated to fix strict typing
-            slug: current.slug,
+                        slug: String(current.slug),
             title: current.title,
-            // @ts-ignore - Auto-generated to fix strict typing
-            // @ts-ignore - Auto-generated to fix strict typing
-            category: current.category,
+                                    category: current.category,
             description: current.description || "",
             content: current.content,
             author_email: current.cf_email || "unknown"
@@ -471,12 +431,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 404 as const, body: { error: "Restore failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  approveDoc: async ({ params }: { params: any }, c: any) => {
+    approveDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("docs").select(["revision_of", "title", "category", "sort_order", "description", "content", "is_portfolio", "is_executive_summary", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
       if (!row) return { status: 200 as const, body: { success: false } };
@@ -490,54 +447,39 @@ const docTsRestRouter = s.router(docContract, {
 
         if (row.cf_email) {
           const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
-          // @ts-ignore - Auto-generated to fix strict typing
-          if (author) await emitNotification(c, { userId: author.id, title: "Doc Merged", message: `Your changes to document "${row.title}" have been approved.`, link: `/docs/${row.revision_of}`, priority: "medium" });
+                    if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Merged", message: `Your changes to document "${row.title}" have been approved.`, link: `/docs/${row.revision_of}`, priority: "medium" });
         }
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      } else {
+                  } else {
         await db.updateTable("docs").set({ status: "published" }).where("slug", "=", slug).execute();
         if (row.cf_email) {
           const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
-          // @ts-ignore - Auto-generated to fix strict typing
-          if (author) await emitNotification(c, { userId: author.id, title: "Doc Approved", message: `Your document "${row.title}" has been published.`, link: `/docs/${slug}`, priority: "medium" });
+                    if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Approved", message: `Your document "${row.title}" has been published.`, link: `/docs/${slug}`, priority: "medium" });
         }
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      }
+                  }
       return { status: 200 as const, body: { success: true } };
     } catch (_err) {
       return { status: 200 as const, body: { success: false } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  rejectDoc: async ({ params, body }: { params: any, body: any }, c: any) => {
+    rejectDoc: async ({ params, body }: { params: any, body: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    const { reason } = body;
+            const { reason } = body;
     try {
       const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("docs").select(["title", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
       await db.updateTable("docs").set({ status: "rejected" }).where("slug", "=", slug).execute();
       if (row?.cf_email) {
         const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
-        // @ts-ignore - Auto-generated to fix strict typing
-        if (author) await emitNotification(c, { userId: author.id, title: "Doc Rejected", message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`, link: "/dashboard?tab=docs", priority: "high" });
+                if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Rejected", message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`, link: "/dashboard?tab=docs", priority: "high" });
       }
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      return { status: 200 as const, body: { success: true } };
+                  return { status: 200 as const, body: { success: true } };
     } catch (_err) {
       return { status: 200 as const, body: { success: false } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  undeleteDoc: async ({ params }: { params: any }, c: any) => {
+    undeleteDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("docs").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
@@ -545,12 +487,9 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 200 as const, body: { success: false } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  purgeDoc: async ({ params }: { params: any }, c: any) => {
+    purgeDoc: async ({ params }: { params: any }, c: any) => {
     const { slug } = params;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("docs").where("slug", "=", slug).execute();
       return { status: 200 as const, body: { success: true } };
@@ -558,7 +497,7 @@ const docTsRestRouter = s.router(docContract, {
       return { status: 200 as const, body: { success: false } };
     }
   },
-});
+} as any);
 
 
 

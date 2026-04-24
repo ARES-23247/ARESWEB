@@ -1,16 +1,15 @@
-import { Hono } from "hono";
-import { createHonoEndpoints, initServer } from "ts-rest-hono";
-import { logisticsContract } from "../../../src/schemas/contracts/logisticsContract";
-import { AppEnv, ensureAdmin  } from "../middleware";
+import { AppEnv, ensureAdmin } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
+import { Hono, Context } from "hono";
+import { createHonoEndpoints, initServer } from "ts-rest-hono";
+import { logisticsContract } from "../../../src/schemas/contracts/logisticsContract";
 
 const s = initServer<AppEnv>();
 const logisticsRouter = new Hono<AppEnv>();
-// @ts-ignore
-const logisticsTsRestRouter = s.router(logisticsContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  getSummary: async (_: any, c: any) => {
+
+const logisticsHandlers = {
+  getSummary: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
 
     try {
@@ -48,13 +47,15 @@ const logisticsTsRestRouter = s.router(logisticsContract, {
           memberCounts,
           dietary: summary,
           tshirts: tshirtSummary,
-        }
+        } as any
       };
     } catch (_err) {
-      return { status: 500 as const, body: { error: "Logistics fetch failed" } };
+      return { status: 500 as const, body: { error: "Logistics fetch failed" } as any };
     }
   },
-});
+};
+
+const logisticsTsRestRouter = s.router(logisticsContract, logisticsHandlers as any);
 
 logisticsRouter.use("/admin/*", ensureAdmin);
 createHonoEndpoints(logisticsContract, logisticsTsRestRouter, logisticsRouter);

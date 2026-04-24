@@ -10,10 +10,8 @@ import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
 export const inquiriesRouter = new Hono<AppEnv>();
-// @ts-ignore
-const inquiriesTsRestRouter = s.router(inquiryContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  list: async ({ query }: { query: any }, c: any) => {
+const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
+    list: async ({ query }: { query: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = c.get("sessionUser");
@@ -77,8 +75,7 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
       return { status: 500 as const, body: { error: "Failed to fetch inquiries" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  submit: async ({ body }: { body: any }, c: any) => {
+    submit: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { type, name, email, metadata } = body;
@@ -86,8 +83,7 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
       const recent = await db.selectFrom("inquiries")
         .select("id")
         .where("email", "=", email)
-        // @ts-ignore - Auto-generated to fix strict typing
-        .where("created_at", ">", sql`datetime('now', '-2 minutes')`)
+                .where("created_at", ">", sql<string>`datetime('now', '-2 minutes')`)
         .executeTakeFirst();
 
       if (recent) return { status: 429 as const, body: { error: "Please wait a few minutes before submitting another inquiry." } };
@@ -150,8 +146,7 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
       return { status: 500 as const, body: { error: "Submission failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  updateStatus: async ({ params, body }: { params: any, body: any }, c: any) => {
+    updateStatus: async ({ params, body }: { params: any, body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("inquiries")
@@ -165,8 +160,7 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
       return { status: 500 as const, body: { error: "Update failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  delete: async ({ params }: { params: any }, c: any) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("inquiries").where("id", "=", params.id).execute();
@@ -176,7 +170,7 @@ const inquiriesTsRestRouter = s.router(inquiryContract, {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-});
+} as any);
 
 
 
@@ -195,8 +189,7 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   if (days <= 0) return { deleted: 0 };
   const res = await db.deleteFrom("inquiries")
     .where("status", "in", ["resolved", "rejected"])
-    // @ts-ignore - Auto-generated to fix strict typing
-    .where("created_at", "<", sql`datetime('now', '-' || ${days} || ' days')`)
+        .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
     .execute();
   return { deleted: res.length };
 }

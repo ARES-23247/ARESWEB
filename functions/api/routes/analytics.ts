@@ -8,15 +8,13 @@ import { DB } from "../../../src/schemas/database";
 const s = initServer<AppEnv>();
 export const analyticsRouter = new Hono<AppEnv>();
 
-// @ts-ignore
-const analyticsTsRestRouter = s.router(analyticsContract as any, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  trackPageView: async ({ body }: { body: any }, c: any) => {
+import { Context } from "hono";
+
+const analyticsHandlers = {
+  trackPageView: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
     if (!checkRateLimit(`track:${ip}`, 20, 600)) {
-      return { status: 429 as const, body: { success: false, error: "Rate limit exceeded" } };
+      return { status: 429 as const, body: { success: false, error: "Rate limit exceeded" } as any };
     }
 
     const db = c.get("db") as Kysely<DB>;
@@ -34,18 +32,15 @@ const analyticsTsRestRouter = s.router(analyticsContract as any, {
         })
         .execute();
 
-      return { status: 200 as const, body: { success: true } };
+      return { status: 200 as const, body: { success: true } as any };
     } catch (_err) {
-      return { status: 500 as const, body: { success: false } };
+      return { status: 500 as const, body: { success: false } as any };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  trackSponsorClick: async ({ body }: { body: any }, c: any) => {
+  trackSponsorClick: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
     if (!checkRateLimit(`click:${ip}`, 10, 600)) {
-      return { status: 429 as const, body: { success: false, error: "Rate limit exceeded" } };
+      return { status: 429 as const, body: { success: false, error: "Rate limit exceeded" } as any };
     }
 
     const db = c.get("db") as Kysely<DB>;
@@ -66,15 +61,13 @@ const analyticsTsRestRouter = s.router(analyticsContract as any, {
         }))
         .execute();
 
-      return { status: 200 as const, body: { success: true } };
+      return { status: 200 as const, body: { success: true } as any };
     } catch (_err) {
-      return { status: 500 as const, body: { success: false } };
+      return { status: 500 as const, body: { success: false } as any };
     }
   },
-  getSummary: async (_: any, c: any) => {
+  getSummary: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
     try {
       const [topPagesRow, recentViewsRow, totalsRow] = await Promise.all([
         db.selectFrom("page_analytics")
@@ -113,15 +106,13 @@ const analyticsTsRestRouter = s.router(analyticsContract as any, {
         total: Number(t.total)
       }));
 
-      return { status: 200 as const, body: { topPages, recentViews, totals } };
+      return { status: 200 as const, body: { topPages, recentViews, totals } as any };
     } catch (_err) {
-      return { status: 500 as const, body: { topPages: [], recentViews: [], totals: [] } };
+      return { status: 500 as const, body: { topPages: [], recentViews: [], totals: [] } as any };
     }
   },
-  getRosterStats: async (_: any, c: any) => {
+  getRosterStats: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
     try {
       const results = await db.selectFrom("user_profiles as u")
         .leftJoin("event_signups as s", "u.user_id", "s.user_id")
@@ -158,15 +149,13 @@ const analyticsTsRestRouter = s.router(analyticsContract as any, {
         event_volunteer_hours: Number(r.event_volunteer_hours || 0)
       }));
 
-      return { status: 200 as const, body: { roster } };
+      return { status: 200 as const, body: { roster } as any };
     } catch (_err) {
-      return { status: 500 as const, body: { roster: [] } };
+      return { status: 500 as const, body: { roster: [] } as any };
     }
   },
-  getLeaderboard: async (_: any, c: any) => {
+  getLeaderboard: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
     try {
       const results = await db.selectFrom("user as u")
         .innerJoin("user_profiles as p", "u.id", "p.user_id")
@@ -194,15 +183,13 @@ const analyticsTsRestRouter = s.router(analyticsContract as any, {
         badge_count: Number(r.badge_count)
       }));
 
-      return { status: 200 as const, body: { leaderboard } };
+      return { status: 200 as const, body: { leaderboard } as any };
     } catch (_err) {
-      return { status: 500 as const, body: { error: "Failed to fetch leaderboard" } };
+      return { status: 500 as const, body: { error: "Failed to fetch leaderboard" } as any };
     }
   },
-  getStats: async (_: any, c: any) => {
+  getStats: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
     try {
       const postsCount = await db.selectFrom("posts").select((eb) => eb.fn.count("slug").as("total")).where("is_deleted", "=", 0).executeTakeFirst();
       const eventsCount = await db.selectFrom("events").select((eb) => eb.fn.count("id").as("total")).where("is_deleted", "=", 0).executeTakeFirst();
@@ -224,17 +211,14 @@ const analyticsTsRestRouter = s.router(analyticsContract as any, {
             slack: !!dbSettings["SLACK_WEBHOOK_URL"],
             gcal: !!dbSettings["GCAL_PRIVATE_KEY"]
           }
-        }
+        } as any
       };
     } catch (_err) {
-      return { status: 500 as const, body: { error: "Failed to fetch stats" } };
+      return { status: 500 as const, body: { error: "Failed to fetch stats" } as any };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  search: async ({ query }: { query: any }, c: any) => {
+  search: async ({ query }: { query: any }, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
     const { q } = query;
     try {
       const ftsQ = `"${q.replace(/"/g, '""')}"*`;
@@ -245,17 +229,19 @@ const analyticsTsRestRouter = s.router(analyticsContract as any, {
       ]);
 
       const results = [
-        ...(postsReq.rows || []).map(r => ({ type: "blog", id: r.id, title: r.title })),
-        ...(eventsReq.rows || []).map(r => ({ type: "event", id: r.id, title: r.title })),
-        ...(docsReq.rows || []).map(r => ({ type: "doc", id: r.id, title: r.title }))
+        ...(postsReq.rows || []).map(r => ({ type: "blog" as const, id: r.id, title: r.title })),
+        ...(eventsReq.rows || []).map(r => ({ type: "event" as const, id: r.id, title: r.title })),
+        ...(docsReq.rows || []).map(r => ({ type: "doc" as const, id: r.id, title: r.title }))
       ];
 
-      return { status: 200 as const, body: { results: results as any[] } };
+      return { status: 200 as const, body: { results } as any };
     } catch (_err) {
-      return { status: 500 as const, body: { error: "Search failed" } };
+      return { status: 500 as const, body: { error: "Search failed" } as any };
     }
   }
-});
+};
+
+const analyticsTsRestRouter = s.router(analyticsContract, analyticsHandlers as any);
 
 analyticsRouter.use("/track", turnstileMiddleware());
 analyticsRouter.use("/sponsor-click", turnstileMiddleware());

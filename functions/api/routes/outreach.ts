@@ -35,10 +35,8 @@ async function fetchVolunteerEvents(db: Kysely<DB>) {
     return [];
   }
 }
-// @ts-ignore
-const outreachTsRestRouter = s.router(outreachContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  list: async (_: any, c: any) => {
+const outreachTsRestRouter: any = s.router(outreachContract as any, {
+    list: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -75,8 +73,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  adminList: async (_: any, c: any) => {
+    adminList: async (_: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -113,8 +110,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  save: async ({ body }: { body: any }, c: any) => {
+    save: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       if (body.id) {
@@ -155,8 +151,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
       return { status: 500 as const, body: { error: "Save failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  delete: async ({ params }: { params: any }, c: any) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("outreach_logs")
@@ -169,7 +164,7 @@ const outreachTsRestRouter = s.router(outreachContract, {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-});
+} as any);
 
 
 

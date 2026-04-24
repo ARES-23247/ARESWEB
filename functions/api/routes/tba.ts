@@ -1,9 +1,9 @@
+import { Kysely } from "kysely";
+import { DB } from "../../../src/schemas/database";
 import { Hono, Context } from "hono";
 import { AppEnv  } from "../middleware";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
 import { tbaContract } from "../../../src/schemas/contracts/tbaContract";
-import { Kysely } from "kysely";
-import { DB } from "../../../src/schemas/database";
 
 const s = initServer<AppEnv>();
 export const tbaRouter = new Hono<AppEnv>();
@@ -33,28 +33,28 @@ async function getTBA(path: string, c: Context<AppEnv>) {
   setTbaCache(path, { data, expiresAt: now + 300000 });
   return data;
 }
-// @ts-ignore
-const tbaTsRestRouter = s.router(tbaContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  getRankings: async ({ params }: { params: any }, c: any) => {
+
+const tbaHandlers = {
+  getRankings: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     try {
       const data = await getTBA(`/event/${params.eventKey}/rankings`, c);
-      return { status: 200 as const, body: { rankings: (data as any)?.rankings || [] } };
+      return { status: 200 as const, body: { rankings: (data as any)?.rankings as any[] || [] } as any };
     } catch (_err) {
-      return { status: 200 as const, body: { rankings: [] } };
+      return { status: 200 as const, body: { rankings: [] } as any };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  getMatches: async ({ params }: { params: any }, c: any) => {
+  getMatches: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     try {
       const data = await getTBA(`/event/${params.eventKey}/matches/simple`, c) as any[];
       const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
-      return { status: 200 as const, body: { matches: sorted } };
+      return { status: 200 as const, body: { matches: sorted as any[] } as any };
     } catch (_err) {
-      return { status: 200 as const, body: { matches: [] } };
+      return { status: 200 as const, body: { matches: [] } as any };
     }
   },
-});
+};
+
+const tbaTsRestRouter = s.router(tbaContract, tbaHandlers as any);
 
 createHonoEndpoints(tbaContract, tbaTsRestRouter, tbaRouter);
 export default tbaRouter;

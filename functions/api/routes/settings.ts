@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Hono } from "hono";
+import { Hono, Context } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 import { AppEnv, ensureAdmin, logAuditAction, validateLength, MAX_INPUT_LENGTHS, getDbSettings  } from "../middleware";
@@ -24,41 +24,43 @@ function maskSecret(value: string): string {
   return '••••••••' + value.slice(-4);
 }
 
-const settingsHandlers: any = {
+
+
+const settingsHandlers = {
    
-  getSettings: async (_: any, c: any) => {
+  getSettings: async (_: any, c: Context<AppEnv>) => {
     try {
       const settings = await getDbSettings(c);
       const masked: Record<string, string> = {};
       for (const [key, value] of Object.entries(settings)) {
         masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
       }
-      return { status: 200 as const, body: { success: true, settings: masked } };
+      return { status: 200 as const, body: { success: true, settings: masked } as any };
     } catch {
-      return { status: 500 as const, body: { success: false, settings: {} } };
+      return { status: 500 as const, body: { success: false, settings: {} } as any };
     }
   },
    
-  updateSettings: async ({ body }: any, c: any) => {
+  updateSettings: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const entries = Object.entries(body) as [string, string][];
       for (const [key, value] of entries) {
         const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);
-        if (error) return { status: 400 as const, body: { success: false, updated: 0 } };
+        if (error) return { status: 400 as const, body: { success: false, updated: 0 } as any };
         await db.insertInto("settings")
           .values({ key, value, updated_at: new Date().toISOString() })
           .onConflict((oc: any) => oc.column("key").doUpdateSet({ value, updated_at: new Date().toISOString() }))
           .execute();
       }
       c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, `Updated ${entries.length} integration keys.`));
-      return { status: 200 as const, body: { success: true, updated: entries.length } };
+      return { status: 200 as const, body: { success: true, updated: entries.length } as any };
     } catch {
-      return { status: 500 as const, body: { success: false, updated: 0 } };
+      return { status: 500 as const, body: { success: false, updated: 0 } as any };
     }
   },
    
-  getStats: async (_: any, c: any) => {
+  getStats: async (_: any, c: Context<AppEnv>) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const [posts, events, docs, inquiries, users] = await Promise.all([
@@ -76,18 +78,15 @@ const settingsHandlers: any = {
           docs: Number(docs?.count || 0),
           inquiries: Number(inquiries?.count || 0),
           users: Number(users?.count || 0),
-        }
+        } as any
       };
     } catch {
-      return { status: 200 as const, body: { posts: 0, events: 0, docs: 0, inquiries: 0, users: 0 } };
+      return { status: 200 as const, body: { posts: 0, events: 0, docs: 0, inquiries: 0, users: 0 } as any };
     }
   }
 };
 
-// @ts-ignore - Auto-generated to fix strict typing
-// @ts-ignore - Auto-generated to fix strict typing
-// @ts-ignore
-const settingsTsRestRouter = s.router(settingsContract, settingsHandlers);
+const settingsTsRestRouter = s.router(settingsContract, settingsHandlers as any);
 
 
 

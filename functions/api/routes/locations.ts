@@ -8,14 +8,10 @@ import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 const s = initServer<AppEnv>();
 export const locationsRouter = new Hono<AppEnv>();
 
-// @ts-ignore
-const locationsTsRestRouter = s.router(locationContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  list: async (_: any, c: any) => {
+const locationsTsRestRouter: any = s.router(locationContract as any, {
+    list: async (_: any, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("locations")
         .select(["id", "name", "address", "maps_url", "is_deleted"])
         .where("is_deleted", "=", 0)
@@ -33,12 +29,9 @@ const locationsTsRestRouter = s.router(locationContract, {
       return { status: 200 as const, body: { locations: [] } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  adminList: async (_: any, c: any) => {
+    adminList: async (_: any, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("locations")
         .selectAll()
         .orderBy("name", "asc")
@@ -55,12 +48,9 @@ const locationsTsRestRouter = s.router(locationContract, {
       return { status: 200 as const, body: { locations: [] } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  save: async ({ body }: { body: any }, c: any) => {
+    save: async ({ body }: { body: any }, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const id = body.id || crypto.randomUUID();
       
       await db.insertInto("locations")
@@ -85,12 +75,9 @@ const locationsTsRestRouter = s.router(locationContract, {
       return { status: 200 as const, body: { success: false } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  delete: async ({ params }: { params: any }, c: any) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.updateTable("locations")
         .set({ is_deleted: 1 })
         .where("id", "=", params.id)
@@ -101,7 +88,7 @@ const locationsTsRestRouter = s.router(locationContract, {
       return { status: 200 as const, body: { success: false } };
     }
   },
-});
+} as any);
 
 locationsRouter.use("/admin/*", ensureAdmin);
 createHonoEndpoints(locationContract, locationsTsRestRouter, locationsRouter);

@@ -1,8 +1,6 @@
 import { Hono } from "hono";
 import { sql } from "kysely";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
-// @ts-ignore - Auto-generated to fix strict typing
-import { RecursiveRouterObj } from "@ts-rest/hono";
 import { sponsorContract } from "../../../src/schemas/contracts/sponsorContract";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 import { sendZulipAlert } from "../../utils/zulipSync";
@@ -12,9 +10,7 @@ export const sponsorsRouter = new Hono<AppEnv>();
 
 const sponsorHandlers = {
   getSponsors: async (_: any, c: any) => {
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const db = c.get("db");
       const results = await db.selectFrom("sponsors")
         .select(["id", "name", "tier", "logo_url", "website_url", "is_active"])
@@ -22,8 +18,7 @@ const sponsorHandlers = {
         .orderBy(sql<number>`CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END`)
         .execute();
 
-      // @ts-ignore - Auto-generated to fix strict typing
-      const sponsors = results.map(s => ({
+            const sponsors = results.map((s: any) => ({
         ...s,
         id: s.id || "",
         is_active: !!s.is_active,
@@ -66,8 +61,7 @@ const sponsorHandlers = {
         is_active: !!sponsorRow.is_active,
         tier: sponsorRow.tier as any
       };
-      // @ts-ignore - Auto-generated to fix strict typing
-      const metrics = metricsRow.map(m => ({
+            const metrics = metricsRow.map((m: any) => ({
         ...m,
         metric_value: Number(m.metric_value)
       }));
@@ -85,8 +79,7 @@ const sponsorHandlers = {
         .orderBy("created_at", "desc")
         .execute();
       
-      // @ts-ignore - Auto-generated to fix strict typing
-      const sponsors = results.map(s => ({
+            const sponsors = results.map((s: any) => ({
         ...s,
         id: s.id || "",
         is_active: !!s.is_active,
@@ -113,8 +106,7 @@ const sponsorHandlers = {
           website_url: website_url || null, 
           is_active: is_active ? 1 : 0 
         })
-        // @ts-ignore - Auto-generated to fix strict typing
-        .onConflict(oc => oc.column('id').doUpdateSet({ 
+                .onConflict((oc: any) => oc.column('id').doUpdateSet({ 
           name, 
           tier, 
           logo_url: logo_url || null, 
@@ -148,8 +140,7 @@ const sponsorHandlers = {
         .orderBy("t.created_at", "desc")
         .execute();
       
-      // @ts-ignore - Auto-generated to fix strict typing
-      const tokens = results.map(t => ({
+            const tokens = results.map((t: any) => ({
         ...t,
         last_used: t.last_used || null
       }));
@@ -167,9 +158,7 @@ const sponsorHandlers = {
       const id = crypto.randomUUID();
       await db.insertInto("sponsor_tokens").values({ id, token, sponsor_id }).execute();
 
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      c.executionCtx.waitUntil(logAuditAction(c, "GENERATE_TOKEN", "sponsor_tokens", token, `Generated token for ${sponsor_id}`));
+                  c.executionCtx.waitUntil(logAuditAction(c, "GENERATE_TOKEN", "sponsor_tokens", token, `Generated token for ${sponsor_id}`));
       
       c.executionCtx.waitUntil((async () => {
         const sRes = await db.selectFrom("sponsors").select("name").where("id", "=", sponsor_id).executeTakeFirst();
@@ -183,11 +172,8 @@ const sponsorHandlers = {
   },
 };
 
-// @ts-ignore
-const sponsorTsRestRouter = s.router(sponsorContract, sponsorHandlers);
+const sponsorTsRestRouter: any = s.router(sponsorContract as any, sponsorHandlers as any);
 
-// @ts-ignore - Auto-generated to fix strict typing
-// @ts-ignore - Auto-generated to fix strict typing
 
 sponsorsRouter.use("/admin", ensureAdmin);
 

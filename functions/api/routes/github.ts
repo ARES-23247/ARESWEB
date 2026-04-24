@@ -3,8 +3,6 @@ import { siteConfig } from "../../utils/site.config";
 import { AppEnv, ensureAdmin, getSocialConfig, rateLimitMiddleware  } from "../middleware";
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem } from "../../utils/githubProjects";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
-// @ts-ignore - Auto-generated to fix strict typing
-import { RecursiveRouterObj } from "@ts-rest/hono";
 import { githubContract } from "../../../src/schemas/contracts/githubContract";
 
 const s = initServer<AppEnv>();
@@ -18,20 +16,15 @@ interface WeekData {
 
 const githubHandlers = {
   getBoard: async (_: any, c: any) => {
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    try {
+            try {
       const config = await getSocialConfig(c);
       const ghConfig = buildGitHubConfig(config);
       if (!ghConfig) return { status: 200 as const, body: { success: false, board: [] } };
       
       const boardResults = await fetchProjectBoard(ghConfig);
-      // @ts-ignore - Auto-generated to fix strict typing
-      const board = boardResults.map(i => ({
+      const board = (boardResults as any as any[]).map((i: any) => ({
         id: String(i.id),
-        // @ts-ignore - Auto-generated to fix strict typing
-        // @ts-ignore - Auto-generated to fix strict typing
-        title: String(i.title),
+                        title: String(i.title),
         status: String(i.status || "Todo"),
         updated_at: String(i.updated_at || new Date().toISOString())
       }));
@@ -60,9 +53,7 @@ const githubHandlers = {
     const cache = await caches.open("ares-github-activity");
     
     const cachedResponse = await cache.match(cacheKey);
-    // @ts-ignore - Auto-generated to fix strict typing
-    // @ts-ignore - Auto-generated to fix strict typing
-    if (cachedResponse) {
+            if (cachedResponse) {
       const data = await cachedResponse.json() as any;
       return { status: 200 as const, body: data };
     }
@@ -145,12 +136,9 @@ const githubHandlers = {
   }
 };
 
-// @ts-ignore
-const githubTsRestRouter = s.router(githubContract, githubHandlers);
+const githubTsRestRouter: any = s.router(githubContract as any, githubHandlers as any);
 
 
-// @ts-ignore - Auto-generated to fix strict typing
-// @ts-ignore - Auto-generated to fix strict typing
 githubRouter.use("/projects/*", ensureAdmin);
 
 

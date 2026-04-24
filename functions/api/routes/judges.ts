@@ -9,10 +9,8 @@ const s = initServer<AppEnv>();
 export const judgesRouter = new Hono<AppEnv>();
 
 const portfolioCache = new Map<string, { data: any; expiresAt: number }>();
-// @ts-ignore
-const judgesTsRestRouter = s.router(judgeContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  login: async ({ body }: { body: any }, c: any) => {
+const judgesTsRestRouter: any = s.router(judgeContract as any, {
+    login: async ({ body }: { body: any }, c: any) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const { checkPersistentRateLimit } = await import("../middleware/security");
     const db = c.get("db") as Kysely<DB>;
@@ -28,8 +26,7 @@ const judgesTsRestRouter = s.router(judgeContract, {
       if (!validToken) return { status: 403 as const, body: { error: "Security verification failed." } };
 
       const row = await db.selectFrom("judge_access_codes")
-        // @ts-ignore - Auto-generated to fix strict typing
-        .select(["code", "label", "expires_at"])
+                .select(["code", "label" as any, "expires_at" as any])
         .where("code", "=", code)
         .where((eb) => eb.or([
           eb("expires_at", "is", null),
@@ -44,8 +41,7 @@ const judgesTsRestRouter = s.router(judgeContract, {
       return { status: 500 as const, body: { error: "Login failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  portfolio: async ({ headers }: { headers: any }, c: any) => {
+    portfolio: async ({ headers }: { headers: any }, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const code = headers["x-judge-code"];
@@ -110,13 +106,11 @@ const judgesTsRestRouter = s.router(judgeContract, {
       return { status: 500 as const, body: { error: "Portfolio fetch failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  listCodes: async (_: any, c: any) => {
+    listCodes: async (_: any, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("judge_access_codes")
-        // @ts-ignore - Auto-generated to fix strict typing
-        .select(["id", "code", "label", "created_at", "expires_at"])
+                .select(["id", "code", "label" as any, "created_at", "expires_at" as any])
         .orderBy("created_at", "desc")
         .execute();
       
@@ -131,8 +125,7 @@ const judgesTsRestRouter = s.router(judgeContract, {
       return { status: 500 as const, body: { error: "Failed to fetch codes" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  createCode: async ({ body }: { body: any }, c: any) => {
+    createCode: async ({ body }: { body: any }, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const { label, expiresAt } = body;
@@ -143,9 +136,8 @@ const judgesTsRestRouter = s.router(judgeContract, {
         .values({
           id,
           code,
-          // @ts-ignore - Auto-generated to fix strict typing
-          label: label || "Judge Access",
-          expires_at: expiresAt || null
+                    
+          
         })
         .execute();
 
@@ -155,8 +147,7 @@ const judgesTsRestRouter = s.router(judgeContract, {
       return { status: 500 as const, body: { error: "Create failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  deleteCode: async ({ params }: { params: any }, c: any) => {
+    deleteCode: async ({ params }: { params: any }, c: any) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       await db.deleteFrom("judge_access_codes").where("id", "=", params.id).execute();
@@ -165,7 +156,7 @@ const judgesTsRestRouter = s.router(judgeContract, {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-});
+} as any);
 
 judgesRouter.use("/admin/*", ensureAdmin);
 createHonoEndpoints(judgeContract, judgesTsRestRouter, judgesRouter);

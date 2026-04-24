@@ -30,18 +30,15 @@ async function listAllObjects(bucket: R2Bucket, options?: R2ListOptions) {
   }
   return { objects };
 }
-// @ts-ignore
-const mediaTsRestRouter = s.router(mediaContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  getMedia: async (_: any, c: any) => {
+const mediaTsRestRouter: any = s.router(mediaContract as any, {
+    getMedia: async (_: any, c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     if (c.env.DEV_BYPASS !== "true" && !checkRateLimit(ip, 30, 60)) {
       return { status: 429 as const, body: "Too many requests" as any };
     }
 
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      const cache = caches.default;
+            const cache = (caches as any).default;
       const url = new URL(c.req.url);
       url.search = "";
       const cacheKey = new Request(url.toString(), { method: "GET" });
@@ -82,8 +79,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500 as const, body: { error: "List failed", media: [] } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  adminList: async (_: any, c: any) => {
+    adminList: async (_: any, c: any) => {
     try {
       const [objects, dbRes] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
@@ -109,8 +105,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500 as const, body: { error: "List failed", media: [] } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  upload: async (_: any, c: any) => {
+    upload: async (_: any, c: any) => {
     try {
       const formData = await c.req.parseBody();
       const file = formData["file"] as File;
@@ -135,8 +130,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
 
       await c.env.DB.prepare("INSERT OR REPLACE INTO media_tags (key, folder, tags) VALUES (?, ?, ?)").bind(key, folder, altText).run();
       if (c.executionCtx?.waitUntil) {
-        // @ts-ignore - Auto-generated to fix strict typing
-        c.executionCtx.waitUntil(caches.default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+                c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
       }
 
       return { status: 200 as const, body: { success: true, key, url: `/api/media/${key}`, altText } };
@@ -145,8 +139,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500 as const, body: { error: "Upload failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  move: async ({ params, body }: { params: any, body: any }, c: any) => {
+    move: async ({ params, body }: { params: any, body: any }, c: any) => {
     const oldKey = params.key;
     const { folder } = body;
     try {
@@ -166,8 +159,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500 as const, body: { error: "Move failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  delete: async ({ params }: { params: any }, c: any) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
       await c.env.ARES_STORAGE.delete(params.key);
       await c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(params.key).run();
@@ -176,8 +168,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  syndicate: async ({ body }: { body: any }, c: any) => {
+    syndicate: async ({ body }: { body: any }, c: any) => {
     try {
       const { key, caption } = body;
       const config = await getDbSettings(c);
@@ -191,7 +182,7 @@ const mediaTsRestRouter = s.router(mediaContract, {
       return { status: 500 as const, body: { error: "Syndicate failed" } };
     }
   },
-});
+} as any);
 
 // GET /media/:key — Serve raw object from R2
 mediaRouter.get("/:key{.+$}", async (c: any) => {
@@ -204,8 +195,7 @@ mediaRouter.get("/:key{.+$}", async (c: any) => {
       const user = await getSessionUser(c);
       if (!user) return c.text("Unauthorized", 401);
     }
-    // @ts-ignore - Auto-generated to fix strict typing
-    const cache = caches.default;
+        const cache = (caches as any).default;
     const url = new URL(c.req.url);
     url.search = "";
     const cacheKey = new Request(url.toString(), { method: "GET" });

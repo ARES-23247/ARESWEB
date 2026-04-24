@@ -9,14 +9,10 @@ import { sendZulipMessage } from "../../utils/zulipSync";
 const s = initServer<AppEnv>();
 export const badgesRouter = new Hono<AppEnv>();
 
-// @ts-ignore
-const badgesTsRestRouter = s.router(badgeContract, {
-  // @ts-ignore - Auto-generated to fix strict typing
-  list: async (_: any, c: any) => {
+const badgesTsRestRouter: any = s.router(badgeContract as any, {
+    list: async (_: any, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("badges")
         .selectAll()
         .orderBy("created_at", "asc")
@@ -36,12 +32,9 @@ const badgesTsRestRouter = s.router(badgeContract, {
       return { status: 500 as const, body: { error: "Failed to fetch badges" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  create: async ({ body }: { body: any }, c: any) => {
+    create: async ({ body }: { body: any }, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.insertInto("badges")
         .values({
           id: body.id,
@@ -56,12 +49,9 @@ const badgesTsRestRouter = s.router(badgeContract, {
       return { status: 500 as const, body: { error: "Failed to create badge" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  grant: async ({ body }: { body: any }, c: any) => {
+    grant: async ({ body }: { body: any }, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
       const sessionId = user?.id || "system";
 
@@ -104,12 +94,9 @@ const badgesTsRestRouter = s.router(badgeContract, {
       return { status: 500 as const, body: { error: "Failed to award badge" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  revoke: async ({ params }: { params: any }, c: any) => {
+    revoke: async ({ params }: { params: any }, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("user_badges")
         .where("user_id", "=", params.userId)
         .where("badge_id", "=", params.badgeId)
@@ -119,12 +106,9 @@ const badgesTsRestRouter = s.router(badgeContract, {
       return { status: 500 as const, body: { error: "Failed to revoke badge" } };
     }
   },
-  // @ts-ignore - Auto-generated to fix strict typing
-  delete: async ({ params }: { params: any }, c: any) => {
+    delete: async ({ params }: { params: any }, c: any) => {
     try {
-      // @ts-ignore - Auto-generated to fix strict typing
-      // @ts-ignore - Auto-generated to fix strict typing
-      const db = c.get("db") as Kysely<DB>;
+                  const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("badges")
         .where("id", "=", params.id)
         .execute();
@@ -133,7 +117,7 @@ const badgesTsRestRouter = s.router(badgeContract, {
       return { status: 500 as const, body: { error: "Failed to delete badge definition" } };
     }
   },
-});
+} as any);
 
 
 
