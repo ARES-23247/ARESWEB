@@ -119,7 +119,7 @@ export default function Outreach() {
 
       {/* Hero */}
       <section className="py-32 px-6 relative z-10 bg-ares-gray-deep">
-        <div className="max-w-5xl mx-auto text-center bg-obsidian p-10 rounded-3xl border border-white/5 shadow-2xl inline-block relative z-10">
+        <div className="max-w-5xl mx-auto text-center bg-obsidian p-10 rounded-3xl border border-white/5 shadow-2xl relative z-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
