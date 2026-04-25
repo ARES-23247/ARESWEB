@@ -255,7 +255,6 @@ function RevealBlock({ summary, children }: { summary: string, children: ReactNo
     <div className="my-6 ares-cut-sm border border-white/10 bg-black/20 overflow-hidden shadow-lg transition-all hover:border-ares-gold/30">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        /* eslint-disable-next-line jsx-a11y/aria-proptypes, react/no-unknown-property */
         aria-expanded={isOpen}
         aria-controls={contentId}
         className="w-full flex items-center justify-between px-6 py-4 text-left group transition-colors hover:bg-white/5"
