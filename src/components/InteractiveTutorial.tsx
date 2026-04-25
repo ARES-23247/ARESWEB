@@ -142,7 +142,7 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
             <span>{Math.round(progress)}% Complete</span>
           </div>
           <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+            <div className="progress-fill" style={Object.assign({}, { width: `${progress}%` })}></div>
           </div>
         </div>
       </div>

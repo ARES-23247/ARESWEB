@@ -230,10 +230,10 @@ export default function AdminInquiries() {
                     <tr 
                       key={row.id} 
                       className="hover:bg-white/5 transition-colors group absolute w-full flex"
-                      style={{ 
+                      style={Object.assign({}, { 
                         height: `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`
-                      }}
+                      })}
                     >
                       {row.getVisibleCells().map(cell => (
                         <td key={cell.id} className="px-6 py-4 text-sm text-marble/80 flex-1 flex items-center overflow-hidden">

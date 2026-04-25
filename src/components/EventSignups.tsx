@@ -249,7 +249,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                 value={mySignup?.notes || ""}
                 onChange={e => setMySignup(prev => ({ bringing: prev?.bringing || "", notes: e.target.value, prep_hours: prev?.prep_hours || 0 }))}
                 className={`w-full ${isPotluck && isVolunteer ? 'md:col-span-2' : ''} bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all`}
-                style={(!isPotluck && !isVolunteer) ? { gridColumn: 'span 2' } : {}}
+                style={Object.assign({}, (!isPotluck && !isVolunteer) ? { gridColumn: 'span 2' } : {})}
               />
               {isVolunteer && (
                 <div className="flex items-center gap-3">

@@ -106,21 +106,21 @@ export default function PowerSheddingSim() {
 
         {/* DASHBOARD */}
         <div className="flex-1 min-w-[250px] bg-white/[0.03] p-6 ares-cut border border-white/10 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
-          <div className="text-5xl font-extrabold" style={{ color: getVoltageColor(), textShadow: `0 0 20px ${getVoltageColor()}44` }}>
+          <div className="text-5xl font-extrabold" style={Object.assign({}, { color: getVoltageColor(), textShadow: `0 0 20px ${getVoltageColor()}44` })}>
             {voltage.toFixed(1)}V
           </div>
           
-          <div className="text-[12px] tracking-widest" style={{ color: isBrownout ? '#C00000' : (isShedding ? '#CD7F32' : '#00E5FF') }}>
+          <div className="text-[12px] tracking-widest" style={Object.assign({}, { color: isBrownout ? '#C00000' : (isShedding ? '#CD7F32' : '#00E5FF') })}>
             {isBrownout ? 'CRITICAL BROWNOUT' : (isShedding ? 'POWER SHEDDING ACTIVE' : 'SYSTEM NOMINAL')}
           </div>
 
           <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
             <div 
               className="h-full transition-all duration-300 ease-out"
-              style={{ 
+              style={Object.assign({}, { 
                 width: `${(voltage / 12.5) * 100}%`,
                 backgroundColor: getVoltageColor()
-              }}
+              })}
             ></div>
           </div>
 
