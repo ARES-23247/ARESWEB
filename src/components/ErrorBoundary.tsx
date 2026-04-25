@@ -21,6 +21,31 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public static getDerivedStateFromError(error: any): State {
+    const errorStr = error?.message || error?.toString?.() || "";
+
+    // Detect stale chunk errors from PWA/service worker cache after deployment
+    const isStaleChunk =
+      errorStr.includes("Failed to fetch dynamically imported module") ||
+      errorStr.includes("Importing a module script failed") ||
+      errorStr.includes("error loading dynamically imported module");
+
+    if (isStaleChunk) {
+      const reloadKey = "ares-stale-chunk-reload";
+      const lastReload = sessionStorage.getItem(reloadKey);
+      const now = Date.now();
+      // Only auto-reload once per 60s to prevent infinite loop
+      if (!lastReload || now - Number(lastReload) > 60_000) {
+        sessionStorage.setItem(reloadKey, String(now));
+        // Unregister stale service worker and force reload
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(r => r.unregister());
+          });
+        }
+        window.location.reload();
+      }
+    }
+
     const correlationId = Math.random().toString(36).substring(2, 10).toUpperCase();
     return { 
       hasError: true, 
