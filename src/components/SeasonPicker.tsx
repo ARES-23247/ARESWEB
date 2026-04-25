@@ -32,7 +32,7 @@ export default function SeasonPicker({ value, onChange, label = "Linked Season" 
         <option value="">-- No Season Link --</option>
         {seasons?.map((s) => (
           <option key={s.start_year} value={s.start_year.toString()}>
-            {s.start_year}-{s.end_year} | {s.challenge_name}
+            {s.start_year} | {s.challenge_name}
           </option>
         ))}
       </select>

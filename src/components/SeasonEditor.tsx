@@ -23,7 +23,6 @@ export default function SeasonEditor() {
   // Local State
   const [isPending, setIsPending] = useState(false);
   const [startYear, setStartYear] = useState<number>(new Date().getFullYear());
-  const [endYear, setEndYear] = useState<number>(new Date().getFullYear() + 1);
   const [challengeName, setChallengeName] = useState("");
   const [robotName, setRobotName] = useState("");
   const [robotImageUrl, setRobotImageUrl] = useState(DEFAULT_COVER_IMAGE);
@@ -47,7 +46,6 @@ export default function SeasonEditor() {
     if (detailData?.status === 200 && detailData.body.season) {
       const s = detailData.body.season;
       setStartYear(s.start_year);
-      setEndYear(s.end_year);
       setChallengeName(s.challenge_name);
       setRobotName(s.robot_name || "");
       setRobotImageUrl(s.robot_image || DEFAULT_COVER_IMAGE);
@@ -69,7 +67,7 @@ export default function SeasonEditor() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSuccess: (res: any) => {
       if (res.status === 200 && res.body.success) {
-        toast.success(`Season ${startYear}-${endYear} saved successfully.`);
+        toast.success(`Season ${startYear} saved successfully.`);
         queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
         queryClient.invalidateQueries({ queryKey: ["seasons"] });
         navigate("/dashboard/manage_seasons");
@@ -97,7 +95,7 @@ export default function SeasonEditor() {
     
     const payload = {
       start_year: Number(startYear),
-      end_year: Number(endYear),
+      end_year: Number(startYear),
       challenge_name: challengeName,
       robot_name: robotName,
       robot_image: robotImageUrl === DEFAULT_COVER_IMAGE ? null : robotImageUrl,
@@ -129,7 +127,7 @@ export default function SeasonEditor() {
         <div className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1">
-              <label htmlFor="start-year" className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Start Year</label>
+              <label htmlFor="start-year" className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em] mb-2">Season Year</label>
               <input
                 id="start-year"
                 type="number"
@@ -138,17 +136,6 @@ export default function SeasonEditor() {
                 disabled={!!editId}
                 className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:ring-1 focus:ring-ares-gold transition-all"
                 placeholder='2025'
-              />
-            </div>
-            <div className="flex-1">
-              <label htmlFor="end-year" className="block text-xs font-black text-ares-gold uppercase tracking-[0.2em] mb-2">End Year</label>
-              <input
-                id="end-year"
-                type="number"
-                value={endYear}
-                onChange={(e) => setEndYear(parseInt(e.target.value))}
-                className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:ring-1 focus:ring-ares-gold transition-all"
-                placeholder='2026'
               />
             </div>
           </div>

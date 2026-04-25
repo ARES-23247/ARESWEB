@@ -88,7 +88,7 @@ export default function SeasonManagerTab({
       getItemId={(s) => s.start_year.toString()}
       isItemDeleted={(s) => Number(s.is_deleted) === 1}
       getItemStatus={(s) => s.status}
-      renderTitle={(s) => `${s.start_year}-${s.end_year} | ${s.challenge_name}`}
+      renderTitle={(s) => `${s.start_year} | ${s.challenge_name}`}
       renderSubtitle={(s) => (
         <span className="text-xs text-marble/40 bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm uppercase tracking-widest">
           {s.robot_name || 'No Robot Assigned'}
