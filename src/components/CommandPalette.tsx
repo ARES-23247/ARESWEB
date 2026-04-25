@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, FileText, Calendar, ShieldCheck, HelpCircle, Terminal, Home, ArrowRight } from "lucide-react";
@@ -21,7 +21,9 @@ interface SearchResult {
 
 export default function CommandPalette() {
   const { isCommandPaletteOpen: isOpen, setCommandPaletteOpen: setIsOpen } = useUIStore();
+  const [inputValue, setInputValue] = useState("");
   const [query, setQuery] = useState("");
+  const [isPending, startTransition] = useTransition();
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   
@@ -65,6 +67,14 @@ export default function CommandPalette() {
     }
   }, [isOpen]);
 
+  // Handle Input Change with Transition
+  const handleValueChange = (v: string) => {
+    setInputValue(v);
+    startTransition(() => {
+      setQuery(v);
+    });
+  };
+
   // @ts-expect-error - BetterAuth session typing
   const userRole = session?.user?.role;
 
@@ -88,12 +98,13 @@ export default function CommandPalette() {
   useEffect(() => {
     if (query.trim().length < 2) {
       const timer = setTimeout(() => {
-        setResults(
-          staticLinks.filter((link) => 
-            link.title.toLowerCase().includes(query.toLowerCase()) || 
-            link.category.toLowerCase().includes(query.toLowerCase())
-          )
+        const filtered = staticLinks.filter((link) => 
+          link.title.toLowerCase().includes(query.toLowerCase()) || 
+          link.category.toLowerCase().includes(query.toLowerCase())
         );
+        startTransition(() => {
+          setResults(filtered);
+        });
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -141,7 +152,9 @@ export default function CommandPalette() {
           link.category.toLowerCase().includes(query.toLowerCase())
         );
 
-        setResults([...matchedStaticLinks, ...searchResults]);
+        startTransition(() => {
+          setResults([...matchedStaticLinks, ...searchResults]);
+        });
       } catch (err) {
         console.error("Search failed:", err);
       } finally {
@@ -155,6 +168,7 @@ export default function CommandPalette() {
 
   const handleSelect = (item: SearchResult) => {
     setIsOpen(false);
+    setInputValue("");
     setQuery("");
     if (item.url) {
       navigate(item.url);
@@ -178,7 +192,7 @@ export default function CommandPalette() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[15vh] px-4"
+          className="fixed inset-0 z-modal bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[15vh] px-4"
           onClick={handleBackdropClick}
         >
           <motion.div
@@ -195,14 +209,14 @@ export default function CommandPalette() {
             >
               {/* Input Header */}
               <div className="flex items-center px-6 py-5 border-b border-white/5 bg-white/[0.02]">
-                <Search className="text-marble/40 mr-3 shrink-0" size={20} />
+                <Search className={`transition-colors ${isPending ? 'text-ares-cyan animate-pulse' : 'text-marble/40'} mr-3 shrink-0`} size={20} />
                 <Command.Input
                   // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   className="w-full bg-transparent border-none outline-none text-white placeholder-marble/30 font-mono text-lg"
                   placeholder="Search documentation, routes, workflows..."
-                  value={query}
-                  onValueChange={setQuery}
+                  value={inputValue}
+                  onValueChange={handleValueChange}
                 />
                 <div className="shrink-0 items-center gap-1 ml-3 hidden sm:flex">
                   <kbd className="bg-white/10 text-marble/40 text-xs px-2 py-1 rounded font-mono border border-white/10">ESC</kbd>
@@ -215,7 +229,7 @@ export default function CommandPalette() {
                 className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
                 aria-live="polite"
               >
-                {isSearching && query.length >= 2 && results.length === 0 ? (
+                {(isSearching || isPending) && query.length >= 2 && results.length === 0 ? (
                   <Command.Loading>
                     <div className="p-8 text-center text-marble/40 animate-pulse font-mono flex items-center justify-center gap-2">
                       <Terminal className="text-ares-cyan" size={16} /> Scanning D1 nodes...

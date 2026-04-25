@@ -1,7 +1,7 @@
 import { Hono, Context } from "hono";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { userContract } from "../../../src/schemas/contracts/userContract";
-import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, parsePagination } from "../middleware";
 import { upsertProfile } from "./_profileUtils";
 import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
@@ -10,10 +10,10 @@ const s = initServer<AppEnv>();
 export const usersRouter = new Hono<AppEnv>();
 
 const userHandlers = {
-  getUsers: async ({ query }: { query: any }, c: Context<AppEnv>) => {
+  getUsers: async ({ query: _query }: { query: any }, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
-      const { limit = 50, offset = 0 } = query;
+      const { limit, offset } = parsePagination(c, 50, 100);
       const results = await db.selectFrom("user as u")
         .leftJoin("user_profiles as p", "u.id", "p.user_id")
         .select([
@@ -21,8 +21,8 @@ const userHandlers = {
           "p.nickname", "p.member_type"
         ])
         .orderBy("u.createdAt", "desc")
-        .limit(limit || 50)
-        .offset(offset || 0)
+        .limit(limit)
+        .offset(offset)
         .execute();
 
       const users = results.map((u) => {

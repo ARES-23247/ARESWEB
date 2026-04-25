@@ -186,7 +186,29 @@ export const eventHandlers = {
   saveEvent: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
+
+      // FIX: Handle upsert if ID is provided (prevents double-creation on subsequent saves)
+      if (body.id) {
+        const existing = await db.selectFrom("events").select("id").where("id", "=", body.id).executeTakeFirst();
+        if (existing) {
+          return eventHandlers.updateEvent({ params: { id: body.id }, body }, c);
+        }
+      }
+
       const { title, category, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
+
+      // FIX: Prevent double-click creation of duplicate events with same title/date
+      const recent = await db.selectFrom("events")
+        .select("id")
+        .where("title", "=", title || "")
+        .where("date_start", "=", dateStart)
+        .where("is_deleted", "=", 0)
+        .executeTakeFirst();
+      
+      if (recent) {
+        return { status: 200 as const, body: { success: true, id: recent.id, warning: "Double-submission prevented" } as any };
+      }
+
       const cat = category || 'internal';
       const genId = crypto.randomUUID();
       
@@ -351,16 +373,41 @@ export const eventHandlers = {
       if (!gcalEmail || !gcalKey || calendars.length === 0) throw new Error("Config missing");
 
       let total = 0;
+      const allEvents: any[] = [];
+
       for (const cal of calendars) {
         const events = await pullEventsFromGcal({ email: gcalEmail as string, privateKey: gcalKey as string, calendarId: cal.id as string });
         for (const ev of events) {
-          await db.insertInto("events")
-            .values({ id: crypto.randomUUID(), title: ev.title, date_start: ev.date_start, date_end: ev.date_end || null, location: ev.location, description: ev.description, gcal_event_id: ev.gcal_event_id,  status: 'published', category: cal.category })
-            .onConflict((oc) => oc.column("gcal_event_id").doUpdateSet({ title: ev.title, date_start: ev.date_start, date_end: ev.date_end || null, location: ev.location, description: ev.description, category: cal.category }))
-            .execute();
-          total++;
+          allEvents.push({
+            id: crypto.randomUUID(),
+            title: ev.title,
+            date_start: ev.date_start,
+            date_end: ev.date_end || null,
+            location: ev.location,
+            description: ev.description,
+            gcal_event_id: ev.gcal_event_id,
+            status: 'published',
+            category: cal.category
+          });
         }
       }
+
+      if (allEvents.length > 0) {
+        // D1 has a variable limit; chunking would be safer but for a typical calendar sync this is okay.
+        await db.insertInto("events")
+          .values(allEvents)
+          .onConflict((oc) => oc.column("gcal_event_id").doUpdateSet({
+            title: sql`excluded.title`,
+            date_start: sql`excluded.date_start`,
+            date_end: sql`excluded.date_end`,
+            location: sql`excluded.location`,
+            description: sql`excluded.description`,
+            category: sql`excluded.category`
+          }))
+          .execute();
+        total = allEvents.length;
+      }
+
       return { status: 200 as const, body: { success: true, count: total } as any };
     } catch {
       return { status: 200 as const, body: { success: false } as any };

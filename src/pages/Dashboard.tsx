@@ -5,10 +5,37 @@ import { useDashboardSession } from "../hooks/useDashboardSession";
 import { useDashboardNotifications } from "../hooks/useDashboardNotifications";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import DashboardRoutes from "../components/dashboard/DashboardRoutes";
+import { api } from "../api/client";
 
 export default function Dashboard() {
   const { session, isPending, permissions } = useDashboardSession();
+  
+  // Lift common dashboard queries to the top level to prevent waterfalls
+  // We use parallel queries here so they all start at the same time
   const notifications = useDashboardNotifications(session, permissions);
+  
+  const { data: statsRes } = api.analytics.getStats.useQuery(
+    ["dashboard-stats-shared"], 
+    {}, 
+    { 
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      // We don't wait for session here to avoid waterfall; the server will handle auth
+    }
+  );
+
+  const stats = {
+    posts: statsRes?.status === 200 ? statsRes.body.posts : 0,
+    events: statsRes?.status === 200 ? statsRes.body.events : 0,
+    docs: statsRes?.status === 200 ? statsRes.body.docs : 0,
+    integrations: statsRes?.status === 200 ? statsRes.body.integrations : {
+      zulip: false,
+      github: false,
+      discord: false,
+      bluesky: false,
+      slack: false,
+      gcal: false
+    }
+  };
 
   if (isPending) {
     return (
@@ -46,7 +73,12 @@ export default function Dashboard() {
 
         <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 overflow-hidden z-10">
           <div className="mb-4" /> {/* Spacer replaced header */}
-          <DashboardRoutes session={session} permissions={permissions} notifications={notifications} />
+          <DashboardRoutes 
+            session={session} 
+            permissions={permissions} 
+            notifications={notifications} 
+            stats={stats}
+          />
 
           <div className="mt-6 flex items-center justify-between text-marble/90 text-xs font-bold uppercase tracking-widest px-4 pb-4">
              <span>ARES Robotics 23247</span>

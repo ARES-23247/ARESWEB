@@ -221,7 +221,11 @@ const analyticsHandlers = {
     const db = c.get("db") as Kysely<DB>;
     const { q } = query;
     try {
-      const ftsQ = `"${q.replace(/"/g, '""')}"*`;
+      // SCA-FTS-01: Sanitize FTS5 query
+      const qClean = (q || "").replace(/[^a-zA-Z0-9\s]/g, "").trim();
+      if (!qClean) return { status: 200 as const, body: { results: [] } as any };
+      const ftsQ = `"${qClean}"*`;
+
       const [postsReq, eventsReq, docsReq] = await Promise.all([
         sql<{ id: string, title: string }>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
         sql<{ id: string, title: string }>`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`.execute(db),

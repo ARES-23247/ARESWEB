@@ -10,7 +10,8 @@ import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 // -- Command Center Component -----------------------------------------
-export default function CommandCenter() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function CommandCenter({ stats: prefetchedStats }: { stats?: any }) {
   const queryClient = useQueryClient();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -22,22 +23,20 @@ export default function CommandCenter() {
   });
   const board = boardRes?.status === 200 ? boardRes.body.board : null;
 
-  const { data: analyticsData, isLoading: isStatsLoading, isError: isStatsError } = api.analytics.getStats.useQuery(["command-stats"], {}, {
-    refetchInterval: 300000,
-  });
-
-  const stats = analyticsData?.status === 200 ? analyticsData.body : { posts: 0, events: 0, docs: 0 };
-  const health = analyticsData?.status === 200 ? [
-    { name: "Zulip Chat", key: "zulip", icon: <img src="/icons/zulip.svg" alt="Zulip" className="w-8 h-8 mx-auto" />, configured: analyticsData.body.integrations.zulip },
-    { name: "GitHub Projects", key: "github", icon: <img src="/icons/github.svg" alt="GitHub" className="w-8 h-8 mx-auto" />, configured: analyticsData.body.integrations.github },
-    { name: "Discord", key: "discord", icon: <img src="/icons/discord.svg" alt="Discord" className="w-8 h-8 mx-auto" />, configured: analyticsData.body.integrations.discord },
-    { name: "Bluesky", key: "bluesky", icon: <img src="/icons/bluesky.svg" alt="Bluesky" className="w-8 h-8 mx-auto" />, configured: analyticsData.body.integrations.bluesky },
-    { name: "Slack", key: "slack", icon: <img src="/icons/slack.svg" alt="Slack" className="w-8 h-8 mx-auto grayscale invert" />, configured: analyticsData.body.integrations.slack },
-    { name: "Google Calendar", key: "gcal", icon: <img src="/icons/gcal.svg" alt="Google Calendar" className="w-8 h-8 mx-auto" />, configured: analyticsData.body.integrations.gcal },
+  // Using prefetched stats from parent to avoid waterfall
+  const stats = prefetchedStats || { posts: 0, events: 0, docs: 0, integrations: {} };
+  
+  const health = stats.integrations ? [
+    { name: "Zulip Chat", key: "zulip", icon: <img src="/icons/zulip.svg" alt="Zulip" className="w-8 h-8 mx-auto" />, configured: stats.integrations.zulip },
+    { name: "GitHub Projects", key: "github", icon: <img src="/icons/github.svg" alt="GitHub" className="w-8 h-8 mx-auto" />, configured: stats.integrations.github },
+    { name: "Discord", key: "discord", icon: <img src="/icons/discord.svg" alt="Discord" className="w-8 h-8 mx-auto" />, configured: stats.integrations.discord },
+    { name: "Bluesky", key: "bluesky", icon: <img src="/icons/bluesky.svg" alt="Bluesky" className="w-8 h-8 mx-auto" />, configured: stats.integrations.bluesky },
+    { name: "Slack", key: "slack", icon: <img src="/icons/slack.svg" alt="Slack" className="w-8 h-8 mx-auto grayscale invert" />, configured: stats.integrations.slack },
+    { name: "Google Calendar", key: "gcal", icon: <img src="/icons/gcal.svg" alt="Google Calendar" className="w-8 h-8 mx-auto" />, configured: stats.integrations.gcal },
   ] : [];
 
-  const isLoading = isBoardLoading || isStatsLoading;
-  const isError = isBoardError || isStatsError;
+  const isLoading = isBoardLoading;
+  const isError = isBoardError;
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["command-board"] });

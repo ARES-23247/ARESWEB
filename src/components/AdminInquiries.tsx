@@ -130,7 +130,7 @@ export default function AdminInquiries() {
             </button>
           )}
           <button onClick={() => { if(confirm("Delete inquiry?")) deleteInquiryMutation.mutate({ params: { id: info.row.original.id }, body: null }); }} 
-            className="p-2 bg-white/5 hover:bg-ares-red/20 text-marble/40 hover:text-ares-red transition-all ares-cut-xs" 
+            className="p-2 bg-white/5 hover:bg-ares-danger/20 text-marble/40 hover:text-ares-danger-soft transition-all ares-cut-xs" 
             title="Delete"
             aria-label="Delete inquiry"
           >

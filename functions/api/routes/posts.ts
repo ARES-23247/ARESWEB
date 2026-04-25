@@ -13,31 +13,13 @@ import {
   approvePost, 
   getPostHistory, 
   restorePostFromHistory,
-  createShadowRevision
+  createShadowRevision,
+  captureHistory,
+  pruneHistory
 } from "../../utils/postHistory";
 
 const s = initServer<AppEnv>();
 export const postsRouter = new Hono<AppEnv>();
-
-async function prunePostHistory(db: Kysely<DB>, slug: string, limit = 10) {
-  try {
-    const results = await db.selectFrom("posts_history")
-      .select("id")
-      .where("slug", "=", slug)
-      .orderBy("created_at", "desc")
-      .offset(limit - 1)
-      .limit(1)
-      .execute();
-
-    if (results.length > 0) {
-      const oldestId = results[0].id;
-      await db.deleteFrom("posts_history")
-        .where("slug", "=", slug)
-        .where("id", "<", oldestId)
-        .execute();
-    }
-  } catch { /* ignore */ }
-}
 
 const postHandlers = {
   getPosts: async ({ query }: { query: any }, c: Context<AppEnv>) => {
@@ -222,8 +204,30 @@ const postHandlers = {
   savePost: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
+
+      // FIX: Handle upsert if slug is provided (prevents double-creation on subsequent saves)
+      if (body.slug) {
+        return postHandlers.updatePost({ params: { slug: body.slug }, body }, c);
+      }
+
       const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
       if (titleError) return { status: 200 as const, body: { success: false, warning: titleError } as any };
+
+      const user = await getSessionUser(c);
+      const email = user?.email || "anonymous_dashboard_user";
+      const dateStr = getStandardDate();
+
+      // FIX: Prevent double-click creation of duplicate posts with same title on same day
+      const recent = await db.selectFrom("posts")
+        .select("slug")
+        .where("title", "=", body.title)
+        .where("cf_email", "=", email)
+        .where("date", "=", dateStr)
+        .executeTakeFirst();
+      
+      if (recent) {
+        return { status: 200 as const, body: { success: true, slug: recent.slug, warning: "Double-submission prevented" } as any };
+      }
 
       let slug = body.title
         .toLowerCase()
@@ -236,12 +240,9 @@ const postHandlers = {
           slug = `${slug}-${suffix}`;
         }
 
-        const dateStr = getStandardDate();
         const astStr = JSON.stringify(body.ast);
         const snippet = extractAstText(body.ast as any).substring(0, 200);
         
-        const user = await getSessionUser(c);
-        const email = user?.email || "anonymous_dashboard_user";
         const status = body.isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
         await db.insertInto("posts")
@@ -260,7 +261,7 @@ const postHandlers = {
           })
           .execute();
 
-        c.executionCtx.waitUntil(prunePostHistory(db, slug, 10));
+        c.executionCtx.waitUntil(pruneHistory(c, slug, 10));
         c.executionCtx.waitUntil(logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`));
 
         const warnings: string[] = [];
@@ -344,6 +345,18 @@ const postHandlers = {
       }
 
       const status = body.isDraft ? "pending" : "published";
+      
+      // CRITICAL: Capture history before update to prevent data loss
+      const current = await db.selectFrom("posts")
+        .select(["title", "author", "thumbnail", "snippet", "ast", "cf_email", "season_id"])
+        .where("slug", "=", slug)
+        .executeTakeFirst();
+      
+      if (current) {
+        // @ts-expect-error -- manual casting for history
+        await captureHistory(c, slug, current);
+      }
+
       await db.updateTable("posts")
         .set({
           title: body.title,
@@ -357,7 +370,6 @@ const postHandlers = {
         .where("slug", "=", slug)
         .execute();
 
-      c.executionCtx.waitUntil(prunePostHistory(db, slug, 10));
       c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`));
       return { status: 200 as const, body: { success: true, slug } as any };
     } catch {

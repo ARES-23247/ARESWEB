@@ -47,9 +47,12 @@ export default function PowerSheddingSim() {
   };
 
   const getVoltageColor = () => {
-    if (isBrownout) return '#C00000'; // ares-red
-    if (isShedding) return '#CD7F32'; // ares-bronze
-    return '#00E5FF'; // ares-cyan
+    const aresRed = getComputedStyle(document.documentElement).getPropertyValue('--ares-red').trim() || '#C00000';
+    const aresBronze = getComputedStyle(document.documentElement).getPropertyValue('--ares-bronze').trim() || '#CD7F32';
+    const aresCyan = getComputedStyle(document.documentElement).getPropertyValue('--ares-cyan').trim() || '#00E5FF';
+    if (isBrownout) return aresRed;
+    if (isShedding) return aresBronze;
+    return aresCyan;
   };
 
   return (

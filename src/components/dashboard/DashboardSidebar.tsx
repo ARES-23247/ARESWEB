@@ -253,7 +253,7 @@ export default function DashboardSidebar({
               await signOut();
               window.location.href = '/';
             }}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-ares-red/10 hover:bg-ares-red/20 text-ares-red border border-ares-red/20 hover:border-ares-red/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 hover:border-ares-danger/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
           >
             <LogOut size={16} /> Sign Out
           </button>

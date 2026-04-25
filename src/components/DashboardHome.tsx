@@ -3,23 +3,23 @@ import { useSession } from "../utils/auth-client";
 import { Activity, Target, MessageSquare, BookOpen, User, HelpCircle } from "lucide-react";
 import TeamAvailability from "./TeamAvailability";
 import PlatformQuickStats from "./command/PlatformQuickStats";
-import { api } from "../api/client";
+
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
-export default function DashboardHome() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function DashboardHome({ stats: prefetchedStats }: { stats?: any }) {
   const { data: session } = useSession();
   
   // @ts-expect-error - BetterAuth session typing
   const role = session?.user?.role || "unverified";
   const canSeeInquiries = role !== "unverified";
 
-  const { data: statsRes } = api.analytics.getStats.useQuery(["admin-stats"], {}, { enabled: canSeeInquiries });
-
-  const stats = {
-    posts: statsRes?.status === 200 ? statsRes.body.posts : 0,
-    events: statsRes?.status === 200 ? statsRes.body.events : 0,
-    docs: statsRes?.status === 200 ? statsRes.body.docs : 0,
+  // Using prefetched stats from parent to avoid waterfall
+  const stats = prefetchedStats || {
+    posts: 0,
+    events: 0,
+    docs: 0,
   };
    
   // @ts-expect-error - BetterAuth session typing

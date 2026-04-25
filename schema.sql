@@ -440,7 +440,6 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON audit_log(actor);
 CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);
-CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at);
 
 
 -- ── Full-Text Search (FTS5) Virtual Tables + Sync Triggers ───────────────
@@ -540,6 +539,7 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 CREATE INDEX IF NOT EXISTS idx_events_visibility ON events(is_deleted, status, published_at, date_start);
 CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_member_type ON user_profiles(member_type);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_show_on_about ON user_profiles(show_on_about);
 CREATE INDEX IF NOT EXISTS idx_inquiries_type ON inquiries(type);
 CREATE INDEX IF NOT EXISTS idx_docs_status_deleted ON docs(status, is_deleted);
 CREATE INDEX IF NOT EXISTS idx_user_badges_badge ON user_badges(badge_id);
@@ -547,9 +547,12 @@ CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_session_userId ON session(userId);
 CREATE INDEX IF NOT EXISTS idx_account_userId ON account(userId);
+CREATE INDEX IF NOT EXISTS idx_user_role ON user(role);
 CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author);
 CREATE INDEX IF NOT EXISTS idx_posts_cf_email ON posts(cf_email);
+CREATE INDEX IF NOT EXISTS idx_posts_published_at ON posts(published_at, status, is_deleted);
 CREATE INDEX IF NOT EXISTS idx_comments_is_deleted ON comments(is_deleted);
+CREATE INDEX IF NOT EXISTS idx_docs_history_author ON docs_history(author_email);
 
 -- Championship-Grade Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_docs_category_sort ON docs(category, sort_order);

@@ -49,25 +49,16 @@ export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, limit
   }
 
   try {
-    const row = await db.selectFrom("rate_limits")
-      .select(["count", "expires_at"])
-      .where("ip", "=", ip)
+    const result = await db.insertInto("rate_limits")
+      .values({ ip, count: 1, expires_at: now + windowSeconds })
+      .onConflict(oc => oc.column("ip").doUpdateSet({
+        count: sql`CASE WHEN expires_at < ${now} THEN 1 ELSE count + 1 END`,
+        expires_at: sql`CASE WHEN expires_at < ${now} THEN ${now + windowSeconds} ELSE expires_at END`
+      }))
+      .returning("count")
       .executeTakeFirst();
 
-    if (!row || row.expires_at < now) {
-      await db.insertInto("rate_limits")
-        .values({ ip, count: 1, expires_at: now + windowSeconds })
-        .onConflict(oc => oc.column("ip").doUpdateSet({ count: 1, expires_at: now + windowSeconds }))
-        .execute();
-      return true;
-    }
-    if (row.count >= limit) return false;
-    
-    await db.updateTable("rate_limits")
-      .set({ count: sql`count + 1` })
-      .where("ip", "=", ip)
-      .execute();
-    return true;
+    return (result?.count ?? 0) <= limit;
   } catch (err) {
     console.error("[RateLimit] Persistent check failed:", err);
     // Fall open on DB error or missing table so we don't bring down the API

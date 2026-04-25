@@ -39,6 +39,12 @@ const config: Config = {
         sans: ["Inter", "system-ui", "sans-serif"],
         heading: ["League Spartan", "Inter", "sans-serif"],
       },
+      zIndex: {
+        navbar: "50",
+        modal: "100",
+        popover: "200",
+        "asset-picker": "1000",
+      },
     },
   },
   plugins: [

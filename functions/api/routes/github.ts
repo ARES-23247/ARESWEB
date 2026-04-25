@@ -67,14 +67,15 @@ const githubHandlers = {
       if (!repoRes.ok) throw new Error("GitHub API Error");
       const repos = await repoRes.json() as { name: string }[];
       
-      const allActivity: WeekData[][] = [];
-      for (const repo of repos) {
-        const actRes = await fetch(`https://api.github.com/repos/${org}/${repo.name}/stats/commit_activity`, { headers });
-        if (actRes.ok) {
-          const json = await actRes.json();
-          if (Array.isArray(json)) allActivity.push(json);
-        }
-      }
+      const activityResults = await Promise.all(
+        repos.map(repo => 
+          fetch(`https://api.github.com/repos/${org}/${repo.name}/stats/commit_activity`, { headers })
+            .then(res => res.ok ? res.json() : null)
+            .catch(() => null)
+        )
+      );
+
+      const allActivity = activityResults.filter((json): json is WeekData[] => Array.isArray(json));
 
       const dailyMap = new Map<string, number>();
       for (const repoWeeks of allActivity) {

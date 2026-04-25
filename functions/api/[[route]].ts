@@ -66,6 +66,12 @@ app.use("*", dbMiddleware);
 
 const apiRouter = new Hono<AppEnv>();
 
+// SCA-P01: Prevent CDN Cache Poisoning
+apiRouter.use("*", async (c, next) => {
+  await next();
+  c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+});
+
 
 // ── CORS ─────
 apiRouter.use("*", cors({
@@ -117,7 +123,12 @@ apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
 apiRouter.get("/search", rateLimitMiddleware(50, 60), async (c) => {
   const q = c.req.query("q") || "";
   if (q.length < 3) return c.json({ results: [] });
-  const ftsQ = `"${q.replace(/"/g, '""')}"*`;
+  
+  // SCA-FTS-01: Sanitize FTS5 query
+  const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
+  if (!qClean) return c.json({ results: [] });
+  const ftsQ = `"${qClean}"*`;
+
   const db = c.get("db") as Kysely<DB>;
   const [postsReq, eventsReq, docsReq] = await Promise.all([
     sql<Record<string, unknown>>`SELECT 'blog' as type, f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
@@ -131,7 +142,20 @@ apiRouter.get("/search", rateLimitMiddleware(50, 60), async (c) => {
 apiRouter.get("/admin/audit-log", ensureAdmin, async (c) => {
   const { limit, offset } = parsePagination(c, 50, 200);
   const db = c.get("db");
-  const results = await db.selectFrom("audit_log").selectAll().orderBy("created_at", "desc").limit(limit).offset(offset).execute();
+  const results = await db.selectFrom("audit_log")
+    .select([
+      "id",
+      "actor",
+      "action",
+      "resource_type",
+      "resource_id",
+      "created_at",
+      sql<string>`substr(details, 1, 500)`.as("details")
+    ])
+    .orderBy("created_at", "desc")
+    .limit(limit)
+    .offset(offset)
+    .execute();
   return c.json({ logs: results || [] });
 });
 
@@ -156,7 +180,10 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   const { Kysely } = await import("kysely");
   const db = new Kysely<DB>({ dialect: new D1Dialect({ database: env.DB }) });
   await purgeOldInquiries(db, 30);
-  await db.deleteFrom("audit_log").where("created_at", "<", sql`datetime('now', '-90 days')` as any).execute();
+  await db.deleteFrom("audit_log")
+    .where("created_at", "<", sql`datetime('now', '-90 days')` as any)
+    .limit(100)
+    .execute();
 };
 
 export default app;

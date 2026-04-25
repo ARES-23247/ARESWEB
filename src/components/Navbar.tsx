@@ -54,10 +54,10 @@ export default function Navbar() {
   });
 
   return (
-    <nav role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible rounded-b-2xl border-t-4 border-ares-bronze">
+    <nav role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-navbar bg-obsidian/85 backdrop-blur-xl shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible rounded-b-2xl border-t-4 border-ares-bronze">
       <a 
         href="#main-content" 
-        className="sr-only focus:not-sr-only focus:absolute focus:top-24 focus:left-6 bg-ares-red text-white px-6 py-3 ares-cut-sm font-bold z-[100] shadow-2xl border border-white/20 transition-all"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-24 focus:left-6 bg-ares-red text-white px-6 py-3 ares-cut-sm font-bold z-modal shadow-2xl border border-white/20 transition-all"
       >
         Skip to Main Content
       </a>

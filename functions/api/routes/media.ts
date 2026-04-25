@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AppEnv, ensureAdmin, getDbSettings, checkRateLimit } from "../middleware";
+import { AppEnv, ensureAdmin, getDbSettings, checkRateLimit, logAuditAction } from "../middleware";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
 import { mediaContract } from "../../../src/schemas/contracts/mediaContract";
 
@@ -26,10 +26,11 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
     console.warn("[media.ts] R2Bucket not bound! Returning empty list.");
     return { objects: [] };
   }
-  let result = await bucket.list(options);
+  // PERF-M01: Limit results to avoid timeouts on large buckets
+  let result = await bucket.list({ ...options, limit: 100 });
   const objects = [...result.objects];
   while (result.truncated) {
-    result = await bucket.list({ ...options, cursor: result.cursor });
+    result = await bucket.list({ ...options, cursor: result.cursor, limit: 100 });
     objects.push(...result.objects);
   }
   return { objects };
@@ -117,28 +118,42 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
 
       if (!file) return { status: 400 as const, body: { error: "No file uploaded" } };
 
-      const arrayBuffer = await file.arrayBuffer();
-      if (!isValidImage(arrayBuffer)) return { status: 400 as const, body: { error: "Invalid file type." } };
+      const isLarge = file.size > 10 * 1024 * 1024;
+      let buffer: ArrayBuffer | null = null;
+      
+      // Use small slice for type validation to avoid memory spike
+      const headerBuffer = await file.slice(0, 1024).arrayBuffer();
+      if (!isValidImage(headerBuffer)) return { status: 400 as const, body: { error: "Invalid file type." } };
 
       const key = folder ? `${folder}/${file.name}` : file.name;
       if (c.env.ARES_STORAGE) {
-        await c.env.ARES_STORAGE.put(key, arrayBuffer, { httpMetadata: { contentType: file.type } });
+        if (isLarge) {
+          await c.env.ARES_STORAGE.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+        } else {
+          buffer = await file.arrayBuffer();
+          await c.env.ARES_STORAGE.put(key, buffer, { httpMetadata: { contentType: file.type } });
+        }
       } else {
         console.warn("[media.ts] R2Bucket not bound! Skipping physical upload.");
       }
 
       let altText = "ARES 23247 Team Media Image";
-      if (c.env.AI && arrayBuffer.byteLength < 2.5 * 1024 * 1024) {
+      if (!isLarge && c.env.AI && (buffer || file.size < 2.5 * 1024 * 1024)) {
         try {
-          const uint8 = new Uint8Array(arrayBuffer);
-          const aiRes = await c.env.AI.run('@cf/llava-1.5-7b-hf', { prompt: 'Describe for screen reader', image: Array.from(uint8) }) as { description?: string };
+          if (!buffer) buffer = await file.arrayBuffer();
+          const uint8 = new Uint8Array(buffer);
+          // SCA-M01: Pass Uint8Array directly to avoid Array.from memory exhaustion
+          const aiRes = await c.env.AI.run('@cf/llava-1.5-7b-hf', { prompt: 'Describe for screen reader', image: uint8 as any }) as { description?: string };
           if (aiRes?.description) altText = String(aiRes.description).trim();
         } catch { /* fallback */ }
       }
 
       await c.env.DB.prepare("INSERT OR REPLACE INTO media_tags (key, folder, tags) VALUES (?, ?, ?)").bind(key, folder, altText).run();
+      
+      c.executionCtx.waitUntil(logAuditAction(c, "media_upload", "media", key, `Uploaded to ${folder}`));
+      
       if (c.executionCtx?.waitUntil) {
-                c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+        c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
       }
 
       return { status: 200 as const, body: { success: true, key, url: `/api/media/${key}`, altText } };
@@ -151,24 +166,23 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
     const oldKey = params.key;
     const { folder } = body;
     try {
+      const fileName = oldKey.split("/").pop();
+      const newKey = `${folder}/${fileName}`;
+
       if (c.env.ARES_STORAGE) {
         const object = await c.env.ARES_STORAGE.get(oldKey);
         if (!object) return { status: 404 as const, body: { error: "Source not found" } };
-
-        const fileName = oldKey.split("/").pop();
-        const newKey = `${folder}/${fileName}`;
 
         await c.env.ARES_STORAGE.put(newKey, object.body, { httpMetadata: { contentType: object.httpMetadata?.contentType } });
         await c.env.ARES_STORAGE.delete(oldKey);
         
         await c.env.DB.prepare("UPDATE media_tags SET key = ?, folder = ? WHERE key = ?").bind(newKey, folder, oldKey).run();
-        return { status: 200 as const, body: { success: true, newKey } };
       } else {
-        const fileName = oldKey.split("/").pop();
-        const newKey = `${folder}/${fileName}`;
         await c.env.DB.prepare("UPDATE media_tags SET key = ?, folder = ? WHERE key = ?").bind(newKey, folder, oldKey).run();
-        return { status: 200 as const, body: { success: true, newKey } };
       }
+      
+      c.executionCtx.waitUntil(logAuditAction(c, "media_move", "media", newKey, `Moved from ${oldKey} to ${folder}`));
+      return { status: 200 as const, body: { success: true, newKey } };
     } catch {
       return { status: 500 as const, body: { error: "Move failed" } };
     }
@@ -179,6 +193,7 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
         await c.env.ARES_STORAGE.delete(params.key);
       }
       await c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(params.key).run();
+      c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", params.key));
       return { status: 200 as const, body: { success: true } };
     } catch {
       return { status: 500 as const, body: { error: "Delete failed" } };

@@ -97,7 +97,12 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
     const saved = localStorage.getItem(`tutorial-${title}-progress`);
     if (saved) {
       setTimeout(() => {
-        setCompletedSteps(new Set(JSON.parse(saved)));
+        try {
+          setCompletedSteps(new Set(JSON.parse(saved)));
+        } catch (e) {
+          console.error("Failed to parse tutorial progress", e);
+          setCompletedSteps(new Set());
+        }
       }, 0);
     }
   }, [title]);

@@ -4,6 +4,7 @@ import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 import { AppEnv, getSessionUser } from "../middleware";
 import { encrypt } from "../../utils/crypto";
+import { safeJSONParse, safeJSONStringify } from "../../utils/json";
 
 export async function upsertProfile(
   c: Context<AppEnv>,
@@ -29,14 +30,28 @@ export async function upsertProfile(
       const val = data[key];
       if (isEncrypted) return await encrypt(String(val || ""), secret);
       if (key === 'subteams' || key === 'dietary_restrictions' || key === 'colleges' || key === 'employers') {
-        return Array.isArray(val) ? JSON.stringify(val) : (val || defaultValue);
+        return safeJSONStringify(val, defaultValue);
       }
       if (key === 'show_on_about' || key === 'show_email' || key === 'show_phone') {
         return data[key] ? 1 : 0;
       }
       return val ?? defaultValue;
     }
-    return (existing as any)?.[key] ?? defaultValue;
+    
+    // Reading back from DB: ensure it's valid if it's a JSON column
+    const existingVal = (existing as any)?.[key];
+    if (key === 'subteams' || key === 'dietary_restrictions' || key === 'colleges' || key === 'employers') {
+      // We want to return the string from the DB, but only if it's valid JSON
+      if (typeof existingVal === 'string') {
+        try {
+          JSON.parse(existingVal);
+          return existingVal;
+        } catch {
+          return defaultValue;
+        }
+      }
+    }
+    return existingVal ?? defaultValue;
   };
 
   // SEC-F09: Prevent self-escalation of member_type

@@ -86,6 +86,26 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
       const { type, name, email, metadata } = body;
       const secret = c.env.ENCRYPTION_SECRET;
 
+      // FIX: Prevents double submissions (double clicks) by checking for identical 
+      // submissions from this email/type in the last 60 seconds.
+      const recent = await db.selectFrom("inquiries")
+        .select(["id", "email", "metadata"])
+        .where("type", "=", type)
+        .where("created_at", ">", sql<string>`datetime('now', '-60 seconds')`)
+        .execute();
+
+      for (const r of recent) {
+        try {
+          const decryptedEmail = await decrypt(r.email, secret);
+          if (decryptedEmail === email) {
+            const currentMeta = metadata ? JSON.stringify(metadata) : null;
+            if (r.metadata === currentMeta) {
+              return { status: 200 as const, body: { success: true, id: r.id } };
+            }
+          }
+        } catch { /* ignore decryption errors for old entries */ }
+      }
+
       // EFF: Remove exact email check as encryption is now non-deterministic.
       // The persistentRateLimitMiddleware already handles IP-based limiting.
 
@@ -93,13 +113,18 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
       const encryptedName = await encrypt(name, secret);
       const encryptedEmail = await encrypt(email, secret);
       
+      let metadataStr = metadata ? JSON.stringify(metadata) : null;
+      if (metadataStr && metadataStr.length > 5000) {
+        metadataStr = metadataStr.substring(0, 5000);
+      }
+
       await db.insertInto("inquiries")
         .values({
           id,
           type,
           name: encryptedName,
           email: encryptedEmail,
-          metadata: metadata ? JSON.stringify(metadata) : null,
+          metadata: metadataStr,
         })
         .execute();
 
@@ -191,7 +216,8 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   if (days <= 0) return { deleted: 0 };
   const res = await db.deleteFrom("inquiries")
     .where("status", "in", ["resolved", "rejected"])
-        .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
+    .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
+    .limit(100)
     .execute();
   return { deleted: res.length };
 }

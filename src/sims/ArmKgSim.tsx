@@ -63,6 +63,9 @@ export default function ArmKgSim() {
       const cx = aCanvas.width/2;
       // @ts-expect-error -- D1 untyped response
       const cy = aCanvas.height/2;
+
+      const aresRed = getComputedStyle(document.documentElement).getPropertyValue('--ares-red').trim() || '#C00000';
+      const aresCyan = getComputedStyle(document.documentElement).getPropertyValue('--ares-cyan').trim() || '#29b6f6';
       
       aCtx!.fillStyle = '#444';
       aCtx!.beginPath(); aCtx!.arc(cx,cy, 15, 0, Math.PI*2); aCtx!.fill();
@@ -77,10 +80,10 @@ export default function ArmKgSim() {
       // Invert angle for visually standard display (0 is horizontal right)
       aCtx!.rotate(-armAng * Math.PI/180); 
       
-      aCtx!.fillStyle = '#B32416';
+      aCtx!.fillStyle = aresRed;
       aCtx!.fillRect(0, -10, 80, 20); 
       
-      aCtx!.fillStyle = '#29b6f6';
+      aCtx!.fillStyle = aresCyan;
       aCtx!.beginPath(); aCtx!.arc(0,0, 6, 0, Math.PI*2); aCtx!.fill();
       
       aCtx!.restore();

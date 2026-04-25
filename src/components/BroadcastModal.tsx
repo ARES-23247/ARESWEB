@@ -82,8 +82,8 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] bg-obsidian border border-white/10 max-w-md w-[calc(100%-2rem)] ares-cut overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 focus:outline-none">
+        <Dialog.Overlay className="fixed inset-0 z-modal bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-modal bg-obsidian border border-white/10 max-w-md w-[calc(100%-2rem)] ares-cut overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 focus:outline-none">
           <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
             <div className="flex items-center gap-2">
               <div className={`p-1.5 ares-cut-sm ${type === 'blog' ? 'bg-ares-red text-white' : 'bg-ares-gold text-black'}`}>

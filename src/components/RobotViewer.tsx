@@ -4,10 +4,17 @@ import { OrbitControls, PerspectiveCamera, MeshDistortMaterial, Float, MeshWobbl
 import { useRef } from "react";
 import * as THREE from "three";
 
+// Dynamic Brand Palette lookup to ensure championship-tier consistency
+const getBrandColor = (varName: string, fallback: string) => {
+  if (typeof window === "undefined") return fallback;
+  const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  return val || fallback;
+};
+
 const ARES_COLORS = {
-  red: "#C00000",
-  gold: "#FFB81C",
-  cyan: "#00E5FF",
+  red: getBrandColor("--ares-red", "#C00000"),
+  gold: getBrandColor("--ares-gold", "#FFB81C"),
+  cyan: getBrandColor("--ares-cyan", "#00E5FF"),
   dark: "#111111",
   grid: "#222222",
 };

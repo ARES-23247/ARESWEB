@@ -103,10 +103,10 @@ export default function GitHubHeatmap() {
       </div>
 
       {/* Heatmap Grid */}
-      <div className="overflow-x-auto pb-2">
-        <div className="min-w-[720px]">
+      <div className="overflow-x-auto pb-2 min-w-0">
+        <div className="min-w-0">
           {/* Month labels */}
-          <div className="flex ml-9 mb-1 text-xs text-marble/90 font-bold uppercase tracking-wider h-4">
+          <div className="flex ml-9 mb-1 text-xs text-marble/90 font-bold uppercase tracking-wider h-4 flex-wrap">
             {grid.map((week, i) => {
               const d = new Date(week[0].date);
               const month = d.getMonth();
@@ -123,7 +123,7 @@ export default function GitHubHeatmap() {
             })}
           </div>
           <div className="relative mt-4">
-            <div className="flex gap-[2px]">
+            <div className="flex gap-[2px] flex-wrap">
               {/* Day labels */}
               <div className="flex flex-col gap-[2px] mr-1 shrink-0">
                 {DAYS.map((day, i) => (
@@ -138,7 +138,7 @@ export default function GitHubHeatmap() {
 
               {/* Week columns */}
               {grid.map((week, wi) => (
-                <div key={wi} className="flex flex-col gap-[2px]">
+                <div key={wi} className="flex flex-col gap-[2px] flex-shrink-0">
                   {week.map((day) => (
                     <div
                       key={day.date}

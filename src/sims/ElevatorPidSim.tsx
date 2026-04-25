@@ -76,6 +76,9 @@ export default function ElevatorPidSim() {
       eCtx!.clearRect(0,0,eCanvas.width,eCanvas.height);
       // @ts-expect-error -- D1 untyped response
       const eH = eCanvas.height;
+
+      const aresRed = getComputedStyle(document.documentElement).getPropertyValue('--ares-red').trim() || '#C00000';
+      const aresCyan = getComputedStyle(document.documentElement).getPropertyValue('--ares-cyan').trim() || '#29b6f6';
       
       eCtx!.fillStyle = '#222';
       eCtx!.fillRect(35, 10, 10, eH-20);
@@ -85,13 +88,13 @@ export default function ElevatorPidSim() {
       const { setpoint: s } = stateRef.current;
       const syPx = (1 - s) * trackH + 10;
       
-      eCtx!.strokeStyle = '#29b6f6';
+      eCtx!.strokeStyle = aresCyan;
       eCtx!.lineWidth = 2;
       eCtx!.beginPath(); eCtx!.moveTo(10, syPx+10); eCtx!.lineTo(70, syPx+10); eCtx!.stroke();
       
-      eCtx!.fillStyle = '#B32416';
+      eCtx!.fillStyle = aresRed;
       eCtx!.fillRect(20, yPx, 40, 20);
-      eCtx!.fillStyle = '#d42e1e';
+      eCtx!.fillStyle = aresRed; // Reusing aresRed instead of hardcoded lighter shade
       eCtx!.fillRect(25, yPx+5, 30, 10);
       
       // Draw Graph
@@ -112,7 +115,7 @@ export default function ElevatorPidSim() {
       
       // Setpoint line
       gCtx!.beginPath();
-      gCtx!.strokeStyle = '#29b6f6';
+      gCtx!.strokeStyle = aresCyan;
       gCtx!.lineWidth = 2;
       for(let i=0; i<history.length; i++) {
           const x = i * slice;
@@ -123,7 +126,7 @@ export default function ElevatorPidSim() {
       
       // Position line
       gCtx!.beginPath();
-      gCtx!.strokeStyle = '#B32416';
+      gCtx!.strokeStyle = aresRed;
       gCtx!.lineWidth = 2;
       for(let i=0; i<history.length; i++) {
           const x = i * slice;

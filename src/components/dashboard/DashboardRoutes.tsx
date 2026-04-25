@@ -45,6 +45,7 @@ export default function DashboardRoutes({
   session,
   permissions,
   notifications,
+  stats,
 }: {
   session: DashboardSession | null;
   permissions: DashboardPermissions;
@@ -54,6 +55,8 @@ export default function DashboardRoutes({
     pendingEventsCount: number;
     pendingDocsCount: number;
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stats: any;
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,7 +65,7 @@ export default function DashboardRoutes({
 
   const routes = useMemo(() => (
     <Routes location={location}>
-      <Route index element={<DashboardHome />} />
+      <Route index element={<DashboardHome stats={stats} />} />
       <Route path="profile" element={<ProfileEditor />} />
       <Route path="blog/:editSlug?" element={<BlogEditor userRole={session?.user?.role} />} />
       <Route path="event/:editId?" element={<EventEditor userRole={session?.user?.role} />} />
@@ -85,9 +88,9 @@ export default function DashboardRoutes({
       <Route path="outreach" element={<OutreachTracker />} />
       <Route path="legacy" element={<AwardEditor />} />
       <Route path="locations" element={<LocationsManager />} />
-      <Route path="command_center" element={isAdmin ? <CommandCenter /> : <div className="text-center py-20">Access Denied</div>} />
+      <Route path="command_center" element={isAdmin ? <CommandCenter stats={stats} /> : <div className="text-center py-20">Access Denied</div>} />
     </Routes>
-  ), [location, session?.user?.role, notifications, navigate, isAdmin, canSeeInquiries, canSeeLogistics]);
+  ), [location, session?.user?.role, notifications, navigate, isAdmin, canSeeInquiries, canSeeLogistics, stats]);
 
   return (
     <div className="flex-1 w-full relative overflow-hidden flex flex-col">
