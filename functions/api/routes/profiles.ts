@@ -96,7 +96,8 @@ const profileHandlers = {
           auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role }
         } as any
       };
-    } catch {
+    } catch (err) {
+      console.error("[Profile] Error in getMe:", err);
       return { status: 200 as const, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
     }
   },
