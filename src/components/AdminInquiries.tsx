@@ -222,6 +222,7 @@ export default function AdminInquiries() {
               </thead>
               <tbody 
                 className="relative min-h-[400px]"
+                style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
               >
                 {rowVirtualizer.getVirtualItems().map(virtualRow => {
                   const row = rows[virtualRow.index];

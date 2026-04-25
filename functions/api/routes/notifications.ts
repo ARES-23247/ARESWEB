@@ -77,9 +77,21 @@ const notificationHandlers = {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } as any };
 
+      let filterOutreach = false;
+      if (user.role !== "admin") {
+        const memberType = user.member_type || "student";
+        if (memberType === "student") {
+          filterOutreach = true;
+        }
+      }
+
       // Optimized single-roundtrip query for all counts
       const [inquiries, posts, events, docs] = await Promise.all([
-        db.selectFrom("inquiries").select(db.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst(),
+        (async () => {
+          let q = db.selectFrom("inquiries").select(db.fn.count("id").as("count")).where("status", "=", "pending");
+          if (filterOutreach) q = q.where("type", "in", ["outreach", "support"]);
+          return q.executeTakeFirst();
+        })(),
         db.selectFrom("posts").select(db.fn.count("id").as("count")).where("status", "=", "pending").where("is_deleted", "=", 0).executeTakeFirst(),
         db.selectFrom("events").select(db.fn.count("id").as("count")).where("status", "=", "pending").where("is_deleted", "=", 0).executeTakeFirst(),
         db.selectFrom("docs").select(db.fn.count("id").as("count")).where("status", "=", "pending").where("is_deleted", "=", 0).executeTakeFirst(),
@@ -104,12 +116,23 @@ const notificationHandlers = {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } as any };
 
+      let filterOutreach = false;
+      if (user.role !== "admin") {
+        const memberType = user.member_type || "student";
+        if (memberType === "student") {
+          filterOutreach = true;
+        }
+      }
+
       // Batch fetch all detailed pending items
       const [inquiries, posts, events, docs] = await Promise.all([
-        db.selectFrom("inquiries")
-          .select(["id", "name", "email", "type", "status", "created_at"])
-          .where("status", "=", "pending")
-          .execute(),
+        (async () => {
+          let q = db.selectFrom("inquiries")
+            .select(["id", "name", "email", "type", "status", "created_at"])
+            .where("status", "=", "pending");
+          if (filterOutreach) q = q.where("type", "in", ["outreach", "support"]);
+          return q.execute();
+        })(),
         db.selectFrom("posts")
           .select(["title", "slug", "status", "is_deleted"])
           .where("status", "=", "pending")
