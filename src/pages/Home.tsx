@@ -10,10 +10,9 @@ export default function Home() {
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[95vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true" style={{ isolation: 'isolate' }}>
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
           <div
-            className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
-            style={{ backgroundImage: "url('/favicon.png')" }}
+            className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12 bg-[url('/favicon.png')]"
           ></div>
           <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent"></div>
         </div>
