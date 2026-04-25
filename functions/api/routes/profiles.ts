@@ -1,5 +1,5 @@
 import { Hono, Context } from "hono";
-import { AppEnv, getSessionUser, sanitizeProfileForPublic, persistentRateLimitMiddleware } from "../middleware";
+import { AppEnv, getSessionUser, sanitizeProfileForPublic, persistentRateLimitMiddleware, rateLimitMiddleware } from "../middleware";
 import { getAuth } from "../../utils/auth";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";

@@ -465,15 +465,17 @@ const postHandlers = {
       const socialConfig = await getSocialConfig(c);
       const baseUrl = new URL(c.req.url).origin;
       
-      await dispatchSocials(
-        c.env.DB,
-        {
-          title: String(post.title),
-          url: `${baseUrl}/blog/${slug}`,
-          snippet: post.snippet || "Read the latest update from ARES 23247!",
-          coverImageUrl: post.thumbnail || "",
-          baseUrl: baseUrl
-        }, socialConfig, socials);
+      c.executionCtx.waitUntil(
+        dispatchSocials(
+          c.env.DB,
+          {
+            title: String(post.title),
+            url: `${baseUrl}/blog/${slug}`,
+            snippet: post.snippet || "Read the latest update from ARES 23247!",
+            coverImageUrl: post.thumbnail || "",
+            baseUrl: baseUrl
+          }, socialConfig, socials).catch(err => console.error("[Repush] Social dispatch failed:", err))
+      );
       return { status: 200 as const, body: { success: true } as any };
     } catch (err) {
       return { status: 502 as const, body: { error: (err as Error).message } as any };

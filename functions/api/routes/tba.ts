@@ -37,7 +37,11 @@ async function getTBA(path: string, c: Context<AppEnv>) {
 const tbaHandlers = {
   getRankings: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     try {
-      const data = await getTBA(`/event/${params.eventKey}/rankings`, c);
+      const eventKey = String(params.eventKey);
+      if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
+        return { status: 400 as const, body: { error: "Invalid eventKey" } as any };
+      }
+      const data = await getTBA(`/event/${eventKey}/rankings`, c);
       return { status: 200 as const, body: { rankings: (data as any)?.rankings as any[] || [] } as any };
     } catch {
       return { status: 200 as const, body: { rankings: [] } as any };
@@ -45,7 +49,11 @@ const tbaHandlers = {
   },
   getMatches: async ({ params }: { params: any }, c: Context<AppEnv>) => {
     try {
-      const data = await getTBA(`/event/${params.eventKey}/matches/simple`, c) as any[];
+      const eventKey = String(params.eventKey);
+      if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
+        return { status: 400 as const, body: { error: "Invalid eventKey" } as any };
+      }
+      const data = await getTBA(`/event/${eventKey}/matches/simple`, c) as any[];
       const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
       return { status: 200 as const, body: { matches: sorted as any[] } as any };
     } catch {

@@ -150,10 +150,10 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                                     .execute();
                                             } else {
                                                 if (env.ENVIRONMENT !== "production") {
-                                                  console.log(`[GitHub Auth] Verified ${session.userId} as ${siteConfig.urls.githubOrg} Org Member. Promoting to Member.`);
+                                                  console.log(`[GitHub Auth] Verified ${session.userId} as ${siteConfig.urls.githubOrg} Org Member. Promoting to User.`);
                                                 }
                                                 await kyselyDb.updateTable("user")
-                                                    .set({ role: 'member' })
+                                                    .set({ role: 'user' })
                                                     .where("id", "=", session.userId)
                                                     .execute();
                                             }

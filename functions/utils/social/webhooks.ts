@@ -1,9 +1,31 @@
 import { PostPayload, SocialConfig } from "../socialSync";
 
+function validateWebhookUrl(url: string | undefined, type: 'discord' | 'slack' | 'teams' | 'gchat' | 'make'): boolean {
+  if (!url) return false;
+  const prefixes = {
+    discord: "https://discord.com/api/webhooks/",
+    slack: "https://hooks.slack.com/",
+    teams: "https://", // Teams can vary widely, but must be https
+    gchat: "https://chat.googleapis.com/v1/spaces/",
+    make: "https://hook.us1.make.com/" // Common Make prefix
+  };
+
+  if (type === 'teams') {
+     return url.startsWith("https://") && (url.includes(".webhook.office.com") || url.includes("outlook.office.com"));
+  }
+
+  const prefix = prefixes[type];
+  if (!url.startsWith(prefix)) {
+    console.error(`[SSRF Prevention] Invalid ${type} webhook URL prefix: ${url}`);
+    return false;
+  }
+  return true;
+}
+
 export async function dispatchDiscord(payload: PostPayload, config: SocialConfig) {
-  if (!config.DISCORD_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.DISCORD_WEBHOOK_URL, 'discord')) return;
   
-  return fetch(config.DISCORD_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.DISCORD_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -24,9 +46,9 @@ export async function dispatchDiscord(payload: PostPayload, config: SocialConfig
 }
 
 export async function dispatchDiscordPhoto(imageUrl: string, caption: string, config: SocialConfig) {
-  if (!config.DISCORD_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.DISCORD_WEBHOOK_URL, 'discord')) return;
 
-  return fetch(config.DISCORD_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.DISCORD_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -45,9 +67,9 @@ export async function dispatchDiscordPhoto(imageUrl: string, caption: string, co
 }
 
 export async function dispatchSlack(payload: PostPayload, config: SocialConfig) {
-  if (!config.SLACK_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.SLACK_WEBHOOK_URL, 'slack')) return;
 
-  return fetch(config.SLACK_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.SLACK_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -57,9 +79,9 @@ export async function dispatchSlack(payload: PostPayload, config: SocialConfig) 
 }
 
 export async function dispatchSlackPhoto(imageUrl: string, caption: string, config: SocialConfig) {
-  if (!config.SLACK_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.SLACK_WEBHOOK_URL, 'slack')) return;
 
-  return fetch(config.SLACK_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.SLACK_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -76,9 +98,9 @@ export async function dispatchSlackPhoto(imageUrl: string, caption: string, conf
 }
 
 export async function dispatchTeams(payload: PostPayload, config: SocialConfig) {
-  if (!config.TEAMS_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.TEAMS_WEBHOOK_URL, 'teams')) return;
 
-  return fetch(config.TEAMS_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.TEAMS_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -105,9 +127,9 @@ export async function dispatchTeams(payload: PostPayload, config: SocialConfig) 
 }
 
 export async function dispatchTeamsPhoto(imageUrl: string, caption: string, config: SocialConfig) {
-  if (!config.TEAMS_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.TEAMS_WEBHOOK_URL, 'teams')) return;
 
-  return fetch(config.TEAMS_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.TEAMS_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -132,9 +154,9 @@ export async function dispatchTeamsPhoto(imageUrl: string, caption: string, conf
 }
 
 export async function dispatchGChat(payload: PostPayload, config: SocialConfig) {
-  if (!config.GCHAT_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.GCHAT_WEBHOOK_URL, 'gchat')) return;
 
-  return fetch(config.GCHAT_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.GCHAT_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -149,9 +171,9 @@ export async function dispatchGChat(payload: PostPayload, config: SocialConfig) 
 }
 
 export async function dispatchGChatPhoto(imageUrl: string, caption: string, config: SocialConfig) {
-  if (!config.GCHAT_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.GCHAT_WEBHOOK_URL, 'gchat')) return;
 
-  return fetch(config.GCHAT_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.GCHAT_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -176,9 +198,9 @@ export async function dispatchGChatPhoto(imageUrl: string, caption: string, conf
 }
 
 export async function dispatchMake(payload: PostPayload, config: SocialConfig) {
-  if (!config.MAKE_WEBHOOK_URL) return;
+  if (!validateWebhookUrl(config.MAKE_WEBHOOK_URL, 'make')) return;
 
-  return fetch(config.MAKE_WEBHOOK_URL, { signal: AbortSignal.timeout(5000),
+  return fetch(config.MAKE_WEBHOOK_URL!, { signal: AbortSignal.timeout(5000),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)

@@ -28,17 +28,19 @@ function timingSafeEqual(a: string, b: string): boolean {
   const aBuf = enc.encode(a);
   const bBuf = enc.encode(b);
   
-  // Use a fixed length for comparison to avoid leaking the target length
-  // We'll use 64 bytes as a safe ceiling for tokens
-  const maxLength = Math.max(aBuf.length, bBuf.length, 64);
-  const aFixed = new Uint8Array(maxLength);
-  const bFixed = new Uint8Array(maxLength);
-  aFixed.set(aBuf);
-  bFixed.set(bBuf);
+  if (aBuf.length !== bBuf.length) {
+    // If lengths differ, compare aBuf against itself to consume time
+    // but ensure we return false at the end.
+    let _result = 0;
+    for (let i = 0; i < aBuf.length; i++) {
+      _result |= aBuf[i] ^ aBuf[i];
+    }
+    return false;
+  }
 
-  let result = aBuf.length === bBuf.length ? 0 : 1;
-  for (let i = 0; i < maxLength; i++) {
-    result |= aFixed[i] ^ bFixed[i];
+  let result = 0;
+  for (let i = 0; i < aBuf.length; i++) {
+    result |= aBuf[i] ^ bBuf[i];
   }
   return result === 0;
 }

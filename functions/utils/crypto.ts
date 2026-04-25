@@ -97,7 +97,7 @@ export async function decrypt(encryptedText: string, secret: string): Promise<st
     return new TextDecoder().decode(decrypted);
   } catch (err) {
     console.error("[Crypto] Decryption failed:", err);
-    // Fallback: return raw text (lazy migration support)
-    return encryptedText;
+    // SEC-02: Do not leak raw ciphertext on failure
+    return "[Decryption Failed]";
   }
 }

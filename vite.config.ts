@@ -115,7 +115,11 @@ export default defineConfig({
           motion: ["framer-motion"],
           icons: ["lucide-react"],
           media: ["heic2any"],
-          threejs: ["three", "@react-three/fiber", "@react-three/drei"]
+          threejs: ["three", "@react-three/fiber", "@react-three/drei"],
+          syntax: ["react-syntax-highlighter"],
+          tremor: ["@tremor/react"],
+          flow: ["@xyflow/react"],
+          mammoth: ["mammoth"]
         },
       },
     },

@@ -249,8 +249,8 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
   const socialConfig = await getSocialConfig(c);
   const baseUrl = new URL(c.req.url).origin;
 
-  try {
-    await dispatchSocials(
+  c.executionCtx.waitUntil(
+    dispatchSocials(
       c.env.DB,
       {
         title: row.title as string,
@@ -260,10 +260,8 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         baseUrl: baseUrl
       },
       socialConfig
-    );
-  } catch {
-    warnings.push("Social Syndication Failed");
-  }
+    ).catch(err => console.error("[Approve] Social dispatch failed:", err))
+  );
 
   // Notify original author
   if (row.cf_email) {
@@ -273,17 +271,15 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
       .executeTakeFirst();
 
     if (author) {
-      try {
-        await emitNotification(c, {
+      c.executionCtx.waitUntil(
+        emitNotification(c, {
           userId: author.id as string,
           title: "Post Approved",
           message: `Your post "${row.title}" has been published.`,
           link: `/blog/${slug}`,
           priority: "medium"
-        });
-      } catch {
-        warnings.push("Failed to notify author");
-      }
+        }).catch(err => console.error("[Approve] Author notification failed:", err))
+      );
     }
   }
 

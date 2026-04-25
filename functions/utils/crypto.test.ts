@@ -129,11 +129,11 @@ describe('crypto PII encryption utility', () => {
       expect(mockDeriveKey).toHaveBeenCalled();
     });
 
-    it('returns raw text on decryption failure (lazy migration fallback)', async () => {
+    it('returns sentinel on decryption failure (SEC-02)', async () => {
       mockDecrypt.mockRejectedValueOnce(new Error('Decryption failed'));
 
       const result = await decrypt('bad:encrypted:data', TEST_SECRET);
-      expect(result).toBe('bad:encrypted:data');
+      expect(result).toBe('[Decryption Failed]');
     });
 
     it('returns input for single-part strings with no colon', async () => {

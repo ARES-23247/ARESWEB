@@ -111,7 +111,7 @@ const notificationHandlers = {
           .where("status", "=", "pending")
           .execute(),
         db.selectFrom("posts")
-          .select(["id", "title", "slug", "status", "is_deleted"])
+          .select(["title", "slug", "status", "is_deleted"])
           .where("status", "=", "pending")
           .where("is_deleted", "=", 0)
           .execute(),
@@ -121,7 +121,7 @@ const notificationHandlers = {
           .where("is_deleted", "=", 0)
           .execute(),
         db.selectFrom("docs")
-          .select(["id", "title", "slug", "status", "is_deleted"])
+          .select(["title", "slug", "status", "is_deleted"])
           .where("status", "=", "pending")
           .where("is_deleted", "=", 0)
           .execute(),

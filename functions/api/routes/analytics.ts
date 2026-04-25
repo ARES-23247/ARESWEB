@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { analyticsContract } from "../../../src/schemas/contracts/analyticsContract";
-import { AppEnv, ensureAdmin, checkRateLimit, turnstileMiddleware, getDbSettings  } from "../middleware";
+import { AppEnv, ensureAdmin, checkRateLimit, rateLimitMiddleware, turnstileMiddleware, getDbSettings  } from "../middleware";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 

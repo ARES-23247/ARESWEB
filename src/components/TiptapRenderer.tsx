@@ -2,6 +2,7 @@ import { ReactNode, lazy, Suspense, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Eye } from "lucide-react";
 import { CodeBlock } from "./docs/CodeBlock";
+import ErrorBoundary from "./ErrorBoundary";
 
 const CodePlayground = lazy(() => import('./docs/CodePlayground').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CodePlayground</div> })));
 const InteractiveTutorial = lazy(() => import('./InteractiveTutorial').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load InteractiveTutorial</div> })));
@@ -156,9 +157,11 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       const Component = ComponentMap[componentName];
       if (Component) {
         return (
-          <Suspense fallback={<div className="p-8 border border-white/10 bg-ares-gray-dark rounded animate-pulse text-center text-marble/40">Loading interactive tool...</div>}>
-            <Component className="my-8" />
-          </Suspense>
+          <ErrorBoundary fallback={<div className="p-4 border border-white/10 bg-ares-danger/10 text-ares-danger rounded text-sm font-mono my-8">Component failed to load</div>}>
+            <Suspense fallback={<div className="p-8 border border-white/10 bg-ares-gray-dark rounded animate-pulse text-center text-marble/40">Loading interactive tool...</div>}>
+              <Component className="my-8" />
+            </Suspense>
+          </ErrorBoundary>
         );
       }
       return (

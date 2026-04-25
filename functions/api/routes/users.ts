@@ -121,18 +121,23 @@ const userHandlers = {
       const db = c.get("db") as Kysely<DB>;
       const id = params.id;
       
-      await db.deleteFrom("comments").where("user_id", "=", id).execute();
-      await db.deleteFrom("event_signups").where("user_id", "=", id).execute();
-      await db.deleteFrom("user_badges").where("user_id", "=", id).execute();
-      await db.deleteFrom("user_profiles").where("user_id", "=", id).execute();
-      await db.deleteFrom("session").where("userId", "=", id).execute();
-      await db.deleteFrom("account").where("userId", "=", id).execute();
+      // Atomicity Fix: Delete all related records in parallel, then the user
+      await Promise.all([
+        db.deleteFrom("comments").where("user_id", "=", id).execute(),
+        db.deleteFrom("event_signups").where("user_id", "=", id).execute(),
+        db.deleteFrom("user_badges").where("user_id", "=", id).execute(),
+        db.deleteFrom("user_profiles").where("user_id", "=", id).execute(),
+        db.deleteFrom("session").where("userId", "=", id).execute(),
+        db.deleteFrom("account").where("userId", "=", id).execute()
+      ]);
+      
       await db.deleteFrom("user").where("id", "=", id).execute();
 
       c.executionCtx.waitUntil(logAuditAction(c, "DELETE_USER", "user", id, `Deleted user ${id}`));
 
       return { status: 200 as const, body: { success: true } as any };
-    } catch {
+    } catch (e: any) {
+      console.error("Delete user failed:", e);
       return { status: 500 as const, body: { error: "Delete failed" } as any };
     }
   },

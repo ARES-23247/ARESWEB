@@ -26,11 +26,15 @@ export function getValidatedEnv(runtimeEnv: Record<string, unknown>) {
   });
 }
 
+let cachedEnv: AppEnv["Bindings"] | null = null;
+
 export const envMiddleware = async (c: Context<AppEnv>, next: Next) => {
   try {
-    const env = getValidatedEnv(c.env as unknown as Record<string, unknown>);
+    if (!cachedEnv) {
+      cachedEnv = getValidatedEnv(c.env as unknown as Record<string, unknown>) as unknown as AppEnv["Bindings"];
+    }
     // SEC-D02: Attach validated env to context for type-safe access
-    c.set("env", env as unknown as AppEnv["Bindings"]);
+    c.set("env", cachedEnv);
   } catch (err) {
     console.error("Environment Validation Error:", err);
     

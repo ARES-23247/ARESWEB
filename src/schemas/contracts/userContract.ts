@@ -98,7 +98,7 @@ export const profileContract = c.router({
   updateMe: {
     method: "PUT",
     path: "/me",
-    body: z.record(z.any()),
+    body: z.record(z.string(), z.any()),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -131,8 +131,8 @@ export const profileContract = c.router({
     path: "/:userId",
     responses: {
       200: z.object({
-        profile: z.record(z.any()),
-        badges: z.array(z.record(z.any())),
+        profile: z.record(z.string(), z.any()),
+        badges: z.array(z.record(z.string(), z.any())),
       }),
       403: z.object({ error: z.string() }),
       404: z.object({ error: z.string() }),

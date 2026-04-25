@@ -1,21 +1,21 @@
 import { z } from "zod";
 
 export const eventSchema = z.object({
-  title: z.string().min(1, "Event title is required"),
-  dateStart: z.string().min(1, "Start date is required"),
-  dateEnd: z.string().optional(),
-  location: z.string().optional(),
-  description: z.string().optional(),
-  coverImage: z.string().optional().or(z.literal("")),
+  title: z.string().min(1, "Event title is required").max(255),
+  dateStart: z.string().min(1, "Start date is required").max(255),
+  dateEnd: z.string().max(255).optional(),
+  location: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  coverImage: z.string().max(255).optional().or(z.literal("")),
   category: z.enum(["internal", "outreach", "external"]).default("internal"),
-  tbaEventKey: z.string().optional().or(z.literal("")),
+  tbaEventKey: z.string().max(255).optional().or(z.literal("")),
   isPotluck: z.boolean().default(false),
   isVolunteer: z.boolean().default(false),
-  publishedAt: z.string().optional(),
+  publishedAt: z.string().max(255).optional(),
   isDraft: z.boolean().optional(),
-  seasonId: z.string().optional(),
-  meetingNotes: z.string().optional(),
-  socials: z.record(z.string(), z.boolean()).optional(),
+  seasonId: z.string().max(255).optional(),
+  meetingNotes: z.string().max(200000).optional(),
+  socials: z.record(z.string().max(255), z.boolean()).optional(),
 });
 
 export type EventPayload = z.infer<typeof eventSchema>;

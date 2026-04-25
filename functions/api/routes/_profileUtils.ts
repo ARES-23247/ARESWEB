@@ -8,113 +8,84 @@ import { encrypt } from "../../utils/crypto";
 export async function upsertProfile(
   c: Context<AppEnv>,
   userId: string,
-   
   data: Record<string, any>
 ) {
   const secret = c.env.ENCRYPTION_SECRET;
   const sessionUser = await getSessionUser(c);
   const db = c.get("db") as Kysely<DB>;
   
-  // SEC-F09: Prevent self-escalation of member_type
-  let memberType = (data.member_type as string) || "student";
-  
+  // Fetch existing profile to allow merging
   const existing = await db.selectFrom("user_profiles")
-    .select("member_type")
+    .selectAll()
     .where("user_id", "=", userId)
     .executeTakeFirst();
   
   const isTargetingSelf = sessionUser?.id === userId;
   const isAdmin = sessionUser?.role === "admin" || sessionUser?.member_type === "coach" || sessionUser?.member_type === "mentor";
 
+  // Robust Merge Helper: Only overwrite if key is present in data, otherwise keep existing or use default
+  const getMergedValue = async (key: string, isEncrypted: boolean = false, defaultValue: any = "") => {
+    if (key in data) {
+      const val = data[key];
+      if (isEncrypted) return await encrypt(String(val || ""), secret);
+      if (key === 'subteams' || key === 'dietary_restrictions' || key === 'colleges' || key === 'employers') {
+        return Array.isArray(val) ? JSON.stringify(val) : (val || defaultValue);
+      }
+      if (key === 'show_on_about' || key === 'show_email' || key === 'show_phone') {
+        return data[key] ? 1 : 0;
+      }
+      return val ?? defaultValue;
+    }
+    return (existing as any)?.[key] ?? defaultValue;
+  };
+
+  // SEC-F09: Prevent self-escalation of member_type
+  let memberType = await getMergedValue("member_type", false, "student");
+  
   if (isTargetingSelf && !isAdmin && existing) {
     memberType = existing.member_type || "student";
   } else if (!isAdmin && !existing) {
     memberType = "student";
   }
 
-  const encryptedName = await encrypt((data.emergency_contact_name as string) || "", secret);
-  const encryptedPhone = await encrypt((data.emergency_contact_phone as string) || "", secret);
-  const encryptedUserPhone = await encrypt((data.phone as string) || "", secret);
-  const encryptedContactEmail = await encrypt((data.contact_email as string) || "", secret);
-  const encryptedParentsName = await encrypt((data.parents_name as string) || "", secret);
-  const encryptedParentsEmail = await encrypt((data.parents_email as string) || "", secret);
-  const encryptedStudentsName = await encrypt((data.students_name as string) || "", secret);
-  const encryptedStudentsEmail = await encrypt((data.students_email as string) || "", secret);
-
-  let subteamsStr = (data.subteams as string) || "[]";
-  if (Array.isArray(data.subteams)) subteamsStr = JSON.stringify(data.subteams);
-  
-  let dietaryStr = (data.dietary_restrictions as string) || "[]";
-  if (Array.isArray(data.dietary_restrictions)) dietaryStr = JSON.stringify(data.dietary_restrictions);
-
-   
   const values: any = {
     user_id: userId,
-    nickname: (data.nickname as string) || "",
-    first_name: (data.first_name as string) || "",
-    last_name: (data.last_name as string) || "",
-    pronouns: (data.pronouns as string) || "",
-    phone: encryptedUserPhone,
-    contact_email: encryptedContactEmail,
-    bio: (data.bio as string) || "",
-    subteams: subteamsStr,
-    dietary_restrictions: dietaryStr,
-    show_on_about: data.show_on_about ? 1 : 0,
-    show_email: data.show_email ? 1 : 0,
-    show_phone: data.show_phone ? 1 : 0,
+    nickname: await getMergedValue("nickname"),
+    first_name: await getMergedValue("first_name"),
+    last_name: await getMergedValue("last_name"),
+    pronouns: await getMergedValue("pronouns"),
+    phone: await getMergedValue("phone", true),
+    contact_email: await getMergedValue("contact_email", true),
+    bio: await getMergedValue("bio"),
+    subteams: await getMergedValue("subteams", false, "[]"),
+    dietary_restrictions: await getMergedValue("dietary_restrictions", false, "[]"),
+    show_on_about: await getMergedValue("show_on_about", false, 1),
+    show_email: await getMergedValue("show_email", false, 0),
+    show_phone: await getMergedValue("show_phone", false, 0),
     member_type: memberType,
-    grade_year: (data.grade_year as string) || "",
-    colleges: (data.colleges as string) || "[]",
-    employers: (data.employers as string) || "[]",
-    favorite_first_thing: (data.favorite_first_thing as string) || "",
-    fun_fact: (data.fun_fact as string) || "",
-    favorite_robot_mechanism: (data.favorite_robot_mechanism as string) || "",
-    pre_match_superstition: (data.pre_match_superstition as string) || "",
-    leadership_role: (data.leadership_role as string) || "",
-    rookie_year: (data.rookie_year as string) || "",
-    tshirt_size: (data.tshirt_size as string) || "",
-    emergency_contact_name: encryptedName,
-    emergency_contact_phone: encryptedPhone,
-    parents_name: encryptedParentsName,
-    parents_email: encryptedParentsEmail,
-    students_name: encryptedStudentsName,
-    students_email: encryptedStudentsEmail,
-    favorite_food: (data.favorite_food as string) || ""
+    grade_year: await getMergedValue("grade_year"),
+    colleges: await getMergedValue("colleges", false, "[]"),
+    employers: await getMergedValue("employers", false, "[]"),
+    favorite_first_thing: await getMergedValue("favorite_first_thing"),
+    fun_fact: await getMergedValue("fun_fact"),
+    favorite_robot_mechanism: await getMergedValue("favorite_robot_mechanism"),
+    pre_match_superstition: await getMergedValue("pre_match_superstition"),
+    leadership_role: await getMergedValue("leadership_role"),
+    rookie_year: await getMergedValue("rookie_year"),
+    tshirt_size: await getMergedValue("tshirt_size"),
+    emergency_contact_name: await getMergedValue("emergency_contact_name", true),
+    emergency_contact_phone: await getMergedValue("emergency_contact_phone", true),
+    parents_name: await getMergedValue("parents_name", true),
+    parents_email: await getMergedValue("parents_email", true),
+    students_name: await getMergedValue("students_name", true),
+    students_email: await getMergedValue("students_email", true),
+    favorite_food: await getMergedValue("favorite_food")
   };
+
+  const { user_id: _, ...updateSet } = values;
 
   await db.insertInto("user_profiles")
     .values(values)
-    .onConflict((oc: any) => oc.column("user_id").doUpdateSet({
-      nickname: values.nickname,
-      first_name: values.first_name,
-      last_name: values.last_name,
-      pronouns: values.pronouns,
-      phone: values.phone,
-      contact_email: values.contact_email,
-      bio: values.bio,
-      subteams: values.subteams,
-      dietary_restrictions: values.dietary_restrictions,
-      show_on_about: values.show_on_about,
-      show_email: values.show_email,
-      show_phone: values.show_phone,
-      member_type: values.member_type,
-      grade_year: values.grade_year,
-      colleges: values.colleges,
-      employers: values.employers,
-      favorite_first_thing: values.favorite_first_thing,
-      fun_fact: values.fun_fact,
-      favorite_robot_mechanism: values.favorite_robot_mechanism,
-      pre_match_superstition: values.pre_match_superstition,
-      leadership_role: values.leadership_role,
-      rookie_year: values.rookie_year,
-      tshirt_size: values.tshirt_size,
-      emergency_contact_name: values.emergency_contact_name,
-      emergency_contact_phone: values.emergency_contact_phone,
-      parents_name: values.parents_name,
-      parents_email: values.parents_email,
-      students_name: values.students_name,
-      students_email: values.students_email,
-      favorite_food: values.favorite_food
-    }))
+    .onConflict((oc: any) => oc.column("user_id").doUpdateSet(updateSet))
     .execute();
 }
