@@ -20,8 +20,8 @@ export default function MobileQuickActions() {
     <Drawer.Root open={isSidebarOpen} onOpenChange={setSidebarOpen}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm" />
-        <Drawer.Content className="bg-obsidian flex flex-col rounded-t-[32px] h-[60vh] mt-24 fixed bottom-0 left-0 right-0 z-[101] border-t border-white/10 outline-none ring-1 ring-white/5">
-          <div className="p-4 bg-white/5 rounded-t-[32px] flex-1 overflow-y-auto">
+        <Drawer.Content className="bg-obsidian flex flex-col h-[60vh] mt-24 fixed bottom-0 left-0 right-0 z-[101] border-t border-white/10 outline-none ring-1 ring-white/5">
+          <div className="p-4 bg-white/5 flex-1 overflow-y-auto">
             <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-white/20 mb-8" />
             <div className="max-w-md mx-auto">
               <Drawer.Title className="font-black text-2xl mb-6 text-white uppercase tracking-tighter flex items-center gap-3">

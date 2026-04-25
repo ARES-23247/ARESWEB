@@ -49,7 +49,7 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
       animate={{ opacity: 1, y: 0 }}
       className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl z-50"
     >
-      <div className="glass-card bg-black/80 backdrop-blur-2xl border border-ares-cyan/30 rounded-[2.5rem] p-4 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_20px_rgba(0,183,235,0.2)] flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+      <div className="glass-card bg-black/80 backdrop-blur-2xl border border-ares-cyan/30 ares-cut p-4 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_20px_rgba(0,183,235,0.2)] flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
         {/* Animated Background Element */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-ares-cyan to-transparent animate-pulse" />
         

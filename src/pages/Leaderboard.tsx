@@ -116,7 +116,7 @@ export default function Leaderboard() {
                     <p className="text-ares-gray text-xs font-bold uppercase tracking-widest">{user.member_type}</p>
                   </Link>
 
-                  <div className={`w-full ${height} ${bg} border-t border-x ${border}/30 rounded-t-3xl flex flex-col items-center justify-start pt-6 relative overflow-hidden backdrop-blur-sm group`}>
+                  <div className={`w-full ${height} ${bg} border-t border-x ${border}/30 flex flex-col items-center justify-start pt-6 relative overflow-hidden backdrop-blur-sm group`}>
                      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
                      <p className={`text-4xl font-black ${color}`}>{rank}</p>
                      <div className="mt-auto pb-6 flex items-center gap-2">

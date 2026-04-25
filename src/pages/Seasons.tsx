@@ -165,7 +165,7 @@ export default function Seasons() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {isLoadingAwards ? (
-              [1,2,3].map(i => <div key={i} className="h-64 bg-white/5 rounded-[2.5rem] animate-pulse" />)
+              [1,2,3].map(i => <div key={i} className="h-64 bg-white/5 ares-cut animate-pulse" />)
             ) : awards.length > 0 ? (
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               awards.map((award: any, idx: number) => (
@@ -174,7 +174,7 @@ export default function Seasons() {
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="bg-ares-gray-dark border border-white/5 p-8 rounded-[2.5rem] group hover:border-ares-gold/40 transition-all relative overflow-hidden"
+                  className="bg-ares-gray-dark border border-white/5 p-8 ares-cut group hover:border-ares-gold/40 transition-all relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
                   <div className="flex justify-between items-start mb-6">

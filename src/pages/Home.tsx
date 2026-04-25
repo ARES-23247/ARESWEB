@@ -31,8 +31,8 @@ export default function Home() {
                 </p>
               </div>
               <h1 className="text-6xl md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
-                <span className="inline-block mb-2 px-6 py-2 bg-obsidian rounded-tl-[1.5rem] rounded-br-[1.5rem] rounded-tr-md rounded-bl-md text-white">Engineered</span> <br />
-                <span className="bg-ares-red px-6 py-2 pb-3 mt-4 inline-block rounded-tl-[1.5rem] rounded-br-[1.5rem] rounded-tr-md rounded-bl-md shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white">To Inspire</span>
+                <span className="inline-block mb-2 px-6 py-2 bg-obsidian ares-cut-sm text-white">Engineered</span> <br />
+                <span className="bg-ares-red px-6 py-2 pb-3 mt-4 inline-block ares-cut-sm shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white">To Inspire</span>
               </h1>
             </div>
           </div>

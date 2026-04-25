@@ -104,7 +104,7 @@ export default function JudgesHub() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-obsidian/40 backdrop-blur-2xl border border-white/5 p-10 rounded-[2.5rem] shadow-2xl relative z-10"
+          className="w-full max-w-md bg-obsidian/40 backdrop-blur-2xl border border-white/5 p-10 ares-cut shadow-2xl relative z-10"
         >
           <div className="flex flex-col items-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-ares-cyan to-ares-blue ares-cut-lg flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,183,235,0.3)]">
@@ -322,7 +322,7 @@ export default function JudgesHub() {
             </section>
 
             {/* Snapshot Stats */}
-            <section className="bg-ares-cyan/5 border border-ares-cyan/20 rounded-[2.5rem] p-8">
+            <section className="bg-ares-cyan/5 border border-ares-cyan/20 ares-cut p-8">
               <h3 className="text-xs font-black text-ares-cyan uppercase tracking-[0.2em] mb-6">Seasonal Efficiency</h3>
               <div className="space-y-6">
                 <div className="flex items-center justify-between">

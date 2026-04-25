@@ -186,7 +186,7 @@ export default function ProfilePage() {
           {/* Admin / Private Details */}
           {(profile.emergency_contact_name || profile.dietary_restrictions || profile.tshirt_size) && (
              <div className="bg-ares-red/5 border border-ares-red/20 ares-cut p-6 mb-8 relative overflow-hidden">
-               <div className="absolute top-0 right-0 bg-ares-red text-white text-[9px] font-black uppercase px-2 py-1 rounded-bl-lg">Private / Admin Only</div>
+               <div className="absolute top-0 right-0 bg-ares-red text-white text-[9px] font-black uppercase px-2 py-1 ares-cut-sm">Private / Admin Only</div>
                <h3 className="ares-badge-red mb-6 flex items-center gap-2"><Shield size={14} /> Internal Records</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                  {(profile.emergency_contact_name || profile.emergency_contact_phone) && (

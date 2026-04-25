@@ -254,7 +254,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
       )}
       
       {isDeleted && (
-        <div className="bg-ares-danger/10 border-l-4 border-ares-danger p-4 rounded-r-lg mb-6 flex items-start gap-3">
+        <div className="bg-ares-danger/10 border-l-4 border-ares-danger p-4 mb-6 flex items-start gap-3">
           <div className="text-ares-danger mt-0.5">⚠️</div>
           <div>
             <h4 className="text-white font-bold text-sm tracking-wide uppercase">Ghost Event</h4>

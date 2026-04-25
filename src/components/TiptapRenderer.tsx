@@ -171,7 +171,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       );
     }
     case "blockquote": return (
-      <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic rounded-r-lg">
+      <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic">
         {children}
       </blockquote>
     );

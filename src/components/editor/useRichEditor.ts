@@ -54,7 +54,7 @@ export function useRichEditor(options?: UseRichEditorOptions): Editor | null {
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         codeBlock: false,
-        blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white italic rounded-r-lg' } }
+        blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white italic' } }
       }),
       Typography,
       Highlight.configure({ HTMLAttributes: { class: 'bg-ares-gold/30 text-black rounded-sm px-1' } }),

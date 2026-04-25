@@ -173,7 +173,7 @@ export default function AwardEditor() {
         {isLoading ? (
           <DashboardLoadingGrid count={2} heightClass="h-48" gridClass="grid-cols-1 lg:grid-cols-2" />
         ) : awards.map((award) => (
-          <div key={award.id} className="bg-black/40 border border-white/5 rounded-[2.5rem] p-8 group hover:border-ares-gold/30 transition-all flex flex-col md:flex-row gap-8 relative overflow-hidden">
+          <div key={award.id} className="bg-black/40 border border-white/5 ares-cut p-8 group hover:border-ares-gold/30 transition-all flex flex-col md:flex-row gap-8 relative overflow-hidden">
             {/* Background Glow */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
             

@@ -151,9 +151,9 @@ export default function EventDetail() {
       <section className="relative w-full max-w-5xl mx-auto px-6 py-16 flex flex-col md:flex-row gap-12">
         {/* Motif: Ionic Pillar Divider on Desktop */}
         <div className="hidden md:flex flex-col items-center shrink-0 w-8 opacity-20" aria-hidden="true">
-          <div className="w-8 h-4 border-b-2 border-ares-gold rounded-t-lg mb-2"></div>
+          <div className="w-8 h-4 border-b-2 border-ares-gold mb-2"></div>
           <div className="w-2 flex-1 bg-gradient-to-b from-ares-gold to-ares-bronze/10 rounded-full"></div>
-          <div className="w-8 h-4 border-t-2 border-ares-bronze/10 rounded-b-lg mt-2"></div>
+          <div className="w-8 h-4 border-t-2 border-ares-bronze/10 mt-2"></div>
         </div>
 
         <motion.article 

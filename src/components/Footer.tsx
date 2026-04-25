@@ -87,7 +87,7 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col lg:flex-row justify-between items-center gap-8">
         <p className="text-marble text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">
-          © {mounted ? new Date().getFullYear() : "2025"} <span className="bg-ares-red text-white px-1 rounded-sm">ARES</span> 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
+          © {mounted ? new Date().getFullYear() : "2025"} <span className="bg-ares-red text-white px-1 ares-cut-sm">ARES</span> 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
         </p>
         
         <div className="flex flex-wrap items-center justify-center lg:justify-end gap-x-8 gap-y-4 text-xs font-bold uppercase tracking-[0.2em] text-marble">

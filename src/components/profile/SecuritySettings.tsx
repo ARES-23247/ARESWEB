@@ -149,7 +149,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
         {isSettingUp2FA && twoFactorData && (
           <div className="mt-4 p-4 border-t border-white/10 space-y-6 pt-4 animate-in fade-in slide-in-from-top-2">
             <div className="flex flex-col md:flex-row gap-6 items-center">
-              <div className="bg-white p-2 rounded-lg">
+              <div className="bg-white p-2 ares-cut-sm">
                 <QRCodeSVG value={twoFactorData.qrCode} size={160} />
               </div>
               <div className="flex-1 space-y-3">

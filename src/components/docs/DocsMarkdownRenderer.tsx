@@ -161,7 +161,7 @@ function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
         ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ol>,
         li: ({ children }) => <li className="leading-relaxed">{children}</li>,
         blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic rounded-r-lg">{children}</blockquote>
+          <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic">{children}</blockquote>
         ),
         code: ({ className, children, ...props }) => {
           const match = /language-(\w+)/.exec(className || '');
