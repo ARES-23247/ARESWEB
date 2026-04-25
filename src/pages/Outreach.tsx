@@ -235,7 +235,7 @@ export default function Outreach() {
         <div className="max-w-4xl mx-auto ares-cut bg-obsidian border border-white/10 p-12 text-center relative overflow-hidden z-10">
           <h2 className="text-4xl md:text-5xl font-black text-white mb-6 italic tracking-tighter relative z-10">Have a volunteer need?</h2>
           <p className="text-white text-lg mb-10 max-w-xl mx-auto font-medium relative z-10">Whether it&apos;s a elementary school demo, a science fair, or a community workshop—ARES is here to inspire.</p>
-          <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-3 px-10 py-5 bg-black text-white font-black ares-cut hover:bg-ares-red transition-all shadow-2xl relative z-10 border border-white/10">
+          <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-3 px-10 py-5 bg-black text-white font-black ares-cut-sm hover:bg-ares-red transition-all shadow-2xl relative z-10 border border-white/10">
             Get In Touch <ArrowRight size={20} />
           </button>
         </div>
@@ -317,7 +317,7 @@ export default function Outreach() {
                     <Turnstile onVerify={setTurnstileToken} theme="dark" size="normal" className="mb-4" />
                   </div>
 
-                  <button type="submit" disabled={isSubmitting || !turnstileToken} className="w-full py-4 bg-ares-red text-white font-black hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all ares-cut disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest">
+                  <button type="submit" disabled={isSubmitting || !turnstileToken} className="w-full py-4 bg-ares-red text-white font-black hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all ares-cut-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest">
                     {isSubmitting ? "Submitting..." : "Submit Request"}
                   </button>
                 </form>

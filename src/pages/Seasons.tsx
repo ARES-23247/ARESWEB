@@ -210,8 +210,8 @@ export default function Seasons() {
             <h2 className="text-4xl font-black text-white mb-6 italic tracking-tighter relative z-10">SUPPORT THE LEGACY.</h2>
             <p className="text-white text-lg mb-10 max-w-xl mx-auto relative z-10 font-medium">Our history is written by the mentors, students, and sponsors who invest in our success. Join us in building the future.</p>
             <div className="flex flex-wrap justify-center gap-4 relative z-10">
-               <a href="/sponsors" className="px-8 py-4 bg-white text-ares-red font-black ares-cut hover:scale-105 transition-all shadow-lg">SPONSOR ARES</a>
-               <a href="/contact" className="px-8 py-4 bg-ares-gray-dark text-white font-black ares-cut hover:bg-white/10 transition-all border border-white/10">JOIN THE TEAM</a>
+               <a href="/sponsors" className="px-8 py-4 bg-white text-ares-red font-black ares-cut-sm hover:scale-105 transition-all shadow-lg">SPONSOR ARES</a>
+               <a href="/contact" className="px-8 py-4 bg-ares-gray-dark text-white font-black ares-cut-sm hover:bg-white/10 transition-all border border-white/10">JOIN THE TEAM</a>
             </div>
          </div>
       </section>

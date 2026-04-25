@@ -91,11 +91,11 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
             href={`https://www.thebluealliance.com/event/${eventKey}`}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 ares-cut text-sm font-bold text-marble hover:bg-white/10 transition-all"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 ares-cut-sm text-sm font-bold text-marble hover:bg-white/10 transition-all"
           >
             Full Stats <ExternalLink size={14} />
           </a>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-ares-cyan text-black font-black ares-cut text-sm hover:shadow-[0_0_20px_rgba(0,183,235,0.4)] transition-all">
+          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-ares-cyan text-black font-black ares-cut-sm text-sm hover:shadow-[0_0_20px_rgba(0,183,235,0.4)] transition-all">
             Match Predictions <Zap size={14} className="fill-current" />
           </button>
         </div>

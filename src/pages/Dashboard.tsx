@@ -57,7 +57,7 @@ export default function Dashboard() {
         <ShieldAlert size={64} className="text-ares-red mb-4 opacity-50" />
         <h1 className="text-2xl font-black text-white mb-2">Authentication Required</h1>
         <p className="text-marble/90 mb-8 max-w-md">You must be signed in with a verified ARES account to access the administrative dashboard.</p>
-        <Link to="/login" className="px-6 py-3 bg-ares-red text-white font-bold ares-cut hover:bg-ares-bronze transition-colors">
+        <Link to="/login" className="px-6 py-3 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-bronze transition-colors">
           Return to Login
         </Link>
       </div>
