@@ -115,7 +115,7 @@ describe("Hono Backend - /docs Router", () => {
       headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "false" }, mockExecutionContext);
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
     authBypass = true; // reset for other tests
   });
 });
