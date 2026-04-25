@@ -79,9 +79,9 @@ export default function Navbar() {
           <Link to="/outreach" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Outreach</Link>
           <Link to="/events" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Events</Link>
           <Link to="/blog" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Blog</Link>
-          <Link to="/docs" aria-label="ARES Documentation Library" className="hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group border border-white/5 bg-white/5">
-            <span className="bg-ares-red px-3 py-1.5 text-xs font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">ARES</span>
-            <span className="text-white px-3 py-1.5 text-xs font-heading font-bold uppercase tracking-[0.2em] group-hover:bg-white/10 transition-colors">LIB</span>
+          <Link to="/docs" aria-label="ARES Documentation Library" className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group border border-white/5 bg-white/5">
+            <span className="bg-ares-red h-full px-3 flex items-center text-xs font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">ARES</span>
+            <span className="text-white h-full px-3 flex items-center text-xs font-heading font-bold uppercase tracking-[0.2em] group-hover:bg-white/10 transition-colors">LIB</span>
           </Link>
         </div>
 
@@ -89,7 +89,7 @@ export default function Navbar() {
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
             aria-label="Open Command Palette"
-            className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/10 hover:bg-white/20 text-marble/90 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan border border-white/10"
+            className="flex items-center gap-2 px-3 h-9 ares-cut-sm bg-white/10 hover:bg-white/20 text-marble/90 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan border border-white/10"
           >
             <Search size={14} aria-hidden="true" />
             <span className="text-xs sm:text-xs font-mono flex items-center gap-2 whitespace-nowrap">
@@ -104,7 +104,7 @@ export default function Navbar() {
               <div className="relative" ref={notifRef}>
                 <button 
                   onClick={() => setShowNotifs(!showNotifs)}
-                className="relative flex items-center justify-center p-2 ares-cut-sm bg-white/5 hover:bg-white/10 border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                className="relative flex items-center justify-center h-9 w-9 ares-cut-sm bg-white/5 hover:bg-white/10 border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 aria-label="Notifications"
               >
                 <Bell size={18} className="text-white" />
@@ -174,7 +174,7 @@ export default function Navbar() {
             </div>
           )}
           {isSignedIn && (
-            <Link to="/dashboard" className="relative flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm transition-all group" aria-label="Dashboard">
+            <Link to="/dashboard" className="relative flex items-center gap-2 px-3 h-9 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm transition-all group" aria-label="Dashboard">
               <img 
                 src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${session?.user?.id}`} 
                 alt="" 
@@ -184,14 +184,14 @@ export default function Navbar() {
             </Link>
           )}
           {!isPending && !isSignedIn && (
-            <Link to="/login" className="flex items-center gap-2 px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-ares-gold/30 ares-cut-sm transition-all group" aria-label="Sign In">
+            <Link to="/login" className="flex items-center gap-2 px-4 h-9 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-ares-gold/30 ares-cut-sm transition-all group" aria-label="Sign In">
               <LogIn size={14} className="text-ares-gold" />
               <span className="text-xs font-bold text-white group-hover:text-ares-gold uppercase tracking-wider">Sign In</span>
             </Link>
           )}
 
 
-          <Link to="/sponsors" className="hidden md:flex bg-ares-red text-white px-6 py-1.5 ares-cut-sm font-bold uppercase tracking-widest text-xs hover:bg-ares-bronze hover:text-white transition-all shadow-lg shadow-ares-red/20 border border-ares-red/50 items-center gap-2">
+          <Link to="/sponsors" className="hidden md:flex bg-ares-red text-white px-6 h-9 ares-cut-sm font-bold uppercase tracking-widest text-xs hover:bg-ares-bronze hover:text-white transition-all shadow-lg shadow-ares-red/20 border border-ares-red/50 items-center gap-2">
             <Heart size={14} className="fill-white" />
             <span>Support Us</span>
           </Link>
