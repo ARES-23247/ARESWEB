@@ -247,6 +247,8 @@ const docTsRestRouter: any = s.router(docContract as any, {
       
       const docs = results.map(d => ({
         ...d,
+        title: d.title || "Untitled",
+        category: d.category || "Uncategorized",
         sort_order: Number(d.sort_order || 0),
         is_portfolio: Number(d.is_portfolio || 0),
         is_executive_summary: Number(d.is_executive_summary || 0),
@@ -254,8 +256,9 @@ const docTsRestRouter: any = s.router(docContract as any, {
       }));
 
       return { status: 200 as const, body: { docs: docs as any[] } };
-    } catch {
-      return { status: 200 as const, body: { docs: [] } };
+    } catch (e) {
+      console.error("ADMIN LIST ERROR", e);
+      return { status: 500 as const, body: { error: "Failed to fetch docs" } as any };
     }
   },
     adminDetail: async ({ params }: { params: any }, c: any) => {

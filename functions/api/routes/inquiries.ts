@@ -47,8 +47,12 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
       const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
 
       const inquiries = await Promise.all(results.map(async (r) => {
-        let name = await decrypt(String(r.name), secret);
-        let email = await decrypt(String(r.email), secret);
+        let name = String(r.name);
+        let email = String(r.email);
+        
+        try { if (name.includes(":")) name = await decrypt(name, secret); } catch { /* ignore fallback to plaintext */ }
+        try { if (email.includes(":")) email = await decrypt(email, secret); } catch { /* ignore fallback to plaintext */ }
+        
         let metadata = r.metadata;
 
         if (maskPII) {

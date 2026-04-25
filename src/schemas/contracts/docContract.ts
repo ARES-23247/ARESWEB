@@ -6,8 +6,8 @@ const c = initContract();
 
 export const docResponseSchema = z.object({
   slug: z.string(),
-  title: z.string(),
-  category: z.string(),
+  title: z.string().nullish(),
+  category: z.string().nullish(),
   sort_order: z.number().nullish(),
   description: z.string().nullish(),
   is_portfolio: z.number().nullish(),
