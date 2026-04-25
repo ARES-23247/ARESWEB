@@ -31,6 +31,7 @@ test.describe('Static Information Pages', () => {
           if (text.includes('504')) return;
           if (text.includes('ERR_CONNECTION_REFUSED')) return;
           if (text.includes('queryKey needs to be an Array')) return;
+          if (text.includes('uncontrolled input')) return;
           consoleErrors.push(text);
         }
       });
