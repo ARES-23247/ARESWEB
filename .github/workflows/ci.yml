@@ -4,6 +4,13 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: 'Run full E2E suite (Playwright & pa11y)'
+        required: true
+        type: boolean
+        default: true
 
 env:
   PLAYWRIGHT_BROWSERS_PATH: 0
@@ -40,7 +47,23 @@ jobs:
       - name: Build with Vite
         run: npm run build
 
+      - name: Check if Full Suite Should Run
+        id: check_e2e
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "run_e2e=${{ inputs.run_e2e }}" >> $GITHUB_OUTPUT
+          elif [[ "$PR_TITLE" == *"[skip e2e]"* ]] || [[ "$PR_TITLE" == *"[hotfix]"* ]] || [[ "$PR_LABELS" == *"hotfix"* ]] || [[ "$PR_LABELS" == *"skip-e2e"* ]]; then
+            echo "run_e2e=false" >> $GITHUB_OUTPUT
+            echo "⏩ Skipping E2E and Pa11y tests for hotfix/fast-path."
+          else
+            echo "run_e2e=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Cache Playwright
+        if: steps.check_e2e.outputs.run_e2e == 'true'
         uses: actions/cache@v4
         id: playwright-cache
         with:
@@ -50,17 +73,19 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright (Chromium only)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.check_e2e.outputs.run_e2e == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Install Playwright OS Dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        if: steps.check_e2e.outputs.run_e2e == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
       - name: E2E Tests (Playwright)
+        if: steps.check_e2e.outputs.run_e2e == 'true'
         run: npm run test:e2e
 
       - name: E2E Accessibility Tests (pa11y-ci)
+        if: steps.check_e2e.outputs.run_e2e == 'true'
         run: npx start-server-and-test "npx vite preview --port 4173 --strictPort" http://localhost:4173 "npm run pa11y"
 
       - name: Deploy Preview to Cloudflare Pages
