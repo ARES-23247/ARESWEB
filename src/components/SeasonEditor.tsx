@@ -95,7 +95,7 @@ export default function SeasonEditor() {
     
     const payload = {
       start_year: Number(startYear),
-      end_year: Number(startYear),
+      end_year: Number(startYear) + 1,
       challenge_name: challengeName,
       robot_name: robotName,
       robot_image: robotImageUrl === DEFAULT_COVER_IMAGE ? null : robotImageUrl,
