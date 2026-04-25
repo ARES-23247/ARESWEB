@@ -121,20 +121,59 @@ apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
 // ── Global Search ───
 apiRouter.get("/search", rateLimitMiddleware(50, 60), async (c) => {
   const q = c.req.query("q") || "";
-  if (q.length < 3) return c.json({ results: [] });
+  if (q.length < 2) return c.json({ results: [] });
   
   // SCA-FTS-01: Sanitize FTS5 query
   const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
   if (!qClean) return c.json({ results: [] });
-  const ftsQ = `"${qClean}"*`;
+  const ftsQ = `${qClean}*`;
 
   const db = c.get("db") as Kysely<DB>;
+  
+  // SCA-FTS-02: Use rich FTS5 features (snippet/highlight) for championship-grade search
   const [postsReq, eventsReq, docsReq] = await Promise.all([
-    sql<Record<string, unknown>>`SELECT 'blog' as type, f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
-    sql<Record<string, unknown>>`SELECT 'event' as type, f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
-    sql<Record<string, unknown>>`SELECT 'doc' as type, f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`.execute(db)
+    sql<Record<string, unknown>>`
+      SELECT 
+        'blog' as type, 
+        f.slug as id, 
+        highlight(posts_fts, 1, '<b>', '</b>') as title,
+        snippet(posts_fts, 4, '...', '...', '...', 15) as snippet
+      FROM posts_fts f 
+      JOIN posts p ON f.slug = p.slug 
+      WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} 
+      ORDER BY rank LIMIT 5
+    `.execute(db),
+    sql<Record<string, unknown>>`
+      SELECT 
+        'event' as type, 
+        f.id, 
+        highlight(events_fts, 1, '<b>', '</b>') as title,
+        snippet(events_fts, 2, '...', '...', '...', 15) as snippet
+      FROM events_fts f 
+      JOIN events e ON f.id = e.id 
+      WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} 
+      ORDER BY rank LIMIT 5
+    `.execute(db),
+    sql<Record<string, unknown>>`
+      SELECT 
+        'doc' as type, 
+        f.slug as id, 
+        highlight(docs_fts, 1, '<b>', '</b>') as title,
+        snippet(docs_fts, 4, '...', '...', '...', 15) as snippet
+      FROM docs_fts f 
+      JOIN docs d ON f.slug = d.slug 
+      WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} 
+      ORDER BY rank LIMIT 5
+    `.execute(db)
   ]);
-  return c.json({ results: [...(postsReq.rows || []), ...(eventsReq.rows || []), ...(docsReq.rows || [])] });
+  
+  const results = [
+    ...(postsReq.rows || []),
+    ...(eventsReq.rows || []),
+    ...(docsReq.rows || [])
+  ];
+
+  return c.json({ results });
 });
 
 // ── Audit Log ────────────────────────────
