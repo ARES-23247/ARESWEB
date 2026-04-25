@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
+import { csrf } from "hono/csrf";
 import { Bindings, AppEnv, checkRateLimit, rateLimitMiddleware, logSystemError, ensureAdmin, dbMiddleware, envMiddleware, parsePagination } from "./middleware";
 import { sql } from "kysely";
 import { DB } from "../../src/schemas/database";
@@ -71,6 +72,16 @@ apiRouter.use("*", async (c, next) => {
   await next();
   c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
 });
+
+// ── CSRF Protection ──
+apiRouter.use("*", csrf({
+  origin: (origin) => {
+    if (!origin) return false;
+    const trusted = ["http://localhost:5173", "http://localhost:8788", "https://aresfirst.org"];
+    if (trusted.includes(origin)) return true;
+    return origin.endsWith(".pages.dev") || origin.endsWith(".aresfirst.org");
+  }
+}));
 
 
 // ── CORS ─────
@@ -181,8 +192,11 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   const db = new Kysely<DB>({ dialect: new D1Dialect({ database: env.DB }) });
   await purgeOldInquiries(db, 30);
   await db.deleteFrom("audit_log")
-    .where("created_at", "<", sql`datetime('now', '-90 days')` as any)
-    .limit(100)
+    .where("id", "in", (eb) => eb.selectFrom("audit_log")
+      .select("id")
+      .where("created_at", "<", sql`datetime('now', '-90 days')` as any)
+      .limit(100)
+    )
     .execute();
 };
 

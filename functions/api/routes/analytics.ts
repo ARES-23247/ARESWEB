@@ -247,7 +247,6 @@ const analyticsHandlers = {
 
 const analyticsTsRestRouter = s.router(analyticsContract, analyticsHandlers as any);
 
-analyticsRouter.use("/track", turnstileMiddleware());
 analyticsRouter.use("/sponsor-click", turnstileMiddleware());
 analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 analyticsRouter.use("/admin", ensureAdmin);

@@ -30,6 +30,7 @@ export default function CommandPalette() {
   const { data: session } = authClient.useSession();
   const navigate = useNavigate();
   const lastActiveElement = useRef<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Toggle Command Palette with Ctrl+K or Cmd+K
   useEffect(() => {
@@ -59,6 +60,40 @@ export default function CommandPalette() {
       window.removeEventListener("open-command-palette", handleCustomOpen);
     };
   }, [isOpen, setIsOpen]);
+
+  // Focus Trap Logic
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      if (!modalRef.current) return;
+
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey) { // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else { // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleTab);
+    return () => window.removeEventListener("keydown", handleTab);
+  }, [isOpen]);
 
   // Restore focus when palette closes
   useEffect(() => {
@@ -196,6 +231,7 @@ export default function CommandPalette() {
           onClick={handleBackdropClick}
         >
           <motion.div
+            ref={modalRef}
             initial={{ scale: 0.95, opacity: 0, y: -10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}

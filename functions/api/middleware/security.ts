@@ -92,11 +92,17 @@ export async function verifyTurnstile(
       signal: AbortSignal.timeout(5000)
     });
 
-    const result = await res.json() as { success: boolean, 'error-codes'?: string[] };
-    if (!result.success) {
-      console.warn("[Turnstile] Validation failed:", JSON.stringify(result));
+    if (!res.ok) {
+      console.error("[Turnstile] Verification request failed:", res.statusText);
+      return false;
     }
-    return result.success === true;
+
+    const result = await res.json() as { success: boolean, 'error-codes'?: string[] };
+    if (result.success !== true) {
+      console.warn("[Turnstile] Validation failed:", JSON.stringify(result));
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error("[Turnstile] Verification exception:", err);
     return false;

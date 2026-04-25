@@ -4,7 +4,7 @@ import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 import { AppEnv, getSessionUser } from "../middleware";
 import { encrypt } from "../../utils/crypto";
-import { safeJSONParse, safeJSONStringify } from "../../utils/json";
+import { safeJSONStringify } from "../../utils/json";
 
 export async function upsertProfile(
   c: Context<AppEnv>,

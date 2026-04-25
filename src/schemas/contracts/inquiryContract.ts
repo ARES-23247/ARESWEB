@@ -5,11 +5,11 @@ const c = initContract();
 
 export const inquirySchema = z.object({
   id: z.string(),
-  type: z.enum(["sponsor", "student", "mentor", "outreach", "support"]),
+  type: z.string(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.string(),
   metadata: z.string().nullable().optional(), // JSON string from DB
-  status: z.enum(["pending", "approved", "resolved", "rejected"]),
+  status: z.string(),
   created_at: z.string(),
 });
 

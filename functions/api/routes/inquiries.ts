@@ -8,11 +8,12 @@ import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
 import { encrypt, decrypt } from "../../utils/crypto";
+import { safeJSONStringify } from "../../utils/json";
 
 const s = initServer<AppEnv>();
 export const inquiriesRouter = new Hono<AppEnv>();
 
-inquiriesRouter.post("/submit", persistentRateLimitMiddleware(5, 300));
+inquiriesRouter.post("/", persistentRateLimitMiddleware(5, 300));
 const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
     list: async ({ query }: { query: any }, c: any) => {
     try {
@@ -98,7 +99,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         try {
           const decryptedEmail = await decrypt(r.email, secret);
           if (decryptedEmail === email) {
-            const currentMeta = metadata ? JSON.stringify(metadata) : null;
+            const currentMeta = safeJSONStringify(metadata, null as any);
             if (r.metadata === currentMeta) {
               return { status: 200 as const, body: { success: true, id: r.id } };
             }
@@ -113,7 +114,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
       const encryptedName = await encrypt(name, secret);
       const encryptedEmail = await encrypt(email, secret);
       
-      let metadataStr = metadata ? JSON.stringify(metadata) : null;
+      let metadataStr = safeJSONStringify(metadata, null as any);
       if (metadataStr && metadataStr.length > 5000) {
         metadataStr = metadataStr.substring(0, 5000);
       }
@@ -215,9 +216,12 @@ inquiriesRouter.use("/", (c, next) => {
 export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   if (days <= 0) return { deleted: 0 };
   const res = await db.deleteFrom("inquiries")
-    .where("status", "in", ["resolved", "rejected"])
-    .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
-    .limit(100)
+    .where("id", "in", (eb) => eb.selectFrom("inquiries")
+      .select("id")
+      .where("status", "in", ["resolved", "rejected"])
+      .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
+      .limit(100)
+    )
     .execute();
   return { deleted: res.length };
 }

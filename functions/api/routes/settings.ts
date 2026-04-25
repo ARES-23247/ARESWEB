@@ -122,7 +122,7 @@ settingsRouter.get("/admin/backup", async (c: any) => {
         } else {
           q = q.selectAll();
         }
-        backup[tableName] = await q.execute() as unknown[];
+        backup[tableName] = await q.limit(1000).execute() as unknown[];
         
         if (tableName === "inquiries") {
           backup[tableName] = (backup[tableName] || []).map((r) => {

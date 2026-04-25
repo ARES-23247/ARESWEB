@@ -1,9 +1,16 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { GreekMeander } from "./GreekMeander";
 import { siteConfig } from "../site.config";
 import { Mail, Box } from "lucide-react";
 
 export default function Footer() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <footer role="contentinfo" aria-label="Site Footer" className="w-full bg-obsidian text-marble border-t border-ares-bronze/20 pt-16 pb-8 overflow-hidden relative">
@@ -80,7 +87,7 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-marble/10 flex flex-col lg:flex-row justify-between items-center gap-8">
         <p className="text-marble text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">
-          © {new Date().getFullYear()} <span className="bg-ares-red text-white px-1 rounded-sm">ARES</span> 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
+          © {mounted ? new Date().getFullYear() : "2025"} <span className="bg-ares-red text-white px-1 rounded-sm">ARES</span> 23247. Proudly part of the <a href="https://MARSFIRST.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-ares-red/30">MARS Family</a>.
         </p>
         
         <div className="flex flex-wrap items-center justify-center lg:justify-end gap-x-8 gap-y-4 text-xs font-bold uppercase tracking-[0.2em] text-marble">

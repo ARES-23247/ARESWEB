@@ -47,27 +47,25 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
 
   const handleCheckpoint = async () => {
     if (currentStepData.checkpoint) {
-      setCompletedSteps(prev => {
-        const next = new Set(prev);
-        next.add(currentStepData.id);
+      const next = new Set(completedSteps);
+      next.add(currentStepData.id);
+      
+      setCompletedSteps(next);
 
-        // Save progress to localStorage (side effect inside setter is discouraged but ensures sync with state update)
-        const progressArray = [...next];
-        localStorage.setItem(`tutorial-${title}-progress`, JSON.stringify(progressArray));
+      // Save progress to localStorage
+      const progressArray = [...next];
+      localStorage.setItem(`tutorial-${title}-progress`, JSON.stringify(progressArray));
 
-        // Sync to Cloudflare conditionally
-        if (syncId) {
-          api.analytics.trackPageView.mutation({
-            body: { 
-              path: `/tutorial/${title}/checkpoint/${currentStepData.id}`,
-              category: 'tutorial-checkpoint',
-              metadata: { syncId, progress: progressArray }
-            }
-          }).catch((e: unknown) => console.error("Failed to sync progress to cloud", e));
-        }
-
-        return next;
-      });
+      // Sync to Cloudflare conditionally
+      if (syncId) {
+        api.analytics.trackPageView.mutation({
+          body: { 
+            path: `/tutorial/${title}/checkpoint/${currentStepData.id}`,
+            category: 'tutorial-checkpoint',
+            metadata: { syncId, progress: progressArray }
+          }
+        }).catch((e: unknown) => console.error("Failed to sync progress to cloud", e));
+      }
     }
   };
 

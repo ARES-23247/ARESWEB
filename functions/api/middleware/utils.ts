@@ -3,6 +3,7 @@ import { siteConfig } from "../../utils/site.config";
 import { parseAstToText } from "../../utils/content";
 import { Kysely } from "kysely";
 import { DB } from "../../../src/schemas/database";
+import { safeJSONParse } from "../../utils/json";
 
 // ── Cloudflare Bindings ──────────────────────────────────────────────
 export type Bindings = {
@@ -161,8 +162,7 @@ export async function logAuditAction(
         action,
         resource_type,
         resource_id: resource_id || null,
-        details: scrubPii(details || null),
-        created_at: new Date().toISOString()
+        details: scrubPii(details || null)
       })
       .execute();
   } catch (err) {
@@ -186,8 +186,7 @@ export async function logSystemError(
         action: "INTEGRATION_FAILURE",
         resource_type: service,
         resource_id: null,
-        details: JSON.stringify({ error, details, timestamp: new Date().toISOString() }),
-        created_at: new Date().toISOString()
+        details: JSON.stringify({ error, details, timestamp: new Date().toISOString() })
       })
       .execute();
   } catch (err) {
@@ -291,11 +290,7 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
   }
 
   const safeParseArray = (val: unknown) => {
-    if (Array.isArray(val)) return val;
-    if (typeof val === 'string') {
-      try { return JSON.parse(val); } catch { return []; }
-    }
-    return [];
+    return safeJSONParse<string[]>(val, []);
   };
 
   const safe: Record<string, unknown> = {

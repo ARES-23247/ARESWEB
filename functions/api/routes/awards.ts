@@ -48,9 +48,25 @@ const awardsTsRestRouter: any = s.router(awardContract as any, {
       let exists = false;
       if (id) {
         const row = await db.selectFrom("awards").select("id").where("id", "=", Number(id) as any).executeTakeFirst();
-        if (row) exists = true;
-      } else {
-        finalId = crypto.randomUUID();
+        if (row) {
+          exists = true;
+          finalId = String(row.id);
+        }
+      }
+
+      // SCA-A01: Fix race condition by checking for duplicates before insertion
+      if (!exists) {
+        const duplicate = await db.selectFrom("awards")
+          .select("id")
+          .where("title", "=", title)
+          .where("date", "=", String(year))
+          .where("event_name", "=", event_name || "")
+          .where("is_deleted", "=", 0)
+          .executeTakeFirst();
+        if (duplicate) {
+          exists = true;
+          finalId = String(duplicate.id);
+        }
       }
 
       const values = {
@@ -66,9 +82,11 @@ const awardsTsRestRouter: any = s.router(awardContract as any, {
       if (exists && finalId) {
         await db.updateTable("awards").set(values).where("id", "=", Number(finalId) as any).execute();
         c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", finalId, `Award "${title}" (${year}) updated`));
-      } else if (finalId) {
-        await db.insertInto("awards").values({ ...values, id: undefined }).execute();
-        c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", finalId, `Award "${title}" (${year}) created`));
+      } else {
+        const res = await db.insertInto("awards").values({ ...values, id: undefined }).executeTakeFirst();
+        const newId = String(res.insertId || finalId || "new");
+        c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", newId, `Award "${title}" (${year}) created`));
+        finalId = newId;
       }
 
       return { status: 200 as const, body: { success: true, id: finalId || "" } };

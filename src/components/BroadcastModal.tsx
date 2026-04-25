@@ -99,6 +99,11 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
           </div>
 
           <div className="p-6">
+            <div className="sr-only" aria-live="polite">
+              {isPending && "Broadcasting..."}
+              {status === "success" && "Broadcast Successful"}
+              {status === "error" && `Broadcast Failed: ${errorMsg}`}
+            </div>
             <div className="mb-6">
               <p className="text-xs font-bold text-marble/40 uppercase tracking-widest mb-1">Target Content</p>
               <Dialog.Description className="text-lg font-bold text-white leading-tight m-0">{title}</Dialog.Description>
@@ -167,11 +172,11 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
 
             {status === "error" && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="w-16 h-16 bg-ares-red/20 text-ares-red rounded-full flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-ares-red/20 text-ares-danger-soft rounded-full flex items-center justify-center mb-4">
                   <AlertCircle size={32} />
                 </div>
                 <h4 className="text-xl font-bold text-white mb-1">Broadcast Failed</h4>
-                <p className="text-ares-red text-sm mb-4">{errorMsg}</p>
+                <p className="text-ares-danger-soft text-sm mb-4">{errorMsg}</p>
                 <button 
                   onClick={() => setStatus("idle")}
                   className="text-xs font-bold text-marble/40 hover:text-white underline tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded px-2 py-1"
