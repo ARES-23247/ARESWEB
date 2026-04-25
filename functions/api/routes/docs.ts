@@ -586,10 +586,11 @@ const docTsRestRouter: any = s.router(docContract as any, {
 
 
 // Apply middleware/protections
-docsRouter.use("/admin", ensureAdmin);
-docsRouter.use("/admin/*", ensureAdmin);
+// SEC-F01: Authenticated users can submit revisions via /admin/save
 docsRouter.use("/admin/save", ensureAuth);
 
+// SEC-F02: All other /admin paths require full admin privileges
+docsRouter.use("/admin/*", ensureAdmin);
 
 createHonoEndpoints(docContract, docTsRestRouter, docsRouter);
 export default docsRouter;

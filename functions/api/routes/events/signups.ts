@@ -1,6 +1,6 @@
  
 import { Hono } from "hono";
-import { AppEnv, getSessionUser, turnstileMiddleware  } from "../../middleware";
+import { AppEnv, getSessionUser, turnstileMiddleware, ensureAuth, ensureAdmin } from "../../middleware";
 
 const signupsRouter = new Hono<AppEnv>();
 
@@ -85,9 +85,9 @@ signupsRouter.get("/:id/signups", async (c: any) => {
   }
 });
 
-signupsRouter.post("/:id/signups", turnstileMiddleware(), async (c: any) => {
-  const user = await getSessionUser(c);
-  if (!user || user.role === "unverified") return c.json({ error: "Forbidden" }, 403);
+signupsRouter.post("/:id/signups", ensureAuth, turnstileMiddleware(), async (c: any) => {
+  const user = (await getSessionUser(c))!;
+  if (user.role === "unverified") return c.json({ error: "Forbidden" }, 403);
   const eventId = (c.req.param("id") || "");
   const db = c.get("db");
 
@@ -116,9 +116,8 @@ signupsRouter.post("/:id/signups", turnstileMiddleware(), async (c: any) => {
   }
 });
 
-signupsRouter.delete("/:id/signups/me", async (c: any) => {
-  const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
+signupsRouter.delete("/:id/signups/me", ensureAuth, async (c: any) => {
+  const user = (await getSessionUser(c))!;
   const eventId = (c.req.param("id") || "");
   const db = c.get("db");
   try {
@@ -132,10 +131,10 @@ signupsRouter.delete("/:id/signups/me", async (c: any) => {
   }
 });
 
-signupsRouter.patch("/:id/signups/me/attendance", async (c: any) => {
+signupsRouter.patch("/:id/signups/me/attendance", ensureAuth, async (c: any) => {
   const eventId = (c.req.param("id") || "");
-  const user = await getSessionUser(c);
-  if (!user || user.role === "unverified") return c.json({ error: "Unauthorized" }, 401);
+  const user = (await getSessionUser(c))!;
+  if (user.role === "unverified") return c.json({ error: "Unauthorized" }, 401);
   const db = c.get("db");
 
   try {
@@ -152,15 +151,10 @@ signupsRouter.patch("/:id/signups/me/attendance", async (c: any) => {
   }
 });
 
-signupsRouter.patch("/:id/signups/:userId/attendance", async (c: any) => {
+signupsRouter.patch("/:id/signups/:userId/attendance", ensureAdmin, async (c: any) => {
   const eventId = (c.req.param("id") || "");
   const userId = (c.req.param("userId") || "");
-  const user = await getSessionUser(c);
   const db = c.get("db");
-
-  if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
 
   try {
     const body = await c.req.json();

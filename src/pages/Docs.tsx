@@ -215,7 +215,7 @@ export default function Docs() {
                       <div className="relative z-10 w-8 h-8 rounded-full border-2 border-ares-gray-deep overflow-hidden bg-ares-gray-dark">
                         <img 
                           src={currentDoc.original_author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentDoc.cf_email}`}
-                          alt="Author avatar" 
+                          alt={`${currentDoc.original_author_nickname || "Author"}'s avatar`} 
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -233,7 +233,7 @@ export default function Docs() {
                           <div className="flex -space-x-2">
                             {contributors.slice(0, 5).map((c: any, idx: any) => (
                               <div key={idx} className="w-6 h-6 rounded-full border border-ares-gray-deep overflow-hidden bg-ares-gray-dark" title={c.nickname || c.author_email}>
-                                <img src={c.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${c.author_email}`} alt="avatar" className="w-full h-full object-cover"/>
+                                <img src={c.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${c.author_email}`} alt={`${c.nickname || "Contributor"}'s avatar`} className="w-full h-full object-cover"/>
                               </div>
                             ))}
                             {contributors.length > 5 && (

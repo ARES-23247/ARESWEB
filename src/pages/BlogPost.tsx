@@ -84,7 +84,7 @@ export default function BlogPost() {
                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit">
                  <img 
                    src={post.author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author_nickname || post.slug}`}
-                   alt="Author"
+                   alt={`${post.author_nickname || "Author"}'s avatar`}
                    className="w-6 h-6 rounded-full object-cover border border-white/20"
                  />
                  <span className="text-sm text-white">{post.author_nickname || "ARES Author"}</span>

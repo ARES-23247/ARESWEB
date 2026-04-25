@@ -13,9 +13,7 @@ export const profilesRouter = new Hono<AppEnv>();
 
 const profileHandlers = {
   getMe: async (_: any, c: Context<AppEnv>) => {
-    const user = await getSessionUser(c);
-    if (!user) return { status: 200 as const, body: { auth: null, member_type: "student", first_name: "", last_name: "", nickname: "" } as any };
-
+    const user = (await getSessionUser(c))!;
     const db = c.get("db") as Kysely<DB>;
 
     try {
@@ -103,8 +101,7 @@ const profileHandlers = {
     }
   },
   updateMe: async ({ body }: { body: any }, c: Context<AppEnv>) => {
-    const user = await getSessionUser(c);
-    if (!user) return { status: 200 as const, body: { success: false } };
+    const user = (await getSessionUser(c))!;
     try {
       await upsertProfile(c as any, user.id, body as any);
       return { status: 200 as const, body: { success: true } };
@@ -236,6 +233,11 @@ const profileHandlers = {
 };
 
 const profileTsRestRouter = s.router(profileContract, profileHandlers as any);
+
+profilesRouter.use("/me", ensureAuth);
+profilesRouter.use("/update-me", ensureAuth);
+profilesRouter.use("/avatar", ensureAuth);
+
 createHonoEndpoints(profileContract, profileTsRestRouter, profilesRouter);
 
 profilesRouter.use("/team-roster", rateLimitMiddleware(100, 60));
@@ -243,8 +245,7 @@ profilesRouter.use("/:userId", rateLimitMiddleware(100, 60));
 
 profilesRouter.use("/update-me", persistentRateLimitMiddleware(10, 60));
 profilesRouter.put("/avatar", persistentRateLimitMiddleware(15, 60), async (c: any) => {
-  const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const user = (await getSessionUser(c))!;
   try {
     const body = await c.req.json();
     const { image } = body;

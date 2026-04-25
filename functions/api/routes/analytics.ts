@@ -247,10 +247,11 @@ const analyticsHandlers = {
 
 const analyticsTsRestRouter = s.router(analyticsContract, analyticsHandlers as any);
 
+// Apply ensureAdmin ONLY to administrative routes
+analyticsRouter.use("/admin/*", ensureAdmin);
+
 analyticsRouter.use("/sponsor-click", turnstileMiddleware());
 analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
-analyticsRouter.use("/admin", ensureAdmin);
-analyticsRouter.use("/admin/*", ensureAdmin);
 
 createHonoEndpoints(analyticsContract, analyticsTsRestRouter, analyticsRouter);
 

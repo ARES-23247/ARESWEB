@@ -247,7 +247,7 @@ export default function AvatarEditor({ currentImage, onClose }: AvatarEditorProp
               <div className="relative w-full h-full ares-cut md:ares-cut-lg bg-ares-gray-dark border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
                 <img
                   src={currentUrl}
-                  alt="Avatar Preview"
+                  alt="Interactive Avatar Preview"
                   className="w-full h-full object-contain filter drop-shadow-2xl scale-110"
                 />
               </div>

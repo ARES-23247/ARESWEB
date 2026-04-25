@@ -1,7 +1,7 @@
 import { Hono, Context } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware } from "../middleware";
+import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware, ensureAuth } from "../middleware";
 import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
@@ -116,8 +116,8 @@ const commentHandlers = {
     }
   },
   update: async ({ params, body }: { params: any, body: any }, c: Context<AppEnv>) => {
-    const user = await getSessionUser(c);
-    if (!user || user.role === "unverified") return { status: 200 as const, body: { success: false } as any };
+    const user = (await getSessionUser(c))!;
+    if (user.role === "unverified") return { status: 200 as const, body: { success: false } as any };
 
     const { id } = params;
     const db = c.get("db") as Kysely<DB>;
@@ -152,8 +152,8 @@ const commentHandlers = {
     }
   },
   delete: async ({ params }: { params: any }, c: Context<AppEnv>) => {
-    const user = await getSessionUser(c);
-    if (!user || user.role === "unverified") return { status: 200 as const, body: { success: false } as any };
+    const user = (await getSessionUser(c))!;
+    if (user.role === "unverified") return { status: 200 as const, body: { success: false } as any };
 
     const { id } = params;
     const db = c.get("db") as Kysely<DB>;
@@ -187,6 +187,16 @@ const commentHandlers = {
 };
 
 const commentTsRestRouter = s.router(commentContract, commentHandlers as any);
+
+commentsRouter.use("/:targetType/:targetId", async (c, next) => {
+  if (c.req.method === "POST") return ensureAuth(c, next);
+  return next();
+});
+
+commentsRouter.use("/:id", async (c, next) => {
+  if (c.req.method === "PATCH" || c.req.method === "DELETE") return ensureAuth(c, next);
+  return next();
+});
 
 commentsRouter.use("/submit/*", persistentRateLimitMiddleware(10, 60));
 commentsRouter.use("/:id", (c, next) => {

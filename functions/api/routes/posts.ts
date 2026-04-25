@@ -498,9 +498,12 @@ const postHandlers = {
 const postTsRestRouter: any = s.router(postContract as any, postHandlers as any);
 
 // Apply middleware/protections
-postsRouter.use("/admin", ensureAdmin);
+// SEC-P01: Revisions/History available to any authenticated team member
+postsRouter.use("/admin/:slug/history", ensureAuth);
+postsRouter.use("/admin/:slug/history/*", ensureAuth);
+
+// SEC-P02: All other admin operations require full Admin/Author privileges
 postsRouter.use("/admin/*", ensureAdmin);
-postsRouter.use("/admin/save", ensureAuth);
 
 createHonoEndpoints(postContract, postTsRestRouter, postsRouter);
 

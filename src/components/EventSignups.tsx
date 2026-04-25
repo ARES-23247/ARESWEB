@@ -210,7 +210,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <img src={entry.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${entry.user_id}`}
-                            alt="" className="w-6 h-6 ares-cut-sm bg-white/10" />
+                            alt={`${entry.nickname || "ARES Member"}'s avatar`} className="w-6 h-6 ares-cut-sm bg-white/10" />
                           <span className={`text-sm font-bold ${entry.attended ? "text-white" : "text-marble/40"}`}>{entry.nickname || "ARES Member"}</span>
                         </div>
                       </td>

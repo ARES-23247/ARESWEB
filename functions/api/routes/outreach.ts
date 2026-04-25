@@ -169,6 +169,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
 
 
 // Middlewares
+outreachRouter.use("/", ensureAuth);
 outreachRouter.use("/admin", ensureAdmin);
 outreachRouter.use("/admin/*", ensureAdmin);
 outreachRouter.use("/admin", rateLimitMiddleware(15, 60));

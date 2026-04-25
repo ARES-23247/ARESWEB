@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import zulipWebhookRouter from "./zulipWebhook";
 import { mockExecutionContext } from "../../../src/test/utils";
 
+vi.mock("../../utils/zulipSync", () => ({
+  sendZulipMessage: vi.fn().mockResolvedValue(1),
+}));
+
 describe("Zulip Webhook Router", () => {
   const env = {
     ZULIP_WEBHOOK_TOKEN: "test-token",

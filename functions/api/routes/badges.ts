@@ -122,6 +122,7 @@ const badgesTsRestRouter: any = s.router(badgeContract as any, {
 
 
 // Middlewares
+badgesRouter.use("/", ensureAuth);
 badgesRouter.use("/admin/*", ensureAdmin);
 badgesRouter.use("/admin", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));

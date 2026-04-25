@@ -74,7 +74,7 @@ export default function Blog() {
                       <div className="flex items-center gap-1.5" title={post.author_nickname}>
                         <img 
                           src={post.author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author_nickname || post.slug}`}
-                          alt="Author"
+                          alt={`${post.author_nickname || "Author"}'s avatar`}
                           className="w-5 h-5 rounded-full object-cover border border-white/10"
                         />
                         <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[100px]">{post.author_nickname || "ARES Author"}</span>

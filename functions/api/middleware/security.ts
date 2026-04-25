@@ -41,14 +41,16 @@ export function checkRateLimit(ip: string, limit = 100, windowSeconds = 60): boo
 import { DB } from "../../../shared/schemas/database";
 
 export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, limit: number, windowSeconds: number): Promise<boolean> {
-  const now = Math.floor(Date.now() / 1000);
+  if (!db) return true; // Fall open if middleware wasn't attached
   
-  // Cleanup old records occasionally to avoid table bloat
-  if (Math.random() < 0.05) {
-    db.deleteFrom("rate_limits").where("expires_at", "<", now).execute().catch(console.error);
-  }
+  const now = Math.floor(Date.now() / 1000);
 
   try {
+    // Cleanup old records occasionally to avoid table bloat
+    if (Math.random() < 0.05) {
+      db.deleteFrom("rate_limits").where("expires_at", "<", now).execute().catch(console.error);
+    }
+
     const result = await db.insertInto("rate_limits")
       .values({ ip, count: 1, expires_at: now + windowSeconds })
       .onConflict(oc => oc.column("ip").doUpdateSet({

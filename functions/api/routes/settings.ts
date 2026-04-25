@@ -90,8 +90,8 @@ const settingsTsRestRouter = s.router(settingsContract, settingsHandlers as any)
 
 
 
-// Admin protection
-settingsRouter.use("/*", ensureAdmin);
+// Admin protection - Entire router
+settingsRouter.use(ensureAdmin);
 
 // Backup route remains manual as it's a file export
 settingsRouter.get("/admin/backup", async (c: any) => {

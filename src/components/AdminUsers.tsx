@@ -68,7 +68,7 @@ export default function AdminUsers() {
       cell: info => (
         <a href={`/profile/${info.row.original.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <img src={info.row.original.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${info.row.original.id}`}
-            alt="" className="w-8 h-8 ares-cut-sm bg-obsidian" />
+            alt={`${info.row.original.nickname || info.row.original.name || "User"}'s avatar`} className="w-8 h-8 ares-cut-sm bg-obsidian" />
           <div>
             <span className="text-sm font-bold text-white block hover:text-ares-red">{info.row.original.nickname || info.getValue() || "ARES Member"}</span>
             <span className="text-[10px] text-white/40 font-mono">{info.row.original.id.slice(0, 8)}</span>
