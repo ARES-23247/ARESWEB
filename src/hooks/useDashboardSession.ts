@@ -37,7 +37,7 @@ export function useDashboardSession() {
     }
   );
 
-  const session: DashboardSession | null = res?.status === 200 ? {
+  const session: DashboardSession | null = res?.status === 200 && res.body.auth ? {
     authenticated: true,
     user: {
       ...res.body.auth,

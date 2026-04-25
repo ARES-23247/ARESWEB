@@ -8,16 +8,26 @@ interface Props {
 interface State {
   hasError: boolean;
   errorStr: string;
+  correlationId: string;
+  statusCode?: number;
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    errorStr: ""
+    errorStr: "",
+    correlationId: ""
   };
 
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, errorStr: error.stack || error.toString() };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static getDerivedStateFromError(error: any): State {
+    const correlationId = Math.random().toString(36).substring(2, 10).toUpperCase();
+    return { 
+      hasError: true, 
+      errorStr: error.stack || error.toString(),
+      correlationId,
+      statusCode: error.status || error.statusCode || error.response?.status
+    };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -40,6 +50,20 @@ export default class ErrorBoundary extends Component<Props, State> {
           <p className="text-white/60 text-center max-w-lg mb-6 leading-relaxed">
             The ARES React engine encountered an unhandled DOM rendering collision. The system has automatically isolated the fault.
           </p>
+
+          <div className="flex gap-4 mb-4">
+            <div className="bg-black/40 px-3 py-1.5 ares-cut-sm border border-white/10 flex flex-col items-center">
+              <span className="text-[10px] uppercase text-white/40 font-bold tracking-widest">Correlation ID</span>
+              <span className="text-sm font-mono text-ares-gold">{this.state.correlationId}</span>
+            </div>
+            {this.state.statusCode && (
+              <div className="bg-black/40 px-3 py-1.5 ares-cut-sm border border-white/10 flex flex-col items-center">
+                <span className="text-[10px] uppercase text-white/40 font-bold tracking-widest">HTTP Status</span>
+                <span className="text-sm font-mono text-ares-red">{this.state.statusCode}</span>
+              </div>
+            )}
+          </div>
+
           <div className="bg-ares-gray-dark border border-white/10 p-4 ares-cut-sm w-full max-w-xl text-left font-mono text-xs text-white overflow-x-auto mb-8 shadow-inner">
             {this.state.errorStr}
           </div>
