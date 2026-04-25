@@ -174,6 +174,29 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                 .set({ role: 'admin' })
                                 .where("email", "=", user.email)
                                 .execute();
+                        } else {
+                            try {
+                                const admins = await kyselyDb.selectFrom("user")
+                                    .select("id")
+                                    .where("role", "=", "admin")
+                                    .execute();
+                                
+                                if (admins.length > 0) {
+                                    const values = admins.map(admin => ({
+                                        id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
+                                        user_id: admin.id,
+                                        title: "New User Registration",
+                                        message: `A new user (${user.name || user.email}) has registered and is pending verification.`,
+                                        link: "/dashboard/users",
+                                        priority: "medium"
+                                    }));
+                                    
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    await kyselyDb.insertInto("notifications" as any).values(values).execute();
+                                }
+                            } catch (err) {
+                                console.error("[Auth] Failed to notify admins of new user:", err);
+                            }
                         }
                     },
                 },

@@ -180,4 +180,9 @@ h1, h2, h3, h4, .font-heading {
   .print-layout table {
     break-inside: avoid;
   }
+  
+  /* Fix native select option background in dark mode wrappers */
+  select option {
+    @apply bg-obsidian text-white;
+  }
 }
