@@ -151,7 +151,7 @@ export default function ProjectBoardKanban({
                       {status}
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 ares-cut-sm">
                     {items.length}
                   </span>
                 </div>

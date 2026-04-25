@@ -64,7 +64,7 @@ const NavButton = ({
             e.stopPropagation();
             navigate(`/dashboard/${tab}?view=pending`);
           }}
-          className="shrink-0 bg-ares-danger text-white text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(192,0,0,0.5)] hover:brightness-110 hover:scale-110 transition-all z-10 relative cursor-pointer"
+          className="shrink-0 bg-ares-danger text-white text-xs font-black uppercase tracking-widest px-2 py-0.5 ares-cut-sm shadow-[0_0_10px_rgba(192,0,0,0.5)] hover:brightness-110 hover:scale-110 transition-all z-10 relative cursor-pointer"
         >
           {pendingCount}
         </button>

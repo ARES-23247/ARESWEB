@@ -110,14 +110,14 @@ export default function EventDetail() {
             <span>&larr;</span> Back to Archive
           </Link>
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-            <span className={`w-fit px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${isPast ? "bg-obsidian text-white/60" : "bg-ares-red/20 text-ares-red border border-ares-red/50 shadow-[0_0_15px_rgba(192,0,0,0.4)]"}`}>
+            <span className={`w-fit px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest ${isPast ? "bg-obsidian text-white/60" : "bg-ares-red/20 text-ares-red border border-ares-red/50 shadow-[0_0_15px_rgba(192,0,0,0.4)]"}`}>
               {isPast ? "Historical Record" : "Upcoming Event"}
             </span>
             
             {!isPast && (
               <button 
                 onClick={handleSaveToCalendar}
-                className="w-fit flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-obsidian/80 hover:bg-ares-gold text-white hover:text-black border border-white/10 hover:border-ares-gold transition-all shadow-lg backdrop-blur-sm"
+                className="w-fit flex items-center gap-2 px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-obsidian/80 hover:bg-ares-gold text-white hover:text-black border border-white/10 hover:border-ares-gold transition-all shadow-lg backdrop-blur-sm"
               >
                 <Calendar size={14} /> Add to Calendar
               </button>
@@ -125,7 +125,7 @@ export default function EventDetail() {
             {isEditor && (
               <Link 
                 to={`/dashboard/event/${event.id}`}
-                className="w-fit flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-ares-cyan/10 hover:bg-ares-cyan text-ares-cyan hover:text-black border border-ares-cyan/30 transition-all shadow-lg backdrop-blur-sm"
+                className="w-fit flex items-center gap-2 px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/10 hover:bg-ares-cyan text-ares-cyan hover:text-black border border-ares-cyan/30 transition-all shadow-lg backdrop-blur-sm"
               >
                 <Edit2 size={14} /> Edit Event
               </Link>

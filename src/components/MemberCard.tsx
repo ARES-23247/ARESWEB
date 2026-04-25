@@ -40,7 +40,7 @@ export function MemberCard({ member }: { member: TeamMember }) {
         {subteams.length > 0 && (
           <div className="flex flex-wrap gap-1 justify-center mb-2">
             {(subteams as string[]).slice(0, 3).map((team: string) => (
-              <span key={team} className="px-2 py-0.5 bg-ares-red/5 text-ares-red/70 text-[9px] font-bold rounded-full uppercase tracking-wider">
+              <span key={team} className="px-2 py-0.5 bg-ares-red/5 text-ares-red/70 text-[9px] font-bold ares-cut-sm uppercase tracking-wider">
                 {team}
               </span>
             ))}

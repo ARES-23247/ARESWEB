@@ -78,7 +78,7 @@ export default function Join() {
             transition={{ duration: 0.6 }}
             className="bg-obsidian p-8 ares-cut-lg border border-white/10 shadow-2xl inline-block"
           >
-            <p aria-hidden="true" className="bg-ares-red text-white inline-block px-4 py-1 rounded-full uppercase tracking-[0.3em] font-bold text-xs mb-6 shadow-lg shadow-ares-red/20 before:content-['Enrollment_Open']"></p>
+            <p aria-hidden="true" className="bg-ares-red text-white inline-block px-4 py-1 ares-cut-sm uppercase tracking-[0.3em] font-bold text-xs mb-6 shadow-lg shadow-ares-red/20 before:content-['Enrollment_Open']"></p>
             <p className="sr-only">Enrollment Open</p>
             <h1 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter italic">
               Join <span aria-hidden="true" className="bg-ares-red px-6 py-1 ares-cut shadow-xl inline-block text-white ml-2 before:content-['ARES.']"></span>

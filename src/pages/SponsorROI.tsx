@@ -105,7 +105,7 @@ export default function SponsorROI() {
               )}
             </div>
             <div>
-              <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-[10px] font-black uppercase tracking-widest mb-3">
+              <div className="inline-flex items-center justify-center px-3 py-1 ares-cut-sm bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-[10px] font-black uppercase tracking-widest mb-3">
                 {sponsor.tier} Partner
               </div>
               <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">

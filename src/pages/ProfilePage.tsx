@@ -137,11 +137,11 @@ export default function ProfilePage() {
               </h1>
               {profile.pronouns && <p className="text-marble text-sm mb-3">{profile.pronouns}</p>}
               <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-4">
-                <span className="px-3 py-1 bg-ares-red/20 border border-ares-red/30 rounded-full text-xs font-bold text-ares-red">
+                <span className="px-3 py-1 bg-ares-red/20 border border-ares-red/30 ares-cut-sm text-xs font-bold text-ares-red">
                   {memberIcon} {memberLabel}
                 </span>
                 {subteams.length > 0 && subteams.map((team: string) => (
-                  <span key={team} className="px-3 py-1 bg-ares-gold/10 border border-ares-gold/20 rounded-full text-xs font-bold text-ares-gold">
+                  <span key={team} className="px-3 py-1 bg-ares-gold/10 border border-ares-gold/20 ares-cut-sm text-xs font-bold text-ares-gold">
                     {team}
                   </span>
                 ))}

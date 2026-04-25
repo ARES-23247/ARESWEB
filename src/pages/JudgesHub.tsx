@@ -227,7 +227,7 @@ export default function JudgesHub() {
                     <h4 className="text-xl font-bold group-hover:text-ares-gold transition-colors">{doc.title}</h4>
                     <p className="text-marble text-sm mt-2 line-clamp-2">{doc.description}</p>
                     <div className="mt-6 flex items-center justify-between">
-                      <span className="text-xs font-black bg-ares-gold/10 text-ares-gold px-3 py-1 rounded-full uppercase tracking-widest">RAPID REVIEW</span>
+                      <span className="text-xs font-black bg-ares-gold/10 text-ares-gold px-3 py-1 ares-cut-sm uppercase tracking-widest">RAPID REVIEW</span>
                       <ChevronRight className="text-marble group-hover:text-ares-gold transition-colors" />
                     </div>
                   </motion.a>
@@ -279,7 +279,7 @@ export default function JudgesHub() {
                 {portfolio?.outreach.map((log, i) => (
                   <div key={i} className="p-6 bg-black/40 border border-white/10 ares-cut-lg">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="text-xs font-bold text-ares-gold bg-ares-gold/10 px-3 py-1 rounded-full uppercase tracking-widest">{format(new Date(log.date), 'MMM yyyy')}</div>
+                      <div className="text-xs font-bold text-ares-gold bg-ares-gold/10 px-3 py-1 ares-cut-sm uppercase tracking-widest">{format(new Date(log.date), 'MMM yyyy')}</div>
                       <div className="text-lg font-black text-white">{log.total_hours} <span className="text-xs text-marble uppercase tracking-tighter">Team Hours</span></div>
                     </div>
                     <h4 className="font-bold text-white">{log.event_name}</h4>

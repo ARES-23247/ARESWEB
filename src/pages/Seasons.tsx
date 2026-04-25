@@ -46,7 +46,7 @@ export default function Seasons() {
         <motion.div
            initial={{ opacity: 0, scale: 0.9 }}
            animate={{ opacity: 1, scale: 1 }}
-           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-ares-gold text-xs font-bold uppercase tracking-widest mb-8"
+           className="inline-flex items-center gap-2 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-ares-gold text-xs font-bold uppercase tracking-widest mb-8"
         >
           <History size={14} />
           Establishing Excellence Since 2025

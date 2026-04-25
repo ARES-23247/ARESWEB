@@ -93,7 +93,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             {this.state.errorStr}
           </div>
           <button 
-            className="bg-white text-ares-gray-deep font-bold px-8 py-3 rounded-full hover:bg-ares-gold transition-colors tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-ares-gray-deep shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:shadow-[0_0_20px_rgba(251,191,36,0.4)]"
+            className="bg-white text-ares-gray-deep font-bold px-8 py-3 ares-cut-sm hover:bg-ares-gold transition-colors tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-ares-gray-deep shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:shadow-[0_0_20px_rgba(251,191,36,0.4)]"
             onClick={() => window.location.reload()}
           >
             Reboot Interface

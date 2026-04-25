@@ -148,7 +148,7 @@ export default function DietarySummary() {
       </div>
 
       <div className="md:col-span-2 flex justify-center pt-2">
-        <div className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs font-bold text-ares-gray uppercase tracking-widest">
+        <div className="px-4 py-1.5 bg-white/5 border border-white/10 ares-cut-sm text-xs font-bold text-ares-gray uppercase tracking-widest">
           Based on {data.totalCount} active member profiles
         </div>
       </div>

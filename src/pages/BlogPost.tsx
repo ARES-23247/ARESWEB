@@ -85,11 +85,11 @@ export default function BlogPost() {
             <span>&larr;</span> Back to all posts
           </Link>
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-             <span className="w-fit px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
+             <span className="w-fit px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
                {post.date && !isNaN(new Date(post.date).getTime()) ? format(new Date(post.date), 'MMMM do, yyyy') : "Unpublished"}
              </span>
              {(post.author_avatar || post.author_nickname) && (
-               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit">
+               <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 w-fit">
                  <img 
                    src={post.author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author_nickname || post.slug}`}
                    alt={`${post.author_nickname || "Author"}'s avatar`}
@@ -101,7 +101,7 @@ export default function BlogPost() {
             {isEditor && (
               <Link 
                 to={`/dashboard/blog/${post.slug}`}
-                className="w-fit flex items-center gap-2 md:ml-auto px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-ares-gold/10 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/30 transition-all shadow-lg backdrop-blur-sm"
+                className="w-fit flex items-center gap-2 md:ml-auto px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-gold/10 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/30 transition-all shadow-lg backdrop-blur-sm"
               >
                 <Edit2 size={14} /> Edit Post
               </Link>

@@ -18,7 +18,7 @@ export default function IntegrationHealthMonitor({ health }: IntegrationHealthMo
           <Activity size={16} className="text-ares-gold" />
           Integration Health
         </h3>
-        <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+        <span className={`text-xs font-bold px-3 py-1 ares-cut-sm ${
           configuredCount === totalIntegrations 
             ? "bg-ares-cyan/10 text-ares-cyan border border-ares-cyan/30" 
             : "bg-ares-gold/10 text-ares-gold border border-ares-gold/30"

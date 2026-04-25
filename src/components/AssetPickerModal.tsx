@@ -68,13 +68,13 @@ export default function AssetPickerModal({
             <div className="px-6 py-4 bg-white/5 border-b border-white/10 flex flex-wrap gap-2 shadow-inner">
               <button 
                 onClick={() => setSelectedFolderFilter("All")}
-                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full border transition-all ${selectedFolderFilter === "All" ? "bg-ares-gold border-ares-gold text-black shadow-md" : "bg-black/50 border-white/10 text-white/60 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"}`}
+                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest ares-cut-sm border transition-all ${selectedFolderFilter === "All" ? "bg-ares-gold border-ares-gold text-black shadow-md" : "bg-black/50 border-white/10 text-white/60 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"}`}
               >All Assets</button>
               {uniqueFolders.map(folder => (
                 <button 
                   key={folder as any}
                   onClick={() => setSelectedFolderFilter(folder as any)}
-                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full border transition-all ${selectedFolderFilter === folder ? "bg-white border-white text-black shadow-md" : "bg-black/50 border-white/10 text-white/60 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"}`}
+                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest ares-cut-sm border transition-all ${selectedFolderFilter === folder ? "bg-white border-white text-black shadow-md" : "bg-black/50 border-white/10 text-white/60 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"}`}
                 >{folder as any}</button>
               ))}
             </div>
