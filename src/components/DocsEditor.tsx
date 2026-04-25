@@ -106,6 +106,21 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
     }
   });
 
+  const deleteMutation = api.docs.deleteDoc.useMutation({
+    onSuccess: (data: any) => {
+      if (data.status === 200) {
+        queryClient.invalidateQueries({ queryKey: ["docs"] });
+        queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
+        navigate("/dashboard");
+      } else {
+        setErrorMsg("Failed to delete the document.");
+      }
+    },
+    onError: () => {
+      setErrorMsg("Failed to delete the document.");
+    }
+  });
+
   const onFormSubmit = (data: any, isDraft = false) => {
     if (!editor) return;
     const content = JSON.stringify(editor.getJSON());
@@ -122,14 +137,7 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
     });
     if (!confirmed) return;
 
-    try {
-      await api.docs.undeleteDoc.mutate({ params: { slug: editSlug }, body: {} });
-      queryClient.invalidateQueries({ queryKey: ["docs"] });
-      queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
-      navigate("/dashboard/manage_docs");
-    } catch {
-      setErrorMsg("Failed to delete the document.");
-    }
+    deleteMutation.mutate({ params: { slug: editSlug }, body: {} });
   };
 
   if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;

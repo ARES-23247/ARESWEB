@@ -170,6 +170,21 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
     }
   });
 
+  const deleteMutation = api.events.deleteEvent.useMutation({
+    onSuccess: (data: any) => {
+      if (data.status === 200) {
+        queryClient.invalidateQueries({ queryKey: ["events"] });
+        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+        navigate("/dashboard");
+      } else {
+        setErrorMsg("Failed to delete the event.");
+      }
+    },
+    onError: () => {
+      setErrorMsg("Failed to delete the event.");
+    }
+  });
+
   const onFormSubmit = (data: EventPayload, isDraft = false) => {
     const finalDescription = editor ? JSON.stringify(editor.getJSON()) : data.description;
     const payload = { ...data, description: finalDescription, isDraft };
@@ -190,12 +205,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
     });
     if (!confirmed) return;
 
-    try {
-      await api.events.deleteEvent.mutate({ params: { id: editId }, body: {} });
-      navigate("/dashboard");
-    } catch {
-      setErrorMsg("Failed to delete the event.");
-    }
+    deleteMutation.mutate({ params: { id: editId }, body: {} });
   };
 
   const handleFileUpload = async (file: File) => {

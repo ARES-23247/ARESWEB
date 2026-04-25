@@ -150,6 +150,21 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
     }
   });
 
+  const deleteMutation = api.posts.deletePost.useMutation({
+    onSuccess: (data: any) => {
+      if (data.status === 200) {
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
+        navigate("/dashboard");
+      } else {
+        setErrorMsg("Failed to delete the post. Please try again.");
+      }
+    },
+    onError: () => {
+      setErrorMsg("Failed to delete the post. Please try again.");
+    }
+  });
+
   const onFormSubmit = (data: PostPayload, isDraft = false) => {
     if (!editor) return;
     const ast = editor.getJSON();
@@ -171,12 +186,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
     });
     if (!confirmed) return;
 
-    try {
-      await api.posts.deletePost.mutate({ params: { slug: editSlug }, body: {} });
-      navigate("/dashboard");
-    } catch {
-      setErrorMsg("Failed to delete the post. Please try again.");
-    }
+    deleteMutation.mutate({ params: { slug: editSlug }, body: {} });
   };
 
 
