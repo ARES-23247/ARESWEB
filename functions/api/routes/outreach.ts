@@ -3,7 +3,7 @@ import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { outreachContract } from "../../../shared/schemas/contracts/outreachContract";
-import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, logAuditAction, rateLimitMiddleware } from "../middleware";
 
 const s = initServer<AppEnv>();
 export const outreachRouter = new Hono<AppEnv>();

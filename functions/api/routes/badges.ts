@@ -3,7 +3,7 @@ import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { badgeContract } from "../../../shared/schemas/contracts/badgeContract";
-import { AppEnv, ensureAdmin, getSessionUser, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 
 const s = initServer<AppEnv>();
