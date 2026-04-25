@@ -46,21 +46,6 @@ export const docContract = c.router({
     },
     summary: "List all public docs",
   },
-  getDoc: {
-    method: "GET",
-    path: "/:slug",
-    responses: {
-      200: z.object({
-        doc: docDetailResponseSchema,
-        contributors: z.array(z.object({
-          nickname: z.string().nullable(),
-          avatar: z.string().nullable(),
-        })),
-      }),
-      404: z.object({ error: z.string() }),
-    },
-    summary: "Get single doc with contributors",
-  },
   searchDocs: {
     method: "GET",
     path: "/search",
@@ -98,6 +83,21 @@ export const docContract = c.router({
       }),
       404: z.object({ error: z.string() }),
     },
+  },
+  getDoc: {
+    method: "GET",
+    path: "/:slug",
+    responses: {
+      200: z.object({
+        doc: docDetailResponseSchema,
+        contributors: z.array(z.object({
+          nickname: z.string().nullable(),
+          avatar: z.string().nullable(),
+        })),
+      }),
+      404: z.object({ error: z.string() }),
+    },
+    summary: "Get single doc with contributors",
   },
   deleteDoc: {
     method: "DELETE",
