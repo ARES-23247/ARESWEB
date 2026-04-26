@@ -10,8 +10,9 @@ const handlers = {
   getStats: async ({ c }: { c: any }) => {
     try {
       const db = c.get("db") as any;
-      const users = await db.selectFrom("user").select(db.fn.count("id").as("count")).executeTakeFirst();
-      return { status: 200, body: { activeUsers: Number(users?.count || 0) } };
+      const users = await db.selectFrom("user").select(["email"]).execute();
+      const activeMembers = users.filter((m: any) => m.email);
+      return { status: 200, body: { activeUsers: activeMembers.length } };
     } catch (err) {
       console.error("[Communications] Error fetching stats:", err);
       return { status: 500, body: { success: false, error: "Internal server error" } };
