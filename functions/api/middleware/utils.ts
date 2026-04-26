@@ -104,6 +104,8 @@ export type SocialConfig = {
   GITHUB_PROJECT_ID?: string;
   GITHUB_ORG?: string;
   GITHUB_WEBHOOK_SECRET?: string;
+  RESEND_API_KEY?: string;
+  RESEND_FROM_EMAIL?: string;
 };
 
 // ── Input Validation Helpers ─────────────────────────────────────────
@@ -213,7 +215,8 @@ export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, 
     'ZULIP_BOT_EMAIL', 'ZULIP_API_KEY', 'ZULIP_URL', 'ZULIP_ADMIN_STREAM', 'ZULIP_COMMENT_STREAM', 'ZULIP_WEBHOOK_TOKEN',
     'GITHUB_PAT', 'GITHUB_PROJECT_ID', 'GITHUB_ORG', 'GITHUB_WEBHOOK_SECRET',
     'ENCRYPTION_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL',
-    'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_DATABASE_ID', 'R2_ACCESS_KEY', 'R2_SECRET_KEY'
+    'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_DATABASE_ID', 'R2_ACCESS_KEY', 'R2_SECRET_KEY',
+    'RESEND_API_KEY', 'RESEND_FROM_EMAIL'
   ];
   
   const db = c.get("db");
@@ -267,6 +270,8 @@ export async function getSocialConfig(c: Context<AppEnv>): Promise<SocialConfig>
       GITHUB_PROJECT_ID: c.env.GITHUB_PROJECT_ID || dbSettings["GITHUB_PROJECT_ID"],
       GITHUB_ORG: c.env.GITHUB_ORG || dbSettings["GITHUB_ORG"] || siteConfig.urls.githubOrg,
       GITHUB_WEBHOOK_SECRET: c.env.GITHUB_WEBHOOK_SECRET || dbSettings["GITHUB_WEBHOOK_SECRET"],
+      RESEND_API_KEY: c.env.RESEND_API_KEY || dbSettings["RESEND_API_KEY"],
+      RESEND_FROM_EMAIL: dbSettings["RESEND_FROM_EMAIL"],
     };
     c.set("socialConfig", config);
     return config;

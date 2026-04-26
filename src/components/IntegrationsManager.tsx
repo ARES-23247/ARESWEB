@@ -6,6 +6,7 @@ import { ZulipCard } from "./integrations/ZulipCard";
 import { GithubCard } from "./integrations/GithubCard";
 import { SocialCard } from "./integrations/SocialCard";
 import { DataBackupCard } from "./integrations/DataBackupCard";
+import { ResendCard } from "./integrations/ResendCard";
 import { api } from "../api/client";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -105,6 +106,8 @@ export default function IntegrationsManager() {
           <GithubCard localSettings={localSettings as any} handleChange={handleChange} />
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <SocialCard localSettings={localSettings as any} handleChange={handleChange} />
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <ResendCard localSettings={localSettings as any} handleChange={handleChange} />
           <DataBackupCard />
         </div>
       </form>

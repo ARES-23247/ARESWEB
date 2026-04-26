@@ -2,7 +2,7 @@ import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, History,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail,
   type LucideIcon
 } from "lucide-react";
 import { signOut } from "../../utils/auth-client";
@@ -223,6 +223,7 @@ export default function DashboardSidebar({
               <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Operations</h4>
               <div className="space-y-1 px-3">
                 {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} pendingCount={pendingInquiriesCount} />}
+                {isAdmin && <NavButton tab="mass_email" icon={Mail} label="Mass Email Blast" currentPath={location.pathname} />}
                 <NavButton tab="outreach" icon={Target} label="Outreach Tracker" currentPath={location.pathname} />
                 <NavButton tab="locations" icon={MapPin} label="Meeting Locations" currentPath={location.pathname} />
                 <NavButton tab="sponsors" icon={Gem} label="Sponsors & Funding" currentPath={location.pathname} />

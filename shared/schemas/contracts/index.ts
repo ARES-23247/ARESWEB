@@ -20,6 +20,7 @@ import { zulipContract } from "./zulipContract";
 import { commentContract } from "./commentContract";
 import { judgeContract } from "./judgeContract";
 import { tbaContract } from "./tbaContract";
+import { communicationsContract } from "./communicationsContract";
 
 const c = initContract();
 
@@ -46,4 +47,5 @@ export const apiContract = c.router({
   comments: c.router(commentContract, { pathPrefix: "/comments" }),
   judges: c.router(judgeContract, { pathPrefix: "/judges" }),
   tba: c.router(tbaContract, { pathPrefix: "/tba" }),
+  communications: c.router(communicationsContract, { pathPrefix: "/communications" }),
 });

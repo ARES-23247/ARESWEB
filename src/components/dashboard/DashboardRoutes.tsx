@@ -25,6 +25,7 @@ const AdminInquiries = lazy(() => import("@/components/AdminInquiries"));
 const DashboardHome = lazy(() => import("@/components/DashboardHome"));
 const CommandCenter = lazy(() => import("@/components/CommandCenter"));
 const SponsorTokensManager = lazy(() => import("@/components/SponsorTokensManager"));
+const MassEmailComposer = lazy(() => import("@/components/MassEmailComposer"));
 
 // ── Suspense Spinner ─────────────────────────────────────────────────
 function TabLoader() {
@@ -89,6 +90,7 @@ export default function DashboardRoutes({
       <Route path="legacy" element={<AwardEditor />} />
       <Route path="locations" element={<LocationsManager />} />
       <Route path="command_center" element={isAdmin ? <CommandCenter stats={stats} /> : <div className="text-center py-20">Access Denied</div>} />
+      <Route path="mass_email" element={isAdmin ? <MassEmailComposer /> : <div className="text-center py-20">Access Denied</div>} />
     </Routes>
   ), [location, session?.user?.role, notifications, navigate, isAdmin, canSeeInquiries, canSeeLogistics, stats]);
 

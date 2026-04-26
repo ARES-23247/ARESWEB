@@ -121,9 +121,12 @@ apiRouter.route("/analytics", analyticsRouter);
 apiRouter.route("/github", githubRouter);
 apiRouter.route("/zulip", zulipRouter);
 
+import { communicationsRouter } from "./routes/communications";
+
 // Webhooks
 apiRouter.route("/webhooks/github", githubWebhookRouter);
 apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
+apiRouter.route("/communications", communicationsRouter);
 
 // ── Global Search ───
 apiRouter.get("/search", rateLimitMiddleware(50, 60), async (c) => {
