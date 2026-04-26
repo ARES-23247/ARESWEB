@@ -65,6 +65,14 @@ export default function PowerSheddingSim() {
     return 'drop-shadow-[0_0_20px_rgba(0,229,255,0.3)]';
   };
 
+  const progressRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (progressRef.current) {
+      progressRef.current.style.width = `${(voltage / 12.5) * 100}%`;
+    }
+  }, [voltage]);
+
   return (
     <div className="bg-ares-black border border-white/10 my-8 flex flex-col overflow-hidden text-white font-heading tracking-wider" role="region" aria-label="Power Shedding Simulator — interactive demonstration of FRC robot battery voltage sag under varying motor loads">
       <div className="px-5 py-4 bg-white/5 border-b border-white/10 text-sm font-bold text-ares-red">
@@ -133,8 +141,8 @@ export default function PowerSheddingSim() {
 
           <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
             <div 
+              ref={progressRef}
               className={`h-full transition-all duration-300 ease-out ${getVoltageBgColor()}`}
-              style={{ width: `${(voltage / 12.5) * 100}%` }}
             ></div>
           </div>
 

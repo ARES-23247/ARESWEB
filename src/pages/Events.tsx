@@ -110,7 +110,7 @@ export default function Events() {
                       href={iframeSrc} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-ares-cyan transition-colors"
+                      className="text-[10px] font-bold uppercase tracking-widest text-marble hover:text-ares-cyan transition-colors"
                     >
                       Calendar blocked by extensions? View directly on Google →
                     </a>
