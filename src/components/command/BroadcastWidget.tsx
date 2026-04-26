@@ -46,8 +46,9 @@ export default function BroadcastWidget() {
       <div className="flex-1 flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-bold text-marble/60 uppercase tracking-widest mb-1">Stream</label>
+            <label htmlFor="zulip-stream-input" className="block text-[10px] font-bold text-marble/60 uppercase tracking-widest mb-1">Stream</label>
             <input
+              id="zulip-stream-input"
               type="text"
               value={stream}
               onChange={(e) => setStream(e.target.value)}
@@ -56,8 +57,9 @@ export default function BroadcastWidget() {
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-marble/60 uppercase tracking-widest mb-1">Topic</label>
+            <label htmlFor="zulip-topic-input" className="block text-[10px] font-bold text-marble/60 uppercase tracking-widest mb-1">Topic</label>
             <input
+              id="zulip-topic-input"
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
@@ -68,8 +70,9 @@ export default function BroadcastWidget() {
         </div>
 
         <div className="flex-1">
-          <label className="block text-[10px] font-bold text-marble/60 uppercase tracking-widest mb-1">Message Content (Markdown)</label>
+          <label htmlFor="zulip-content-input" className="block text-[10px] font-bold text-marble/60 uppercase tracking-widest mb-1">Message Content (Markdown)</label>
           <textarea
+            id="zulip-content-input"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full h-24 bg-white/5 border border-white/10 p-2 text-xs text-white focus:outline-none focus:border-ares-cyan/50 ares-cut-sm transition-colors resize-none"
