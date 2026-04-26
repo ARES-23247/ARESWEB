@@ -16,17 +16,21 @@ export default function MassEmailComposer() {
   const sendMutation = api.communications.sendMassEmail.useMutation({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSuccess: (res: any) => {
-      if (res.body.success) {
+      if (res?.status === 200 && res?.body?.success) {
         toast.success(`Mass email dispatched successfully to ${res.body.recipientCount} recipients.`);
         setSubject("");
         editor?.commands.setContent("");
       } else {
-        toast.error(`Error: ${res.body.error}`);
+        const errorMsg = res?.body?.error || res?.body?.message || `Server returned status ${res?.status || "unknown"}`;
+        toast.error(`Email send failed: ${errorMsg}`);
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
-      toast.error(`Failed to send mass email. ${err?.message || "Server returned an error."}`);
+      // ts-rest fires onError when the response doesn't match any contract schema.
+      // Try to extract the actual error from the raw response.
+      const detail = err?.body?.error || err?.body?.message || err?.message || "An unexpected server error occurred. Check Resend API key configuration.";
+      toast.error(`Email send failed: ${detail}`);
     }
   });
 
@@ -45,6 +49,7 @@ export default function MassEmailComposer() {
       sendMutation.mutate({ body: { subject, htmlContent } });
     }
   };
+
 
   const recipientCount = statsRes?.status === 200 ? statsRes.body.activeUsers : 0;
 
