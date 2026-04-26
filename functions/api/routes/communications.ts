@@ -10,12 +10,16 @@ const handlers = {
   getStats: async (_args: any, c: any) => {
     try {
       const db = c.get("db") as any;
+      if (!db) {
+        console.error("[Communications] db context is null/undefined");
+        return { status: 500 as const, body: { success: false as const, error: "Database not initialized" } };
+      }
       const users = await db.selectFrom("user").select(["email"]).execute();
       const activeMembers = users.filter((m: any) => m.email);
-      return { status: 200, body: { activeUsers: activeMembers.length } };
-    } catch (err) {
+      return { status: 200 as const, body: { activeUsers: activeMembers.length } };
+    } catch (err: any) {
       console.error("[Communications] Error fetching stats:", err);
-      return { status: 500, body: { success: false, error: "Internal server error" } };
+      return { status: 500 as const, body: { success: false as const, error: err?.message || "Internal server error" } };
     }
   },
 
@@ -24,7 +28,7 @@ const handlers = {
       const socialConfig = await getSocialConfig(c);
       
       if (!socialConfig.RESEND_API_KEY) {
-        return { status: 400, body: { success: false, error: "Resend API key is not configured." } };
+        return { status: 400 as const, body: { success: false as const, error: "Resend API key is not configured." } };
       }
 
       const fromEmail = socialConfig.RESEND_FROM_EMAIL || "team@aresfirst.org";
@@ -35,7 +39,7 @@ const handlers = {
       const activeMembers = users.filter((m: any) => m.email);
 
       if (activeMembers.length === 0) {
-        return { status: 400, body: { success: false, error: "No active users found to send emails to." } };
+        return { status: 400 as const, body: { success: false as const, error: "No active users found to send emails to." } };
       }
 
       const BATCH_LIMIT = 50;
@@ -82,7 +86,7 @@ const handlers = {
       await logAuditAction(c, "SEND_MASS_EMAIL", "communications", "broadcast", `Sent to ${sentCount} recipients. Subject: ${body.subject}`);
 
       return { 
-        status: 200, 
+        status: 200 as const, 
         body: { 
           success: true, 
           message: "Emails dispatched successfully",
@@ -94,7 +98,7 @@ const handlers = {
       console.error("[Communications] Send mass email failed:", err);
       const db = c.get("db");
       await logSystemError(db, "Communications", "Failed to send mass email", err.message);
-      return { status: 500, body: { success: false, error: err.message || "Failed to dispatch emails" } };
+      return { status: 500 as const, body: { success: false as const, error: err.message || "Failed to dispatch emails" } };
     }
   }
 };
