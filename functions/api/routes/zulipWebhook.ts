@@ -55,8 +55,8 @@ zulipWebhookRouter.post("/", async (c) => {
     return c.json({ content: "❌ Invalid request payload." });
   }
 
-  // Validate webhook token — fail-closed
-  const expectedToken = c.env.ZULIP_WEBHOOK_TOKEN;
+  const config = await getSocialConfig(c);
+  const expectedToken = config.ZULIP_WEBHOOK_TOKEN;
   if (!expectedToken) {
     console.error("[ZulipWebhook] ZULIP_WEBHOOK_TOKEN is not configured.");
     return c.json({ content: "❌ Webhook token not configured on server." }, 403);
