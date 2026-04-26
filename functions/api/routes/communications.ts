@@ -1,9 +1,13 @@
-import { tsRestRouter } from "@ts-rest/hono";
+import { Hono } from "hono";
+import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { communicationsContract } from "../../../shared/schemas/contracts/communicationsContract";
-import { getSocialConfig, logAuditAction, logSystemError } from "../middleware/utils";
+import { AppEnv, getSocialConfig, logAuditAction, logSystemError } from "../middleware/utils";
 
-export const communicationsRouter = tsRestRouter(communicationsContract, {
-  getStats: async ({ c }) => {
+const s = initServer<AppEnv>();
+export const communicationsRouter = new Hono<AppEnv>();
+
+const handlers = {
+  getStats: async ({ c }: { c: any }) => {
     try {
       const socialConfig = await getSocialConfig(c);
       if (!socialConfig.ZULIP_API_KEY || !socialConfig.ZULIP_BOT_EMAIL) {
@@ -124,4 +128,9 @@ export const communicationsRouter = tsRestRouter(communicationsContract, {
       return { status: 500, body: { success: false, error: err.message || "Failed to dispatch emails" } };
     }
   }
-});
+};
+
+const communicationsTsRestRouter = s.router(communicationsContract, handlers as any);
+createHonoEndpoints(communicationsContract, communicationsTsRestRouter, communicationsRouter);
+
+export default communicationsRouter;
