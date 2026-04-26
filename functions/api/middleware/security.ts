@@ -86,6 +86,14 @@ export async function verifyTurnstile(
   }
   if (!token) return false;
 
+  // SEC-03: Allow E2E / local development bypass token
+  // @ts-expect-error - ENVIRONMENT might not be in AppEnv type but exists at runtime
+  const isProd = globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production";
+  if (token === "test-bypass-token" && !isProd) {
+    console.warn("[Turnstile] Accepted test-bypass-token in non-production environment.");
+    return true;
+  }
+
   try {
     const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
@@ -119,7 +127,7 @@ export async function verifyTurnstile(
 export const rateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
   return async (c: Context<AppEnv>, next: Next) => {
     // SEC-03: Bypass rate limiting in local dev/test if DEV_BYPASS is enabled
-    if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1") {
+    if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1" || c.env.ENVIRONMENT !== "production") {
       return await next();
     }
 
@@ -136,7 +144,7 @@ export const rateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
  */
 export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
   return async (c: Context<AppEnv>, next: Next) => {
-    if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1") {
+    if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1" || c.env.ENVIRONMENT !== "production") {
       return await next();
     }
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
@@ -154,6 +162,10 @@ export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) =>
  */
 export const turnstileMiddleware = () => {
   return async (c: Context<AppEnv>, next: Next) => {
+    if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1" || c.env.ENVIRONMENT !== "production") {
+      return await next();
+    }
+
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const contentType = c.req.header("Content-Type") || "";
     

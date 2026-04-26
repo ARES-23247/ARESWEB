@@ -91,7 +91,7 @@ const commentHandlers = {
 
       c.executionCtx.waitUntil((async () => {
         const msgId = await sendZulipMessage(
-          c.env, 
+          social, 
           zulipStream, 
           `${targetType.toUpperCase()}: ${targetId}`, 
           `**${user.name || 'ARES Member'}** commented on ${targetType} \`${targetId}\`:\n\n${content}`
@@ -148,10 +148,11 @@ const commentHandlers = {
         .execute();
 
       if (row.zulip_message_id) {
-        c.executionCtx.waitUntil(
-          updateZulipMessage(c.env, String(row.zulip_message_id), `**${user.name}** (edited):\n\n${content}`)
-            .catch((err) => console.error("[Comments:ZulipUpdate] Error", err))
-        );
+        c.executionCtx.waitUntil((async () => {
+          const social = await getSocialConfig(c);
+          await updateZulipMessage(social, String(row.zulip_message_id), `**${user.name}** (edited):\n\n${content}`)
+            .catch((err) => console.error("[Comments:ZulipUpdate] Error", err));
+        })());
       }
 
       return { status: 200 as const, body: { success: true } as any };
@@ -182,10 +183,11 @@ const commentHandlers = {
         .execute();
 
       if (row.zulip_message_id) {
-        c.executionCtx.waitUntil(
-          deleteZulipMessage(c.env, String(row.zulip_message_id))
-            .catch((err) => console.error("[Comments:ZulipDelete] Error", err))
-        );
+        c.executionCtx.waitUntil((async () => {
+          const social = await getSocialConfig(c);
+          await deleteZulipMessage(social, String(row.zulip_message_id))
+            .catch((err) => console.error("[Comments:ZulipDelete] Error", err));
+        })());
       }
 
       return { status: 200 as const, body: { success: true } as any };

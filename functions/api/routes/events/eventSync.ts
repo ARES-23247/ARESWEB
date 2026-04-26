@@ -13,8 +13,8 @@ export const eventSyncHandlers = {
     try {
       const db = c.get("db") as Kysely<DB>;
       const dbSettings = await getDbSettings(c);
-      const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
-      const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
+      const gcalEmail = c.env.GCAL_SERVICE_ACCOUNT_EMAIL || dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
+      const gcalKey = c.env.GCAL_PRIVATE_KEY || dbSettings["GCAL_PRIVATE_KEY"];
 
       const calendars = [
         { id: dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"], category: "internal" },

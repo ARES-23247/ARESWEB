@@ -162,7 +162,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         
         const topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
         const zulipContent = `**New ${type} inquiry received**\n\n**Name:** ${name}\n**Email:** ${email}\n**ID:** ${id.slice(0, 8)}\n\n[Review Inquiry](${baseUrl}/dashboard/inquiries)`;
-        await sendZulipMessage(c.env, "contacts", topic, zulipContent).catch(() => {});
+        await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => {});
 
         const audiences: NotifyAudience[] = (type === "outreach" || type === "support") ? ["admin", "coach", "mentor", "student"] : ["admin", "coach", "mentor"];
         await notifyByRole(c, audiences, { title: `New ${type.toUpperCase()} Inquiry`, message: `${name} submitted a new inquiry.`, link: "/dashboard/inquiries", priority: type === "sponsor" ? "high" : "medium" }).catch(() => {});

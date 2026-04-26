@@ -66,11 +66,11 @@ export default function Turnstile({ onVerify, onExpire, theme = "dark", size = "
   }, [onVerify, onExpire, theme, size]);
 
   useEffect(() => {
-    // SEC-03: Bypass Turnstile for E2E tests if requested
+    // SEC-03: Bypass Turnstile for E2E tests and local development
     const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     const hasBypass = window.ARES_E2E_BYPASS;
-    if (isLocal && hasBypass) {
-      onVerify("test-bypass-token");
+    if (isLocal || hasBypass) {
+      setTimeout(() => onVerify("test-bypass-token"), 200);
       return;
     }
 

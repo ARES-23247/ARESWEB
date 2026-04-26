@@ -2,7 +2,7 @@ import { Context, Hono } from "hono";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { docContract } from "../../../shared/schemas/contracts/docContract";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, checkRateLimit, verifyTurnstile, emitNotification, notifyByRole } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, checkRateLimit, verifyTurnstile, emitNotification, notifyByRole, getSocialConfig } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -399,7 +399,10 @@ const docTsRestRouter: any = s.router(docContract as any, {
 
         if (status === "published") {
           const action = existing ? "updated" : "created";
-          c.executionCtx.waitUntil(sendZulipMessage(c.env, "engineering", "Engineering Docs", `📝 **Doc ${action}:** [${title}](${siteConfig.urls.base}/docs/${slug}) (${category})`));
+          c.executionCtx.waitUntil((async () => {
+            const socialConfig = await getSocialConfig(c);
+            await sendZulipMessage(socialConfig, "engineering", "Engineering Docs", `📝 **Doc ${action}:** [${title}](${siteConfig.urls.base}/docs/${slug}) (${category})`);
+          })());
         }
 
         if (status === "pending") {

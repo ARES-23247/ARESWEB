@@ -296,7 +296,7 @@ const postHandlers = {
 
           try {
             await sendZulipMessage(
-              c.env,
+              socialConfig,
               "announcements",
               "Website Updates",
               `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`

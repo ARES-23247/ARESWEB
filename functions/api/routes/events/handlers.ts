@@ -254,7 +254,7 @@ export const eventHandlers = {
           }
           const eventTopic = `Event: ${title}`;
           const eventContent = `📅 **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
-          await sendZulipMessage(c.env, "events", eventTopic, eventContent).catch(() => {});
+          await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch(() => {});
         }
       })());
 
@@ -400,7 +400,7 @@ export const eventHandlers = {
         const baseUrl = new URL(c.req.url).origin;
         const eventTopic = `Event: ${targetRow.title}`;
         const eventContent = `📅 **Event Approved & Scheduled**\n\n**Title:** ${targetRow.title}\n**Location:** ${targetRow.location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
-        await sendZulipMessage(c.env, "events", eventTopic, eventContent).catch(() => {});
+        await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch(() => {});
       })());
 
       return { status: 200 as const, body: { success: true } as any };

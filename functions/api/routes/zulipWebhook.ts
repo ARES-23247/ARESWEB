@@ -248,10 +248,10 @@ zulipWebhookRouter.post("/", async (c) => {
         
         const broadcastContent = `${msgCore}\n\n*— Broadcasted by ${body.message.sender_full_name} via ARES Bot*`;
 
-        c.executionCtx.waitUntil(
-          sendZulipMessage(c.env, streamTarget, "Broadcast", broadcastContent)
-            .catch(() => {})
-        );
+        c.executionCtx.waitUntil((async () => {
+          const socialConfig = await getSocialConfig(c);
+          await sendZulipMessage(socialConfig, streamTarget, "Broadcast", broadcastContent).catch(() => {});
+        })());
 
         return c.json({ content: `✅ Broadcast dispatched to \`${streamTarget}\`.` });
       }
