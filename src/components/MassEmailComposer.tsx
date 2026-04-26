@@ -39,7 +39,7 @@ export default function MassEmailComposer() {
       return;
     }
     
-    if (confirm("Are you sure you want to send this mass email to the active roster?")) {
+    if (confirm("Are you sure you want to send this mass email to all registered website users?")) {
       sendMutation.mutate({ body: { subject, htmlContent } });
     }
   };
@@ -92,7 +92,7 @@ export default function MassEmailComposer() {
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-bold text-white uppercase tracking-widest">Audience Roster</h3>
-            <p className="text-xs text-marble/60">Sourced directly from active Zulip accounts.</p>
+            <p className="text-xs text-marble/60">Sourced directly from registered website users.</p>
           </div>
           <div className="text-right">
              {isPending ? (
@@ -110,7 +110,7 @@ export default function MassEmailComposer() {
             <AlertTriangle className="shrink-0 mt-0.5" size={18} />
             <div>
               <p className="font-bold">No active recipients found.</p>
-              <p className="opacity-80">Make sure your Zulip and Resend integrations are correctly configured in the Admin Settings.</p>
+              <p className="opacity-80">Make sure your Resend integration is correctly configured in the Admin Settings.</p>
             </div>
           </div>
         )}

@@ -9,61 +9,29 @@ export const communicationsRouter = new Hono<AppEnv>();
 const handlers = {
   getStats: async ({ c }: { c: any }) => {
     try {
-      const socialConfig = await getSocialConfig(c);
-      if (!socialConfig.ZULIP_API_KEY || !socialConfig.ZULIP_BOT_EMAIL) {
-        return { status: 200, body: { activeUsers: 0 } };
-      }
-
-      const url = `${socialConfig.ZULIP_URL || "https://ares.zulipchat.com"}/api/v1/users`;
-      const authHeader = "Basic " + btoa(unescape(encodeURIComponent(socialConfig.ZULIP_BOT_EMAIL + ":" + socialConfig.ZULIP_API_KEY)));
-
-      const response = await fetch(url, {
-        headers: { Authorization: authHeader }
-      });
-
-      if (!response.ok) {
-        return { status: 200, body: { activeUsers: 0 } };
-      }
-
-      const rawData = await response.json() as any;
-      const members = Array.isArray(rawData.members) ? rawData.members : [];
-      
-      const activeMembers = members.filter((m: any) => m.is_active && !m.is_bot);
-      return { status: 200, body: { activeUsers: activeMembers.length } };
+      const db = c.get("db") as any;
+      const users = await db.selectFrom("user").select(db.fn.count("id").as("count")).executeTakeFirst();
+      return { status: 200, body: { activeUsers: Number(users?.count || 0) } };
     } catch (err) {
       console.error("[Communications] Error fetching stats:", err);
       return { status: 500, body: { success: false, error: "Internal server error" } };
     }
   },
 
-  sendMassEmail: async ({ body, c }) => {
+  sendMassEmail: async ({ body, c }: { body: any, c: any }) => {
     try {
       const socialConfig = await getSocialConfig(c);
       
       if (!socialConfig.RESEND_API_KEY) {
         return { status: 400, body: { success: false, error: "Resend API key is not configured." } };
       }
-      if (!socialConfig.ZULIP_API_KEY || !socialConfig.ZULIP_BOT_EMAIL) {
-        return { status: 400, body: { success: false, error: "Zulip is not configured. Cannot fetch recipient list." } };
-      }
 
       const fromEmail = socialConfig.RESEND_FROM_EMAIL || "team@aresfirst.org";
 
-      // Fetch users from Zulip
-      const url = `${socialConfig.ZULIP_URL || "https://ares.zulipchat.com"}/api/v1/users`;
-      const authHeader = "Basic " + btoa(unescape(encodeURIComponent(socialConfig.ZULIP_BOT_EMAIL + ":" + socialConfig.ZULIP_API_KEY)));
-
-      const response = await fetch(url, {
-        headers: { Authorization: authHeader }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch Zulip users: ${response.statusText}`);
-      }
-
-      const rawData = await response.json() as any;
-      const members = Array.isArray(rawData.members) ? rawData.members : [];
-      const activeMembers = members.filter((m: any) => m.is_active && !m.is_bot && m.delivery_email);
+      // Fetch users from database
+      const db = c.get("db") as any;
+      const users = await db.selectFrom("user").select(["email"]).execute();
+      const activeMembers = users.filter((m: any) => m.email);
 
       if (activeMembers.length === 0) {
         return { status: 400, body: { success: false, error: "No active users found to send emails to." } };
@@ -77,7 +45,7 @@ const handlers = {
       for (const member of activeMembers) {
         emailPayloads.push({
           from: `ARES Robotics <${fromEmail}>`,
-          to: [member.delivery_email],
+          to: [member.email],
           subject: body.subject,
           html: body.htmlContent,
         });
