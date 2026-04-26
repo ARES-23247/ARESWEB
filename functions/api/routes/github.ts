@@ -25,7 +25,7 @@ const githubHandlers = {
       }
       
       const boardResults = await fetchProjectBoard(ghConfig);
-      const board = (boardResults as any as any[]).map((i: any) => ({
+      const board = (boardResults.items || []).map((i: any) => ({
         id: String(i.id),
                         title: String(i.title),
         status: String(i.status || "Todo"),

@@ -78,6 +78,7 @@ const sponsorHandlers = {
       const db = c.get("db");
       const results = await db.selectFrom("sponsors")
         .select(["id", "name", "tier", "logo_url", "website_url", "is_active"])
+        .where("is_active", "=", 1)
         .orderBy("created_at", "desc")
         .execute();
       
@@ -182,7 +183,7 @@ const sponsorTsRestRouter: any = s.router(sponsorContract as any, sponsorHandler
 
 
 sponsorsRouter.use("/admin", ensureAdmin);
-
+sponsorsRouter.use("/admin/*", ensureAdmin);
 
 createHonoEndpoints(sponsorContract, sponsorTsRestRouter, sponsorsRouter);
 export default sponsorsRouter;
