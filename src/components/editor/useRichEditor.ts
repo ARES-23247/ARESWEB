@@ -31,6 +31,7 @@ import { MermaidBlock } from './extensions/MermaidBlock';
 import { CommandsList } from './CommandsList';
 import { MentionList } from './MentionList';
 import { suggestionRenderer } from './suggestionRenderer';
+import { InteractiveComponent } from './extensions/InteractiveComponent';
 import 'katex/dist/katex.min.css';
 
 export interface UseRichEditorOptions {
@@ -78,6 +79,7 @@ export function useRichEditor(options?: UseRichEditorOptions): Editor | null {
       }),
       Callout,
       Reveal,
+      InteractiveComponent,
 
       SlashCommands.configure({
         suggestion: {
