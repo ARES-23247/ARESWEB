@@ -206,9 +206,9 @@ const analyticsHandlers = {
           docs: Number(docsCount?.total || 0),
           integrations: {
             zulip: !!dbSettings["ZULIP_API_KEY"],
-            github: !!dbSettings["GITHUB_ACCESS_TOKEN"],
+            github: !!dbSettings["GITHUB_PAT"],
             discord: !!dbSettings["DISCORD_WEBHOOK_URL"],
-            bluesky: !!dbSettings["BLUESKY_PASSWORD"],
+            bluesky: !!dbSettings["BLUESKY_APP_PASSWORD"],
             slack: !!dbSettings["SLACK_WEBHOOK_URL"],
             gcal: !!dbSettings["GCAL_PRIVATE_KEY"]
           }
