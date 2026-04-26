@@ -7,7 +7,7 @@ const s = initServer<AppEnv>();
 export const communicationsRouter = new Hono<AppEnv>();
 
 const handlers = {
-  getStats: async ({ c }: { c: any }) => {
+  getStats: async (_args: any, c: any) => {
     try {
       const db = c.get("db") as any;
       const users = await db.selectFrom("user").select(["email"]).execute();
@@ -19,7 +19,7 @@ const handlers = {
     }
   },
 
-  sendMassEmail: async ({ body, c }: { body: any, c: any }) => {
+  sendMassEmail: async ({ body }: { body: any }, c: any) => {
     try {
       const socialConfig = await getSocialConfig(c);
       

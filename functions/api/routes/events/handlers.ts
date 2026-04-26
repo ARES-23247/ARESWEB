@@ -200,7 +200,7 @@ export const eventHandlers = {
         }
       }
 
-      const { title, category, dateStart, dateEnd, location, description, coverImage, socials, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
+      const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, socials, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
 
       // FIX: Prevent double-click creation of duplicate events with same title/date
       const recent = await db.selectFrom("events")
@@ -229,7 +229,7 @@ export const eventHandlers = {
           id: genId, title: title || "", category: cat, date_start: dateStart, date_end: dateEnd || null,
           location: location || "", description: description || "", cover_image: coverImage || "",
           gcal_event_id: null, cf_email: user?.email || "anonymous_admin", status,
-          is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0,
+          is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0, tba_event_key: tbaEventKey || null,
           published_at: publishedAt || null, season_id: seasonId || null, meeting_notes: meetingNotes || null
         })
         .execute();
