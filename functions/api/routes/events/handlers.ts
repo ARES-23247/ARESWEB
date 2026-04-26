@@ -1,5 +1,5 @@
 import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, AppEnv } from "../../middleware";
-import { pushEventToGcal, pullEventsFromGcal } from "../../../utils/gcalSync";
+import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql, Kysely } from "kysely";
@@ -299,6 +299,27 @@ export const eventHandlers = {
         .where("id", "=", id)
         .execute();
 
+      c.executionCtx.waitUntil((async () => {
+        if (status === "published") {
+          const socialConfig = await getSocialConfig(c);
+          const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+          const calId = (socialConfig as any)[calKey] || (socialConfig as any)["CALENDAR_ID"];
+          
+          if (socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] && socialConfig["GCAL_PRIVATE_KEY"] && calId) {
+            try {
+              const row = await db.selectFrom("events").select("gcal_event_id").where("id", "=", id).executeTakeFirst();
+              const gcalId = await pushEventToGcal(
+                { id, title: title || "", date_start: dateStart, date_end: dateEnd || undefined, location: location || undefined, description: description || undefined, cover_image: coverImage || undefined, gcal_event_id: row?.gcal_event_id || undefined },
+                { email: socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] as string, privateKey: socialConfig["GCAL_PRIVATE_KEY"] as string, calendarId: calId as string }
+              );
+              if (gcalId && gcalId !== row?.gcal_event_id) {
+                await db.updateTable("events").set({ gcal_event_id: gcalId }).where("id", "=", id).execute();
+              }
+            } catch { /* ignore GCal failure */ }
+          }
+        }
+      })());
+
       return { status: 200 as const, body: { success: true, id } as any };
     } catch (e) {
       console.error("UPDATE_EVENT ERROR", e);
@@ -310,6 +331,27 @@ export const eventHandlers = {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("events").set({ is_deleted: 1 }).where("id", "=", id).execute();
+
+      c.executionCtx.waitUntil((async () => {
+        const row = await db.selectFrom("events").select(["gcal_event_id", "category"]).where("id", "=", id).executeTakeFirst();
+        if (row && row.gcal_event_id) {
+          const socialConfig = await getSocialConfig(c);
+          const cat = row.category || "internal";
+          const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+          const calId = (socialConfig as any)[calKey] || (socialConfig as any)["CALENDAR_ID"];
+          
+          if (socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] && socialConfig["GCAL_PRIVATE_KEY"] && calId) {
+            try {
+              await deleteEventFromGcal(row.gcal_event_id, {
+                email: socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] as string,
+                privateKey: socialConfig["GCAL_PRIVATE_KEY"] as string,
+                calendarId: calId as string
+              });
+            } catch { /* ignore GCal failure */ }
+          }
+        }
+      })());
+
       return { status: 200 as const, body: { success: true } as any };
     } catch (e) {
       console.error("DELETE_EVENT ERROR", e);
@@ -320,7 +362,7 @@ export const eventHandlers = {
     const { id } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
-      const row = await db.selectFrom("events").select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "tba_event_key", "status", "is_potluck", "is_volunteer", "season_id", "meeting_notes", "revision_of"]).where("id", "=", id).executeTakeFirst();
+      const row = await db.selectFrom("events").select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "tba_event_key", "status", "is_potluck", "is_volunteer", "season_id", "meeting_notes", "revision_of", "gcal_event_id"]).where("id", "=", id).executeTakeFirst();
       if (row && row.revision_of) {
         await db.updateTable("events")
           .set({ title: row.title, date_start: row.date_start, date_end: row.date_end, location: row.location, description: row.description, cover_image: row.cover_image, tba_event_key: row.tba_event_key, status: 'published', is_potluck: row.is_potluck, is_volunteer: row.is_volunteer, season_id: row.season_id, meeting_notes: row.meeting_notes })
@@ -330,6 +372,30 @@ export const eventHandlers = {
       } else {
         await db.updateTable("events").set({ status: 'published' }).where("id", "=", id).execute();
       }
+
+      c.executionCtx.waitUntil((async () => {
+        const targetId = row?.revision_of || id;
+        const targetRow = await db.selectFrom("events").selectAll().where("id", "=", targetId).executeTakeFirst();
+        if (!targetRow) return;
+        
+        const socialConfig = await getSocialConfig(c);
+        const cat = targetRow.category || "internal";
+        const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+        const calId = (socialConfig as any)[calKey] || (socialConfig as any)["CALENDAR_ID"];
+        
+        if (socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] && socialConfig["GCAL_PRIVATE_KEY"] && calId) {
+          try {
+            const gcalId = await pushEventToGcal(
+              { id: targetRow.id, title: targetRow.title, date_start: targetRow.date_start, date_end: targetRow.date_end || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, cover_image: targetRow.cover_image || undefined, gcal_event_id: targetRow.gcal_event_id || undefined },
+              { email: socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] as string, privateKey: socialConfig["GCAL_PRIVATE_KEY"] as string, calendarId: calId as string }
+            );
+            if (gcalId && gcalId !== targetRow.gcal_event_id) {
+              await db.updateTable("events").set({ gcal_event_id: gcalId }).where("id", "=", targetRow.id).execute();
+            }
+          } catch { /* ignore GCal failure */ }
+        }
+      })());
+
       return { status: 200 as const, body: { success: true } as any };
     } catch (e) {
       console.error("APPROVE_EVENT ERROR", e);
@@ -352,6 +418,29 @@ export const eventHandlers = {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("events").set({ is_deleted: 0 }).where("id", "=", id).execute();
+
+      c.executionCtx.waitUntil((async () => {
+        const targetRow = await db.selectFrom("events").selectAll().where("id", "=", id).executeTakeFirst();
+        if (!targetRow || targetRow.status !== "published") return;
+        
+        const socialConfig = await getSocialConfig(c);
+        const cat = targetRow.category || "internal";
+        const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+        const calId = (socialConfig as any)[calKey] || (socialConfig as any)["CALENDAR_ID"];
+        
+        if (socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] && socialConfig["GCAL_PRIVATE_KEY"] && calId) {
+          try {
+            const gcalId = await pushEventToGcal(
+              { id: targetRow.id, title: targetRow.title, date_start: targetRow.date_start, date_end: targetRow.date_end || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, cover_image: targetRow.cover_image || undefined, gcal_event_id: targetRow.gcal_event_id || undefined },
+              { email: socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] as string, privateKey: socialConfig["GCAL_PRIVATE_KEY"] as string, calendarId: calId as string }
+            );
+            if (gcalId && gcalId !== targetRow.gcal_event_id) {
+              await db.updateTable("events").set({ gcal_event_id: gcalId }).where("id", "=", targetRow.id).execute();
+            }
+          } catch { /* ignore GCal failure */ }
+        }
+      })());
+
       return { status: 200 as const, body: { success: true } as any };
     } catch (e) {
       console.error("UNDELETE_EVENT ERROR", e);
@@ -362,7 +451,28 @@ export const eventHandlers = {
     const { id } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
+      const row = await db.selectFrom("events").select(["gcal_event_id", "category"]).where("id", "=", id).executeTakeFirst();
       await db.deleteFrom("events").where("id", "=", id).execute();
+
+      c.executionCtx.waitUntil((async () => {
+        if (row && row.gcal_event_id) {
+          const socialConfig = await getSocialConfig(c);
+          const cat = row.category || "internal";
+          const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+          const calId = (socialConfig as any)[calKey] || (socialConfig as any)["CALENDAR_ID"];
+          
+          if (socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] && socialConfig["GCAL_PRIVATE_KEY"] && calId) {
+            try {
+              await deleteEventFromGcal(row.gcal_event_id, {
+                email: socialConfig["GCAL_SERVICE_ACCOUNT_EMAIL"] as string,
+                privateKey: socialConfig["GCAL_PRIVATE_KEY"] as string,
+                calendarId: calId as string
+              });
+            } catch { /* ignore GCal failure */ }
+          }
+        }
+      })());
+
       return { status: 200 as const, body: { success: true } as any };
     } catch (e) {
       console.error("PURGE_EVENT ERROR", e);
@@ -550,7 +660,7 @@ export const eventHandlers = {
     const user = await getSessionUser(c);
     if (user?.role !== "admin" && user?.role !== "author") return { status: 401 as const, body: { error: "Unauthorized" } as any };
     const db = c.get("db") as Kysely<DB>;
-    const event = await db.selectFrom("events").select(["id", "title", "description", "cover_image"]).where("id", "=", params.id).executeTakeFirst();
+    const event = await db.selectFrom("events").selectAll().where("id", "=", params.id).executeTakeFirst();
     if (!event) return { status: 404 as const, body: { error: "Event not found" } as any };
 
     try {
@@ -572,6 +682,26 @@ export const eventHandlers = {
         social as any,
         socialsFilter
       );
+
+      // Force push to Google Calendar
+      const cat = event.category || "internal";
+      const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof social;
+      const calId = (social as any)[calKey] || (social as any)["CALENDAR_ID"];
+      
+      if (social["GCAL_SERVICE_ACCOUNT_EMAIL"] && social["GCAL_PRIVATE_KEY"] && calId) {
+        try {
+          const gcalId = await pushEventToGcal(
+            { id: event.id, title: event.title, date_start: event.date_start, date_end: event.date_end || undefined, location: event.location || undefined, description: event.description || undefined, cover_image: event.cover_image || undefined, gcal_event_id: event.gcal_event_id || undefined },
+            { email: social["GCAL_SERVICE_ACCOUNT_EMAIL"] as string, privateKey: social["GCAL_PRIVATE_KEY"] as string, calendarId: calId as string }
+          );
+          if (gcalId && gcalId !== event.gcal_event_id) {
+            await db.updateTable("events").set({ gcal_event_id: gcalId }).where("id", "=", event.id).execute();
+          }
+        } catch (e) {
+          console.error("REPUSH_EVENT_GCAL ERROR", e);
+        }
+      }
+
       return { status: 200 as const, body: { success: true } as any };
     } catch (err) {
       console.error("REPUSH_EVENT ERROR", err);
