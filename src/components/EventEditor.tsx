@@ -104,12 +104,18 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
   useEffect(() => {
     if (eventRes?.status === 200 && eventRes.body.event) {
       const event = eventRes.body.event;
+      const formatForInput = (d: string | null | undefined) => {
+        if (!d) return "";
+        if (d.length === 10) return d + "T00:00";
+        return d.slice(0, 16).replace(" ", "T");
+      };
+
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsDeleted(event.is_deleted === 1);
       reset({
         title: event.title || "",
-        dateStart: event.date_start || "",
-        dateEnd: event.date_end || "",
+        dateStart: formatForInput(event.date_start),
+        dateEnd: formatForInput(event.date_end),
         location: event.location || "",
         description: event.description || "",
         coverImage: event.cover_image || DEFAULT_COVER_IMAGE,
