@@ -22,9 +22,24 @@ export const zulipContract = c.router({
       200: z.object({
         success: z.boolean(),
         presence: zulipPresenceSchema,
+        userNames: z.record(z.string(), z.string()).optional(),
       }),
       500: z.object({ success: z.boolean(), error: z.string() }),
     },
     summary: "Get Zulip team presence",
+  },
+  sendMessage: {
+    method: "POST",
+    path: "/message",
+    body: z.object({
+      stream: z.string(),
+      topic: z.string(),
+      content: z.string(),
+    }),
+    responses: {
+      200: z.object({ success: z.boolean() }),
+      500: z.object({ success: z.boolean(), error: z.string() }),
+    },
+    summary: "Send a Zulip message",
   },
 });

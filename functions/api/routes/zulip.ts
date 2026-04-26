@@ -34,8 +34,49 @@ const zulipHandlers = {
         return { status: 500 as const, body: { success: false, error: await res.text() } as any };
       }
 
+      const usersRes = await fetch(`${config.ZULIP_URL || "https://ares.zulipchat.com"}/api/v1/users`, {
+        method: "GET",
+        headers: { "Authorization": authHeader }
+      });
+
+      let userNames: Record<string, string> = {};
+      if (usersRes.ok) {
+        const usersData = await usersRes.json() as { members: Array<{ email: string; full_name: string }> };
+        if (usersData.members) {
+          userNames = usersData.members.reduce((acc, user) => {
+            acc[user.email] = user.full_name;
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
       const data = await res.json() as { result: string; presences: z.infer<typeof zulipPresenceSchema> };
-      return { status: 200 as const, body: { success: true, presence: data.presences } as any };
+      return { status: 200 as const, body: { success: true, presence: data.presences, userNames } as any };
+    } catch (err) {
+      return { status: 500 as const, body: { success: false, error: (err as Error).message } as any };
+    }
+  },
+  sendMessage: async ({ body }: any, c: Context<AppEnv>) => {
+    try {
+      const { sendZulipMessage } = await import("../../utils/zulipSync");
+      const config = await getSocialConfig(c);
+      
+      if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
+        return { status: 500 as const, body: { success: false, error: "Zulip not configured." } as any };
+      }
+
+      const res = await sendZulipMessage(
+        { ZULIP_EMAIL: config.ZULIP_BOT_EMAIL, ZULIP_API_KEY: config.ZULIP_API_KEY, ZULIP_URL: config.ZULIP_URL },
+        body.stream,
+        body.topic,
+        body.content
+      );
+
+      if (!res) {
+        return { status: 500 as const, body: { success: false, error: "Failed to send message" } as any };
+      }
+
+      return { status: 200 as const, body: { success: true } as any };
     } catch (err) {
       return { status: 500 as const, body: { success: false, error: (err as Error).message } as any };
     }

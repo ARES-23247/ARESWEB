@@ -19,6 +19,7 @@ interface ZulipPresences {
 
 export default function TeamAvailability() {
   const [presences, setPresences] = useState<ZulipPresences | null>(null);
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +28,9 @@ export default function TeamAvailability() {
       const res = await api.zulip.getPresence.query();
       if (res.status === 200 && res.body.success) {
         setPresences(res.body.presence);
+        if (res.body.userNames) {
+          setUserNames(res.body.userNames);
+        }
         setError(null);
       } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,7 +152,9 @@ export default function TeamAvailability() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{member.email.split("@")[0]}</p>
+                    <p className="text-xs font-bold text-white truncate">
+                      {userNames[member.email] || member.email.split("@")[0]}
+                    </p>
                     <div className="flex items-center gap-1 mt-0.5">
                       {getIcon(member.status)}
                       <span className="text-[9px] uppercase tracking-wider font-bold text-marble/40">

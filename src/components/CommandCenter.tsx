@@ -6,6 +6,7 @@ import ProjectBoardKanban from "./command/ProjectBoardKanban";
 import PlatformQuickStats from "./command/PlatformQuickStats";
 import CommandQuickActions from "./command/CommandQuickActions";
 import ZulipBotCommands from "./command/ZulipBotCommands";
+import BroadcastWidget from "./command/BroadcastWidget";
 import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -135,9 +136,10 @@ export default function CommandCenter({ stats: prefetchedStats }: { stats?: any 
       {/* Zulip Bot Status */}
       <ZulipBotCommands />
 
-      {/* Team Availability Widget */}
-      <div className="grid grid-cols-1 gap-6">
+      {/* Team Availability Widget and Broadcast */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TeamAvailability />
+        <BroadcastWidget />
       </div>
     </div>
   );
