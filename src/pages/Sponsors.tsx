@@ -148,7 +148,7 @@ export default function Sponsors() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-5xl md:text-7xl font-black tracking-tighter mb-6 italic"
+            className="text-5xl md:text-7xl font-black tracking-tighter mb-6"
           >
             Our <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Partners</span>
           </motion.h1>
@@ -226,7 +226,7 @@ export default function Sponsors() {
 
           <div className="flex-1 relative z-10 flex flex-col justify-between bg-obsidian p-6 ares-cut border border-white/5">
             <div>
-              <h2 className="text-4xl md:text-5xl font-black text-white mb-6 uppercase tracking-tighter">Join the<br/><span className="text-ares-gold italic">Engineering Journey.</span></h2>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-6 uppercase tracking-tighter">Join the<br/><span className="text-ares-gold">Engineering Journey.</span></h2>
               <p className="text-marble text-lg mb-8 max-w-xl leading-relaxed">
                 Help us build the next generation of robotics. We are always looking for partners who share our passion for excellence, education, and innovation. Whether you can provide mentorship, machining, material donations, or financial grants, your support is the foundation of our success.
               </p>

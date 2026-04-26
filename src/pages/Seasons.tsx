@@ -54,7 +54,7 @@ export default function Seasons() {
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter italic"
+          className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter"
         >
           Our <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Legacy</span>.
         </motion.h1>
@@ -67,7 +67,7 @@ export default function Seasons() {
       <section className="py-32 px-6 bg-ares-gray-dark/50 relative z-10 border-y border-white/5">
         <div className="max-w-6xl mx-auto">
           <header className="mb-20 text-center">
-            <h2 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter mb-4">Journey Through Time</h2>
+            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">Journey Through Time</h2>
             <p className="text-marble font-medium italic uppercase tracking-widest text-xs">Our evolution from a rookie build to a championship contender.</p>
           </header>
 
@@ -98,7 +98,7 @@ export default function Seasons() {
                                {season.start_year}-{season.end_year}
                              </span>
                            </div>
-                           <h3 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter mb-4 uppercase leading-none">
+                           <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4 uppercase leading-none">
                              {season.challenge_name}
                            </h3>
                            {season.summary && (
@@ -159,7 +159,7 @@ export default function Seasons() {
       <section className="py-32 px-6 relative z-10 bg-ares-gray-deep">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-16">
-            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Digital Trophy Case</h2>
+            <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Digital Trophy Case</h2>
             <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent" />
           </div>
 
@@ -183,7 +183,7 @@ export default function Seasons() {
                     </div>
                     <span className="text-2xl font-black text-white/20 italic">{award.year}</span>
                   </div>
-                  <h3 className="text-2xl font-black text-white mb-2 italic tracking-tighter group-hover:text-ares-gold transition-colors">{award.title}</h3>
+                  <h3 className="text-2xl font-black text-white mb-2 tracking-tighter group-hover:text-ares-gold transition-colors">{award.title}</h3>
                   <div className="text-xs font-bold uppercase tracking-widest text-marble mb-4 flex items-center gap-2">
                     <MapPin size={10} className="text-ares-red" /> {award.event_name}
                   </div>
@@ -207,7 +207,7 @@ export default function Seasons() {
       <section className="py-32 px-6">
          <div className="max-w-4xl mx-auto p-12 ares-cut bg-obsidian border border-white/10 text-center shadow-2xl relative overflow-hidden">
             <Trophy className="text-white mx-auto mb-8 relative z-10" size={64} strokeWidth={1} />
-            <h2 className="text-4xl font-black text-white mb-6 italic tracking-tighter relative z-10">SUPPORT THE LEGACY.</h2>
+            <h2 className="text-4xl font-black text-white mb-6 tracking-tighter relative z-10">SUPPORT THE LEGACY.</h2>
             <p className="text-white text-lg mb-10 max-w-xl mx-auto relative z-10 font-medium">Our history is written by the mentors, students, and sponsors who invest in our success. Join us in building the future.</p>
             <div className="flex flex-wrap justify-center gap-4 relative z-10">
                <a href="/sponsors" className="px-8 py-4 bg-white text-ares-red font-black ares-cut-sm hover:scale-105 transition-all shadow-lg">SPONSOR ARES</a>

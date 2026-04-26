@@ -192,7 +192,7 @@ export default function AwardEditor() {
                  <span className="flex items-center gap-1"><Calendar size={12} /> {award.year}</span>
                  <span className="flex items-center gap-1">&middot; <Star size={12} className="fill-ares-gold" /> Blue Banner</span>
               </div>
-              <h4 className="text-2xl font-black text-white mb-2 italic tracking-tighter">{award.title}</h4>
+              <h4 className="text-2xl font-black text-white mb-2 tracking-tighter">{award.title}</h4>
               <div className="flex items-center gap-2 text-ares-gray text-xs font-bold mb-4">
                  <MapPin size={10} /> {award.event_name}
               </div>

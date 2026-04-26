@@ -121,7 +121,7 @@ export default function Outreach() {
             <Activity size={14} className="animate-pulse" />
             Active Impact Reporting
           </div>
-          <h1 className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter italic">
+          <h1 className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter">
             Engineering <br/> <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white">Change</span>.
           </h1>
           <p className="text-marble text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium">
@@ -160,7 +160,7 @@ export default function Outreach() {
       <section className="py-32 px-6 bg-white text-ares-black ares-cut-lg relative z-10 mt-20">
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <h2 className="text-4xl md:text-6xl font-black text-ares-red mb-8 tracking-tighter italic">Sparking Curiosity.</h2>
+            <h2 className="text-4xl md:text-6xl font-black text-ares-red mb-8 tracking-tighter">Sparking Curiosity.</h2>
             <p className="text-lg leading-relaxed mb-6 font-medium text-ares-gray">
               ARES is proud to partner with <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="text-ares-red underline font-black">Spark! Imagination and Science Center</a> in Morgantown. 
             </p>
@@ -190,7 +190,7 @@ export default function Outreach() {
         <div className="max-w-5xl mx-auto">
           <header className="mb-16 flex flex-col md:flex-row items-end justify-between gap-6">
             <div>
-              <h2 className="text-4xl font-black text-white italic tracking-tighter">Impact Log</h2>
+              <h2 className="text-4xl font-black text-white tracking-tighter">Impact Log</h2>
               <p className="text-marble font-medium">A chronological record of our community interactions.</p>
             </div>
             <div className="h-px flex-1 bg-white/5 mx-6 hidden md:block" />
@@ -233,7 +233,7 @@ export default function Outreach() {
 
       <section className="py-32 px-6 relative z-10">
         <div className="max-w-4xl mx-auto ares-cut bg-obsidian border border-white/10 p-12 text-center relative overflow-hidden z-10">
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-6 italic tracking-tighter relative z-10">Have a volunteer need?</h2>
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tighter relative z-10">Have a volunteer need?</h2>
           <p className="text-white text-lg mb-10 max-w-xl mx-auto font-medium relative z-10">Whether it&apos;s a elementary school demo, a science fair, or a community workshop—ARES is here to inspire.</p>
           <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-3 px-10 py-5 bg-black text-white font-black ares-cut-sm hover:bg-ares-red transition-all shadow-2xl relative z-10 border border-white/10">
             Get In Touch <ArrowRight size={20} />
@@ -268,7 +268,7 @@ export default function Outreach() {
                 <X size={24} />
               </button>
 
-              <h3 className="text-3xl font-black text-white italic tracking-tight mb-2">Request a <span className="bg-ares-red px-3 py-1 ares-cut shadow-lg inline-block text-white ml-2">Demo</span></h3>
+              <h3 className="text-3xl font-black text-white tracking-tight mb-2">Request a <span className="bg-ares-red px-3 py-1 ares-cut shadow-lg inline-block text-white ml-2">Demo</span></h3>
               <p className="text-marble/90 text-sm mb-8">Tell us about your event, and our student outreach team will get back to you to coordinate.</p>
 
               {submitStatus === "success" ? (

@@ -183,7 +183,7 @@ export default function About() {
               { q: "Is it enjoyable?", a: "Having fun while working hard is a core part of being on ARES." },
             ].map((faq) => (
               <div key={faq.q} className="marble-card hero-card p-8 group">
-                <h3 className="text-obsidian font-bold text-lg mb-4 font-heading group-hover:text-ares-bronze transition-colors uppercase italic">{faq.q}</h3>
+                <h3 className="text-obsidian font-bold text-lg mb-4 font-heading group-hover:text-ares-bronze transition-colors uppercase">{faq.q}</h3>
                 <p className="text-obsidian/70 text-base leading-relaxed">{faq.a}</p>
               </div>
             ))}

@@ -18,7 +18,7 @@ export default function DashboardPageHeader({
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-black/40 border border-white/10 p-6 ares-cut mb-6">
       <div>
-        <h2 className={`text-2xl font-black text-white flex items-center gap-3 ${italicTitle ? 'italic' : ''}`}>
+        <h2 className={`text-2xl font-black text-white flex items-center gap-3`}>
           {icon} {title}
         </h2>
         <p className="text-marble/50 text-sm mt-1">{subtitle}</p>

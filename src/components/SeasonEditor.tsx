@@ -116,7 +116,7 @@ export default function SeasonEditor() {
   return (
     <div className="flex flex-col gap-6 w-full relative">
       <div>
-        <h2 className="text-3xl font-black text-white tracking-tighter italic mb-2 uppercase">
+        <h2 className="text-3xl font-black text-white tracking-tighter mb-2 uppercase">
           {editId ? "Update Legacy" : "Forge New Legacy"}
         </h2>
         <p className="text-marble/40 text-sm font-bold uppercase tracking-widest">

@@ -62,7 +62,7 @@ export default function CompetitionBanner({ eventKey, teamKey = "frc23247" }: Co
           </div>
           
           <div>
-            <h3 className="text-xl font-black text-white italic tracking-tighter flex items-center gap-2">
+            <h3 className="text-xl font-black text-white tracking-tighter flex items-center gap-2">
               LIVE COMPETITION INTEL
               <span className="text-xs not-italic font-bold bg-ares-red text-white px-2 py-0.5 ares-cut-sm uppercase tracking-widest ml-2 shadow-lg shadow-ares-red/20">Active</span>
             </h3>
