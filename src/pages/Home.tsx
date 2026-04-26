@@ -24,12 +24,12 @@ export default function Home() {
               alt="ARES 23247 Logo" 
               className="w-32 md:w-56 lg:w-[22rem] h-32 md:h-56 lg:h-[22rem] object-contain drop-shadow-[0_0_25px_rgba(192,0,0,0.6)] shrink-0" 
             />
-            <div>
+            <div className="bg-obsidian">
               <p className="text-ares-gold font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading mb-4">
                 Appalachian Robotics & Engineering Society
               </p>
               <h1 className="text-6xl md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
-                <span className="block mb-2">Engineered</span>
+                <span className="block mb-2 text-white">Engineered</span>
                 <span className="bg-ares-red px-6 py-2 pb-3 mt-2 inline-block ares-cut-sm shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white">To Inspire</span>
               </h1>
             </div>

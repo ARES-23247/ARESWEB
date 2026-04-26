@@ -22,8 +22,8 @@ export function MemberCard({ member }: { member: TeamMember }) {
 
   return (
     <Link to={`/profile/${member.user_id}`} className="group block">
-      <div className="hero-card bg-white border border-ares-bronze/10 p-6 text-center transition-all duration-300 group-hover:border-ares-red/30 group-hover:shadow-lg">
-        <div className="w-20 h-20 mx-auto mb-4 ares-cut bg-marble border border-ares-bronze/20 overflow-hidden p-2 group-hover:scale-105 transition-transform">
+      <div className="hero-card bg-white/5 border border-white/10 p-6 text-center transition-all duration-300 group-hover:border-ares-red/30 group-hover:shadow-lg backdrop-blur-sm">
+        <div className="w-20 h-20 mx-auto mb-4 ares-cut bg-white/10 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform">
           <img
             src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.user_id}`}
             alt=""
@@ -31,16 +31,16 @@ export function MemberCard({ member }: { member: TeamMember }) {
             className="w-full h-full object-contain"
           />
         </div>
-        <h4 className="text-obsidian font-bold text-base mb-0.5 group-hover:text-ares-red transition-colors">
+        <h4 className="text-white font-bold text-base mb-0.5 group-hover:text-ares-red transition-colors">
           {member.nickname || "ARES Member"}
         </h4>
         {member.pronouns && (
-          <p className="text-obsidian/40 text-xs mb-2">{member.pronouns}</p>
+          <p className="text-marble/40 text-xs mb-2">{member.pronouns}</p>
         )}
         {subteams.length > 0 && (
           <div className="flex flex-wrap gap-1 justify-center mb-2">
             {(subteams as string[]).slice(0, 3).map((team: string) => (
-              <span key={team} className="px-2 py-0.5 bg-ares-red/5 text-ares-red/70 text-[9px] font-bold ares-cut-sm uppercase tracking-wider">
+              <span key={team} className="px-2 py-0.5 bg-ares-red/10 text-ares-red/70 text-[9px] font-bold ares-cut-sm uppercase tracking-wider">
                 {team}
               </span>
             ))}

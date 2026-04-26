@@ -48,7 +48,7 @@ export default function About() {
   })).filter(section => section.items.length > 0), [members]);
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full bg-obsidian">
       <SEO title="About Us" description="Learn about ARES 23247, our mission, and the students driving FIRST Robotics forward in West Virginia." />
       {/* ─── HERO ─── */}
       <section className="py-32 bg-obsidian text-marble relative overflow-hidden">
@@ -64,25 +64,25 @@ export default function About() {
       </section>
 
       {/* ─── THE MISSION ─── */}
-      <section className="py-24 bg-marble text-obsidian">
+      <section className="py-24 bg-obsidian text-marble border-t border-white/5">
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 items-start">
             <div className="md:col-span-1">
-              <h2 className="text-3xl md:text-4xl font-bold text-obsidian mb-6 font-heading uppercase leading-tight">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 font-heading uppercase leading-tight">
                 Who Joins <br />
                 <span className="bg-ares-red px-4 py-2 mt-2 inline-block ares-cut text-white">Our Community?</span>
               </h2>
-              <p className="text-obsidian/70 text-lg">
+              <p className="text-marble/70 text-lg">
                 We recruit students from 6th–12th grade who possess grit, determination, and a hunger for innovation.
               </p>
             </div>
-            <div className="md:col-span-2 space-y-8 text-lg leading-relaxed">
+            <div className="md:col-span-2 space-y-8 text-lg leading-relaxed text-marble">
               <p>
                 In the <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a>, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
               </p>
-              <div className="bg-white border-l-4 border-ares-red hero-card p-8 shadow-sm group hover:border-ares-red">
+              <div className="bg-white/5 border-l-4 border-ares-red hero-card p-8 backdrop-blur-sm group hover:border-ares-red">
                 <h3 className="bg-ares-red py-1 px-3 rounded inline-block font-bold text-xs tracking-widest uppercase mb-6 font-heading text-white">What You&apos;ll Learn</h3>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-bold uppercase tracking-wider text-obsidian/60">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-bold uppercase tracking-wider text-marble/60">
                   {[
                     "Mechanical Systems", "Electrical Engineering", "Java Programming", 
                     { name: "CAD & 3D Design", link: "https://www.printables.com/@ARESFTC_3784306" }, 
@@ -163,10 +163,10 @@ export default function About() {
       )}
 
       {/* ─── QUICK ANSWERS (FAQS) ─── */}
-      <section className="py-24 bg-white border-t border-ares-bronze/10">
+      <section className="py-24 bg-obsidian border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-6xl font-bold text-obsidian mb-4 font-heading uppercase">Quick Answers</h2>
+            <h2 className="text-4xl md:text-6xl font-bold text-white mb-4 font-heading uppercase">Quick Answers</h2>
             <p className="text-ares-red font-bold tracking-widest uppercase text-sm">Frequently Asked Questions</p>
           </div>
           
@@ -182,9 +182,9 @@ export default function About() {
               { q: "Where We Meet?", a: "Our main office is at Mountaineer Middle School in Morgantown." },
               { q: "Is it enjoyable?", a: "Having fun while working hard is a core part of being on ARES." },
             ].map((faq) => (
-              <div key={faq.q} className="marble-card hero-card p-8 group">
-                <h3 className="text-obsidian font-bold text-lg mb-4 font-heading group-hover:text-ares-bronze transition-colors uppercase">{faq.q}</h3>
-                <p className="text-obsidian/70 text-base leading-relaxed">{faq.a}</p>
+              <div key={faq.q} className="bg-white/5 border border-white/10 hero-card p-8 group backdrop-blur-sm hover:border-ares-red/30 transition-colors">
+                <h3 className="text-white font-bold text-lg mb-4 font-heading group-hover:text-ares-bronze transition-colors uppercase">{faq.q}</h3>
+                <p className="text-marble/70 text-base leading-relaxed">{faq.a}</p>
               </div>
             ))}
           </div>

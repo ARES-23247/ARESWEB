@@ -10,14 +10,14 @@ export interface SectionConfig {
 
 export function MemberSection({ section }: { section: SectionConfig }) {
   return (
-    <section className={`py-24 ${section.type === "coach" || section.type === "student" ? "bg-white" : section.type === "alumni" ? "bg-obsidian text-marble" : "bg-marble"}`}>
+    <section className="py-24 bg-obsidian text-marble border-t border-white/5">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <span className="text-4xl mb-4 block">{section.icon}</span>
-          <h2 className={`text-4xl md:text-5xl font-bold mb-4 font-heading uppercase ${section.type === "alumni" ? "text-white" : "text-obsidian"}`}>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 font-heading uppercase text-white">
             {section.title}
           </h2>
-          <p className={`text-lg max-w-2xl mx-auto ${section.type === "alumni" ? "text-marble" : "text-obsidian/70"}`}>
+          <p className="text-lg max-w-2xl mx-auto text-marble/70">
             {section.desc}
           </p>
           <div className="w-24 h-1 bg-ares-red mx-auto mt-6"></div>
