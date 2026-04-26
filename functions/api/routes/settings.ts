@@ -93,6 +93,23 @@ const settingsHandlers = {
       console.error("GET_STATS ERROR", e);
       return { status: 500 as const, body: { error: "Failed to fetch stats" } as any };
     }
+  },
+   
+  getPublicSettings: async (_: any, c: Context<AppEnv>) => {
+    try {
+      const settings = await getDbSettings(c);
+      const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
+      const publicSettings: Record<string, string> = {};
+      for (const key of publicKeys) {
+        if (settings[key]) {
+          publicSettings[key] = settings[key];
+        }
+      }
+      return { status: 200 as const, body: { success: true, settings: publicSettings } as any };
+    } catch (e) {
+      console.error("GET_PUBLIC_SETTINGS ERROR", e);
+      return { status: 500 as const, body: { success: false, error: "Failed to fetch public settings" } as any };
+    }
   }
 };
 
@@ -100,8 +117,8 @@ const settingsTsRestRouter = s.router(settingsContract, settingsHandlers as any)
 
 
 
-// Admin protection - Entire router
-settingsRouter.use(ensureAdmin);
+// Admin protection - Apply only to admin routes
+settingsRouter.use("/admin/*", ensureAdmin);
 
 // Backup route remains manual as it's a file export
 settingsRouter.get("/admin/backup", async (c: any) => {

@@ -3,6 +3,7 @@ import { siteConfig } from "../../site.config";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
+import { api } from "../../api/client";
 
 interface DocRecord {
   slug: string;
@@ -29,6 +30,9 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
     setPrevSlugs(currSlugs);
     setExpandedCats(new Set(groupedDocs.map(([cat]) => cat)));
   }
+
+  const { data: settingsRes } = api.settings.getPublicSettings.useQuery(["public_settings"], {});
+  const docsDriveUrl = settingsRes?.status === 200 ? settingsRes.body.settings["COMMUNITY_DOCS_URL"] : null;
 
   const [prevCurrentSlug, setPrevCurrentSlug] = useState(currentSlug);
   if (currentSlug !== prevCurrentSlug) {
@@ -128,12 +132,23 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen }: DocsSidebarProp
           ))}
         </nav>
 
-        <div className="mt-8 px-2 border-t border-white/8 pt-4">
+        <div className="mt-8 px-2 border-t border-white/8 pt-4 space-y-3">
+          {docsDriveUrl && (
+            <a
+              href={docsDriveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-white font-bold hover:text-ares-cyan transition-colors"
+            >
+              <ExternalLink size={14} />
+              Community Docs Drive
+            </a>
+          )}
           <a
             href={`https://${siteConfig.urls.githubOrg}.github.io/ARESLib/javadoc/index.html`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-white hover:text-ares-gold transition-colors"
+            className="flex items-center gap-2 text-sm text-white/60 hover:text-ares-gold transition-colors"
           >
             <ExternalLink size={14} />
             API Javadoc

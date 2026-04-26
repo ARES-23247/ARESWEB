@@ -8,6 +8,8 @@ export const githubProjectItemSchema = z.object({
   title: z.string(),
   status: z.string(),
   updated_at: z.string(),
+  assignees: z.array(z.string()).default([]),
+  type: z.string().default("DRAFT_ISSUE"),
 });
 
 export const githubHeatmapDaySchema = z.object({

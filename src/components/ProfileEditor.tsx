@@ -64,7 +64,6 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
   useEffect(() => {
     if (profileRes?.status === 200) {
-      // @ts-expect-error backend responses branch dynamically
       const data = adminEditUserId ? profileRes.body.profile : profileRes.body;
       reset({
         ...DEFAULT_PROFILE,

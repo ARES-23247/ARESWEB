@@ -230,13 +230,21 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
 
         {/* Link / YT */}
         <button type="button" aria-label="Insert Link or YouTube Video" onClick={async () => {
+          const previousUrl = editor.getAttributes('link').href;
           const url = await modal.prompt({
             title: "Insert Link",
-            description: "Enter the URL:",
+            description: "Enter the URL (leave blank to remove link):",
+            defaultValue: previousUrl || "",
           });
           if (url === null) return;
           if (url === '') { editor.chain().focus().extendMarkRange('link').unsetLink().run(); return; }
-          const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
+          
+          let finalUrl = url.trim();
+          if (!/^https?:\/\//i.test(finalUrl) && !finalUrl.startsWith('mailto:') && !finalUrl.startsWith('/')) {
+            finalUrl = `https://${finalUrl}`;
+          }
+
+          const isYoutube = finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be');
           if (isYoutube) {
             const embed = await modal.confirm({
               title: "Embed YouTube Video?",
@@ -244,11 +252,16 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
               confirmText: "Embed",
             });
             if (embed) {
-              editor.chain().focus().setYoutubeVideo({ src: url }).run();
+              editor.chain().focus().setYoutubeVideo({ src: finalUrl }).run();
               return;
             }
           }
-          editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+          
+          if (editor.state.selection.empty) {
+            editor.chain().focus().insertContent(`<a href="${finalUrl}">${url}</a>`).run();
+          } else {
+            editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
+          }
         }} className="px-3 py-2 ares-cut-sm text-sm font-bold transition-all text-ares-cyan hover:bg-ares-gray-dark hover:text-white">🔗 / YT</button>
 
         {/* Table */}

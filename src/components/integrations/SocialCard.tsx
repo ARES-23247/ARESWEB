@@ -335,6 +335,40 @@ export function SocialCard({
         </div>
       </div>
 
+      <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full pointer-events-none" />
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Camera size={20} className="text-white/80" /> Community Shared Resources
+        </h3>
+        <p className="text-xs text-ares-gray mb-4 block">
+          Public links to your team's Google Drive, Google Photos, or Google Docs. These will appear on the public-facing pages.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="photo_drive_url" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Photo Drive URL</label>
+            <input
+              id="photo_drive_url"
+              type="text"
+              placeholder="https://photos.app.goo.gl/..."
+              value={localSettings["COMMUNITY_PHOTO_DRIVE_URL"] || ""}
+              onChange={(e) => handleChange("COMMUNITY_PHOTO_DRIVE_URL", e.target.value)}
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/50 transition-colors"
+            />
+          </div>
+          <div>
+            <label htmlFor="docs_drive_url" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">Public Documents Drive</label>
+            <input
+              id="docs_drive_url"
+              type="text"
+              placeholder="https://docs.google.com/document/..."
+              value={localSettings["COMMUNITY_DOCS_URL"] || ""}
+              onChange={(e) => handleChange("COMMUNITY_DOCS_URL", e.target.value)}
+              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-white/50 transition-colors"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* X / Twitter Setup */}
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group lg:col-span-2">
         <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gray/10 blur-3xl rounded-full pointer-events-none" />

@@ -41,4 +41,15 @@ export const settingsContract = c.router({
     },
     summary: "Get platform quick stats (admin)",
   },
+  getPublicSettings: {
+    method: "GET",
+    path: "/public/settings",
+    responses: {
+      200: z.object({
+        success: z.boolean(),
+        settings: z.record(z.string(), z.string()),
+      }),
+    },
+    summary: "Get public integration settings",
+  },
 });

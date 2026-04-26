@@ -16,26 +16,30 @@ interface WeekData {
 
 const githubHandlers = {
   getBoard: async (_: any, c: any) => {
-            try {
+    try {
       const config = await getSocialConfig(c);
       const ghConfig = buildGitHubConfig(config);
       if (!ghConfig) {
-        console.error("[GitHub:Board] Configuration missing");
-        return { status: 500 as const, body: { error: "GitHub configuration missing" } as any };
+        console.error("[GitHub:Board] Configuration missing — GITHUB_PAT or GITHUB_PROJECT_ID not set");
+        // Return empty board instead of 500 so the frontend can distinguish "not configured"
+        return { status: 200 as const, body: { success: false, board: [] as any[] } };
       }
       
       const boardResults = await fetchProjectBoard(ghConfig);
       const board = (boardResults.items || []).map((i: any) => ({
         id: String(i.id),
-                        title: String(i.title),
+        title: String(i.title),
         status: String(i.status || "Todo"),
-        updated_at: String(i.updated_at || new Date().toISOString())
+        updated_at: String(i.updatedAt || i.updated_at || new Date().toISOString()),
+        assignees: Array.isArray(i.assignees) ? i.assignees : [],
+        type: String(i.type || "DRAFT_ISSUE"),
       }));
 
       return { status: 200 as const, body: { success: true, board: board as any[] } };
     } catch (e) {
-      console.error("[GitHub:Board] Error", e);
-      return { status: 500 as const, body: { error: "Failed to fetch GitHub board" } as any };
+      console.error("[GitHub:Board] Error fetching board:", (e as Error).message, (e as Error).stack);
+      // Return empty board with success:false so the frontend shows a meaningful error
+      return { status: 200 as const, body: { success: false, board: [] as any[] } };
     }
   },
   createItem: async ({ body }: { body: any }, c: any) => {
