@@ -44,7 +44,7 @@ describe("Zulip Webhook Router", () => {
     });
 
     const res = await zulipWebhookRouter.request(req, {}, env, mockExecutionContext);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
   });
 
   it("should handle empty bot mentions with help message", async () => {
