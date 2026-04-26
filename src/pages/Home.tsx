@@ -60,7 +60,7 @@ export default function Home() {
               <h2 className="text-4xl md:text-5xl font-bold mb-4 font-heading text-white">Our Objectives</h2>
               <p className="text-marble/70 text-lg">Engineering precision meets community impact in our quest for the 2026 season.</p>
             </div>
-            <div className="h-1 flex-grow bg-white/10 mx-8 mb-4 hidden md:block"></div>
+            <div className="h-px flex-grow bg-white/5 mx-8 mb-4 hidden md:block"></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
