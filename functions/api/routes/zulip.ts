@@ -19,7 +19,10 @@ const zulipHandlers = {
         return { status: 500 as const, body: { success: false, error: "Zulip not configured." } as any };
       }
       
-      const authHeader = "Basic " + btoa(`${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`);
+      // Unicode-safe Base64 encoding to prevent "btoa() can only operate on characters in the Latin1 range" errors
+      // if credentials contain hidden unicode characters or non-breaking spaces.
+      const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
+      const authHeader = "Basic " + btoa(unescape(encodeURIComponent(credentials)));
       const url = `${config.ZULIP_URL || "https://ares.zulipchat.com"}/api/v1/realm/presence`;
 
       const res = await fetch(url, {

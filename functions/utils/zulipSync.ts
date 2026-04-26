@@ -17,7 +17,9 @@ const ZulipResponseSchema = z.object({
 
 type ZulipCredentials = any;
 type ZulipEnv = Bindings | ZulipCredentials;
-const getZulipAuthHeaders = (env: any) => ({ "Authorization": "Basic " + btoa(env.ZULIP_EMAIL + ":" + env.ZULIP_API_KEY) });
+const getZulipAuthHeaders = (env: any) => ({ 
+  "Authorization": "Basic " + btoa(unescape(encodeURIComponent(env.ZULIP_EMAIL + ":" + env.ZULIP_API_KEY))) 
+});
 
 // ... (headers and url helpers remain same)
 
