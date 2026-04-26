@@ -130,7 +130,7 @@ export default function Navbar() {
                     <h3 className="text-sm font-bold text-white">Notifications</h3>
                     {unreadCount > 0 && (
                       <button 
-                        onClick={() => markAllRead.mutate()}
+                        onClick={() => markAllRead.mutate({ body: {} })}
                         className="text-xs text-ares-gold hover:text-white flex items-center gap-1"
                       >
                         <Check size={12} /> Mark Read
@@ -153,14 +153,14 @@ export default function Navbar() {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
 
-                                if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: undefined });
+                                if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: null });
                                 if (n.link) navigate(n.link);
                                 setShowNotifs(false);
                               }
                             }}
                             onClick={() => {
                               
-                              if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: undefined });
+                              if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: null });
                               if (n.link) navigate(n.link);
                               setShowNotifs(false);
                             }}
@@ -175,7 +175,7 @@ export default function Navbar() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deleteNotif.mutate({ params: { id: n.id }, body: undefined });
+                                deleteNotif.mutate({ params: { id: n.id }, body: {} });
                               }}
                               className="absolute top-2 right-2 p-1 text-marble/40 hover:text-ares-red opacity-0 group-hover/notif:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:text-ares-red"
                               aria-label="Delete notification"

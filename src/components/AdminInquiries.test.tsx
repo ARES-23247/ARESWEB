@@ -103,7 +103,7 @@ describe("AdminInquiries component", () => {
     render(<AdminInquiries />, { wrapper });
     
     // Find the RESOLVE button
-    const resolveBtn = screen.getByRole("button", { name: /RESOLVE/i });
+    const resolveBtn = screen.getByRole("button", { name: /^RESOLVE$/i });
     fireEvent.click(resolveBtn);
 
     expect(mutate).toHaveBeenCalledWith({
