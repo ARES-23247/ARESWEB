@@ -226,7 +226,7 @@ export default function AdminInquiries() {
                   {isConfirming ? (
                     <>
                       <button
-                        onClick={() => { deleteInquiryMutation.mutate({ params: { id: inquiry.id }, body: {} }); setConfirmId(null); }}
+                        onClick={() => { deleteInquiryMutation.mutate({ params: { id: inquiry.id } }); setConfirmId(null); }}
                         className="text-xs font-bold text-white bg-ares-red hover:bg-ares-red/80 px-3 py-1 ares-cut-sm shadow-[0_0_20px_rgba(204,0,0,0.4)] transition-all animate-pulse"
                       >
                         CONFIRM DELETE

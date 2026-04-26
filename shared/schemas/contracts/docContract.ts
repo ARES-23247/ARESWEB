@@ -54,13 +54,15 @@ export const docContract = c.router({
     }),
     responses: {
       200: z.object({
-        results: z.array(z.object({
-          slug: z.string(),
-          title: z.string(),
-          category: z.string(),
-          description: z.string().nullable(),
-          snippet: z.string(),
-        })),
+        results: z.array(
+          z.object({
+            slug: z.string(),
+            title: z.string(),
+            category: z.string(),
+            description: z.string().nullable(),
+            snippet: z.string(),
+          }),
+        ),
       }),
       500: z.object({ error: z.string() }),
     },
@@ -90,10 +92,12 @@ export const docContract = c.router({
     responses: {
       200: z.object({
         doc: docDetailResponseSchema,
-        contributors: z.array(z.object({
-          nickname: z.string().nullable(),
-          avatar: z.string().nullable(),
-        })),
+        contributors: z.array(
+          z.object({
+            nickname: z.string().nullable(),
+            avatar: z.string().nullable(),
+          }),
+        ),
       }),
       404: z.object({ error: z.string() }),
     },
@@ -102,7 +106,7 @@ export const docContract = c.router({
   deleteDoc: {
     method: "DELETE",
     path: "/admin/:slug",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -151,7 +155,7 @@ export const docContract = c.router({
   restoreHistory: {
     method: "PATCH",
     path: "/admin/:slug/history/:id/restore",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
       404: z.object({ error: z.string() }),
@@ -160,7 +164,7 @@ export const docContract = c.router({
   approveDoc: {
     method: "POST",
     path: "/admin/:slug/approve",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -176,7 +180,7 @@ export const docContract = c.router({
   undeleteDoc: {
     method: "POST",
     path: "/admin/:slug/undelete",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -184,7 +188,7 @@ export const docContract = c.router({
   purgeDoc: {
     method: "POST",
     path: "/admin/:slug/purge",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },

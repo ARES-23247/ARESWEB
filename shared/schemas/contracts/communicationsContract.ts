@@ -49,4 +49,3 @@ export const communicationsContract = c.router({
     summary: "Get count of active users for mass email preview",
   },
 });
-

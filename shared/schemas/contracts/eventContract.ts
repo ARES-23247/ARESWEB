@@ -114,7 +114,7 @@ export const eventContract = c.router({
   deleteEvent: {
     method: "DELETE",
     path: "/admin/:id",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -123,7 +123,7 @@ export const eventContract = c.router({
   syncEvents: {
     method: "POST",
     path: "/admin/sync",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean(), count: z.number().optional() }),
     },
@@ -132,7 +132,7 @@ export const eventContract = c.router({
   approveEvent: {
     method: "POST",
     path: "/admin/:id/approve",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -150,7 +150,7 @@ export const eventContract = c.router({
   undeleteEvent: {
     method: "POST",
     path: "/admin/:id/restore",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -159,7 +159,7 @@ export const eventContract = c.router({
   purgeEvent: {
     method: "DELETE",
     path: "/admin/:id/purge",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -169,7 +169,7 @@ export const eventContract = c.router({
     method: "POST",
     path: "/admin/:id/repush",
     body: z.object({
-      socials: z.array(z.string()).optional()
+      socials: z.array(z.string()).optional(),
     }),
     responses: {
       200: z.object({ success: z.boolean() }),
@@ -223,7 +223,7 @@ export const eventContract = c.router({
   deleteMySignup: {
     method: "DELETE",
     path: "/:id/signups",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
       401: z.object({ error: z.string() }),

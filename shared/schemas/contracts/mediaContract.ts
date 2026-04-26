@@ -9,9 +9,11 @@ export const r2ObjectSchema = z.object({
   uploaded: z.string(),
   url: z.string(),
   httpEtag: z.string().optional(),
-  httpMetadata: z.object({
-    contentType: z.string().optional(),
-  }).optional(),
+  httpMetadata: z
+    .object({
+      contentType: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const assetSchema = r2ObjectSchema.extend({
@@ -94,7 +96,7 @@ export const mediaContract = c.router({
     pathParams: z.object({
       key: z.string(),
     }),
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({
         success: z.boolean(),

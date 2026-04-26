@@ -82,12 +82,14 @@ export const postContract = c.router({
       200: z.object({
         post: postDetailSchema,
         is_editor: z.boolean(),
-        author: z.object({
-          id: z.string(),
-          name: z.string().nullable(),
-          image: z.string().nullable(),
-          role: z.string(),
-        }).optional(),
+        author: z
+          .object({
+            id: z.string(),
+            name: z.string().nullable(),
+            image: z.string().nullable(),
+            role: z.string(),
+          })
+          .optional(),
       }),
       404: z.object({ error: z.string() }),
     },
@@ -122,7 +124,7 @@ export const postContract = c.router({
   deletePost: {
     method: "DELETE",
     path: "/admin/:slug",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -131,7 +133,7 @@ export const postContract = c.router({
   undeletePost: {
     method: "POST",
     path: "/admin/:slug/undelete",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -140,7 +142,7 @@ export const postContract = c.router({
   purgePost: {
     method: "DELETE",
     path: "/admin/:slug/purge",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -149,11 +151,11 @@ export const postContract = c.router({
   approvePost: {
     method: "POST",
     path: "/admin/:slug/approve",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
-      200: z.object({ 
+      200: z.object({
         success: z.boolean(),
-        warnings: z.array(z.string()).optional()
+        warnings: z.array(z.string()).optional(),
       }),
       404: z.object({ error: z.string() }),
     },
@@ -163,7 +165,7 @@ export const postContract = c.router({
     method: "POST",
     path: "/admin/:slug/reject",
     body: z.object({
-      reason: z.string().optional()
+      reason: z.string().optional(),
     }),
     responses: {
       200: z.object({ success: z.boolean() }),
@@ -182,7 +184,7 @@ export const postContract = c.router({
   restorePostHistory: {
     method: "POST",
     path: "/admin/:slug/history/:id/restore",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
       404: z.object({ error: z.string() }),
@@ -193,7 +195,7 @@ export const postContract = c.router({
     method: "POST",
     path: "/admin/:slug/repush",
     body: z.object({
-      socials: z.array(z.string()).optional()
+      socials: z.array(z.string()).optional(),
     }),
     responses: {
       200: z.object({ success: z.boolean() }),

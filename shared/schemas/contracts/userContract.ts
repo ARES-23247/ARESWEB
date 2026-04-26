@@ -66,7 +66,7 @@ export const userContract = c.router({
   deleteUser: {
     method: "DELETE",
     path: "/admin/:id",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
@@ -80,13 +80,15 @@ export const profileContract = c.router({
     path: "/me",
     responses: {
       200: z.object({
-        auth: z.object({
-          id: z.string(),
-          email: z.string(),
-          name: z.string().nullable(),
-          image: z.string().nullable(),
-          role: z.string(),
-        }).nullable(),
+        auth: z
+          .object({
+            id: z.string(),
+            email: z.string(),
+            name: z.string().nullable(),
+            image: z.string().nullable(),
+            role: z.string(),
+          })
+          .nullable(),
         member_type: z.string(),
         first_name: z.string().optional().nullable(),
         last_name: z.string().optional().nullable(),
@@ -136,19 +138,21 @@ export const profileContract = c.router({
     path: "/team-roster",
     responses: {
       200: z.object({
-        members: z.array(z.object({
-          user_id: z.string(),
-          nickname: z.string().nullable(),
-          avatar: z.string().nullable(),
-          pronouns: z.string().nullable().optional(),
-          subteams: z.array(z.string()).optional(),
-          member_type: z.string(),
-          bio: z.string().nullable().optional(),
-          fun_fact: z.string().nullable().optional(),
-          favorite_first_thing: z.string().nullable().optional(),
-          colleges: z.array(z.string()).optional(),
-          employers: z.array(z.string()).optional(),
-        })),
+        members: z.array(
+          z.object({
+            user_id: z.string(),
+            nickname: z.string().nullable(),
+            avatar: z.string().nullable(),
+            pronouns: z.string().nullable().optional(),
+            subteams: z.array(z.string()).optional(),
+            member_type: z.string(),
+            bio: z.string().nullable().optional(),
+            fun_fact: z.string().nullable().optional(),
+            favorite_first_thing: z.string().nullable().optional(),
+            colleges: z.array(z.string()).optional(),
+            employers: z.array(z.string()).optional(),
+          }),
+        ),
       }),
     },
     summary: "Get public team roster",

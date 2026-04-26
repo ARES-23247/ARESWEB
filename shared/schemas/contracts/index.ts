@@ -30,7 +30,9 @@ export const apiContract = c.router({
   docs: c.router(docContract, { pathPrefix: "/docs" }),
   events: c.router(eventContract, { pathPrefix: "/events" }),
   media: c.router(mediaContract, { pathPrefix: "/media" }),
-  notifications: c.router(notificationContract, { pathPrefix: "/notifications" }),
+  notifications: c.router(notificationContract, {
+    pathPrefix: "/notifications",
+  }),
   users: c.router(userContract, { pathPrefix: "/users" }),
   profiles: c.router(profileContract, { pathPrefix: "/profile" }),
   analytics: c.router(analyticsContract, { pathPrefix: "/analytics" }),
@@ -47,5 +49,7 @@ export const apiContract = c.router({
   comments: c.router(commentContract, { pathPrefix: "/comments" }),
   judges: c.router(judgeContract, { pathPrefix: "/judges" }),
   tba: c.router(tbaContract, { pathPrefix: "/tba" }),
-  communications: c.router(communicationsContract, { pathPrefix: "/communications" }),
+  communications: c.router(communicationsContract, {
+    pathPrefix: "/communications",
+  }),
 });

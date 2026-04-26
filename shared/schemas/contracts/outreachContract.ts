@@ -62,7 +62,7 @@ export const outreachContract = c.router({
     pathParams: z.object({
       id: z.string(),
     }),
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({
         success: z.boolean(),

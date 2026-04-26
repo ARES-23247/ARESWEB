@@ -139,12 +139,14 @@ export const analyticsContract = c.router({
     }),
     responses: {
       200: z.object({
-        results: z.array(z.object({
-          type: z.string(),
-          id: z.string(),
-          title: z.string(),
-          matched_text: z.string().optional(),
-        })),
+        results: z.array(
+          z.object({
+            type: z.string(),
+            id: z.string(),
+            title: z.string(),
+            matched_text: z.string().optional(),
+          }),
+        ),
       }),
       500: z.object({ error: z.string() }),
     },

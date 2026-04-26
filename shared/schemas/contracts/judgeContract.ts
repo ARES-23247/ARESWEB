@@ -36,7 +36,7 @@ export const judgeContract = c.router({
     method: "GET",
     path: "/portfolio",
     headers: z.object({
-      "Authorization": z.string().optional(),
+      Authorization: z.string().optional(),
       "x-judge-code": z.string().optional(),
     }),
     responses: {
@@ -84,7 +84,7 @@ export const judgeContract = c.router({
     pathParams: z.object({
       id: z.string(),
     }),
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({
         success: z.boolean(),

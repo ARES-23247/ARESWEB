@@ -50,7 +50,7 @@ export const awardContract = c.router({
   deleteAward: {
     method: "DELETE",
     path: "/admin/:id",
-    body: z.any().optional(),
+    body: c.noBody(),
     responses: {
       200: z.object({ success: z.boolean() }),
     },
