@@ -120,11 +120,11 @@ export default function Events() {
               </div>
               {calendars.length > 0 ? (
                 <div className="flex flex-col gap-2">
-                  <div className="w-full bg-black/40 border border-white/10 ares-cut-sm overflow-hidden shadow-lg">
+                  <div className="w-full bg-white/95 border border-white/10 ares-cut-sm overflow-hidden shadow-lg">
                     <iframe 
                       title="Google Calendar"
                       src={iframeSrc} 
-                      className="w-full h-[600px] md:h-[700px] border-0 invert hue-rotate-180 opacity-85 contrast-105"
+                      className="w-full h-[600px] md:h-[700px] border-0"
                       allowFullScreen
                     />
                   </div>
