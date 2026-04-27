@@ -155,4 +155,22 @@ describe("useDashboardNotifications Hook", () => {
       expect(result.current.pendingDocsCount).toBe(0);
     });
   });
+
+  it("should handle non-200 responses (e.g. 500 server error) gracefully", async () => {
+    const mockSession: any = { authenticated: true, user: { role: "admin" } };
+    const mockPermissions: any = { isAuthorized: true, canSeeInquiries: true };
+
+    server.use(
+      http.get(/\/api\/notifications\/action-items/, () => HttpResponse.json({ error: "Internal Server Error" }, { status: 500 }))
+    );
+
+    const { result } = renderWithProviders(() => useDashboardNotifications(mockSession, mockPermissions));
+    
+    await waitFor(() => {
+      expect(result.current.pendingInquiriesCount).toBe(0);
+      expect(result.current.pendingPostsCount).toBe(0);
+      expect(result.current.pendingEventsCount).toBe(0);
+      expect(result.current.pendingDocsCount).toBe(0);
+    });
+  });
 });

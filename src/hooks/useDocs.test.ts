@@ -99,4 +99,17 @@ describe("useDocs hook", () => {
     expect(result.current.searchOpen).toBe(false);
     expect(result.current.searchQuery).toBe("");
   });
+
+  it("handles non-200 or undefined API responses gracefully", () => {
+    vi.mocked(api.docs.getDocs.useQuery).mockReturnValue({ data: { status: 500 } } as any);
+    vi.mocked(api.docs.getDoc.useQuery).mockReturnValue({ data: { status: 404 } } as any);
+    vi.mocked(api.docs.searchDocs.useQuery).mockReturnValue({ data: undefined } as any);
+    
+    const { result } = renderHook(() => useDocs("unknown"));
+    
+    expect(result.current.allDocs).toEqual([]);
+    expect(result.current.currentDoc).toBeUndefined();
+    expect(result.current.contributors).toEqual([]);
+    expect(result.current.searchResults).toEqual([]);
+  });
 });

@@ -135,8 +135,11 @@ export default function SwerveSim() {
       positions.forEach(pos => {
         const mx = vxChassis - curOmega * pos[1] * 0.05;
         const my = vyChassis + curOmega * pos[0] * 0.05;
-        const mAngle = Math.atan2(my, mx);
+        
+        // MATH-F01 FIX: Zero-point guard to prevent NaN headings
         const mSpeed = Math.sqrt(mx*mx + my*my);
+        const mAngle = mSpeed > 0.001 ? Math.atan2(my, mx) : 0;
+        
         ctx.save();
         ctx.translate(pos[0], pos[1]);
         ctx.fillStyle = '#1A1A1A';
