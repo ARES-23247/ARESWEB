@@ -83,7 +83,7 @@ export default function Sponsors() {
   };
 
   const submitMutation = api.inquiries.submit.useMutation({
-    onSuccess: (res) => {
+    onSuccess: (res: any) => {
       if (res.status === 200 || res.status === 207) {
         setSubmitStatus("success");
         setName(""); setEmail(""); setPhone(""); setLevel("Interested in Details"); setMessage("");

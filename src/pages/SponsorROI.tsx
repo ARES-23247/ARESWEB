@@ -33,7 +33,7 @@ export default function SponsorROI() {
     let cancelled = false;
 
     api.sponsors.getRoi.query({ params: { tokenId: tokenId || "" } })
-      .then((res) => {
+      .then((res: any) => {
         if (!cancelled && res.status === 200) {
           setData(res.body as SponsorROI);
           setLoading(false);
