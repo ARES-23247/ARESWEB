@@ -41,7 +41,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const { handleSubmit, reset, control } = useForm<ProfilePayload>({
+  const { handleSubmit, reset, control } = useForm<ProfileData>({
     defaultValues: DEFAULT_PROFILE
   });
 

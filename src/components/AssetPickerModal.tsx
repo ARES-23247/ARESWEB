@@ -3,6 +3,7 @@ interface MediaAsset {
   url: string;
   folder?: string;
   tags?: string;
+  size?: number;
 }
 import { useState } from "react";
 import { X, ImagePlus, Plus } from "lucide-react";
@@ -119,7 +120,7 @@ export default function AssetPickerModal({
                       <p className="text-white/60 text-xs font-mono truncate">{asset.key}</p>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
                         <span className="text-xs text-white/60 uppercase font-bold tracking-widest">
-                          {(asset.size / 1024).toFixed(0)} KB
+                          {((asset.size || 0) / 1024).toFixed(0)} KB
                         </span>
                         {asset.folder && (
                            <span className="text-[9px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded font-bold uppercase">{asset.folder}</span>

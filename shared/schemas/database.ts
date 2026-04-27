@@ -567,6 +567,12 @@ export interface SponsorTokens {
   token: string | null;
 }
 
+export interface TaskAssignments {
+  assigned_at: Generated<string | null>;
+  task_id: string;
+  user_id: string;
+}
+
 export interface Tasks {
   assigned_to: string | null;
   created_at: Generated<string | null>;
@@ -752,6 +758,7 @@ export interface DB {
   sponsors: Sponsors;
   sponsorship_pipeline: SponsorshipPipeline;
   tasks: Tasks;
+  task_assignments: TaskAssignments;
   user: User;
   user_badges: UserBadges;
   user_profiles: UserProfiles;

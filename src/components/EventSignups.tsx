@@ -41,8 +41,8 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
           setIsAuthenticated(typed.authenticated);
           setUserRole(typed.role);
           setCanManage(typed.can_manage);
-          setDietarySummary(typed.dietary_summary);
-          setTeamDietarySummary(typed.team_dietary_summary);
+          setDietarySummary(typed.dietary_summary || null);
+          setTeamDietarySummary(typed.team_dietary_summary || null);
           
           const own = (typed.signups || []).find((s: SignupEntry) => s.is_own);
           if (own) setMySignup({ bringing: own.bringing, notes: own.notes, prep_hours: own.prep_hours || 0 });
@@ -248,8 +248,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                 placeholder={isPotluck ? "Notes (dietary info, arrival time...)" : "Notes (arrival time, etc...)"}
                 value={mySignup?.notes || ""}
                 onChange={e => setMySignup(prev => ({ bringing: prev?.bringing || "", notes: e.target.value, prep_hours: prev?.prep_hours || 0 }))}
-                className={`w-full ${isPotluck && isVolunteer ? 'md:col-span-2' : ''} bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all`}
-                style={Object.assign({}, (!isPotluck && !isVolunteer) ? { gridColumn: 'span 2' } : {})}
+                className={`w-full ${isPotluck && isVolunteer ? 'md:col-span-2' : ''} ${(!isPotluck && !isVolunteer) ? 'col-span-2' : ''} bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all`}
               />
               {isVolunteer && (
                 <div className="flex items-center gap-3">

@@ -89,7 +89,7 @@ export default function Sponsors() {
         setName(""); setEmail(""); setPhone(""); setLevel("Interested in Details"); setMessage("");
       } else {
         setSubmitStatus("error");
-        setErrorMessage("error" in res.body ? res.body.error : "Something went wrong");
+        setErrorMessage("error" in (res.body as { error?: string }) ? String((res.body as { error?: string }).error) : "Something went wrong");
       }
     },
     onError: (err: Error) => {

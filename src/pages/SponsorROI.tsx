@@ -38,7 +38,7 @@ export default function SponsorROI() {
           setData(res.body as SponsorROI);
           setLoading(false);
         } else if (!cancelled && res.status !== 200) {
-          setError("error" in res.body ? String(res.body.error) : "Failed to load data");
+          setError("error" in (res.body as { error?: string }) ? String((res.body as { error?: string }).error) : "Failed to load data");
           setLoading(false);
         }
       })

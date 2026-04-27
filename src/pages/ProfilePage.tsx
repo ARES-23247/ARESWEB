@@ -157,7 +157,7 @@ export default function ProfilePage() {
               </h3>
               <div className="flex flex-wrap gap-4">
                 {badges.map((b) => {
-                  const IconComp = ((LucideIcons as unknown as Record<string, React.ComponentType>)[b.icon] || LucideIcons.Award);
+                  const IconComp = ((LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[b.icon] || LucideIcons.Award);
                   const colorClass = `text-${b.color_theme.replace("text-", "")}`;
                   return (
                     <div key={b.id} className="relative group cursor-help bg-obsidian border border-white/10 hover:border-ares-gold ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">

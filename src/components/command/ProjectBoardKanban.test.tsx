@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
-import ProjectBoardKanban from "./ProjectBoardKanban";
+import ProjectBoardKanban, { TaskItem } from "./ProjectBoardKanban";
 
 // Mock matchMedia for testing environment
 Object.defineProperty(window, 'matchMedia', {
@@ -57,7 +57,7 @@ describe("ProjectBoardKanban Component", () => {
         updated_at: new Date().toISOString() 
       },
     ];
-    render(<ProjectBoardKanban {...defaultProps} tasks={tasks as any} />);
+    render(<ProjectBoardKanban {...defaultProps} tasks={tasks as unknown as TaskItem[]} />);
     
     expect(screen.getByText("urgent")).toBeInTheDocument();
     expect(screen.getByTitle("Alice")).toBeInTheDocument();

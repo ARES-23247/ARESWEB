@@ -415,7 +415,8 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
 
               socials={socials as Record<string, boolean>}
 
-              onChange={(platform, val) => setValue(`socials.${platform}` as "socials", val)}
+              // @ts-expect-error react-hook-form dynamic path
+              onChange={(platform, val) => setValue(`socials.${platform}`, val)}
               isEdit={!!editId}
             />
           }

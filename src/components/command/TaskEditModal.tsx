@@ -71,7 +71,7 @@ export default function TaskEditModal({ task, onClose, onSave, onDelete }: TaskE
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const updates: any = {};
+      const updates: Partial<TaskItem> = {};
       if (title !== task.title) updates.title = title;
       if (description !== (task.description || "")) updates.description = description || null;
       if (status !== task.status) updates.status = status;
@@ -84,7 +84,7 @@ export default function TaskEditModal({ task, onClose, onSave, onDelete }: TaskE
         !assigneeIds.every(id => currentIds.includes(id));
       
       if (hasAssigneeChange) {
-        updates.assignees = assigneeIds;
+        updates.assignees = assigneeIds as unknown as { id: string }[];
       }
 
       if (Object.keys(updates).length > 0) {
@@ -104,7 +104,7 @@ export default function TaskEditModal({ task, onClose, onSave, onDelete }: TaskE
 
   const isOverdue = dueDate && new Date(dueDate) < new Date() && status !== "done";
 
-  const currentAssignees = teamMembers.filter((m: any) => assigneeIds.includes(m.id));
+  const currentAssignees = teamMembers.filter((m: { id: string }) => assigneeIds.includes(m.id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -239,16 +239,16 @@ export default function TaskEditModal({ task, onClose, onSave, onDelete }: TaskE
           {/* Assignees + Due Date row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative" ref={dropdownRef}>
-              <label className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block flex items-center gap-1">
+              <label className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 flex items-center gap-1">
                 <User size={10} />
                 Assignees ({assigneeIds.length})
               </label>
               
               <div className="flex flex-wrap gap-1.5 p-2 bg-ares-gray-dark/50 border border-white/10 ares-cut-sm min-h-[42px] content-start">
-                {currentAssignees.map((m: any) => (
+                {currentAssignees.map((m: { id: string; nickname?: string | null; name?: string | null }) => (
                   <span key={m.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan text-[10px] font-black ares-cut-sm uppercase tracking-wider">
                     {m.nickname || m.name}
-                    <button onClick={() => toggleAssignee(m.id)} className="hover:text-white transition-colors">
+                    <button onClick={() => toggleAssignee(m.id)} className="hover:text-white transition-colors" title="Remove Assignee">
                       <X size={10} />
                     </button>
                   </span>
@@ -270,7 +270,7 @@ export default function TaskEditModal({ task, onClose, onSave, onDelete }: TaskE
                     exit={{ opacity: 0, y: -10 }}
                     className="absolute z-[60] left-0 right-0 mt-1 bg-obsidian border border-white/10 ares-cut-sm shadow-2xl max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10"
                   >
-                    {teamMembers.map((m: any) => (
+                    {teamMembers.map((m: { id: string; nickname?: string | null; name?: string | null }) => (
                       <button
                         key={m.id}
                         onClick={() => toggleAssignee(m.id)}
