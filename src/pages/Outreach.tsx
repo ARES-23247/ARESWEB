@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, Clock, ArrowRight, Activity, MapPin, Heart, X, CheckCircle } from "lucide-react";
@@ -9,7 +6,6 @@ import Turnstile from "../components/Turnstile";
 import { api } from "../api/client";
 import { inquirySchema } from "@shared/schemas/inquirySchema";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface OutreachLog {
   id: string;
   title: string;
@@ -79,15 +75,13 @@ export default function Outreach() {
         throw new Error(payloadResult.error.issues[0].message);
       }
 
-       
-      const res = await api.inquiries.submit.mutation({ body: payloadResult.data as any });
+      const res = await api.inquiries.submit.mutation({ body: payloadResult.data });
       if (res.status === 200 || res.status === 207) {
         setSubmitStatus("success");
         setName(""); setEmail(""); setPhone(""); setOrganization(""); setDescription("");
       } else {
         setSubmitStatus("error");
-         
-        setErrorMessage((res.body as any).error || "Something went wrong.");
+        setErrorMessage("error" in res.body ? String(res.body.error) : "Something went wrong.");
       }
     } catch (err) {
       setSubmitStatus("error");
@@ -98,11 +92,9 @@ export default function Outreach() {
   };
 
   const { data: logsRes, isLoading } = api.outreach.adminList.useQuery(["public-outreach"], {});
-   
-  const rawBody = (logsRes as any)?.body;
-  const logs = logsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.logs) ? rawBody.logs : [])) : [];
+  const logs: OutreachLog[] = logsRes?.status === 200 ? logsRes.body.logs : [];
 
-  const totals = logs.reduce((acc: any, l: any) => ({
+  const totals = logs.reduce((acc: { hours: number; reach: number; events: number }, l: OutreachLog) => ({
     hours: acc.hours + (l.hours_logged || 0),
     reach: acc.reach + (l.reach_count || 0),
     events: acc.events + 1
@@ -138,7 +130,7 @@ export default function Outreach() {
               { label: "Community Reach", val: totals.reach.toLocaleString(), icon: <div className="w-16 h-16 ares-cut bg-ares-red flex items-center justify-center shadow-lg"><Target className="text-white" size={32} /></div>, desc: "Estimated lives touched by ARES demos and events." },
               { label: "Service Hours", val: totals.hours.toLocaleString(), icon: <div className="w-16 h-16 ares-cut bg-ares-gold flex items-center justify-center shadow-lg"><Clock className="text-black" size={32} /></div>, desc: "Total student hours dedicated to community STEM engagement." },
               { label: "Impact Events", val: totals.events, icon: <div className="w-16 h-16 ares-cut bg-ares-cyan flex items-center justify-center shadow-lg"><Heart className="text-black" size={32} /></div>, desc: "Unique workshops, demos, and volunteer sessions completed." },
-            ].map((stat: any, idx: any) => (
+            ].map((stat, idx) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, x: -20 }}
@@ -201,8 +193,8 @@ export default function Outreach() {
 
           <div className="space-y-6">
             {isLoading ? (
-              [1,2,3].map((i: any) => <div key={i} className="h-48 bg-white/5 ares-cut-lg animate-pulse" />)
-            ) : logs.map((log: any) => (
+              [1,2,3].map((i) => <div key={i} className="h-48 bg-white/5 ares-cut-lg animate-pulse" />)
+            ) : logs.map((log: OutreachLog) => (
               <motion.div 
                 key={log.id} 
                 initial={{ opacity: 0, y: 20 }}

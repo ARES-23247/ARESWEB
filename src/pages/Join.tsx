@@ -25,21 +25,22 @@ export default function Join() {
   const submitMutation = api.inquiries.submit.useMutation({
     onMutate: () => setIsSubmitting(true),
     onSettled: () => setIsSubmitting(false),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (res: any) => {
+    onSuccess: (res: { status: number; body: unknown }) => {
       if (res.status === 200 || res.status === 207) {
         setSubmitStatus("success");
         setName(""); setEmail(""); setPhone(""); setSchool(""); setGrade(""); setOccupation(""); setInterests([]); setAdditional("");
       } else {
         setSubmitStatus("error");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setErrorMessage((res.body as any).error || "Something went wrong");
+        setErrorMessage(
+          res.body && typeof res.body === "object" && "error" in res.body 
+            ? String((res.body as { error?: unknown }).error) 
+            : "Something went wrong"
+        );
       }
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (err: any) => {
+    onError: (err: Error | unknown) => {
       setSubmitStatus("error");
-      setErrorMessage(err.message || JSON.stringify(err) || "Network error");
+      setErrorMessage(err instanceof Error ? err.message : JSON.stringify(err) || "Network error");
     }
   });
 
@@ -56,8 +57,7 @@ export default function Join() {
         throw new Error(payloadResult.error.issues[0].message);
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      submitMutation.mutate({ body: payloadResult.data as any });
+      submitMutation.mutate({ body: payloadResult.data });
     } catch (err) {
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");

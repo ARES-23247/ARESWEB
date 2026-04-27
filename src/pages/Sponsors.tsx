@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { siteConfig } from "../site.config";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Gem, Award, ShieldCheck, Zap, ExternalLink, Heart, Package } from "lucide-react";
 import SEO from "../components/SEO";
@@ -58,8 +55,7 @@ const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; borde
 
 export default function Sponsors() {
   const { data: sponsorsRes } = api.sponsors.getSponsors.useQuery(["public-sponsors"], {});
-  const rawBody = (sponsorsRes as any)?.body;
-  const sponsors = sponsorsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.sponsors) ? rawBody.sponsors : [])) : [];
+  const sponsors = sponsorsRes?.status === 200 ? sponsorsRes.body.sponsors : [];
 
   const grouped = sponsors.reduce((acc: Record<string, Sponsor[]>, s: Sponsor) => {
     if (!acc[s.tier]) acc[s.tier] = [];
@@ -76,8 +72,6 @@ export default function Sponsors() {
   const [phone, setPhone] = useState("");
   const [level, setLevel] = useState("Interested in Details");
   const [message, setMessage] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
@@ -89,14 +83,13 @@ export default function Sponsors() {
   };
 
   const submitMutation = api.inquiries.submit.useMutation({
-    onSuccess: (res: any) => {
+    onSuccess: (res) => {
       if (res.status === 200 || res.status === 207) {
         setSubmitStatus("success");
         setName(""); setEmail(""); setPhone(""); setLevel("Interested in Details"); setMessage("");
       } else {
         setSubmitStatus("error");
-         
-        setErrorMessage((res.body as any).error || "Something went wrong");
+        setErrorMessage("error" in res.body ? res.body.error : "Something went wrong");
       }
     },
     onError: (err: Error) => {
@@ -123,8 +116,7 @@ export default function Sponsors() {
       return;
     }
 
-     
-    submitMutation.mutate({ body: payloadResult.data as any });
+    submitMutation.mutate({ body: payloadResult.data });
   };
 
   return (
@@ -293,8 +285,8 @@ export default function Sponsors() {
               </div>
               <div className="pt-2">
                 <Turnstile onVerify={setTurnstileToken} theme="dark" size="compact" className="mb-4" />
-                <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-ares-bronze hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
-                  {isSubmitting ? "Sending..." : <><span className="flex items-center gap-2">Submit Interest Request <ArrowRight size={18} /></span></>}
+                <button type="submit" disabled={submitMutation.isPending} className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-ares-bronze hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none">
+                  {submitMutation.isPending ? "Sending..." : <><span className="flex items-center gap-2">Submit Interest Request <ArrowRight size={18} /></span></>}
                 </button>
                 <p className="text-center text-xs text-marble font-mono uppercase tracking-tighter mt-4">
                   {siteConfig.team.fullName} operates under a 501(c)(3) nonprofit umbrella. All donations are tax-deductible.

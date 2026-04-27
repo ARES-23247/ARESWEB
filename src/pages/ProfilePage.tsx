@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -55,16 +54,16 @@ export default function ProfilePage() {
     let cancelled = false;
 
     api.profiles.getPublicProfile.query({ params: { userId: userId || "" } })
-      .then((res: any) => { 
+      .then((res) => { 
         if (cancelled || res.status !== 200) return;
         const data = res.body;
          
-        setProfile(data.profile as any); 
-        setBadges(data.badges || []);
+        setProfile(data.profile as ProfilePublic); 
+        setBadges(data.badges as BadgeDef[] || []);
         setError(null);
         setLoading(false); 
       })
-      .catch((err: any) => {
+      .catch((err: Error) => {
         if (cancelled) return;
         setError({ status: err.message.includes("403") ? 403 : 500, message: err.message || "Network error" });
         setLoading(false);
@@ -158,7 +157,7 @@ export default function ProfilePage() {
               </h3>
               <div className="flex flex-wrap gap-4">
                 {badges.map((b) => {
-                  const IconComp = ((LucideIcons as unknown as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award) as any;
+                  const IconComp = ((LucideIcons as unknown as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award) as React.ElementType;
                   const colorClass = `text-${b.color_theme.replace("text-", "")}`;
                   return (
                     <div key={b.id} className="relative group cursor-help bg-obsidian border border-white/10 hover:border-ares-gold ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -34,14 +33,16 @@ export default function SponsorROI() {
     let cancelled = false;
 
     api.sponsors.getRoi.query({ params: { tokenId: tokenId || "" } })
-      .then((res: any) => {
+      .then((res) => {
         if (!cancelled && res.status === 200) {
-           
-          setData(res.body as any);
+          setData(res.body as SponsorROI);
+          setLoading(false);
+        } else if (!cancelled && res.status !== 200) {
+          setError("error" in res.body ? String(res.body.error) : "Failed to load data");
           setLoading(false);
         }
       })
-      .catch((err: any) => {
+      .catch((err: Error) => {
         if (!cancelled) {
           setError(err.message);
           setLoading(false);

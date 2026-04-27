@@ -1,11 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
 import SEO from "../components/SEO";
 import { api } from "../api/client";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Season {
   start_year: number;
   end_year: number;
@@ -16,7 +13,6 @@ interface Season {
   robot_cad_url: string | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Award {
   id: string;
   title: string;
@@ -28,15 +24,10 @@ interface Award {
 
 export default function Seasons() {
   const { data: seasonsRes, isLoading: isLoadingSeasons } = api.seasons.list.useQuery(["public-seasons"], {});
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawBody = (seasonsRes as any)?.body;
-  const seasons = seasonsRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.seasons) ? rawBody.seasons : [])) : [];
+  const seasons: Season[] = seasonsRes?.status === 200 ? seasonsRes.body.seasons : [];
 
   const { data: awardsRes, isLoading: isLoadingAwards } = api.awards.getAwards.useQuery(["public-awards"], {});
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const awards = (awardsRes?.body as any)?.awards || [];
-
-
+  const awards: Award[] = awardsRes?.status === 200 ? awardsRes.body.awards : [];
 
   return (
     <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">
@@ -79,8 +70,7 @@ export default function Seasons() {
                  <div className="w-10 h-10 border-2 border-white/10 border-t-ares-red rounded-full animate-spin" />
                </div>
              ) : seasons.length > 0 ? (
-               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-               seasons.map((season: any, idx: number) => {
+               seasons.map((season: Season, idx: number) => {
                  const isEven = idx % 2 === 0;
                  return (
                    <motion.div 
@@ -167,8 +157,7 @@ export default function Seasons() {
             {isLoadingAwards ? (
               [1,2,3].map(i => <div key={i} className="h-64 bg-white/5 ares-cut animate-pulse" />)
             ) : awards.length > 0 ? (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              awards.map((award: any, idx: number) => (
+              awards.map((award: Award, idx: number) => (
                 <motion.div
                   key={award.id}
                   initial={{ opacity: 0, y: 30 }}

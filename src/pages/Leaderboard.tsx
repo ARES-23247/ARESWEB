@@ -18,9 +18,7 @@ export default function Leaderboard() {
   const { data: leaderboardRes, isLoading } = api.analytics.getLeaderboard.useQuery(["leaderboard"], {});
 
   const leaders = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawBody = (leaderboardRes as any)?.body;
-    return (leaderboardRes?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.leaderboard) ? rawBody.leaderboard : [])) : []) as LeaderboardUser[];
+    return (leaderboardRes?.status === 200 ? leaderboardRes.body.leaderboard : []) as LeaderboardUser[];
   }, [leaderboardRes]);
 
   if (isLoading) {
