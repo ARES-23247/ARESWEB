@@ -165,6 +165,7 @@ export default function BadgeManager() {
           ) : (
              
             badges.map((b: BadgeRecord) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const IconComp = ((LucideIcons as unknown as Record<string, React.ElementType>)[b.icon] || LucideIcons.Award) as any;
               return (
                 <div key={b.id} className="bg-ares-gray-dark/50 border border-white/10 ares-cut-sm p-4 flex items-start gap-4">

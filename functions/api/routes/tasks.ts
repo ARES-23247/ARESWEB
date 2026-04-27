@@ -8,7 +8,6 @@ import { AppEnv, ensureAuth, getSessionUser, rateLimitMiddleware, getSocialConfi
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const s = initServer<AppEnv>();
 export const tasksRouter = new Hono<AppEnv>();
 
