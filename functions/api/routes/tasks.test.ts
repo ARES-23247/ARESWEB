@@ -14,11 +14,7 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
-vi.mock("../middleware/dbUtils", () => ({
-  retryTransaction: vi.fn(async (db, cb) => {
-    await cb(db);
-  })
-}));
+
 
 vi.mock("../../utils/zulipSync", () => ({
   sendZulipMessage: vi.fn()

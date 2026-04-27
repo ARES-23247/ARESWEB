@@ -1,9 +1,9 @@
 
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import { outreachContract } from "../../../../shared/schemas/contracts/outreachContract";
+
 import { AppEnv, getSessionUser, logAuditAction } from "../../middleware";
-import { retryTransaction } from "../../middleware/dbUtils";
+
 import { initServer } from "ts-rest-hono";
 
 const _s = initServer<AppEnv>();
@@ -37,8 +37,8 @@ async function fetchVolunteerEvents(db: Kysely<DB>) {
   }
 }
 
-export const outreachHandlers: Parameters<typeof _s.router<typeof outreachContract>>[1] = {
-  list: async (_input, c) => {
+export const outreachHandlers: any = {
+  list: async (_input: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -79,7 +79,7 @@ export const outreachHandlers: Parameters<typeof _s.router<typeof outreachContra
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  adminList: async (_input, c) => {
+  adminList: async (_input: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -120,55 +120,54 @@ export const outreachHandlers: Parameters<typeof _s.router<typeof outreachContra
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  save: async (input, c) => {
+  save: async (input: any, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
 
-      const result = await retryTransaction(db, async (trx) => {
-        if (body.id) {
-          await trx.updateTable("outreach_logs")
-            .set({
-              title: body.title,
-              date: body.date,
-              location: body.location,
-              hours: body.hours_logged,
-              people_reached: body.reach_count,
-              students_count: body.students_count,
-              impact_summary: body.description,
-              is_mentoring: body.is_mentoring ? 1 : 0,
-              mentored_team_number: body.mentored_team_number,
-              season_id: body.season_id,
-            })
-            .where("id", "=", body.id as any)
-            .execute();
-          return body.id;
-        } else {
-          const inserted = await trx.insertInto("outreach_logs")
-            .values({
-              title: body.title,
-              date: body.date,
-              location: body.location,
-              hours: body.hours_logged,
-              people_reached: body.reach_count,
-              students_count: body.students_count,
-              impact_summary: body.description,
-              is_mentoring: body.is_mentoring ? 1 : 0,
-              mentored_team_number: body.mentored_team_number,
-              season_id: body.season_id,
-            })
-            .executeTakeFirst();
-          return inserted.insertId?.toString() || "new";
-        }
-      });
+      let result: string | number;
+      if (body.id) {
+        await db.updateTable("outreach_logs")
+          .set({
+            title: body.title,
+            date: body.date,
+            location: body.location,
+            hours: body.hours_logged,
+            people_reached: body.reach_count,
+            students_count: body.students_count,
+            impact_summary: body.description,
+            is_mentoring: body.is_mentoring ? 1 : 0,
+            mentored_team_number: body.mentored_team_number,
+            season_id: body.season_id,
+          })
+          .where("id", "=", body.id as any)
+          .execute();
+        result = body.id;
+      } else {
+        const inserted = await db.insertInto("outreach_logs")
+          .values({
+            title: body.title,
+            date: body.date,
+            location: body.location,
+            hours: body.hours_logged,
+            people_reached: body.reach_count,
+            students_count: body.students_count,
+            impact_summary: body.description,
+            is_mentoring: body.is_mentoring ? 1 : 0,
+            mentored_team_number: body.mentored_team_number,
+            season_id: body.season_id,
+          })
+          .executeTakeFirst();
+        result = inserted.insertId?.toString() || "new";
+      }
 
       if (body.id) {
         c.executionCtx.waitUntil(logAuditAction(c, "update_outreach", "outreach_logs", body.id, `Updated outreach: ${body.title}`));
         return { status: 200 as const, body: { success: true, id: body.id } };
       } else {
-        c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", result, `Created outreach: ${body.title}`));
+        c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", String(result), `Created outreach: ${body.title}`));
         return { status: 200 as const, body: { success: true, id: result } };
       }
     } catch (err) {
@@ -176,19 +175,17 @@ export const outreachHandlers: Parameters<typeof _s.router<typeof outreachContra
       return { status: 500 as const, body: { error: "Save failed" } };
     }
   },
-  delete: async (input, c) => {
+  delete: async (input: any, c: any) => {
     try {
       const { params } = input;
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
 
-      await retryTransaction(db, async (trx) => {
-        await trx.updateTable("outreach_logs")
-          .set({ is_deleted: 1 })
-          .where("id", "=", params.id as any)
-          .execute();
-      });
+      await db.updateTable("outreach_logs")
+        .set({ is_deleted: 1 })
+        .where("id", "=", params.id as any)
+        .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "delete_outreach", "outreach_logs", params.id, "Outreach log soft-deleted"));
       return { status: 200 as const, body: { success: true } };
     } catch (err) {

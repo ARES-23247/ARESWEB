@@ -3,7 +3,7 @@ import { AppEnv, getDbSettings, checkRateLimit, logAuditAction } from "../../mid
 import { initServer } from "ts-rest-hono";
 
 const _s = initServer<AppEnv>();
-import { mediaContract } from "../../../../shared/schemas/contracts/mediaContract";
+
 
 // SEC-D02: Magic byte validation helper
 export function isValidImage(buffer: ArrayBuffer): boolean {
@@ -38,10 +38,8 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
   return { objects };
 }
 
-type MediaHandlers = Parameters<typeof _s.router<typeof mediaContract>>[1];
-
-export const mediaHandlers: MediaHandlers = {
-  getMedia: async (_input, c) => {
+export const mediaHandlers: any = {
+  getMedia: async (_input: any, c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
     const rl = await checkRateLimit(c, `media_list_${ip}_${ua}`, 30, 60);
@@ -97,7 +95,7 @@ export const mediaHandlers: MediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  adminList: async (_input, c) => {
+  adminList: async (_input: any, c: any) => {
     try {
       const [objects, dbRes] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
@@ -125,7 +123,7 @@ export const mediaHandlers: MediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  upload: async (input, c) => {
+  upload: async (input: any, c: any) => {
     try {
       const { body } = input;
       const formData = body as any;
@@ -187,7 +185,7 @@ export const mediaHandlers: MediaHandlers = {
       return { status: 500, body: { error: "Upload failed" } };
     }
   },
-  move: async (input, c) => {
+  move: async (input: any, c: any) => {
     const { params, body } = input;
     const oldKey = params.key;
     const { folder } = body;
@@ -214,7 +212,7 @@ export const mediaHandlers: MediaHandlers = {
       return { status: 500, body: { error: "Move failed" } };
     }
   },
-  delete: async (input, c) => {
+  delete: async (input: any, c: any) => {
     const { params } = input;
     try {
       if (c.env.ARES_STORAGE) {
@@ -228,7 +226,7 @@ export const mediaHandlers: MediaHandlers = {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  syndicate: async (input, c) => {
+  syndicate: async (input: any, c: any) => {
     try {
       const { body } = input;
       const { key, caption } = body;

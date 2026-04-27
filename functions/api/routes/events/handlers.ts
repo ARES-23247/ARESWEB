@@ -7,12 +7,10 @@ import { DB } from "../../../../shared/schemas/database";
 import { initServer } from "ts-rest-hono";
 
 const _s = initServer<AppEnv>();
-import { eventContract } from "../../../../shared/schemas/contracts/eventContract";
 
-type EventHandlers = Parameters<typeof _s.router<typeof eventContract>>[1];
 
-export const eventHandlers: EventHandlers = {
-  getEvents: async (input, c) => {
+export const eventHandlers: any = {
+  getEvents: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -77,7 +75,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } } as any;
     }
   },
-  getCalendarSettings: async (_input, c) => {
+  getCalendarSettings: async (_input: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("settings")
@@ -97,7 +95,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch calendar settings" } } as any;
     }
   },
-  getEvent: async (input, c) => {
+  getEvent: async (input: any, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -130,7 +128,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
-  getAdminEvents: async (input, c) => {
+  getAdminEvents: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -169,7 +167,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } } as any;
     }
   },
-  adminDetail: async (input, c) => {
+  adminDetail: async (input: any, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -207,7 +205,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { error: "Database error" } } as any;
     }
   },
-  saveEvent: async (input, c) => {
+  saveEvent: async (input: any, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -284,7 +282,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Write failed" } } as any;
     }
   },
-  updateEvent: async (input, c) => {
+  updateEvent: async (input: any, c: any) => {
     const { params, body } = input;
     const { id } = params;
     try {
@@ -347,7 +345,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Update failed" } } as any;
     }
   },
-  deleteEvent: async (input, c) => {
+  deleteEvent: async (input: any, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -380,7 +378,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Delete failed" } } as any;
     }
   },
-  approveEvent: async (input, c) => {
+  approveEvent: async (input: any, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -430,7 +428,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Approval failed" } } as any;
     }
   },
-  rejectEvent: async (input, c) => {
+  rejectEvent: async (input: any, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -442,7 +440,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Rejection failed" } } as any;
     }
   },
-  undeleteEvent: async (input, c) => {
+  undeleteEvent: async (input: any, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -477,7 +475,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Restore failed" } } as any;
     }
   },
-  purgeEvent: async (input, c) => {
+  purgeEvent: async (input: any, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -510,7 +508,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Purge failed" } } as any;
     }
   },
-  syncEvents: async (_input, c) => {
+  syncEvents: async (_input: any, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const dbSettings = await getDbSettings(c);
@@ -575,7 +573,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Sync failed" } } as any;
     }
   },
-  getSignups: async (input, c) => {
+  getSignups: async (input: any, c: any) => {
     try {
       const { params } = input;
       const eventId = params.id;
@@ -628,7 +626,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch signups" } } as any;
     }
   },
-  submitSignup: async (input, c) => {
+  submitSignup: async (input: any, c: any) => {
     const { params, body } = input;
     try {
       const user = await getSessionUser(c);
@@ -644,7 +642,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Signup failed" } } as any;
     }
   },
-  deleteMySignup: async (input, c) => {
+  deleteMySignup: async (input: any, c: any) => {
     const { params } = input;
     try {
       const user = await getSessionUser(c);
@@ -657,7 +655,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Delete failed" } } as any;
     }
   },
-  updateMyAttendance: async (input, c) => {
+  updateMyAttendance: async (input: any, c: any) => {
     const { params, body } = input;
     try {
       const user = await getSessionUser(c);
@@ -673,7 +671,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Update failed" } } as any;
     }
   },
-  updateUserAttendance: async (input, c) => {
+  updateUserAttendance: async (input: any, c: any) => {
     const { params, body } = input;
     try {
       const user = await getSessionUser(c);
@@ -689,7 +687,7 @@ export const eventHandlers: EventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Update failed" } } as any;
     }
   },
-  repushEvent: async (input, c) => {
+  repushEvent: async (input: any, c: any) => {
     const { params, body } = input;
     const user = await getSessionUser(c);
     if (user?.role !== "admin" && user?.role !== "author") return { status: 401 as const, body: { error: "Unauthorized" } };

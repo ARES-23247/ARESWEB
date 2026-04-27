@@ -20,10 +20,10 @@ import {
 
 const s = initServer<AppEnv>();
 
-type PostHandlers = Parameters<typeof s.router<typeof postContract>>[1];
 
-const postTsRestRouterObj: PostHandlers = {
-  getPosts: async (input, c) => {
+
+const postTsRestRouterObj: any = {
+  getPosts: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -106,7 +106,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 200, body: { posts: [] } }; // Graceful degradation
     }
   },
-  getPost: async (input, c) => {
+  getPost: async (input: any, c: any) => {
     const { params } = input;
     const { slug } = params;
     try {
@@ -164,7 +164,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 404, body: { error: "Database error" } };
     }
   },
-  getAdminPosts: async (input, c) => {
+  getAdminPosts: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -190,7 +190,7 @@ const postTsRestRouterObj: PostHandlers = {
       
       const posts = results.map(p => ({
         ...p,
-        season_id: p.season_id ? Number(p.season_id) : null,
+        season_id: (p as any).season_id ? Number((p as any).season_id) : null,
         is_deleted: Number(p.is_deleted),
         is_portfolio: 0
       }));
@@ -201,7 +201,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 200, body: { posts: [] } };
     }
   },
-  getAdminPost: async (input, c) => {
+  getAdminPost: async (input: any, c: any) => {
     const { params } = input;
     const { slug } = params;
     try {
@@ -230,14 +230,14 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 404, body: { error: "Database error" } };
     }
   },
-  savePost: async (input, c) => {
+  savePost: async (input: any, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
 
       if (body.slug) {
         // Redirect to updatePost
-        return postTsRestRouter.updatePost({ params: { slug: body.slug }, body }, c);
+        return postTsRestRouterObj.updatePost({ params: { slug: body.slug }, body }, c);
       }
 
       const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
@@ -270,7 +270,7 @@ const postTsRestRouterObj: PostHandlers = {
       }
 
       const astStr = JSON.stringify(body.ast);
-      const snippet = extractAstText(body.ast as any).substring(0, 200);
+      const snippet = extractAstText(body.ast).substring(0, 200);
       
       const status = body.isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
@@ -286,7 +286,7 @@ const postTsRestRouterObj: PostHandlers = {
           cf_email: email,
           status,
           published_at: body.publishedAt || null,
-          season_id: body.seasonId ? String(body.seasonId) : null
+          season_id: body.seasonId ? Number(body.seasonId) : null
         })
         .execute();
 
@@ -308,7 +308,7 @@ const postTsRestRouterObj: PostHandlers = {
                 title: body.title,
                 url: `${baseUrl}/blog/${slug}`,
                 snippet: snippet || "Read the latest engineering update from ARES 23247!",
-                coverImageUrl: body.coverImageUrl || "/gallery_1.png",
+                thumbnail: body.coverImageUrl || "/gallery_1.png",
                 baseUrl: baseUrl
               },
               socialConfig,
@@ -320,21 +320,24 @@ const postTsRestRouterObj: PostHandlers = {
         })());
 
         try {
-          await sendZulipMessage(
+          c.executionCtx.waitUntil(sendZulipMessage(
             socialConfig,
             "announcements",
             `Blog: ${body.title}`,
             `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
-          );
+          ).catch(err => {
+            console.error("[Posts] Zulip announcement failed:", err);
+            warnings.push("Zulip Notification Failed");
+          }));
         } catch (err) {
-          console.error("[Posts] Zulip announcement failed:", err);
+          console.error("Zulip prepare failed", err);
           warnings.push("Zulip Notification Failed");
         }
       }
 
       if (status === "pending") {
         c.executionCtx.waitUntil(
-          notifyByRole(c, ["admin", "author", "coach", "mentor"] as any[], {
+          notifyByRole(c, ["admin", "coach", "mentor"], {
             title: "📝 Pending Blog Post",
             message: `"${body.title}" submitted by ${email} needs review.`,
             link: "/dashboard/manage_blog",
@@ -353,20 +356,20 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Database write failed" } };
     }
   },
-  updatePost: async (input, c) => {
+  updatePost: async (input: any, c: any) => {
     const { params, body } = input;
     const { slug } = params;
     try {
       const db = c.get("db") as Kysely<DB>;
       const astStr = JSON.stringify(body.ast);
-      const snippet = extractAstText(body.ast as any).substring(0, 200);
+      const snippet = extractAstText(body.ast).substring(0, 200);
       const user = await getSessionUser(c);
       
       if (user?.role !== "admin") {
         const revSlug = await createShadowRevision(c, slug, user!, {
           title: body.title,
           author: "ARES Team",
-          coverImageUrl: body.coverImageUrl,
+          thumbnail: body.coverImageUrl,
           snippet,
           astStr,
           publishedAt: body.publishedAt,
@@ -395,7 +398,7 @@ const postTsRestRouterObj: PostHandlers = {
           ast: astStr,
           status,
           published_at: body.publishedAt || null,
-          season_id: body.seasonId ? String(body.seasonId) : null
+          season_id: body.seasonId ? Number(body.seasonId) : null
         })
         .where("slug", "=", slug)
         .execute();
@@ -407,7 +410,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Database write failed" } };
     }
   },
-  deletePost: async (input, c) => {
+  deletePost: async (input: any, c: any) => {
     const { params } = input;
     const { slug } = params;
     try {
@@ -420,7 +423,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  undeletePost: async (input, c) => {
+  undeletePost: async (input: any, c: any) => {
     const { params } = input;
     const { slug } = params;
     try {
@@ -433,7 +436,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Undelete failed" } };
     }
   },
-  purgePost: async (input, c) => {
+  purgePost: async (input: any, c: any) => {
     const { params } = input;
     const { slug } = params;
     try {
@@ -462,7 +465,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Purge failed" } };
     }
   },
-  approvePost: async (input, c) => {
+  approvePost: async (input: any, c: any) => {
     const { params } = input;
     const { slug } = params;
     try {
@@ -474,7 +477,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Approval failed" } };
     }
   },
-  rejectPost: async (input, c) => {
+  rejectPost: async (input: any, c: any) => {
     const { params, body } = input;
     const { slug } = params;
     const { reason } = body;
@@ -503,7 +506,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Reject failed" } };
     }
   },
-  getPostHistory: async (input, c) => {
+  getPostHistory: async (input: any, c: any) => {
     const { params } = input;
     const { slug } = params;
     try {
@@ -518,7 +521,7 @@ const postTsRestRouterObj: PostHandlers = {
       return { status: 500, body: { error: "Failed to fetch history" } };
     }
   },
-  restorePostHistory: async (input, c) => {
+  restorePostHistory: async (input: any, c: any) => {
     const { params } = input;
     const { slug, id } = params;
     const user = await getSessionUser(c);
@@ -526,7 +529,7 @@ const postTsRestRouterObj: PostHandlers = {
     if (!result.success) return { status: 404, body: { error: result.error || "Restore failed" } };
     return { status: 200, body: { success: true } };
   },
-  repushSocials: async (input, c) => {
+  repushSocials: async (input: any, c: any) => {
     const { params, body } = input;
     const { slug } = params;
     const { socials } = body;
@@ -545,7 +548,7 @@ const postTsRestRouterObj: PostHandlers = {
             title: String(post.title),
             url: `${baseUrl}/blog/${slug}`,
             snippet: post.snippet || "Read the latest update from ARES 23247!",
-            coverImageUrl: post.thumbnail || "",
+            thumbnail: post.thumbnail || "",
             baseUrl: baseUrl
           }, socialConfig, socials).catch(err => console.error("[Repush] Social dispatch failed:", err))
       );
@@ -556,7 +559,7 @@ const postTsRestRouterObj: PostHandlers = {
   },
 };
 
-const postTsRestRouter = s.router(postContract, postTsRestRouterObj as any);
+const postTsRestRouter = s.router(postContract, postTsRestRouterObj);
 
 export const postsRouter = new Hono<AppEnv>();
 

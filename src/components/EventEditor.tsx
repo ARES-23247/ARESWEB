@@ -56,7 +56,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
       isPotluck: false,
       isVolunteer: false,
       publishedAt: "",
-      seasonId: "",
+      seasonId: undefined,
       meetingNotes: "",
       socials: {
         discord: true,
@@ -125,7 +125,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         isPotluck: event.is_potluck === 1,
         isVolunteer: event.is_volunteer === 1,
         publishedAt: event.published_at || "",
-        seasonId: event.season_id ? String(event.season_id) : "",
+        seasonId: event.season_id ? Number(event.season_id) : undefined,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         socials: (socials as any) || {}
       });
@@ -317,7 +317,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           />
         </div>
         <div className="flex-1">
-          <SeasonPicker value={formValues.seasonId || ""} onChange={(val) => setValue("seasonId", val)} />
+          <SeasonPicker value={formValues.seasonId || ""} onChange={(val) => setValue("seasonId", val ? Number(val) : undefined)} />
         </div>
         <div className="flex-1">
           <label htmlFor="event-location" className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
@@ -377,7 +377,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         isPotluck={formValues.isPotluck || false} 
         isVolunteer={formValues.isVolunteer || false} 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onChange={(field, val) => setValue(field as any, val)}
+        onChange={(field, val) => setValue(field as any, val as any)}
       />
 
       <div>
@@ -409,8 +409,8 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           isPending={saveMutation.isPending}
           isEditing={!!editId}
           onDelete={handleDelete}
-          onSaveDraft={handleSubmit((d) => onFormSubmit(d as EventPayload, true))}
-          onPublish={handleSubmit((d) => onFormSubmit(d as EventPayload, false))}
+          onSaveDraft={() => handleSubmit((d: unknown) => onFormSubmit(d as EventPayload, true))()}
+          onPublish={() => handleSubmit((d: unknown) => onFormSubmit(d as EventPayload, false))()}
           deleteText="DELETE"
           updateText="UPDATE EVENT"
           publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH EVENT"}

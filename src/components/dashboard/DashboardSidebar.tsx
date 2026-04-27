@@ -91,7 +91,7 @@ export default function DashboardSidebar({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
 
-  const { isAuthorized, canSeeInquiries, isAdmin, canSeeLogistics, role, memberType } = permissions;
+  const { isAuthorized, canSeeInquiries, isAdmin, canSeeLogistics, canSeeTasks, role, memberType } = permissions;
   const { pendingInquiriesCount, pendingPostsCount, pendingEventsCount, pendingDocsCount } = notifications;
 
   return (
@@ -186,7 +186,7 @@ export default function DashboardSidebar({
             </div>
           </div>
 
-          {!permissions.isUnverified && (
+          {canSeeTasks && (
             <div>
               <h4 className="text-xs uppercase font-black tracking-widest text-ares-cyan mb-2 px-6">Team Workspace</h4>
               <div className="space-y-1 px-3">

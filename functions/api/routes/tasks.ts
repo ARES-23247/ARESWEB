@@ -4,7 +4,7 @@ import { DB } from "../../../shared/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { taskContract } from "../../../shared/schemas/contracts/taskContract";
 import { AppEnv, ensureAuth, getSessionUser, rateLimitMiddleware, getSocialConfig } from "../middleware";
-import { retryTransaction } from "../middleware/dbUtils";
+
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 
@@ -135,15 +135,15 @@ const tasksTsRestRouter: any = s.router(taskContract as any, {
 
       const now = new Date().toISOString();
       
-      // KNT-02: Use retryTransaction to handle high-velocity morning standup contention
-      await retryTransaction(db, async (trx) => {
-        for (const item of body.items) {
-          await trx.updateTable("tasks")
-            .set({ status: item.status, sort_order: item.sort_order, updated_at: now })
-            .where("id", "=", item.id)
-            .execute();
-        }
-      });
+      // Cloudflare D1 does not reliably support Kysely's implicit BEGIN/COMMIT transactions over HTTP.
+      // Since sorting updates don't strictly require full transactional rollback (worst case the board is slightly out of order),
+      // we execute them concurrently.
+      await Promise.all(body.items.map((item: any) =>
+        db.updateTable("tasks")
+          .set({ status: item.status, sort_order: item.sort_order, updated_at: now })
+          .where("id", "=", item.id)
+          .execute()
+      ));
 
       c.executionCtx.waitUntil(db.insertInto("audit_log").values({
         id: crypto.randomUUID(),

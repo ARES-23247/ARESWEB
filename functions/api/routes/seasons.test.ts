@@ -25,7 +25,7 @@ const mockDb = {
 describe("Seasons Router", () => {
   let app: Hono<any>;
   const env = { DB: {} };
-  const mockExecutionContext = {
+  const mockExecutionContext: any = {
     waitUntil: vi.fn(),
   };
 

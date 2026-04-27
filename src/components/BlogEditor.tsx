@@ -8,6 +8,7 @@ import AssetPickerModal from "./AssetPickerModal";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
+import { z } from "zod";
 import { postSchema, PostPayload } from "@shared/schemas/postSchema";
 import { api } from "../api/client";
 import { useModal } from "../contexts/ModalContext";
@@ -30,7 +31,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   const { availableSocials } = useAdminSettings();
   const { uploadFile, isUploading: isUploadingCover, setErrorMsg: setUploadError } = useImageUpload();
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<PostPayload>({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<z.input<typeof postSchema>>({
     resolver: zodResolver(postSchema),
     defaultValues: {
       title: "",
@@ -48,7 +49,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
       },
       isDraft: false,
       publishedAt: "",
-      seasonId: ""
+      seasonId: undefined
     }
   });
 
@@ -80,7 +81,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
       reset({
         title: post.title || "",
         publishedAt: post.published_at || "",
-        seasonId: post.season_id ? String(post.season_id) : "",
+        seasonId: post.season_id ? Number(post.season_id) : undefined,
         thumbnail: post.thumbnail || DEFAULT_COVER_IMAGE,
         ast: post.ast ? JSON.parse(post.ast) : {},
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -256,7 +257,7 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
           />
         </div>
         <div className="flex-1 md:max-w-xs">
-          <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("seasonId", val)} />
+          <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("seasonId", val ? Number(val) : undefined)} />
         </div>
       </div>
 
@@ -280,8 +281,8 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
         isPending={saveMutation.isPending}
         isEditing={!!editSlug}
         onDelete={handleDelete}
-        onSaveDraft={handleSubmit((d) => onFormSubmit(d, true))}
-        onPublish={handleSubmit((d) => onFormSubmit(d, false))}
+        onSaveDraft={() => handleSubmit((d: unknown) => onFormSubmit(d as PostPayload, true))()}
+        onPublish={() => handleSubmit((d: unknown) => onFormSubmit(d as PostPayload, false))()}
         deleteText="DELETE"
         updateText="UPDATE ENTRY"
         publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY"}

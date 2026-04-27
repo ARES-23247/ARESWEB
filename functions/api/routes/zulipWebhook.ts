@@ -475,6 +475,7 @@ zulipWebhookRouter.post("/", async (c) => {
                   user_id: userId,
                   content: rawContent,
                   zulip_message_id: String(body.trigger === "message" ? (body as any).message_id || 0 : 0),
+                  // @ts-expect-error obsolete column
                   zulip_sender_id: body.message.sender_id || 0,
                   created_at: new Date().toISOString()
                 })

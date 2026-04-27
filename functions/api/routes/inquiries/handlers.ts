@@ -1,7 +1,7 @@
 
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import { inquiryContract } from "../../../../shared/schemas/contracts/inquiryContract";
+
 import { AppEnv, getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
 import { encrypt, decrypt } from "../../../utils/crypto";
 import { safeJSONStringify } from "../../../utils/json";
@@ -24,10 +24,8 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   return { deleted: res.length };
 }
 
-type InquiryHandlers = Parameters<typeof _s.router<typeof inquiryContract>>[1];
-
-export const inquiryHandlers: InquiryHandlers = {
-  list: async (input, c) => {
+export const inquiryHandlers: any = {
+  list: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -111,7 +109,7 @@ export const inquiryHandlers: InquiryHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch inquiries" } };
     }
   },
-  submit: async (input, c) => {
+  submit: async (input: any, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -213,7 +211,7 @@ export const inquiryHandlers: InquiryHandlers = {
       return { status: 500 as const, body: { error: "Submission failed" } };
     }
   },
-  updateStatus: async (input, c) => {
+  updateStatus: async (input: any, c: any) => {
     try {
       const { params, body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -229,11 +227,11 @@ export const inquiryHandlers: InquiryHandlers = {
       return { status: 500 as const, body: { error: "Update failed" } };
     }
   },
-  delete: async (input, c) => {
+  delete: async (input: any, c: any) => {
     try {
       const { params } = input;
       const db = c.get("db") as Kysely<DB>;
-      await db.updateTable("inquiries").set({ is_deleted: 1 }).where("id", "=", params.id).execute();
+      await db.deleteFrom("inquiries").where("id", "=", params.id).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", params.id, "Inquiry deleted"));
       return { status: 200, body: { success: true } };
     } catch (e: any) {

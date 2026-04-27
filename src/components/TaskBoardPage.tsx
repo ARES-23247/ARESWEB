@@ -47,9 +47,8 @@ export default function TaskBoardPage() {
         queryClient.setQueryData(queryKey, context.previousTasks);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
-    },
+    // We remove invalidateQueries onSettled because Cloudflare D1 replication lag
+    // causes immediate refetches to return stale data, reverting the optimistic update.
   });
 
   const deleteMutation = api.tasks.delete.useMutation({
@@ -69,9 +68,6 @@ export default function TaskBoardPage() {
       if (context?.previousTasks) {
         queryClient.setQueryData(queryKey, context.previousTasks);
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -99,9 +95,6 @@ export default function TaskBoardPage() {
         queryClient.setQueryData(queryKey, context.previousTasks);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
-    },
   });
 
   // -- Handlers -------------------------------------------------------
@@ -111,8 +104,12 @@ export default function TaskBoardPage() {
       const res = await api.tasks.create.mutation({
         body: { title }
       });
-      if (res.status === 200 && res.body.success) {
-        queryClient.invalidateQueries({ queryKey });
+      if (res.status === 200 && res.body.success && res.body.task) {
+        // Manually inject new task to avoid D1 replication lag on refetch
+        queryClient.setQueryData(queryKey, (old: TaskListResponse | undefined) => {
+          if (!old?.body?.tasks) return old;
+          return { ...old, body: { ...old.body, tasks: [res.body.task, ...old.body.tasks] } };
+        });
       }
     } catch (err) {
       console.error("Create task failed:", err);

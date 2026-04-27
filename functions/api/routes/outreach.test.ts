@@ -17,9 +17,7 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
-vi.mock("../middleware/dbUtils", () => ({
-  retryTransaction: vi.fn(async (db, cb) => cb(db))
-}));
+
 
 import outreachRouter from "./outreach/index";
 

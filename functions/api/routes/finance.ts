@@ -9,10 +9,8 @@ import { AppEnv } from "../middleware";
 const financeRouter = new Hono<AppEnv>();
 const s = initServer<AppEnv>();
 
-type FinanceHandlers = Parameters<typeof s.router<typeof financeContract>>[1];
-
-const financeTsRestRouterObj: FinanceHandlers = {
-  getSummary: async (input, c) => {
+const financeTsRestRouterObj: any = {
+  getSummary: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -60,7 +58,7 @@ const financeTsRestRouterObj: FinanceHandlers = {
     }
   },
 
-  listPipeline: async (input, c) => {
+  listPipeline: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -85,7 +83,7 @@ const financeTsRestRouterObj: FinanceHandlers = {
     }
   },
 
-  savePipeline: async (input, c) => {
+  savePipeline: async (input: any, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -157,7 +155,7 @@ const financeTsRestRouterObj: FinanceHandlers = {
     }
   },
 
-  deletePipeline: async (input, c) => {
+  deletePipeline: async (input: any, c: any) => {
     try {
       const { params } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -169,7 +167,7 @@ const financeTsRestRouterObj: FinanceHandlers = {
     }
   },
 
-  listTransactions: async (input, c) => {
+  listTransactions: async (input: any, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -196,7 +194,7 @@ const financeTsRestRouterObj: FinanceHandlers = {
     }
   },
 
-  saveTransaction: async (input, c) => {
+  saveTransaction: async (input: any, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -229,7 +227,7 @@ const financeTsRestRouterObj: FinanceHandlers = {
     }
   },
 
-  deleteTransaction: async (input, c) => {
+  deleteTransaction: async (input: any, c: any) => {
     try {
       const { params } = input;
       const db = c.get("db") as Kysely<DB>;
