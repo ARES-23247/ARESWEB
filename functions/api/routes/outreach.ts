@@ -70,7 +70,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
       }));
 
       const combined = [...logs, ...volunteerEvents].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) => b.date.localeCompare(a.date)
       );
 
       return { status: 200 as const, body: { logs: combined } };
@@ -110,7 +110,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
       }));
 
       const combined = [...logs, ...volunteerEvents].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) => b.date.localeCompare(a.date)
       );
 
       return { status: 200 as const, body: { logs: combined } };

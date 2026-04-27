@@ -88,20 +88,22 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
       const user = await getSessionUser(c);
       
       if (body.id) {
-        // Atomic transaction to check and update status
-        const success = await db.transaction().execute(async (trx) => {
-          const existing = await trx.selectFrom("sponsorship_pipeline")
-            .select("status")
-            .where("id", "=", body.id!)
-            .executeTakeFirst();
-          
-          if (!existing) return false;
+        // Fetch current status once before batching logic
+        const existing = await db.selectFrom("sponsorship_pipeline")
+          .select("status")
+          .where("id", "=", body.id)
+          .executeTakeFirst();
+        
+        if (!existing) return { status: 404 as const, body: { error: "Item not found" } };
 
-          // Check for 'Secured' transition
-          if (body.status === "secured" && existing.status !== "secured") {
-            if (!body.sponsor_id) {
-              const slug = body.company_name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-              await trx.insertInto("sponsors")
+        const batch: any[] = [];
+
+        // Check for 'Secured' transition logic
+        if (body.status === "secured" && existing.status !== "secured") {
+          if (!body.sponsor_id) {
+            const slug = body.company_name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+            batch.push(
+              db.insertInto("sponsors")
                 .values({
                   id: slug,
                   name: body.company_name,
@@ -109,11 +111,12 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
                   is_active: 1
                 })
                 .onConflict(oc => oc.column("id").doNothing())
-                .execute();
-              body.sponsor_id = slug;
-            }
+            );
+            body.sponsor_id = slug;
+          }
 
-            await trx.insertInto("finance_transactions")
+          batch.push(
+            db.insertInto("finance_transactions")
               .values({
                 id: crypto.randomUUID(),
                 type: "income",
@@ -124,10 +127,12 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
                 season_id: body.season_id,
                 logged_by: user?.id || null,
               })
-              .execute();
-          }
+          );
+        }
 
-          await trx.updateTable("sponsorship_pipeline")
+        // Final update to the pipeline item
+        batch.push(
+          db.updateTable("sponsorship_pipeline")
             .set({
               company_name: body.company_name,
               sponsor_id: body.sponsor_id,
@@ -138,13 +143,16 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
               season_id: body.season_id,
               updated_at: sql`datetime('now')`
             })
-            .where("id", "=", body.id!)
-            .execute();
-          
-          return true;
-        });
+            .where("id", "=", body.id)
+        );
 
-        if (!success) return { status: 500 as const, body: { error: "Update failed" } };
+        // Execute as a single D1 Batch (1 Round-trip)
+        if (batch.length > 0) {
+          await db.transaction().execute(async (_trx) => {
+            for (const b of batch) await b.execute();
+          });
+        }
+
         c.executionCtx.waitUntil(logAuditAction(c, "update_sponsorship_pipeline", "sponsorship_pipeline", body.id, `Updated pipeline item: ${body.company_name}`));
       } else {
         await db.insertInto("sponsorship_pipeline")

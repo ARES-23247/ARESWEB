@@ -50,8 +50,17 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         let name = String(r.name);
         let email = String(r.email);
         
-        try { if (name.includes(":")) name = await decrypt(name, secret); } catch { /* ignore fallback to plaintext */ }
-        try { if (email.includes(":")) email = await decrypt(email, secret); } catch { /* ignore fallback to plaintext */ }
+        try { 
+          if (name.includes(":")) name = await decrypt(name, secret); 
+        } catch { 
+          name = "[ENCRYPTED NAME]";
+        }
+        
+        try { 
+          if (email.includes(":")) email = await decrypt(email, secret); 
+        } catch { 
+          email = "[ENCRYPTED EMAIL]";
+        }
         
         let metadata = r.metadata;
 

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { Utensils, Shirt, RefreshCw, AlertCircle, Users } from "lucide-react";
-import { motion } from "framer-motion";
+import { Utensils, Shirt, RefreshCw, AlertCircle, Users, Mail, Copy, Check, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../api/client";
 
 interface LogisticsData {
@@ -17,6 +17,34 @@ export default function DietarySummary() {
   const [data, setData] = useState<LogisticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [exporting, setExporting] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportedEmails, setExportedEmails] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  const handleExportEmails = async () => {
+    setExporting(true);
+    try {
+      const res = await api.logistics.exportEmails.query();
+      if (res.status === 200) {
+        setExportedEmails((res.body as any).emails.join(", "));
+        setShowExportModal(true);
+      } else {
+        alert("Failed to export emails");
+      }
+    } catch {
+      alert("Error exporting emails");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(exportedEmails);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     api.logistics.getSummary.query()
@@ -74,6 +102,16 @@ export default function DietarySummary() {
         title="Team Logistics Summary" 
         subtitle="Aggregated dietary data for event planning and team management."
         icon={<Utensils className="text-ares-gold" />}
+        action={
+          <button
+            onClick={handleExportEmails}
+            disabled={exporting}
+            className="flex items-center gap-2 px-4 py-2 bg-obsidian border border-white/10 hover:border-ares-red/50 hover:bg-ares-red/10 text-white font-bold ares-cut-sm transition-colors text-sm uppercase tracking-widest disabled:opacity-50"
+          >
+            {exporting ? <RefreshCw size={16} className="animate-spin" /> : <Mail size={16} />}
+            {exporting ? "Exporting..." : "Export Roster Emails"}
+          </button>
+        }
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Dietary Panel */}
@@ -153,6 +191,57 @@ export default function DietarySummary() {
         </div>
       </div>
     </div>
+
+    {/* Export Modal */}
+    <AnimatePresence>
+      {showExportModal && (
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
+          <motion.div 
+            initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+            className="bg-obsidian border border-white/10 p-6 max-w-2xl w-full ares-cut-lg relative shadow-2xl"
+          >
+            <button 
+              onClick={() => setShowExportModal(false)}
+              className="absolute top-4 right-4 text-marble/50 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-black text-white flex items-center gap-2 uppercase tracking-widest mb-2">
+              <Mail className="text-ares-red" size={20} /> Active Roster Emails
+            </h2>
+            <p className="text-sm text-marble/70 mb-6">Comma-separated list ready to paste into BCC.</p>
+            
+            <div className="relative mb-6">
+              <textarea 
+                readOnly
+                value={exportedEmails}
+                className="w-full h-48 bg-black/50 border border-white/10 p-4 font-mono text-sm text-white resize-none focus:outline-none focus:border-ares-red/50 ares-cut-sm"
+              />
+              <button
+                onClick={handleCopy}
+                className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-ares-red hover:bg-red-600 text-white font-bold text-xs uppercase tracking-widest ares-cut-sm transition-colors"
+              >
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            
+            <div className="flex justify-end">
+              <button 
+                onClick={() => setShowExportModal(false)}
+                className="px-6 py-2 border border-white/20 hover:bg-white/5 text-white font-bold ares-cut-sm transition-colors uppercase tracking-widest text-sm"
+              >
+                Done
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
     </div>
   );
 }
