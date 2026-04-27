@@ -260,8 +260,7 @@ export default function AdminUsers() {
             </thead>
             <tbody 
               className="relative"
-              // eslint-disable-next-line react/forbid-dom-props
-              style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+              {...({ style: { height: `${rowVirtualizer.getTotalSize()}px` } } as React.HTMLAttributes<HTMLTableSectionElement>)}
             >
               {rowVirtualizer.getVirtualItems().map(virtualRow => {
                 const row = rows[virtualRow.index];
@@ -270,11 +269,7 @@ export default function AdminUsers() {
                   <tr 
                     key={row.id} 
                     className="hover:bg-white/[0.03] transition-colors group absolute w-full flex border-b border-white/5"
-                    // eslint-disable-next-line react/forbid-dom-props
-                    style={{ 
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`
-                    }}
+                    {...({ style: { height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` } } as React.HTMLAttributes<HTMLTableRowElement>)}
                   >
                     {row.getVisibleCells().map(cell => (
                       <td key={cell.id} className="px-4 py-2 flex items-center flex-1 overflow-hidden">

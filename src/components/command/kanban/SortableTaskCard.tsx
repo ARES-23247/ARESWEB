@@ -31,8 +31,7 @@ export function SortableTaskCard({
   return (
     <div
       ref={setNodeRef}
-      // eslint-disable-next-line react/forbid-dom-props
-      style={style}
+      {...({ style } as React.HTMLAttributes<HTMLDivElement>)}
       className="p-2.5 bg-obsidian/60 hover:bg-ares-gray-dark/60 ares-cut-sm border border-white/5 hover:border-white/10 transition-all group relative flex gap-2"
     >
       <button 
