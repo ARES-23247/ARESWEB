@@ -1,25 +1,38 @@
-import { Hono } from "hono";
-import { createHonoEndpoints, initServer } from "ts-rest-hono";
-import { inquiryContract } from "../../../shared/schemas/contracts/inquiryContract";
-import { AppEnv, ensureAdmin, logAuditAction, turnstileMiddleware, getSocialConfig, SocialConfig, persistentRateLimitMiddleware } from "../middleware";
-import { sendZulipMessage } from "../../utils/zulipSync";
-import { notifyByRole, NotifyAudience } from "../../utils/notifications";
-import { buildGitHubConfig, createProjectItem } from "../../utils/githubProjects";
-import { sql, Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
-import { encrypt, decrypt } from "../../utils/crypto";
-import { safeJSONStringify } from "../../utils/json";
+
+import { Kysely, sql } from "kysely";
+import { DB } from "../../../../shared/schemas/database";
+import { inquiryContract } from "../../../../shared/schemas/contracts/inquiryContract";
+import { AppEnv, getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
+import { encrypt, decrypt } from "../../../utils/crypto";
+import { safeJSONStringify } from "../../../utils/json";
+import { sendZulipMessage } from "../../../utils/zulipSync";
+import { notifyByRole, NotifyAudience } from "../../../utils/notifications";
+import { buildGitHubConfig, createProjectItem } from "../../../utils/githubProjects";
+import { initServer } from "ts-rest-hono";
 
 const s = initServer<AppEnv>();
-export const inquiriesRouter = new Hono<AppEnv>();
 
-inquiriesRouter.post("/", persistentRateLimitMiddleware(5, 300));
-const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
-    list: async ({ query }: { query: any }, c: any) => {
+export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
+  if (days <= 0) return { deleted: 0 };
+  const res = await db.deleteFrom("inquiries")
+    .where("id", "in", (eb) => eb.selectFrom("inquiries")
+      .select("id")
+      .where("status", "in", ["resolved", "rejected"])
+      .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
+      .limit(100)
+    )
+    .execute();
+  return { deleted: res.length };
+}
+
+type InquiryHandlers = Parameters<typeof s.router<typeof inquiryContract>>[1];
+
+export const inquiryHandlers: InquiryHandlers = {
+  list: async ({ query }: { query: { limit?: number, offset?: number } }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = c.get("sessionUser");
-      if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
+      if (!user) return { status: 401, body: { error: "Unauthorized" } };
 
       const limit = query.limit || 50;
       const offset = query.offset || 0;
@@ -36,7 +49,11 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         }
       }
 
-      let dbQuery = db.selectFrom("inquiries").select(["id", "type", "name", "email", "metadata", "status", "created_at"]).orderBy("created_at", "desc").limit(limit).offset(offset);
+      let dbQuery = db.selectFrom("inquiries")
+        .select(["id", "type", "name", "email", "metadata", "status", "created_at"])
+        .orderBy("created_at", "desc")
+        .limit(limit)
+        .offset(offset);
       
       if (filterOutreach) {
         dbQuery = dbQuery.where("type", "in", ["outreach", "support"]);
@@ -79,29 +96,28 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         
         return {
           id: String(r.id),
-          type: r.type as "sponsor" | "student" | "mentor" | "outreach" | "support",
+          type: r.type as any,
           name,
           email,
-          metadata,
-          status: r.status as "pending" | "approved" | "resolved" | "rejected",
+          metadata: metadata || null,
+          status: r.status as any,
           created_at: String(r.created_at)
         };
       }));
 
-      return { status: 200 as const, body: { inquiries: inquiries as any[] } };
+      return { status: 200, body: { inquiries: inquiries as any[] } };
     } catch (e) {
-      console.error("INQUIRY LIST ERROR", e);
-      return { status: 500 as const, body: { error: "Failed to fetch inquiries" } };
+      console.error("[Inquiry:List] Error", e);
+      return { status: 500, body: { error: "Failed to fetch inquiries" } };
     }
   },
-    submit: async ({ body }: { body: any }, c: any) => {
+  submit: async ({ body }: { body: { type: "sponsor" | "student" | "mentor" | "outreach" | "support", name: string, email: string, metadata?: Record<string, unknown>, turnstileToken?: string } }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { type, name, email, metadata } = body;
       const secret = c.env.ENCRYPTION_SECRET;
 
-      // FIX: Prevents double submissions (double clicks) by checking for identical 
-      // submissions from this email/type in the last 60 seconds.
+      // Prevents double submissions
       const recent = await db.selectFrom("inquiries")
         .select(["id", "email", "metadata"])
         .where("type", "=", type)
@@ -114,14 +130,11 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
           if (decryptedEmail === email) {
             const currentMeta = safeJSONStringify(metadata, null as any);
             if (r.metadata === currentMeta) {
-              return { status: 200 as const, body: { success: true, id: r.id } };
+              return { status: 200, body: { success: true, id: r.id } };
             }
           }
-        } catch { /* ignore decryption errors for old entries */ }
+        } catch { /* ignore */ }
       }
-
-      // EFF: Remove exact email check as encryption is now non-deterministic.
-      // The persistentRateLimitMiddleware already handles IP-based limiting.
 
       const id = crypto.randomUUID();
       const encryptedName = await encrypt(name, secret);
@@ -148,7 +161,7 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
           tierStr = (metadata as any).level;
           tierStr = tierStr.replace(" Tier Sponsor", "");
         }
-        const encryptedSponsorName = await encrypt(name, c.env.ENCRYPTION_SECRET);
+        const encryptedSponsorName = await encrypt(name, secret);
         await db.insertInto("sponsors")
           .values({
             id,
@@ -166,7 +179,11 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         const msg = `🔔 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${baseUrl}/dashboard/inquiries`;
         
         if (social.DISCORD_WEBHOOK_URL) {
-          await fetch(social.DISCORD_WEBHOOK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: msg }) }).catch(() => {});
+          await fetch(social.DISCORD_WEBHOOK_URL, { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify({ content: msg }) 
+          }).catch(() => {});
         }
         
         const topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
@@ -174,7 +191,12 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => {});
 
         const audiences: NotifyAudience[] = (type === "outreach" || type === "support") ? ["admin", "coach", "mentor", "student"] : ["admin", "coach", "mentor"];
-        await notifyByRole(c, audiences, { title: `New ${type.toUpperCase()} Inquiry`, message: `${name} submitted a new inquiry.`, link: "/dashboard/inquiries", priority: type === "sponsor" ? "high" : "medium" }).catch(() => {});
+        await notifyByRole(c, audiences, { 
+          title: `New ${type.toUpperCase()} Inquiry`, 
+          message: `${name} submitted a new inquiry.`, 
+          link: "/dashboard/inquiries", 
+          priority: type === "sponsor" ? "high" : "medium" 
+        }).catch(() => {});
 
         if (type === "sponsor" || type === "student") {
           const ghConfig = buildGitHubConfig(social as SocialConfig);
@@ -184,13 +206,13 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         }
       })());
 
-      return { status: 200 as const, body: { success: true, id } };
+      return { status: 200, body: { success: true, id } };
     } catch (e) {
-      console.error("INQUIRY SUBMISSION ERROR", e);
-      return { status: 500 as const, body: { error: "Submission failed" } };
+      console.error("[Inquiry:Submit] Error", e);
+      return { status: 500, body: { error: "Submission failed" } };
     }
   },
-    updateStatus: async ({ params, body }: { params: any, body: any }, c: any) => {
+  updateStatus: async ({ params, body }: { params: { id: string }, body: { status: "pending" | "approved" | "resolved" | "rejected" } }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("inquiries")
@@ -199,51 +221,21 @@ const inquiriesTsRestRouter: any = s.router(inquiryContract as any, {
         .execute();
 
       c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", params.id, `Status changed to ${body.status}`));
-      return { status: 200 as const, body: { success: true, status: body.status as any } };
-    } catch {
-      return { status: 500 as const, body: { error: "Update failed" } };
+      return { status: 200, body: { success: true, status: body.status as any } };
+    } catch (err) {
+      console.error("[Inquiry:UpdateStatus] Error", err);
+      return { status: 500, body: { error: "Update failed" } };
     }
   },
-    delete: async ({ params }: { params: any }, c: any) => {
+  delete: async ({ params }: { params: { id: string } }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("inquiries").where("id", "=", params.id).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", params.id, "Inquiry deleted"));
-      return { status: 200 as const, body: { success: true } };
+      return { status: 200, body: { success: true } };
     } catch (e: any) {
-      console.error("DELETE_INQUIRY ERROR", e);
-      return { status: 500 as const, body: { error: e?.message || "Delete failed" } };
+      console.error("[Inquiry:Delete] Error", e);
+      return { status: 500, body: { error: e?.message || "Delete failed" } };
     }
   },
-} as any);
-
-
-
-// Admin protection
-inquiriesRouter.use("/admin", ensureAdmin);
-inquiriesRouter.use("/admin/*", ensureAdmin);
-
-inquiriesRouter.use("/", (c, next) => {
-  if (c.req.method === "POST" && !c.req.path.includes("/admin")) {
-    return turnstileMiddleware()(c, next);
-  }
-  return next();
-});
-
-export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
-  if (days <= 0) return { deleted: 0 };
-  const res = await db.deleteFrom("inquiries")
-    .where("id", "in", (eb) => eb.selectFrom("inquiries")
-      .select("id")
-      .where("status", "in", ["resolved", "rejected"])
-      .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
-      .limit(100)
-    )
-    .execute();
-  return { deleted: res.length };
-}
-
-
-createHonoEndpoints(inquiryContract, inquiriesTsRestRouter, inquiriesRouter);
-
-export default inquiriesRouter;
+};

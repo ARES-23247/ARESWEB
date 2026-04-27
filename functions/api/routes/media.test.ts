@@ -25,7 +25,7 @@ vi.mock("../../utils/zulipSync", () => ({
   sendZulipAlert: vi.fn().mockResolvedValue(true),
 }));
 
-import mediaRouter from "./media";
+import mediaRouter from "./media/index";
 
 describe("Hono Backend - /media Router", () => {
   let mockR2: any;
@@ -157,28 +157,29 @@ describe("Hono Backend - /media Router", () => {
     expect(dispatchPhotoSocials).toHaveBeenCalled();
   });
 
-  it("POST /admin/upload - upload file", async () => {
+  it("POST /admin/upload - upload file (direct handler)", async () => {
+    const { mediaHandlers } = await import("./media/handlers");
     mockR2.put.mockResolvedValue(undefined);
 
-    const { mediaTsRestRouter } = await import("./media");
     const fileBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]); // Valid PNG header
     const file = new File([fileBytes], "test.png", { type: "image/png" });
     
-    // Create a mock FormData object since we are bypassing HTTP
+    // Mock FormData object
     const mockFormData = {
-      get: (key: string) => key === "file" ? file : "Gallery"
+      file: file,
+      folder: "Gallery"
     };
 
     const mockC = {
       env,
       req: {
-        parseBody: vi.fn().mockResolvedValue(mockFormData),
-        url: "http://localhost/admin/upload"
+        url: "http://localhost/api/media/admin/upload",
+        header: vi.fn().mockReturnValue("127.0.0.1"),
       },
       executionCtx: mockExecutionContext
     };
 
-    const res = await mediaTsRestRouter.upload({ body: mockFormData }, mockC);
+    const res = await (mediaHandlers.upload as any)({ body: mockFormData }, mockC);
     
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);

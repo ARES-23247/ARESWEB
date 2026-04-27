@@ -1,32 +1,34 @@
-import { Hono } from "hono";
-import { AppEnv, ensureAdmin, getDbSettings, checkRateLimit, logAuditAction } from "../middleware";
-import { initServer, createHonoEndpoints } from "ts-rest-hono";
-import { mediaContract } from "../../../shared/schemas/contracts/mediaContract";
+
+import { AppEnv, getDbSettings, checkRateLimit, logAuditAction, getSessionUser } from "../../middleware";
+import { initServer } from "ts-rest-hono";
 
 const s = initServer<AppEnv>();
-export const mediaRouter = new Hono<AppEnv>();
+import { mediaContract } from "../../../../shared/schemas/contracts/mediaContract";
 
 // SEC-D02: Magic byte validation helper
-function isValidImage(buffer: ArrayBuffer): boolean {
+export function isValidImage(buffer: ArrayBuffer): boolean {
   const arr = new Uint8Array(buffer).subarray(0, 4);
-  const header = arr.reduce((acc, b) => acc + b.toString(16).padStart(2, '0'), '');
+  // Ensure lowercase for comparison
+  const header = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
   
   if (header === '89504e47') return true; // PNG
-  if (header.startsWith('ffd8ff')) return true; // JPEG
+  if (header.startsWith('ffd8ff') || header === 'ffd8ffe0' || header === 'ffd8ffe1') return true; // JPEG
   if (header.startsWith('47494638')) return true; // GIF
   if (header === '52494646') return true; // WEBP
-  if (header.includes('66747970')) return true; // HEIC
+  
+  // HEIC/HEIF usually have 'ftyp' at offset 4, but let's check first 16 bytes for 'ftypheic' or similar
+  const longerArr = new Uint8Array(buffer).subarray(0, 16);
+  const longerHeader = Array.from(longerArr).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+  if (longerHeader.includes('66747970')) return true; // 'ftyp'
 
   return false;
 }
 
-// SCA-F01: Recursive R2 Listing Helper
 async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOptions) {
   if (!bucket) {
-    console.warn("[media.ts] R2Bucket not bound! Returning empty list.");
+    console.warn("[media/handlers.ts] R2Bucket not bound! Returning empty list.");
     return { objects: [] };
   }
-  // PERF-M01: Limit results to avoid timeouts on large buckets
   let result = await bucket.list({ ...options, limit: 100 });
   const objects = [...result.objects];
   while (result.truncated) {
@@ -35,16 +37,18 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
   }
   return { objects };
 }
-export const mediaTsRestRouter: any = s.router(mediaContract as any, {
-    getMedia: async (_: any, c: any) => {
+
+type MediaHandlers = Parameters<typeof s.router<typeof mediaContract>>[1];
+
+export const mediaHandlers: MediaHandlers = {
+  getMedia: async (_, c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
     if (c.env.DEV_BYPASS !== "true" && !checkRateLimit(ip, ua, 30, 60)) {
-      return { status: 429 as const, body: "Too many requests" as any };
+      return { status: 429, body: { error: "Too many requests" } as any };
     }
 
     try {
-      // ECON-RCF-01: Runtime Cache Fallback for portability
       const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
       const url = new URL(c.req.url);
       url.search = "";
@@ -82,14 +86,17 @@ export const mediaTsRestRouter: any = s.router(mediaContract as any, {
       const response = new Response(JSON.stringify(payload), {
         headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=300", "Vary": "Accept" },
       });
-      c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
+      if (cache && c.executionCtx) {
+        c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
+      }
 
-      return { status: 200 as const, body: payload };
-    } catch {
-      return { status: 500 as const, body: { error: "List failed", media: [] } };
+      return { status: 200, body: payload };
+    } catch (e) {
+      console.error("[Media:GetMedia] Error", e);
+      return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-    adminList: async (_: any, c: any) => {
+  adminList: async (_, c: any) => {
     try {
       const [objects, dbRes] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
@@ -107,21 +114,23 @@ export const mediaTsRestRouter: any = s.router(mediaContract as any, {
         uploaded: obj.uploaded.toISOString(),
         url: `/api/media/${obj.key}`,
         httpEtag: obj.httpEtag,
-        ...metaMap.get(obj.key) || { folder: "Uncategorized", tags: "" }
+        folder: metaMap.get(obj.key)?.folder || "Uncategorized",
+        tags: metaMap.get(obj.key)?.tags || ""
       }));
 
-      return { status: 200 as const, body: { media: media as any[] } };
-    } catch {
-      return { status: 500 as const, body: { error: "List failed", media: [] } };
+      return { status: 200, body: { media: media as any[] } };
+    } catch (e) {
+      console.error("[Media:AdminList] Error", e);
+      return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-    upload: async ({ body }: { body: any }, c: any) => {
+  upload: async ({ body }: { body: FormData }, c: any) => {
     try {
-      const formData = body instanceof FormData ? body : await c.req.parseBody();
-      const file = formData.get ? formData.get("file") as File : formData["file"] as File;
-      const folder = (formData.get ? formData.get("folder") as string : formData["folder"] as string) || "Library";
+      const formData = body as any;
+      const file = formData.file as File;
+      const folder = (formData.folder as string) || "Library";
 
-      if (!file) return { status: 400 as const, body: { error: "No file uploaded" } };
+      if (!file) return { status: 400, body: { error: "No file uploaded" } };
 
       const isLarge = file.size > 10 * 1024 * 1024;
       let buffer: ArrayBuffer | null = null;
@@ -131,22 +140,20 @@ export const mediaTsRestRouter: any = s.router(mediaContract as any, {
         buffer = await file.arrayBuffer();
         headerBuffer = buffer.slice(0, 1024);
       } else {
-        // Use small slice for type validation to avoid memory spike on large files
         headerBuffer = await file.slice(0, 1024).arrayBuffer();
       }
       
-      if (!isValidImage(headerBuffer)) return { status: 400 as const, body: { error: "Invalid file type." } };
+      if (!isValidImage(headerBuffer)) {
+        return { status: 400, body: { error: "Invalid file type. Only standard images are supported." } };
+      }
 
       const key = folder ? `${folder}/${file.name}` : file.name;
       if (c.env.ARES_STORAGE) {
         if (isLarge) {
-          // Note: file.stream() might have issues if file.slice() partially consumed it in some CF worker versions
           await c.env.ARES_STORAGE.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
         } else {
           await c.env.ARES_STORAGE.put(key, buffer!, { httpMetadata: { contentType: file.type } });
         }
-      } else {
-        console.warn("[media.ts] R2Bucket not bound! Skipping physical upload.");
       }
 
       let altText = "ARES 23247 Team Media Image";
@@ -155,27 +162,30 @@ export const mediaTsRestRouter: any = s.router(mediaContract as any, {
         try {
           if (!buffer) buffer = await file.arrayBuffer();
           const uint8 = new Uint8Array(buffer);
-          // SCA-M01: Pass Uint8Array directly to avoid Array.from memory exhaustion
           const aiRes = await c.env.AI.run('@cf/llava-1.5-7b-hf', { prompt: 'Describe for screen reader', image: uint8 as any }) as { description?: string };
           if (aiRes?.description) altText = String(aiRes.description).trim();
-        } catch { /* fallback */ }
+        } catch (err) { 
+          console.error("[Media:Upload] AI Error", err);
+        }
       }
 
       await c.env.DB.prepare("INSERT OR REPLACE INTO media_tags (key, folder, tags) VALUES (?, ?, ?)").bind(key, folder, altText).run();
       
-      c.executionCtx.waitUntil(logAuditAction(c, "media_upload", "media", key, `Uploaded to ${folder}`));
-      
-      if (c.executionCtx?.waitUntil) {
-        c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+      if (c.executionCtx) {
+        c.executionCtx.waitUntil(logAuditAction(c, "media_upload", "media", key, `Uploaded to ${folder}`));
+        
+        if (typeof caches !== 'undefined') {
+          c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+        }
       }
 
-      return { status: 200 as const, body: { success: true, key, url: `/api/media/${key}`, altText } };
+      return { status: 200, body: { success: true, key, url: `/api/media/${key}`, altText } };
     } catch (err) {
-      console.error("UPLOAD ERROR", err);
-      return { status: 500 as const, body: { error: "Upload failed" } };
+      console.error("[Media:Upload] Error", err);
+      return { status: 500, body: { error: "Upload failed" } };
     }
   },
-    move: async ({ params, body }: { params: any, body: any }, c: any) => {
+  move: async ({ params, body }: { params: { key: string }, body: { folder: string } }, c: any) => {
     const oldKey = params.key;
     const { folder } = body;
     try {
@@ -184,7 +194,7 @@ export const mediaTsRestRouter: any = s.router(mediaContract as any, {
 
       if (c.env.ARES_STORAGE) {
         const object = await c.env.ARES_STORAGE.get(oldKey);
-        if (!object) return { status: 404 as const, body: { error: "Source not found" } };
+        if (!object) return { status: 404, body: { error: "Source not found" } };
 
         await c.env.ARES_STORAGE.put(newKey, object.body, { httpMetadata: { contentType: object.httpMetadata?.contentType } });
         await c.env.ARES_STORAGE.delete(oldKey);
@@ -195,85 +205,38 @@ export const mediaTsRestRouter: any = s.router(mediaContract as any, {
       }
       
       c.executionCtx.waitUntil(logAuditAction(c, "media_move", "media", newKey, `Moved from ${oldKey} to ${folder}`));
-      return { status: 200 as const, body: { success: true, newKey } };
-    } catch {
-      return { status: 500 as const, body: { error: "Move failed" } };
+      return { status: 200, body: { success: true, newKey } };
+    } catch (e) {
+      console.error("[Media:Move] Error", e);
+      return { status: 500, body: { error: "Move failed" } };
     }
   },
-    delete: async ({ params }: { params: any }, c: any) => {
+  delete: async ({ params }: { params: { key: string } }, c: any) => {
     try {
       if (c.env.ARES_STORAGE) {
         await c.env.ARES_STORAGE.delete(params.key);
       }
       await c.env.DB.prepare("DELETE FROM media_tags WHERE key = ?").bind(params.key).run();
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", params.key));
-      return { status: 200 as const, body: { success: true } };
-    } catch {
-      return { status: 500 as const, body: { error: "Delete failed" } };
+      return { status: 200, body: { success: true } };
+    } catch (e) {
+      console.error("[Media:Delete] Error", e);
+      return { status: 500, body: { error: "Delete failed" } };
     }
   },
-    syndicate: async ({ body }: { body: any }, c: any) => {
+  syndicate: async ({ body }: { body: { key: string, caption?: string } }, c: any) => {
     try {
       const { key, caption } = body;
       const config = await getDbSettings(c);
       const baseUrl = new URL(c.req.url).origin;
       const imageUrl = `${baseUrl}/api/media/${key}`;
-      const { dispatchPhotoSocials } = await import("../../utils/socialSync");
+      const { dispatchPhotoSocials } = await import("../../../utils/socialSync");
       
       c.executionCtx.waitUntil(dispatchPhotoSocials(imageUrl, caption || "", config));
-      return { status: 200 as const, body: { success: true, message: "Dispatched" } };
-    } catch {
-      return { status: 500 as const, body: { error: "Syndicate failed" } };
+      return { status: 200, body: { success: true, message: "Dispatched" } };
+    } catch (e) {
+      console.error("[Media:Syndicate] Error", e);
+      return { status: 500, body: { error: "Syndicate failed" } };
     }
   },
-} as any);
-
-// Note: raw object route is now mounted AFTER ts-rest endpoints
-
-// Protections
-mediaRouter.use("/admin/*", ensureAdmin);
-mediaRouter.use("/admin", ensureAdmin);
-
-createHonoEndpoints(mediaContract, mediaTsRestRouter, mediaRouter);
-
-// GET /media/:key — Serve raw object from R2 (Must be after createHonoEndpoints to avoid catching /admin)
-mediaRouter.get("/:key{.+$}", async (c: any) => {
-  const key = c.req.param("key");
-  try {
-    const folder = key.includes("/") ? key.split("/")[0] : "Uncategorized";
-    const publicFolders = ["Gallery", "Library"];
-    if (!publicFolders.includes(folder)) {
-      const { getSessionUser } = await import("../middleware");
-      const user = await getSessionUser(c);
-      if (!user) return c.text("Unauthorized", 401);
-    }
-    const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
-    const url = new URL(c.req.url);
-    url.search = "";
-    const cacheKey = new Request(url.toString(), { method: "GET" });
-    
-    if (cache) {
-      const cached = await cache.match(cacheKey);
-      if (cached && publicFolders.includes(folder)) return cached;
-    }
-
-    if (!c.env.ARES_STORAGE) return c.text("R2 Not Bound", 404);
-    
-    const object = await c.env.ARES_STORAGE.get(key);
-    if (!object) return c.text("Not Found", 404);
-
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set("etag", object.httpEtag);
-    if (publicFolders.includes(folder)) headers.set("Cache-Control", "public, max-age=2592000, stale-while-revalidate=86400");
-    else headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
-
-    const response = new Response(object.body, { headers });
-    if (publicFolders.includes(folder)) c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
-    return response;
-  } catch {
-    return c.text("Internal Error", 500);
-  }
-});
-
-export default mediaRouter;
+};

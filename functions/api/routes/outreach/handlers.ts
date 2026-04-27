@@ -1,15 +1,13 @@
-import { Hono } from "hono";
+
 import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
-import { createHonoEndpoints, initServer } from "ts-rest-hono";
-import { outreachContract } from "../../../shared/schemas/contracts/outreachContract";
-import { AppEnv, ensureAdmin, ensureAuth, logAuditAction, rateLimitMiddleware } from "../middleware";
-import { retryTransaction } from "../middleware/dbUtils";
+import { DB } from "../../../../shared/schemas/database";
+import { outreachContract } from "../../../../shared/schemas/contracts/outreachContract";
+import { AppEnv, getSessionUser, logAuditAction } from "../../middleware";
+import { retryTransaction } from "../../middleware/dbUtils";
+import { initServer } from "ts-rest-hono";
 
 const s = initServer<AppEnv>();
-export const outreachRouter = new Hono<AppEnv>();
 
-// SCA-F01: Synchronize volunteer events as outreach records
 async function fetchVolunteerEvents(db: Kysely<DB>) {
   try {
     const results = await db.selectFrom("events")
@@ -21,7 +19,7 @@ async function fetchVolunteerEvents(db: Kysely<DB>) {
       .execute();
     
     return results.map((r) => ({
-      id: r.id,
+      id: String(r.id),
       title: r.title,
       date: r.date,
       location: r.location || null,
@@ -38,8 +36,9 @@ async function fetchVolunteerEvents(db: Kysely<DB>) {
     return [];
   }
 }
-const outreachTsRestRouter: any = s.router(outreachContract as any, {
-    list: async (_: any, c: any) => {
+
+export const outreachHandlers: Parameters<typeof s.router<typeof outreachContract>>[1] = {
+  list: async (_, c) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -74,13 +73,13 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         (a, b) => b.date.localeCompare(a.date)
       );
 
-      c.header("Cache-Control", "no-cache, no-store, must-revalidate");
-      return { status: 200 as const, body: { logs: combined } };
-    } catch {
-      return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
+      return { status: 200, body: { logs: combined as any } };
+    } catch (err) {
+      console.error("[Outreach:List] Error", err);
+      return { status: 500, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-    adminList: async (_: any, c: any) => {
+  adminList: async (_, c) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -115,16 +114,19 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         (a, b) => b.date.localeCompare(a.date)
       );
 
-      c.header("Cache-Control", "no-cache, no-store, must-revalidate");
-      return { status: 200 as const, body: { logs: combined } };
-    } catch {
-      return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
+      return { status: 200, body: { logs: combined as any } };
+    } catch (err) {
+      console.error("[Outreach:AdminList] Error", err);
+      return { status: 500, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-    save: async ({ body }: { body: any }, c: any) => {
+  save: async ({ body }, c) => {
     try {
       const db = c.get("db") as Kysely<DB>;
-      await retryTransaction(db, async (trx) => {
+      const user = await getSessionUser(c);
+      if (!user) return { status: 401, body: { error: "Unauthorized" } };
+
+      const result = await retryTransaction(db, async (trx) => {
         if (body.id) {
           await trx.updateTable("outreach_logs")
             .set({
@@ -141,8 +143,9 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
             })
             .where("id", "=", body.id as any)
             .execute();
+          return body.id;
         } else {
-          await trx.insertInto("outreach_logs")
+          const inserted = await trx.insertInto("outreach_logs")
             .values({
               title: body.title,
               date: body.date,
@@ -155,24 +158,29 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
               mentored_team_number: body.mentored_team_number,
               season_id: body.season_id,
             })
-            .execute();
+            .executeTakeFirst();
+          return inserted.insertId?.toString() || "new";
         }
       });
 
       if (body.id) {
         c.executionCtx.waitUntil(logAuditAction(c, "update_outreach", "outreach_logs", body.id, `Updated outreach: ${body.title}`));
-        return { status: 200 as const, body: { success: true, id: body.id } };
+        return { status: 200, body: { success: true, id: body.id } };
       } else {
-        c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", "new", `Created outreach: ${body.title}`));
-        return { status: 200 as const, body: { success: true, id: "new" } };
+        c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", result, `Created outreach: ${body.title}`));
+        return { status: 200, body: { success: true, id: result } };
       }
-    } catch {
-      return { status: 500 as const, body: { error: "Save failed" } };
+    } catch (err) {
+      console.error("[Outreach:Save] Error", err);
+      return { status: 500, body: { error: "Save failed" } };
     }
   },
-    delete: async ({ params }: { params: any }, c: any) => {
+  delete: async ({ params }, c) => {
     try {
       const db = c.get("db") as Kysely<DB>;
+      const user = await getSessionUser(c);
+      if (!user) return { status: 401, body: { error: "Unauthorized" } };
+
       await retryTransaction(db, async (trx) => {
         await trx.updateTable("outreach_logs")
           .set({ is_deleted: 1 })
@@ -180,22 +188,10 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
           .execute();
       });
       c.executionCtx.waitUntil(logAuditAction(c, "delete_outreach", "outreach_logs", params.id, "Outreach log soft-deleted"));
-      return { status: 200 as const, body: { success: true } };
-    } catch {
-      return { status: 500 as const, body: { error: "Delete failed" } };
+      return { status: 200, body: { success: true } };
+    } catch (err) {
+      console.error("[Outreach:Delete] Error", err);
+      return { status: 500, body: { error: "Delete failed" } };
     }
   },
-} as any);
-
-
-
-// Middlewares
-outreachRouter.use("/", ensureAuth);
-outreachRouter.use("/admin", ensureAdmin);
-outreachRouter.use("/admin/*", ensureAdmin);
-outreachRouter.use("/admin", rateLimitMiddleware(15, 60));
-
-
-createHonoEndpoints(outreachContract, outreachTsRestRouter, outreachRouter);
-
-export default outreachRouter;
+};

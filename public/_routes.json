@@ -2,7 +2,8 @@
   "version": 1,
   "include": [
     "/api/*",
-    "/dashboard/api/*"
+    "/dashboard/api/*",
+    "/sitemap.xml"
   ],
   "exclude": []
 }

@@ -21,7 +21,7 @@ vi.mock("../middleware/dbUtils", () => ({
   retryTransaction: vi.fn(async (db, cb) => cb(db))
 }));
 
-import outreachRouter from "./outreach";
+import outreachRouter from "./outreach/index";
 
 describe("Hono Backend - /outreach Router", () => {
   
@@ -62,19 +62,42 @@ describe("Hono Backend - /outreach Router", () => {
     testApp.route("/", outreachRouter);
   });
 
-  it("GET / - list outreach logs", async () => {
-    mockDb.execute.mockResolvedValueOnce([{ id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "..." }]);
+  it("GET / - list outreach logs with volunteer events", async () => {
+    mockDb.execute
+      .mockResolvedValueOnce([
+        { id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "..." }
+      ]) // outreach_logs
+      .mockResolvedValueOnce([
+        { id: "v1", title: "Volunteer", date: "2024-02-01", location: "Loc", season_id: "1" },
+        { id: "v2", title: "Volunteer No Season", date: "2024-01-15", location: null, season_id: null }
+      ]); // events
+      
     const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.logs).toHaveLength(3);
+    expect(body.logs[0].title).toBe("Volunteer"); // Sorted by date
+    expect(body.logs[1].title).toBe("Volunteer No Season");
+    expect(body.logs[2].title).toBe("Test");
+    expect(body.logs[1].season_id).toBeNull();
+  });
+
+  it("GET / - handles list failure", async () => {
+    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
   });
 
   it("POST /admin/save - create", async () => {
+    mockDb.executeTakeFirst.mockResolvedValue({ insertId: 123n });
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ title: "New", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
       headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.id).toBe("123");
   });
 
   it("POST /admin/save - update existing", async () => {
@@ -86,10 +109,44 @@ describe("Hono Backend - /outreach Router", () => {
     expect(res.status).toBe(200);
   });
 
-  it("GET /admin/list - list outreach logs for admin", async () => {
-    mockDb.execute.mockResolvedValueOnce([{ id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "..." }]);
+  it("POST /admin/save - handles save failure", async () => {
+    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ 
+        title: "Fail", 
+        date: "2024-01-01", 
+        students_count: 0, 
+        hours_logged: 0, 
+        reach_count: 0,
+        location: null,
+        description: null
+      }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /admin/list - list outreach logs with volunteer events", async () => {
+    mockDb.execute
+      .mockResolvedValueOnce([
+        { id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "..." }
+      ]) // outreach_logs
+      .mockResolvedValueOnce([
+        { id: "v1", title: "Volunteer", date: "2024-02-01", location: "Loc", season_id: "1" }
+      ]); // events
+      
     const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.logs).toHaveLength(2);
+    expect(body.logs[0].title).toBe("Volunteer");
+  });
+
+  it("GET /admin/list - handles admin list failure", async () => {
+    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
   });
 
   it("DELETE /admin/:id - soft-delete", async () => {
@@ -99,5 +156,15 @@ describe("Hono Backend - /outreach Router", () => {
       body: JSON.stringify({})
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+  });
+
+  it("DELETE /admin/:id - handles delete failure", async () => {
+    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    const res = await testApp.request("/admin/123", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
   });
 });

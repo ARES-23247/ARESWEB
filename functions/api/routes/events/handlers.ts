@@ -5,10 +5,12 @@ import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { Context } from "hono";
-import { RecursiveRouterObj, ServerInferResponses } from "@ts-rest/core";
+import { initServer } from "ts-rest-hono";
+
+const s = initServer<AppEnv>();
 import { eventContract } from "../../../../shared/schemas/contracts/eventContract";
 
-type EventHandlers = RecursiveRouterObj<typeof eventContract, AppEnv>;
+type EventHandlers = Parameters<typeof s.router<typeof eventContract>>[1];
 
 export const eventHandlers: EventHandlers = {
   getEvents: async ({ query }, c) => {
