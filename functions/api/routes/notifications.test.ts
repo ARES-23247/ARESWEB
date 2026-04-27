@@ -38,6 +38,10 @@ describe("Hono Backend - /notifications Router", () => {
       values: vi.fn().mockReturnThis(),
       updateTable: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
+      deleteFrom: vi.fn().mockReturnThis(),
+      fn: {
+        count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("count") })
+      },
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
@@ -75,5 +79,36 @@ describe("Hono Backend - /notifications Router", () => {
       body: JSON.stringify({})
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+  });
+
+  it("DELETE /:id - delete notification", async () => {
+    const res = await testApp.request("/123", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /pending-counts - get pending counts", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 5 }); // inquiries
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 2 }); // posts
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 1 }); // events
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0 }); // docs
+    const res = await testApp.request("/pending-counts", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.inquiries).toBe(5);
+  });
+
+  it("GET /action-items - get dashboard action items", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ id: 1 }]); // inquiries
+    mockDb.execute.mockResolvedValueOnce([{ title: "post1" }]); // posts
+    mockDb.execute.mockResolvedValueOnce([]); // events
+    mockDb.execute.mockResolvedValueOnce([]); // docs
+    const res = await testApp.request("/action-items", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.inquiries.length).toBe(1);
   });
 });

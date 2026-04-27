@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useEventFilters } from "./useEventFilters";
-import { addDays, subDays } from "date-fns";
+
 import { EventItem } from "../components/events/EventCard";
 
 describe("useEventFilters hook", () => {

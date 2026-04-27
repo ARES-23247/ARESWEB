@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { eventSyncHandlers } from "./eventSync";
-import { mockExecutionContext } from "../../../../src/test/utils";
 
 vi.mock("../../middleware", () => ({
   getDbSettings: vi.fn(),

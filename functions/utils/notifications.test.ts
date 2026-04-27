@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Context } from 'hono';
 import { AppEnv } from '../api/middleware/utils';
+import { emitNotification, notifyByRole, notifyAdmins } from './notifications';
 
-// Mock crypto.randomUUID
-vi.stubGlobal('crypto', {
-  randomUUID: () => 'test-uuid-1234',
-});
+// Mock crypto.randomUUID safely without overwriting the whole crypto object
+vi.spyOn(crypto, 'randomUUID').mockReturnValue('12345678-1234-1234-1234-123456789012');
 
 function createMockContext(overrides?: {
   dbResults?: unknown[];
@@ -55,7 +54,6 @@ describe('notifications utility', () => {
   describe('emitNotification()', () => {
     it('inserts notification with priority into D1', async () => {
       const { mockCtx, mockDb } = createMockContext();
-      const { emitNotification } = await import('./notifications');
       
       await emitNotification(mockCtx, {
         userId: 'user-123',
@@ -74,7 +72,6 @@ describe('notifications utility', () => {
 
     it('handles missing link gracefully (null)', async () => {
       const { mockCtx, mockDb } = createMockContext();
-      const { emitNotification } = await import('./notifications');
       
       await emitNotification(mockCtx, {
         userId: 'user-456',
@@ -87,7 +84,6 @@ describe('notifications utility', () => {
 
     it('defaults priority to low', async () => {
       const { mockCtx, mockDb } = createMockContext();
-      const { emitNotification } = await import('./notifications');
       
       await emitNotification(mockCtx, {
         userId: 'user-789',
@@ -104,8 +100,6 @@ describe('notifications utility', () => {
       const { mockCtx, mockDb } = createMockContext();
       mockDb.execute.mockRejectedValue(new Error('D1_ERROR'));
       
-      const { emitNotification } = await import('./notifications');
-      
       await expect(emitNotification(mockCtx, {
         userId: 'user-fail',
         title: 'Fail Test',
@@ -117,7 +111,6 @@ describe('notifications utility', () => {
   describe('notifyByRole()', () => {
     it('returns early for empty audiences', async () => {
       const { mockCtx, mockDb } = createMockContext();
-      const { notifyByRole } = await import('./notifications');
       
       await notifyByRole(mockCtx, [], {
         title: 'Empty',
@@ -131,7 +124,6 @@ describe('notifications utility', () => {
       const { mockCtx, mockDb } = createMockContext({
         dbResults: [{ id: 'admin-1' }],
       });
-      const { notifyByRole } = await import('./notifications');
       
       await notifyByRole(mockCtx, ['admin'], {
         title: 'Admin Alert',
@@ -146,7 +138,6 @@ describe('notifications utility', () => {
       const { mockCtx, mockDb } = createMockContext({
         dbResults: [{ id: 'coach-1' }],
       });
-      const { notifyByRole } = await import('./notifications');
       
       await notifyByRole(mockCtx, ['coach', 'mentor'], {
         title: 'Staff Alert',
@@ -162,7 +153,6 @@ describe('notifications utility', () => {
       const { mockCtx, mockDb } = createMockContext({
         dbResults: mockUsers,
       });
-      const { notifyByRole } = await import('./notifications');
       
       await notifyByRole(mockCtx, ['student'], {
         title: 'Chunk Alert',
@@ -178,8 +168,6 @@ describe('notifications utility', () => {
       const { mockCtx, mockDb } = createMockContext();
       mockDb.execute.mockRejectedValue(new Error('D1_ERROR'));
       
-      const { notifyByRole } = await import('./notifications');
-      
       await expect(notifyByRole(mockCtx, ['admin'], {
         title: 'Fail',
         message: 'Should not throw',
@@ -192,7 +180,6 @@ describe('notifications utility', () => {
       const { mockCtx, mockDb } = createMockContext({
         dbResults: [{ id: 'admin-1' }],
       });
-      const { notifyAdmins } = await import('./notifications');
       
       await notifyAdmins(mockCtx, {
         title: 'Admin Only',

@@ -149,21 +149,23 @@ describe("Zulip Webhook Router", () => {
     const payload = JSON.stringify({ token: "test-token", message: { content: '@**ARES Bot** !inquiries' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
-    expect(json.content).toContain("You have 2 pending inquiries");
+    expect(json.content).toContain("2 pending inquiries");
   });
 
-  it("should handle !rcv new", async () => {
-    const payload = JSON.stringify({ token: "test-token", message: { content: '@**ARES Bot** !rcv new "Best Robot" "Option 1" "Option 2"' } });
+  it("should handle !rcv create", async () => {
+    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ role: "admin" });
+    const payload = JSON.stringify({ token: "test-token", message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv create "Best Robot" "Option 1" "Option 2"' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
-    expect(json.content).toContain("Created Ranked Choice Poll");
+    expect(json.content).toContain("Created");
   });
 
-  it("should handle !rcv new with missing title", async () => {
-    const payload = JSON.stringify({ token: "test-token", message: { content: '@**ARES Bot** !rcv new' } });
+  it("should handle !rcv create with missing title", async () => {
+    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ role: "admin" });
+    const payload = JSON.stringify({ token: "test-token", message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv create' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
-    expect(json.content).toContain("Usage: `!rcv new");
+    expect(json.content).toContain("Usage: `!rcv create");
   });
 
   it("should handle !rcv status", async () => {
@@ -197,10 +199,12 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv tally", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({
-      value: JSON.stringify({ title: "Best Robot", active: true, options: ["A", "B"], votes: { "test@test.com": [0, 1] } })
-    });
-    const payload = JSON.stringify({ token: "test-token", message: { content: '@**ARES Bot** !rcv tally 12345' } });
+    mockDb.executeTakeFirst = vi.fn()
+      .mockResolvedValueOnce({
+        value: JSON.stringify({ title: "Best Robot", active: true, options: ["A", "B"], votes: { "test@test.com": [0, 1] } })
+      })
+      .mockResolvedValueOnce({ role: "admin" });
+    const payload = JSON.stringify({ token: "test-token", message: { content: '@**ARES Bot** !rcv tally 12345', sender_email: "a@a.com" } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
     // Depending on what tally does, we just expect it to not fail

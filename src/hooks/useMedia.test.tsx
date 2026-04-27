@@ -1,3 +1,4 @@
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useMedia } from "./useMedia";
@@ -220,3 +221,4 @@ describe("useMedia hook", () => {
     expect(result.current.filteredAssets[0].folder).toBe("Events");
   });
 });
+

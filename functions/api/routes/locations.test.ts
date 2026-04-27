@@ -57,9 +57,29 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("GET / - list locations", async () => {
-    mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "Shop", address: "123 Main St" }]);
+    mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "Shop", address: "123 Main St", is_deleted: 0 }]);
     const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+    const body = await res.json();
+    expect((body as any).locations.length).toBe(1);
+  });
+
+  it("GET / - handles db error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /admin/list - list all locations", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "Shop", address: "123", is_deleted: 1 }]);
+    const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /admin/list - handles db error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
   });
 
   it("POST /admin/save - save location", async () => {
@@ -69,5 +89,43 @@ describe("Hono Backend - /locations Router", () => {
       headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - handles update with existing id", async () => {
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ id: "123", name: "Shop", address: "123 Main St", maps_url: "http", is_deleted: 1 }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - handles db error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ name: "Shop", address: "123 Main St" }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE /admin/:id - soft delete location", async () => {
+    const res = await testApp.request("/admin/123", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("DELETE /admin/:id - handles db error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/123", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
   });
 });

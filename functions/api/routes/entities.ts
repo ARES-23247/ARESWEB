@@ -1,11 +1,10 @@
 import { Hono } from "hono";
-import { Kysely, sql } from "kysely";
+import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { createHonoEndpoints, initServer } from "ts-rest-hono";
+import { createHonoEndpoints } from "ts-rest-hono";
 import { entityContract } from "../../../shared/schemas/contracts/entityContract";
 import { AppEnv, ensureAuth, logAuditAction } from "../middleware";
 
-const s = initServer<AppEnv>();
 export const entitiesRouter = new Hono<AppEnv>();
 
 const entityHandlers = {

@@ -174,4 +174,67 @@ describe("Hono Backend - /docs Router", () => {
     const res = await testApp.request("/admin/test-doc/history", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });
+
+  it("GET /admin/:slug/detail - fetches admin detail", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ slug: "test-doc", title: "Test Doc", content: "..." });
+    const res = await testApp.request("/admin/test-doc/detail", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("PATCH /admin/:slug/sort - updates sort order", async () => {
+    const res = await testApp.request("/admin/test-doc/sort", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sortOrder: 5 })
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /:slug/feedback - submits feedback", async () => {
+    const res = await testApp.request("/test-doc/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isHelpful: true, comment: "Great doc!", turnstileToken: "abc" })
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/:slug/approve - approves doc", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ title: "Test Doc", cf_email: "test@test.com" });
+    const res = await testApp.request("/admin/test-doc/approve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/:slug/reject - rejects doc", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ title: "Test Doc", cf_email: "test@test.com" });
+    const res = await testApp.request("/admin/test-doc/reject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "Needs work" })
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/:slug/undelete - undeletes doc", async () => {
+    const res = await testApp.request("/admin/test-doc/undelete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/:slug/purge - purges doc", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ content: "test" });
+    const res = await testApp.request("/admin/test-doc/purge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
 });

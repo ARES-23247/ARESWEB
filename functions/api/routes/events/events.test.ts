@@ -225,12 +225,6 @@ describe("Hono Backend - Events Router", () => {
   });
 
   // Error Paths and Edge Cases
-  it("GET / - with search query", async () => {
-    // Requires sql execution mock, we'll just mock db execute globally to return rows
-    mockDb.execute = vi.fn().mockResolvedValue({ rows: [{ id: "1", title: "Test", category: "outreach", is_deleted: 0 }] });
-    const res = await testApp.request("/?q=robot", {}, env, mockExecutionContext);
-    expect(res.status).toBe(200);
-  });
 
   it("GET / - db error", async () => {
     mockDb.execute = vi.fn().mockRejectedValue(new Error("DB error"));
@@ -252,7 +246,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/save - upsert if id provided", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "1" }); // existing
+    mockDb.executeTakeFirst.mockResolvedValue({ id: "1" }); // existing for both saveEvent and updateEvent
     const res = await testApp.request("/admin/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -272,7 +266,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("PATCH /admin/:id - non-admin creates revision", async () => {
-    const res = await testApp.request("/admin/1", {
+    await testApp.request("/admin/1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Updated" })

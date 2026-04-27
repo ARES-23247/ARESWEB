@@ -21,7 +21,7 @@ async function setup() {
     // Apply all migrations locally
     execSync('npx wrangler d1 migrations apply ares-db --local --batch', { stdio: 'inherit' });
     console.log("✅ Database schema synchronized.");
-  } catch (e) {
+  } catch {
     console.error("❌ Database bootstrap failed. Ensure wrangler is installed.");
   }
 

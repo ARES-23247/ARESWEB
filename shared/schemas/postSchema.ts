@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const postSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
+  slug: z.string().max(255).optional(),
   coverImageUrl: z.string().max(255).optional().or(z.literal("")),
   ast: z.record(z.string().max(255), z.any()), // JSON AST from Tiptap
   socials: z.record(z.string().max(255), z.boolean()).optional(),

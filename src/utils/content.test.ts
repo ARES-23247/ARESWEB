@@ -1,3 +1,4 @@
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from "vitest";
 import { extractTextFromAst } from "./content";
 
@@ -37,3 +38,4 @@ describe("extractTextFromAst", () => {
     expect(extractTextFromAst(node)).toBe("");
   });
 });
+

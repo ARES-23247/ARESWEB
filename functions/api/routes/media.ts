@@ -35,7 +35,7 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
   }
   return { objects };
 }
-const mediaTsRestRouter: any = s.router(mediaContract as any, {
+export const mediaTsRestRouter: any = s.router(mediaContract as any, {
     getMedia: async (_: any, c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
@@ -115,11 +115,11 @@ const mediaTsRestRouter: any = s.router(mediaContract as any, {
       return { status: 500 as const, body: { error: "List failed", media: [] } };
     }
   },
-    upload: async (_: any, c: any) => {
+    upload: async ({ body }: { body: any }, c: any) => {
     try {
-      const formData = await c.req.parseBody();
-      const file = formData["file"] as File;
-      const folder = (formData["folder"] as string) || "Library";
+      const formData = body instanceof FormData ? body : await c.req.parseBody();
+      const file = formData.get ? formData.get("file") as File : formData["file"] as File;
+      const folder = (formData.get ? formData.get("folder") as string : formData["folder"] as string) || "Library";
 
       if (!file) return { status: 400 as const, body: { error: "No file uploaded" } };
 

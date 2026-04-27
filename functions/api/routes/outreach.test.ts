@@ -77,6 +77,21 @@ describe("Hono Backend - /outreach Router", () => {
     expect(res.status).toBe(200);
   });
 
+  it("POST /admin/save - update existing", async () => {
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ id: "1", title: "Updated", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /admin/list - list outreach logs for admin", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "..." }]);
+    const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
   it("DELETE /admin/:id - soft-delete", async () => {
     const res = await testApp.request("/admin/123", {
       method: "DELETE",

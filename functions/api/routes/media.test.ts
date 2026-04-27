@@ -90,14 +90,6 @@ describe("Hono Backend - /media Router", () => {
     testApp.use("*", async (c: any, next: any) => {
       c.set("db", mockDb);
       c.set("sessionUser", { id: "1", role: "admin", email: "admin@test.com" });
-      
-      if (c.req.path.includes("/admin/upload")) {
-        c.req.parseBody = async () => ({
-          file: new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x00, 0x00])], "test.png", { type: "image/png" }),
-          folder: "Gallery"
-        });
-      }
-      
       await next();
     });
     testApp.route("/", mediaRouter);
@@ -165,19 +157,32 @@ describe("Hono Backend - /media Router", () => {
     expect(dispatchPhotoSocials).toHaveBeenCalled();
   });
 
-  it("POST /admin/upload - upload file (route reachable)", async () => {
+  it("POST /admin/upload - upload file", async () => {
     mockR2.put.mockResolvedValue(undefined);
 
-    const res = await testApp.request("/admin/upload", {
-      method: "POST",
-      headers: { "Content-Type": "multipart/form-data; boundary=---test" }
-    }, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
+    const { mediaTsRestRouter } = await import("./media");
+    const fileBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]); // Valid PNG header
+    const file = new File([fileBytes], "test.png", { type: "image/png" });
+    
+    // Create a mock FormData object since we are bypassing HTTP
+    const mockFormData = {
+      get: (key: string) => key === "file" ? file : "Gallery"
+    };
 
-    // TST-F01: ts-rest-hono cannot parse multipart/form-data in vitest mock env,
-    // so the route returns 500. We verify the route IS mounted (not 404) and the
-    // error is specifically the body parsing failure (not a missing route).
-    expect(res.status).not.toBe(404);
-    expect([200, 400, 500]).toContain(res.status);
+    const mockC = {
+      env,
+      req: {
+        parseBody: vi.fn().mockResolvedValue(mockFormData),
+        url: "http://localhost/admin/upload"
+      },
+      executionCtx: mockExecutionContext
+    };
+
+    const res = await mediaTsRestRouter.upload({ body: mockFormData }, mockC);
+    
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockR2.put).toHaveBeenCalled();
   });
 
   it("GET /:key - serves raw object", async () => {

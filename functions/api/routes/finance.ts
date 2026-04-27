@@ -178,16 +178,12 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
   },
 
   deletePipeline: async ({ params }: any, c: Context<AppEnv>) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      await retryTransaction(db, async (trx) => {
-        await trx.deleteFrom("sponsorship_pipeline").where("id", "=", params.id).execute();
-      });
-      c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsorship_pipeline", "sponsorship_pipeline", params.id, "Pipeline item deleted"));
-      return { status: 200 as const, body: { success: true } };
-    } catch {
-      return { status: 500 as const, body: { error: "Delete failed" } };
-    }
+    const db = c.get("db") as Kysely<DB>;
+    await retryTransaction(db, async (trx) => {
+      await trx.deleteFrom("sponsorship_pipeline").where("id", "=", params.id).execute();
+    });
+    c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsorship_pipeline", "sponsorship_pipeline", params.id, "Pipeline item deleted"));
+    return { status: 200 as const, body: { success: true } };
   },
 
   listTransactions: async ({ query }: any, c: Context<AppEnv>) => {
@@ -272,38 +268,34 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
   },
 
   deleteTransaction: async ({ params }: any, c: Context<AppEnv>) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      
-      // 1. Fetch full record for forensic snapshot
-      const existing = await db.selectFrom("finance_transactions")
-        .selectAll()
-        .where("id", "=", params.id)
-        .executeTakeFirst();
-      
-      if (!existing) return { status: 404 as const, body: { error: "Not found" } };
+    const db = c.get("db") as Kysely<DB>;
+    
+    // 1. Fetch full record for forensic snapshot
+    const existing = await db.selectFrom("finance_transactions")
+      .selectAll()
+      .where("id", "=", params.id)
+      .executeTakeFirst();
+    
+    if (!existing) return { status: 404 as const, body: { error: "Not found" } };
 
-      // 2. Physical R2 Cleanup
-      if (existing.receipt_url && c.env.ARES_STORAGE) {
-        try {
-          const url = new URL(existing.receipt_url);
-          const key = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
-          c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(key));
-        } catch (e) {
-          console.error("[Finance] Failed to parse/delete R2 receipt:", e);
-        }
+    // 2. Physical R2 Cleanup
+    if (existing.receipt_url && c.env.ARES_STORAGE) {
+      try {
+        const url = new URL(existing.receipt_url);
+        const key = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
+        c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(key));
+      } catch (e) {
+        console.error("[Finance] Failed to parse/delete R2 receipt:", e);
       }
-
-      // 3. Atomic Delete with Forensic Log
-      await retryTransaction(db, async (trx) => {
-        await trx.deleteFrom("finance_transactions").where("id", "=", params.id).execute();
-      });
-
-      c.executionCtx.waitUntil(logAuditAction(c, "delete_finance_transaction", "finance_transactions", params.id, JSON.stringify(existing)));
-      return { status: 200 as const, body: { success: true } };
-    } catch {
-      return { status: 500 as const, body: { error: "Delete failed" } };
     }
+
+    // 3. Atomic Delete with Forensic Log
+    await retryTransaction(db, async (trx) => {
+      await trx.deleteFrom("finance_transactions").where("id", "=", params.id).execute();
+    });
+
+    c.executionCtx.waitUntil(logAuditAction(c, "delete_finance_transaction", "finance_transactions", params.id, JSON.stringify(existing)));
+    return { status: 200 as const, body: { success: true } };
   },
 } as any);
 

@@ -103,7 +103,7 @@ describe("Hono Backend - /settings Router", () => {
   it("GET /admin/settings - error", async () => {
     mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
     // mock getDbSettings to throw
-    const res = await testApp.request("/admin/settings", {
+    await testApp.request("/admin/settings", {
       method: "POST", // invalid method to force error or mock differently?
       // wait, I can't mock getDbSettings easily here since it's vi.mock'd at the top.
       // let's pass a bad body to POST instead to get 500

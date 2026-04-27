@@ -1,6 +1,6 @@
  
 declare const global: typeof globalThis;
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 
@@ -92,12 +92,40 @@ describe("Hono Backend - /inquiries Router", () => {
     testApp.route("/", inquiriesRouter);
   });
 
+  afterEach(async () => {
+    if (mockExecutionContext.promises && mockExecutionContext.promises.length > 0) {
+      await Promise.allSettled(mockExecutionContext.promises);
+      mockExecutionContext.promises.length = 0;
+    }
+  });
+
   it("GET /admin/list - list all", async () => {
     const res = await testApp.request("/admin/list?page=1&limit=50", {
       headers: { "DEV_BYPASS": "true" }
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
     expect(mockDb.selectFrom).toHaveBeenCalledWith("inquiries");
+  });
+
+  it("GET /admin/list - mask PII for students", async () => {
+    testApp = new Hono<any>();
+    testApp.use("*", async (c: any, next: any) => {
+      c.set("db", mockDb);
+      c.set("sessionUser", { id: "2", role: "user", member_type: "student", email: "student@test.com" });
+      await next();
+    });
+    testApp.route("/", inquiriesRouter);
+
+    mockDb.execute = vi.fn().mockResolvedValue([
+      { id: "1", type: "outreach", name: "John Doe", email: "john.doe@example.com", metadata: JSON.stringify({ level: "high", secret: "hidden" }), status: "pending", created_at: "2024-01-01" }
+    ]);
+
+    const res = await testApp.request("/admin/list", { headers: { "DEV_BYPASS": "true" } }, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.inquiries[0].name).toBe("J*******");
+    expect(body.inquiries[0].email).toContain("***@");
+    expect(body.inquiries[0].metadata).not.toContain("secret");
   });
 
   it("POST / - submit new inquiry", async () => {
@@ -120,6 +148,42 @@ describe("Hono Backend - /inquiries Router", () => {
 
     expect(res.status).toBe(200);
     expect(mockDb.insertInto).toHaveBeenCalledWith("inquiries");
+  });
+
+  it("POST / - submit sponsor inquiry", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
+    mockDb.execute = vi.fn().mockResolvedValue([]);
+
+    const res = await testApp.request("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "sponsor", name: "Acme Corp", email: "sponsor@acme.com", metadata: { level: "Gold Tier Sponsor" } })
+    }, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    expect(mockDb.insertInto).toHaveBeenCalledWith("inquiries");
+    expect(mockDb.insertInto).toHaveBeenCalledWith("sponsors");
+  });
+
+  it("POST / - prevent duplicate submissions", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
+    mockDb.execute = vi.fn().mockResolvedValue([{
+      id: "dup-id", email: "test@test.com", metadata: JSON.stringify({ msg: "hello" })
+    }]);
+    
+    // Polyfill decrypt to return the same email
+    const cryptoModule = await import("../../utils/crypto");
+    vi.spyOn(cryptoModule, "decrypt").mockResolvedValue("test@test.com");
+
+    const res = await testApp.request("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "support", name: "Test", email: "test@test.com", metadata: { msg: "hello" } })
+    }, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.id).toBe("dup-id");
   });
 
   it("PATCH /admin/:id/status - update status", async () => {
@@ -148,6 +212,13 @@ describe("Hono Backend - /inquiries Router", () => {
 
     expect(res.status).toBe(200);
     expect(mockDb.deleteFrom).toHaveBeenCalled();
+  });
+
+  it("purgeOldInquiries - delete old inquiries", async () => {
+    const { purgeOldInquiries } = await import("./inquiries");
+    mockDb.execute = vi.fn().mockResolvedValue([{ id: "1" }, { id: "2" }]);
+    const res = await purgeOldInquiries(mockDb, 30);
+    expect(res.deleted).toBe(2);
   });
 
   it("GET /admin/list - masks PII for students", async () => {

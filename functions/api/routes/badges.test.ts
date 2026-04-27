@@ -23,10 +23,13 @@ describe("Hono Backend - /badges Router", () => {
     vi.clearAllMocks();
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
+      groupBy: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
@@ -61,6 +64,39 @@ describe("Hono Backend - /badges Router", () => {
       body: JSON.stringify({ id: "1", name: "Innovator", description: "...", icon: "...", color_theme: "..." }),
       headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/grant - grant badge to user", async () => {
+    const res = await testApp.request("/admin/grant", {
+      method: "POST",
+      body: JSON.stringify({ userId: "u1", badgeId: "b1" }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("DELETE /admin/grant/:userId/:badgeId - revoke badge", async () => {
+    const res = await testApp.request("/admin/grant/u1/b1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("DELETE /admin/:id - delete badge definition", async () => {
+    const res = await testApp.request("/admin/b1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /leaderboard - public leaderboard", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ user_id: "u1", nickname: "test", member_type: "student", badge_count: 5 }]);
+    const res = await testApp.request("/leaderboard", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 });

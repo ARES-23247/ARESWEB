@@ -1,6 +1,5 @@
-import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Link2, ExternalLink, FileText, CheckCircle, Target, Trophy } from "lucide-react";
-import { motion } from "framer-motion";
 import { api } from "../api/client";
 import { Link } from "react-router-dom";
 

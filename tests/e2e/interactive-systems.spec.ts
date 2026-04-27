@@ -1,3 +1,4 @@
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
 
 test.describe('Interactive Systems & Workflows', () => {
@@ -141,3 +142,4 @@ test.describe('Interactive Systems & Workflows', () => {
     expect(openedLinks).toContain('https://aresfirst.zulipchat.com/#narrow/stream/events/topic/Event.3A.20Zulip.20E2E.20Event/near/99999');
   });
 });
+

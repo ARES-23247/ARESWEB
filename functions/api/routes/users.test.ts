@@ -93,6 +93,30 @@ describe("Hono Backend - /users Router", () => {
     expect(mockDb.updateTable).toHaveBeenCalledWith("user");
   });
 
+  it("PATCH /admin/:id - update member_type (existing profile)", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "1" }); // simulate existing profile
+    const res = await testApp.request("/admin/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ member_type: "mentor" })
+    }, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    expect(mockDb.updateTable).toHaveBeenCalledWith("user_profiles");
+  });
+
+  it("PATCH /admin/:id - update member_type (new profile)", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce(null); // simulate new profile
+    const res = await testApp.request("/admin/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ member_type: "student" })
+    }, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    expect(mockDb.insertInto).toHaveBeenCalledWith("user_profiles");
+  });
+
   it("DELETE /admin/:id - delete user", async () => {
     const res = await testApp.request("/admin/1", {
       method: "DELETE",

@@ -241,13 +241,60 @@ describe("Hono Backend - /posts Router", () => {
     expect(res.status).toBe(404);
   });
 
-  it("POST /admin/save - returns 409 on duplicate", async () => {
+  it("POST /admin/save - returns 409 on duplicate title today", async () => {
     mockDb.executeTakeFirst.mockResolvedValueOnce({ slug: "duplicate" });
     const res = await testApp.request("/admin/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "duplicate", ast: { type: "doc" } })
+      body: JSON.stringify({ title: "Duplicate Title", ast: { type: "doc" } })
     }, env, mockExecutionContext);
     expect(res.status).toBe(409);
+  });
+
+  it("POST /admin/save - handles upsert if slug is provided", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ title: "Old" }); // for history capture
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: "existing-slug", title: "Updated", ast: { type: "doc", content: [] } })
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    expect(mockDb.updateTable).toHaveBeenCalledWith("posts");
+  });
+
+  it("POST /admin/save - returns 400 on long title", async () => {
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "A".repeat(600), ast: { type: "doc" } })
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /admin/:slug - non-admin creates shadow revision", async () => {
+    // Override getSessionUser for this test
+    const { getSessionUser } = await import("../middleware");
+    (getSessionUser as any).mockResolvedValueOnce({ id: "2", email: "author@test.com", role: "author" });
+    
+    const res = await testApp.request("/admin/test-post", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Updated", ast: { type: "doc", content: [] } })
+    }, env, mockExecutionContext);
+    
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.success).toBe(true);
+    expect(body.slug).toBe("new-slug");
+  });
+
+  it("GET /admin/list - admin list fallback when schema is old", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("Column not found"));
+    mockDb.execute.mockResolvedValueOnce([{ slug: "fallback-post", is_deleted: 0 }]); // fallback query
+    
+    const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.posts[0].slug).toBe("fallback-post");
   });
 });
