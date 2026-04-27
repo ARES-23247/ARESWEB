@@ -192,7 +192,12 @@ export default function FinanceManager() {
                   <div key={lead.id} className="bg-black/60 p-3 ares-cut-sm border border-white/5 group hover:border-white/20 transition-all">
                     <div className="flex justify-between items-start mb-1">
                       <span className="text-xs font-bold text-white leading-tight">{lead.company_name}</span>
-                      <button onClick={() => confirm("Delete lead?") && deletePipeline.mutate({ params: { id: lead.id! } })} className="opacity-0 group-hover:opacity-100 text-marble/20 hover:text-ares-red transition-all">
+                      <button 
+                        onClick={() => confirm("Delete lead?") && deletePipeline.mutate({ params: { id: lead.id! } })} 
+                        className="opacity-0 group-hover:opacity-100 text-marble/20 hover:text-ares-red transition-all"
+                        title="Delete lead"
+                        aria-label="Delete lead"
+                      >
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -241,7 +246,12 @@ export default function FinanceManager() {
                     {t.type === 'income' ? '+' : '-'}${Number(t.amount).toLocaleString()}
                   </td>
                   <td className="p-4">
-                    <button onClick={() => confirm("Delete transaction?") && deleteTransaction.mutate({ params: { id: t.id! } })} className="opacity-0 group-hover:opacity-100 text-marble/20 hover:text-ares-red transition-all">
+                    <button 
+                      onClick={() => confirm("Delete transaction?") && deleteTransaction.mutate({ params: { id: t.id! } })} 
+                      className="opacity-0 group-hover:opacity-100 text-marble/20 hover:text-ares-red transition-all"
+                      title="Delete transaction"
+                      aria-label="Delete transaction"
+                    >
                       <Trash2 size={14} />
                     </button>
                   </td>

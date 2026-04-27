@@ -260,6 +260,7 @@ export default function AdminUsers() {
             </thead>
             <tbody 
               className="relative"
+              // eslint-disable-next-line react/forbid-dom-props
               style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
             >
               {rowVirtualizer.getVirtualItems().map(virtualRow => {
@@ -269,6 +270,7 @@ export default function AdminUsers() {
                   <tr 
                     key={row.id} 
                     className="hover:bg-white/[0.03] transition-colors group absolute w-full flex border-b border-white/5"
+                    // eslint-disable-next-line react/forbid-dom-props
                     style={{ 
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`

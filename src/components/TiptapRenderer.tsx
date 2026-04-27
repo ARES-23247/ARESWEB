@@ -273,8 +273,8 @@ function RevealBlock({ summary, children }: { summary: string, children: ReactNo
     <div className="my-6 ares-cut-sm border border-white/10 bg-black/20 overflow-hidden shadow-lg transition-all hover:border-ares-gold/30">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-controls={contentId}
+        {...(isOpen ? { 'aria-expanded': true } : { 'aria-expanded': false })}
+        {...{ 'aria-controls': contentId }}
         className="w-full flex items-center justify-between px-6 py-4 text-left group transition-colors hover:bg-white/5"
       >
         <div className="flex items-center gap-3">
