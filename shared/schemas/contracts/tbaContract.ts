@@ -26,4 +26,18 @@ export const tbaContract = c.router({
     },
     summary: "Get TBA matches for an event",
   },
+  getFtcEvents: {
+    method: "GET",
+    path: "/ftc-events/:season/:eventCode/:type",
+    pathParams: z.object({
+      season: z.string(),
+      eventCode: z.string(),
+      type: z.enum(["matches", "rankings", "alliances"]),
+    }),
+    responses: {
+      200: z.any(),
+      500: z.object({ error: z.string() }),
+    },
+    summary: "Fetch official data from FTC Events API",
+  },
 });

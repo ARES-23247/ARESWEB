@@ -3,7 +3,9 @@ import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { taskContract } from "../../../shared/schemas/contracts/taskContract";
-import { AppEnv, ensureAuth, getSessionUser, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAuth, getSessionUser, rateLimitMiddleware, getSocialConfig } from "../middleware";
+import { sendZulipMessage } from "../../utils/zulipSync";
+import { siteConfig } from "../../utils/site.config";
 
 const s = initServer<AppEnv>();
 export const tasksRouter = new Hono<AppEnv>();
@@ -105,6 +107,18 @@ const tasksTsRestRouter: any = s.router(taskContract as any, {
         updated_at: now,
       };
 
+      if (body.assigned_to) {
+        try {
+          const assignee = await db.selectFrom("user").select("email").where("id", "=", body.assigned_to).executeTakeFirst();
+          if (assignee?.email) {
+            const env = await getSocialConfig(c);
+            await sendZulipMessage(env, assignee.email, null, `You have been assigned a new task: **${body.title}**\n\n[Open Task Dashboard](${siteConfig.urls.base}/dashboard?tab=tasks)`, "private");
+          }
+        } catch (e) {
+          console.error("Zulip DM fail", e);
+        }
+      }
+
       return { status: 200 as const, body: { success: true, task } };
     } catch (err) {
       console.error("[Tasks] Create error:", err);
@@ -118,12 +132,20 @@ const tasksTsRestRouter: any = s.router(taskContract as any, {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
 
-      // Check task exists
+      // Check task exists and authorization
       const existing = await db.selectFrom("tasks")
-        .select("id")
+        .select(["id", "assigned_to", "title", "created_by"])
         .where("id", "=", params.id)
         .executeTakeFirst();
+      
       if (!existing) return { status: 404 as const, body: { error: "Task not found" } };
+
+      const isAdmin = user.role === "admin";
+      const isOwner = existing.created_by === user.id;
+
+      if (!isAdmin && !isOwner) {
+        return { status: 403 as const, body: { error: "You are not authorized to update this task" } };
+      }
 
       // Build update object dynamically
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -149,6 +171,18 @@ const tasksTsRestRouter: any = s.router(taskContract as any, {
         details: "Updated task",
         created_at: new Date().toISOString(),
       }).execute();
+
+      if (body.assigned_to && body.assigned_to !== existing.assigned_to) {
+        try {
+          const assignee = await db.selectFrom("user").select("email").where("id", "=", body.assigned_to).executeTakeFirst();
+          if (assignee?.email) {
+            const env = await getSocialConfig(c);
+            await sendZulipMessage(env, assignee.email, null, `You have been assigned to an existing task: **${updates.title || existing.title}**\n\n[Open Task Dashboard](${siteConfig.urls.base}/dashboard?tab=tasks)`, "private");
+          }
+        } catch (e) {
+          console.error("Zulip DM fail", e);
+        }
+      }
 
       return { status: 200 as const, body: { success: true } };
     } catch (err) {
@@ -193,6 +227,20 @@ const tasksTsRestRouter: any = s.router(taskContract as any, {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
+
+      const existing = await db.selectFrom("tasks")
+        .select(["created_by"])
+        .where("id", "=", params.id)
+        .executeTakeFirst();
+      
+      if (!existing) return { status: 404 as const, body: { error: "Task not found" } };
+
+      const isAdmin = user.role === "admin";
+      const isOwner = existing.created_by === user.id;
+
+      if (!isAdmin && !isOwner) {
+        return { status: 403 as const, body: { error: "You are not authorized to delete this task" } };
+      }
 
       await db.deleteFrom("tasks")
         .where("id", "=", params.id)

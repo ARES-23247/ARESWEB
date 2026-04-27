@@ -58,12 +58,11 @@ test.describe('Kanban Task Board', () => {
 
     // In-memory tasks store for the mock session
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let mockTasks: any[] = [];
+    const mockTasks: any[] = [];
 
     // Mock Tasks API
     await page.route('**/api/tasks*', async (route, request) => {
       const method = request.method();
-      const url = request.url();
 
       if (method === 'GET') {
         await route.fulfill({

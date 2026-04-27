@@ -69,7 +69,8 @@ const zulipHandlers = {
         { ZULIP_EMAIL: config.ZULIP_BOT_EMAIL, ZULIP_API_KEY: config.ZULIP_API_KEY, ZULIP_URL: config.ZULIP_URL },
         body.stream,
         body.topic,
-        body.content
+        body.content,
+        "stream"
       );
 
       if (!res) {
@@ -77,6 +78,45 @@ const zulipHandlers = {
       }
 
       return { status: 200 as const, body: { success: true } as any };
+    } catch (err) {
+      return { status: 500 as const, body: { success: false, error: (err as Error).message } as any };
+    }
+  },
+  getTopicMessages: async ({ query }: any, c: Context<AppEnv>) => {
+    try {
+      const config = await getSocialConfig(c);
+      if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
+        return { status: 500 as const, body: { success: false, error: "Zulip not configured." } as any };
+      }
+
+      const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
+      const authHeader = "Basic " + btoa(unescape(encodeURIComponent(credentials)));
+      const url = new URL(`${config.ZULIP_URL || "https://aresfirst.zulipchat.com"}/api/v1/messages`);
+      
+      const narrow = [
+        { operator: "stream", operand: query.stream },
+        { operator: "topic", operand: query.topic }
+      ];
+
+      url.searchParams.append("narrow", JSON.stringify(narrow));
+      url.searchParams.append("anchor", "newest");
+      url.searchParams.append("num_before", "100");
+      url.searchParams.append("num_after", "0");
+
+      const res = await fetch(url.toString(), {
+        method: "GET",
+        headers: { "Authorization": authHeader }
+      });
+
+      if (!res.ok) {
+        if (res.status === 403) {
+          return { status: 403 as const, body: { success: false, error: "Zulip bot is not subscribed to this stream." } as any };
+        }
+        return { status: 500 as const, body: { success: false, error: await res.text() } as any };
+      }
+
+      const data = await res.json() as { result: string; messages: any[] };
+      return { status: 200 as const, body: { success: true, messages: data.messages } as any };
     } catch (err) {
       return { status: 500 as const, body: { success: false, error: (err as Error).message } as any };
     }

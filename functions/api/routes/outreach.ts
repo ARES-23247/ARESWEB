@@ -28,6 +28,8 @@ async function fetchVolunteerEvents(db: Kysely<DB>) {
       hours_logged: 0,
       reach_count: 0,
       description: "Volunteer Event (Synced)",
+      is_mentoring: false,
+      mentored_team_number: null,
       season_id: r.season_id ? Number(r.season_id) : null,
       is_dynamic: true
     }));
@@ -43,7 +45,8 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         .select([
           "id", "title", "date", "location", 
           "hours as hours_logged", "people_reached as reach_count", 
-          "students_count", "impact_summary as description", "season_id"
+          "students_count", "impact_summary as description", "season_id",
+          "is_mentoring", "mentored_team_number"
         ])
         .where("is_deleted", "=", 0)
         .orderBy("date", "desc")
@@ -60,6 +63,8 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         hours_logged: Number(r.hours_logged || 0),
         reach_count: Number(r.reach_count || 0),
         description: r.description || null,
+        is_mentoring: !!r.is_mentoring,
+        mentored_team_number: r.mentored_team_number || null,
         season_id: r.season_id ? Number(r.season_id) : null,
         is_dynamic: false
       }));
@@ -80,7 +85,8 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         .select([
           "id", "title", "date", "location", 
           "hours as hours_logged", "people_reached as reach_count", 
-          "students_count", "impact_summary as description", "season_id"
+          "students_count", "impact_summary as description", "season_id",
+          "is_mentoring", "mentored_team_number"
         ])
         .where("is_deleted", "=", 0)
         .orderBy("date", "desc")
@@ -97,6 +103,8 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         hours_logged: Number(r.hours_logged || 0),
         reach_count: Number(r.reach_count || 0),
         description: r.description || null,
+        is_mentoring: !!r.is_mentoring,
+        mentored_team_number: r.mentored_team_number || null,
         season_id: r.season_id ? Number(r.season_id) : null,
         is_dynamic: false
       }));
@@ -123,6 +131,8 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
             people_reached: body.reach_count,
             students_count: body.students_count,
             impact_summary: body.description,
+            is_mentoring: body.is_mentoring ? 1 : 0,
+            mentored_team_number: body.mentored_team_number,
             season_id: body.season_id,
           })
           .where("id", "=", body.id as any)
@@ -130,10 +140,8 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         c.executionCtx.waitUntil(logAuditAction(c, "update_outreach", "outreach_logs", body.id, `Updated outreach: ${body.title}`));
         return { status: 200 as const, body: { success: true, id: body.id } };
       } else {
-        const id = crypto.randomUUID();
         await db.insertInto("outreach_logs")
           .values({
-            id: id as any, 
             title: body.title,
             date: body.date,
             location: body.location,
@@ -141,11 +149,13 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
             people_reached: body.reach_count,
             students_count: body.students_count,
             impact_summary: body.description,
+            is_mentoring: body.is_mentoring ? 1 : 0,
+            mentored_team_number: body.mentored_team_number,
             season_id: body.season_id,
           })
           .execute();
-        c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", id, `Created outreach: ${body.title}`));
-        return { status: 200 as const, body: { success: true, id } };
+        c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", "new", `Created outreach: ${body.title}`));
+        return { status: 200 as const, body: { success: true, id: "new" } };
       }
     } catch {
       return { status: 500 as const, body: { error: "Save failed" } };

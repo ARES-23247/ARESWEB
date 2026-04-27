@@ -38,3 +38,12 @@ CREATE TABLE IF NOT EXISTS finance_transactions (
 
 CREATE INDEX IF NOT EXISTS idx_finance_season_date ON finance_transactions(season_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_finance_type ON finance_transactions(type);
+
+-- 4. Additional Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_outreach_mentoring ON outreach_logs(is_mentoring);
+
+-- 5. System Settings
+INSERT OR IGNORE INTO settings (key, value) VALUES ('TBA_API_KEY', '');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('FTC_EVENTS_API_KEY', '');
+
+

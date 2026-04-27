@@ -31,16 +31,26 @@ const getZulipAuthHeaders = (env: any) => {
  */
 export async function sendZulipMessage(
   env: Bindings | ZulipCredentials,
-  stream: string,
-  topic: string,
-  content: string
+  to: string | string[],
+  topic: string | null,
+  content: string,
+  type: "stream" | "private" = "stream"
 ): Promise<string | null> {
   const runDispatch = async () => {
     const url = `${(env.ZULIP_URL || "https://aresfirst.zulipchat.com")}/api/v1/messages`;
     const formData = new URLSearchParams();
-    formData.append("type", "stream");
-    formData.append("to", stream);
-    formData.append("topic", topic);
+    formData.append("type", type);
+    
+    if (type === "private" && Array.isArray(to)) {
+      formData.append("to", JSON.stringify(to));
+    } else {
+      formData.append("to", to as string);
+    }
+    
+    if (type === "stream" && topic) {
+      formData.append("topic", topic);
+    }
+    
     formData.append("content", content);
 
     const headers: Record<string, string> = { 
@@ -178,5 +188,5 @@ export async function sendZulipAlert(
   
   const content = `**${title}**\n\n${markdownBody}`;
   
-  await sendZulipMessage(env, adminStream, topic, content);
+  await sendZulipMessage(env, adminStream, topic, content, "stream");
 }

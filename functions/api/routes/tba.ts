@@ -29,6 +29,11 @@ async function getTBA(path: string, c: Context<AppEnv>) {
   if (!apiKey) throw new Error("TBA_API_KEY missing");
 
   const r = await fetch(`https://www.thebluealliance.com/api/v3${path}`, { headers: { "X-TBA-Auth-Key": apiKey } });
+  
+  if (!r.ok) {
+    throw new Error(`TBA API Error: ${r.status}`);
+  }
+
   const data = await r.json();
   setTbaCache(path, { data, expiresAt: now + 300000 });
   return data;
@@ -62,6 +67,38 @@ const tbaHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch matches" } as any };
     }
   },
+  getFtcEvents: async ({ params }: { params: any }, c: Context<AppEnv>) => {
+    try {
+      const { season, eventCode, type } = params;
+      const path = `/${season}/events/${eventCode}/${type}`;
+      
+      const now = Date.now();
+      const cacheKey = `ftc_${path}`;
+      const cached = tbaCache.get(cacheKey);
+      if (cached && cached.expiresAt > now) return { status: 200 as const, body: cached.data };
+
+      const db = c.get("db") as Kysely<DB>;
+      const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "FTC_EVENTS_API_KEY").executeTakeFirst();
+      const apiKey = settingsRow?.value;
+      if (!apiKey) throw new Error("FTC_EVENTS_API_KEY missing");
+
+      const r = await fetch(`https://ftc-api.firstinspires.org/v2.0${path}`, { 
+        headers: { 
+          "Authorization": `Basic ${apiKey}`,
+          "Accept": "application/json"
+        } 
+      });
+      
+      if (!r.ok) throw new Error(`FTC API Error: ${r.status}`);
+      
+      const data = await r.json();
+      setTbaCache(cacheKey, { data, expiresAt: now + 300000 });
+      return { status: 200 as const, body: data };
+    } catch (e) {
+      console.error("GET_FTC_EVENTS ERROR", e);
+      return { status: 500 as const, body: { error: "Failed to fetch official event data" } };
+    }
+  }
 };
 
 const tbaTsRestRouter = s.router(tbaContract, tbaHandlers as any);

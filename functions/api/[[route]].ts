@@ -35,6 +35,7 @@ import zulipWebhookRouter from "./routes/zulipWebhook";
 import zulipRouter from "./routes/zulip";
 import notificationsRouter from "./routes/notifications";
 import tasksRouter from "./routes/tasks";
+import financeRouter from "./routes/finance";
 
 const app = new Hono<AppEnv>();
 
@@ -98,6 +99,7 @@ apiRouter.use("*", cors({
 
 // ── Mount Domain Routers ─────────────────────────────────────────────
 apiRouter.route("/auth", authRouter);
+apiRouter.route("/finance", financeRouter);
 apiRouter.route("/posts", postsRouter);
 apiRouter.route("/docs", docsRouter);
 apiRouter.route("/events", eventsRouter);

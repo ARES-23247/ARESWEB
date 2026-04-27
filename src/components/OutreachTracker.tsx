@@ -30,6 +30,8 @@ interface OutreachLog {
   hours_logged: number;
   reach_count: number;
   description: string | null;
+  is_mentoring?: boolean;
+  mentored_team_number?: string | null;
   season_id?: number | null;
   is_dynamic?: boolean;
 }
@@ -49,11 +51,14 @@ export default function OutreachTracker() {
       hours_logged: 0,
       reach_count: 0,
       description: "",
+      is_mentoring: false,
+      mentored_team_number: "",
       season_id: null
     }
   });
 
   const seasonId = useWatch({ control, name: "season_id" });
+  const isMentoring = useWatch({ control, name: "is_mentoring" });
 
   const { data: outreachData, isLoading } = api.outreach.adminList.useQuery(["admin-outreach"], {});
 
@@ -94,10 +99,11 @@ export default function OutreachTracker() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const totals = useMemo(() => logs.reduce((acc: any, l: any) => ({
     hours: acc.hours + (l.hours_logged || 0),
+    mentoringHours: acc.mentoringHours + (l.is_mentoring ? (l.hours_logged || 0) : 0),
     reach: acc.reach + (l.reach_count || 0),
     students: acc.students + (l.students_count || 0),
     events: acc.events + 1
-  }), { hours: 0, reach: 0, students: 0, events: 0 }), [logs]);
+  }), { hours: 0, mentoringHours: 0, reach: 0, students: 0, events: 0 }), [logs]);
 
   return (
     <div className="space-y-8">
@@ -105,7 +111,7 @@ export default function OutreachTracker() {
         metrics={[
           { label: "Community Reach", value: totals.reach.toLocaleString(), icon: <Target className="text-ares-red" /> },
           { label: "Service Hours", value: totals.hours.toLocaleString(), icon: <Clock className="text-ares-gold" /> },
-          { label: "Student Leads", value: totals.students.toLocaleString(), icon: <Users className="text-ares-cyan" /> },
+          { label: "Mentoring Hours", value: totals.mentoringHours.toLocaleString(), icon: <Users className="text-ares-cyan" /> },
           { label: "Total Events", value: totals.events, icon: <CheckCircle className="text-ares-gold" /> },
         ]}
       />
@@ -193,6 +199,29 @@ export default function OutreachTracker() {
                 focusColor="ares-red"
                 fullWidth
               />
+              <div className="flex flex-col gap-4">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`w-10 h-6 ares-cut-sm transition-colors flex items-center px-1 ${isMentoring ? 'bg-ares-cyan' : 'bg-white/10'}`}>
+                    <motion.div 
+                      animate={{ x: isMentoring ? 16 : 0 }}
+                      className="w-4 h-4 bg-white ares-cut-sm shadow-sm"
+                    />
+                  </div>
+                  <input type="checkbox" className="hidden" {...register("is_mentoring")} />
+                  <span className="text-xs font-bold text-marble/60 group-hover:text-white transition-colors">Mentoring Session</span>
+                </label>
+
+                {isMentoring && (
+                  <DashboardInput
+                    id="outreach-mentored-team"
+                    label="Mentored Team #"
+                    {...register("mentored_team_number")}
+                    error={errors.mentored_team_number?.message}
+                    placeholder="e.g. 23247"
+                    focusColor="ares-cyan"
+                  />
+                )}
+              </div>
               <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("season_id", val ? parseInt(val) : null)} />
             </div>
             <DashboardSubmitButton 
@@ -216,6 +245,13 @@ export default function OutreachTracker() {
                  {log.location && <span className="flex items-center gap-1">&middot; <MapPin size={12} /> {log.location}</span>}
               </div>
               <h4 className="text-xl font-bold text-white mb-2">{log.title}</h4>
+              <div className="flex items-center gap-2 mb-2">
+                {log.is_mentoring && (
+                  <span className="px-2 py-0.5 bg-ares-cyan/10 border border-ares-cyan/30 text-[10px] font-black text-ares-cyan uppercase tracking-tighter ares-cut-sm">
+                    Mentoring {log.mentored_team_number ? `#${log.mentored_team_number}` : ""}
+                  </span>
+                )}
+              </div>
               <p className="text-marble/50 text-sm line-clamp-2">
                 {(() => {
                   try {

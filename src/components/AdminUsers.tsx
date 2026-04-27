@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp } from "lucide-react";
+import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
 import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -59,9 +59,19 @@ export default function AdminUsers() {
     patchMutation.mutate({ params: { id: userId }, body: { member_type: newType } });
   }, [patchMutation]);
 
+  const deleteMutation = api.users.deleteUser.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_users"] });
+      toast.success("User removed successfully");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to remove user");
+    }
+  });
+
   const removeUser = (userId: string, name: string) => {
     if (!confirm(`Remove ${name}? This cannot be undone.`)) return;
-    toast.info("Delete functionality to be implemented in contract fully");
+    deleteMutation.mutate({ params: { id: userId } });
   };
 
   const columnHelper = useMemo(() => createColumnHelper<User>(), []);
@@ -141,6 +151,15 @@ export default function AdminUsers() {
       header: () => <div className="text-right">Actions</div>,
       cell: info => (
         <div className="text-right">
+          {info.row.original.email && (
+            <a href={`https://aresfirst.zulipchat.com/#narrow/pm-with/${info.row.original.email}`}
+              target="_blank" rel="noopener noreferrer"
+              title="Message on Zulip"
+              aria-label={`Message ${info.row.original.name} on Zulip`}
+              className="inline-block p-2 mr-1 text-white/60 hover:text-ares-cyan transition-all ares-cut-sm hover:bg-ares-cyan/10">
+              <MessageSquare size={18} />
+            </a>
+          )}
           <button onClick={() => setEditUserId(info.row.original.id)}
             title="Edit user profile"
             aria-label={`Edit profile for ${info.row.original.name}`}

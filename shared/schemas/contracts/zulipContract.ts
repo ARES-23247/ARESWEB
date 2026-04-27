@@ -49,4 +49,18 @@ export const zulipContract = c.router({
     },
     summary: "Send a Zulip message",
   },
+  getTopicMessages: {
+    method: "GET",
+    path: "/topic",
+    query: z.object({
+      stream: z.string(),
+      topic: z.string(),
+    }),
+    responses: {
+      200: z.object({ success: z.boolean(), messages: z.any() }),
+      403: z.object({ success: z.boolean(), error: z.string() }),
+      500: z.object({ success: z.boolean(), error: z.string() }),
+    },
+    summary: "Get messages for a specific Zulip topic",
+  },
 });

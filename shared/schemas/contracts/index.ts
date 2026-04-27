@@ -22,11 +22,13 @@ import { judgeContract } from "./judgeContract";
 import { tbaContract } from "./tbaContract";
 import { communicationsContract } from "./communicationsContract";
 import { taskContract } from "./taskContract";
+import { financeContract } from "./financeContract";
 
 const c = initContract();
 
 export const apiContract = c.router({
   sponsors: c.router(sponsorContract, { pathPrefix: "/sponsors" }),
+  finance: c.router(financeContract, { pathPrefix: "/finance" }),
   posts: c.router(postContract, { pathPrefix: "/posts" }),
   docs: c.router(docContract, { pathPrefix: "/docs" }),
   events: c.router(eventContract, { pathPrefix: "/events" }),

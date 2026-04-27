@@ -2,7 +2,7 @@ import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, History,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail, DollarSign,
   type LucideIcon
 } from "lucide-react";
 import { signOut } from "../../utils/auth-client";
@@ -225,6 +225,7 @@ export default function DashboardSidebar({
                 {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} pendingCount={pendingInquiriesCount} />}
                 {isAdmin && <NavButton tab="mass_email" icon={Mail} label="Mass Email Blast" currentPath={location.pathname} />}
                 <NavButton tab="outreach" icon={Target} label="Outreach Tracker" currentPath={location.pathname} />
+                {isAdmin && <NavButton tab="finance" icon={DollarSign} label="Finance & Budget" currentPath={location.pathname} />}
                 <NavButton tab="locations" icon={MapPin} label="Meeting Locations" currentPath={location.pathname} />
                 <NavButton tab="sponsors" icon={Gem} label="Sponsors & Funding" currentPath={location.pathname} />
                 {isAdmin && <NavButton tab="sponsor_tokens" icon={Gem} label="Sponsor ROI Tokens" currentPath={location.pathname} />}

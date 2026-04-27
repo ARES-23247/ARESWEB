@@ -281,7 +281,9 @@ export interface OutreachLogs {
   id: Generated<number | null>;
   impact_summary: string | null;
   is_deleted: Generated<number | null>;
+  is_mentoring: Generated<number | null>;
   location: string | null;
+  mentored_team_number: string | null;
   people_reached: number | null;
   season_id: string | null;
   students_count: Generated<number | null>;
@@ -420,6 +422,32 @@ export interface Tasks {
   created_by: string;
   due_date: string | null;
   created_at: Generated<string | null>;
+  updated_at: Generated<string | null>;
+}
+
+export interface FinanceTransactions {
+  amount: number;
+  category: string;
+  created_at: Generated<string | null>;
+  date: string;
+  description: string | null;
+  id: string | null;
+  logged_by: string | null;
+  receipt_url: string | null;
+  season_id: string | null;
+  type: string;
+}
+
+export interface SponsorshipPipeline {
+  company_name: string;
+  contact_person: string | null;
+  created_at: Generated<string | null>;
+  estimated_value: Generated<number | null>;
+  id: string | null;
+  notes: string | null;
+  season_id: string | null;
+  sponsor_id: string | null;
+  status: Generated<string>;
   updated_at: Generated<string | null>;
 }
 
@@ -597,6 +625,8 @@ export interface DB {
   session: Session;
   settings: Settings;
   tasks: Tasks;
+  finance_transactions: FinanceTransactions;
+  sponsorship_pipeline: SponsorshipPipeline;
   sponsor_metrics: SponsorMetrics;
   sponsor_tokens: SponsorTokens;
   sponsors: Sponsors;

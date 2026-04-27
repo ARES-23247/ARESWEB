@@ -9,6 +9,8 @@ export const outreachSchema = z.object({
   hours_logged: z.number().min(0).default(0),
   reach_count: z.number().min(0).default(0),
   description: z.string().max(5000).nullable().optional(),
+  is_mentoring: z.boolean().default(false),
+  mentored_team_number: z.string().max(50).nullable().optional(),
   is_dynamic: z.boolean().optional()
 });
 

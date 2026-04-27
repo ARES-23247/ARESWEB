@@ -20,6 +20,7 @@ const SponsorEditor = lazy(() => import("@/components/SponsorEditor"));
 const OutreachTracker = lazy(() => import("@/components/OutreachTracker"));
 const AwardEditor = lazy(() => import("@/components/AwardEditor"));
 const MemberImpactOverview = lazy(() => import("@/components/MemberImpactOverview"));
+const FinanceManager = lazy(() => import("@/components/FinanceManager"));
 const LocationsManager = lazy(() => import("@/components/LocationsManager"));
 const AdminInquiries = lazy(() => import("@/components/AdminInquiries"));
 const DashboardHome = lazy(() => import("@/components/DashboardHome"));
@@ -86,6 +87,7 @@ export default function DashboardRoutes({
       <Route path="badges" element={isAdmin ? <ContentManager mode="badges" /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="logistics" element={canSeeLogistics ? <DietarySummary /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="analytics" element={<AnalyticsDashboard />} />
+      <Route path="finance" element={isAdmin ? <FinanceManager /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="sponsors" element={<SponsorEditor />} />
       <Route path="sponsor_tokens" element={isAdmin ? <SponsorTokensManager /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="outreach" element={<OutreachTracker />} />
