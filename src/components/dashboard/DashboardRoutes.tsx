@@ -101,7 +101,7 @@ export default function DashboardRoutes({
   ), [location, session?.user?.role, notifications, navigate, isAdmin, canSeeInquiries, canSeeLogistics, canSeeTasks, stats]);
 
   return (
-    <div className="flex-1 w-full relative overflow-hidden flex flex-col">
+    <div className="flex-1 w-full relative flex flex-col">
       <AnimatePresence mode="wait">
         <motion.div
           key={location.pathname}
@@ -109,7 +109,7 @@ export default function DashboardRoutes({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="w-full h-full overflow-y-auto"
+          className="w-full h-full"
         >
           <Suspense fallback={<TabLoader />}>
             {routes}

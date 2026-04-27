@@ -309,7 +309,7 @@ export default function ProjectBoardKanban({
                     strategy={verticalListSortingStrategy}
                     id={status}
                   >
-                    <DroppableColumn id={status} className="p-2 space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 min-h-[60px]">
+                    <DroppableColumn id={status} className="p-2 space-y-2 max-h-[800px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 min-h-[60px]">
                       {items.length === 0 ? (
                         <p className="text-ares-gray text-xs text-center py-6 italic">No items</p>
                       ) : (

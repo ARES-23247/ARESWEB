@@ -1,9 +1,10 @@
-import { ReactNode, lazy, Suspense, useState } from "react";
+import { ReactNode, lazy, Suspense, useState, JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Eye } from "lucide-react";
 import { CodeBlock } from "./docs/CodeBlock";
 import ErrorBoundary from "./ErrorBoundary";
 
+/* ---------- Lazy Loaded Simulators & Tools ---------- */
 const CodePlayground = lazy(() => import('./docs/CodePlayground').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CodePlayground</div> })));
 const InteractiveTutorial = lazy(() => import('./InteractiveTutorial').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load InteractiveTutorial</div> })));
 // @ts-expect-error -- CoreValueCallout uses named export; catch fallback provides default shape
@@ -54,6 +55,7 @@ const ComponentMap: Record<string, React.LazyExoticComponent<React.ComponentType
   HomeCoreValues: lazy(() => Promise.resolve({ default: () => <div className="p-4 border border-white/10 bg-ares-gray-dark rounded text-ares-gray text-sm font-mono">[Core Values Component]</div> }))
 };
 
+/* ---------- Types & Helpers ---------- */
 export interface ASTMark { type: string; attrs?: Record<string, string | number | boolean>; }
 export interface ASTNode {
   type: string;
@@ -68,17 +70,11 @@ export interface ASTNode {
 
 function validateUrl(url: string, type: 'image' | 'video'): string {
   if (!url) return "";
-  
-  // Allow relative paths
   if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) return url;
 
   const allowedDomains = [
-    "aresnetwork.dev",
-    "youtube.com",
-    "youtu.be",
-    "googleusercontent.com",
-    "cloudflare-ipfs.com",
-    "raw.githubusercontent.com"
+    "aresnetwork.dev", "youtube.com", "youtu.be", "googleusercontent.com",
+    "cloudflare-ipfs.com", "raw.githubusercontent.com"
   ];
 
   try {
@@ -93,106 +89,166 @@ function validateUrl(url: string, type: 'image' | 'video'): string {
   return "";
 }
 
+/* ---------- Node Renderers ---------- */
+
+const renderText = (node: ASTNode) => {
+  let text: ReactNode = node.text;
+  if (!node.marks) return text;
+
+  node.marks.forEach((mark) => {
+    if (mark.type === "bold") text = <strong key={typeof text === "string" ? text + "b" : "b"}>{text}</strong>;
+    if (mark.type === "italic") text = <em key={typeof text === "string" ? text + "i" : "i"}>{text}</em>;
+    if (mark.type === "link") {
+      const href = (mark.attrs?.href as string) || "#";
+      const target = (mark.attrs?.target as string) || "_blank";
+      text = (
+        <a
+          key={typeof text === "string" ? text + "a" : "a"}
+          href={href}
+          target={target}
+          rel={target === "_blank" ? "noopener noreferrer" : undefined}
+          className="text-ares-gold underline decoration-ares-gold/40 underline-offset-2 hover:text-ares-cyan hover:decoration-ares-cyan transition-colors"
+        >
+          {text}
+        </a>
+      );
+    }
+    if (mark.type === "code") text = <code key={typeof text === "string" ? text + "c" : "c"} className="bg-white/10 px-1.5 py-0.5 rounded text-ares-cyan text-sm font-mono">{text}</code>;
+    if (mark.type === "strike") text = <s key={typeof text === "string" ? text + "s" : "s"}>{text}</s>;
+    if (mark.type === "underline") text = <u key={typeof text === "string" ? text + "u" : "u"}>{text}</u>;
+  });
+  return text;
+};
+
+const renderHeading = (node: ASTNode, children: ReactNode) => {
+  const level = node.attrs?.level || node.level || 1;
+  const Tag = `h${level}` as any;
+  
+  let className = "font-heading font-bold mb-4 text-white border-b border-white/10 pb-2";
+  if (level === 1) className = "text-3xl " + className + " mt-10";
+  if (level === 2) className = "text-2xl font-bold font-heading mt-8 mb-3 text-ares-gold scroll-m-24 group relative border-none pb-0";
+  if (level === 3) className = "text-xl font-bold font-heading mt-6 mb-2 text-ares-red scroll-m-24 group relative border-none pb-0";
+  if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white border-none pb-0";
+
+  const textValue = node.content ? node.content.map(c => c.text || "").join("") : "";
+  const id = textValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  return (
+    <Tag id={id} className={className}>
+      {(level === 2 || level === 3) && (
+         <a href={`#${id}`} className="absolute -left-6 top-1 opcode-0 group-hover:opacity-100 transition-opacity text-ares-gray hover:text-ares-cyan" aria-label="Link to section">
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+         </a>
+      )}
+      {children}
+    </Tag>
+  );
+};
+
+const renderImage = (node: ASTNode) => {
+  const srcStr = validateUrl((node.src || node.attrs?.src || "") as string, 'image');
+  const altStr = (node.alt || node.attrs?.alt || "") as string;
+  if (!srcStr) return null;
+  return (
+    <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40">
+      <div className="relative w-full aspect-video">
+        <img src={srcStr} alt={altStr} className="w-full h-full object-cover" />
+      </div>
+      {altStr && <figcaption className="text-center text-xs tracking-widest uppercase font-bold text-ares-gold/60 mt-2 p-2">{altStr}</figcaption>}
+    </figure>
+  );
+};
+
+const renderInteractiveComponent = (node: ASTNode) => {
+  const componentName = node.attrs?.componentName as string;
+  const Component = ComponentMap[componentName];
+  if (Component) {
+    return (
+      <ErrorBoundary fallback={<div className="p-4 border border-white/10 bg-ares-danger/10 text-ares-danger rounded text-sm font-mono my-8">Component failed to load</div>}>
+        <Suspense fallback={<div className="p-8 border border-white/10 bg-ares-gray-dark rounded animate-pulse text-center text-marble/40">Loading interactive tool...</div>}>
+          <Component className="my-8" />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+  return (
+    <div className="p-4 border border-ares-red/50 bg-ares-red/10 text-white font-bold rounded my-8 font-mono text-sm shadow-lg shadow-ares-red/20">
+      Unknown interactive component: {componentName}
+    </div>
+  );
+};
+
+const renderYoutube = (node: ASTNode) => {
+  const src = validateUrl(node.attrs?.src as string, 'video');
+  if (!src) return null;
+  return (
+    <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
+      <iframe title="YouTube Video Component" src={src} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+    </div>
+  );
+};
+
+const renderTaskItem = (node: ASTNode, children: ReactNode) => (
+  <li className="flex items-start gap-3">
+    <div className="mt-1 flex-shrink-0">
+      <input 
+        type="checkbox" 
+        aria-label="Task checkbox"
+        title="Task checkbox"
+        checked={node.attrs?.checked as boolean} 
+        readOnly 
+        className="w-4 h-4 rounded appearance-none border border-white/20 bg-ares-black checked:bg-ares-cyan checked:border-ares-cyan relative after:content-[''] after:hidden checked:after:block after:absolute after:left-[4px] after:top-[1px] after:w-[6px] after:h-[10px] after:border-solid after:border-obsidian after:border-r-[2px] after:border-b-[2px] after:rotate-45 transition-colors cursor-default" 
+      />
+    </div>
+    <div className={node.attrs?.checked ? "text-marble/40 line-through" : ""}>{children}</div>
+  </li>
+);
+
+const renderCallout = (node: ASTNode, children: ReactNode) => {
+  const type = node.attrs?.type || "info";
+  let baseClass = "p-4 my-6 ares-cut-sm border flex gap-4";
+  let icon = "ℹ️";
+  
+  if (type === "info") {
+    baseClass += " bg-ares-cyan/10 border-ares-cyan/30 text-white";
+    icon = "ℹ️";
+  } else if (type === "warning") {
+    baseClass += " bg-ares-red/10 border-ares-red/30 text-white";
+    icon = "⚠️";
+  } else if (type === "tip") {
+    baseClass += " bg-ares-gold/10 border-ares-gold/30 text-white";
+    icon = "💡";
+  }
+
+  return (
+    <div className={baseClass}>
+      <div className="text-xl flex-shrink-0">{icon}</div>
+      <div className="prose-direct-children">{children}</div>
+    </div>
+  );
+};
+
+/* ---------- Main Component ---------- */
+
 export default function TiptapRenderer({ node }: { node: ASTNode }) {
   if (!node) return null;
 
   if (node.type === "text") {
-    let text: ReactNode = node.text;
-    if (node.marks) {
-      node.marks.forEach((mark) => {
-        if (mark.type === "bold") text = <strong key={typeof text === "string" ? text + "b" : "b"}>{text}</strong>;
-        if (mark.type === "italic") text = <em key={typeof text === "string" ? text + "i" : "i"}>{text}</em>;
-        if (mark.type === "link") {
-          const href = (mark.attrs?.href as string) || "#";
-          const target = (mark.attrs?.target as string) || "_blank";
-          text = (
-            <a
-              key={typeof text === "string" ? text + "a" : "a"}
-              href={href}
-              target={target}
-              rel={target === "_blank" ? "noopener noreferrer" : undefined}
-              className="text-ares-gold underline decoration-ares-gold/40 underline-offset-2 hover:text-ares-cyan hover:decoration-ares-cyan transition-colors"
-            >
-              {text}
-            </a>
-          );
-        }
-        if (mark.type === "code") text = <code key={typeof text === "string" ? text + "c" : "c"} className="bg-white/10 px-1.5 py-0.5 rounded text-ares-cyan text-sm font-mono">{text}</code>;
-        if (mark.type === "strike") text = <s key={typeof text === "string" ? text + "s" : "s"}>{text}</s>;
-        if (mark.type === "underline") text = <u key={typeof text === "string" ? text + "u" : "u"}>{text}</u>;
-      });
-    }
-    return <>{text}</>;
+    return <>{renderText(node)}</>;
   }
 
   const children = node.content ? node.content.map((c, i) => <TiptapRenderer key={i} node={c} />) : null;
 
   switch (node.type) {
     case "doc": return <>{children}</>;
-    case "heading": {
-      const level = node.attrs?.level || node.level || 1;
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      
-      let className = "font-heading font-bold mb-4 text-white border-b border-white/10 pb-2";
-      if (level === 1) className = "text-3xl " + className + " mt-10";
-      if (level === 2) className = "text-2xl font-bold font-heading mt-8 mb-3 text-ares-gold scroll-m-24 group relative border-none pb-0";
-      if (level === 3) className = "text-xl font-bold font-heading mt-6 mb-2 text-ares-red scroll-m-24 group relative border-none pb-0";
-      if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white border-none pb-0";
-
-      const textValue = node.content ? node.content.map(c => c.text || "").join("") : "";
-      const id = textValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-      return (
-        <Tag id={id} className={className}>
-          {(level === 2 || level === 3) && (
-             <a href={`#${id}`} className="absolute -left-6 top-1 opcode-0 group-hover:opacity-100 transition-opacity text-ares-gray hover:text-ares-cyan" aria-label="Link to section">
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-             </a>
-          )}
-          {children}
-        </Tag>
-      );
-    }
+    case "heading": return renderHeading(node, children);
     case "paragraph": return <p className="text-white/80 leading-relaxed mb-4">{children}</p>;
     case "bulletList": return <ul className="list-disc list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ul>;
-    case "orderedList": return <ol className="list-decimal list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ol>;
+    case "orderedList": return <ul className="list-decimal list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ul>;
     case "listItem": return <li className="leading-relaxed">{children}</li>;
-    case "image": {
-      const srcStr = validateUrl((node.src || node.attrs?.src || "") as string, 'image');
-      const altStr = (node.alt || node.attrs?.alt || "") as string;
-      if (!srcStr) return null;
-      return (
-        <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40">
-          <div className="relative w-full aspect-video">
-            <img src={srcStr} alt={altStr} className="w-full h-full object-cover" />
-          </div>
-          {altStr && <figcaption className="text-center text-xs tracking-widest uppercase font-bold text-ares-gold/60 mt-2 p-2">{altStr}</figcaption>}
-        </figure>
-      );
-    }
-    case "interactiveComponent": {
-      const componentName = node.attrs?.componentName as string;
-      const Component = ComponentMap[componentName];
-      if (Component) {
-        return (
-          <ErrorBoundary fallback={<div className="p-4 border border-white/10 bg-ares-danger/10 text-ares-danger rounded text-sm font-mono my-8">Component failed to load</div>}>
-            <Suspense fallback={<div className="p-8 border border-white/10 bg-ares-gray-dark rounded animate-pulse text-center text-marble/40">Loading interactive tool...</div>}>
-              <Component className="my-8" />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      }
-      return (
-        <div className="p-4 border border-ares-red/50 bg-ares-red/10 text-white font-bold rounded my-8 font-mono text-sm shadow-lg shadow-ares-red/20">
-          Unknown interactive component: {componentName}
-        </div>
-      );
-    }
-    case "blockquote": return (
-      <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic">
-        {children}
-      </blockquote>
-    );
+    case "image": return renderImage(node);
+    case "interactiveComponent": return renderInteractiveComponent(node);
+    case "blockquote": return <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic">{children}</blockquote>;
     case "table": return (
       <div className="overflow-x-auto my-6">
         <table className="w-full text-left border-collapse border border-white/10 ares-cut-sm hidden-border-corners shadow-lg table-auto">
@@ -203,60 +259,12 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "tableRow": return <tr className="border-b border-white/5 hover:bg-white/5 transition-colors odd:bg-black/20 even:bg-black/40">{children}</tr>;
     case "tableHeader": return <th className="bg-obsidian border border-white/10 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
     case "tableCell": return <td className="border border-white/5 p-3 text-marble align-top">{children}</td>;
-    case "youtube": {
-      const src = validateUrl(node.attrs?.src as string, 'video');
-      if (!src) return null;
-      return (
-        <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
-          <iframe title="YouTube Video Component" src={src} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-        </div>
-      );
-    }
+    case "youtube": return renderYoutube(node);
     case "taskList": return <ul className="list-none pl-0 space-y-2 my-4 text-white/80">{children}</ul>;
-    case "taskItem": return (
-      <li className="flex items-start gap-3">
-        <div className="mt-1 flex-shrink-0">
-          <input 
-            type="checkbox" 
-            aria-label="Task checkbox"
-            title="Task checkbox"
-            checked={node.attrs?.checked as boolean} 
-            readOnly 
-            className="w-4 h-4 rounded appearance-none border border-white/20 bg-ares-black checked:bg-ares-cyan checked:border-ares-cyan relative after:content-[''] after:hidden checked:after:block after:absolute after:left-[4px] after:top-[1px] after:w-[6px] after:h-[10px] after:border-solid after:border-obsidian after:border-r-[2px] after:border-b-[2px] after:rotate-45 transition-colors cursor-default" 
-          />
-        </div>
-        <div className={node.attrs?.checked ? "text-marble/40 line-through" : ""}>{children}</div>
-      </li>
-    );
-    case "codeBlock": return (
-        <div className="my-4"><CodeBlock value={node.content?.[0]?.text || ""} language={node.attrs?.language as string} /></div>
-    );
-    case "mermaidBlock": return (
-        <div className="my-4"><CodeBlock value={node.content?.[0]?.text || ""} language="mermaid" /></div>
-    );
-    case "callout": {
-      const type = node.attrs?.type || "info";
-      let baseClass = "p-4 my-6 ares-cut-sm border flex gap-4";
-      let icon = "ℹ️";
-      
-      if (type === "info") {
-        baseClass += " bg-ares-cyan/10 border-ares-cyan/30 text-white";
-        icon = "ℹ️";
-      } else if (type === "warning") {
-        baseClass += " bg-ares-red/10 border-ares-red/30 text-white";
-        icon = "⚠️";
-      } else if (type === "tip") {
-        baseClass += " bg-ares-gold/10 border-ares-gold/30 text-white";
-        icon = "💡";
-      }
-
-      return (
-        <div className={baseClass}>
-          <div className="text-xl flex-shrink-0">{icon}</div>
-          <div className="prose-direct-children">{children}</div>
-        </div>
-      );
-    }
+    case "taskItem": return renderTaskItem(node, children);
+    case "codeBlock": return <div className="my-4"><CodeBlock value={node.content?.[0]?.text || ""} language={node.attrs?.language as string} /></div>;
+    case "mermaidBlock": return <div className="my-4"><CodeBlock value={node.content?.[0]?.text || ""} language="mermaid" /></div>;
+    case "callout": return renderCallout(node, children);
     case "reveal": {
       const summary = (node.attrs?.summary || "Show Answer") as string;
       return <RevealBlock summary={summary}>{children}</RevealBlock>;
@@ -264,6 +272,8 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     default: return <>{children}</>;
   }
 }
+
+/* ---------- Sub-Components ---------- */
 
 function RevealBlock({ summary, children }: { summary: string, children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -273,8 +283,8 @@ function RevealBlock({ summary, children }: { summary: string, children: ReactNo
     <div className="my-6 ares-cut-sm border border-white/10 bg-black/20 overflow-hidden shadow-lg transition-all hover:border-ares-gold/30">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        {...(isOpen ? { 'aria-expanded': true } : { 'aria-expanded': false })}
-        {...{ 'aria-controls': contentId }}
+        aria-expanded={isOpen}
+        aria-controls={contentId}
         className="w-full flex items-center justify-between px-6 py-4 text-left group transition-colors hover:bg-white/5"
       >
         <div className="flex items-center gap-3">

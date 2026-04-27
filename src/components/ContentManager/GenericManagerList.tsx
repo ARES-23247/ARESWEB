@@ -87,7 +87,7 @@ export default function GenericManagerList<T>({
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col">
       <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
         {headerTitle}
         {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
@@ -98,7 +98,7 @@ export default function GenericManagerList<T>({
         {isError && <span className="text-ares-red font-bold animate-pulse">API ERROR!</span>}
       </div>
 
-      <div className="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0 pr-2 custom-scrollbar">
+      <div className="flex flex-col gap-3">
         {items.length === 0 ? (
           <DashboardEmptyState
             className="text-marble/50 text-xs italic py-8 text-center border border-dashed border-white/5 ares-cut-sm"

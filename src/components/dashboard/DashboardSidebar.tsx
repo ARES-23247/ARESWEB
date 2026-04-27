@@ -132,7 +132,7 @@ export default function DashboardSidebar({
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed md:relative top-0 left-0 z-50 w-72 h-full bg-obsidian border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none ${
+        className={`fixed md:sticky top-0 left-0 z-50 w-72 h-screen bg-obsidian border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >

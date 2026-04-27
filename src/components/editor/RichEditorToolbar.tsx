@@ -5,7 +5,7 @@
  * Sticks just below the navbar (top: 64px) as the user scrolls, giving a
  * word-processor feel. Includes Export .HTML / .JSON and Import .DOCX / .JSON.
  */
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import { toast } from "sonner";

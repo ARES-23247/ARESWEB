@@ -66,15 +66,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-obsidian text-white font-sans overflow-hidden font-medium selection:bg-ares-red/30">
+    <div className="flex min-h-screen bg-obsidian text-white font-sans font-medium selection:bg-ares-red/30">
       <SEO title="Command Center" description="ARES 23247 Administrative Dashboard and Team Portal." />
       <DashboardSidebar session={session} permissions={permissions} notifications={notifications} />
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-w-0 relative">
         <div className="absolute inset-0 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] mix-blend-overlay" />
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-ares-red/5 via-transparent to-transparent pointer-events-none" />
 
-        <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 overflow-hidden z-10">
+        <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 z-10">
           <div className="mb-4" /> {/* Spacer replaced header */}
           <DashboardRoutes 
             session={session} 
@@ -83,7 +83,7 @@ export default function Dashboard() {
             stats={stats}
           />
 
-          <div className="mt-6 flex items-center justify-between text-marble/90 text-xs font-bold uppercase tracking-widest px-4 pb-4">
+          <div className="mt-auto pt-12 flex items-center justify-between text-marble/90 text-xs font-bold uppercase tracking-widest px-4 pb-4">
              <span>ARES Robotics 23247</span>
              <span>D1 Edge Server</span>
           </div>
