@@ -409,6 +409,20 @@ export interface Settings {
   value: string;
 }
 
+export interface Tasks {
+  id: string | null;
+  title: string;
+  description: string | null;
+  status: Generated<string | null>;
+  priority: Generated<string | null>;
+  sort_order: Generated<number | null>;
+  assigned_to: string | null;
+  created_by: string;
+  due_date: string | null;
+  created_at: Generated<string | null>;
+  updated_at: Generated<string | null>;
+}
+
 export interface SponsorMetrics {
   clicks: Generated<number | null>;
   created_at: Generated<string | null>;
@@ -582,6 +596,7 @@ export interface DB {
   seasons: Seasons;
   session: Session;
   settings: Settings;
+  tasks: Tasks;
   sponsor_metrics: SponsorMetrics;
   sponsor_tokens: SponsorTokens;
   sponsors: Sponsors;

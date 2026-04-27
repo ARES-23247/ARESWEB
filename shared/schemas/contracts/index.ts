@@ -21,6 +21,7 @@ import { commentContract } from "./commentContract";
 import { judgeContract } from "./judgeContract";
 import { tbaContract } from "./tbaContract";
 import { communicationsContract } from "./communicationsContract";
+import { taskContract } from "./taskContract";
 
 const c = initContract();
 
@@ -52,4 +53,5 @@ export const apiContract = c.router({
   communications: c.router(communicationsContract, {
     pathPrefix: "/communications",
   }),
+  tasks: c.router(taskContract, { pathPrefix: "/tasks" }),
 });

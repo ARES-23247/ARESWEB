@@ -20,30 +20,18 @@ Object.defineProperty(window, 'matchMedia', {
 
 describe("ProjectBoardKanban Component", () => {
   const defaultProps = {
+    tasks: [],
     isLoading: false,
     isCreating: false,
-    newTaskTitle: "",
-    setNewTaskTitle: vi.fn(),
-    showCreateForm: false,
-    setShowCreateForm: vi.fn(),
     onCreateTask: vi.fn(),
+    onUpdateTask: vi.fn(),
+    onDeleteTask: vi.fn(),
+    onReorder: vi.fn(),
     onRefresh: vi.fn(),
   };
 
-  it("renders empty state when board is null", () => {
-    render(<ProjectBoardKanban board={null} {...defaultProps} />);
-    expect(screen.getByText("GitHub Projects not configured")).toBeInTheDocument();
-    expect(screen.getByText(/Set your/)).toBeInTheDocument();
-  });
-
-  it("renders empty columns when board has zero items", () => {
-    const emptyBoard = {
-      title: "Test Board",
-      shortDescription: "Test Desc",
-      items: [],
-      totalCount: 0
-    };
-    render(<ProjectBoardKanban board={emptyBoard} {...defaultProps} />);
+  it("renders empty columns when tasks is empty", () => {
+    render(<ProjectBoardKanban {...defaultProps} />);
     
     // Verify standard columns exist
     expect(screen.getAllByText("Todo").length).toBeGreaterThan(0);
@@ -56,20 +44,29 @@ describe("ProjectBoardKanban Component", () => {
   });
 
   it("renders tasks within correct columns", () => {
-    const board = {
-      title: "Test Board",
-      shortDescription: "Test Desc",
-      items: [
-        { id: "1", title: "Task 1", status: "Todo", updated_at: new Date().toISOString(), assignees: [] },
-        { id: "2", title: "Task 2", status: "In Progress", updated_at: new Date().toISOString(), assignees: [] },
-        { id: "3", title: "Task 3", status: "Done", updated_at: new Date().toISOString(), assignees: [] },
-      ],
-      totalCount: 3
-    };
-    render(<ProjectBoardKanban board={board as unknown as import("./types").ProjectBoard} {...defaultProps} />);
+    const tasks = [
+      { id: "1", title: "Task 1", status: "todo", priority: "normal", sort_order: 0, created_by: "u1", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { id: "2", title: "Task 2", status: "in_progress", priority: "high", sort_order: 0, created_by: "u1", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { id: "3", title: "Task 3", status: "done", priority: "normal", sort_order: 0, created_by: "u1", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    ];
+    render(<ProjectBoardKanban {...defaultProps} tasks={tasks} />);
     
     expect(screen.getByText("Task 1")).toBeInTheDocument();
     expect(screen.getByText("Task 2")).toBeInTheDocument();
     expect(screen.getByText("Task 3")).toBeInTheDocument();
+  });
+
+  it("shows loading state when loading with no tasks", () => {
+    render(<ProjectBoardKanban {...defaultProps} isLoading={true} />);
+    expect(screen.getByText("Loading task board...")).toBeInTheDocument();
+  });
+
+  it("renders priority badge for non-normal priority", () => {
+    const tasks = [
+      { id: "1", title: "Urgent Task", status: "todo", priority: "urgent", sort_order: 0, created_by: "u1", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    ];
+    render(<ProjectBoardKanban {...defaultProps} tasks={tasks} />);
+    
+    expect(screen.getByText("urgent")).toBeInTheDocument();
   });
 });

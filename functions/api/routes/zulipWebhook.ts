@@ -4,7 +4,6 @@ import { DB } from "../../../shared/schemas/database";
 import { siteConfig } from "../../utils/site.config";
 import { AppEnv, getSocialConfig } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
-import { buildGitHubConfig, fetchProjectBoard, createProjectItem, fetchProjectFields, updateProjectItemStatus } from "../../utils/githubProjects";
 import { calculateIRV } from "../../utils/irvCalculator";
 
 export const zulipWebhookRouter = new Hono<AppEnv>();
@@ -110,9 +109,9 @@ zulipWebhookRouter.post("/", async (c) => {
             "",
             "| Command | Description |",
             "|---|---|",
-            "| `!tasks` | List open GitHub Project items |",
-            "| `!task <title>` | Create a new draft task |",
-            "| `!task <index> done` | Mark a task as Done |",
+            "| `!tasks` | List open tasks |",
+            "| `!task <title>` | Create a new task |",
+            "| `!task <#> done` | Mark a task as Done |",
             "| `!stats` | ARESWEB quick stats |",
             "| `!inquiries` | Pending inquiry count |",
             "| `!events` | Upcoming events |",
@@ -123,22 +122,31 @@ zulipWebhookRouter.post("/", async (c) => {
         });
 
       case "!tasks": {
-        const config = await getSocialConfig(c);
-        const ghConfig = buildGitHubConfig(config);
-        if (!ghConfig) {
-          return c.json({ content: "⚠️ GitHub Projects not configured. Add `GITHUB_PAT` and `GITHUB_PROJECT_ID` in ARESWEB Integrations." });
+        const taskResults = await db.selectFrom("tasks")
+          .leftJoin("user_profiles as ap", "tasks.assigned_to", "ap.user_id")
+          .select(["tasks.id", "tasks.title", "tasks.status", "ap.nickname as assignee_name"])
+          .where("tasks.status", "!=", "done")
+          .orderBy("tasks.sort_order", "asc")
+          .orderBy("tasks.created_at", "desc")
+          .limit(15)
+          .execute();
+
+        if (taskResults.length === 0) {
+          return c.json({ content: "📋 **Task Board** — No open tasks." });
         }
-        const board = await fetchProjectBoard(ghConfig);
-        if (board.items.length === 0) {
-          return c.json({ content: `📋 **${board.title}** — No items found.` });
-        }
-        const lines = board.items.slice(0, 15).map((item, i) => {
+        const lines = taskResults.map((item, i) => {
           const status = item.status ? `\`${item.status}\`` : "—";
-          const assignee = item.assignees.length > 0 ? `@${item.assignees[0]}` : "";
+          const assignee = item.assignee_name ? `@${item.assignee_name}` : "";
           return `${i + 1}. **${item.title}** ${status} ${assignee}`;
         });
+
+        const totalRes = await db.selectFrom("tasks")
+          .select(eb => eb.fn.count("id").as("count"))
+          .executeTakeFirst();
+        const total = Number(totalRes?.count || taskResults.length);
+
         return c.json({
-          content: `📋 **${board.title}** (${board.totalCount} total)\n\n${lines.join("\n")}`,
+          content: `📋 **Task Board** (${total} total)\n\n${lines.join("\n")}`,
         });
       }
 
@@ -151,35 +159,54 @@ zulipWebhookRouter.post("/", async (c) => {
         // Check if it's a completion command: "!task 3 done"
         const indexArg = parseInt(taskArgs[0]);
         if (!isNaN(indexArg) && taskArgs[1]?.toLowerCase() === "done") {
-          const config = await getSocialConfig(c);
-          const ghConfig = buildGitHubConfig(config);
-          if (!ghConfig) return c.json({ content: "⚠️ GitHub Projects not configured." });
-
-          const board = await fetchProjectBoard(ghConfig);
-          const target = board.items[indexArg - 1];
+          // Fetch open tasks to find the one at this index
+          const openTasks = await db.selectFrom("tasks")
+            .select(["id", "title"])
+            .where("status", "!=", "done")
+            .orderBy("sort_order", "asc")
+            .orderBy("created_at", "desc")
+            .limit(15)
+            .execute();
+          const target = openTasks[indexArg - 1];
           if (!target) return c.json({ content: `❌ No task at index ${indexArg}.` });
 
-          // Find the "Status" field and "Done" option
-          const fields = await fetchProjectFields(ghConfig);
-          const statusField = fields.find(f => f.name === "Status" && f.options);
-          const doneOption = statusField?.options?.find(o => o.name.toLowerCase().includes("done"));
+          await db.updateTable("tasks")
+            .set({ status: "done", updated_at: new Date().toISOString() })
+            .where("id", "=", target.id as string)
+            .execute();
 
-          if (!statusField || !doneOption) {
-            return c.json({ content: "⚠️ Could not find 'Status' field or 'Done' option on the project board." });
-          }
-
-          await updateProjectItemStatus(ghConfig, target.id, statusField.id, doneOption.id);
           return c.json({ content: `✅ **${target.title}** marked as Done!` });
         }
 
         // Otherwise, create a new task
         const title = taskArgs.join(" ");
-        const config = await getSocialConfig(c);
-        const ghConfig = buildGitHubConfig(config);
-        if (!ghConfig) return c.json({ content: "⚠️ GitHub Projects not configured." });
+        const senderEmail = body.message?.sender_email;
+        let creatorId = "system";
+        if (senderEmail) {
+          const senderUser = await db.selectFrom("user")
+            .select("id")
+            .where("email", "=", senderEmail)
+            .executeTakeFirst();
+          if (senderUser?.id) creatorId = senderUser.id as string;
+        }
 
-        const itemId = await createProjectItem(ghConfig, title, `Created via Zulip by ${body.message.sender_full_name}`);
-        return c.json({ content: `✅ Created task: **${title}**\nItem ID: \`${itemId}\`` });
+        const taskId = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await db.insertInto("tasks")
+          .values({
+            id: taskId,
+            title,
+            description: `Created via Zulip by ${body.message.sender_full_name}`,
+            status: "todo",
+            priority: "normal",
+            sort_order: 0,
+            created_by: creatorId,
+            created_at: now,
+            updated_at: now,
+          })
+          .execute();
+
+        return c.json({ content: `✅ Created task: **${title}**` });
       }
 
       case "!stats": {

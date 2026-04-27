@@ -34,6 +34,7 @@ import githubWebhookRouter from "./routes/githubWebhook";
 import zulipWebhookRouter from "./routes/zulipWebhook";
 import zulipRouter from "./routes/zulip";
 import notificationsRouter from "./routes/notifications";
+import tasksRouter from "./routes/tasks";
 
 const app = new Hono<AppEnv>();
 
@@ -120,6 +121,7 @@ apiRouter.route("/notifications", notificationsRouter);
 apiRouter.route("/analytics", analyticsRouter);
 apiRouter.route("/github", githubRouter);
 apiRouter.route("/zulip", zulipRouter);
+apiRouter.route("/tasks", tasksRouter);
 
 import { communicationsRouter } from "./routes/communications";
 

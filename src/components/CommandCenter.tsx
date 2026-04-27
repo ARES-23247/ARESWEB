@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RefreshCw, Radio, MessageSquare } from "lucide-react";
+import { RefreshCw, Radio, MessageSquare, Database } from "lucide-react";
 import TeamAvailability from "./TeamAvailability";
 import IntegrationHealthMonitor from "./command/IntegrationHealthMonitor";
 import ProjectBoardKanban from "./command/ProjectBoardKanban";
@@ -14,44 +14,25 @@ import { useQueryClient } from "@tanstack/react-query";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function CommandCenter({ stats: prefetchedStats }: { stats?: any }) {
   const queryClient = useQueryClient();
-  const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
 
   // -- Queries --------------------------------------------------------
-  const { data: boardRes, isLoading: isBoardLoading, isError: isBoardError } = api.github.getBoard.useQuery(["command-board"], {}, {
-    refetchInterval: 60000,
-  });
-  // The github API returns { success: true/false, board: any[] }
-  const boardBody = boardRes?.status === 200 ? boardRes.body : null;
-  const boardConfigured = boardBody?.success === true;
-  const boardArray = boardBody && Array.isArray(boardBody.board) && boardBody.board.length > 0 ? boardBody.board : null;
-  const board = boardArray ? {
-    title: "Project Board",
-    shortDescription: "GitHub Projects",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response items are dynamically shaped
-    items: boardArray.map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      status: item.status,
-      assignees: item.assignees || [],
-      createdAt: item.updated_at || new Date().toISOString(),
-      type: item.type || "DRAFT_ISSUE",
-    })),
-    totalCount: boardArray.length
-  } : boardConfigured ? {
-    title: "Project Board",
-    shortDescription: "GitHub Projects",
-    items: [],
-    totalCount: 0
-  } : null;
+  const { data: tasksRes, isLoading: isTasksLoading } = api.tasks.list.useQuery(
+    ["command-tasks"],
+    {},
+    { refetchInterval: 30000 }
+  );
+
+  const tasksBody = tasksRes?.status === 200 ? tasksRes.body : null;
+  const tasks = tasksBody?.tasks || [];
 
   // Using prefetched stats from parent to avoid waterfall
   const stats = prefetchedStats || { posts: 0, events: 0, docs: 0, integrations: {} };
   
   const health = stats.integrations ? [
+    { name: "Task Board", key: "tasks", icon: <Database className="w-8 h-8 mx-auto text-ares-cyan" />, configured: true },
     { name: "Zulip Chat", key: "zulip", icon: <img src="/icons/zulip.svg" alt="Zulip" className="w-8 h-8 mx-auto" />, configured: stats.integrations.zulip },
-    { name: "GitHub Projects", key: "github", icon: <img src="/icons/github.svg" alt="GitHub" className="w-8 h-8 mx-auto" />, configured: stats.integrations.github },
+    { name: "GitHub", key: "github", icon: <img src="/icons/github.svg" alt="GitHub" className="w-8 h-8 mx-auto" />, configured: stats.integrations.github },
     { name: "Discord", key: "discord", icon: <img src="/icons/discord.svg" alt="Discord" className="w-8 h-8 mx-auto" />, configured: stats.integrations.discord },
     { name: "Bluesky", key: "bluesky", icon: <img src="/icons/bluesky.svg" alt="Bluesky" className="w-8 h-8 mx-auto" />, configured: stats.integrations.bluesky },
     { name: "BAND", key: "band", icon: <MessageSquare className="w-8 h-8 mx-auto text-brand-facebook" />, configured: stats.integrations.band },
@@ -59,32 +40,65 @@ export default function CommandCenter({ stats: prefetchedStats }: { stats?: any 
     { name: "Google Calendar", key: "gcal", icon: <img src="/icons/gcal.svg" alt="Google Calendar" className="w-8 h-8 mx-auto" />, configured: stats.integrations.gcal },
   ] : [];
 
-  const isLoading = isBoardLoading;
-  const isError = isBoardError;
-
   const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["command-board"] });
+    queryClient.invalidateQueries({ queryKey: ["command-tasks"] });
     queryClient.invalidateQueries({ queryKey: ["command-health"] });
     queryClient.invalidateQueries({ queryKey: ["command-stats"] });
   };
 
   // -- Create Task ----------------------------------------------------
-  const handleCreateTask = async () => {
-    if (!newTaskTitle.trim()) return;
+  const handleCreateTask = async (title: string) => {
     setIsCreating(true);
     try {
-      const res = await api.github.createItem.mutation({
-        body: { title: newTaskTitle.trim() }
+      const res = await api.tasks.create.mutation({
+        body: { title }
       });
       if (res.status === 200 && res.body.success) {
-        setNewTaskTitle("");
-        setShowCreateForm(false);
-        queryClient.invalidateQueries({ queryKey: ["command-board"] });
+        queryClient.invalidateQueries({ queryKey: ["command-tasks"] });
       }
     } catch (err) {
       console.error("Create task failed:", err);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  // -- Update Task ----------------------------------------------------
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleUpdateTask = async (id: string, updates: any) => {
+    try {
+      await api.tasks.update.mutation({
+        params: { id },
+        body: updates,
+      });
+      queryClient.invalidateQueries({ queryKey: ["command-tasks"] });
+    } catch (err) {
+      console.error("Update task failed:", err);
+    }
+  };
+
+  // -- Delete Task ----------------------------------------------------
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await api.tasks.delete.mutation({
+        params: { id },
+        body: null,
+      });
+      queryClient.invalidateQueries({ queryKey: ["command-tasks"] });
+    } catch (err) {
+      console.error("Delete task failed:", err);
+    }
+  };
+
+  // -- Reorder Tasks --------------------------------------------------
+  const handleReorder = async (items: { id: string; status: string; sort_order: number }[]) => {
+    try {
+      await api.tasks.reorder.mutation({
+        body: { items },
+      });
+      queryClient.invalidateQueries({ queryKey: ["command-tasks"] });
+    } catch (err) {
+      console.error("Reorder tasks failed:", err);
     }
   };
 
@@ -100,7 +114,7 @@ export default function CommandCenter({ stats: prefetchedStats }: { stats?: any 
             Command Center
           </h2>
           <p className="text-marble/40 text-sm mt-1">
-            Unified view of ARESWEB, Zulip, and GitHub integrations
+            Unified view of ARESWEB, Zulip, and team task management
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -110,36 +124,28 @@ export default function CommandCenter({ stats: prefetchedStats }: { stats?: any 
           </span>
           <button
             onClick={handleRefresh}
-            disabled={isLoading}
+            disabled={isTasksLoading}
             title="Refresh dashboard data"
             className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble/40 hover:text-white transition-all disabled:opacity-30"
           >
-            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+            <RefreshCw size={16} className={isTasksLoading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
 
-      {isError && (
-        <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-ares-red animate-pulse" />
-          TELEMETRY FAULT: Command Center synchronization partially degraded.
-        </div>
-      )}
-
       {/* Integration Health Monitor */}
       <IntegrationHealthMonitor health={health} />
 
-      {/* GitHub Project Board – Kanban View */}
-      <ProjectBoardKanban 
-        board={board || null}
-        isLoading={isBoardLoading}
+      {/* Native Task Board – Kanban View */}
+      <ProjectBoardKanban
+        tasks={tasks}
+        isLoading={isTasksLoading}
         isCreating={isCreating}
-        newTaskTitle={newTaskTitle}
-        setNewTaskTitle={setNewTaskTitle}
-        showCreateForm={showCreateForm}
-        setShowCreateForm={setShowCreateForm}
         onCreateTask={handleCreateTask}
-        onRefresh={() => queryClient.invalidateQueries({ queryKey: ["command-board"] })}
+        onUpdateTask={handleUpdateTask}
+        onDeleteTask={handleDeleteTask}
+        onReorder={handleReorder}
+        onRefresh={() => queryClient.invalidateQueries({ queryKey: ["command-tasks"] })}
       />
 
       {/* Platform Quick Stats + Quick Actions */}
@@ -159,4 +165,3 @@ export default function CommandCenter({ stats: prefetchedStats }: { stats?: any 
     </div>
   );
 }
-
