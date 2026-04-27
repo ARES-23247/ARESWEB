@@ -92,17 +92,17 @@ test.describe('Interactive Systems & Workflows', () => {
             date_start: new Date().toISOString(),
             date_end: new Date().toISOString(),
             description: "Test description",
-            type: 'meeting',
-            zulip_topic_id: 12345
+            category: 'meeting'
           }
         }
       });
     });
 
-    await page.route('**/api/comments/zulip/*', async route => {
+    await page.route(url => url.pathname.includes('/api/zulip/topic'), async route => {
       await route.fulfill({
         status: 200,
         json: {
+          success: true,
           messages: [
             {
               id: 99999,
@@ -122,7 +122,7 @@ test.describe('Interactive Systems & Workflows', () => {
 
     // Ensure the message is rendered
     const msgBlock = page.getByText('This is a test message from Zulip.');
-    await expect(msgBlock).toBeVisible();
+    await expect(msgBlock).toBeVisible({ timeout: 5000 });
 
     // The message is wrapped in a clickable div. We intercept window.open to prevent actual navigation.
     await page.evaluate(() => {
@@ -138,6 +138,6 @@ test.describe('Interactive Systems & Workflows', () => {
 
     // Verify window.open was called with the deep link
     const openedLinks = await page.evaluate(() => (window as any)._openedDeepLinks);
-    expect(openedLinks).toContain('https://aresfirst.zulipchat.com/near/99999');
+    expect(openedLinks).toContain('https://aresfirst.zulipchat.com/#narrow/stream/events/topic/Event.3A.20Zulip.20E2E.20Event/near/99999');
   });
 });

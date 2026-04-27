@@ -83,15 +83,22 @@ test.describe('Admin Dashboard', () => {
   });
 
   test('Command Center displays security telemetry', async ({ page }) => {
-    await page.route('**/api/admin/stats', async route => {
+    await page.route('**/api/analytics/admin/stats*', async route => {
       await route.fulfill({
         status: 200,
         json: {
-          users: 10,
+          posts: 10,
           events: 5,
-          inquiries: 2,
-          projects: 3,
-          securityBlocks: 42
+          docs: 2,
+          securityBlocks: 42,
+          integrations: {
+            zulip: false,
+            github: false,
+            discord: false,
+            bluesky: false,
+            slack: false,
+            gcal: false
+          }
         }
       });
     });
@@ -99,41 +106,42 @@ test.describe('Admin Dashboard', () => {
     await page.goto('/dashboard');
     
     // Verify Security Blocks widget is visible
-    await expect(page.getByText('Security Blocks')).toBeVisible();
+    await expect(page.getByText('Sec Blocks')).toBeVisible();
     await expect(page.getByText('42')).toBeVisible();
   });
 
   test('Logistics tab supports email export', async ({ page }) => {
-    await page.route('**/api/admin/summary', async route => {
+    await page.route('**/api/logistics/admin/summary*', async route => {
       await route.fulfill({
         status: 200,
         json: {
           totalCount: 2,
-          allergies: [{ condition: 'Peanuts', count: 1 }],
-          restrictions: [{ condition: 'Vegetarian', count: 1 }]
-        }
-      });
-    });
-    
-    await page.route('**/api/admin/export-emails', async route => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          emails: "test1@ares.org, test2@ares.org"
+          memberCounts: { Student: 1, Mentor: 1 },
+          dietary: { Peanuts: 1, Vegetarian: 1 },
+          tshirts: { M: 1, L: 1 }
         }
       });
     });
 
-    await page.goto('/dashboard');
-    
-    // Navigate to Logistics
-    await page.getByRole('button', { name: /Logistics/i }).click();
+    await page.route('**/api/logistics/admin/export-emails*', async route => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          users: [
+            { name: "Test User 1", email: "test1@ares.org", role: "admin" },
+            { name: "Test User 2", email: "test2@ares.org", role: "member" }
+          ]
+        }
+      });
+    });
+
+    await page.goto('/dashboard/logistics');
     
     // Wait for the DietarySummary component to load
-    await expect(page.getByText('Dietary Summary')).toBeVisible();
+    await expect(page.getByText('Team Logistics Summary')).toBeVisible({ timeout: 15000 });
     
     // Click export emails
-    await page.getByRole('button', { name: /Export Emails/i }).click();
+    await page.getByRole('button', { name: /Export Roster Emails/i }).click();
     
     // Verify modal appeared with the mock data
     await expect(page.getByText('Active Roster Emails')).toBeVisible();
