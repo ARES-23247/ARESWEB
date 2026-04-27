@@ -255,6 +255,23 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
   deleteTransaction: async ({ params }: any, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
+      
+      // 1. Check for physical assets in R2
+      const existing = await db.selectFrom("finance_transactions")
+        .select("receipt_url")
+        .where("id", "=", params.id)
+        .executeTakeFirst();
+      
+      if (existing?.receipt_url && c.env.ARES_STORAGE) {
+        try {
+          const url = new URL(existing.receipt_url);
+          const key = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
+          c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(key));
+        } catch (e) {
+          console.error("[Finance] Failed to parse/delete R2 receipt:", e);
+        }
+      }
+
       await db.deleteFrom("finance_transactions").where("id", "=", params.id).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "delete_finance_transaction", "finance_transactions", params.id, "Transaction deleted"));
       return { status: 200 as const, body: { success: true } };
