@@ -4,6 +4,7 @@ import { DB } from "../../../shared/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { financeContract } from "../../../shared/schemas/contracts/financeContract";
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware, getSessionUser } from "../middleware";
+import { retryTransaction } from "../middleware/dbUtils";
 
 const s = initServer<AppEnv>();
 export const financeRouter = new Hono<AppEnv>();
@@ -35,6 +36,7 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
         return acc;
       }, { total_income: 0, total_expenses: 0 });
 
+      c.header("Cache-Control", "no-cache, no-store, must-revalidate");
       return {
         status: 200 as const,
         body: {
@@ -65,6 +67,7 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
 
       const results = await q.orderBy("created_at", "desc").execute();
       
+      c.header("Cache-Control", "no-cache, no-store, must-revalidate");
       return {
         status: 200 as const,
         body: {
@@ -146,9 +149,8 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
             .where("id", "=", body.id)
         );
 
-        // Execute as a single D1 Batch (1 Round-trip)
         if (batch.length > 0) {
-          await db.transaction().execute(async (_trx) => {
+          await retryTransaction(db, async (_trx) => {
             for (const b of batch) await b.execute();
           });
         }
@@ -178,7 +180,9 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
   deletePipeline: async ({ params }: any, c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
-      await db.deleteFrom("sponsorship_pipeline").where("id", "=", params.id).execute();
+      await retryTransaction(db, async (trx) => {
+        await trx.deleteFrom("sponsorship_pipeline").where("id", "=", params.id).execute();
+      });
       c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsorship_pipeline", "sponsorship_pipeline", params.id, "Pipeline item deleted"));
       return { status: 200 as const, body: { success: true } };
     } catch {
@@ -202,6 +206,7 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
 
       const results = await q.orderBy("date", "desc").execute();
       
+      c.header("Cache-Control", "no-cache, no-store, must-revalidate");
       return {
         status: 200 as const,
         body: {
@@ -224,34 +229,40 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
       const user = await getSessionUser(c);
       const id = body.id || crypto.randomUUID();
       
+      await retryTransaction(db, async (trx) => {
+        if (body.id) {
+          await trx.updateTable("finance_transactions")
+            .set({
+              type: body.type,
+              amount: body.amount,
+              category: body.category,
+              date: body.date,
+              description: body.description,
+              receipt_url: body.receipt_url,
+              season_id: body.season_id,
+            })
+            .where("id", "=", body.id)
+            .execute();
+        } else {
+          await trx.insertInto("finance_transactions")
+            .values({
+              id,
+              type: body.type,
+              amount: body.amount,
+              category: body.category,
+              date: body.date,
+              description: body.description || null,
+              receipt_url: body.receipt_url || null,
+              season_id: body.season_id || null,
+              logged_by: user?.id || null,
+            })
+            .execute();
+        }
+      });
+
       if (body.id) {
-        await db.updateTable("finance_transactions")
-          .set({
-            type: body.type,
-            amount: body.amount,
-            category: body.category,
-            date: body.date,
-            description: body.description,
-            receipt_url: body.receipt_url,
-            season_id: body.season_id,
-          })
-          .where("id", "=", body.id)
-          .execute();
         c.executionCtx.waitUntil(logAuditAction(c, "update_finance_transaction", "finance_transactions", body.id, `Updated transaction: ${body.description || body.category}`));
       } else {
-        await db.insertInto("finance_transactions")
-          .values({
-            id,
-            type: body.type,
-            amount: body.amount,
-            category: body.category,
-            date: body.date,
-            description: body.description || null,
-            receipt_url: body.receipt_url || null,
-            season_id: body.season_id || null,
-            logged_by: user?.id || null,
-          })
-          .execute();
         c.executionCtx.waitUntil(logAuditAction(c, "create_finance_transaction", "finance_transactions", id, `Created transaction: ${body.description || body.category}`));
       }
       return { status: 200 as const, body: { success: true, id } };
@@ -280,7 +291,10 @@ const financeTsRestRouter: any = s.router(financeContract as any, {
         }
       }
 
-      await db.deleteFrom("finance_transactions").where("id", "=", params.id).execute();
+      await retryTransaction(db, async (trx) => {
+        await trx.deleteFrom("finance_transactions").where("id", "=", params.id).execute();
+      });
+
       c.executionCtx.waitUntil(logAuditAction(c, "delete_finance_transaction", "finance_transactions", params.id, "Transaction deleted"));
       return { status: 200 as const, body: { success: true } };
     } catch {

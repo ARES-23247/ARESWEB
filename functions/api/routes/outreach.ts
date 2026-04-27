@@ -4,6 +4,7 @@ import { DB } from "../../../shared/schemas/database";
 import { createHonoEndpoints, initServer } from "ts-rest-hono";
 import { outreachContract } from "../../../shared/schemas/contracts/outreachContract";
 import { AppEnv, ensureAdmin, ensureAuth, logAuditAction, rateLimitMiddleware } from "../middleware";
+import { retryTransaction } from "../middleware/dbUtils";
 
 const s = initServer<AppEnv>();
 export const outreachRouter = new Hono<AppEnv>();
@@ -62,7 +63,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         students_count: Number(r.students_count || 0),
         hours_logged: Number(r.hours_logged || 0),
         reach_count: Number(r.reach_count || 0),
-        description: r.description || null,
+        description: r.description ? (r.description.length > 200 ? r.description.substring(0, 200) + "..." : r.description) : null,
         is_mentoring: !!r.is_mentoring,
         mentored_team_number: r.mentored_team_number || null,
         season_id: r.season_id ? Number(r.season_id) : null,
@@ -73,6 +74,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         (a, b) => b.date.localeCompare(a.date)
       );
 
+      c.header("Cache-Control", "no-cache, no-store, must-revalidate");
       return { status: 200 as const, body: { logs: combined } };
     } catch {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
@@ -102,7 +104,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         students_count: Number(r.students_count || 0),
         hours_logged: Number(r.hours_logged || 0),
         reach_count: Number(r.reach_count || 0),
-        description: r.description || null,
+        description: r.description ? (r.description.length > 200 ? r.description.substring(0, 200) + "..." : r.description) : null,
         is_mentoring: !!r.is_mentoring,
         mentored_team_number: r.mentored_team_number || null,
         season_id: r.season_id ? Number(r.season_id) : null,
@@ -113,6 +115,7 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
         (a, b) => b.date.localeCompare(a.date)
       );
 
+      c.header("Cache-Control", "no-cache, no-store, must-revalidate");
       return { status: 200 as const, body: { logs: combined } };
     } catch {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
@@ -121,39 +124,45 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
     save: async ({ body }: { body: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
+      await retryTransaction(db, async (trx) => {
+        if (body.id) {
+          await trx.updateTable("outreach_logs")
+            .set({
+              title: body.title,
+              date: body.date,
+              location: body.location,
+              hours: body.hours_logged,
+              people_reached: body.reach_count,
+              students_count: body.students_count,
+              impact_summary: body.description,
+              is_mentoring: body.is_mentoring ? 1 : 0,
+              mentored_team_number: body.mentored_team_number,
+              season_id: body.season_id,
+            })
+            .where("id", "=", body.id as any)
+            .execute();
+        } else {
+          await trx.insertInto("outreach_logs")
+            .values({
+              title: body.title,
+              date: body.date,
+              location: body.location,
+              hours: body.hours_logged,
+              people_reached: body.reach_count,
+              students_count: body.students_count,
+              impact_summary: body.description,
+              is_mentoring: body.is_mentoring ? 1 : 0,
+              mentored_team_number: body.mentored_team_number,
+              season_id: body.season_id,
+            })
+            .execute();
+        }
+      });
+
       if (body.id) {
-        await db.updateTable("outreach_logs")
-          .set({
-            title: body.title,
-            date: body.date,
-            location: body.location,
-            hours: body.hours_logged,
-            people_reached: body.reach_count,
-            students_count: body.students_count,
-            impact_summary: body.description,
-            is_mentoring: body.is_mentoring ? 1 : 0,
-            mentored_team_number: body.mentored_team_number,
-            season_id: body.season_id,
-          })
-          .where("id", "=", body.id as any)
-          .execute();
         c.executionCtx.waitUntil(logAuditAction(c, "update_outreach", "outreach_logs", body.id, `Updated outreach: ${body.title}`));
         return { status: 200 as const, body: { success: true, id: body.id } };
       } else {
-        await db.insertInto("outreach_logs")
-          .values({
-            title: body.title,
-            date: body.date,
-            location: body.location,
-            hours: body.hours_logged,
-            people_reached: body.reach_count,
-            students_count: body.students_count,
-            impact_summary: body.description,
-            is_mentoring: body.is_mentoring ? 1 : 0,
-            mentored_team_number: body.mentored_team_number,
-            season_id: body.season_id,
-          })
-          .execute();
         c.executionCtx.waitUntil(logAuditAction(c, "create_outreach", "outreach_logs", "new", `Created outreach: ${body.title}`));
         return { status: 200 as const, body: { success: true, id: "new" } };
       }
@@ -164,10 +173,12 @@ const outreachTsRestRouter: any = s.router(outreachContract as any, {
     delete: async ({ params }: { params: any }, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
-      await db.updateTable("outreach_logs")
-        .set({ is_deleted: 1 })
-        .where("id", "=", params.id as any)
-        .execute();
+      await retryTransaction(db, async (trx) => {
+        await trx.updateTable("outreach_logs")
+          .set({ is_deleted: 1 })
+          .where("id", "=", params.id as any)
+          .execute();
+      });
       c.executionCtx.waitUntil(logAuditAction(c, "delete_outreach", "outreach_logs", params.id, "Outreach log soft-deleted"));
       return { status: 200 as const, body: { success: true } };
     } catch {

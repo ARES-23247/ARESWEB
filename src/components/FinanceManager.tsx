@@ -4,11 +4,16 @@ import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { useQueryClient } from "@tanstack/react-query";
-import { 
-  Plus, Trash2, DollarSign, PieChart, TrendingUp, 
-  TrendingDown, ArrowRight, RefreshCw,
-  Wallet, Building
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import { DollarSign } from "lucide-react";
+import { PieChart } from "lucide-react";
+import { TrendingUp } from "lucide-react";
+import { TrendingDown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { Wallet } from "lucide-react";
+import { Building } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../api/client";
 import SeasonPicker from "./SeasonPicker";

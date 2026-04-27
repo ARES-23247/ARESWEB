@@ -91,7 +91,7 @@ export default function DashboardSidebar({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
 
-  const { isAuthorized, canSeeInquiries, isAdmin, canSeeLogistics, role, memberType } = permissions;
+  const { isAuthorized, canSeeInquiries, isAdmin, canSeeLogistics, role, memberType, canSeeTasks } = permissions;
   const { pendingInquiriesCount, pendingPostsCount, pendingEventsCount, pendingDocsCount } = notifications;
 
   return (
@@ -239,7 +239,7 @@ export default function DashboardSidebar({
               <h4 className="text-xs uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
                 {isAdmin && <NavButton tab="command_center" icon={Radio} label="Command Center" currentPath={location.pathname} />}
-                {isAdmin && <NavButton tab="tasks" icon={LayoutDashboard} label="Kanban Tasks" currentPath={location.pathname} />}
+                {canSeeTasks && <NavButton tab="tasks" icon={LayoutDashboard} label="Kanban Tasks" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="impact_roster" icon={Trophy} label="Impact & Roster" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="badges" icon={Award} label="Badges & Awards" currentPath={location.pathname} />}

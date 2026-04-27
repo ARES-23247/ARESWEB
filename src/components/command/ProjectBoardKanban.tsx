@@ -112,7 +112,7 @@ export default function ProjectBoardKanban({
     ? { [activeKanbanFilter]: grouped[activeKanbanFilter] || [] }
     : grouped;
 
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+  const activeTask = activeId ? tasks.find(t => String(t.id) === activeId) : null;
 
   // ── DnD Handlers ────────────────────────────────────────────────
   const handleDragStart = (event: DragStartEvent) => {
@@ -124,7 +124,7 @@ export default function ProjectBoardKanban({
     if (COLUMNS.includes(id as typeof COLUMNS[number])) return id;
     // Otherwise find which column the task is in
     for (const col of COLUMNS) {
-      if (grouped[col].some(t => t.id === id)) return col;
+      if (grouped[col].some(t => String(t.id) === String(id))) return col;
     }
     return null;
   };
@@ -157,7 +157,7 @@ export default function ProjectBoardKanban({
       targetCol = findColumn(overTarget) || "todo";
     }
 
-    const task = tasks.find(t => t.id === activeTaskId);
+    const task = tasks.find(t => String(t.id) === activeTaskId);
     if (!task) return;
 
     // If status changed, update it and reorder
@@ -165,7 +165,7 @@ export default function ProjectBoardKanban({
     if (currentCol !== targetCol) {
       // Build new order for target column
       const targetItems = [...(grouped[targetCol] || [])];
-      const overIndex = targetItems.findIndex(t => t.id === overTarget);
+      const overIndex = targetItems.findIndex(t => String(t.id) === overTarget);
       const insertAt = overIndex >= 0 ? overIndex : targetItems.length;
       targetItems.splice(insertAt, 0, { ...task, status: targetCol });
 
@@ -178,8 +178,8 @@ export default function ProjectBoardKanban({
     } else {
       // Same column reorder
       const colItems = [...(grouped[currentCol] || [])];
-      const oldIndex = colItems.findIndex(t => t.id === activeTaskId);
-      const newIndex = colItems.findIndex(t => t.id === overTarget);
+      const oldIndex = colItems.findIndex(t => String(t.id) === activeTaskId);
+      const newIndex = colItems.findIndex(t => String(t.id) === overTarget);
       if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
 
       const [moved] = colItems.splice(oldIndex, 1);
@@ -305,7 +305,7 @@ export default function ProjectBoardKanban({
                     </span>
                   </div>
                   <SortableContext
-                    items={items.map(i => i.id)}
+                    items={items.map(i => String(i.id))}
                     strategy={verticalListSortingStrategy}
                     id={status}
                   >

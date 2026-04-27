@@ -284,6 +284,7 @@ export interface OutreachLogs {
   is_mentoring: Generated<number | null>;
   location: string | null;
   mentored_team_number: string | null;
+  metadata: string | null;
   people_reached: number | null;
   season_id: string | null;
   students_count: Generated<number | null>;
@@ -611,6 +612,16 @@ export interface DB {
   media_tags: MediaTags;
   notifications: Notifications;
   outreach_logs: OutreachLogs;
+  outreach_fts: {
+    title: string | null;
+    location: string | null;
+    impact_summary: string | null;
+  };
+  awards_fts: {
+    title: string | null;
+    event_name: string | null;
+    description: string | null;
+  };
   page_analytics: PageAnalytics;
   posts: Posts;
   posts_fts: PostsFts;

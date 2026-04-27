@@ -20,7 +20,7 @@ export function SortableTaskCard({
   const [showMenu, setShowMenu] = useState(false);
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: String(task.id) });
 
   const style = {
     transform: CSS.Transform.toString(transform),
