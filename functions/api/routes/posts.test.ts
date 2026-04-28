@@ -18,8 +18,14 @@ vi.mock("../../../functions/utils/socialSync", () => ({
 vi.mock("../../../functions/utils/zulipSync", () => ({
   sendZulipMessage: vi.fn().mockResolvedValue(true),
 }));
-const { mockEmitNotification } = vi.hoisted(() => ({
+const { mockEmitNotification, mockNotifyByRole } = vi.hoisted(() => ({
   mockEmitNotification: vi.fn().mockResolvedValue(true),
+  mockNotifyByRole: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("../../../functions/utils/notifications", () => ({
+  emitNotification: mockEmitNotification,
+  notifyByRole: mockNotifyByRole,
 }));
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -30,8 +36,6 @@ vi.mock("../middleware", async (importOriginal) => {
     ensureAuth: async (_c: unknown, next: () => Promise<void>) => next(),
     logAuditAction: vi.fn().mockResolvedValue(true),
     getSessionUser: vi.fn().mockResolvedValue({ id: "1", email: "admin@test.com", role: "admin" }),
-    emitNotification: mockEmitNotification,
-    notifyByRole: vi.fn().mockResolvedValue(true),
   };
 });
 vi.mock("../../../functions/utils/postHistory", () => ({
@@ -66,7 +70,16 @@ describe("Hono Backend - /posts Router", () => {
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
+      where: vi.fn().mockImplementation((arg1) => {
+        if (typeof arg1 === "function") {
+          const ebMock: any = vi.fn().mockReturnThis();
+          ebMock.or = vi.fn().mockReturnThis();
+          ebMock.and = vi.fn().mockReturnThis();
+          ebMock.val = vi.fn().mockReturnThis();
+          arg1(ebMock);
+        }
+        return mockDb;
+      }),
       leftJoin: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
@@ -135,6 +148,14 @@ describe("Hono Backend - /posts Router", () => {
     expect(body.posts[0].season_id).toBe(3);
   });
 
+  it("GET /admin/list - handles db error from fallback", async () => {
+    mockDb.execute.mockRejectedValue(new Error("Fail twice"));
+    const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.posts).toEqual([]);
+  });
+
   it("POST /admin/save - create new post", async () => {
     const postData = {
       title: "New Post",
@@ -190,7 +211,15 @@ describe("Hono Backend - /posts Router", () => {
     expect(body.post.season_id).toBe(5);
   });
 
+  it("GET /admin/:slug - handles db error", async () => {
+    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("DB fail"));
+    const res = await testApp.request("/admin/test-post", {}, env, mockExecutionContext);
+    expect(res.status).toBe(404);
+  });
+
   it("GET /admin/:slug/history - get post history", async () => {
+    const { getPostHistory } = await import("../../../functions/utils/postHistory");
+    (getPostHistory as any).mockResolvedValueOnce([{ id: "1", title: "Old Post" }]);
     const res = await testApp.request("/admin/test/history", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
@@ -230,7 +259,7 @@ describe("Hono Backend - /posts Router", () => {
   it("GET / - search published posts", async () => {
     mockDb.execute.mockResolvedValue({ rows: [createMockPost()] });
     // For sql template tag
-    mockDb.executeQuery = vi.fn().mockResolvedValue({ rows: [createMockPost()] });
+    mockDb.getExecutor().executeQuery.mockResolvedValueOnce({ rows: [createMockPost()] });
     const res = await testApp.request("/?q=test", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
@@ -335,6 +364,19 @@ describe("Hono Backend - /posts Router", () => {
     expect(res.status).toBe(409);
   });
 
+  it("POST /admin/save - generates suffix for duplicate slug", async () => {
+    mockDb.executeTakeFirst
+      .mockResolvedValueOnce(null) // no recent post today for this user
+      .mockResolvedValueOnce({ slug: "existing" }); // but slug already exists globally
+    
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Duplicate Slug", ast: { type: "doc" } })
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
   it("POST /admin/save - handles upsert if slug is provided", async () => {
     mockDb.executeTakeFirst.mockResolvedValueOnce({ title: "Old" }); // for history capture
     const res = await testApp.request("/admin/save", {
@@ -415,6 +457,110 @@ describe("Hono Backend - /posts Router", () => {
     (getPostHistory as any).mockRejectedValueOnce(new Error("History fail"));
     
     const res = await testApp.request("/admin/test/history", {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin/:slug/undelete - handles db error", async () => {
+    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB fail")) }) }) });
+    const res = await testApp.request("/admin/test-post/undelete", { 
+      method: "POST",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE /admin/:slug/purge - handles invalid thumbnail URL gracefully", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ thumbnail: "not-a-valid-url" });
+    const storageEnv = { ...env, ARES_STORAGE: { delete: vi.fn().mockResolvedValue(true) } };
+    const res = await testApp.request("/admin/test-post/purge", { 
+      method: "DELETE",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    }, storageEnv as any, mockExecutionContext);
+    expect(res.status).toBe(200);
+    expect(mockDb.deleteFrom).toHaveBeenCalledWith("posts");
+  });
+  it("POST /admin/save - creates draft post (pending status)", async () => {
+    const postData = {
+      title: "Draft Post",
+      ast: { type: "doc", content: [] },
+      isDraft: true,
+    };
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify(postData),
+      headers: { "Content-Type": "application/json" },
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - handles notifyByRole failure gracefully", async () => {
+    const { notifyByRole } = await import("../../../functions/utils/notifications");
+    (notifyByRole as any).mockRejectedValueOnce(new Error("Notify fail"));
+    
+    const postData = {
+      title: "Draft Post Error",
+      ast: { type: "doc", content: [] },
+      isDraft: true,
+    };
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify(postData),
+      headers: { "Content-Type": "application/json" },
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    console.log("WAITUNTIL CALLS:", mockExecutionContext.waitUntil.mock.calls.length);
+    if (mockExecutionContext.waitUntil.mock.calls.length > 0) {
+      const p = mockExecutionContext.waitUntil.mock.calls[mockExecutionContext.waitUntil.mock.calls.length - 1][0];
+      await p.catch(() => {});
+    }
+    await new Promise(resolve => setTimeout(resolve, 10)); // allow catch to run
+  });
+
+  it("POST /admin/save - handles synchronous error in Zulip prepare", async () => {
+    const { sendZulipMessage } = await import("../../../functions/utils/zulipSync");
+    (sendZulipMessage as any).mockImplementationOnce(() => { throw new Error("Sync Fail"); });
+    
+    const postData = {
+      title: "Sync Fail Post",
+      ast: { type: "doc", content: [] },
+      isDraft: false,
+    };
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify(postData),
+      headers: { "Content-Type": "application/json" },
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+  });
+
+  it("POST /admin/save - handles async error in Zulip prepare", async () => {
+    const { sendZulipMessage } = await import("../../../functions/utils/zulipSync");
+    (sendZulipMessage as any).mockRejectedValueOnce(new Error("Async Fail"));
+    
+    const postData = {
+      title: "Async Fail Post",
+      ast: { type: "doc", content: [] },
+      isDraft: false,
+    };
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify(postData),
+      headers: { "Content-Type": "application/json" },
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+  });
+
+  it("DELETE /admin/:slug - handles db error", async () => {
+    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB fail")) }) }) });
+    const res = await testApp.request("/admin/test-post", { 
+      method: "DELETE",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    }, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 });

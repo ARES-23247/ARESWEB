@@ -38,7 +38,16 @@ describe("Hono Backend - /finance Router", () => {
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
+      select: vi.fn().mockImplementation((args) => {
+        if (Array.isArray(args)) {
+          args.forEach((arg: any) => {
+            if (typeof arg === "function") {
+              arg({ fn: { sum: () => ({ as: vi.fn() }) } });
+            }
+          });
+        }
+        return mockDb;
+      }),
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       groupBy: vi.fn().mockReturnThis(),

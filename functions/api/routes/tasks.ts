@@ -148,7 +148,7 @@ const taskHandlers = {
           if (emails.length > 0) {
             const env = await getSocialConfig(c);
             for (const email of emails) {
-              await sendZulipMessage(env, email, null, `You have been assigned a new task: **${body.title}**\n\n[Open Task Dashboard](${siteConfig.urls.base}/dashboard?tab=tasks)`, "private").catch(() => {});
+              await sendZulipMessage(env, email, null, `You have been assigned a new task: **${body.title}**\n\n[Open Task Dashboard](${siteConfig.urls.base}/dashboard?tab=tasks)`, "private").catch((e) => console.error("[Tasks] Zulip assign error:", e));
             }
           }
         } catch (e) {

@@ -91,7 +91,7 @@ const awardsTsRestRouter: any = s.router(awardContract as any, {
         finalId = newId;
       }
 
-      return { status: 200 as const, body: { success: true, id: finalId || "" } };
+      return { status: 200 as const, body: { success: true, id: finalId! } };
     } catch (e) {
       console.error("SAVE_AWARD ERROR", e);
       return { status: 500 as const, body: { error: "Failed to save award", success: false } as any };

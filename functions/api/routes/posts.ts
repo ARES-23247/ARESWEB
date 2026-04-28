@@ -336,14 +336,18 @@ const postTsRestRouterObj: any = {
       }
 
       if (status === "pending") {
+        const notifyPromise = notifyByRole(c, ["admin", "coach", "mentor"], {
+          title: "📝 Pending Blog Post",
+          message: `"${body.title}" submitted by ${email} needs review.`,
+          link: "/dashboard/manage_blog",
+          external: true,
+          priority: "medium"
+        });
+        
         c.executionCtx.waitUntil(
-          notifyByRole(c, ["admin", "coach", "mentor"], {
-            title: "📝 Pending Blog Post",
-            message: `"${body.title}" submitted by ${email} needs review.`,
-            link: "/dashboard/manage_blog",
-            external: true,
-            priority: "medium"
-          }).catch(() => {})
+          notifyPromise.catch(function handleNotifyError(e) {
+            console.error("[Posts] notifyByRole error:", e);
+          })
         );
       }
 

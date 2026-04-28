@@ -65,6 +65,14 @@ describe("Hono Backend - /awards Router", () => {
     expect(body.awards).toBeDefined();
   });
 
+  it("GET / - list all awards with explicit limit and offset 0", async () => {
+    mockDb.execute.mockResolvedValueOnce([]);
+    const res = await testApp.request("/?limit=0&offset=0", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    expect(mockDb.limit).toHaveBeenCalledWith(50);
+    expect(mockDb.offset).toHaveBeenCalledWith(0);
+  });
+
   it("POST /admin/save - create new award", async () => {
     const res = await testApp.request("/admin/save", {
       method: "POST",
@@ -110,6 +118,23 @@ describe("Hono Backend - /awards Router", () => {
       headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - update by ID but not found falls back to duplicate check", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce(null); // Find by ID fails
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: 456 }); // Duplicate check succeeds
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({
+        id: "999",
+        title: "Updated",
+        year: 2024
+      }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.id).toBe("456");
   });
 
   it("POST /admin/save - update existing award by duplicate match", async () => {

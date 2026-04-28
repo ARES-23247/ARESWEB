@@ -31,7 +31,12 @@ describe("Hono Backend - /tasks Router", () => {
     return {
       selectFrom: vi.fn().mockReturnThis(),
       leftJoin: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
+      select: vi.fn().mockImplementation((args) => {
+        if (Array.isArray(args)) {
+          args.forEach(arg => typeof arg === "function" && arg(mockDb));
+        }
+        return mockDb;
+      }),
       orderBy: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       whereRef: vi.fn().mockReturnThis(),
@@ -72,16 +77,27 @@ describe("Hono Backend - /tasks Router", () => {
         sort_order: 1, 
         created_by: "user1", 
         assignees_json: '[{"id":"user2","nickname":"Alice"}]' 
+      },
+      { 
+        id: "task2", 
+        title: "Test Task 2", 
+        status: null, 
+        priority: null, 
+        sort_order: 2, 
+        created_by: "user1", 
+        assignees_json: '[]' 
       }
     ]);
 
     const res = await testApp.request("/", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
-    expect(body.tasks).toHaveLength(1);
+    expect(body.tasks).toHaveLength(2);
     expect(body.tasks[0].title).toBe("Test Task");
     expect(body.tasks[0].assignees).toHaveLength(1);
     expect(body.tasks[0].assignees[0].nickname).toBe("Alice");
+    expect(body.tasks[1].status).toBe("todo");
+    expect(body.tasks[1].priority).toBe("normal");
   });
 
   it("GET / - handles db error", async () => {
@@ -199,9 +215,14 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("POST / - handles Zulip failure in create gracefully", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "student" } as any);
-    mockDb.execute.mockResolvedValueOnce([]); // profiles
-    mockDb.execute.mockResolvedValueOnce([{ email: "alice@test.com" }]); // user emails
-    vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip Down"));
+    
+    // Fail the user query to trigger the catch block for assignee notifications
+    mockDb.execute = vi.fn()
+      .mockResolvedValueOnce([]) // insert tasks
+      .mockResolvedValueOnce([]) // insert assignments
+      .mockResolvedValueOnce([]) // insert audit
+      .mockResolvedValueOnce([{ user_id: "user2", nickname: "Alice" }]) // profiles
+      .mockRejectedValueOnce(new Error("DB query fail for user emails"));
 
     const res = await testApp.request("/", {
       method: "POST",
@@ -210,6 +231,65 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+  });
+
+  it("POST / - handles Zulip thread creation failure gracefully", async () => {
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "student" } as any);
+    mockDb.execute = vi.fn()
+      .mockResolvedValueOnce([]) // insert tasks
+      .mockResolvedValueOnce([]) // insert assignments
+      .mockResolvedValueOnce([]) // insert audit
+      .mockResolvedValueOnce([]) // profiles
+      .mockResolvedValueOnce([]); // emails
+    
+    vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip Thread Down"));
+
+    const res = await testApp.request("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "New Task", assignees: [] })
+    }, {}, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+  });
+
+  it("POST / - sends Zulip notification on create", async () => {
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "student" } as any);
+    mockDb.execute = vi.fn().mockResolvedValue([{ email: "alice@test.com", user_id: "user2", nickname: null }]);
+    vi.mocked(sendZulipMessage).mockResolvedValueOnce();
+
+    const res = await testApp.request("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "New Task", assignees: ["user2"], due_date: "2024-01-01" })
+    }, {}, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to resolve
+    expect(sendZulipMessage).toHaveBeenCalled();
+  });
+
+  it("POST / - handles Zulip individual notification failure gracefully", async () => {
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "student" } as any);
+    mockDb.execute = vi.fn()
+      .mockResolvedValueOnce([]) // insert tasks
+      .mockResolvedValueOnce([]) // insert assignments
+      .mockResolvedValueOnce([]) // insert audit
+      .mockResolvedValueOnce([{ user_id: "user2", nickname: "Alice" }]) // profiles
+      .mockResolvedValueOnce([{ email: "alice@test.com", user_id: "user2", nickname: null }]); // emails
+
+    vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip single fail"));
+
+    const res = await testApp.request("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "New Task", assignees: ["user2"], due_date: "2024-01-01" })
+    }, {}, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to resolve
   });
 
   // ─── REORDER ────────────────────────────────────────────────────────────
@@ -368,6 +448,76 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(500);
+  });
+
+  it("PATCH /:id - sends Zulip notification to new assignees", async () => {
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "task1", created_by: "user2", title: "Task" });
+    mockDb.execute = vi.fn().mockResolvedValue([{ email: "bob@test.com", user_id: "user3", nickname: "Bob" }]);
+    vi.mocked(sendZulipMessage).mockResolvedValueOnce();
+    
+    const res = await testApp.request("/task1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Updated Task", assignees: ["user3"] })
+    }, {}, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    expect(sendZulipMessage).toHaveBeenCalled();
+  });
+
+  it("PATCH /:id - handles Zulip notification rejection", async () => {
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "task1", created_by: "user2", title: "Task" });
+    mockDb.execute = vi.fn().mockResolvedValue([{ email: "bob@test.com", user_id: "user3", nickname: "Bob" }]);
+    vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip API down"));
+    
+    const res = await testApp.request("/task1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignees: ["user3"] })
+    }, {}, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("PATCH /:id - updates all fields and clears assignees", async () => {
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "task1", created_by: "user2", title: "Task" });
+    mockDb.execute = vi.fn().mockResolvedValue([]);
+    
+    const res = await testApp.request("/task1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        description: "New desc",
+        due_date: "2024-01-01",
+        sort_order: 5,
+        assignees: [] 
+      })
+    }, {}, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("PATCH /:id - handles Zulip failure in update gracefully", async () => {
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "task1", created_by: "user2", title: "Task" });
+    
+    // Fail the user query to trigger the catch block for assignee notifications
+    mockDb.execute = vi.fn()
+      .mockResolvedValueOnce([]) // update task
+      .mockResolvedValueOnce([]) // delete assignments
+      .mockResolvedValueOnce([]) // insert assignments
+      .mockRejectedValueOnce(new Error("DB query fail for user emails"));
+    
+    const res = await testApp.request("/task1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Updated Task", assignees: ["user3"] })
+    }, {}, mockExecutionContext);
+
+    expect(res.status).toBe(200);
   });
 
   // ─── DELETE ─────────────────────────────────────────────────────────────

@@ -289,7 +289,8 @@ describe("Analytics Router", () => {
       mockDb.execute.mockResolvedValue([
         { user_id: "1", first_name: "Alice", badge_count: 5, member_type: "mentor" },
         { user_id: "2", member_type: "student", badge_count: 2 },
-        { user_id: "3", member_type: "mentor", badge_count: 1 } // missing first_name
+        { user_id: "3", member_type: "mentor", badge_count: 1 }, // missing first_name
+        { user_id: "4", badge_count: 0 } // missing member_type
       ]);
 
       const req = new Request("http://localhost/leaderboard");
@@ -297,7 +298,7 @@ describe("Analytics Router", () => {
 
       expect(res.status).toBe(200);
       const body = await res.json() as any;
-      expect(body.leaderboard.length).toBe(3);
+      expect(body.leaderboard.length).toBe(4);
       expect(body.leaderboard[1].first_name).toBe("ARES Member");
       expect(body.leaderboard[2].first_name).toBe("ARES");
     });
