@@ -13,8 +13,8 @@ progress:
 
 Phase: 05
 Plan: Not started
-Status: Ready for execution
-Last activity: 2026-04-28 — Milestone v3.4 roadmap created with 3 phases
+Status: Ready for planning
+Last activity: 2026-04-28 — Phase 05 context gathered
 
 ## Accumulated Context
 - (Carried over from v3.2) Calendar integration links directly to `/events/:id` from `react-calendar` views.
