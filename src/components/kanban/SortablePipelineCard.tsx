@@ -1,7 +1,7 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, GripVertical, Building, DollarSign } from "lucide-react";
+import { Trash2, GripVertical, DollarSign } from "lucide-react";
 
 interface PipelineItem {
   id?: string;
@@ -40,6 +40,9 @@ export function SortablePipelineCard({ item, onDelete, onEdit }: SortablePipelin
       ref={setNodeRef}
       style={style}
       onClick={() => onEdit(item)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(item); } }}
+      role="button"
+      tabIndex={0}
       className="bg-black/60 p-3 ares-cut-sm border border-white/5 group hover:border-white/20 transition-all cursor-pointer relative"
     >
       <div className="flex justify-between items-start mb-1 gap-2">
@@ -49,6 +52,9 @@ export function SortablePipelineCard({ item, onDelete, onEdit }: SortablePipelin
             {...listeners}
             className="text-marble/20 hover:text-white cursor-grab active:cursor-grabbing p-0.5 -ml-1 mt-0.5"
             onClick={(e) => e.stopPropagation()} // Prevent edit modal from opening when dragging
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}
+            role="button"
+            tabIndex={0}
           >
             <GripVertical size={14} />
           </div>

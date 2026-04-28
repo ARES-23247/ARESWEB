@@ -16,6 +16,7 @@ import { RefreshCw } from "lucide-react";
 
 export interface KanbanColumnConfig {
   label: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any;
   bg: string;
   text: string;
@@ -96,7 +97,7 @@ export function GenericKanbanBoard<T>({
     return null;
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = (_event: DragOverEvent) => {
     // Only used to provide visual feedback if needed
   };
 

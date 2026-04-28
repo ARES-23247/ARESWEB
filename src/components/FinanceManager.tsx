@@ -4,7 +4,7 @@ import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, DollarSign, PieChart, TrendingUp, TrendingDown, ArrowRight, RefreshCw, Wallet, Building, Circle, UserPlus, Handshake, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
+import { Plus, Trash2, DollarSign, PieChart, TrendingUp, TrendingDown, RefreshCw, Wallet, Building, Circle, UserPlus, Handshake, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
 import { GenericKanbanBoard, KanbanColumnConfig } from "./kanban/GenericKanbanBoard";
 import { SortablePipelineCard } from "./kanban/SortablePipelineCard";
 import SponsorshipEditModal from "./kanban/SponsorshipEditModal";
@@ -27,12 +27,28 @@ const pipelineConfig: Record<string, KanbanColumnConfig> = {
   lost:      { bg: "bg-ares-red/10", text: "text-ares-red", border: "border-ares-red/30", label: "Lost", icon: XCircleIcon },
 };
 
+export interface PipelineItem {
+  id?: string;
+  company_name: string;
+  status: string;
+  estimated_value: number;
+}
+
+export interface TransactionItem {
+  id?: string;
+  type: string;
+  amount: number;
+  category: string;
+  date: string;
+  description: string;
+}
+
 export default function FinanceManager() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"pipeline" | "ledger">("pipeline");
   const [isAdding, setIsAdding] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-  const [editingLead, setEditingLead] = useState<any>(null);
+  const [editingLead, setEditingLead] = useState<PipelineItem | null>(null);
   const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
 
   // ── Queries ──
@@ -41,20 +57,6 @@ export default function FinanceManager() {
   const { data: transactionsRes } = api.finance.listTransactions.useQuery(["finance-transactions", selectedSeason], { query: { season_id: selectedSeason || undefined } });
 
   const summary = summaryRes?.status === 200 ? summaryRes.body : null;
-  interface PipelineItem {
-    id?: string;
-    company_name: string;
-    status: string;
-    estimated_value: number;
-  }
-  interface TransactionItem {
-    id?: string;
-    type: string;
-    amount: number;
-    category: string;
-    date: string;
-    description: string;
-  }
   const pipeline: PipelineItem[] = pipelineRes?.status === 200 ? (pipelineRes.body as unknown as { pipeline: PipelineItem[] }).pipeline : [];
 
   const transactions: TransactionItem[] = transactionsRes?.status === 200 ? (transactionsRes.body as unknown as { transactions: TransactionItem[] }).transactions : [];
@@ -231,19 +233,20 @@ export default function FinanceManager() {
       {/* Main View */}
       {activeTab === 'pipeline' ? (
         <>
-          <GenericKanbanBoard<any>
+          <GenericKanbanBoard<PipelineItem>
             items={pipeline}
             columns={PIPELINE_COLUMNS}
             columnConfig={pipelineConfig}
             getId={(item) => String(item.id)}
             getStatus={(item) => item.status}
-            getSortOrder={(item) => 0} // no sort order in DB currently
+            getSortOrder={(_item) => 0} // no sort order in DB currently
             onReorder={(updates) => {
               // we only care about status updates since sort_order is not saved
               // to optimize, just update the items that changed status
               updates.forEach(update => {
                 const item = pipeline.find(p => String(p.id) === update.id);
                 if (item && item.status !== update.status) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   savePipeline.mutate({ body: { ...item, status: update.status } as any });
                 }
               });
@@ -273,6 +276,7 @@ export default function FinanceManager() {
                 item={editingLead}
                 onClose={() => setEditingLead(null)}
                 onSave={async (id, updates) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   await savePipeline.mutateAsync({ body: { ...editingLead, ...updates } as any });
                   setEditingLead(null);
                 }}

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { X, Trash2, Building, DollarSign, Type, AlignLeft } from "lucide-react";
-import { DashboardInput, DashboardSubmitButton } from "../dashboard/DashboardFormInputs";
 
 interface PipelineItem {
   id?: string;
@@ -47,6 +46,7 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
       <motion.div
@@ -69,12 +69,13 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
 
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
+            <label htmlFor="companyName" className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
               Company Name
             </label>
             <div className="relative">
               <Type className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={16} />
               <input
+                id="companyName"
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
@@ -85,10 +86,11 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
+              <label htmlFor="status" className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
                 Status
               </label>
               <select
+                id="status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 ares-cut-sm p-2.5 text-sm text-white focus:border-ares-red outline-none"
@@ -102,12 +104,13 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
             </div>
             
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
+              <label htmlFor="estimatedValue" className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
                 Est. Value ($)
               </label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={16} />
                 <input
+                  id="estimatedValue"
                   type="number"
                   value={estimatedValue}
                   onChange={(e) => setEstimatedValue(e.target.value)}
@@ -118,10 +121,11 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
+            <label htmlFor="contactPerson" className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
               Contact Person
             </label>
             <input
+              id="contactPerson"
               type="text"
               value={contactPerson}
               onChange={(e) => setContactPerson(e.target.value)}
@@ -131,12 +135,13 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
+            <label htmlFor="notes" className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 block px-1">
               Notes
             </label>
             <div className="relative">
               <AlignLeft className="absolute left-3 top-3 text-marble/40" size={16} />
               <textarea
+                id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Details about the lead..."
