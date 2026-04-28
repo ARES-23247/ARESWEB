@@ -91,62 +91,60 @@ const financeTsRestRouterObj: any = {
       const id = body.id || crypto.randomUUID();
       const isNew = !body.id;
 
-      const result = await db.transaction().execute(async (trx) => {
+      let currentStatus = null;
+      if (!isNew) {
+        const existing = await db
+          .selectFrom("sponsorship_pipeline")
+          .select("status")
+          .where("id", "=", id)
+          .executeTakeFirst();
+        currentStatus = existing?.status?.toLowerCase();
+      }
 
-        let currentStatus = null;
-        if (!isNew) {
-          const existing = await trx
-            .selectFrom("sponsorship_pipeline")
-            .select("status")
-            .where("id", "=", id)
-            .executeTakeFirst();
-          currentStatus = existing?.status?.toLowerCase();
-        }
+      const data = {
+        id,
+        company_name: body.company_name,
+        contact_person: body.contact_person || null,
+        status: body.status,
+        estimated_value: body.estimated_value ?? 0,
+        season_id: body.season_id ? Number(body.season_id) : null,
+        notes: body.notes || null,
+      };
 
-        const data = {
-          id,
-          company_name: body.company_name,
-          contact_person: body.contact_person || null,
-          status: body.status,
-          estimated_value: body.estimated_value ?? 0,
-          season_id: body.season_id ? Number(body.season_id) : null,
-          notes: body.notes || null,
-        };
-
-        if (isNew) {
-          await trx.insertInto("sponsorship_pipeline").values(data).execute();
-        } else {
-          await trx.updateTable("sponsorship_pipeline").set(data).where("id", "=", id).execute();
-        }
+      if (isNew) {
+        await db.insertInto("sponsorship_pipeline").values(data).execute();
+      } else {
+        await db.updateTable("sponsorship_pipeline").set(data).where("id", "=", id).execute();
+      }
 
 
-        if (body.status === "secured" && currentStatus !== "secured") {
-          await trx
-            .insertInto("sponsors")
-            .values({
-              id: crypto.randomUUID(),
-              name: body.company_name,
-              tier: "Bronze",
-              is_active: 1,
-            })
-            .execute();
+      if (body.status === "secured" && currentStatus !== "secured") {
+        await db
+          .insertInto("sponsors")
+          .values({
+            id: crypto.randomUUID(),
+            name: body.company_name,
+            tier: "Bronze",
+            is_active: 1,
+          })
+          .execute();
 
-          await trx
-            .insertInto("finance_transactions")
-            .values({
-              id: crypto.randomUUID(),
-              amount: body.estimated_value || 0,
-              type: "income",
-              category: "Sponsorship",
-              date: new Date().toISOString().split("T")[0],
-              description: `Sponsorship from ${body.company_name}`,
-              season_id: body.season_id ? Number(body.season_id) : null,
-              logged_by: user?.id || "system",
-            })
-            .execute();
-        }
-        return { id };
-      });
+        await db
+          .insertInto("finance_transactions")
+          .values({
+            id: crypto.randomUUID(),
+            amount: body.estimated_value || 0,
+            type: "income",
+            category: "Sponsorship",
+            date: new Date().toISOString().split("T")[0],
+            description: `Sponsorship from ${body.company_name}`,
+            season_id: body.season_id ? Number(body.season_id) : null,
+            logged_by: user?.id || "system",
+          })
+          .execute();
+      }
+      
+      const result = { id };
 
       await logAuditAction(c, isNew ? "create" : "update", "sponsorship_pipeline", result.id);
       return { status: 200 as const, body: { success: true, id: result.id } };

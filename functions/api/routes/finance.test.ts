@@ -171,7 +171,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles save error", async () => {
-      mockDb.transaction.mockImplementationOnce(() => { throw new Error("Fail"); });
+      mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
       const res = await testApp.request("/sponsorship", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
