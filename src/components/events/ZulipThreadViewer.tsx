@@ -6,6 +6,7 @@ import { format } from "date-fns";
 interface ZulipThreadViewerProps {
   stream: string;
   topic: string;
+  label?: string;
 }
 
 interface ZulipMessage {
@@ -17,7 +18,7 @@ interface ZulipMessage {
   content: string;
 }
 
-export default function ZulipThreadViewer({ stream, topic }: ZulipThreadViewerProps) {
+export default function ZulipThreadViewer({ stream, topic, label = "Discussion" }: ZulipThreadViewerProps) {
   const { data, isLoading, isError, error, refetch, isRefetching } = api.zulip.getTopicMessages.useQuery(
     ["zulip", stream, topic],
     {
@@ -68,7 +69,7 @@ export default function ZulipThreadViewer({ stream, topic }: ZulipThreadViewerPr
     <div className="bg-white/5 border border-white/10 ares-cut-sm p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <h3 className="text-xl font-bold text-ares-gold flex items-center gap-2 font-heading uppercase">
-          <MessageSquare size={20} /> Event Discussion
+          <MessageSquare size={20} /> {label}
         </h3>
         <div className="flex items-center gap-2">
           {isRefetching && <RefreshCw className="animate-spin text-ares-gold" size={14} />}

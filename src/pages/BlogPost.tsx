@@ -124,7 +124,7 @@ export default function BlogPost() {
           <TiptapRenderer node={parsedAst} />
 
           {/* Comments (auth-gated, handled via Zulip) */}
-          {slug && session && <ZulipThreadViewer stream="announcements" topic={`Blog: ${post.title}`} />}
+          {slug && session && <ZulipThreadViewer stream="announcements" topic={`Blog: ${post.title}`} label="Blog Discussion" />}
         </motion.article>
       </div>
     </motion.div>

@@ -189,7 +189,7 @@ export default function EventDetail() {
           {/* Zulip Discussion Thread */}
           {session && (
             <div className="mt-12">
-              <ZulipThreadViewer stream="events" topic={`Event: ${event.title}`} />
+              <ZulipThreadViewer stream="events" topic={`Event: ${event.title}`} label="Event Discussion" />
             </div>
           )}
         </motion.article>
