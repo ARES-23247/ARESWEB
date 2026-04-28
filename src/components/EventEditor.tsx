@@ -325,7 +325,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
             >
               <option value="">-- Select a Venue --</option>
               {locations.map(loc => (
-                <option key={loc.id} value={loc.name}>
+                <option key={loc.id} value={`${loc.name} — ${loc.address}`}>
                   {loc.name} ({loc.address})
                 </option>
               ))}

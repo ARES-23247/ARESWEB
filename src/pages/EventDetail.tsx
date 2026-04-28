@@ -142,7 +142,7 @@ export default function EventDetail() {
               <p className="flex items-center gap-2">
                 <span className="text-white">Location:</span>{" "}
                 <a
-                  href={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}`}
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(event.location.includes('—') ? event.location.split('—').pop()!.trim() : event.location)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 decoration-ares-bronze/50 hover:text-white hover:decoration-white transition-colors"
