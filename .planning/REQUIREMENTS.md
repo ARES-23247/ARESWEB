@@ -9,6 +9,7 @@
 - [ ] **COL-04**: System correctly persists the CRDT Yjs document state back to the D1 database as static HTML/AST for read-only rendering without WebSockets.
 - [ ] **COL-05**: System utilizes Liveblocks Webhooks (`YjsDocumentUpdated`) to automatically back up the draft state to the D1 database periodically during active editing sessions and definitively when the last user leaves the room, ensuring zero data loss regardless of individual user disconnects.
 - [ ] **COL-06**: System maintains separation between "draft" (Liveblocks CRDT state/auto-saves) and "published" (public D1 database state), ensuring webhook auto-saves only update the draft revision until a user explicitly clicks "Publish Changes".
+- [ ] **COL-07**: Webhook auto-saves perform in-place updates on the draft row and explicitly BYPASS inserting into `docs_history` or `posts_history` tables to prevent database spam. New history snapshots are only created upon explicit user publication.
 
 ## Traceability
 *(To be populated by Roadmap)*
