@@ -127,9 +127,12 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("GET /admin/list - admin list", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ slug: "test", title: "Test", is_deleted: 1, season_id: "3" }]);
     const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     expect(mockDb.selectFrom).toHaveBeenCalledWith("posts");
+    const body = await res.json() as any;
+    expect(body.posts[0].season_id).toBe(3);
   });
 
   it("POST /admin/save - create new post", async () => {
@@ -180,9 +183,11 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("GET /admin/:slug - get post details", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ slug: "test" });
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ slug: "test", season_id: "5", is_deleted: 1, ast: "{\"type\":\"doc\"}" });
     const res = await testApp.request("/admin/test", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.post.season_id).toBe(5);
   });
 
   it("GET /admin/:slug/history - get post history", async () => {
@@ -224,8 +229,39 @@ describe("Hono Backend - /posts Router", () => {
 
   it("GET / - search published posts", async () => {
     mockDb.execute.mockResolvedValue({ rows: [createMockPost()] });
+    // For sql template tag
+    mockDb.executeQuery = vi.fn().mockResolvedValue({ rows: [createMockPost()] });
     const res = await testApp.request("/?q=test", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
+  });
+
+  it("GET / - search error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+    // Kysely sql tag execute might look for getExecutor().executeQuery
+    mockDb.getExecutor().executeQuery = vi.fn().mockRejectedValueOnce(new Error("Fail"));
+    const res = await testApp.request("/?q=fail", {}, env, mockExecutionContext);
+    expect(res.status).toBe(200); // graceful degrade
+  });
+
+  it("DELETE /admin/:slug/purge - handles db error", async () => {
+    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("Fail"));
+    const res = await testApp.request("/admin/test-post/purge", { 
+      method: "DELETE",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin/:slug/approve - handles internal error", async () => {
+    const { approvePost } = await import("../../../functions/utils/postHistory");
+    (approvePost as any).mockRejectedValueOnce(new Error("Fail"));
+    const res = await testApp.request("/admin/test/approve", { 
+      method: "POST",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(500);
   });
 
   it("POST /admin/:slug - update post", async () => {

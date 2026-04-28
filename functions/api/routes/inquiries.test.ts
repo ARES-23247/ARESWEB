@@ -60,7 +60,12 @@ describe("Hono Backend - /inquiries Router", () => {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
+      where: vi.fn().mockImplementation((col, op, val) => {
+        if (typeof val === 'function') {
+          val(mockDb);
+        }
+        return mockDb;
+      }),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockReturnThis(),
@@ -433,5 +438,29 @@ describe("Hono Backend - /inquiries Router", () => {
     
     const res2 = await purgeOldInquiries(mockDb as any, 0);
     expect(res2.deleted).toBe(0);
+  });
+
+  it("POST / - handles background task errors gracefully", async () => {
+    // Force all external calls to reject to hit the .catch(() => {}) blocks
+    global.fetch = vi.fn().mockRejectedValue(new Error("Fetch failed"));
+    const zulipModule = await import("../../utils/zulipSync");
+    vi.spyOn(zulipModule, "sendZulipMessage").mockRejectedValue(new Error("Zulip failed"));
+    const notifyModule = await import("../../utils/notifications");
+    vi.spyOn(notifyModule, "notifyByRole").mockRejectedValue(new Error("Notify failed"));
+    const githubModule = await import("../../utils/githubProjects");
+    vi.spyOn(githubModule, "createProjectItem").mockRejectedValue(new Error("GitHub failed"));
+
+    const res = await testApp.request("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "sponsor", name: "Acme", email: "sponsor@acme.com", metadata: {} })
+    }, env, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    
+    // Wait for the background task to complete to ensure the catches are executed
+    if (mockExecutionContext.promises && mockExecutionContext.promises.length > 0) {
+      await Promise.allSettled(mockExecutionContext.promises);
+    }
   });
 });

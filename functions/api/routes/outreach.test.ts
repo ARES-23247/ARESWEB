@@ -141,6 +141,32 @@ describe("Hono Backend - /outreach Router", () => {
     expect(body.logs[0].title).toBe("Volunteer");
   });
 
+  it("GET /admin/list - fallback properties and long description", async () => {
+    mockDb.execute
+      .mockResolvedValueOnce([
+        { id: "1", title: "Test", date: "2024-01-01", students_count: null, hours_logged: null, reach_count: null, description: "A".repeat(250), is_mentoring: null, mentored_team_number: null, season_id: null }
+      ])
+      .mockResolvedValueOnce([]); // events
+      
+    const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.logs[0].description.length).toBe(203); // 200 + "..."
+  });
+
+  it("GET / - handles volunteer fetch failure gracefully", async () => {
+    mockDb.execute
+      .mockResolvedValueOnce([
+        { id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "A".repeat(250) }
+      ])
+      .mockRejectedValueOnce(new Error("Volunteer DB Error")); // fetchVolunteerEvents fails
+      
+    const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.logs).toHaveLength(1);
+  });
+
   it("GET /admin/list - handles admin list failure", async () => {
     mockDb.execute.mockRejectedValue(new Error("DB Error"));
     const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
@@ -164,5 +190,37 @@ describe("Hono Backend - /outreach Router", () => {
       body: JSON.stringify({})
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
+  });
+
+  it("POST /admin/save - handles unauthorized", async () => {
+    const middleware = await import("../middleware");
+    vi.mocked(middleware.getSessionUser).mockResolvedValueOnce(null);
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ title: "Fail", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /admin/save - create with mentoring", async () => {
+    mockDb.executeTakeFirst.mockResolvedValue({ insertId: 123n });
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ title: "New", is_mentoring: true, mentored_team_number: "1234", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("DELETE /admin/:id - handles unauthorized", async () => {
+    const middleware = await import("../middleware");
+    vi.mocked(middleware.getSessionUser).mockResolvedValueOnce(null);
+    const res = await testApp.request("/admin/123", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(401);
   });
 });

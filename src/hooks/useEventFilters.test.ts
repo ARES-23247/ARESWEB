@@ -17,7 +17,9 @@ describe("useEventFilters hook", () => {
   it("filters and sorts upcoming and past events correctly", () => {
     const events: EventItem[] = [
       { id: "1", title: "Past Outreach", category: "outreach", date_start: "2023-10-10T10:00:00Z", date_end: null, location: "", description: "", cover_image: null, tba_event_key: null },
+      { id: "1b", title: "Older Past Outreach", category: "outreach", date_start: "2023-10-05T10:00:00Z", date_end: null, location: "", description: "", cover_image: null, tba_event_key: null },
       { id: "2", title: "Future Outreach", category: "outreach", date_start: "2023-10-20T10:00:00Z", date_end: null, location: "", description: "", cover_image: null, tba_event_key: null },
+      { id: "2b", title: "Later Future Outreach", category: "outreach", date_start: "2023-10-25T10:00:00Z", date_end: null, location: "", description: "", cover_image: null, tba_event_key: null },
       { id: "3", title: "Past Practice", category: "internal", date_start: "2023-10-11T10:00:00Z", date_end: null, location: "", description: "", cover_image: null, tba_event_key: null },
       { id: "4", title: "Future Practice", category: "internal", date_start: "2023-10-21T10:00:00Z", date_end: null, location: "", description: "", cover_image: null, tba_event_key: null },
       { id: "5", title: "Past External", category: "external", date_start: "2023-10-12T10:00:00Z", date_end: null, location: "", description: "", cover_image: null, tba_event_key: null },
@@ -26,11 +28,13 @@ describe("useEventFilters hook", () => {
 
     const { result } = renderHook(() => useEventFilters(events));
     
-    expect(result.current.upcomingOutreach).toHaveLength(1);
+    expect(result.current.upcomingOutreach).toHaveLength(2);
     expect(result.current.upcomingOutreach[0].id).toBe("2");
+    expect(result.current.upcomingOutreach[1].id).toBe("2b");
     
-    expect(result.current.pastOutreach).toHaveLength(1);
+    expect(result.current.pastOutreach).toHaveLength(2);
     expect(result.current.pastOutreach[0].id).toBe("1");
+    expect(result.current.pastOutreach[1].id).toBe("1b");
 
     expect(result.current.upcomingPractices).toHaveLength(1);
     expect(result.current.upcomingPractices[0].id).toBe("4");

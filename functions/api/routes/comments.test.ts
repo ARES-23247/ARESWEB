@@ -122,4 +122,120 @@ describe("Hono Backend - /comments Router", () => {
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });
+
+  // Error paths and edge cases
+  it("GET list - handles db error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+    const res = await testApp.request("/post/my-post", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST submit - handles unverified user", async () => {
+    const { getSessionUser } = await import("../middleware");
+    (getSessionUser as any).mockResolvedValueOnce({ id: "1", role: "unverified" });
+    const res = await testApp.request("/post/my-post", { method: "POST", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(403);
+  });
+
+  it("POST submit - handles long content", async () => {
+    const res = await testApp.request("/post/my-post", { method: "POST", body: JSON.stringify({ content: "A".repeat(15000) }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(400);
+  });
+
+  it("POST submit - handles internal error", async () => {
+    mockDb.insertInto.mockReturnValue({ values: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Fail")) }) });
+    const res = await testApp.request("/post/my-post", { method: "POST", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST submit - handles Zulip and Notification failures", async () => {
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
+    const { emitNotification } = await import("../../utils/notifications");
+    vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip fail"));
+    vi.mocked(emitNotification).mockRejectedValueOnce(new Error("Notif fail"));
+    
+    mockDb.executeTakeFirst = vi.fn()
+      .mockResolvedValueOnce({ cf_email: "other@test.com" })
+      .mockResolvedValueOnce({ id: "author-id" });
+    
+    const res = await testApp.request("/post/my-post", {
+      method: "POST",
+      body: JSON.stringify({ content: "test" }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    
+    expect(res.status).toBe(200);
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
+  });
+
+  it("PATCH edit - handles not found", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    const res = await testApp.request("/1", { method: "PATCH", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(404);
+  });
+
+  it("PATCH edit - handles unauthorized user (not owner)", async () => {
+    const { getSessionUser } = await import("../middleware");
+    (getSessionUser as any).mockResolvedValueOnce({ id: "user", role: "member" }); // not admin
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "other-user" });
+    const res = await testApp.request("/1", { method: "PATCH", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(403);
+  });
+
+  it("PATCH edit - handles db error", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev" });
+    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Fail")) }) }) });
+    const res = await testApp.request("/1", { method: "PATCH", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("PATCH edit - handles Zulip Update failure", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
+    const { updateZulipMessage } = await import("../../utils/zulipSync");
+    vi.mocked(updateZulipMessage).mockRejectedValueOnce(new Error("Zulip fail"));
+    
+    const res = await testApp.request("/1", {
+      method: "PATCH",
+      body: JSON.stringify({ content: "Updated content" }),
+      headers: { "Content-Type": "application/json" },
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+
+    expect(res.status).toBe(200);
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
+  });
+
+  it("DELETE - handles not found", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    const res = await testApp.request("/1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(404);
+  });
+
+  it("DELETE - handles unauthorized user (not owner/admin)", async () => {
+    const { getSessionUser } = await import("../middleware");
+    (getSessionUser as any).mockResolvedValueOnce({ id: "user", role: "member" }); // not admin, not owner
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "other-user" });
+    const res = await testApp.request("/1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(403);
+  });
+
+  it("DELETE - handles internal error", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev" });
+    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Fail")) }) }) });
+    const res = await testApp.request("/1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE - handles Zulip Delete failure", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
+    const { deleteZulipMessage } = await import("../../utils/zulipSync");
+    vi.mocked(deleteZulipMessage).mockRejectedValueOnce(new Error("Zulip fail"));
+
+    const res = await testApp.request("/1", { 
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
+  });
 });

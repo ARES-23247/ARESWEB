@@ -150,4 +150,47 @@ describe("Hono Backend - /zulip Router", () => {
     const res = await testApp.request("/topic?stream=general&topic=test", {}, {}, mockExecutionContext);
     expect(res.status).toBe(403);
   });
+
+  it("GET /topic - handles 500 error", async () => {
+    vi.mocked(getSocialConfig).mockResolvedValueOnce({
+      ZULIP_BOT_EMAIL: "bot@test.com",
+      ZULIP_API_KEY: "key123",
+      ZULIP_URL: "https://test.zulip.com"
+    } as any);
+
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 500, text: async () => "Internal Error" });
+
+    const res = await testApp.request("/topic?stream=general&topic=test", {}, {}, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /presence - handles users fetch error", async () => {
+    vi.mocked(getSocialConfig).mockResolvedValueOnce({
+      ZULIP_BOT_EMAIL: "bot@test.com",
+      ZULIP_API_KEY: "key123",
+      ZULIP_URL: "https://test.zulip.com"
+    } as any);
+
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) }) // /presence
+      .mockResolvedValueOnce({ ok: false }); // /users
+
+    const res = await testApp.request("/presence", {}, {}, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /presence - handles empty users response", async () => {
+    vi.mocked(getSocialConfig).mockResolvedValueOnce({
+      ZULIP_BOT_EMAIL: "bot@test.com",
+      ZULIP_API_KEY: "key123",
+      ZULIP_URL: "https://test.zulip.com"
+    } as any);
+
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) }) // /presence
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) }); // /users
+
+    const res = await testApp.request("/presence", {}, {}, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
 });

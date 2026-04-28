@@ -34,7 +34,15 @@ describe("Hono Backend - /sponsors Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockReturnThis(),
+      onConflict: vi.fn((key) => {
+        if (typeof key === "function") {
+          key({
+            column: vi.fn().mockReturnThis(),
+            doUpdateSet: vi.fn().mockReturnThis()
+          });
+        }
+        return mockDb;
+      }),
       doUpdateSet: vi.fn().mockReturnThis(),
       updateTable: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
@@ -69,6 +77,15 @@ describe("Hono Backend - /sponsors Router", () => {
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ name: "Google", tier: "Gold", logo_url: "https://example.com/logo.png", website_url: "https://example.com", description: "..." }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - save sponsor with optional props", async () => {
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ id: "my-sponsor", name: "Google", tier: "Gold", logo_url: "https://example.com/logo.png", website_url: "https://example.com", is_active: 1 }),
       headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);

@@ -168,6 +168,21 @@ describe("Hono Backend - /github Router", () => {
       expect(res.status).toBe(500);
     });
 
+    it("handles GitHub API error on commit activity fetch", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ name: "repo1" }]
+      });
+
+      fetchMock.mockRejectedValueOnce(new Error("Network Error"));
+
+      const res = await testApp.request("/activity", {}, {}, mockExecutionContext);
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.repoCount).toBe(1);
+      expect(body.totalCommits).toBe(0);
+    });
+
     it("returns cached response if available", async () => {
       vi.stubGlobal("caches", {
         open: vi.fn().mockResolvedValue({

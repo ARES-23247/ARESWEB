@@ -21,6 +21,10 @@ vi.mock("../../utils/crypto", () => ({
   encrypt: vi.fn((val) => Promise.resolve("encrypted_" + val)),
 }));
 
+vi.mock("./_profileUtils", () => ({
+  upsertProfile: vi.fn().mockResolvedValue(true),
+}));
+
 import { usersRouter } from "./users";
 
 describe("Hono Backend - /users Router", () => {
@@ -166,6 +170,12 @@ describe("Hono Backend - /users Router", () => {
     expect(res.status).toBe(404);
   });
 
+  it("GET /admin/:id - database error", async () => {
+    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("Fail"));
+    const res = await testApp.request("/admin/1", {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
   it("PATCH /admin/:id - error", async () => {
     mockDb.updateTable.mockImplementationOnce(() => { throw new Error("DB error") });
     const res = await testApp.request("/admin/1", {
@@ -184,5 +194,65 @@ describe("Hono Backend - /users Router", () => {
       body: JSON.stringify({})
     }, env, mockExecutionContext);
     expect(res.status).toBe(500);
+  });
+
+  it("PUT /admin/:id/profile - handles error", async () => {
+    const { upsertProfile } = await import("./_profileUtils");
+    (upsertProfile as any).mockRejectedValueOnce(new Error("Fail"));
+    const res = await testApp.request("/admin/1/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nickname: "Admin User" })
+    }, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /admin/:id/profile - handles user not found", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    const res = await testApp.request("/admin/999/profile", {}, env, mockExecutionContext);
+    expect(res.status).toBe(404);
+  });
+
+  it("GET /admin/:id/profile - gets default profile if none exists", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({
+      id: "1", name: "Admin", email: "admin@test.com", image: null, role: "admin"
+    }); // user
+    mockDb.executeTakeFirst.mockResolvedValueOnce(null); // profile
+
+    const res = await testApp.request("/admin/1/profile", {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as Record<string, any>;
+    expect(body.profile.nickname).toBe("Admin");
+  });
+
+  it("GET /admin/:id/profile - handles database error", async () => {
+    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("Fail"));
+    const res = await testApp.request("/admin/1/profile", {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /admin/list - list users with masked email for student", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "Student", email: "student123@test.com", member_type: "student", role: "user" }]);
+    const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as Record<string, any>;
+    expect(body.users[0].email).toBe("st********@test.com");
+  });
+
+  it("GET /admin/:id/profile - handles decryption error", async () => {
+    const { decrypt } = await import("../../utils/crypto");
+    (decrypt as any).mockRejectedValueOnce(new Error("Decryption failed"));
+
+    mockDb.executeTakeFirst.mockResolvedValueOnce({
+      id: "1", name: "Admin", email: "admin@test.com", image: null, role: "admin"
+    }); // user
+    mockDb.executeTakeFirst.mockResolvedValueOnce({
+      user_id: "1", nickname: "Admin User", emergency_contact_name: "encrypted_bad"
+    }); // profile
+
+    const res = await testApp.request("/admin/1/profile", {}, env, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as Record<string, any>;
+    expect(body.profile.emergency_contact_name).toBe("[Decryption Failed]");
   });
 });

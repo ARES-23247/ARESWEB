@@ -11,7 +11,6 @@ import { api } from "../api/client";
 import SEO from "../components/SEO";
 import { extractTextFromAst } from "../utils/content";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface EventRow {
   id: string;
   title: string;
@@ -92,13 +91,11 @@ export default function EventDetail() {
         image={event.cover_image || undefined}
         type="event"
       />
-      {/* ─── STANDALONE EVENT HERO ─── */}
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-bronze">
         <GreekMeander variant="thick" opacity="opacity-60" className="absolute bottom-[-1px] left-0 z-10" />
-        <img src={event.cover_image || DEFAULT_COVER_IMAGE} alt={event.title} className={`absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity ${event.cover_image ? 'object-cover' : 'object-contain p-16 bg-black/80'}`} />
+        <img src={event.cover_image || DEFAULT_COVER_IMAGE} alt={event.title} className={`absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity ${event.cover_image ? "object-cover" : "object-contain p-16 bg-black/80"}`} />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/70 to-transparent"></div>
         
-        {/* Motif: Glowing shield orb (Aegis) overlay */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vh] h-[80vh] rounded-full border border-ares-gold/10 shadow-[0_0_120px_rgba(192,0,0,0.15)] pointer-events-none mix-blend-screen animate-pulse-slow" aria-hidden="true"></div>
         
         <motion.div 
@@ -137,18 +134,18 @@ export default function EventDetail() {
           </h1>
           <div className="mt-8 flex flex-col md:flex-row gap-6 text-ares-bronze font-medium text-lg lg:text-xl">
             <p className="flex items-center gap-2">
-              <span className="text-white">Date:</span> {format(startDate, 'EEEE, MMMM do, yyyy')}
+              <span className="text-white">Date:</span> {format(startDate, "EEEE, MMMM do, yyyy")}
             </p>
             {event.location && (
               <p className="flex items-center gap-2">
                 <span className="text-white">Location:</span>{" "}
                 <a
-                  href={`https://maps.google.com/maps?q=${encodeURIComponent(locationAddress || (event.location.includes('—') ? event.location.split('—').pop()!.trim() : event.location))}`}
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(locationAddress || (event.location.includes("—") ? event.location.split("—").pop()!.trim() : event.location))}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 decoration-ares-bronze/50 hover:text-white hover:decoration-white transition-colors"
                 >
-                  {event.location} ↗
+                  {event.location} <span className="sr-only">(Opens in Google Maps)</span> &nearr;
                 </a>
               </p>
             )}
@@ -156,9 +153,7 @@ export default function EventDetail() {
         </motion.div>
       </section>
 
-      {/* ─── EVENT CONTENT BODY ─── */}
       <section className="relative w-full max-w-5xl mx-auto px-6 py-16 flex flex-col md:flex-row gap-12">
-        {/* Motif: Ionic Pillar Divider on Desktop */}
         <div className="hidden md:flex flex-col items-center shrink-0 w-8 opacity-20" aria-hidden="true">
           <div className="w-8 h-4 border-b-2 border-ares-gold mb-2"></div>
           <div className="w-2 flex-1 bg-gradient-to-b from-ares-gold to-ares-bronze/10 rounded-full"></div>
@@ -192,10 +187,8 @@ export default function EventDetail() {
             </div>
           )}
 
-          {/* Sign-Up Sheet */}
           {id && <EventSignups eventId={id} isPotluck={event.is_potluck === 1} isVolunteer={event.is_volunteer === 1} />}
           
-          {/* Zulip Discussion Thread */}
           {session && (
             <div className="mt-12">
               <ZulipThreadViewer stream="events" topic={`Event: ${event.title}`} label="Event Discussion" />

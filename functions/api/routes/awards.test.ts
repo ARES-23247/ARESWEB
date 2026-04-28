@@ -81,6 +81,77 @@ describe("Hono Backend - /awards Router", () => {
     expect(res.status).toBe(200);
   });
 
+  it("GET / - list all awards with missing optional fields", async () => {
+    mockDb.execute.mockResolvedValueOnce([
+      { id: "1", title: "Missing", date: "2024", created_at: null }
+    ]);
+    const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.awards[0].image_url).toBe("trophy");
+    expect(body.awards[0].season_id).toBeNull();
+  });
+
+  it("GET / - handles db error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin/save - update existing award by ID", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: 123 }); // Find by ID
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({
+        id: "123",
+        title: "Updated",
+        year: 2024
+      }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - update existing award by duplicate match", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: 123 }); // Find by duplicate title/year/event
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({
+        title: "Duplicate",
+        year: 2024,
+        season_id: 5
+      }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - create new award with mock insert object", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce(null); // Not duplicate
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ insertId: 999n }); // Insert result
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({
+        title: "New",
+        year: 2024
+      }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.id).toBe("999");
+  });
+
+  it("POST /admin/save - handles db error", async () => {
+    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ title: "Fail", year: 2024 }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
   it("DELETE /admin/:id - soft-delete", async () => {
     const res = await testApp.request("/admin/123", {
       method: "DELETE",
@@ -89,5 +160,16 @@ describe("Hono Backend - /awards Router", () => {
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
 
     expect(res.status).toBe(200);
+  });
+
+  it("DELETE /admin/:id - handles db error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/123", {
+      method: "DELETE",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+
+    expect(res.status).toBe(500);
   });
 });

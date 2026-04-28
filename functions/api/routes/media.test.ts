@@ -309,11 +309,14 @@ describe("Hono Backend - /media Router", () => {
     expect(res.status).toBe(404);
   });
 
-  it("isValidImage - JPEG, GIF, WEBP", async () => {
+  it("isValidImage - JPEG, GIF, WEBP, PNG, HEIC, and Invalid", async () => {
     const { isValidImage } = await import("./media/handlers");
     expect(isValidImage(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]).buffer)).toBe(true);
     expect(isValidImage(new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]).buffer)).toBe(true);
     expect(isValidImage(new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]).buffer)).toBe(true);
+    expect(isValidImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer)).toBe(true);
+    expect(isValidImage(new Uint8Array([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, 0x00, 0x00, 0x00, 0x00]).buffer)).toBe(true);
+    expect(isValidImage(new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]).buffer)).toBe(false);
   });
 
   it("GET / admin - paginated list", async () => {
@@ -344,7 +347,8 @@ describe("Hono Backend - /media Router", () => {
 
   it("GET / - internal failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
-    const res = await (mediaHandlers.getMedia as any)({}, { env: { ...env, ARES_STORAGE: { list: vi.fn().mockRejectedValue(new Error("List Fail")) } }, req: { url: "http://localhost/", header: vi.fn() } });
+    const mockDbFail = { prepare: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
+    const res = await (mediaHandlers.getMedia as any)({}, { env: { ...env, DB: mockDbFail }, req: { url: "http://localhost/", header: vi.fn() } });
     expect(res.status).toBe(500);
   });
 

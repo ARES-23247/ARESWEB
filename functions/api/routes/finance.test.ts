@@ -248,20 +248,21 @@ describe("Hono Backend - /finance Router", () => {
   });
 
   describe("DELETE /transactions/:id", () => {
-    it("triggers R2 asset cleanup", async () => {
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ receipt_url: "https://storage.com/receipts/123.jpg" });
-      const res = await testApp.request("/transactions/123", { 
+    it("deletes an existing transaction", async () => {
+      mockDb.executeTakeFirst.mockResolvedValueOnce({ receipt_url: "https://r2.ares/receipts/test.png" });
+      const res = await testApp.request("/transactions/tx-123", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({})
       }, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
-      expect(mockEnv.ARES_STORAGE.delete).toHaveBeenCalledWith("receipts/123.jpg");
+      expect(mockDb.deleteFrom).toHaveBeenCalled();
+      expect(mockEnv.ARES_STORAGE.delete).toHaveBeenCalledWith("receipts/test.png");
     });
 
     it("handles missing transaction", async () => {
       mockDb.executeTakeFirst.mockResolvedValueOnce(null);
-      const res = await testApp.request("/transactions/missing", { 
+      const res = await testApp.request("/transactions/tx-123", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({})
@@ -271,7 +272,7 @@ describe("Hono Backend - /finance Router", () => {
 
     it("handles delete error", async () => {
       mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("Fail"));
-      const res = await testApp.request("/transactions/123", { 
+      const res = await testApp.request("/transactions/tx-123", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({})

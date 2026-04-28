@@ -32,7 +32,16 @@ describe("Hono Backend - /badges Router", () => {
       selectFrom: vi.fn().mockReturnThis(),
       innerJoin: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
+      select: vi.fn((args) => {
+        if (Array.isArray(args)) {
+          args.forEach((arg) => {
+            if (typeof arg === "function") {
+              arg({ fn: { count: vi.fn().mockReturnValue({ as: vi.fn() }) } });
+            }
+          });
+        }
+        return mockDb;
+      }),
       where: vi.fn().mockReturnThis(),
       groupBy: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
@@ -123,6 +132,141 @@ describe("Hono Backend - /badges Router", () => {
 
   it("GET /leaderboard - handles error", async () => {
     mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/leaderboard", {}, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin - create badge error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "1", name: "Innovator", description: "...", icon: "Award", color_theme: "..." }),
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin/grant - error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/grant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "u1", badgeId: "b1" }),
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE /admin/grant/:userId/:badgeId - error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/grant/u1/b1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE /admin/:id - error", async () => {
+    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/admin/b1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin/grant - zulip sync error ignored in background", async () => {
+    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("DB error")); // cause background catch
+    const res = await testApp.request("/admin/grant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "u1", badgeId: "b1" }),
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+  it("GET / - list badges with missing optional fields", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ id: "2", name: "No Options", created_at: "2024-01-01" }]); // missing description, icon, color_theme
+    const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET / - handles error without message", async () => {
+    mockDb.execute.mockRejectedValueOnce({});
+    const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin - create badge error without message", async () => {
+    mockDb.execute.mockRejectedValueOnce({});
+    const res = await testApp.request("/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "1", name: "Innovator", description: "...", icon: "Award", color_theme: "..." }),
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("POST /admin/grant - zulip sync without user profile nickname", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ first_name: "John" }); // userProfile without nickname
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ name: "Badge", icon: "Rocket" }); // badge
+    const res = await testApp.request("/admin/grant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "u1", badgeId: "b1" }),
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/grant - zulip sync without user profile name at all", async () => {
+    mockDb.executeTakeFirst.mockResolvedValueOnce({}); // userProfile without anything
+    mockDb.executeTakeFirst.mockResolvedValueOnce({ name: "Badge" }); // badge without icon
+    const res = await testApp.request("/admin/grant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "u1", badgeId: "b1" }),
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/grant - error without message", async () => {
+    mockDb.execute.mockRejectedValueOnce({});
+    const res = await testApp.request("/admin/grant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "u1", badgeId: "b1" }),
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE /admin/grant/:userId/:badgeId - error without message", async () => {
+    mockDb.execute.mockRejectedValueOnce({});
+    const res = await testApp.request("/admin/grant/u1/b1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("DELETE /admin/:id - error without message", async () => {
+    mockDb.execute.mockRejectedValueOnce({});
+    const res = await testApp.request("/admin/b1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    }, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
+  it("GET /leaderboard - leaderboard with null user profile fields", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ user_id: "u1", nickname: null, member_type: null, badge_count: 5 }]);
+    const res = await testApp.request("/leaderboard", {}, mockEnv, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /leaderboard - error without message", async () => {
+    mockDb.execute.mockRejectedValueOnce({});
     const res = await testApp.request("/leaderboard", {}, mockEnv, mockExecutionContext);
     expect(res.status).toBe(500);
   });

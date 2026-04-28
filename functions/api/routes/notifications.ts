@@ -34,7 +34,8 @@ const notificationHandlers = {
       }));
 
       return { status: 200 as const, body: { notifications } as any };
-    } catch {
+    } catch (e) {
+      console.error("GET_NOTIFICATIONS ERROR", e);
       return { status: 500 as const, body: { error: "Fetch failed", notifications: [] } as any };
     }
   },

@@ -36,7 +36,12 @@ describe("Hono Backend - /locations Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockReturnThis(),
+      onConflict: vi.fn((cb) => {
+        if (typeof cb === "function") {
+          cb({ column: vi.fn().mockReturnValue({ doUpdateSet: vi.fn() }) });
+        }
+        return mockDb;
+      }),
       doUpdateSet: vi.fn().mockReturnThis(),
       updateTable: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
@@ -115,6 +120,30 @@ describe("Hono Backend - /locations Router", () => {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: "{}"
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /admin/list - missing optional fields in db", async () => {
+    mockDb.execute.mockResolvedValueOnce([{ name: "Shop", address: "123" }]); // missing id, is_deleted
+    const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - save location with explicit optional fields", async () => {
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ name: "Shop", address: "123 Main St", maps_url: "http://maps", is_deleted: 1 }),
+      headers: { "Content-Type": "application/json" }
+    }, { DEV_BYPASS: "true" }, mockExecutionContext);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /admin/save - handles update without optional fields", async () => {
+    const res = await testApp.request("/admin/save", {
+      method: "POST",
+      body: JSON.stringify({ id: "123", name: "Shop", address: "123 Main St" }),
+      headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });

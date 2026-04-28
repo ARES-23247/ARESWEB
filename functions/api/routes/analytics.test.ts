@@ -28,11 +28,55 @@ describe("Analytics Router", () => {
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
+      select: vi.fn().mockImplementation((arg) => {
+        const executeArg = (a: any) => {
+          if (typeof a === "function") {
+            try {
+              a({
+                fn: {
+                  count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
+                  sum: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
+                  coalesce: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
+                  case: vi.fn().mockReturnValue({
+                    when: vi.fn().mockReturnThis(),
+                    and: vi.fn().mockReturnThis(),
+                    then: vi.fn().mockReturnThis(),
+                    else: vi.fn().mockReturnThis(),
+                    end: vi.fn().mockReturnThis()
+                  })
+                },
+                case: vi.fn().mockReturnValue({
+                  when: vi.fn().mockReturnThis(),
+                  and: vi.fn().mockReturnThis(),
+                  then: vi.fn().mockReturnThis(),
+                  else: vi.fn().mockReturnThis(),
+                  end: vi.fn().mockReturnThis()
+                }),
+                and: vi.fn().mockReturnThis()
+              } as any);
+            } catch (e) {}
+          }
+        };
+        
+        if (Array.isArray(arg)) {
+          arg.forEach(executeArg);
+        } else {
+          executeArg(arg);
+        }
+        return mockDb;
+      }),
       groupBy: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
-      leftJoin: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockImplementation((table, arg1, arg2) => {
+        const joinMock = { onRef: vi.fn().mockReturnThis(), on: vi.fn().mockReturnThis() };
+        if (typeof arg2 === "function") {
+          try { arg2(joinMock); } catch(e){}
+        } else if (typeof arg1 === "function") {
+          try { arg1(joinMock); } catch(e){}
+        }
+        return mockDb;
+      }),
       innerJoin: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
@@ -44,20 +88,14 @@ describe("Analytics Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockReturnThis(),
+      onConflict: vi.fn().mockImplementation((arg) => {
+        if (typeof arg === "function") {
+          try { arg({ columns: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() }); } catch(e){}
+        }
+        return mockDb;
+      }),
       doUpdateSet: vi.fn().mockReturnThis(),
-      fn: {
-        count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
-        sum: vi.fn().mockReturnThis(),
-        coalesce: vi.fn().mockReturnThis(),
-        case: vi.fn().mockReturnValue({
-          when: vi.fn().mockReturnThis(),
-          and: vi.fn().mockReturnThis(),
-          then: vi.fn().mockReturnThis(),
-          else: vi.fn().mockReturnThis(),
-          end: vi.fn().mockReturnThis()
-        })
-      }
+      fn: {}
     };
     env = {
       DB: {},
@@ -85,8 +123,8 @@ describe("Analytics Router", () => {
     it("should log a page view", async () => {
       const req = new Request("http://localhost/track", {
         method: "POST",
-        body: JSON.stringify({ path: "/test", category: "Test", turnstileToken: "good" }),
-        headers: { "Content-Type": "application/json", "CF-Connecting-IP": "1.2.3.4" },
+        body: JSON.stringify({ path: "/test", category: "Test", turnstileToken: "good", referrer: "ref" }),
+        headers: { "Content-Type": "application/json", "CF-Connecting-IP": "1.2.3.4", "User-Agent": "test-agent" },
       });
 
       const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -94,6 +132,17 @@ describe("Analytics Router", () => {
       const body = await res.json() as any;
       expect(body.success).toBe(true);
       expect(mockDb.execute).toHaveBeenCalled();
+    });
+
+    it("should log a page view with missing fields", async () => {
+      const req = new Request("http://localhost/track", {
+        method: "POST",
+        body: JSON.stringify({ turnstileToken: "good" }),
+        headers: { "Content-Type": "application/json" }, // Missing IP and UA
+      });
+
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(200);
     });
 
     it("should return 429 on rate limit exceeded", async () => {
@@ -132,12 +181,23 @@ describe("Analytics Router", () => {
       const req = new Request("http://localhost/sponsor-click", {
         method: "POST",
         body: JSON.stringify({ sponsor_id: "spon-123", turnstileToken: "good" }),
-        headers: { "Content-Type": "application/json", "CF-Connecting-IP": "10.0.0.1" },
+        headers: { "Content-Type": "application/json", "CF-Connecting-IP": "10.0.0.1", "User-Agent": "test-agent" },
       });
 
       const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
       expect(mockDb.execute).toHaveBeenCalled();
+    });
+
+    it("should log a sponsor click with missing headers", async () => {
+      const req = new Request("http://localhost/sponsor-click", {
+        method: "POST",
+        body: JSON.stringify({ sponsor_id: "spon-123", turnstileToken: "good" }),
+        headers: { "Content-Type": "application/json" }, // Missing IP and UA
+      });
+
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
+      expect(res.status).toBe(200);
     });
 
     it("should return 429 on rate limit exceeded", async () => {
@@ -187,14 +247,19 @@ describe("Analytics Router", () => {
     });
 
     it("GET /roster-stats should return member impact data", async () => {
-      mockDb.execute.mockResolvedValue([{ user_id: "1", nickname: "Test User" }]);
+      mockDb.execute.mockResolvedValue([
+        { user_id: "1", nickname: "Test User" },
+        { user_id: "2" } // missing nickname, member_type, etc.
+      ]);
 
       const req = new Request("http://localhost/admin/roster-stats");
       const res = await testApp.request(req, {}, env, mockExecutionContext);
 
       expect(res.status).toBe(200);
       const body = await res.json() as any;
-      expect(body.roster.length).toBe(1);
+      expect(body.roster.length).toBe(2);
+      expect(body.roster[1].nickname).toBeNull();
+      expect(body.roster[1].attended_events).toBe(0);
     });
 
     it("GET /summary should handle DB errors", async () => {
@@ -221,14 +286,20 @@ describe("Analytics Router", () => {
     });
 
     it("GET /leaderboard should return leaderboard data", async () => {
-      mockDb.execute.mockResolvedValue([{ user_id: "1", first_name: "Alice", badge_count: 5 }]);
+      mockDb.execute.mockResolvedValue([
+        { user_id: "1", first_name: "Alice", badge_count: 5, member_type: "mentor" },
+        { user_id: "2", member_type: "student", badge_count: 2 },
+        { user_id: "3", member_type: "mentor", badge_count: 1 } // missing first_name
+      ]);
 
       const req = new Request("http://localhost/leaderboard");
       const res = await testApp.request(req, {}, env, mockExecutionContext);
 
       expect(res.status).toBe(200);
       const body = await res.json() as any;
-      expect(body.leaderboard.length).toBe(1);
+      expect(body.leaderboard.length).toBe(3);
+      expect(body.leaderboard[1].first_name).toBe("ARES Member");
+      expect(body.leaderboard[2].first_name).toBe("ARES");
     });
 
     it("GET /leaderboard should handle DB errors", async () => {
@@ -255,6 +326,16 @@ describe("Analytics Router", () => {
       expect(body.posts).toBe(10);
     });
 
+    it("GET /stats should handle null counts", async () => {
+      mockDb.executeTakeFirst.mockResolvedValue(undefined);
+      const req = new Request("http://localhost/admin/stats");
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.posts).toBe(0);
+    });
+
     it("GET /stats should handle DB errors", async () => {
       mockDb.executeTakeFirst.mockRejectedValue(new Error("DB Error"));
       const req = new Request("http://localhost/admin/stats");
@@ -273,10 +354,6 @@ describe("Analytics Router", () => {
     });
 
     it("should return search results", async () => {
-      // sql<...>`...`.execute(db) calls db.executeQuery() which is inside getExecutor for kysely.
-      // Wait, mockDb itself has executeQuery for sql template tags in Kysely?
-      // Actually `execute(db)` passes the DB connection down.
-      // In kysely, a raw sql template calls `executeQuery` on the passed object.
       mockDb.getExecutor().executeQuery = vi.fn()
         .mockResolvedValueOnce({ rows: [{ id: "1", title: "Post" }] })
         .mockResolvedValueOnce({ rows: [{ id: "2", title: "Event" }] })
@@ -288,6 +365,16 @@ describe("Analytics Router", () => {
       expect(res.status).toBe(200);
       const body = await res.json() as any;
       expect(body.results.length).toBe(3);
+    });
+
+    it("should return search results with undefined rows", async () => {
+      mockDb.getExecutor().executeQuery = vi.fn().mockResolvedValue({});
+      const req = new Request("http://localhost/search?q=test");
+      const res = await testApp.request(req, {}, env, mockExecutionContext);
+      
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.results.length).toBe(0);
     });
 
     it("should handle DB errors", async () => {

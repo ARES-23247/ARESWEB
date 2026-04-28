@@ -157,10 +157,11 @@ const financeTsRestRouterObj: any = {
 
   deletePipeline: async (input: any, c: any) => {
     try {
-      const { params } = input;
+      const { params } = input || {};
+      const id = params?.id || c.req?.param("id") || new URL(c.req.raw.url).pathname.split("/").pop();
       const db = c.get("db") as Kysely<DB>;
-      await db.deleteFrom("sponsorship_pipeline").where("id", "=", params.id).execute();
-      await logAuditAction(c, "delete", "sponsorship_pipeline", params.id);
+      await db.deleteFrom("sponsorship_pipeline").where("id", "=", id).execute();
+      await logAuditAction(c, "delete", "sponsorship_pipeline", id);
       return { status: 200 as const, body: { success: true } };
     } catch (e: any) {
       return { status: 500 as const, body: { error: e.stack || e.message } };
@@ -229,24 +230,25 @@ const financeTsRestRouterObj: any = {
 
   deleteTransaction: async (input: any, c: any) => {
     try {
-      const { params } = input;
+      const { params } = input || {};
+      const id = params?.id || c.req?.param("id") || new URL(c.req.raw.url).pathname.split("/").pop();
       const db = c.get("db") as Kysely<DB>;
       const tx = await db
         .selectFrom("finance_transactions")
         .select("receipt_url")
-        .where("id", "=", params.id)
+        .where("id", "=", id)
         .executeTakeFirst();
 
       if (!tx) return { status: 404 as const, body: { error: "Transaction not found" } };
 
-      await db.deleteFrom("finance_transactions").where("id", "=", params.id).execute();
+      await db.deleteFrom("finance_transactions").where("id", "=", id).execute();
 
       if (tx.receipt_url && tx.receipt_url.includes("receipts/")) {
         const key = tx.receipt_url.split("receipts/")[1];
         c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(`receipts/${key}`));
       }
 
-      await logAuditAction(c, "delete", "finance_transactions", params.id);
+      await logAuditAction(c, "delete", "finance_transactions", id);
       return { status: 200 as const, body: { success: true } };
     } catch (e: any) {
       console.error("[Finance] Delete error:", e);
