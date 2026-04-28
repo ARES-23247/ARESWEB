@@ -1,15 +1,18 @@
 # Roadmap
 
-## Active Phase
+## Milestones
 
-### Phase 2: Tech Debt Cleanup
-**Goal:** Address test flakiness (`setTimeout` hacks), standardize Kysely expression builder mocks, and harden media upload file validation.
+- ✅ **v1.1 Tech Debt Cleanup** — Phases 1-2 (shipped 2026-04-28)
 
-## Completed Phases
+## Phases
 
-### Phase 1: 100% Backend Test Coverage
-**Goal:** Fix the remaining coverage gaps (specifically in `posts.ts` line 346) to ensure the API meets the 100% function coverage requirement for CI/CD deployment.
-*(Completed 2026-04-28)*
+<details>
+<summary>✅ v1.1 Tech Debt Cleanup (Phases 1-2) — SHIPPED 2026-04-28</summary>
+
+- [x] Phase 1: 100% Backend Test Coverage — completed 2026-04-28
+- [x] Phase 2: Tech Debt Cleanup — completed 2026-04-28
+
+</details>
 
 ## Future Phases
 

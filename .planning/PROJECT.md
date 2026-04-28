@@ -19,9 +19,9 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Finance** — Ledger for transactions and sponsorships.
 - ✓ **Analytics** — Aggregated team statistics.
 - ✓ **Outreach** — External team engagement tracking.
+- ✓ **Milestone 2 (Tech Debt Cleanup)** — Addressed architectural fragility, resolved `waitUntil` test flakiness, standardized Kysely database mocks, and hardened media upload validation.
 
 ### Active
-- [ ] **Milestone 2 (Tech Debt Cleanup):** Address architectural fragility identified in `CONCERNS.md`, specifically resolving `waitUntil` test flakiness, standardizing Kysely database mocks, and hardening media upload validation.
 - [ ] Maintain functionality of the website and ensure new features align with the strict CI/CD and coverage requirements.
 
 ### Out of Scope
