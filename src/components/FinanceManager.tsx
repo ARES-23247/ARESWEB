@@ -71,7 +71,12 @@ export default function FinanceManager() {
     onSuccess: () => {
       toast.success("Sponsorship updated.");
       queryClient.invalidateQueries({ queryKey: ["finance-pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
       setIsAdding(false);
+      pipelineForm.reset();
+    },
+    onError: (err: any) => {
+      toast.error(`Failed to save lead: ${err?.body?.error || err?.message || "Unknown error"}`);
     }
   });
 
@@ -81,6 +86,10 @@ export default function FinanceManager() {
       queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
       setIsAdding(false);
+      transactionForm.reset();
+    },
+    onError: (err: any) => {
+      toast.error(`Failed to save transaction: ${err?.body?.error || err?.message || "Unknown error"}`);
     }
   });
 

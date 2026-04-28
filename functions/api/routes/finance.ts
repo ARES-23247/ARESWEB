@@ -106,11 +106,11 @@ const financeTsRestRouterObj: any = {
         const data = {
           id,
           company_name: body.company_name,
-          contact_person: body.contact_person,
+          contact_person: body.contact_person || null,
           status: body.status,
-          estimated_value: body.estimated_value,
+          estimated_value: body.estimated_value ?? 0,
           season_id: body.season_id ? body.season_id.toString() : null,
-          notes: body.notes,
+          notes: body.notes || null,
         };
 
         if (isNew) {
@@ -140,7 +140,7 @@ const financeTsRestRouterObj: any = {
               category: "Sponsorship",
               date: new Date().toISOString().split("T")[0],
               description: `Sponsorship from ${body.company_name}`,
-              season_id: body.season_id?.toString(),
+              season_id: body.season_id ? body.season_id.toString() : null,
               logged_by: user?.id || "system",
             })
             .execute();
@@ -208,8 +208,8 @@ const financeTsRestRouterObj: any = {
         type: body.type,
         category: body.category,
         date: body.date,
-        description: body.description,
-        receipt_url: body.receipt_url,
+        description: body.description || null,
+        receipt_url: body.receipt_url || null,
         season_id: body.season_id ? body.season_id.toString() : null,
         logged_by: user?.id || "system",
       };
