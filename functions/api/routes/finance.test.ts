@@ -148,14 +148,36 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles 'secured' side-effects atomically", async () => {
+      // Mock existing pipeline item as not secured yet
+      mockDb.executeTakeFirst.mockResolvedValueOnce({ status: "potential" });
+      // Mock no existing transaction
+      mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+
       const res = await testApp.request("/sponsorship", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ ...payload, id: "123" })
       }, mockEnv, mockExecutionContext);
 
       expect(res.status).toBe(200);
       expect(mockDb.insertInto).toHaveBeenCalledWith("sponsors");
+    });
+
+    it("does not duplicate transaction if it already exists (idempotency)", async () => {
+      // Mock existing pipeline item as not secured yet
+      mockDb.executeTakeFirst.mockResolvedValueOnce({ status: "potential" });
+      // Mock existing transaction found
+      mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "tx-already-exists" });
+
+      const res = await testApp.request("/sponsorship", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, id: "123", season_id: 2024 })
+      }, mockEnv, mockExecutionContext);
+
+      expect(res.status).toBe(200);
+      // Since it already exists, sponsors should NOT be inserted again.
+      expect(mockDb.insertInto).not.toHaveBeenCalledWith("sponsors");
     });
 
     it("idempotent when already 'secured'", async () => {
@@ -267,7 +289,19 @@ describe("Hono Backend - /finance Router", () => {
       }, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
       expect(mockDb.deleteFrom).toHaveBeenCalled();
+      expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(mockEnv.ARES_STORAGE.delete).toHaveBeenCalledWith("receipts/test.png");
+    });
+
+    it("handles delete safely when executionCtx is not provided", async () => {
+      mockDb.executeTakeFirst.mockResolvedValueOnce({ receipt_url: "https://r2.ares/receipts/test2.png" });
+      const res = await testApp.request("/transactions/tx-123", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      }, mockEnv, null as any); // no executionCtx
+      expect(res.status).toBe(200);
+      expect(mockDb.deleteFrom).toHaveBeenCalled();
     });
 
     it("handles missing transaction", async () => {

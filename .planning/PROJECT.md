@@ -22,15 +22,23 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 2 (Tech Debt Cleanup)** — Addressed architectural fragility, resolved `waitUntil` test flakiness, standardized Kysely database mocks, and hardened media upload validation.
 
 ### Active
-- TBD (Run `/gsd-new-milestone` to define next active milestone)
+- [v3.2] Calendar Subscriptions & Finance Refinements
 
 ## Current State
 
-**v3.1 Shipped Features:**
+**v3.2 Target Features:**
+- One-click iCal/WebCal calendar subscriptions (Apple Calendar, Google Calendar)
+- Fix Finance Manager budget deletion
+- Fix Sponsorship Kanban idempotency bug
+
+<details>
+<summary>v3.1 Shipped Features</summary>
+
 - Replaced the embedded Google Calendar iframe with a native React calendar component.
 - Built D1-backed event management with automatic background syncing to Google Calendar via `waitUntil`.
 - Established `ts-rest` contracts for full CRUD local event management.
 - Successfully achieved 100% test coverage across all new event API routes.
+</details>
 
 <details>
 <summary>v3.0 Shipped Features</summary>

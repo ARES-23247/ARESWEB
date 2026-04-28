@@ -1,10 +1,10 @@
 ---
-milestone: v3.1
-name: Calendar Integration Ecosystem
+milestone: v3.2
+name: Operations & UX Refinement
 status: active
 progress:
-  phases: 0/3
-  plans: 0/3
+  phases: 0/2
+  plans: 0/2
   tasks: 0/0
 ---
 # Project State
@@ -13,8 +13,8 @@ progress:
 
 Phase: None
 Plan: None
-Status: Milestone v3.1 Planned
-Last activity: 2026-04-28 — Milestone v3.1 Initialized
+Status: Milestone v3.2 Planned
+Last activity: 2026-04-28 — Milestone v3.2 Initialized
 
 ## Accumulated Context
 

@@ -139,29 +139,43 @@ const financeTsRestRouterObj: any = {
 
 
       if (body.status === "secured" && currentStatus !== "secured") {
-        await db
-          .insertInto("sponsors")
-          .values({
-            id: crypto.randomUUID(),
-            name: body.company_name,
-            tier: "Bronze",
-            is_active: 1,
-          })
-          .execute();
+        let existingTxQuery = db
+          .selectFrom("finance_transactions")
+          .select("id")
+          .where("description", "=", `Sponsorship from ${body.company_name}`)
+          .where("amount", "=", body.estimated_value || 0);
+          
+        if (body.season_id) {
+          existingTxQuery = existingTxQuery.where("season_id", "=", Number(body.season_id));
+        }
 
-        await db
-          .insertInto("finance_transactions")
-          .values({
-            id: crypto.randomUUID(),
-            amount: body.estimated_value || 0,
-            type: "income",
-            category: "Sponsorship",
-            date: new Date().toISOString().split("T")[0],
-            description: `Sponsorship from ${body.company_name}`,
-            season_id: body.season_id ? Number(body.season_id) : null,
-            logged_by: user?.id || "system",
-          })
-          .execute();
+        const existingTx = await existingTxQuery.executeTakeFirst();
+
+        if (!existingTx) {
+          await db
+            .insertInto("sponsors")
+            .values({
+              id: crypto.randomUUID(),
+              name: body.company_name,
+              tier: "Bronze",
+              is_active: 1,
+            })
+            .execute();
+
+          await db
+            .insertInto("finance_transactions")
+            .values({
+              id: crypto.randomUUID(),
+              amount: body.estimated_value || 0,
+              type: "income",
+              category: "Sponsorship",
+              date: new Date().toISOString().split("T")[0],
+              description: `Sponsorship from ${body.company_name}`,
+              season_id: body.season_id ? Number(body.season_id) : null,
+              logged_by: user?.id || "system",
+            })
+            .execute();
+        }
       }
       
       const result = { id };
@@ -263,7 +277,13 @@ const financeTsRestRouterObj: any = {
 
       if (tx.receipt_url && tx.receipt_url.includes("receipts/")) {
         const key = tx.receipt_url.split("receipts/")[1];
-        c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(`receipts/${key}`));
+        try {
+          if (c.executionCtx?.waitUntil && c.env?.ARES_STORAGE) {
+            c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(`receipts/${key}`));
+          }
+        } catch (err) {
+          console.warn("[Finance] No execution context available for bucket deletion", err);
+        }
       }
 
       await logAuditAction(c, "delete", "finance_transactions", id);
