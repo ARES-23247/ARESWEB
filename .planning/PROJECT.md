@@ -23,18 +23,14 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 ### Active
 
-## Current Milestone: v3.0 Finance Dashboard Restoration
+## Current State
 
-**Goal:** Restore full functionality to the `/dashboard/finance` page, specifically fixing the inability to create cards, and ensure the end-to-end finance feature is fully operational.
+**v3.0 Shipped Features:**
+- Restored Finance Dashboard functionality, explicitly fixing the `estimated_value` coercion and `season_id` type mismatch preventing card creation.
+- Stabilized and verified the backend via the `ts-rest` contract and 100% vitest line coverage requirement.
 
-**Target features:**
-- Debug and fix the "create cards" functionality on the Finance dashboard.
-- Audit and stabilize the surrounding finance UI and API interactions to ensure the page is fully functional.
-- Ensure any fixes adhere to the 100% backend coverage and CI/CD requirements.
-
-- [ ] Maintain functionality of the website and ensure new features align with the strict CI/CD and coverage requirements.
-
-### Out of Scope
+## Next Milestone Goals
+*Run `/gsd-new-milestone` to define the next objective.*
 
 - Self-hosting (Project relies strictly on Cloudflare's serverless edge ecosystem).
 

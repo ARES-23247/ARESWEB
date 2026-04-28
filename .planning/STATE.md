@@ -1,7 +1,7 @@
 ---
-milestone: v3.0
-name: Finance Dashboard Restoration
-status: planning
+milestone: idle
+name: "No Active Milestone"
+status: complete
 progress:
   phases: 0/0
   plans: 0/0
@@ -11,7 +11,7 @@ progress:
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-28 — Milestone v3.0 started
+Phase: None
+Plan: None
+Status: Milestone v3.0 Completed
+Last activity: 2026-04-28 — Milestone v3.0 Archived

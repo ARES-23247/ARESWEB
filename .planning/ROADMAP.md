@@ -1,11 +1,8 @@
-# Roadmap
+# Project Roadmap
 
-## Active Phase
-
-### Phase 1: Finance Card Creation Fix
-**Goal:** Debug and resolve the inability to create finance cards via the `/dashboard/finance` interface.
-**Requirements:** FIN-01, FIN-02, FIN-03, FIN-04
+## Completed Milestones
+- [x] v1.1 ([Archive](milestones/v1.1-ROADMAP.md))
+- [x] v3.0 Finance Dashboard Restoration ([Archive](milestones/v3.0-ROADMAP.md))
 
 ## Future Phases
-
-*(No future phases currently defined)*
+*(No active milestone - Run `/gsd-new-milestone` to begin)*
