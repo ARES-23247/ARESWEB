@@ -1,33 +1,24 @@
-# Roadmap: v3.2 Operations & UX Refinement
+# Roadmap: ARESWEB
 
-**3 phases** | **4 requirements mapped** | All covered ✓
+## Milestones
 
-| # | Phase | Goal | Requirements | Success Criteria |
-|---|-------|------|--------------|------------------|
-| 01 | Calendar Subscriptions | Native iCal/WebCal subscription links for Apple/Google Calendar. | CAL-01 | 2 |
-| 02 | Finance Manager Fixes | Fix budget deletion and Kanban idempotency bugs. | FIN-01, FIN-02, TST-01 | 2 |
-| 03 | Retroactive Verification Generation | Generate missing GSD lifecycle artifacts for Phases 01 and 02 | CAL-01, FIN-01, FIN-02, TST-01 | 2 |
+- ✅ **v3.2 Operations & UX Refinement** — Phases 01-03 (shipped 2026-04-28)
 
-### Phase Details
+## Phases
 
-**Phase 01: Calendar Subscriptions**
-Goal: Native iCal/WebCal subscription links for Apple/Google Calendar.
-Requirements: CAL-01
-Success criteria:
-1. Users can click a button to subscribe to the calendar in their native client (Apple/Google/Outlook).
-2. The iCal feed provides a valid `.ics` format stream of all live events.
+<details>
+<summary>✅ v3.2 Operations & UX Refinement (Phases 01-03) — SHIPPED 2026-04-28</summary>
 
-**Phase 02: Finance Manager Fixes**
-Goal: Fix budget deletion and Kanban idempotency bugs, maximizing API test coverage.
-Requirements: FIN-01, FIN-02, TST-01
-Success criteria:
-1. Users can delete budget items and the UI reflects the removed amount.
-2. Dropping a sponsorship into "Completed" multiple times only adds the budget amount once.
-3. Finance API test coverage is maintained at 100% line coverage.
+- [x] Phase 01: Calendar Subscriptions (1 plan) — completed 2026-04-28
+- [x] Phase 02: Finance Manager Fixes (1 plan) — completed 2026-04-28
+- [x] Phase 03: Retroactive Verification Generation (0 plans) — completed 2026-04-28
 
-**Phase 03: Retroactive Verification Generation**
-Goal: Generate missing GSD lifecycle artifacts for Phases 01 and 02
-Requirements: CAL-01, FIN-01, FIN-02, TST-01
-Success criteria:
-1. VERIFICATION.md and SUMMARY.md created for Phase 01.
-2. VERIFICATION.md and SUMMARY.md created for Phase 02.
+</details>
+
+## Progress
+
+| Phase             | Milestone | Plans Complete | Status      | Completed  |
+| ----------------- | --------- | -------------- | ----------- | ---------- |
+| 01. Calendar Subscriptions | v3.2      | 1/1            | Complete    | 2026-04-28 |
+| 02. Finance Fixes          | v3.2      | 1/1            | Complete    | 2026-04-28 |
+| 03. Verification           | v3.2      | 0/0            | Complete    | 2026-04-28 |

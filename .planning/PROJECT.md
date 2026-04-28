@@ -20,13 +20,14 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Analytics** — Aggregated team statistics.
 - ✓ **Outreach** — External team engagement tracking.
 - ✓ **Milestone 2 (Tech Debt Cleanup)** — Addressed architectural fragility, resolved `waitUntil` test flakiness, standardized Kysely database mocks, and hardened media upload validation.
+- ✓ **Milestone 3.2 (Operations & UX)** — Delivered native iCal/WebCal calendar subscriptions, resolved Kanban sponsorship idempotency bugs, and fixed Finance Manager budget deletion, achieving 100% API coverage.
 
 ### Active
-- [v3.2] Calendar Subscriptions & Finance Refinements
+- (None - Pending next milestone definition)
 
 ## Current State
 
-**v3.2 Target Features:**
+**v3.2 Shipped Features:**
 - One-click iCal/WebCal calendar subscriptions (Apple Calendar, Google Calendar)
 - Fix Finance Manager budget deletion
 - Fix Sponsorship Kanban idempotency bug

@@ -3,19 +3,23 @@ milestone: v3.2
 name: Operations & UX Refinement
 status: active
 progress:
-  phases: 0/2
-  plans: 0/2
-  tasks: 0/0
+  phases: 3/3
+  plans: 2/2
+  tasks: 4/4
 ---
 # Project State
 
 ## Current Position
 
-Phase: None
-Plan: None
-Status: Milestone v3.2 Planned
-Last activity: 2026-04-28 — Milestone v3.2 Initialized
+Phase: Completed
+Plan: Completed
+Status: Pending Milestone Completion
+Last activity: 2026-04-28 — Completed Phase 01 & 02; Implemented calendar event click-to-navigate links.
 
 ## Accumulated Context
+- Calendar integration links directly to `/events/:id` from `react-calendar` views.
+- Idempotency query implemented for `finance_transactions` to prevent duplicate sponsor logging.
+- Deletion API `executionCtx` properly guarded against missing context.
 
 ### Pending Todos
+- Wrap up milestone and archive if no further refinements are requested.
