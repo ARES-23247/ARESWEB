@@ -166,7 +166,7 @@ describe("Zulip Webhook Router", () => {
     const payload = JSON.stringify({ token: "test-token", message: { content: "!broadcast general msg" } });
     const req = new Request("http://localhost/", { method: "POST", body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
-    const json = await res.json() as Record<string, string>;
+    await res.json();
     // Wait, PRIVILEGED commands logic: if (senderEmail) { check user... } 
     // What if !senderEmail? It just bypasses the `if (senderEmail)` and continues to execute?
     // Wait! Let's check:

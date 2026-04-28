@@ -35,7 +35,7 @@ describe("Analytics Router", () => {
           if (typeof a === "function") {
             try {
               a(createMockExpressionBuilder());
-            } catch (e) {}
+            } catch (_e) { /* ignore */ }
           }
         };
         
@@ -49,12 +49,12 @@ describe("Analytics Router", () => {
       groupBy: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
-      leftJoin: vi.fn().mockImplementation((table, arg1, arg2) => {
+      leftJoin: vi.fn().mockImplementation((_table, arg1, arg2) => {
         const joinMock = { onRef: vi.fn().mockReturnThis(), on: vi.fn().mockReturnThis() };
         if (typeof arg2 === "function") {
-          try { arg2(joinMock); } catch(e){}
+          try { arg2(joinMock); } catch(_e) { /* ignore */ }
         } else if (typeof arg1 === "function") {
-          try { arg1(joinMock); } catch(e){}
+          try { arg1(joinMock); } catch(_e) { /* ignore */ }
         }
         return mockDb;
       }),
@@ -71,7 +71,7 @@ describe("Analytics Router", () => {
       values: vi.fn().mockReturnThis(),
       onConflict: vi.fn().mockImplementation((arg) => {
         if (typeof arg === "function") {
-          try { arg({ columns: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() }); } catch(e){}
+          try { arg({ columns: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() }); } catch(_e) { /* ignore */ }
         }
         return mockDb;
       }),

@@ -4,7 +4,6 @@ import { Hono } from "hono";
 import { mockExecutionContext, createMockExpressionBuilder } from "../../../../src/test/utils";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
-import { getSocialConfig } from "../../middleware";
 
 vi.mock("kysely", async (importOriginal) => {
   const actual = await importOriginal<typeof import("kysely")>();

@@ -219,7 +219,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /admin/backup - database export with db execution failure", async () => {
-    mockDb.selectFrom.mockImplementation((table: string) => mockDb);
+    mockDb.selectFrom.mockImplementation((_table: string) => mockDb);
     mockDb.execute.mockRejectedValue(new Error("DB Error"));
 
     const res = await testApp.request("/admin/backup", {}, env, mockExecutionContext);
