@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { addMonths, subMonths, format } from "date-fns";
+import { addMonths, subMonths, format, addHours } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from "lucide-react";
 import SEO from "../components/SEO";
 import { api } from "../api/client";
@@ -12,7 +12,7 @@ import CompetitionBanner from "../components/CompetitionBanner";
 import { useEventFilters } from "../hooks/useEventFilters";
 import { MonthViewGrid } from "../components/calendar/MonthViewGrid";
 import { AgendaViewList } from "../components/calendar/AgendaViewList";
-import { mockCalendarEvents } from "../components/calendar/EventMockData";
+import { CalendarEvent } from "../components/calendar/EventMockData";
 import { CalendarSubscriptionBanner } from "../components/calendar/CalendarSubscriptionBanner";
 
 export default function Events() {
@@ -34,6 +34,30 @@ export default function Events() {
 
 
   
+  // Transform backend events to CalendarEvent format
+  const mappedEvents: CalendarEvent[] = useMemo(() => {
+    return events.map((e) => {
+      const start = new Date(e.date_start);
+      // If no end date is provided, default to 1 hour after start
+      const end = e.date_end ? new Date(e.date_end) : addHours(start, 1);
+      
+      let type: "internal" | "outreach" | "external" = "internal";
+      if (e.category === "outreach" || e.category === "external") {
+        type = e.category;
+      }
+
+      return {
+        id: e.id,
+        title: e.title,
+        start,
+        end,
+        description: e.description || "",
+        location: e.location || "",
+        type
+      };
+    });
+  }, [events]);
+
   // REF-F01: Extracted event filtering into custom hook
   const { 
     upcomingOutreach, 
@@ -137,9 +161,9 @@ export default function Events() {
               {/* Calendar Grid / List */}
               <div className="w-full relative z-10">
                 {view === "month" ? (
-                  <MonthViewGrid currentDate={currentDate} events={mockCalendarEvents} />
+                  <MonthViewGrid currentDate={currentDate} events={mappedEvents} />
                 ) : (
-                  <AgendaViewList events={mockCalendarEvents} />
+                  <AgendaViewList events={mappedEvents} />
                 )}
               </div>
 
