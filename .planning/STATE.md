@@ -1,7 +1,7 @@
 # Project State
 
-**Current Phase:** 1 (Planning)
+**Current Phase:** 2 (Planning/Requirements)
 
 ## Status
-- Codebase has been fully mapped using GSD Mapper.
-- Transitioning to execute Phase 1 to satisfy coverage gates before further development.
+- **Phase 1 (Test Coverage)** is COMPLETE.
+- Transitioning to Phase 2 (Tech Debt Cleanup). Awaiting specification and execution plan for addressing `waitUntil` and mock stability.

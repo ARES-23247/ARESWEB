@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createMockExpressionBuilder } from "../../../src/test/utils";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
@@ -36,7 +36,7 @@ describe("Hono Backend - /badges Router", () => {
         if (Array.isArray(args)) {
           args.forEach((arg) => {
             if (typeof arg === "function") {
-              arg({ fn: { count: vi.fn().mockReturnValue({ as: vi.fn() }) } });
+              arg(createMockExpressionBuilder());
             }
           });
         }

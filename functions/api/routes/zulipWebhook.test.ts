@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipWebhookRouter from "./zulipWebhook";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, flushWaitUntil, createMockExpressionBuilder } from "../../../src/test/utils";
 
 vi.mock("../../utils/zulipSync", () => ({
   sendZulipMessage: vi.fn().mockResolvedValue(1),
@@ -43,7 +43,7 @@ describe("Zulip Webhook Router", () => {
       select: vi.fn().mockImplementation((cb) => {
         if (typeof cb === 'function') {
           // Provide a dummy eb object
-          cb({ fn: { count: vi.fn().mockReturnValue({ as: vi.fn() }) } });
+          cb(createMockExpressionBuilder());
         }
         return mockDb;
       }),
@@ -207,7 +207,7 @@ describe("Zulip Webhook Router", () => {
     const json = await res.json() as Record<string, string>;
     expect(json.content).toContain("Broadcast dispatched");
     // wait for background task
-    await new Promise(r => setTimeout(r, 0));
+    await flushWaitUntil();
   });
 
   it("should return help for !rcv with no args", async () => {

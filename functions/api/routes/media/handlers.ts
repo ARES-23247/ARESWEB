@@ -5,21 +5,27 @@ import { initServer } from "ts-rest-hono";
 const _s = initServer<AppEnv>();
 
 
-// SEC-D02: Magic byte validation helper
 export function isValidImage(buffer: ArrayBuffer): boolean {
-  const arr = new Uint8Array(buffer).subarray(0, 4);
-  // Ensure lowercase for comparison
-  const header = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+  const arr = new Uint8Array(buffer);
   
-  if (header === '89504e47') return true; // PNG
-  if (header.startsWith('ffd8ff') || header === 'ffd8ffe0' || header === 'ffd8ffe1') return true; // JPEG
-  if (header.startsWith('47494638')) return true; // GIF
-  if (header === '52494646') return true; // WEBP
+  if (arr.length >= 8) {
+    const header8 = Array.from(arr.subarray(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    if (header8 === '89504e470d0a1a0a') return true; // PNG
+  }
+  
+  if (arr.length >= 4) {
+    const header4 = Array.from(arr.subarray(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    if (header4.startsWith('ffd8ff') || header4 === 'ffd8ffe0' || header4 === 'ffd8ffe1') return true; // JPEG
+    if (header4.startsWith('47494638')) return true; // GIF
+    if (header4 === '52494646') return true; // WEBP
+  }
   
   // HEIC/HEIF usually have 'ftyp' at offset 4, but let's check first 16 bytes for 'ftypheic' or similar
-  const longerArr = new Uint8Array(buffer).subarray(0, 16);
-  const longerHeader = Array.from(longerArr).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
-  if (longerHeader.includes('66747970')) return true; // 'ftyp'
+  const checkLen = Math.min(arr.length, 16);
+  if (checkLen >= 8) {
+    const longerHeader = Array.from(arr.subarray(0, checkLen)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    if (longerHeader.includes('66747970')) return true; // 'ftyp'
+  }
 
   return false;
 }

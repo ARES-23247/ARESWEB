@@ -1,7 +1,7 @@
  
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import githubWebhookRouter from "./githubWebhook";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
 import * as zulipSync from "../../utils/zulipSync";
 
 vi.mock("../../utils/zulipSync", () => ({
@@ -482,7 +482,7 @@ describe("GitHub Webhook Router", () => {
 
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle zulip message rejection in issues", async () => {
@@ -500,7 +500,7 @@ describe("GitHub Webhook Router", () => {
 
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle zulip message rejection in push", async () => {
@@ -517,7 +517,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle zulip message rejection in projects_v2_item created", async () => {
@@ -530,7 +530,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle zulip message rejection in projects_v2_item edited", async () => {
@@ -543,7 +543,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle zulip message rejection in projects_v2_item deleted", async () => {
@@ -556,7 +556,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
     it("should handle ignored pull_request action", async () => {
       const payload = JSON.stringify({
@@ -571,7 +571,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle ignored issues action", async () => {
@@ -587,7 +587,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle unknown github events gracefully", async () => {
@@ -615,7 +615,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle pull_request closed not merged", async () => {
@@ -631,7 +631,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle pull_request reopened with missing fields", async () => {
@@ -645,7 +645,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle issues closed", async () => {
@@ -661,7 +661,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
 
     it("should handle issues reopened with missing fields", async () => {
@@ -675,7 +675,7 @@ describe("GitHub Webhook Router", () => {
       });
       const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
-      await new Promise(r => setTimeout(r, 0));
+      await flushWaitUntil();
     });
   });
 

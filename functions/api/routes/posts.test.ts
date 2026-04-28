@@ -2,7 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
 import postsRouter from "./posts";
 import { createMockPost } from "../../../src/test/factories/contentFactory";
 
@@ -515,7 +515,7 @@ describe("Hono Backend - /posts Router", () => {
       const p = mockExecutionContext.waitUntil.mock.calls[mockExecutionContext.waitUntil.mock.calls.length - 1][0];
       await p.catch(() => {});
     }
-    await new Promise(resolve => setTimeout(resolve, 10)); // allow catch to run
+    await flushWaitUntil(); // allow catch to run
   });
 
   it("POST /admin/save - handles synchronous error in Zulip prepare", async () => {
@@ -533,7 +533,7 @@ describe("Hono Backend - /posts Router", () => {
       headers: { "Content-Type": "application/json" },
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+    await flushWaitUntil(); // allow waitUntil to throw
   });
 
   it("POST /admin/save - handles async error in Zulip prepare", async () => {
@@ -551,7 +551,7 @@ describe("Hono Backend - /posts Router", () => {
       headers: { "Content-Type": "application/json" },
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+    await flushWaitUntil(); // allow waitUntil to throw
   });
 
   it("DELETE /admin/:slug - handles db error", async () => {

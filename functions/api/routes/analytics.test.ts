@@ -8,6 +8,8 @@ const mockExecutionContext = {
   passThroughOnException: vi.fn(),
 } as any;
 
+import { createMockExpressionBuilder } from "../../../src/test/utils";
+
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -32,28 +34,7 @@ describe("Analytics Router", () => {
         const executeArg = (a: any) => {
           if (typeof a === "function") {
             try {
-              a({
-                fn: {
-                  count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
-                  sum: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
-                  coalesce: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
-                  case: vi.fn().mockReturnValue({
-                    when: vi.fn().mockReturnThis(),
-                    and: vi.fn().mockReturnThis(),
-                    then: vi.fn().mockReturnThis(),
-                    else: vi.fn().mockReturnThis(),
-                    end: vi.fn().mockReturnThis()
-                  })
-                },
-                case: vi.fn().mockReturnValue({
-                  when: vi.fn().mockReturnThis(),
-                  and: vi.fn().mockReturnThis(),
-                  then: vi.fn().mockReturnThis(),
-                  else: vi.fn().mockReturnThis(),
-                  end: vi.fn().mockReturnThis()
-                }),
-                and: vi.fn().mockReturnThis()
-              } as any);
+              a(createMockExpressionBuilder());
             } catch (e) {}
           }
         };

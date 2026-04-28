@@ -1,7 +1,7 @@
  
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../../src/test/utils";
+import { mockExecutionContext, createMockExpressionBuilder } from "../../../../src/test/utils";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
 import { getSocialConfig } from "../../middleware";
@@ -82,11 +82,7 @@ describe("Hono Backend - Events Router", () => {
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockImplementation((cb) => {
         if (typeof cb === 'function') {
-          const ebMock = Object.assign(vi.fn().mockReturnThis(), {
-            or: vi.fn().mockReturnThis(),
-            and: vi.fn().mockReturnThis(),
-            fn: { count: vi.fn().mockReturnValue({ as: vi.fn() }) }
-          });
+          const ebMock = createMockExpressionBuilder();
           cb(ebMock);
         }
         return mockDb;

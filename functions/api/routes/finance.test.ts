@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
+import { createMockExpressionBuilder } from "../../../src/test/utils";
 
 // Mock middleware BEFORE importing the router
 vi.mock("../middleware", async (importOriginal) => {
@@ -42,7 +43,7 @@ describe("Hono Backend - /finance Router", () => {
         if (Array.isArray(args)) {
           args.forEach((arg: any) => {
             if (typeof arg === "function") {
-              arg({ fn: { sum: () => ({ as: vi.fn() }) } });
+              arg(createMockExpressionBuilder());
             }
           });
         }

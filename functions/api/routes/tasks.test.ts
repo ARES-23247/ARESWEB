@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
 import tasksRouter from "./tasks";
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -231,7 +231,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+    await flushWaitUntil(); // allow waitUntil to throw
   });
 
   it("POST / - handles Zulip thread creation failure gracefully", async () => {
@@ -252,7 +252,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to throw
+    await flushWaitUntil(); // allow waitUntil to throw
   });
 
   it("POST / - sends Zulip notification on create", async () => {
@@ -267,7 +267,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to resolve
+    await flushWaitUntil(); // allow waitUntil to resolve
     expect(sendZulipMessage).toHaveBeenCalled();
   });
 
@@ -289,7 +289,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await new Promise(resolve => setTimeout(resolve, 10)); // allow waitUntil to resolve
+    await flushWaitUntil(); // allow waitUntil to resolve
   });
 
   // ─── REORDER ────────────────────────────────────────────────────────────

@@ -27,6 +27,48 @@ export const mockExecutionContext: any = {
   passThroughOnException: vi.fn(),
 };
 
+/**
+ * Awaits all promises passed to `mockExecutionContext.waitUntil` so far,
+ * allowing background tasks in edge functions to finish before test assertions.
+ */
+export async function flushWaitUntil() {
+  const promises = mockExecutionContext.waitUntil.mock.calls.map((call: any[]) => call[0]);
+  mockExecutionContext.waitUntil.mockClear();
+  await Promise.all(promises);
+}
+
+/**
+ * Creates a unified, chainable Kysely ExpressionBuilder mock
+ * which avoids coverage drops from missing internal builder methods.
+ */
+export function createMockExpressionBuilder() {
+  const ebMock: any = vi.fn().mockReturnThis();
+  const asMock = { as: vi.fn().mockReturnValue(ebMock) };
+  
+  ebMock.or = vi.fn().mockReturnThis();
+  ebMock.and = vi.fn().mockReturnThis();
+  ebMock.val = vi.fn().mockReturnThis();
+  ebMock.fn = {
+    count: vi.fn().mockReturnValue(asMock),
+    sum: vi.fn().mockReturnValue(asMock),
+    max: vi.fn().mockReturnValue(asMock),
+    min: vi.fn().mockReturnValue(asMock),
+    coalesce: vi.fn().mockReturnValue(asMock),
+  };
+  ebMock.case = vi.fn().mockReturnValue({
+    when: vi.fn().mockReturnThis(),
+    and: vi.fn().mockReturnThis(),
+    then: vi.fn().mockReturnThis(),
+    else: vi.fn().mockReturnThis(),
+    end: vi.fn().mockReturnThis(),
+  });
+  ebMock.selectFrom = vi.fn().mockReturnThis();
+  ebMock.select = vi.fn().mockReturnThis();
+  ebMock.where = vi.fn().mockReturnThis();
+  ebMock.execute = vi.fn().mockResolvedValue([]);
+  return ebMock;
+}
+
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
