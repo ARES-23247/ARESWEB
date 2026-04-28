@@ -4,7 +4,7 @@ name: Calendar Integration Ecosystem
 status: active
 progress:
   phases: 0/3
-  plans: 0/0
+  plans: 0/3
   tasks: 0/0
 ---
 # Project State

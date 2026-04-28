@@ -1,15 +1,24 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { addMonths, subMonths, format } from "date-fns";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from "lucide-react";
 import SEO from "../components/SEO";
 import { api } from "../api/client";
 
 import { EventCard, EventItem } from "../components/events/EventCard";
 import CompetitionBanner from "../components/CompetitionBanner";
 import { useEventFilters } from "../hooks/useEventFilters";
+import { MonthViewGrid } from "../components/calendar/MonthViewGrid";
+import { AgendaViewList } from "../components/calendar/AgendaViewList";
+import { mockCalendarEvents } from "../components/calendar/EventMockData";
+import { CalendarSubscriptionBanner } from "../components/calendar/CalendarSubscriptionBanner";
 
 export default function Events() {
+  const [view, setView] = useState<"month" | "agenda">("month");
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   const { data: eventsRes, isLoading } = api.events.getEvents.useQuery(["events"], {});
 
   const events = useMemo(() => {
@@ -23,23 +32,7 @@ export default function Events() {
     return [];
   }, [eventsRes]);
 
-  const { data: calendarRes } = api.events.getCalendarSettings.useQuery(["calendar_config"], {});
-  const calendarData = calendarRes?.status === 200 ? calendarRes.body : null;
 
-  // EFF-N01: Memoize calendar configuration mapping
-  const calendars = useMemo(() => {
-    if (!calendarData) return [];
-    return [
-      { id: calendarData.calendarIdInternal, color: "%23A32929" },
-      { id: calendarData.calendarIdOutreach, color: "%23BE6D00" },
-      { id: calendarData.calendarIdExternal, color: "%2329527A" }
-    ].filter(c => c.id);
-  }, [calendarData]);
-
-  const iframeSrc = useMemo(() => {
-    if (calendars.length === 0) return "";
-    return `https://calendar.google.com/calendar/embed?${calendars.map(c => `src=${encodeURIComponent(c.id as string)}&color=${c.color}`).join("&")}&ctz=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}&bgcolor=%23ffffff&showPrint=0&showTabs=1&showCalendars=1`;
-  }, [calendars]);
   
   // REF-F01: Extracted event filtering into custom hook
   const { 
@@ -94,74 +87,64 @@ export default function Events() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {/* Google Calendar Native IFrame */}
+            {/* Custom ARESWEB Calendar UI */}
             <div className="flex flex-col gap-8 mb-16">
-              <div className="flex items-center gap-4">
-                <h2 className="text-3xl font-bold text-white">Full Calendar</h2>
-                <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent"></div>
-              </div>
-              {calendars.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  <div className="w-full bg-white/95 border border-white/10 ares-cut-sm overflow-hidden shadow-lg">
-                    <iframe 
-                      title="Google Calendar"
-                      src={iframeSrc} 
-                      className="w-full h-[600px] md:h-[700px] border-0"
-                      allowFullScreen
-                    />
-                  </div>
-                  <div className="flex justify-end px-2">
-                    <a 
-                      href={iframeSrc} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-[10px] font-bold uppercase tracking-widest text-marble hover:text-ares-cyan transition-colors"
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-3xl font-bold text-white">Full Calendar</h2>
+                  <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent hidden md:block w-32"></div>
+                </div>
+                
+                {/* View Toggles & Navigation */}
+                <div className="flex items-center gap-4 bg-black/40 border border-white/10 ares-cut-sm p-1">
+                  <div className="flex items-center">
+                    <button 
+                      onClick={() => setCurrentDate(prev => subMonths(prev, 1))}
+                      className="p-2 hover:bg-white/10 text-marble transition-colors"
                     >
-                      Calendar blocked by extensions? View directly on Google →
-                    </a>
+                      <ChevronLeft size={20} />
+                    </button>
+                    <span className="w-32 text-center font-bold text-white tracking-widest uppercase text-sm">
+                      {format(currentDate, "MMMM yyyy")}
+                    </span>
+                    <button 
+                      onClick={() => setCurrentDate(prev => addMonths(prev, 1))}
+                      className="p-2 hover:bg-white/10 text-marble transition-colors"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                  <div className="w-px h-6 bg-white/20"></div>
+                  <div className="flex items-center">
+                    <button 
+                      onClick={() => setView("month")}
+                      className={`p-2 transition-colors ${view === "month" ? "bg-ares-red text-white" : "text-marble hover:bg-white/10"}`}
+                      title="Month View"
+                    >
+                      <CalendarIcon size={18} />
+                    </button>
+                    <button 
+                      onClick={() => setView("agenda")}
+                      className={`p-2 transition-colors ${view === "agenda" ? "bg-ares-red text-white" : "text-marble hover:bg-white/10"}`}
+                      title="Agenda View"
+                    >
+                      <List size={18} />
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <div className="w-full h-[600px] bg-black/40 border border-white/10 ares-cut-sm flex items-center justify-center text-marble/50">
-                  <div className="w-8 h-8 border-2 border-ares-gold/30 border-t-ares-gold rounded-full animate-spin"></div>
-                </div>
-              )}
+              </div>
 
-              {/* Subscribe Buttons */}
-              {calendars.length > 0 && (
-                <div className="bg-black/40 border border-white/10 ares-cut-sm p-6">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-marble/50 mb-4">Subscribe to Our Calendars</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                      { id: calendarData?.calendarIdInternal, name: "ARES Practices", color: "ares-red" },
-                      { id: calendarData?.calendarIdOutreach, name: "ARES Outreach & Volunteer", color: "ares-gold" },
-                      { id: calendarData?.calendarIdExternal, name: "ARES Community Spotlight", color: "ares-cyan" },
-                    ].filter(c => c.id).map((cal) => (
-                      <div key={cal.name} className="flex flex-col gap-2 bg-black/40 ares-cut-sm p-4 border border-white/5">
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">{cal.name}</span>
-                        <div className="flex gap-2">
-                          <a
-                            href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(cal.id as string)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={`flex-1 text-center px-3 py-2 bg-${cal.color}/20 hover:bg-${cal.color}/40 text-${cal.color} border border-${cal.color}/30 ares-cut-sm text-xs font-black uppercase tracking-widest transition-all`}
-                          >
-                            + Google
-                          </a>
-                          <a
-                            href={`https://calendar.google.com/calendar/ical/${encodeURIComponent(cal.id as string)}/public/basic.ics`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex-1 text-center px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 ares-cut-sm text-xs font-black uppercase tracking-widest transition-all"
-                          >
-                            + iCal
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Calendar Grid / List */}
+              <div className="w-full relative z-10">
+                {view === "month" ? (
+                  <MonthViewGrid currentDate={currentDate} events={mockCalendarEvents} />
+                ) : (
+                  <AgendaViewList events={mockCalendarEvents} />
+                )}
+              </div>
+
+              {/* Subscription CTA */}
+              <CalendarSubscriptionBanner />
             </div>
 
             {/* Upcoming Outreach Events */}
