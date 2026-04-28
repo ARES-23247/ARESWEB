@@ -46,6 +46,7 @@ export default function Footer() {
             <li><Link to="/about" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Who We Are</Link></li>
             <li><Link to="/seasons" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Seasons</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Outreach</Link></li>
+            <li><Link to="/events" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Events</Link></li>
             <li><Link to="/blog" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> Team Blog</Link></li>
             <li><a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> 3D Models</a></li>
             <li><a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors flex items-center gap-2"><span>{"//"}</span> CAD Workspace</a></li>
