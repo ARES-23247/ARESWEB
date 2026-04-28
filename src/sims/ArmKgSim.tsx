@@ -57,12 +57,9 @@ export default function ArmKgSim() {
     }
     
     function drawArm() {
-      // @ts-expect-error -- D1 untyped response
-      aCtx!.clearRect(0,0,aCanvas.width,aCanvas.height);
-      // @ts-expect-error -- D1 untyped response
-      const cx = aCanvas.width/2;
-      // @ts-expect-error -- D1 untyped response
-      const cy = aCanvas.height/2;
+      aCtx!.clearRect(0,0,aCanvas!.width,aCanvas!.height);
+      const cx = aCanvas!.width/2;
+      const cy = aCanvas!.height/2;
 
       const aresRed = getComputedStyle(document.documentElement).getPropertyValue('--ares-red').trim() || 'var(--ares-red)';
       const aresCyan = getComputedStyle(document.documentElement).getPropertyValue('--ares-cyan').trim() || 'var(--ares-cyan)';

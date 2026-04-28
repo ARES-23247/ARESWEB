@@ -203,7 +203,6 @@ export default function ProjectBoardKanban({
         ...targetItems.map((t, i) => ({ id: t.id, status: targetCol, sort_order: i }))
       ];
       
-      console.log(`[Kanban] Moving ${activeTaskId} from ${sourceCol} to ${targetCol}`);
       onReorder(reorderItems);
     }
   };

@@ -57,6 +57,11 @@ fix-db.mjs
 fix-docs.cjs
 fix_lint.cjs
 fix_ts.cjs
+fix.mjs
+fix_backlog.mjs
+fix_hex.mjs
+find_buttons.cjs
+testGcal.ts
 dump_schema.mjs
 dump_tables.mjs
 *.py

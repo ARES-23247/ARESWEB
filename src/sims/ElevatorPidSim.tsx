@@ -72,10 +72,8 @@ export default function ElevatorPidSim() {
 
     function draw() {
       // Draw Elevator
-      // @ts-expect-error -- D1 untyped response
-      eCtx!.clearRect(0,0,eCanvas.width,eCanvas.height);
-      // @ts-expect-error -- D1 untyped response
-      const eH = eCanvas.height;
+      eCtx!.clearRect(0,0,eCanvas!.width,eCanvas!.height);
+      const eH = eCanvas!.height;
 
       const aresRed = getComputedStyle(document.documentElement).getPropertyValue('--ares-red').trim() || 'var(--ares-red)';
       const aresCyan = getComputedStyle(document.documentElement).getPropertyValue('--ares-cyan').trim() || 'var(--ares-cyan)';
@@ -98,12 +96,9 @@ export default function ElevatorPidSim() {
       eCtx!.fillRect(25, yPx+5, 30, 10);
       
       // Draw Graph
-      // @ts-expect-error -- D1 untyped response
-      gCtx!.clearRect(0,0,gCanvas.width,gCanvas.height);
-      // @ts-expect-error -- D1 untyped response
-      const gW = gCanvas.width;
-      // @ts-expect-error -- D1 untyped response
-      const gH = gCanvas.height;
+      gCtx!.clearRect(0,0,gCanvas!.width,gCanvas!.height);
+      const gW = gCanvas!.width;
+      const gH = gCanvas!.height;
       
       gCtx!.strokeStyle = '#222';
       gCtx!.lineWidth = 1;

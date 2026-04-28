@@ -73,12 +73,9 @@ export default function FlywheelKvSim() {
     }
     
     function drawFlywheel() {
-      // @ts-expect-error -- D1 untyped response
-      wCtx!.clearRect(0,0,wCanvas.width,wCanvas.height);
-      // @ts-expect-error -- D1 untyped response
-      const cx = wCanvas.width/2;
-      // @ts-expect-error -- D1 untyped response
-      const cy = wCanvas.height/2;
+      wCtx!.clearRect(0,0,wCanvas!.width,wCanvas!.height);
+      const cx = wCanvas!.width/2;
+      const cy = wCanvas!.height/2;
       
       wCtx!.save();
       wCtx!.translate(cx, cy);
@@ -96,12 +93,9 @@ export default function FlywheelKvSim() {
       }
       wCtx!.restore();
       
-      // @ts-expect-error -- D1 untyped response
-      fwGCtx!.clearRect(0,0,fwGCanvas.width,fwGCanvas.height);
-      // @ts-expect-error -- D1 untyped response
-      const gW = fwGCanvas.width;
-      // @ts-expect-error -- D1 untyped response
-      const gH = fwGCanvas.height;
+      fwGCtx!.clearRect(0,0,fwGCanvas!.width,fwGCanvas!.height);
+      const gW = fwGCanvas!.width;
+      const gH = fwGCanvas!.height;
       const maxV = 160;
       const slice = gW / 250;
       

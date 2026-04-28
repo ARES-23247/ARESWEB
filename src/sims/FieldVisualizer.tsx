@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
-      // @ts-expect-error -- D1 untyped response
+// @ts-expect-error -- three/examples types not bundled
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import {
   FIELDS,

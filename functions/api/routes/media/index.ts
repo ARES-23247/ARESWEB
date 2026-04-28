@@ -24,7 +24,6 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     const publicFolders = ["Gallery", "Library"];
     if (!publicFolders.includes(folder)) {
       const user = await getSessionUser(c);
-      console.log("[Media:Raw] Folder:", folder, "User:", user ? "Defined" : "Null");
       if (!user) return c.text("Unauthorized", 401);
     }
     const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
