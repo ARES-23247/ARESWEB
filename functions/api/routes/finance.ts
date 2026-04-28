@@ -109,7 +109,7 @@ const financeTsRestRouterObj: any = {
           contact_person: body.contact_person,
           status: body.status,
           estimated_value: body.estimated_value,
-          season_id: body.season_id?.toString(),
+          season_id: body.season_id ? body.season_id.toString() : null,
           notes: body.notes,
         };
 
@@ -210,7 +210,7 @@ const financeTsRestRouterObj: any = {
         date: body.date,
         description: body.description,
         receipt_url: body.receipt_url,
-        season_id: body.season_id?.toString(),
+        season_id: body.season_id ? body.season_id.toString() : null,
         logged_by: user?.id || "system",
       };
 

@@ -188,7 +188,7 @@ export default function FinanceManager() {
             className="bg-obsidian border border-ares-red/30 ares-cut-lg p-8 shadow-2xl"
           >
             {activeTab === 'pipeline' ? (
-              <form onSubmit={pipelineForm.handleSubmit(data => savePipeline.mutate({ body: { ...data, season_id: selectedSeason } }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <form onSubmit={pipelineForm.handleSubmit(data => savePipeline.mutate({ body: { ...data, season_id: selectedSeason || undefined } }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <DashboardInput id="pipeline-company" label="Company Name" {...pipelineForm.register("company_name")} error={pipelineForm.formState.errors.company_name?.message} fullWidth />
                 <DashboardInput id="pipeline-value" label="Est. Value ($)" type="number" {...pipelineForm.register("estimated_value", { valueAsNumber: true })} />
                 <div className="flex flex-col gap-1">
@@ -202,7 +202,7 @@ export default function FinanceManager() {
                 </div>
               </form>
             ) : (
-              <form onSubmit={transactionForm.handleSubmit(data => saveTransaction.mutate({ body: { ...data, season_id: selectedSeason } }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <form onSubmit={transactionForm.handleSubmit(data => saveTransaction.mutate({ body: { ...data, season_id: selectedSeason || undefined } }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col gap-1">
                   <label htmlFor="transaction-type" className="text-[10px] font-black uppercase tracking-widest text-marble/40 px-1">Type</label>
                   <select id="transaction-type" {...transactionForm.register("type")} className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none">
