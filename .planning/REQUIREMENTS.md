@@ -12,7 +12,13 @@
 - [ ] **COL-07**: Periodic auto-saves perform in-place updates to prevent database spam. However, a new history snapshot is explicitly created when the room empties (`RoomOutdated` webhook) to preserve the state at the end of each editing session, or when explicitly published.
 
 ## Traceability
-*(To be populated by Roadmap)*
+- COL-01 → Phase 05
+- COL-02 → Phase 06
+- COL-03 → Phase 06
+- COL-04 → Phase 07
+- COL-05 → Phase 07
+- COL-06 → Phase 07
+- COL-07 → Phase 07
 
 ## Future Requirements (Deferred)
 - Threaded inline comments

@@ -1,33 +1,45 @@
-# Roadmap: ARESWEB
+# Roadmap: v3.4 Collaborative Editing Ecosystem
 
-## Milestones
+This roadmap breaks down the integration of Liveblocks and Tiptap Yjs bindings into discrete, verifiable phases.
 
-- ✅ **v3.3 Calendar UX Refinement** — Phase 04 (shipped 2026-04-28)
-- ✅ **v3.2 Operations & UX Refinement** — Phases 01-03 (shipped 2026-04-28)
+## Summary
+- **Phase 05**: Liveblocks Infrastructure & Authentication
+- **Phase 06**: Real-time Editor Sync & Presence UI
+- **Phase 07**: State Persistence & Webhook Automation
 
-## Phases
+---
 
-<details>
-<summary>✅ v3.3 Calendar UX Refinement (Phase 04) — SHIPPED 2026-04-28</summary>
+## Phase 05: Liveblocks Infrastructure & Authentication
+**Goal:** Establish the foundational Liveblocks connection and secure backend token minting.
+**Requirements:** 
+- COL-01
 
-- [x] Phase 04: Calendar Hover CSS Fixes (1 plan) — completed 2026-04-28
+**Success Criteria:**
+1. Hono API provides a `/api/liveblocks-auth` endpoint.
+2. Endpoint successfully validates Better-Auth sessions and returns a signed Liveblocks JWT.
+3. Client can initialize a Liveblocks `RoomProvider` and connect to a room without unauthorized errors.
 
-</details>
+---
 
-<details>
-<summary>✅ v3.2 Operations & UX Refinement (Phases 01-03) — SHIPPED 2026-04-28</summary>
+## Phase 06: Real-time Editor Sync & Presence UI
+**Goal:** Implement the multiplayer editing experience using Tiptap and Liveblocks.
+**Requirements:** 
+- COL-02, COL-03
 
-- [x] Phase 01: Calendar Subscriptions (1 plan) — completed 2026-04-28
-- [x] Phase 02: Finance Manager Fixes (1 plan) — completed 2026-04-28
-- [x] Phase 03: Retroactive Verification Generation (0 plans) — completed 2026-04-28
+**Success Criteria:**
+1. Multiple users in the same room can type simultaneously and see text sync via Yjs.
+2. Live cursors and highlight colors are visible for all active users.
+3. User avatars (based on auth data) are displayed in a presence stack above the editor.
 
-</details>
+---
 
-## Progress
+## Phase 07: State Persistence & Webhook Automation
+**Goal:** Ensure CRDT state is safely persisted to D1 drafts and explicitly promoted to published.
+**Requirements:** 
+- COL-04, COL-05, COL-06, COL-07
 
-| Phase             | Milestone | Plans Complete | Status      | Completed  |
-| ----------------- | --------- | -------------- | ----------- | ---------- |
-| 01. Calendar Subscriptions | v3.2      | 1/1            | Complete    | 2026-04-28 |
-| 02. Finance Fixes          | v3.2      | 1/1            | Complete    | 2026-04-28 |
-| 03. Verification           | v3.2      | 0/0            | Complete    | 2026-04-28 |
-| 04. Hover CSS Fixes        | v3.3      | 1/1            | Complete    | 2026-04-28 |
+**Success Criteria:**
+1. `YjsDocumentUpdated` webhook triggers in-place draft saves to D1 without adding history spam.
+2. `RoomOutdated` webhook triggers a draft save AND creates a snapshot in the history table.
+3. Draft changes do not affect the public-facing published document until explicitly requested.
+4. Database AST converts correctly from the Liveblocks YDoc structure for static rendering.
