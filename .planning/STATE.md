@@ -11,10 +11,10 @@ progress:
 
 ## Current Position
 
-Phase: Not started
+Phase: 04
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-28 — Milestone v3.3 started
+Status: Ready for planning
+Last activity: 2026-04-28 — Phase 04 context gathered
 
 ## Accumulated Context
 - (Carried over from v3.2) Calendar integration links directly to `/events/:id` from `react-calendar` views.
