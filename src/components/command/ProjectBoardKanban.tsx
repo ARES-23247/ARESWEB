@@ -1,27 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers, Plus, RefreshCw,
   CheckCircle2, Circle, Clock, AlertTriangle
 } from "lucide-react";
-import {
-  DndContext,
-  DragOverlay,
-  closestCorners,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragEndEvent,
-  DragOverEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { SortableTaskCard } from "./kanban/SortableTaskCard";
-import { DroppableColumn } from "./kanban/DroppableColumn";
 import TaskEditModal from "./TaskEditModal";
+import { GenericKanbanBoard } from "../kanban/GenericKanbanBoard";
 
 // ── Types ────────────────────────────────────────────────────────────
 export interface TaskItem {
@@ -37,7 +22,6 @@ export interface TaskItem {
   due_date?: string | null;
   created_at: string;
   updated_at: string;
-  // Legacy fields
   assigned_to?: string | null;
   assignee_name?: string | null;
 }
@@ -53,7 +37,6 @@ interface ProjectBoardKanbanProps {
   isCreating: boolean;
 }
 
-// ── Status config ────────────────────────────────────────────────────
 export const COLUMNS = ["todo", "in_progress", "done", "blocked"] as const;
 
 export const statusConfig: Record<string, { bg: string; text: string; border: string; icon: React.ElementType; label: string }> = {
@@ -69,8 +52,6 @@ export const priorityBadge: Record<string, string> = {
   normal: "bg-white/5 text-ares-gray",
   low: "bg-white/5 text-ares-gray/50",
 };
-
-
 
 // ── Drag Overlay Card ────────────────────────────────────────────────
 function DragOverlayCard({ task }: { task: TaskItem }) {
@@ -88,124 +69,7 @@ export default function ProjectBoardKanban({
   const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
-
-  // Group tasks by status column
-  const grouped = useMemo(() => {
-    const g: Record<string, TaskItem[]> = {};
-    for (const col of COLUMNS) g[col] = [];
-    for (const t of tasks) {
-      const col = COLUMNS.includes(t.status as typeof COLUMNS[number]) ? t.status : "todo";
-      g[col].push(t);
-    }
-    // Sort within each column
-    for (const col of COLUMNS) {
-      g[col].sort((a, b) => a.sort_order - b.sort_order);
-    }
-    return g;
-  }, [tasks]);
-
-  const filteredColumns = activeKanbanFilter
-    ? { [activeKanbanFilter]: grouped[activeKanbanFilter] || [] }
-    : grouped;
-
-  const activeTask = activeId ? tasks.find(t => String(t.id) === activeId) : null;
-
-  // ── DnD Handlers ────────────────────────────────────────────────
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
-  };
-
-  const findColumn = (id: string): string | null => {
-    // Check if the id is a column droppable
-    if ((COLUMNS as readonly string[]).includes(id)) return id;
-    // Otherwise find which column the task is in
-    for (const col of COLUMNS) {
-      if (grouped[col].some(t => String(t.id) === String(id))) return col;
-    }
-    return null;
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = String(active.id);
-    const overId = String(over.id);
-
-    // Find the containers
-    const activeContainer = findColumn(activeId);
-    const overContainer = findColumn(overId);
-
-    if (!activeContainer || !overContainer || activeContainer === overContainer) {
-      return;
-    }
-
-    // We don't actually update state here yet because we're using props,
-    // but dnd-kit uses this to track container transitions.
-    // In a full implementation, we'd move the item between local state arrays here.
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    if (!over) return;
-
-    const activeTaskId = String(active.id);
-    const overId = String(over.id);
-
-    const sourceCol = findColumn(activeTaskId);
-    const targetCol = findColumn(overId);
-
-    if (!sourceCol || !targetCol) return;
-
-    const task = tasks.find(t => String(t.id) === activeTaskId);
-    if (!task) return;
-
-    // 1. Calculate new state for BOTH columns if they changed, or just one if same
-    const sourceItems = [...(grouped[sourceCol] || [])];
-    const targetItems = sourceCol === targetCol ? sourceItems : [...(grouped[targetCol] || [])];
-
-    if (sourceCol === targetCol) {
-      const oldIndex = sourceItems.findIndex(t => String(t.id) === activeTaskId);
-      const newIndex = sourceItems.findIndex(t => String(t.id) === overId);
-      
-      if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1) {
-        const [moved] = sourceItems.splice(oldIndex, 1);
-        sourceItems.splice(newIndex, 0, moved);
-        
-        const reorderItems = sourceItems.map((t, i) => ({
-          id: t.id,
-          status: sourceCol,
-          sort_order: i,
-        }));
-        onReorder(reorderItems);
-      }
-    } else {
-      // Cross-column move
-      // Remove from source
-      const oldIndex = sourceItems.findIndex(t => String(t.id) === activeTaskId);
-      if (oldIndex !== -1) sourceItems.splice(oldIndex, 1);
-
-      // Insert into target
-      const overIndex = targetItems.findIndex(t => String(t.id) === overId);
-      const insertAt = overIndex >= 0 ? overIndex : targetItems.length;
-      targetItems.splice(insertAt, 0, { ...task, status: targetCol });
-
-      // Build payload for ALL affected tasks in BOTH columns to ensure consistency
-      const reorderItems = [
-        ...sourceItems.map((t, i) => ({ id: t.id, status: sourceCol, sort_order: i })),
-        ...targetItems.map((t, i) => ({ id: t.id, status: targetCol, sort_order: i }))
-      ];
-      
-      onReorder(reorderItems);
-    }
-  };
 
   const handleCreate = () => {
     if (!newTaskTitle.trim()) return;
@@ -214,47 +78,27 @@ export default function ProjectBoardKanban({
     setShowCreateForm(false);
   };
 
+  const headerContent = (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full">
+      <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
+        <Layers size={16} className="text-ares-cyan" />
+        Task Board
+      </h3>
+      <div className="flex items-center gap-2 mt-4 sm:mt-0 ml-auto">
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          title="Create new task"
+          aria-label="Create new task"
+          className="p-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan ares-cut-sm transition-all"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
-    <div className="bg-obsidian/50 border border-white/5 ares-cut p-6">
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
-          <Layers size={16} className="text-ares-cyan" />
-          Task Board
-        </h3>
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex bg-ares-gray-dark/50 ares-cut-sm p-0.5 border border-white/5">
-            <button
-              onClick={() => setActiveKanbanFilter(null)}
-              className={`px-2.5 py-1 text-xs font-bold ares-cut-sm transition-all ${
-                !activeKanbanFilter ? "bg-white/10 text-white" : "text-ares-gray hover:text-white"
-              }`}
-            >
-              All
-            </button>
-            {COLUMNS.map(col => (
-              <button
-                key={col}
-                onClick={() => setActiveKanbanFilter(activeKanbanFilter === col ? null : col)}
-                className={`px-2.5 py-1 text-xs font-bold ares-cut-sm transition-all ${
-                  activeKanbanFilter === col ? "bg-white/10 text-white" : "text-ares-gray hover:text-white"
-                }`}
-              >
-                {statusConfig[col].label}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            title="Create new task"
-            aria-label="Create new task"
-            className="p-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan ares-cut-sm transition-all"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-      </div>
-
       <AnimatePresence>
         {showCreateForm && (
           <motion.div
@@ -284,89 +128,48 @@ export default function ProjectBoardKanban({
         )}
       </AnimatePresence>
 
-      {isLoading && tasks.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="text-ares-gray animate-spin" size={24} />
-            <p className="text-ares-gray text-sm font-bold">Loading task board...</p>
-          </div>
-        </div>
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(filteredColumns).map(([status, items]) => {
-              const config = statusConfig[status] || statusConfig.todo;
-              const StatusIcon = config.icon;
+      <GenericKanbanBoard<TaskItem>
+        items={tasks}
+        columns={COLUMNS}
+        columnConfig={statusConfig}
+        getId={(task) => String(task.id)}
+        getStatus={(task) => task.status}
+        getSortOrder={(task) => task.sort_order}
+        onReorder={onReorder}
+        isLoading={isLoading}
+        headerContent={headerContent}
+        activeFilter={activeKanbanFilter}
+        onFilterChange={setActiveKanbanFilter}
+        emptyStateText="No tasks"
+        renderItem={(task) => (
+          <SortableTaskCard
+            key={task.id}
+            task={task}
+            onDelete={onDeleteTask}
+            onUpdateStatus={(id, s) => onUpdateTask(id, { status: s })}
+            onEdit={(t) => setEditingTask(t)}
+          />
+        )}
+        renderDragOverlay={(task) => <DragOverlayCard task={task} />}
+      />
 
-              return (
-                <div key={status} className={`ares-cut-sm border ${config.border} ${config.bg} overflow-hidden`}>
-                  <div className="p-3 border-b border-white/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {React.createElement(StatusIcon, { size: 14, className: config.text })}
-                      <span className={`text-xs font-black uppercase tracking-wider ${config.text}`}>
-                        {config.label}
-                      </span>
-                    </div>
-                    <span className="text-xs font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 ares-cut-sm">
-                      {items.length}
-                    </span>
-                  </div>
-                  <SortableContext
-                    items={items.map(i => String(i.id))}
-                    strategy={verticalListSortingStrategy}
-                    id={status}
-                  >
-                    <DroppableColumn id={status} className="p-2 space-y-2 max-h-[800px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 min-h-[60px]">
-                      {items.length === 0 ? (
-                        <p className="text-ares-gray text-xs text-center py-6 italic">No items</p>
-                      ) : (
-                        items.map((task) => (
-                          <SortableTaskCard
-                            key={task.id}
-                            task={task}
-                            onDelete={onDeleteTask}
-                            onUpdateStatus={(id, s) => onUpdateTask(id, { status: s })}
-                            onEdit={(t) => setEditingTask(t)}
-                          />
-                        ))
-                      )}
-                    </DroppableColumn>
-                  </SortableContext>
-                </div>
-              );
-            })}
-          </div>
-
-          <DragOverlay>
-            {activeTask ? <DragOverlayCard task={activeTask} /> : null}
-          </DragOverlay>
-        </DndContext>
-      )}
-    </div>
-
-    {/* Edit Modal */}
-    <AnimatePresence>
-      {editingTask && (
-        <TaskEditModal
-          task={editingTask}
-          onClose={() => setEditingTask(null)}
-          onSave={async (id, updates) => {
-            await onUpdateTask(id, updates);
-            setEditingTask(null);
-          }}
-          onDelete={(id) => {
-            onDeleteTask(id);
-            setEditingTask(null);
-          }}
-        />
-      )}
-    </AnimatePresence>
-  </>
+      <AnimatePresence>
+        {editingTask && (
+          <TaskEditModal
+            task={editingTask}
+            onClose={() => setEditingTask(null)}
+            onSave={async (id, updates) => {
+              await onUpdateTask(id, updates);
+              setEditingTask(null);
+            }}
+            onDelete={(id) => {
+              onDeleteTask(id);
+              setEditingTask(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
+

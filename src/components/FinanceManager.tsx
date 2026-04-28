@@ -4,16 +4,10 @@ import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
-import { Trash2 } from "lucide-react";
-import { DollarSign } from "lucide-react";
-import { PieChart } from "lucide-react";
-import { TrendingUp } from "lucide-react";
-import { TrendingDown } from "lucide-react";
-import { ArrowRight } from "lucide-react";
-import { RefreshCw } from "lucide-react";
-import { Wallet } from "lucide-react";
-import { Building } from "lucide-react";
+import { Plus, Trash2, DollarSign, PieChart, TrendingUp, TrendingDown, ArrowRight, RefreshCw, Wallet, Building, Circle, UserPlus, Handshake, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
+import { GenericKanbanBoard, KanbanColumnConfig } from "./kanban/GenericKanbanBoard";
+import { SortablePipelineCard } from "./kanban/SortablePipelineCard";
+import SponsorshipEditModal from "./kanban/SponsorshipEditModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../api/client";
 import SeasonPicker from "./SeasonPicker";
@@ -25,12 +19,12 @@ import { financeTransactionSchema, sponsorshipPipelineSchema } from "@shared/sch
 // ── Status config for Sponsorship ─────────────────────────────────────
 const PIPELINE_COLUMNS = ["potential", "contacted", "pledged", "secured", "lost"] as const;
 
-const pipelineConfig: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  potential: { bg: "bg-white/5", text: "text-marble/50", border: "border-white/10", label: "Potential" },
-  contacted: { bg: "bg-ares-cyan/10", text: "text-ares-cyan", border: "border-ares-cyan/30", label: "Contacted" },
-  pledged:   { bg: "bg-ares-gold/10", text: "text-ares-gold", border: "border-ares-gold/30", label: "Pledged" },
-  secured:   { bg: "bg-ares-green/10", text: "text-ares-green", border: "border-ares-green/30", label: "Secured" },
-  lost:      { bg: "bg-ares-red/10", text: "text-ares-red", border: "border-ares-red/30", label: "Lost" },
+const pipelineConfig: Record<string, KanbanColumnConfig> = {
+  potential: { bg: "bg-white/5", text: "text-marble/50", border: "border-white/10", label: "Potential", icon: Circle },
+  contacted: { bg: "bg-ares-cyan/10", text: "text-ares-cyan", border: "border-ares-cyan/30", label: "Contacted", icon: UserPlus },
+  pledged:   { bg: "bg-ares-gold/10", text: "text-ares-gold", border: "border-ares-gold/30", label: "Pledged", icon: Handshake },
+  secured:   { bg: "bg-ares-green/10", text: "text-ares-green", border: "border-ares-green/30", label: "Secured", icon: CheckCircle2 },
+  lost:      { bg: "bg-ares-red/10", text: "text-ares-red", border: "border-ares-red/30", label: "Lost", icon: XCircleIcon },
 };
 
 export default function FinanceManager() {
@@ -38,6 +32,8 @@ export default function FinanceManager() {
   const [activeTab, setActiveTab] = useState<"pipeline" | "ledger">("pipeline");
   const [isAdding, setIsAdding] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+  const [editingLead, setEditingLead] = useState<any>(null);
+  const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
 
   // ── Queries ──
   const { data: summaryRes } = api.finance.getSummary.useQuery(["finance-summary", selectedSeason], { query: { season_id: selectedSeason || undefined } });
@@ -234,46 +230,60 @@ export default function FinanceManager() {
 
       {/* Main View */}
       {activeTab === 'pipeline' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {PIPELINE_COLUMNS.map(status => (
-            <div key={status} className={`ares-cut-sm border ${pipelineConfig[status].border} ${pipelineConfig[status].bg} flex flex-col min-h-[300px]`}>
-              <div className="p-3 border-b border-white/5 flex items-center justify-between">
-                <span className={`text-[10px] font-black uppercase tracking-tighter ${pipelineConfig[status].text}`}>{pipelineConfig[status].label}</span>
-                <span className="text-[10px] font-bold text-white/20">{pipeline.filter(p => p.status === status).length}</span>
+        <>
+          <GenericKanbanBoard<any>
+            items={pipeline}
+            columns={PIPELINE_COLUMNS}
+            columnConfig={pipelineConfig}
+            getId={(item) => String(item.id)}
+            getStatus={(item) => item.status}
+            getSortOrder={(item) => 0} // no sort order in DB currently
+            onReorder={(updates) => {
+              // we only care about status updates since sort_order is not saved
+              // to optimize, just update the items that changed status
+              updates.forEach(update => {
+                const item = pipeline.find(p => String(p.id) === update.id);
+                if (item && item.status !== update.status) {
+                  savePipeline.mutate({ body: { ...item, status: update.status } as any });
+                }
+              });
+            }}
+            isLoading={isInitialLoading}
+            activeFilter={activeKanbanFilter}
+            onFilterChange={setActiveKanbanFilter}
+            emptyStateText="No leads"
+            renderItem={(item) => (
+              <SortablePipelineCard
+                key={item.id}
+                item={item}
+                onDelete={(id) => deletePipeline.mutate({ params: { id } })}
+                onEdit={(item) => setEditingLead(item)}
+              />
+            )}
+            renderDragOverlay={(item) => (
+              <div className="p-3 bg-obsidian/90 ares-cut-sm border border-ares-cyan/40 shadow-lg shadow-ares-cyan/10 cursor-grabbing">
+                <p className="text-sm font-bold text-white leading-tight">{item.company_name}</p>
               </div>
-              <div className="p-2 space-y-2">
-                {pipeline.filter(p => p.status === status).map(lead => (
-                  <div key={lead.id} className="bg-black/60 p-3 ares-cut-sm border border-white/5 group hover:border-white/20 transition-all">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="text-xs font-bold text-white leading-tight">{lead.company_name}</span>
-                      <button 
-                        onClick={() => confirm("Delete lead?") && deletePipeline.mutate({ params: { id: lead.id! } })} 
-                        className="opacity-0 group-hover:opacity-100 text-marble/20 hover:text-ares-red transition-all"
-                        title="Delete lead"
-                        aria-label="Delete lead"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                    <div className="text-[10px] font-black text-ares-gold">${Number(lead.estimated_value || 0).toLocaleString()}</div>
-                    <div className="mt-2 flex gap-1 overflow-x-auto">
-                       {PIPELINE_COLUMNS.map(next => next !== status && (
-                         <button 
-                            key={next} 
-                            onClick={() => savePipeline.mutate({ body: { ...lead, status: next } })}
-                            className="w-4 h-4 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center transition-colors"
-                            title={`Move to ${next}`}
-                          >
-                           <ArrowRight size={8} />
-                         </button>
-                       ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          />
+
+          <AnimatePresence>
+            {editingLead && (
+              <SponsorshipEditModal
+                item={editingLead}
+                onClose={() => setEditingLead(null)}
+                onSave={async (id, updates) => {
+                  await savePipeline.mutateAsync({ body: { ...editingLead, ...updates } as any });
+                  setEditingLead(null);
+                }}
+                onDelete={(id) => {
+                  deletePipeline.mutate({ params: { id } });
+                  setEditingLead(null);
+                }}
+              />
+            )}
+          </AnimatePresence>
+        </>
       ) : (
         <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden">
           <table className="w-full text-left border-collapse">
