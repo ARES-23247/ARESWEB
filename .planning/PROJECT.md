@@ -22,13 +22,24 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 2 (Tech Debt Cleanup)** — Addressed architectural fragility, resolved `waitUntil` test flakiness, standardized Kysely database mocks, and hardened media upload validation.
 - ✓ **Milestone 3.2 (Operations & UX)** — Delivered native iCal/WebCal calendar subscriptions, resolved Kanban sponsorship idempotency bugs, and fixed Finance Manager budget deletion, achieving 100% API coverage.
 
+- ✓ **Milestone 3.3 (Calendar UX Refinement)** — Prevented webkit scrollbar overflow issues when hovering over calendar events, preserving grid stability.
+
 ### Active
-- [v3.3] Calendar UX Refinement
+- None
 
 ## Current State
 
-**v3.3 Target Features:**
-- Calendar Hover CSS Fixes (prevent scrollbars on event hover)
+<details>
+<summary>v3.3 Shipped Features</summary>
+
+- Calendar Hover CSS Fixes (prevented scrollbars on event hover by shifting scaling behavior onto the relative Z-axis).
+</details>
+
+<details>
+<summary>v3.2 Shipped Features</summary>
+
+- Operations and UX improvements, retroactive verification generation.
+</details>
 
 <details>
 <summary>v3.1 Shipped Features</summary>
@@ -81,4 +92,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-28 after v3.1 initialization*
+*Last updated: 2026-04-28 after v3.3 milestone completion*

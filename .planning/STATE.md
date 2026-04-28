@@ -1,20 +1,20 @@
 ---
 milestone: v3.3
 name: Calendar UX Refinement
-status: planning
+status: complete
 progress:
-  phases: 0/1
-  plans: 0/1
-  tasks: 0/0
+  phases: 1/1
+  plans: 1/1
+  tasks: 1/1
 ---
 # Project State
 
 ## Current Position
 
-Phase: 04
-Plan: Completed
-Status: Verified
-Last activity: 2026-04-28 — Phase 04 executed and verified
+Phase: Complete
+Plan: Complete
+Status: Complete
+Last activity: 2026-04-28 — Milestone v3.3 archived
 
 ## Accumulated Context
 - (Carried over from v3.2) Calendar integration links directly to `/events/:id` from `react-calendar` views.
