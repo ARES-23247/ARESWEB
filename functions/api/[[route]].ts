@@ -37,6 +37,7 @@ import notificationsRouter from "./routes/notifications";
 import tasksRouter from "./routes/tasks";
 import financeRouter from "./routes/finance";
 import entitiesRouter from "./routes/entities";
+import liveblocksRouter from "./routes/liveblocks/index";
 
 const app = new Hono<AppEnv>();
 
@@ -130,6 +131,7 @@ apiRouter.route("/analytics", analyticsRouter);
 apiRouter.route("/github", githubRouter);
 apiRouter.route("/zulip", zulipRouter);
 apiRouter.route("/tasks", tasksRouter);
+apiRouter.route("/liveblocks", liveblocksRouter);
 
 import { communicationsRouter } from "./routes/communications";
 

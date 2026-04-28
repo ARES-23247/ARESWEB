@@ -37,6 +37,7 @@ export type Bindings = {
   RESEND_API_KEY?: string;
   DEV_BYPASS?: string;
   TURNSTILE_SECRET_KEY?: string;
+  LIVEBLOCKS_SECRET_KEY: string;
 };
 
 export type Variables = {

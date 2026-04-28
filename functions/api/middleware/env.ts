@@ -17,6 +17,7 @@ export function getValidatedEnv(runtimeEnv: Record<string, unknown>) {
       ZULIP_CLIENT_ID: z.string().min(1),
       ZULIP_CLIENT_SECRET: z.string().min(1),
       DEV_BYPASS: z.string().optional(),
+      LIVEBLOCKS_SECRET_KEY: z.string().min(1, "Liveblocks Secret is required"),
     },
     clientPrefix: "PUBLIC_",
     client: {},
