@@ -1,9 +1,9 @@
 ---
-milestone: idle
-name: "No Active Milestone"
-status: complete
+milestone: v3.1
+name: Calendar Integration Ecosystem
+status: active
 progress:
-  phases: 0/0
+  phases: 0/3
   plans: 0/0
   tasks: 0/0
 ---
@@ -13,8 +13,8 @@ progress:
 
 Phase: None
 Plan: None
-Status: Milestone v3.0 Completed
-Last activity: 2026-04-28 — Milestone v3.0 Archived
+Status: Milestone v3.1 Planned
+Last activity: 2026-04-28 — Milestone v3.1 Initialized
 
 ## Accumulated Context
 

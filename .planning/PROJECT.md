@@ -22,6 +22,7 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 2 (Tech Debt Cleanup)** — Addressed architectural fragility, resolved `waitUntil` test flakiness, standardized Kysely database mocks, and hardened media upload validation.
 
 ### Active
+- Calendar Integration Ecosystem (v3.1) - Local event management with ARES styling and Google Calendar sync out.
 
 ## Current State
 
@@ -44,6 +45,7 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 |----------|-----------|---------|
 | Cloudflare D1 + Hono | Low latency, edge native, zero-config deployment. | Validated |
 | 100% Test Coverage | Ensures no regressions in the API logic. | Validated |
+| Local Calendar > Google Embeds | Guarantees ARES brand aesthetic, prevents event duplication, and allows linking events to tasks/zulip. | Active |
 
 ## Evolution
 
