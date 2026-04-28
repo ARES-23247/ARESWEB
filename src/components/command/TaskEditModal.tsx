@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { api } from "../../api/client";
 import type { TaskItem } from "./ProjectBoardKanban";
+import ZulipThreadViewer from "../events/ZulipThreadViewer";
 
 interface TaskEditModalProps {
   task: TaskItem;
@@ -320,6 +321,11 @@ export default function TaskEditModal({ task, onClose, onSave, onDelete }: TaskE
             <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
             {task.creator_name && <span>by {task.creator_name}</span>}
             <span>Updated {new Date(task.updated_at).toLocaleDateString()}</span>
+          </div>
+
+          {/* Task Discussion Thread */}
+          <div className="border-t border-white/5 pt-4">
+            <ZulipThreadViewer stream="kanban" topic={task.title} label="Task Discussion" />
           </div>
         </div>
 

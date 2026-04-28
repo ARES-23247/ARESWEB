@@ -156,6 +156,28 @@ const taskHandlers = {
         }
       }
 
+      // Create a Zulip discussion thread for this task in the kanban stream
+      c.executionCtx.waitUntil((async () => {
+        try {
+          const env = await getSocialConfig(c);
+          const assigneeNames = assigneeProfiles.map((a: any) => a.nickname || "Unknown").join(", ");
+          const taskUrl = `${siteConfig.urls.base}/dashboard?tab=tasks`;
+          const threadContent = [
+            `📋 **New Task Created** by ${user.nickname || user.name || "ARES Member"}`,
+            ``,
+            `**Priority:** ${(body.priority || "normal").toUpperCase()}`,
+            body.description ? `**Description:** ${body.description}` : null,
+            assigneeProfiles.length > 0 ? `**Assigned to:** ${assigneeNames}` : null,
+            body.due_date ? `**Due:** ${body.due_date}` : null,
+            ``,
+            `[Open Task Board](${taskUrl})`,
+          ].filter(Boolean).join("\n");
+          await sendZulipMessage(env, "kanban", body.title, threadContent);
+        } catch (e) {
+          console.error("[Tasks:ZulipThread] Error creating discussion thread", e);
+        }
+      })());
+
       return { status: 200, body: { success: true, task } };
     } catch (err) {
       console.error("[Tasks] Create error:", err);
