@@ -125,6 +125,8 @@ export default function Events() {
                     <button 
                       onClick={() => setCurrentDate(prev => subMonths(prev, 1))}
                       className="p-2 hover:bg-white/10 text-marble transition-colors"
+                      aria-label="Previous Month"
+                      title="Previous Month"
                     >
                       <ChevronLeft size={20} />
                     </button>
@@ -134,6 +136,8 @@ export default function Events() {
                     <button 
                       onClick={() => setCurrentDate(prev => addMonths(prev, 1))}
                       className="p-2 hover:bg-white/10 text-marble transition-colors"
+                      aria-label="Next Month"
+                      title="Next Month"
                     >
                       <ChevronRight size={20} />
                     </button>
