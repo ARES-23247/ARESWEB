@@ -98,6 +98,55 @@ const storeRouter = s.router(storeContract, {
       return { status: 500, body: { error: err.message } };
     }
   },
+  getOrders: async ({ c }) => {
+    try {
+      const sessionUser = c.get("sessionUser");
+      if (!sessionUser || sessionUser.role !== "admin") {
+        return { status: 401, body: { error: "Unauthorized" } };
+      }
+
+      const db = c.get("db");
+      const orders = await db
+        .selectFrom("orders")
+        .selectAll()
+        .orderBy("created_at", "desc")
+        .execute();
+
+      return {
+        status: 200,
+        body: orders.map(o => ({
+          ...o,
+          id: o.id || "",
+        }))
+      };
+    } catch (err: any) {
+      console.error("[Store] Get orders failed:", err);
+      return { status: 500, body: { error: err.message } };
+    }
+  },
+  updateOrderStatus: async ({ body, params, c }) => {
+    try {
+      const sessionUser = c.get("sessionUser");
+      if (!sessionUser || sessionUser.role !== "admin") {
+        return { status: 401, body: { error: "Unauthorized" } };
+      }
+
+      const db = c.get("db");
+      await db
+        .updateTable("orders")
+        .set({ fulfillment_status: body.fulfillment_status })
+        .where("id", "=", params.id)
+        .execute();
+
+      return {
+        status: 200,
+        body: { success: true }
+      };
+    } catch (err: any) {
+      console.error("[Store] Update order status failed:", err);
+      return { status: 500, body: { error: err.message } };
+    }
+  },
 });
 
 export const storeHandler = app.route(

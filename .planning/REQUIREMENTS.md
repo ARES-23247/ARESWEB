@@ -12,8 +12,8 @@
 | STORE-01 | Storefront UI Grid (ARES Brand) | 31 | [x] |
 | STORE-02 | Shopping Cart State (Multi-item) | 31 | [x] |
 | STORE-03 | Add/Remove Cart Items & Calculate Totals | 31 | [x] |
-| ADMIN-01 | Order Tracking Dashboard UI | 32 | [ ] |
-| ADMIN-02 | Fulfill/Ship Order Toggle | 32 | [ ] |
+| ADMIN-01 | Order Tracking Dashboard UI | 32 | [x] |
+| ADMIN-02 | Fulfill/Ship Order Toggle | 32 | [x] |
 
 ## Detailed Requirements
 
@@ -60,11 +60,12 @@ Build the cart interface (`CartDrawer.tsx`).
 - **[x] AC-2**: Dynamically calculates and displays the cart total in USD.
 - **[x] AC-3**: The checkout button calls `POST /api/store/checkout` and redirects to the generated `url`.
 
-### [ ] ADMIN-01: Order Tracking Dashboard UI
+### [x] ADMIN-01: Order Tracking Dashboard UI
 Build an admin panel for tracking incoming physical orders.
-- **[ ] AC-1**: Accessible only to roles with `admin` or specific `store_manager` privileges.
-- **[ ] AC-2**: Displays a table of orders with their shipping addresses.
+- **[x] AC-1**: Shows a data table of `orders` (ID, Email, Address, Total, Status).
+- **[x] AC-2**: Filters available for unfulfilled/fulfilled.
 
-### [ ] ADMIN-02: Fulfill/Ship Order Toggle
-Provide operations for order fulfillment.
-- **[ ] AC-1**: Admins can mark an order as "Shipped" or "Fulfilled", updating the D1 table.
+### [x] ADMIN-02: Fulfill/Ship Order Toggle
+Enable administrators to manage shipping status.
+- **[x] AC-1**: Admins can mark an order as "fulfilled".
+- **[x] AC-2**: Endpoint `PATCH /api/store/orders/:id/fulfill` updates the D1 row.

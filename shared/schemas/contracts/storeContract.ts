@@ -67,4 +67,26 @@ export const storeContract = c.router({
     summary: "Create Checkout Session",
     description: "Generates a Stripe Checkout session for the cart items.",
   },
+  getOrders: {
+    method: "GET",
+    path: "/api/store/orders",
+    responses: {
+      200: z.array(OrderSchema),
+      401: ErrorSchema,
+      500: ErrorSchema,
+    },
+    summary: "Get orders (Admin)",
+  },
+  updateOrderStatus: {
+    method: "PATCH",
+    path: "/api/store/orders/:id/status",
+    pathParams: z.object({ id: z.string() }),
+    body: z.object({ fulfillment_status: z.string() }),
+    responses: {
+      200: z.object({ success: z.boolean() }),
+      401: ErrorSchema,
+      500: ErrorSchema,
+    },
+    summary: "Update order fulfillment status (Admin)",
+  },
 });
