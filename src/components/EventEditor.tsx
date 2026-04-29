@@ -28,8 +28,9 @@ export interface LocationRow {
 }
 
 import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
+import VersionHistorySidebar from "./editor/VersionHistorySidebar";
 
-function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: string | unknown }) {
+function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userRole?: string | unknown, roomId?: string | null }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const modal = useModal();
@@ -55,6 +56,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   const [isDeleted, setIsDeleted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<z.input<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
@@ -430,6 +432,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH EVENT"}
           userRole={userRole}
           roundedClass="ares-cut"
+          onShowHistory={roomId && editor ? () => setIsHistoryOpen(true) : undefined}
           extraControls={
             <SocialSyndicationGrid 
               availableSocials={availableSocials}
@@ -449,6 +452,14 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           setIsCoverPickerOpen(false);
         }}
       />
+
+      {isHistoryOpen && roomId && editor && (
+        <VersionHistorySidebar 
+          roomId={roomId}
+          editor={editor}
+          onClose={() => setIsHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -462,11 +473,11 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
   if (roomId) {
     return (
       <CollaborativeEditorRoom roomId={roomId}>
-        <EventEditorInner editId={editId} userRole={userRole} />
+        <EventEditorInner editId={editId} userRole={userRole} roomId={roomId} />
       </CollaborativeEditorRoom>
     );
   }
 
   // Single player mode for new events until they are saved and get an ID
-  return <EventEditorInner editId={editId} userRole={userRole} />;
+  return <EventEditorInner editId={editId} userRole={userRole} roomId={roomId} />;
 }

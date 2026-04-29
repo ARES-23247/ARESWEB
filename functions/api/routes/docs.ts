@@ -386,7 +386,8 @@ const docTsRestRouter: any = s.router(docContract as any, {
             updated_at: new Date().toISOString(),
             is_portfolio: isPortfolio ? 1 : 0,
             is_executive_summary: isExecutiveSummary ? 1 : 0,
-            status
+            status,
+            content_draft: null
           })
           .onConflict((oc) => oc.column("slug").doUpdateSet({
             title: title || "",
@@ -398,7 +399,8 @@ const docTsRestRouter: any = s.router(docContract as any, {
             updated_at: new Date().toISOString(),
             is_portfolio: isPortfolio ? 1 : 0,
             is_executive_summary: isExecutiveSummary ? 1 : 0,
-            status
+            status,
+            content_draft: null
           }))
           .execute();
 

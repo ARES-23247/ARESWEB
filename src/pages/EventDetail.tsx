@@ -26,6 +26,7 @@ interface EventRow {
 
 import { Calendar, Edit2 } from "lucide-react";
 import { GreekMeander } from "../components/GreekMeander";
+import { ContributorStack } from "../components/ui/ContributorStack";
 import { useSession } from "../utils/auth-client";
 import { downloadICS } from "../utils/calendar";
 
@@ -129,9 +130,10 @@ export default function EventDetail() {
               </Link>
             )}
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight uppercase font-heading drop-shadow-2xl">
+          <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight uppercase font-heading drop-shadow-2xl mb-4">
             {event.title}
           </h1>
+          <ContributorStack roomId={`event_${event.id}`} />
           <div className="mt-8 flex flex-col md:flex-row gap-6 text-ares-bronze font-medium text-lg lg:text-xl">
             <p className="flex items-center gap-2">
               <span className="text-white">Date:</span> {format(startDate, "EEEE, MMMM do, yyyy")}

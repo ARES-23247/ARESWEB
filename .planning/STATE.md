@@ -11,10 +11,10 @@ progress:
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-29 — Milestone v3.5 started
+Phase: Phase 10: Public Avatar/YPP Integration
+Plan: 10-PLAN.md
+Status: Active
+Last activity: 2026-04-29 — Completed Phase 09 Contributor Tracking. Starting Phase 10.
 
 ## Accumulated Context
 - (Carried over from v3.2) Calendar integration links directly to `/events/:id` from `react-calendar` views.

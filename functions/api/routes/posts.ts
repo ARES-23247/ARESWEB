@@ -401,6 +401,7 @@ const postTsRestRouterObj: any = {
           snippet,
           ast: astStr,
           status,
+          content_draft: null,
           published_at: body.publishedAt || null,
           season_id: body.seasonId ? Number(body.seasonId) : null
         })

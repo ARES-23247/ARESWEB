@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS posts (
     author TEXT,
     cf_email TEXT,
     ast TEXT NOT NULL,
+    content_draft TEXT,
     is_deleted INTEGER DEFAULT 0,
     status TEXT DEFAULT 'published',
     revision_of TEXT,
@@ -100,6 +101,7 @@ CREATE TABLE IF NOT EXISTS events (
     date_end TEXT,
     location TEXT,
     description TEXT,
+    content_draft TEXT,
     cover_image TEXT,
     gcal_event_id TEXT,
     tba_event_key TEXT,
@@ -160,6 +162,7 @@ CREATE TABLE IF NOT EXISTS docs (
     sort_order INTEGER DEFAULT 0,
     description TEXT,
     content TEXT NOT NULL,
+    content_draft TEXT,
     cf_email TEXT,
     updated_at TEXT DEFAULT (datetime('now')),
     is_deleted INTEGER DEFAULT 0,
@@ -181,6 +184,25 @@ CREATE TABLE IF NOT EXISTS docs_history (
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_docs_history_slug ON docs_history(slug);
+
+CREATE TABLE IF NOT EXISTS document_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_by TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS document_contributors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    user_avatar TEXT,
+    last_contributed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(room_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_document_history_room ON document_history(room_id);
 
 CREATE TABLE IF NOT EXISTS docs_feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

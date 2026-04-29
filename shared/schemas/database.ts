@@ -188,6 +188,14 @@ export interface DocsHistory {
   title: string | null;
 }
 
+export interface DocumentHistory {
+  content: string;
+  created_at: Generated<string | null>;
+  created_by: string | null;
+  id: Generated<number | null>;
+  room_id: string;
+}
+
 export interface EntityLinks {
   created_at: Generated<string | null>;
   id: string | null;
@@ -721,6 +729,7 @@ export interface DB {
   docs_fts_docsize: DocsFtsDocsize;
   docs_fts_idx: DocsFtsIdx;
   docs_history: DocsHistory;
+  document_history: DocumentHistory;
   entity_links: EntityLinks;
   event_signups: EventSignups;
   events: Events;

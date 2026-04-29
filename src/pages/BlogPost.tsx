@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { trackPageView } from "../utils/analytics";
 import { useSession } from "../utils/auth-client";
 import { Edit2 } from "lucide-react";
+import { ContributorStack } from "../components/ui/ContributorStack";
 
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import ZulipThreadViewer from "../components/events/ZulipThreadViewer";
@@ -107,9 +108,10 @@ export default function BlogPost() {
               </Link>
             )}
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter drop-shadow-2xl">
+          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter drop-shadow-2xl mb-4">
             {post.title}
           </h1>
+          <ContributorStack roomId={`blog_${post.slug}`} />
         </motion.div>
       </section>
 

@@ -332,7 +332,7 @@ export const eventHandlers: any = {
         .set({
           title, category: cat, date_start: dateStart, date_end: dateEnd || null,
           location: location || "", description: description || "", cover_image: coverImage || "",
-          tba_event_key: tbaEventKey || null, status,
+          tba_event_key: tbaEventKey || null, status, content_draft: null,
           is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0,
           published_at: publishedAt || null, season_id: seasonId || null, meeting_notes: meetingNotes || null
         })

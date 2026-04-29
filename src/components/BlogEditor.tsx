@@ -292,6 +292,7 @@ function BlogEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?:
         publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY"}
         userRole={userRole}
         roundedClass="ares-cut"
+        onShowHistory={roomId && editor ? () => setIsHistoryOpen(true) : undefined}
         extraControls={
           <SocialSyndicationGrid 
             availableSocials={availableSocials}
@@ -301,6 +302,14 @@ function BlogEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?:
           />
         }
       />
+
+      {isHistoryOpen && roomId && editor && (
+        <VersionHistorySidebar 
+          roomId={roomId}
+          editor={editor}
+          onClose={() => setIsHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -314,11 +323,11 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   if (roomId) {
     return (
       <CollaborativeEditorRoom roomId={roomId}>
-        <BlogEditorInner editSlug={editSlug} userRole={userRole} />
+        <BlogEditorInner editSlug={editSlug} userRole={userRole} roomId={roomId} />
       </CollaborativeEditorRoom>
     );
   }
 
   // Single player mode for new documents until they are saved and get a slug
-  return <BlogEditorInner editSlug={editSlug} userRole={userRole} />;
+  return <BlogEditorInner editSlug={editSlug} userRole={userRole} roomId={roomId} />;
 }

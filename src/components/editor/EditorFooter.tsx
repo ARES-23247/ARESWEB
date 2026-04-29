@@ -14,6 +14,7 @@ interface EditorFooterProps {
   userRole?: string | unknown;
   roundedClass?: string;
   extraControls?: React.ReactNode;
+  onShowHistory?: () => void;
 }
 
 export default function EditorFooter({
@@ -29,7 +30,8 @@ export default function EditorFooter({
   updateText = "UPDATE",
   userRole,
   roundedClass = "rounded-full", // Use "ares-cut-sm" for docs/events
-  extraControls
+  extraControls,
+  onShowHistory
 }: EditorFooterProps) {
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-6 pt-6 border-t border-white/10">
@@ -38,6 +40,16 @@ export default function EditorFooter({
         {extraControls && <div>{extraControls}</div>}
       </div>
       <div className="flex flex-wrap gap-4 items-center justify-end">
+        {onShowHistory && (
+          <button
+            onClick={onShowHistory}
+            type="button"
+            className={`px-4 py-3.5 ${roundedClass} font-bold transition-all border border-white/10 bg-transparent text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            HISTORY
+          </button>
+        )}
         {isEditing && onDelete && (
           <button
             onClick={onDelete}

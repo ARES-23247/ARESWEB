@@ -27,12 +27,14 @@ interface DocData {
 }
 
 import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
+import VersionHistorySidebar from "./editor/VersionHistorySidebar";
 
-function DocsEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?: string | unknown }) {
+function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();
   const [errorMsg, setErrorMsg] = useState("");
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { ydoc, provider } = useCollaborativeEditor();
   const editor = useRichEditor({ 
@@ -283,8 +285,17 @@ function DocsEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?:
           publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH DOC"}
           userRole={userRole}
           roundedClass="ares-cut"
+          onShowHistory={roomId && editor ? () => setIsHistoryOpen(true) : undefined}
         />
       </div>
+
+      {isHistoryOpen && roomId && editor && (
+        <VersionHistorySidebar 
+          roomId={roomId}
+          editor={editor}
+          onClose={() => setIsHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -298,12 +309,12 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
   if (roomId) {
     return (
       <CollaborativeEditorRoom roomId={roomId}>
-        <DocsEditorInner editSlug={editSlug} userRole={userRole} />
+        <DocsEditorInner editSlug={editSlug} userRole={userRole} roomId={roomId} />
       </CollaborativeEditorRoom>
     );
   }
 
   // Single player mode for new documents until they are saved and get a slug
-  return <DocsEditorInner editSlug={editSlug} userRole={userRole} />;
+  return <DocsEditorInner editSlug={editSlug} userRole={userRole} roomId={roomId} />;
 }
 

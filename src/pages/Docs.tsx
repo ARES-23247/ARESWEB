@@ -13,6 +13,7 @@ import { useModal } from "../contexts/ModalContext";
 import ZulipThreadViewer from "../components/events/ZulipThreadViewer";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDocs } from "../hooks/useDocs";
+import { ContributorStack } from "../components/ui/ContributorStack";
 
 export default function Docs() {
   const { slug } = useParams<{ slug: string }>();
@@ -225,26 +226,11 @@ export default function Docs() {
                       </div>
                     </div>
                     
-                    {contributors && contributors.length > 0 && (
-                      <>
-                        <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
-                        <div className="flex flex-col">
-                          <span className="text-xs uppercase font-bold text-ares-cyan/80 tracking-wider mb-1">Contributors</span>
-                          <div className="flex -space-x-2">
-                            {contributors.slice(0, 5).map((c: { nickname?: string; author_email: string; avatar?: string }, idx: number) => (
-                              <div key={idx} className="w-6 h-6 rounded-full border border-ares-gray-deep overflow-hidden bg-ares-gray-dark" title={c.nickname || c.author_email}>
-                                <img src={c.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${c.author_email}`} alt={`${c.nickname || "Contributor"}'s avatar`} className="w-full h-full object-cover"/>
-                              </div>
-                            ))}
-                            {contributors.length > 5 && (
-                              <div className="w-6 h-6 rounded-full border border-ares-gray-deep bg-ares-gray-dark flex items-center justify-center text-xs font-bold text-white z-10">
-                                +{contributors.length - 5}
-                              </div>
-                            )}
-                          </div>
-                         </div>
-                      </>
-                    )}
+                    <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
+                    <div className="flex flex-col">
+                      <span className="text-xs uppercase font-bold text-ares-cyan/80 tracking-wider mb-1">Contributors</span>
+                      <ContributorStack roomId={`doc_${currentDoc.slug}`} />
+                    </div>
                   </div>
                 </div>
               )}
