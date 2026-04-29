@@ -34,6 +34,7 @@ const JudgesHub = React.lazy(() => import("./pages/JudgesHub"));
 const PrintPortfolio = React.lazy(() => import("./pages/PrintPortfolio"));
 const Join = React.lazy(() => import("./pages/Join"));
 const Leaderboard = React.lazy(() => import("./pages/Leaderboard"));
+const Store = React.lazy(() => import("./pages/Store"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 import { useModal } from "./contexts/ModalContext";
@@ -93,6 +94,7 @@ export default function App() {
                 <Route path="/judges" element={<JudgesHub />} />
                 <Route path="/judges/print" element={<PrintPortfolio />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/store" element={<Store />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

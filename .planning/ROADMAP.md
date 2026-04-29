@@ -6,7 +6,7 @@
 |---|-------|------|--------------|------------------|
 | 29 | Database & Stripe Configuration | Initialize D1 schemas and Cloudflare Stripe bindings. | STRIPE-01, STRIPE-02 | [x] `schema.sql` migrations pass and secret bindings are active. |
 | 30 | Backend API (Hono) | Build secure endpoints for product fetching, checkout sessions, and webhooks. | STRIPE-03, STRIPE-04, STRIPE-05 | [x] Webhook correctly parses Stripe signatures and `orders` row is created. |
-| 31 | Frontend Storefront (React) | Build the `/store` UI and cart state management. | STORE-01, STORE-02, STORE-03 | User can browse inventory, add items to cart, and redirect to Stripe Checkout. |
+| 31 | Frontend Storefront (React) | Build the `/store` UI and cart state management. | STORE-01, STORE-02, STORE-03 | [x] User can browse inventory, add items to cart, and redirect to Stripe Checkout. |
 | 32 | Admin Fulfillment Dashboard | Build an internal panel for tracking and shipping physical orders. | ADMIN-01, ADMIN-02 | Admins can view orders, see shipping addresses, and toggle fulfillment status. |
 
 ### Archived Milestones

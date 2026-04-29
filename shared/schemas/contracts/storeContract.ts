@@ -1,8 +1,8 @@
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
-import { ErrorSchema } from "./entityContract";
-
 const c = initContract();
+
+export const ErrorSchema = z.object({ error: z.string() });
 
 export const ProductSchema = z.object({
   id: z.string(),
