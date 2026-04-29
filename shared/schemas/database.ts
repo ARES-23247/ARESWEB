@@ -706,6 +706,23 @@ export interface Verification {
   value: string;
 }
 
+export interface DocumentContributors {
+  id: Generated<number>;
+  room_id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar: string | null;
+  last_contributed_at: Generated<string>;
+}
+
+export interface DocumentHistory {
+  id: Generated<number>;
+  room_id: string;
+  content: string;
+  created_by: string | null;
+  created_at: Generated<string>;
+}
+
 export interface DB {
   _cf_METADATA: _CfMETADATA;
   account: Account;
@@ -729,6 +746,7 @@ export interface DB {
   docs_fts_docsize: DocsFtsDocsize;
   docs_fts_idx: DocsFtsIdx;
   docs_history: DocsHistory;
+  document_contributors: DocumentContributors;
   document_history: DocumentHistory;
   entity_links: EntityLinks;
   event_signups: EventSignups;
