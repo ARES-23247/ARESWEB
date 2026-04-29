@@ -29,11 +29,21 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ### Active
 - None
 
-## Current Milestone: Milestone 3.6 (Collaboration Polish)
+## Current Milestone: None
 
-**Goal:** Refine the Collaborative Editing Ecosystem by fixing UI bugs, rate-limiting the snapshot webhooks, and implementing automatic database purging for old document histories to ensure long-term sustainability.
+**Goal:** Run `/gsd-new-milestone` to define the next objective.
 
 ## Current State
+
+<details>
+<summary>v3.6 Shipped Features</summary>
+
+- Fixed Z-index layout conflicts for the Version History sidebar
+- Implemented a 10-minute snapshot rate limiter on collaborative document webhooks
+- Added autonomous 30-day snapshot expiration via background D1 cron tasks
+- Perfected `MemberCard` rendering, standardizing row height and fixing backdrop blur artifacts
+- Passed WCAG 2.1 AA accessibility contrast rules for Roster UI components
+</details>
 
 <details>
 <summary>v3.5 Shipped Features</summary>
@@ -87,10 +97,6 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 ## Next Milestone Goals
 *Run `/gsd-new-milestone` to define the next objective.*
-
-- Implement Draft Auto-Purging cron triggers.
-- Fix UI z-index conflicts blocking the version history sidebar.
-- Implement rate-limiting for webhook snapshotting.
 
 ## Key Decisions
 
