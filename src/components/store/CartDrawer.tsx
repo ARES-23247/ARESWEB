@@ -39,9 +39,11 @@ export const CartDrawer: React.FC = () => {
 
   return (
     <>
-      <div 
-        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm transition-opacity"
+      <button 
+        type="button"
+        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm transition-opacity w-full border-none cursor-default"
         onClick={() => setIsOpen(false)}
+        aria-label="Close cart backdrop"
       />
       <div className="fixed inset-y-0 right-0 w-full md:w-[400px] bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col transform transition-transform duration-300">
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">

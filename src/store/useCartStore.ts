@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { z } from "zod";
-import { ProductSchema, Product } from "../../shared/schemas/contracts/storeContract";
+import { Product } from "../../shared/schemas/contracts/storeContract";
 
 export interface CartItem {
   product: Product;

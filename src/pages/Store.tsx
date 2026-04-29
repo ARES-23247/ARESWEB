@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { api } from "../api/client";
 import { ShoppingCart, Loader2, Search, CheckCircle2 } from "lucide-react";
+import { Product } from "../../shared/schemas/contracts/storeContract";
 import { ProductCard } from "../components/store/ProductCard";
 import { CartDrawer } from "../components/store/CartDrawer";
 import { useCartStore } from "../store/useCartStore";
@@ -95,7 +96,7 @@ export const Store: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {data.body.map((product: any) => (
+            {data.body.map((product: Product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
