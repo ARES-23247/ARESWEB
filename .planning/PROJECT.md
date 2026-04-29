@@ -23,20 +23,25 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 3.2 (Operations & UX)** — Delivered native iCal/WebCal calendar subscriptions, resolved Kanban sponsorship idempotency bugs, and fixed Finance Manager budget deletion, achieving 100% API coverage.
 
 - ✓ **Milestone 3.3 (Calendar UX Refinement)** — Prevented webkit scrollbar overflow issues when hovering over calendar events, preserving grid stability.
+- ✓ **Milestone 3.4 (Collaborative Editing Ecosystem)** — Integrated real-time multiplayer document editing using Tiptap and Liveblocks.
 
 ### Active
-- [v3.4] Collaborative Editing Ecosystem
+- None
 
-## Current Milestone: v3.4 Collaborative Editing Ecosystem
+## Current Milestone: None
 
-**Goal:** Integrate real-time multiplayer document editing using Tiptap and Liveblocks.
+*Run `/gsd-new-milestone` to define the next objective.*
 
-**Target features:**
+## Current State
+
+<details>
+<summary>v3.4 Shipped Features</summary>
+
 - Liveblocks backend authentication integration for secure token generation
 - Tiptap Yjs extension implementation for multiplayer document state syncing
 - Live cursors and presence avatars to visualize active collaborators
-
-## Current State
+- Draft persistence and historical snapshotting via Webhooks
+</details>
 
 <details>
 <summary>v3.3 Shipped Features</summary>
