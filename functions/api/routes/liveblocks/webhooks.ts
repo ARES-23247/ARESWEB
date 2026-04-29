@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import { AppEnv } from "../../middleware";
 import { WebhookHandler } from "@liveblocks/node";
 import { Liveblocks } from "@liveblocks/node";
-import { getDb } from "../../../database";
+import { Kysely } from "kysely";
+import { DB } from "../../../../shared/schemas/database";
 import { extractTiptapHtmlFromYjs } from "./yjsExtraction";
 
 const webhooksRouter = new Hono<AppEnv>();
@@ -30,10 +31,10 @@ webhooksRouter.post("/", async (c) => {
   }
 
   const liveblocks = new Liveblocks({ secret: c.env.LIVEBLOCKS_SECRET_KEY });
-  const db = getDb(c.env.DB);
+  const db = c.get("db") as Kysely<DB>;
 
   try {
-    if (event.type === "YjsDocumentUpdated" || event.type === "RoomOutdated") {
+    if (event.type === "ydocUpdated") {
       const roomId = event.data.roomId;
       
       // Fetch the current Yjs state as a binary update
@@ -53,7 +54,7 @@ webhooksRouter.post("/", async (c) => {
         await db.updateTable("docs").set({ content_draft: content }).where("slug", "=", entityId).execute();
       }
 
-      if (event.type === "RoomOutdated") {
+      if (event.type === "ydocUpdated") {
         // Create history snapshot
         await db.insertInto("document_history")
           .values({
@@ -63,20 +64,20 @@ webhooksRouter.post("/", async (c) => {
           })
           .execute();
       }
-    } else if (event.type === "UserEntered") {
+    } else if (event.type === "userEntered") {
       const roomId = event.data.roomId;
       const userId = event.data.userId;
-      const info = event.data.info as Record<string, string>;
+      const userInfo = event.data.userInfo as Record<string, string>;
 
-      if (userId && info) {
+      if (userId && userInfo) {
         // SQLite uses DATETIME for CURRENT_TIMESTAMP, but JS Date works too.
         const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
         await db.insertInto("document_contributors")
           .values({
             room_id: roomId,
             user_id: userId,
-            user_name: info.name || "Unknown",
-            user_avatar: info.avatar || null,
+            user_name: userInfo.name || "Unknown",
+            user_avatar: userInfo.avatar || null,
             last_contributed_at: now
           })
           .onConflict((oc) => oc

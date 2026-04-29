@@ -115,6 +115,7 @@ export interface Docs {
   category: string;
   cf_email: string | null;
   content: string;
+  content_draft: string | null;
   description: string | null;
   is_deleted: Generated<number | null>;
   is_executive_summary: Generated<number | null>;
@@ -188,6 +189,15 @@ export interface DocsHistory {
   title: string | null;
 }
 
+export interface DocumentContributors {
+  id: Generated<number | null>;
+  last_contributed_at: Generated<string | null>;
+  room_id: string;
+  user_avatar: string | null;
+  user_id: string;
+  user_name: string;
+}
+
 export interface DocumentHistory {
   content: string;
   created_at: Generated<string | null>;
@@ -209,6 +219,7 @@ export interface EntityLinks {
 export interface Events {
   category: Generated<string | null>;
   cf_email: string | null;
+  content_draft: string | null;
   cover_image: string | null;
   date_end: string | null;
   date_start: string;
@@ -421,6 +432,7 @@ export interface Posts {
   ast: string;
   author: string | null;
   cf_email: string | null;
+  content_draft: string | null;
   date: string | null;
   is_deleted: Generated<number | null>;
   is_portfolio: Generated<number | null>;
@@ -704,23 +716,6 @@ export interface Verification {
   identifier: string;
   updatedAt: number | null;
   value: string;
-}
-
-export interface DocumentContributors {
-  id: Generated<number>;
-  room_id: string;
-  user_id: string;
-  user_name: string;
-  user_avatar: string | null;
-  last_contributed_at: Generated<string>;
-}
-
-export interface DocumentHistory {
-  id: Generated<number>;
-  room_id: string;
-  content: string;
-  created_by: string | null;
-  created_at: Generated<string>;
 }
 
 export interface DB {

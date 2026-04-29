@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { AppEnv, ensureAdmin, persistentRateLimitMiddleware } from "../../middleware";
 import { Liveblocks } from "@liveblocks/node";
-import { getDb } from "../../../database";
+import { Kysely } from "kysely";
+import { DB } from "../../../../shared/schemas/database";
 
 import webhooksRouter from "./webhooks";
 
@@ -17,7 +18,7 @@ liveblocksRouter.get("/history/:roomId", ensureAdmin, async (c) => {
   }
 
   try {
-    const db = getDb(c.env.DB);
+    const db = c.get("db") as Kysely<DB>;
     const history = await db.selectFrom("document_history")
       .selectAll()
       .where("room_id", "=", roomId)
@@ -40,7 +41,7 @@ liveblocksRouter.get("/contributors/:roomId", async (c) => {
   }
 
   try {
-    const db = getDb(c.env.DB);
+    const db = c.get("db") as Kysely<DB>;
     
     // YPP Protection: Only select contributors who are NOT coaches or mentors
     const contributors = await db.selectFrom("document_contributors")

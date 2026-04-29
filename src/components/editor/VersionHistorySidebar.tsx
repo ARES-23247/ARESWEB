@@ -29,7 +29,7 @@ export default function VersionHistorySidebar({ roomId, editor, onClose }: Versi
     queryFn: async () => {
       const res = await fetch(`/api/liveblocks/history/${roomId}`);
       if (!res.ok) throw new Error("Failed to fetch history");
-      const data = await res.json();
+      const data = await res.json() as { history?: HistorySnapshot[] };
       return data.history || [];
     }
   });

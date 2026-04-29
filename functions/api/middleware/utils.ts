@@ -38,6 +38,7 @@ export type Bindings = {
   DEV_BYPASS?: string;
   TURNSTILE_SECRET_KEY?: string;
   LIVEBLOCKS_SECRET_KEY: string;
+  LIVEBLOCKS_WEBHOOK_SECRET?: string;
 };
 
 export type Variables = {

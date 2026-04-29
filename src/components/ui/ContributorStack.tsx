@@ -19,7 +19,7 @@ export function ContributorStack({ roomId, max = 5 }: ContributorStackProps) {
     queryFn: async () => {
       const res = await fetch(`/api/liveblocks/contributors/${roomId}`);
       if (!res.ok) throw new Error('Failed to fetch contributors');
-      const data = await res.json();
+      const data = await res.json() as { contributors?: Contributor[] };
       return data.contributors || [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes

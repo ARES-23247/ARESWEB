@@ -22,8 +22,9 @@ import { RefreshCw } from "lucide-react";
 import SeasonPicker from "./SeasonPicker";
 
 import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
+import VersionHistorySidebar from "./editor/VersionHistorySidebar";
 
-function BlogEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?: string | unknown }) {
+function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();
@@ -62,6 +63,7 @@ function BlogEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?:
   // Local State for visual UI toggles
   const [errorMsg, setErrorMsg] = useState("");
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { ydoc, provider } = useCollaborativeEditor();
   const editor = useRichEditor({ 
