@@ -23,6 +23,7 @@ Last activity: 2026-04-29 — Archived milestone v3.5. Ready for next milestone.
 - (Phase 05) Liveblocks auth infrastructure implemented with BetterAuth session verification.
 - (Phase 06) Tiptap Liveblocks Collaboration and Cursors implemented successfully in CollaborativeEditorRoom.
 - (Phase 07) Webhook handlers created for D1 draft persistence and immutable historical snapshotting.
-
+- (Phase 08) Version History UI Sidebar implemented with Liveblocks and ydocUpdated auto-saves.
+- (Phase 09 & 10) Public Contributor Avatars added with YPP-compliant backend data filtration and live overlap stacks.
 ### Pending Todos
 - None.

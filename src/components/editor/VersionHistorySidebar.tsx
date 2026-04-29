@@ -55,7 +55,7 @@ export default function VersionHistorySidebar({ roomId, editor, onClose }: Versi
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-obsidian border-l border-white/10 shadow-2xl z-50 flex flex-col transform transition-transform duration-300">
+    <div className="fixed inset-y-0 right-0 w-80 bg-obsidian border-l border-white/10 shadow-2xl z-[100] flex flex-col transform transition-transform duration-300">
       <div className="p-4 border-b border-white/10 flex items-center justify-between bg-ares-red/10">
         <div className="flex items-center gap-2">
           <Clock size={18} className="text-ares-red" />
@@ -105,7 +105,7 @@ export default function VersionHistorySidebar({ roomId, editor, onClose }: Versi
       </div>
 
       {previewContent !== null && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4">
           <div className="bg-obsidian w-full max-w-3xl max-h-[80vh] flex flex-col border border-white/20 rounded-md shadow-2xl">
             <div className="flex justify-between items-center p-4 border-b border-white/10 bg-white/5">
               <h3 className="text-white font-bold">Snapshot Preview</h3>

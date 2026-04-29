@@ -55,14 +55,43 @@ webhooksRouter.post("/", async (c) => {
       }
 
       if (event.type === "ydocUpdated") {
-        // Create history snapshot
-        await db.insertInto("document_history")
-          .values({
-            room_id: roomId,
-            content,
-            created_by: "system"
-          })
-          .execute();
+        // Rate limit: Check latest snapshot time for this room
+        const latestSnapshot = await db.selectFrom("document_history")
+          .select("created_at")
+          .where("room_id", "=", roomId)
+          .orderBy("created_at", "desc")
+          .limit(1)
+          .executeTakeFirst();
+          
+        let shouldSave = true;
+        if (latestSnapshot && latestSnapshot.created_at) {
+          // created_at is returned as YYYY-MM-DD HH:MM:SS in UTC
+          const lastSaveTime = new Date(latestSnapshot.created_at + 'Z').getTime(); 
+          const now = Date.now();
+          // 10 minutes in milliseconds = 600000
+          if (now - lastSaveTime < 600000) {
+            shouldSave = false;
+          }
+        }
+
+        if (shouldSave) {
+          // Create history snapshot
+          await db.insertInto("document_history")
+            .values({
+              room_id: roomId,
+              content,
+              created_by: "system"
+            })
+            .execute();
+        }
+
+        // Auto-purge old drafts (> 30 days) asynchronously to keep DB lean
+        const THIRTY_DAYS_AGO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
+        c.executionCtx.waitUntil(
+          db.deleteFrom("document_history")
+            .where("created_at", "<", THIRTY_DAYS_AGO)
+            .execute()
+        );
       }
     } else if (event.type === "userEntered") {
       const roomId = event.data.roomId;

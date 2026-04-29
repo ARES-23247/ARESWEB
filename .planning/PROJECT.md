@@ -29,9 +29,9 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ### Active
 - None
 
-## Current Milestone: None
+## Current Milestone: Milestone 3.6 (Collaboration Polish)
 
-**Goal:** Run `/gsd-new-milestone` to define the next objective.
+**Goal:** Refine the Collaborative Editing Ecosystem by fixing UI bugs, rate-limiting the snapshot webhooks, and implementing automatic database purging for old document histories to ensure long-term sustainability.
 
 ## Current State
 
@@ -88,7 +88,9 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ## Next Milestone Goals
 *Run `/gsd-new-milestone` to define the next objective.*
 
-- Self-hosting (Project relies strictly on Cloudflare's serverless edge ecosystem).
+- Implement Draft Auto-Purging cron triggers.
+- Fix UI z-index conflicts blocking the version history sidebar.
+- Implement rate-limiting for webhook snapshotting.
 
 ## Key Decisions
 
