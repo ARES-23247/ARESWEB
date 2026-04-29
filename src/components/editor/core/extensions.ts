@@ -34,7 +34,7 @@ import * as Y from 'yjs';
 /**
  * Returns the full list of Tiptap extensions used by the ARES editor.
  */
-export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: any, yfield: string = 'default') => [
+export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: unknown, yfield: string = 'default') => [
   GlobalDragHandle.configure({
     dragHandleWidth: 20,
     scrollTreshold: 100,

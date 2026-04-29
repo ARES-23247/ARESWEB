@@ -7,7 +7,7 @@ import { RefreshCw } from "lucide-react";
 
 interface CollaborativeEditorContextType {
   ydoc: Y.Doc | undefined;
-  provider: any | undefined;
+  provider: unknown | undefined;
 }
 
 const CollaborativeEditorContext = createContext<CollaborativeEditorContextType>({
@@ -21,7 +21,6 @@ export function useCollaborativeEditor() {
 
 function CollaborativeEditorInner({
   children,
-  initialContent,
   onDocLoaded,
 }: {
   children: React.ReactNode;
@@ -29,33 +28,21 @@ function CollaborativeEditorInner({
   onDocLoaded?: (ydoc: Y.Doc) => void;
 }) {
   const room = useRoom();
-  const [ydoc, setYdoc] = useState<Y.Doc>();
-  const [provider, setProvider] = useState<any>();
+  const [ydoc] = useState<Y.Doc>(() => new Y.Doc());
+  const [provider] = useState<LiveblocksYjsProvider>(() => new LiveblocksYjsProvider(room, ydoc));
 
   useEffect(() => {
-    const yDoc = new Y.Doc();
-    const yProvider = new LiveblocksYjsProvider(room, yDoc);
-
-    // If initialContent is provided, we can inject it here if the doc is empty.
-    // However, Liveblocks/Yjs might already be syncing. We need to wait for sync
-    // and then check if the doc is empty.
-    yProvider.on("synced", (isSynced: boolean) => {
+    provider.on("synced", (isSynced: boolean) => {
       if (isSynced) {
-        const type = yDoc.getXmlFragment("default");
-        // We defer injecting content to the Editor component using commands.setContent
-        // since Tiptap handles HTML/JSON parsing. So we just pass the doc up.
-        onDocLoaded?.(yDoc);
+        onDocLoaded?.(ydoc);
       }
     });
 
-    setYdoc(yDoc);
-    setProvider(yProvider);
-
     return () => {
-      yDoc.destroy();
-      yProvider.destroy();
+      ydoc.destroy();
+      provider.destroy();
     };
-  }, [room, onDocLoaded]);
+  }, [provider, ydoc, onDocLoaded]);
 
   return (
     <CollaborativeEditorContext.Provider value={{ ydoc, provider }}>

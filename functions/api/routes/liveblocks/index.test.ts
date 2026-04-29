@@ -34,18 +34,15 @@ vi.mock("@liveblocks/node", () => {
 import liveblocksRouter from "./index";
 
 describe("Hono Backend - /liveblocks Router", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let testApp: Hono<any>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthorize.mockResolvedValue({ status: 200, body: '{"token":"mock-token"}' });
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     testApp = new Hono<any>();
     
     // Inject sessionUser and env for test
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     testApp.use("*", async (c: any, next: any) => {
       c.set("sessionUser", {
         id: "user-123",
@@ -87,15 +84,12 @@ describe("Hono Backend - /liveblocks Router", () => {
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
 
     expect(res.status).toBe(400);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body = await res.json() as any;
     expect(body.error).toBe("Room ID is required");
   });
 
   it("POST /auth - returns 401 if sessionUser is missing", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const noUserApp = new Hono<any>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     noUserApp.use("*", async (c: any, next: any) => {
       c.env = { LIVEBLOCKS_SECRET_KEY: "test-secret" };
       await next();
@@ -112,9 +106,7 @@ describe("Hono Backend - /liveblocks Router", () => {
   });
 
   it("POST /auth - falls back to default name/avatar if missing", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const defaultUserApp = new Hono<any>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     defaultUserApp.use("*", async (c: any, next: any) => {
       c.set("sessionUser", {
         id: "user-456",
@@ -155,7 +147,6 @@ describe("Hono Backend - /liveblocks Router", () => {
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
 
     expect(res.status).toBe(500);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body = await res.json() as any;
     expect(body.error).toBe("Failed to authenticate with Liveblocks");
   });

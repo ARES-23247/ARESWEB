@@ -27,7 +27,7 @@ export default function Docs() {
   const {
     allDocs,
     currentDoc,
-    contributors,
+
     docLoading,
     searchResults,
     groupedDocs,
