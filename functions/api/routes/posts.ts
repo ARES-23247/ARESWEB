@@ -568,7 +568,11 @@ const postTsRestRouter = s.router(postContract, postTsRestRouterObj);
 
 export const postsRouter = new Hono<AppEnv>();
 
+import { edgeCacheMiddleware } from "../middleware/cache";
+
 // Apply middleware/protections
+postsRouter.use("/", edgeCacheMiddleware(300, 60)); // Cache list
+postsRouter.use("/:slug", edgeCacheMiddleware(300, 60)); // Cache single
 postsRouter.use("/admin/:slug/history", ensureAuth);
 postsRouter.use("/admin/:slug/history/*", ensureAuth);
 postsRouter.use("/admin/*", ensureAdmin);

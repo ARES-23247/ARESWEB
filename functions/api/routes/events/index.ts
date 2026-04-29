@@ -10,7 +10,11 @@ const eventsRouter = new Hono<AppEnv>();
 
 const eventTsRestRouter = s.router(eventContract, eventHandlers);
 
+import { edgeCacheMiddleware } from "../../middleware/cache";
+
 // Apply protections
+eventsRouter.use("/", edgeCacheMiddleware(300, 60)); // Cache list
+eventsRouter.use("/:id", edgeCacheMiddleware(300, 60)); // Cache single
 eventsRouter.use("/admin", ensureAdmin);
 eventsRouter.use("/admin/*", ensureAdmin);
 eventsRouter.use("/:id/signups", ensureAuth);

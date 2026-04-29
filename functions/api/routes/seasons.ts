@@ -238,6 +238,11 @@ const seasonsTsRestRouterObj: any = {
 const seasonsTsRestRouter = _s.router(seasonContract, seasonsTsRestRouterObj as any);
 export const seasonsRouter = new Hono<AppEnv>();
 
+import { edgeCacheMiddleware } from "../middleware/cache";
+
+seasonsRouter.use("/", edgeCacheMiddleware(300, 60)); // Cache list
+seasonsRouter.use("/:year", edgeCacheMiddleware(300, 60)); // Cache detail
+
 seasonsRouter.use("/admin", ensureAdmin);
 seasonsRouter.use("/admin/*", ensureAdmin);
 seasonsRouter.use("/admin", rateLimitMiddleware(15, 60));
