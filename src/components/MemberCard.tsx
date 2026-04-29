@@ -21,9 +21,9 @@ export function MemberCard({ member }: { member: TeamMember }) {
   const colleges = typeof member.colleges === "string" ? JSON.parse(member.colleges || "[]") : [];
 
   return (
-    <Link to={`/profile/${member.user_id}`} className="group block">
-      <div className="hero-card bg-white/5 border border-white/10 p-6 text-center transition-all duration-300 group-hover:border-ares-red/30 group-hover:shadow-lg backdrop-blur-sm">
-        <div className="w-20 h-20 mx-auto mb-4 ares-cut bg-white/10 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform">
+    <Link to={`/profile/${member.user_id}`} className="group block h-full">
+      <div className="hero-card bg-white/5 border border-white/10 p-6 text-center transition-all duration-300 group-hover:border-ares-red/30 group-hover:shadow-lg backdrop-blur-sm h-full flex flex-col">
+        <div className="w-20 h-20 mx-auto mb-4 ares-cut bg-white/10 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform shrink-0">
           <img
             src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.user_id}`}
             alt=""
@@ -37,22 +37,25 @@ export function MemberCard({ member }: { member: TeamMember }) {
         {member.pronouns && (
           <p className="text-marble/40 text-xs mb-2">{member.pronouns}</p>
         )}
-        {subteams.length > 0 && (
-          <div className="flex flex-wrap gap-1 justify-center mb-2">
-            {(subteams as string[]).slice(0, 3).map((team: string) => (
-              <span key={team} className="px-2 py-0.5 bg-ares-red/10 text-ares-red/70 text-[9px] font-bold ares-cut-sm uppercase tracking-wider">
-                {team}
-              </span>
-            ))}
-          </div>
-        )}
-        {member.member_type === "alumni" && colleges.length > 0 && (
-          <div className="flex justify-center gap-1.5 mt-2">
-            {(colleges as { domain: string }[]).slice(0, 3).map((col: { domain: string }, i: number) => (
-              <BrandLogo key={i} domain={col.domain} fallbackIcon={GraduationCap} className="w-5 h-5" />
-            ))}
-          </div>
-        )}
+        
+        <div className="mt-auto pt-2 flex flex-col gap-2">
+          {subteams.length > 0 && (
+            <div className="flex flex-wrap gap-1 justify-center">
+              {(subteams as string[]).slice(0, 3).map((team: string) => (
+                <span key={team} className="px-2 py-0.5 bg-ares-red/20 text-ares-red-light text-[9px] font-bold ares-cut-sm uppercase tracking-wider">
+                  {team}
+                </span>
+              ))}
+            </div>
+          )}
+          {member.member_type === "alumni" && colleges.length > 0 && (
+            <div className="flex justify-center gap-1.5">
+              {(colleges as { domain: string }[]).slice(0, 3).map((col: { domain: string }, i: number) => (
+                <BrandLogo key={i} domain={col.domain} fallbackIcon={GraduationCap} className="w-5 h-5" />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </Link>
   );
