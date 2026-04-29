@@ -78,10 +78,15 @@ describe("Analytics Router", () => {
       doUpdateSet: vi.fn().mockReturnThis(),
       fn: {}
     };
+    const kvStore = new Map<string, string>();
     env = {
       DB: {},
       TURNSTILE_SECRET_KEY: "test-secret",
       DEV_BYPASS: "true",
+      RATE_LIMITS: {
+        get: vi.fn().mockImplementation(async (k: string) => kvStore.get(k) || null),
+        put: vi.fn().mockImplementation(async (k: string, v: string) => { kvStore.set(k, v); })
+      }
     };
     vi.clearAllMocks();
 
@@ -135,7 +140,7 @@ describe("Analytics Router", () => {
           body: JSON.stringify({ path: "/test", turnstileToken: "good" }),
           headers: { "Content-Type": "application/json", "CF-Connecting-IP": "rate-limit-test" },
         });
-        res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+        res = await testApp.request(req, {}, env, mockExecutionContext);
       }
       expect(res?.status).toBe(429);
     });
@@ -190,7 +195,7 @@ describe("Analytics Router", () => {
           body: JSON.stringify({ sponsor_id: "spon-123", turnstileToken: "good" }),
           headers: { "Content-Type": "application/json", "CF-Connecting-IP": "rate-limit-sponsor" },
         });
-        res = await analyticsRouter.request(req, {}, env, mockExecutionContext);
+        res = await testApp.request(req, {}, env, mockExecutionContext);
       }
       expect(res?.status).toBe(429);
     });
