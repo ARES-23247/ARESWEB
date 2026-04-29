@@ -15,13 +15,13 @@ npx wrangler d1 execute ares-db --file=schema.sql --remote
 ```
 
 ### Migration Strategy
-Historical migrations (001–022) have been consolidated into `schema.sql` and archived to `migrations/_archive/`. All future schema changes use numbered migration files starting at `023`:
+Historical migrations (001–049) have been consolidated into `schema.sql` and archived to `migrations/_archive/`. All future schema changes use numbered migration files starting at `050`:
 
 ```
 schema.sql                    ← Always reflects the COMPLETE current schema
 migrations/
   README.md                   ← Strategy documentation
-  023_next_change.sql         ← Next post-launch migration
+  050_next_change.sql         ← Next post-launch migration
   _archive/                   ← Historical reference only, never re-run
 ```
 
@@ -178,8 +178,8 @@ npx wrangler d1 execute ares-db --file=<migration_file> --remote
 
 ### Deployment Checklist
 1. Write the migration SQL file
-2. **Test locally first**: `npx wrangler d1 execute ares-db --file=migrations/023_xxx.sql --local`
-3. **Apply to production**: `npx wrangler d1 execute ares-db --file=migrations/023_xxx.sql --remote`
+2. **Test locally first**: `npx wrangler d1 execute ares-db --file=migrations/050_xxx.sql --local`
+3. **Apply to production**: `npx wrangler d1 execute ares-db --file=migrations/050_xxx.sql --remote`
 4. **Update schema.sql** to reflect the change
 5. **Commit both files** in the same commit
 

@@ -1,7 +1,7 @@
 # Current State
 
 ## Active Phase
-*(None. Run `/gsd-new-milestone` to define new requirements and roadmap).*
+- 16: Fix Liveblocks Migration Error
 
 ## Environment
 - All previous milestone phases are archived.

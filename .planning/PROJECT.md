@@ -29,9 +29,9 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ### Active
 - None
 
-## Current Milestone: None
+## Current Milestone: Milestone 3.8 (Database Audit & Bug Fixes)
 
-**Goal:** Pending `gsd-new-milestone`.
+**Goal:** Resolve Liveblocks migration database errors, simplify the existing 49 migrations, and perform a codebase-wide database schema audit.
 
 ## Current State
 

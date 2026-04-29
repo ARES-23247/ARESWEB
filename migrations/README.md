@@ -2,7 +2,7 @@
 
 ## Current State
 
-As of launch, all historical migrations (001 through 022) have been **consolidated** into the root `schema.sql` file, which serves as the **single source of truth** for the complete database schema.
+As of launch, all historical migrations (001 through 049) have been **consolidated** into the root `schema.sql` file, which serves as the **single source of truth** for the complete database schema.
 
 The archived migrations are preserved in `_archive/` for historical reference only. **Do not run them** — they are superseded by `schema.sql`.
 
@@ -18,8 +18,8 @@ wrangler d1 execute aresweb-db --file=schema.sql --remote
 
 Once the site is live with production data, use numbered migration files for all schema changes:
 
-1. **Create a new file** in this directory: `023_description.sql`, `024_description.sql`, etc.
-2. **Apply it** to production: `wrangler d1 execute aresweb-db --file=migrations/023_description.sql --remote`
+1. **Create a new file** in this directory: `050_description.sql`, `051_description.sql`, etc.
+2. **Apply it** to production: `wrangler d1 execute aresweb-db --file=migrations/050_description.sql --remote`
 3. **Update `schema.sql`** to reflect the change (keep it as the authoritative reference).
 
 ### Migration Rules
