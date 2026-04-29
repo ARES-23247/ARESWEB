@@ -26,14 +26,20 @@ interface DocData {
   content: string;
 }
 
-export default function DocsEditor({ userRole }: { userRole?: string | unknown }) {
-  const { editSlug } = useParams<{ editSlug?: string }>();
+import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
+
+function DocsEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?: string | unknown }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();
   const [errorMsg, setErrorMsg] = useState("");
 
-  const editor = useRichEditor({ placeholder: "<p>Start writing documentation here...</p>" });
+  const { ydoc, provider } = useCollaborativeEditor();
+  const editor = useRichEditor({ 
+    placeholder: "<p>Start writing documentation here...</p>",
+    ydoc,
+    provider
+  });
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<DocFormValues>({
     resolver: zodResolver(docSchema) as unknown as import("react-hook-form").Resolver<DocFormValues>,
@@ -78,14 +84,20 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
       });
       
       if (editor && doc.content) {
-        try {
-          editor.commands.setContent(JSON.parse(doc.content));
-        } catch {
-          editor.commands.setContent(doc.content);
+        // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
+        // We only inject the DB snapshot if the YDoc is currently empty (e.g. first user joining a new session).
+        const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
+        
+        if (shouldSetContent) {
+          try {
+            editor.commands.setContent(JSON.parse(doc.content));
+          } catch {
+            editor.commands.setContent(doc.content);
+          }
         }
       }
     }
-  }, [docRes, reset, editor]);
+  }, [docRes, reset, editor, ydoc]);
 
   const saveMutation = api.docs.saveDoc.useMutation({
      
@@ -276,3 +288,22 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
     </div>
   );
 }
+
+export default function DocsEditor({ userRole }: { userRole?: string | unknown }) {
+  const { editSlug } = useParams<{ editSlug?: string }>();
+
+  // Use a predictable room ID based on the document slug
+  const roomId = editSlug ? `doc_${editSlug}` : null;
+
+  if (roomId) {
+    return (
+      <CollaborativeEditorRoom roomId={roomId}>
+        <DocsEditorInner editSlug={editSlug} userRole={userRole} />
+      </CollaborativeEditorRoom>
+    );
+  }
+
+  // Single player mode for new documents until they are saved and get a slug
+  return <DocsEditorInner editSlug={editSlug} userRole={userRole} />;
+}
+

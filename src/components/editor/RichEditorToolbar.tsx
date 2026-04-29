@@ -118,6 +118,9 @@ const Btn = ({ active, onClick, children, className = "", disabled = false, aria
 
 const Sep = () => <div className="w-px h-6 bg-white/10 mx-1" />;
 
+import { useCollaborativeEditor } from "./CollaborativeEditorRoom";
+import PresenceAvatars from "./PresenceAvatars";
+
 /* ---------- Component ---------- */
 export default function RichEditorToolbar({ editor, documentTitle }: RichEditorToolbarProps) {
   const modal = useModal();
@@ -126,6 +129,8 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const jsonImportRef = useRef<HTMLInputElement>(null);
+
+  const { provider } = useCollaborativeEditor();
 
   useEffect(() => {
     const handleOpenSimPicker = () => setIsSimPickerOpen(true);
@@ -187,11 +192,12 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
   return (
     <>
       {/* ===== FLOATING TOOLBAR ===== */}
-      <div className="flex flex-wrap items-center gap-1 bg-obsidian/95 backdrop-blur-md border border-white/10 ares-cut-sm p-2 z-50 w-full mb-0 sticky top-24 overflow-x-auto shadow-lg">
-        {/* Undo / Redo */}
-        <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} ariaLabel="Undo">↶</Btn>
-        <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} ariaLabel="Redo">↷</Btn>
-        <Sep />
+      <div className="flex flex-wrap items-center gap-1 bg-obsidian/95 backdrop-blur-md border border-white/10 ares-cut-sm p-2 z-50 w-full mb-0 sticky top-24 shadow-lg">
+        <div className="flex-1 flex flex-wrap items-center gap-1 overflow-x-auto">
+          {/* Undo / Redo */}
+          <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} ariaLabel="Undo">↶</Btn>
+          <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} ariaLabel="Redo">↷</Btn>
+          <Sep />
 
         {/* Headings */}
         <Btn active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} ariaLabel="Heading 1">H1</Btn>
@@ -334,6 +340,14 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         >
           Export .JSON
         </button>
+        </div>
+        
+        {/* Presence Avatars (Right Aligned) */}
+        {provider && (
+          <div className="ml-auto pl-4 border-l border-white/10 hidden md:block">
+            <PresenceAvatars />
+          </div>
+        )}
       </div>
 
       {/* ===== TABLE CONTEXT BAR ===== */}

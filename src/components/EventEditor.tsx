@@ -27,13 +27,27 @@ export interface LocationRow {
   address: string;
 }
 
-export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
-  const { editId } = useParams<{ editId?: string }>();
+import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
+
+function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: string | unknown }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const modal = useModal();
-  const editor = useRichEditor({ placeholder: "<p>Describe your upcoming event or write a full recap here...</p>" });
-  const notesEditor = useRichEditor({ placeholder: "<p>Add private meeting notes here (visible to verified members only)...</p>" });
+  
+  const { ydoc, provider } = useCollaborativeEditor();
+  const editor = useRichEditor({ 
+    placeholder: "<p>Describe your upcoming event or write a full recap here...</p>",
+    ydoc,
+    provider,
+    yfield: 'default'
+  });
+  
+  const notesEditor = useRichEditor({ 
+    placeholder: "<p>Add private meeting notes here (visible to verified members only)...</p>",
+    ydoc,
+    provider,
+    yfield: 'notes'
+  });
   
   const { availableSocials } = useAdminSettings();
   const { uploadFile, isUploading, setErrorMsg: setUploadError } = useImageUpload();
@@ -127,23 +141,31 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
         seasonId: event.season_id ? Number(event.season_id) : undefined,
         socials: (eventRes.body as unknown as { socials?: Record<string, boolean> })?.socials || {}
       });
+
       if (editor) {
-        try {
-          editor.commands.setContent(JSON.parse(event.description));
-        } catch {
-          editor.commands.setContent(`<p>${event.description}</p>`);
+        const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
+        if (shouldSetContent && event.description) {
+          try {
+            editor.commands.setContent(JSON.parse(event.description));
+          } catch {
+            editor.commands.setContent(`<p>${event.description}</p>`);
+          }
         }
       }
-      if (notesEditor && event.meeting_notes) {
-        try {
-          notesEditor.commands.setContent(JSON.parse(event.meeting_notes));
-        } catch {
-          notesEditor.commands.setContent(`<p>${event.meeting_notes}</p>`);
+      
+      if (notesEditor) {
+        const shouldSetNotes = !ydoc || ydoc.getXmlFragment("notes").length === 0;
+        if (shouldSetNotes && event.meeting_notes) {
+          try {
+            notesEditor.commands.setContent(JSON.parse(event.meeting_notes));
+          } catch {
+            notesEditor.commands.setContent(`<p>${event.meeting_notes}</p>`);
+          }
         }
       }
     }
 
-  }, [eventRes, reset, editor, notesEditor]);
+  }, [eventRes, reset, editor, notesEditor, ydoc]);
 
 
   const saveMutation = api.events.saveEvent.useMutation({
@@ -369,7 +391,6 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
       <EventPotluckVolunteerFlags 
         isPotluck={formValues.isPotluck || false} 
         isVolunteer={formValues.isVolunteer || false} 
-
         onChange={(field, val) => setValue(field as "isPotluck" | "isVolunteer", val as boolean)}
       />
 
@@ -412,9 +433,7 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
           extraControls={
             <SocialSyndicationGrid 
               availableSocials={availableSocials}
-
               socials={socials as Record<string, boolean>}
-
               onChange={(platform, val) => setValue(`socials.${platform}`, val)}
               isEdit={!!editId}
             />
@@ -434,3 +453,20 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
   );
 }
 
+export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
+  const { editId } = useParams<{ editId?: string }>();
+
+  // Use a predictable room ID based on the event ID
+  const roomId = editId ? `event_${editId}` : null;
+
+  if (roomId) {
+    return (
+      <CollaborativeEditorRoom roomId={roomId}>
+        <EventEditorInner editId={editId} userRole={userRole} />
+      </CollaborativeEditorRoom>
+    );
+  }
+
+  // Single player mode for new events until they are saved and get an ID
+  return <EventEditorInner editId={editId} userRole={userRole} />;
+}

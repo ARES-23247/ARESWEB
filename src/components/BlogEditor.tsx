@@ -21,8 +21,9 @@ import { RefreshCw } from "lucide-react";
 
 import SeasonPicker from "./SeasonPicker";
 
-export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
-  const { editSlug } = useParams<{ editSlug?: string }>();
+import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
+
+function BlogEditorInner({ editSlug, userRole }: { editSlug?: string, userRole?: string | unknown }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();
@@ -62,7 +63,12 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
   const [errorMsg, setErrorMsg] = useState("");
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
 
-  const editor = useRichEditor({ placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>" });
+  const { ydoc, provider } = useCollaborativeEditor();
+  const editor = useRichEditor({ 
+    placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>",
+    ydoc,
+    provider
+  });
 
   // Use standard API query instead of custom useEntityFetch
   const { data: postRes, isLoading, isError } = api.posts.getAdminPost.useQuery(
@@ -87,16 +93,20 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
         socials: (postRes.body as unknown as { socials?: Record<string, boolean> }).socials || {}
       });
       if (editor && post.ast) {
-        try {
-          editor.commands.setContent(JSON.parse(post.ast));
-        } catch (e) {
-          console.error("Failed to parse existing AST", e);
+        // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
+        const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
+        
+        if (shouldSetContent) {
+          try {
+            editor.commands.setContent(JSON.parse(post.ast));
+          } catch (e) {
+            console.error("Failed to parse existing AST", e);
+          }
         }
       }
     }
 
-  }, [postRes, reset, editor]); // Correct dependencies
-
+  }, [postRes, reset, editor, ydoc]);
 
   const saveMutation = api.posts.savePost.useMutation({
     onSuccess: (data: { status: number; body?: { warning?: string; error?: string; slug?: string; isDraft?: boolean } | null }) => {
@@ -293,4 +303,22 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
       />
     </div>
   );
+}
+
+export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
+  const { editSlug } = useParams<{ editSlug?: string }>();
+
+  // Use a predictable room ID based on the post slug
+  const roomId = editSlug ? `blog_${editSlug}` : null;
+
+  if (roomId) {
+    return (
+      <CollaborativeEditorRoom roomId={roomId}>
+        <BlogEditorInner editSlug={editSlug} userRole={userRole} />
+      </CollaborativeEditorRoom>
+    );
+  }
+
+  // Single player mode for new documents until they are saved and get a slug
+  return <BlogEditorInner editSlug={editSlug} userRole={userRole} />;
 }

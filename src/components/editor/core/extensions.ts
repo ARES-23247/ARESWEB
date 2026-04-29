@@ -27,10 +27,14 @@ import { CommandsList } from '../CommandsList';
 import { MentionList } from '../MentionList';
 import { suggestionRenderer } from '../suggestionRenderer';
 
+import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import * as Y from 'yjs';
+
 /**
  * Returns the full list of Tiptap extensions used by the ARES editor.
  */
-export const getEditorExtensions = (lowlight: unknown) => [
+export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: any, yfield: string = 'default') => [
   GlobalDragHandle.configure({
     dragHandleWidth: 20,
     scrollTreshold: 100,
@@ -38,7 +42,9 @@ export const getEditorExtensions = (lowlight: unknown) => [
   StarterKit.configure({
     heading: { levels: [1, 2, 3] },
     codeBlock: false,
-    blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white italic' } }
+    blockquote: { HTMLAttributes: { class: 'border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-2 my-4 text-white italic' } },
+    // When collaboration is active, history is managed by Yjs instead of Tiptap's built-in history.
+    ...(ydoc ? { history: false } : {}),
   }),
   Typography,
   Highlight.configure({ HTMLAttributes: { class: 'bg-ares-gold/30 text-black rounded-sm px-1' } }),
@@ -77,5 +83,18 @@ export const getEditorExtensions = (lowlight: unknown) => [
     suggestion: {
       render: () => suggestionRenderer(MentionList),
     },
-  })
+  }),
+
+  // Optional Collaborative Extensions
+  ...(ydoc ? [Collaboration.configure({ document: ydoc, field: yfield })] : []),
+  ...(provider ? [
+    CollaborationCursor.configure({
+      provider: provider,
+      user: {
+        name: provider.room?.getSelf()?.info?.name || 'Anonymous',
+        color: '#58a6ff', // Default, but you can assign random colors
+      },
+    })
+  ] : []),
 ];
+

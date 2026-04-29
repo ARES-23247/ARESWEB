@@ -8,6 +8,7 @@ import { ModalProvider } from "./contexts/ModalContext";
 import App from "./App";
 import "./index.css";
 import "./i18n";
+import { LiveblocksProvider } from "@liveblocks/react";
 
 // SEC-REDIRECT: Cloudflare Pages CDN serves static assets before Functions middleware runs.
 // This client-side redirect catches the SPA case where HTML loads on *.pages.dev
@@ -42,9 +43,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <NuqsAdapter>
-            <ModalProvider>
-              <App />
-            </ModalProvider>
+            <LiveblocksProvider authEndpoint="/api/liveblocks/auth">
+              <ModalProvider>
+                <App />
+              </ModalProvider>
+            </LiveblocksProvider>
           </NuqsAdapter>
         </BrowserRouter>
         <ReactQueryDevtools initialIsOpen={false} />
