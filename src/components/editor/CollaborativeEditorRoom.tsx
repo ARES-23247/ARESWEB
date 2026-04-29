@@ -7,7 +7,8 @@ import { RefreshCw } from "lucide-react";
 
 interface CollaborativeEditorContextType {
   ydoc: Y.Doc | undefined;
-  provider: unknown | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  provider: any | undefined;
 }
 
 const CollaborativeEditorContext = createContext<CollaborativeEditorContextType>({

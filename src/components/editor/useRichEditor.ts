@@ -13,7 +13,8 @@ export interface UseRichEditorOptions {
   /** Placeholder HTML shown when the editor is empty. */
   placeholder?: string;
   ydoc?: Y.Doc;
-  provider?: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  provider?: any;
   yfield?: string;
 }
 
