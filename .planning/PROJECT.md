@@ -24,20 +24,25 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 - ✓ **Milestone 3.3 (Calendar UX Refinement)** — Prevented webkit scrollbar overflow issues when hovering over calendar events, preserving grid stability.
 - ✓ **Milestone 3.4 (Collaborative Editing Ecosystem)** — Integrated real-time multiplayer document editing using Tiptap and Liveblocks.
+- ✓ **Milestone 3.5 (Version Control & Contributor Attribution)** — Delivered historical version control and YPP-compliant public avatar attribution across ARESWEB documents.
 
 ### Active
-- [v3.5] Version Control & Contributor Attribution
+- None
 
-## Current Milestone: v3.5 Version Control & Contributor Attribution
+## Current Milestone: None
 
-**Goal:** Implement historical version control and public contributor attribution for collaborative documents.
-
-**Target features:**
-- Version history viewer UI for documents, posts, and events.
-- Draft rollback functionality from historical snapshots.
-- Dynamic overlapping student avatar stack on public pages, enforcing youth protection guidelines.
+**Goal:** Run `/gsd-new-milestone` to define the next objective.
 
 ## Current State
+
+<details>
+<summary>v3.5 Shipped Features</summary>
+
+- Version history viewer UI for documents, posts, and events
+- Draft rollback functionality from historical snapshots
+- Contributor tracking backend for tracking unique users who edited documents
+- Dynamic overlapping student avatar stack on public pages, enforcing FIRST youth protection guidelines
+</details>
 
 <details>
 <summary>v3.4 Shipped Features</summary>

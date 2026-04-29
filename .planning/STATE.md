@@ -1,9 +1,9 @@
 ---
-milestone: v3.5
-name: Version Control & Contributor Attribution
+milestone: v3.6
+name: TBD
 status: planning
 progress:
-  phases: 0/3
+  phases: 0/0
   plans: 0/0
   tasks: 0/0
 ---
@@ -11,10 +11,10 @@ progress:
 
 ## Current Position
 
-Phase: Phase 10: Public Avatar/YPP Integration
-Plan: 10-PLAN.md
-Status: Active
-Last activity: 2026-04-29 — Completed Phase 09 Contributor Tracking. Starting Phase 10.
+Phase: None
+Plan: None
+Status: Idle
+Last activity: 2026-04-29 — Archived milestone v3.5. Ready for next milestone.
 
 ## Accumulated Context
 - (Carried over from v3.2) Calendar integration links directly to `/events/:id` from `react-calendar` views.
