@@ -29,9 +29,16 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ### Active
 - None
 
-## Current Milestone: Pending
+## Current Milestone: Milestone 3.9 (Stripe Storefront)
 
-**Goal:** *Run `/gsd-new-milestone` to define the next objective.*
+**Goal:** Build a natively integrated e-commerce storefront for selling physical team merchandise (t-shirts, hats), utilizing Stripe Checkout for secure payment processing and Cloudflare D1 for inventory and order management.
+
+**Target features:**
+- D1 `products` and `orders` schemas with shipping address tracking.
+- Secure backend integration via Hono API generating Stripe Checkout sessions.
+- Stripe Webhook listener for real-time payment fulfillment sync.
+- React-based storefront with a multi-item Shopping Cart state (Zustand/Context).
+- Admin order fulfillment dashboard.
 
 ## Current State
 

@@ -1,12 +1,32 @@
-# Current State
+---
+milestone: v3.9
+name: Stripe Storefront
+status: planning
+progress:
+  phases_total: 4
+  phases_completed: 0
+  tasks_total: 0
+  tasks_completed: 0
+---
 
-## Active Phase
-- 16: Fix Liveblocks Migration Error
+# Project State
 
-## Environment
-- All previous milestone phases are archived.
-- The project has successfully resolved all ESLint warnings and TypeScript typing issues.
+## Current Position
+
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-29 — Milestone v3.9 started
 
 ## Accumulated Context
-### Roadmap Evolution
-- Milestone 3.7 archived successfully.
+
+### Active Blockers
+- None
+
+### Deferred Debt
+- None
+
+### Cross-Phase Decisions
+- Using Stripe Checkout to handle PCI compliance and mobile wallet payments.
+- Using Cloudflare D1 for inventory management and order fulfillment tracking.
+- Physical merchandise (shipping addresses required).
