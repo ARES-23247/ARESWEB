@@ -3,8 +3,8 @@
 ## v4.7 Gap Closure (Tech Debt from v4.6 Audit)
 
 ### Test Coverage
-- [ ] **TD-01**: `indexer.ts` and `autoReindex.ts` must have vitest unit tests covering core indexing logic, dynamic import behavior, and error handling.
-- [ ] **TD-02**: Admin reindex endpoint (`POST /api/ai/reindex`) must have an E2E or integration test verifying auth guard, incremental mode, and force mode.
+- [x] **TD-01**: `indexer.ts` and `autoReindex.ts` must have vitest unit tests covering core indexing logic, dynamic import behavior, and error handling.
+- [x] **TD-02**: Admin reindex endpoint (`POST /api/ai/reindex`) must have an E2E or integration test verifying auth guard, incremental mode, and force mode.
 
 ### Pipeline Hardening
 - [ ] **TD-03**: `events` and `posts` tables must have `updated_at` columns with automatic update triggers, enabling true incremental timestamp-based indexing instead of full filtered scans.

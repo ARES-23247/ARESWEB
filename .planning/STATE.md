@@ -4,19 +4,19 @@ name: Gap Closure (v4.6 Tech Debt)
 status: planning
 progress:
   phases_total: 2
-  phases_completed: 0
+  phases_completed: 1
   tasks_total: 5
-  tasks_completed: 0
+  tasks_completed: 2
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 51 — RAG Indexer Test Coverage (next)
+Phase: 52 — Index Pipeline Hardening (next)
 Plan: Pending
-Status: Gap closure phases created from v4.6 audit
-Last activity: 2026-04-30 — v4.7 gap closure phases planned (51-52)
+Status: Phase 51 complete (20 tests, TD-01/TD-02 satisfied)
+Last activity: 2026-04-30 — Phase 51 closed, critical static import hotfix deployed
 
 ## Accumulated Context
 
