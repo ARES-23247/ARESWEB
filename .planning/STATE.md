@@ -3,20 +3,20 @@ milestone: v4.7
 name: Gap Closure (v4.6 Tech Debt)
 status: active
 progress:
-  phases_total: 4
-  phases_completed: 2
-  tasks_total: 7
-  tasks_completed: 5
+  phases_total: 5
+  phases_completed: 5
+  tasks_total: 8
+  tasks_completed: 8
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 53 — AI Inline Suggestions (next)
-Plan: Pending
-Status: GhostTextExtension exists but trigger logic never implemented
-Last activity: 2026-04-30 — Phase 53 repurposed, Phase 54 (Sim Playground) added
+Phase: 55 — AI & Sim Hardening (completed)
+Plan: Executed inline (no formal PLAN.md)
+Status: All v4.7 phases complete — milestone ready for closure
+Last activity: 2026-04-30 — Phase 55 shipped (RAG grounding, sim preview fix, auto-heal, chatbot links)
 
 ## Accumulated Context
 
@@ -29,6 +29,7 @@ Last activity: 2026-04-30 — Phase 53 repurposed, Phase 54 (Sim Playground) add
 - TODO: Add `BETTER_AUTH_SECRET` CI secret to suppress auth fallback warnings in E2E logs.
 - TODO: Implement inline AI auto-completion (Notion-style ghost text). Feasible with Tiptap but will burn free-tier neurons fast. Best as z.ai premium-only feature.
 - TODO: Events and Posts tables lack `updated_at` columns — incremental indexing for those tables does a full scan. Consider adding updated_at triggers.
+- TODO: Add unit tests for SimulationPlayground auto-heal and CRUD logic.
 
 ### Cross-Phase Decisions
 - Using Stripe Checkout to handle PCI compliance and mobile wallet payments.
@@ -43,3 +44,6 @@ Last activity: 2026-04-30 — Phase 53 repurposed, Phase 54 (Sim Playground) add
 - RAG Indexing: Incremental via KV timestamp (`rag_last_indexed` in RATE_LIMITS KV). Only public data indexed (status != 'draft', is_deleted != 1). Auto-triggers via targeted `triggerBackgroundReindex()` calls inside individual route handlers (posts, events, docs, seasons) using `executionCtx.waitUntil()`. Catch-all middleware approach was removed — it caused API hangs by interfering with Hono's response chain.
 - **CRITICAL**: Any module under `routes/ai/` that references Workers AI or Vectorize bindings MUST be loaded via dynamic `import()`, never static `import`. Static imports pull the module into every route handler's startup graph, crashing the entire worker if the binding resolution fails during initialization. See `autoReindex.ts` and `ai/index.ts:283` for the correct pattern.
 - Vectorize index name: `ares_knowledge_base`. Embedding model: `@cf/baai/bge-base-en-v1.5`. Batch size: 20 vectors per upsert.
+- Sim preview iframe uses `srcdoc` with `sandbox="allow-scripts allow-same-origin"`. React/ReactDOM UMD bundles are self-hosted in `public/vendor/` and loaded via absolute URLs (`${window.location.origin}/vendor/...`) because srcdoc iframes resolve relative paths against `about:srcdoc`.
+- Sim Playground AI auto-heal: single retry only. On Babel compile error, sends error + broken code back to z.ai, applies fix, re-compiles. No infinite loops.
+- RAG chatbot system prompt includes KEY LINKS section with all team action URLs (join, sponsors, outreach, blog, events, etc.) so the bot can direct users appropriately.

@@ -15,6 +15,7 @@
 - [x] **Phase 52: Index Pipeline Hardening** (TD-03, TD-04, TD-05) — Add `updated_at` columns to `events` and `posts` tables via D1 migration for true incremental scans. Add rate limiting to `/api/ai/reindex`. Validate cron handler executes in production.
 - [x] **Phase 53: AI Inline Suggestions** — Wire up the existing GhostTextExtension with a debounced AI completion trigger. On typing pause, send editor context to z.ai/Workers AI, render ghost text at cursor, accept with Tab. Fixed CopilotMenu SSE chunk spacing bug.
 - [x] **Phase 54: Simulation Playground** — Build a split-pane React simulation editor: Monaco code editor on the left, sandboxed live preview on the right. z.AI assists with code generation/modification. Includes CRUD save/load, Babel transpilation, and dashboard routing.
+- [x] **Phase 55: AI & Sim Hardening** — Grounded RAG chatbot with temporal context (date awareness, upcoming events, current season, recent blog posts in system prompt). Fixed sim preview sandbox by self-hosting React UMD bundles in `public/vendor/` with absolute URLs. Added auto-heal for AI-generated code (detects Babel compile errors, sends back to z.ai for fix, retries once). Injected key action links (join, sponsor, outreach, blog, etc.) into chatbot system prompt. Excluded vendor JS from ESLint. Fixed SSE `undefined` artifact in chat responses.
 
 <details>
 <summary>✅ v4.6 RAG Knowledge Base Pipeline (Phases 49-50) — SHIPPED 2026-04-30</summary>
