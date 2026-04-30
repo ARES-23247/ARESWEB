@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare } from "lucide-react";
+import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
 import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,6 +32,9 @@ type User = {
 
 export default function AdminUsers() {
   const [editUserId, setEditUserId] = useState<string | null>(null);
+  const [pointsUserId, setPointsUserId] = useState<string | null>(null);
+  const [pointsDelta, setPointsDelta] = useState<string>("");
+  const [pointsReason, setPointsReason] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useQueryState("q", { defaultValue: "" });
   const parentRef = useRef<HTMLDivElement>(null);
@@ -75,6 +78,34 @@ export default function AdminUsers() {
   };
 
   const columnHelper = useMemo(() => createColumnHelper<User>(), []);
+
+  const pointsMutation = api.points.awardPoints.useMutation({
+    onSuccess: () => {
+      toast.success("Points transaction successful");
+      setPointsUserId(null);
+      setPointsDelta("");
+      setPointsReason("");
+      queryClient.invalidateQueries({ queryKey: ["points"] });
+      queryClient.invalidateQueries({ queryKey: ["points-history"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update points");
+    }
+  });
+
+  const handleAwardPoints = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pointsUserId || !pointsDelta || !pointsReason) return;
+    const delta = parseInt(pointsDelta, 10);
+    if (isNaN(delta)) return toast.error("Invalid points amount");
+    pointsMutation.mutate({
+      body: {
+        user_id: pointsUserId,
+        points_delta: delta,
+        reason: pointsReason
+      }
+    });
+  };
 
   const columns = useMemo(() => [
     columnHelper.accessor("name", {
@@ -160,6 +191,12 @@ export default function AdminUsers() {
               <MessageSquare size={18} />
             </a>
           )}
+          <button onClick={() => setPointsUserId(info.row.original.id)}
+            title="Manage points"
+            aria-label={`Manage points for ${info.row.original.name}`}
+            className="p-2 mr-1 text-white/60 hover:text-ares-cyan transition-all ares-cut-sm hover:bg-ares-cyan/10">
+            <Zap size={18} />
+          </button>
           <button onClick={() => setEditUserId(info.row.original.id)}
             title="Edit user profile"
             aria-label={`Edit profile for ${info.row.original.name}`}
@@ -306,6 +343,63 @@ export default function AdminUsers() {
               </div>
               <ProfileEditor adminEditUserId={editUserId} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {pointsUserId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4">
+          <div className="bg-obsidian border border-white/10 ares-cut w-full max-w-md shadow-2xl relative p-6">
+            <div className="flex justify-between items-start mb-4 pb-4 border-b border-white/10">
+              <div>
+                <h3 className="text-xl font-black text-ares-cyan flex items-center gap-2">
+                  <Zap size={20} />
+                  Manage Points
+                </h3>
+                <p className="text-white/60 text-sm mt-1">Award or deduct ARES points for this member.</p>
+              </div>
+              <button 
+                onClick={() => setPointsUserId(null)} 
+                title="Close"
+                className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/60 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAwardPoints} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block">Points Delta (+ / -)</label>
+                <input
+                  type="number"
+                  value={pointsDelta}
+                  onChange={(e) => setPointsDelta(e.target.value)}
+                  placeholder="e.g. 50 or -10"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-cyan transition-colors"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block">Reason</label>
+                <input
+                  type="text"
+                  value={pointsReason}
+                  onChange={(e) => setPointsReason(e.target.value)}
+                  placeholder="e.g. Outreach Event Attendance"
+                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-cyan transition-colors"
+                  required
+                />
+              </div>
+              
+              <button
+                type="submit"
+                disabled={pointsMutation.isPending}
+                className="w-full mt-4 flex items-center justify-center gap-2 py-3 font-bold bg-ares-cyan hover:bg-ares-cyan/80 text-obsidian ares-cut-sm transition-all disabled:opacity-50"
+              >
+                {pointsMutation.isPending ? <RefreshCw className="animate-spin" size={18} /> : <Zap size={18} />}
+                {pointsMutation.isPending ? "Processing..." : "Submit Transaction"}
+              </button>
+            </form>
           </div>
         </div>
       )}

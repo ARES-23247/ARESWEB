@@ -19,12 +19,21 @@ export const PointsBalanceSchema = z.object({
   balance: z.number(),
 });
 
+export const PointsLeaderboardEntrySchema = z.object({
+  user_id: z.string(),
+  first_name: z.string(),
+  last_name: z.string().nullable(),
+  nickname: z.string().nullable(),
+  member_type: z.string(),
+  points_balance: z.number(),
+});
+
 export type PointsTransaction = z.infer<typeof PointsTransactionSchema>;
 
 export const pointsContract = c.router({
   getBalance: {
     method: "GET",
-    path: "/api/points/balance/:user_id",
+    path: "/balance/:user_id",
     pathParams: z.object({ user_id: z.string() }),
     responses: {
       200: PointsBalanceSchema,
@@ -36,7 +45,7 @@ export const pointsContract = c.router({
   },
   getHistory: {
     method: "GET",
-    path: "/api/points/history/:user_id",
+    path: "/history/:user_id",
     pathParams: z.object({ user_id: z.string() }),
     responses: {
       200: z.array(PointsTransactionSchema),
@@ -48,7 +57,7 @@ export const pointsContract = c.router({
   },
   awardPoints: {
     method: "POST",
-    path: "/api/points/transaction",
+    path: "/transaction",
     body: z.object({
       user_id: z.string(),
       points_delta: z.number(),
@@ -62,5 +71,16 @@ export const pointsContract = c.router({
       500: ErrorSchema,
     },
     summary: "Award or deduct points (Admin)",
+  },
+  getLeaderboard: {
+    method: "GET",
+    path: "/leaderboard",
+    responses: {
+      200: z.object({
+        leaderboard: z.array(PointsLeaderboardEntrySchema),
+      }),
+      500: ErrorSchema,
+    },
+    summary: "Get global points leaderboard",
   },
 });

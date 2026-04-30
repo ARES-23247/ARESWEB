@@ -28,20 +28,29 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 - ✓ **Milestone 3.9 (Stripe Storefront)** — Delivered D1 ecommerce schemas, Hono Stripe backend, persistent Zustand cart, and admin fulfillment dashboard.
 
+- ✓ **Milestone 4.0 (Gamification)** — Implemented Gamified member activity points system and leaderboard.
+- ✓ **Milestone 4.0 (Documentation)** — Created comprehensive tech stack architecture and GSD orchestration documentation.
+
 ### Active
 - None
 
-## Current Milestone: v4.0 System Hardening, Storefront & Member Incentives
+## Current Milestone: v4.1 System Evolution
 
-**Goal:** Complete the e-commerce storefront, introduce a member activity points system, and perform a comprehensive codebase audit to harden testing infrastructure and update public-facing tech stack documentation.
+**Goal:** Establish the architecture and tooling needed for the next evolution of the ARESWEB project.
 
 **Target features:**
-- Member Activity Points System
-- Storefront Completion (Zulip Alerts, Inventory Tracking, Webhook Testing)
-- Codebase & Test Coverage Audit (exceeding industry standards)
-- Public Tech Stack Documentation Refresh
+- TBD
 
 ## Current State
+
+<details>
+<summary>v4.0 Shipped Features</summary>
+
+- Eliminated brittle assertions and built an isolated webhook testing suite.
+- Added Zulip alerts and database-level inventory depletion for the storefront.
+- Implemented a gamified points ledger and UI for member engagement.
+- Refreshed documentation covering the tech stack, Liveblocks/Tiptap, and GSD orchestration.
+</details>
 
 <details>
 <summary>v3.9 Shipped Features</summary>

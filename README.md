@@ -32,6 +32,12 @@ The official web portal for ARES 23247, a community-based FIRST Tech Challenge t
 └── wrangler.toml    # Cloudflare configuration
 ```
 
+## 📚 Architecture & Orchestration
+
+To keep our codebase healthy, we maintain extensive documentation on our tech stack and how our AI agents organize work.
+- **[ARESWEB Architecture](.planning/ARCHITECTURE.md)**: A guide to our tech stack, including our Tiptap/Liveblocks collaborative editing ecosystem.
+- **[GSD Orchestration](.planning/GSD-ORCHESTRATION.md)**: A guide on how we use Get Shit Done (GSD) skills and workflows to build the platform.
+
 ## 🛠 Development
 
 ### Setup

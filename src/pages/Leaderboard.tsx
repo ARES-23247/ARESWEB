@@ -11,11 +11,11 @@ interface LeaderboardUser {
   last_name: string;
   nickname: string;
   member_type: string;
-  badge_count: number;
+  points_balance: number;
 }
 
 export default function Leaderboard() {
-  const { data: leaderboardRes, isLoading } = api.analytics.getLeaderboard.useQuery(["leaderboard"], {});
+  const { data: leaderboardRes, isLoading } = api.points.getLeaderboard.useQuery(["points-leaderboard"], {});
 
   const leaders = useMemo(() => {
     return (leaderboardRes?.status === 200 ? leaderboardRes.body.leaderboard : []) as LeaderboardUser[];
@@ -119,7 +119,7 @@ export default function Leaderboard() {
                      <p className={`text-4xl font-black ${color}`}>{rank}</p>
                      <div className="mt-auto pb-6 flex items-center gap-2">
                        <Star size={16} className={color} />
-                       <span className="text-white font-bold">{user.badge_count} Badges</span>
+                       <span className="text-white font-bold">{user.points_balance} pts</span>
                      </div>
                   </div>
                 </motion.div>
@@ -142,7 +142,7 @@ export default function Leaderboard() {
                   <tr className="border-b border-white/10 uppercase tracking-widest text-xs text-ares-gray">
                     <th className="py-4 font-bold w-16 text-center">Rank</th>
                     <th className="py-4 font-bold">Member</th>
-                    <th className="py-4 font-bold text-right">Badges Earned</th>
+                    <th className="py-4 font-bold text-right">Points Earned</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
@@ -164,8 +164,8 @@ export default function Leaderboard() {
                       </td>
                       <td className="py-4 text-right">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 ares-cut-sm border border-white/10 text-white font-bold text-xs">
-                          <Award size={14} className="text-ares-red" />
-                          {user.badge_count}
+                          <Star size={14} className="text-ares-cyan" />
+                          {user.points_balance}
                         </div>
                       </td>
                     </tr>

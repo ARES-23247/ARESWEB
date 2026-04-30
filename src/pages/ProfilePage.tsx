@@ -47,6 +47,8 @@ export default function ProfilePage() {
   const { userId } = useParams();
   const [profile, setProfile] = useState<ProfilePublic | null>(null);
   const [badges, setBadges] = useState<BadgeDef[]>([]);
+  const [points, setPoints] = useState<number | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
   const [error, setError] = useState<{ status: number; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -68,6 +70,16 @@ export default function ProfilePage() {
         setError({ status: err.message.includes("403") ? 403 : 500, message: err.message || "Network error" });
         setLoading(false);
       });
+
+    api.points.getBalance.query({ params: { user_id: userId || "" } })
+      .then((res: any) => {
+        if (!cancelled && res.status === 200) setPoints(res.body.balance);
+      }).catch(() => {});
+      
+    api.points.getHistory.query({ params: { user_id: userId || "" } })
+      .then((res: any) => {
+        if (!cancelled && res.status === 200) setHistory(res.body.transactions);
+      }).catch(() => {});
 
     return () => { cancelled = true; };
   }, [userId]);
@@ -179,6 +191,39 @@ export default function ProfilePage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Member Activity Gamification */}
+          {points !== null && (
+            <div className="bg-white/5 border border-white/10 ares-cut-lg p-8 mb-8">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                  <LucideIcons.Zap className="text-ares-cyan" size={16} /> ARES Points Balance
+                </h3>
+                <div className="bg-ares-cyan/10 border border-ares-cyan/30 px-4 py-2 ares-cut-sm">
+                  <span className="text-xl font-black text-ares-cyan">{points} pts</span>
+                </div>
+              </div>
+              
+              {history && history.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-marble uppercase mb-3">Recent Activity</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
+                    {history.map((tx: any) => (
+                      <div key={tx.id} className="bg-black/40 border border-white/5 ares-cut-sm p-3 flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-bold text-white">{tx.reason}</p>
+                          <p className="text-[10px] text-white/40">{tx.created_at ? new Date(tx.created_at).toLocaleDateString() : 'Unknown'}</p>
+                        </div>
+                        <span className={`text-sm font-black ${tx.points_delta > 0 ? "text-ares-cyan" : "text-ares-red"}`}>
+                          {tx.points_delta > 0 ? "+" : ""}{tx.points_delta}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

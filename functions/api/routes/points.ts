@@ -2,7 +2,7 @@ import { Hono, Context } from "hono";
 import { initServer, createHonoEndpoints } from "ts-rest-hono";
 import { pointsContract } from "../../../shared/schemas/contracts/pointsContract";
 import type { AppEnv } from "../middleware/utils";
-import { Kysely } from "kysely";
+import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 
 const app = new Hono<AppEnv>();
@@ -107,6 +107,45 @@ const pointsHandlers = {
       };
     } catch (err: any) {
       console.error("[Points] Award points failed:", err);
+      return { status: 500 as const, body: { error: err.message } };
+    }
+  },
+  getLeaderboard: async (_: any, c: Context<AppEnv>) => {
+    const db = c.get("db") as Kysely<DB>;
+    try {
+      const results = await db.selectFrom("user as u")
+        .innerJoin("user_profiles as p", "u.id", "p.user_id")
+        .leftJoin("points_ledger as pl", "u.id", "pl.user_id")
+        .select([
+          "u.id as user_id",
+          "u.name as first_name",
+          "p.last_name",
+          "p.nickname",
+          "p.member_type",
+          (eb) => eb.fn.coalesce(eb.fn.sum("pl.points_delta"), sql<number>`0`).as("points_balance")
+        ])
+        .where("p.show_on_about", "=", 1)
+        .groupBy(["u.id", "u.name", "p.last_name", "p.nickname", "p.member_type"])
+        .having((eb) => eb.fn.coalesce(eb.fn.sum("pl.points_delta"), sql<number>`0`), ">", 0)
+        .orderBy("points_balance", "desc")
+        .limit(50)
+        .execute();
+
+      const leaderboard = results.map(r => {
+        const isMinor = r.member_type === "student";
+        return {
+          user_id: String(r.user_id),
+          first_name: isMinor ? "ARES Member" : String(r.first_name || "ARES"),
+          last_name: isMinor ? null : (r.last_name || null),
+          nickname: r.nickname || null,
+          member_type: String(r.member_type || "student"),
+          points_balance: Number(r.points_balance)
+        };
+      });
+
+      return { status: 200 as const, body: { leaderboard } };
+    } catch (err: any) {
+      console.error("[Points] Get leaderboard failed:", err);
       return { status: 500 as const, body: { error: err.message } };
     }
   }
