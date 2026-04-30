@@ -103,7 +103,7 @@ export function GlobalRAGChatbot() {
 
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
           {messages.length === 0 && (
-            <div className="text-center text-zinc-500 mt-10">
+            <div className="text-center text-zinc-400 mt-10">
               <Bot className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
               <p>Ask me anything about ARES 23247 rules, code, or schedule.</p>
               <div className="flex items-center justify-center space-x-1 mt-4 text-xs text-yellow-600/60">
@@ -140,6 +140,7 @@ export function GlobalRAGChatbot() {
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading || !turnstileToken}
               placeholder={turnstileToken ? "Ask a question..." : "Verifying connection..."}
+              aria-label="Ask ARES Knowledge Bot a question"
               className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
             />
             <button
