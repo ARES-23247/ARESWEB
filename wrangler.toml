@@ -26,13 +26,10 @@ binding = "DB"
 database_name = "ares-db-preview"
 database_id = "09c4aafb-89fd-4735-930e-3ff8e2289c34"
 
-# AI and Vectorize bindings removed to unblock Cloudflare Pages deployment.
-# The Vectorize index 'ares_knowledge_base' must be created before re-enabling:
-#   npx wrangler vectorize create ares_knowledge_base --dimensions 768 --metric cosine
-# Once created, uncomment the bindings below:
-# [ai]
-# binding = "AI"
-#
-# [[vectorize]]
-# binding = "VECTORIZE_DB"
-# index_name = "ares_knowledge_base"
+[ai]
+binding = "AI"
+
+[[vectorize]]
+binding = "VECTORIZE_DB"
+index_name = "ares_knowledge_base"
+
