@@ -5,7 +5,6 @@ import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   useReactTable,
   getCoreRowModel,
@@ -37,7 +36,6 @@ export default function AdminUsers() {
   const [pointsReason, setPointsReason] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useQueryState("q", { defaultValue: "" });
-  const parentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = api.users.getUsers.useQuery(["admin_users"], {});
@@ -232,13 +230,6 @@ export default function AdminUsers() {
 
   const { rows } = table.getRowModel();
 
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 56,
-    overscan: 10,
-  });
-
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
   }
@@ -272,53 +263,43 @@ export default function AdminUsers() {
       )}
 
       <div className="overflow-x-auto bg-black/40 border border-white/5 ares-cut-lg">
-        <div ref={parentRef} className="max-h-[600px] overflow-y-auto relative scrollbar-thin scrollbar-thumb-white/10">
-          <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 z-20 bg-ares-gray-deep/95 backdrop-blur-md">
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id} className="border-b border-white/10 bg-white/5">
-                  {headerGroup.headers.map(header => (
-                    <th 
-                      key={header.id} 
-                      className="px-4 py-4 text-xs font-black uppercase tracking-widest text-white/40 cursor-pointer hover:text-white transition-colors"
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <div className="flex items-center gap-2">
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{
-                          asc: <ChevronUp size={14} />,
-                          desc: <ChevronDown size={14} />,
-                        }[header.column.getIsSorted() as string] ?? null}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody 
-              className="relative"
-              {...({ style: { height: `${rowVirtualizer.getTotalSize()}px` } } as React.HTMLAttributes<HTMLTableSectionElement>)}
-            >
-              {rowVirtualizer.getVirtualItems().map(virtualRow => {
-                const row = rows[virtualRow.index];
-                if (!row) return null;
-                return (
-                  <tr 
-                    key={row.id} 
-                    className="hover:bg-white/[0.03] transition-colors group absolute w-full flex border-b border-white/5"
-                    {...({ style: { height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` } } as React.HTMLAttributes<HTMLTableRowElement>)}
+        <table className="w-full text-left border-collapse">
+          <thead className="sticky top-0 z-20 bg-ares-gray-deep/95 backdrop-blur-md shadow-sm">
+            {table.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id} className="border-b border-white/10 bg-white/5">
+                {headerGroup.headers.map(header => (
+                  <th 
+                    key={header.id} 
+                    className="px-4 py-4 text-xs font-black uppercase tracking-widest text-white/40 cursor-pointer hover:text-white transition-colors"
+                    onClick={header.column.getToggleSortingHandler()}
                   >
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id} className="px-4 py-2 flex items-center flex-1 overflow-hidden">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    <div className="flex items-center gap-2">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{
+                        asc: <ChevronUp size={14} />,
+                        desc: <ChevronDown size={14} />,
+                      }[header.column.getIsSorted() as string] ?? null}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {rows.map(row => (
+              <tr 
+                key={row.id} 
+                className="hover:bg-white/[0.03] transition-colors group"
+              >
+                {row.getVisibleCells().map(cell => (
+                  <td key={cell.id} className="px-4 py-2">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {editUserId && (
