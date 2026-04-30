@@ -2,6 +2,8 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| [v4.1](milestones/v4.1-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | System Evolution |
+| [v4.0](milestones/v4.0-ROADMAP.md) | ✅ SHIPPED | 2026-04-29 | System Hardening, Storefront & Member Incentives |
 | [v3.9](milestones/v3.9-ROADMAP.md) | ✅ SHIPPED | 2026-04-29 | Stripe Storefront |
 | [v3.8](milestones/v3.8-ROADMAP.md) | ✅ SHIPPED | 2026-04-29 | Database Audit & Bug Fixes |
 | [v3.7](milestones/v3.7-ROADMAP.md) | ✅ SHIPPED | 2026-04-29 | UI Polish & CSS Linting |

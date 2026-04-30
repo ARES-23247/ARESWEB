@@ -20,6 +20,7 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
     if (header4.startsWith('ffd8ff') || header4 === 'ffd8ffe0' || header4 === 'ffd8ffe1') return true; // JPEG
     if (header4.startsWith('47494638')) return true; // GIF
     if (header4 === '52494646') return true; // WEBP
+    if (header4 === '3c3f786d' || header4 === '3c737667') return true; // SVG (<?xm or <svg)
   }
   
   // HEIC/HEIF usually have 'ftyp' at offset 4, but let's check first 16 bytes for 'ftypheic' or similar
@@ -28,6 +29,10 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
     const longerHeader = Array.from(arr.subarray(0, checkLen)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (longerHeader.includes('66747970')) return true; // 'ftyp'
   }
+
+  // Fallback for SVGs that might have leading whitespace or comments
+  const text = new TextDecoder("utf-8").decode(arr.subarray(0, 100));
+  if (text.includes("<svg") || text.includes("<?xml")) return true;
 
   return false;
 }

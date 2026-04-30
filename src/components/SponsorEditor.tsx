@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
 import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package } from "lucide-react";
+import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package, UploadCloud, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -31,7 +31,10 @@ export default function SponsorEditor() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<SponsorPayload>({
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<SponsorPayload>({
     resolver: zodResolver(sponsorSchema),
     defaultValues: {
       tier: "Gold",
@@ -75,6 +78,36 @@ export default function SponsorEditor() {
   const onFormSubmit = (data: SponsorPayload) => {
     const finalId = editingId || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     saveMutation.mutate({ body: { ...data, id: finalId } });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "Sponsors");
+
+    try {
+      const res = await fetch("/api/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setValue("logo_url", data.url, { shouldValidate: true });
+        toast.success("Logo uploaded securely.");
+      } else {
+        toast.error(data.error || "Upload failed");
+      }
+    } catch (err) {
+      toast.error("Failed to upload logo.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleEdit = (s: { id: string; name: string; tier: string; logo_url?: string | null; website_url?: string | null; is_active?: number }) => {
@@ -165,14 +198,35 @@ export default function SponsorEditor() {
                 </select>
                 {errors.tier && <p className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{errors.tier.message as string}</p>}
               </div>
-              <DashboardInput
-                id="sponsor-logo"
-                label="Logo URL"
-                {...register("logo_url")}
-                error={errors.logo_url?.message as string}
-                placeholder="https://..."
-                focusColor="ares-red"
-              />
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-marble/40">Partner Logo</label>
+                <div className="flex gap-2">
+                  <DashboardInput
+                    id="sponsor-logo"
+                    label=""
+                    {...register("logo_url")}
+                    error={errors.logo_url?.message as string}
+                    placeholder="https://... or upload"
+                    focusColor="ares-red"
+                    className="flex-1"
+                  />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handleFileUpload} 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="mt-1 flex items-center justify-center h-12 w-12 bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-colors disabled:opacity-50"
+                  >
+                    {isUploading ? <Loader2 size={18} className="animate-spin text-ares-gold" /> : <UploadCloud size={18} />}
+                  </button>
+                </div>
+              </div>
               <DashboardInput
                 id="sponsor-link"
                 label="Website URL"
