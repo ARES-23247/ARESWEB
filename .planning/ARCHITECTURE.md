@@ -30,3 +30,10 @@ To make sure people do not overwrite each other's work, we use a technology call
 When it is time to save the document to the database, we do not just save standard HTML or raw text. Instead, we convert the document into an **AST** (Abstract Syntax Tree). 
 
 An AST is a deeply structured, organized format. We save this AST format into our Cloudflare D1 database because it is much safer than saving HTML. When a user views the document later, we read the AST and rebuild the text perfectly. This prevents security risks and ensures the formatting always looks right.
+
+## API Testing and Type Safety
+
+When writing tests for our API using **Vitest**, we must follow two important rules to ensure everything connects properly:
+
+- **Type Safety (`AppEnv`)**: Our Hono backend uses a custom environment variable typing called `AppEnv`. Whenever creating a mock `app` in test files, always instantiate it as `new Hono<AppEnv>()` instead of `new Hono()`. This ensures that context variables like `c.set("db", mockDb)` are correctly typed and prevents TypeScript errors.
+- **`ts-rest` Routing in Tests**: We use `ts-rest` to enforce strict API contracts. Because `ts-rest` binds endpoints to the exact paths defined in the contract, mock apps in test files must mount the router at the matching base path. For example, if testing the points router, use `app.route("/api/points", pointsRouter)` rather than mounting it at the root (`/`). This ensures test requests match the expected API paths perfectly and avoids unexpected 404 errors.
