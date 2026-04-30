@@ -251,7 +251,6 @@ app.route("/dashboard/api", apiRouter);
 
 export const onRequest = handle(app);
 import { purgeOldInquiries } from "./routes/inquiries/index";
-import { indexSiteContent } from "./routes/ai/indexer";
 export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   const { D1Dialect } = await import("kysely-d1");
   const { Kysely } = await import("kysely");
@@ -267,8 +266,10 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
     .execute();
 
   // Re-index site content for the RAG chatbot knowledge base
+  // CRITICAL: Must use dynamic import() — static import pulls AI bindings into every request
   if (env.AI && env.VECTORIZE_DB) {
     try {
+      const { indexSiteContent } = await import("./routes/ai/indexer");
       const result = await indexSiteContent(db, env.AI, env.VECTORIZE_DB, env.RATE_LIMITS);
       console.log(`[Cron] Vectorize indexed ${result.indexed} documents. Errors: ${result.errors.length}`);
       if (result.errors.length > 0) {
