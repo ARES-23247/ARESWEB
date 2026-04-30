@@ -19,7 +19,8 @@ export default ts.config(
       "**/*.bundle",
       "*.cjs", // Ignore legacy CommonJS utility scripts at root
       "*.mjs", // Ignore ESM utility scripts at root
-      "scratch/**" // Ignore scratch directory
+      "scratch/**", // Ignore scratch directory
+      "public/vendor/**" // Ignore vendored third-party UMD bundles (React, ReactDOM)
     ],
   },
   js.configs.recommended,
