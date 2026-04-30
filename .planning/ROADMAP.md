@@ -13,7 +13,7 @@
 ### ⏳ v4.9 Simulation Playground Evolution (Phases 57-62) — ACTIVE
 
 - [x] **Phase 57: Hardware & Physics IntelliSense** (SIM-03) — Inject React, Three.js, and ARESLib physics `.d.ts` types into the Monaco Editor instances to enable real-time autocomplete, parameter hints, and JSDoc explanations for hardware kinematics.
-- [ ] **Phase 58: Multi-File Sandbox & Templates** (SIM-04) — Implement a CodeSandbox-style multi-file tree layout allowing users to separate components (e.g., `PIDController.js`, `Constants.js`). Add starting templates (Swerve Drive, Elevator, etc.).
+- [x] **Phase 58: Multi-File Sandbox & Templates** (SIM-04) — Implement a CodeSandbox-style multi-file tree layout allowing users to separate components (e.g., `PIDController.js`, `Constants.js`). Add starting templates (Swerve Drive, Elevator, etc.).
 - [ ] **Phase 59: Real-Time Telemetry & Data Inspector** (SIM-05) — Add a telemetry panel to the simulation pane capable of graphing real-time variables (velocity, PID error, outputs) using a custom `useTelemetry` hook.
 - [ ] **Phase 60: Visual AI Feedback Loop** (SIM-06) — Hook up `html2canvas` (or similar) to capture iframe screenshots and pass visual context to the z.ai model, enabling V0-style iterative UI and visual physics adjustments.
 - [ ] **Phase 61: Built-in Physics Engine Abstractions** (SIM-07) — Pre-load the sandbox environment with `@react-three/fiber` and `@react-three/drei`. Expose global helper components (`<SwerveModule />`, `<PhysicsWorld />`) to eliminate boilerplate.
