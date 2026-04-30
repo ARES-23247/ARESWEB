@@ -2,8 +2,8 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 interface SimPreviewFrameProps {
-  /** Transpiled JavaScript code to execute in the sandbox */
-  compiledCode: string;
+  /** Transpiled JavaScript code modules to execute in the sandbox */
+  compiledFiles: Record<string, string>;
   /** Compilation error message, if any */
   compileError: string | null;
 }
@@ -13,7 +13,7 @@ interface SimPreviewFrameProps {
  * Uses srcdoc with React CDN + the user's component. Runtime errors
  * are captured via postMessage and displayed in the parent.
  */
-export default function SimPreviewFrame({ compiledCode, compileError }: SimPreviewFrameProps) {
+export default function SimPreviewFrame({ compiledFiles, compileError }: SimPreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
@@ -32,10 +32,22 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
 
-  // Build the iframe srcdoc whenever compiledCode changes
+  // Build the iframe srcdoc whenever compiledFiles changes
   useEffect(() => {
     if (!iframeRef.current || compileError) return;
     setRuntimeError(null);
+
+    // Build the script blocks for each compiled file
+    const moduleDefs = Object.entries(compiledFiles)
+      .map(([filename, code]) => {
+        // We use env preset, so it outputs CommonJS. We wrap it in a function.
+        return `
+      __modules['${filename}'] = function(require, module, exports) {
+        ${code}
+      };
+      `;
+      })
+      .join('\n');
 
     const srcdoc = `<!DOCTYPE html>
 <html>
@@ -97,17 +109,48 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
       document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
       return true;
     };
+    
+    // Virtual Module System
+    window.__modules = {};
+    window.__cache = {};
+    
+    function require(name) {
+      if (name === 'react') return window.React;
+      if (name === 'react-dom') return window.ReactDOM;
+      
+      let resolveName = name;
+      if (resolveName.startsWith('./')) resolveName = resolveName.slice(2);
+      if (!resolveName.endsWith('.js') && !resolveName.endsWith('.jsx')) {
+        if (window.__modules[resolveName + '.jsx']) resolveName += '.jsx';
+        else if (window.__modules[resolveName + '.js']) resolveName += '.js';
+      }
+      
+      if (window.__cache[resolveName]) return window.__cache[resolveName].exports;
+      if (!window.__modules[resolveName]) throw new Error('Module not found: ' + name);
+      
+      const module = { exports: {} };
+      window.__cache[resolveName] = module;
+      window.__modules[resolveName](require, module, module.exports);
+      return module.exports;
+    }
+
     try {
       if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
         throw new Error('React failed to load. Please refresh the page.');
       }
-      ${compiledCode}
+      
+      ${moduleDefs}
+      
+      // Execute the entry point
+      const entryExports = require('SimComponent.jsx');
+      const SimComponent = entryExports.default || entryExports.SimComponent || window.SimComponent;
+      
       if (typeof SimComponent !== 'undefined') {
         var root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(React.createElement(SimComponent));
         parent.postMessage({ type: 'sim-ready' }, '*');
       } else {
-        throw new Error('SimComponent is not defined. Your code must define: function SimComponent() { ... }');
+        throw new Error('SimComponent is not defined. Your SimComponent.jsx must export default function SimComponent() { ... }');
       }
     } catch(e) {
       parent.postMessage({ type: 'sim-error', message: e.message }, '*');
@@ -118,7 +161,7 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
 </html>`;
 
     iframeRef.current.srcdoc = srcdoc;
-  }, [compiledCode, compileError]);
+  }, [compiledFiles, compileError]);
 
   const displayError = compileError || runtimeError;
 

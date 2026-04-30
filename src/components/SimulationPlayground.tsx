@@ -9,6 +9,8 @@ loader.config({
 
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 const SimPreviewFrame = lazy(() => import("./editor/SimPreviewFrame"));
+import { FileSidebar } from "./editor/FileSidebar";
+import { SIM_TEMPLATES } from "./editor/SimTemplates";
 
 // Babel standalone for JSX transpilation
 let Babel: { transform: (code: string, opts: Record<string, unknown>) => { code: string } } | null = null;
@@ -20,48 +22,6 @@ const loadBabel = async () => {
   }
   return Babel!;
 };
-
-const DEFAULT_CODE = `// ARES Simulation Playground
-// Your code must export a function called SimComponent
-// Available: React, useState, useEffect, useRef, useCallback, useMemo
-
-function SimComponent() {
-  const [angle, setAngle] = React.useState(0);
-  const [speed, setSpeed] = React.useState(2);
-
-  React.useEffect(() => {
-    const id = setInterval(() => {
-      setAngle(prev => (prev + speed) % 360);
-    }, 16);
-    return () => clearInterval(id);
-  }, [speed]);
-
-  const radius = 80;
-  const x = Math.cos((angle * Math.PI) / 180) * radius;
-  const y = Math.sin((angle * Math.PI) / 180) * radius;
-
-  return (
-    <div className="sim-container">
-      <div className="sim-title">Robot Arm Visualizer</div>
-      <svg width="300" height="300" viewBox="-150 -150 300 300" className="sim-canvas" style={{ display: 'block', margin: '0 auto 16px' }}>
-        <circle cx="0" cy="0" r="5" fill="#d4a030" />
-        <line x1="0" y1="0" x2={x} y2={y} stroke="#58a6ff" strokeWidth="3" strokeLinecap="round" />
-        <circle cx={x} cy={y} r="8" fill="#58a6ff" />
-        <circle cx="0" cy="0" r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeDasharray="4 4" />
-      </svg>
-      <div className="sim-flex" style={{ justifyContent: 'space-between' }}>
-        <div>
-          <div className="sim-label">Speed</div>
-          <input type="range" min="0.5" max="10" step="0.5" value={speed} onChange={e => setSpeed(Number(e.target.value))} className="sim-slider" style={{ width: 180 }} />
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div className="sim-label">Angle</div>
-          <div className="sim-value">{angle.toFixed(0)}°</div>
-        </div>
-      </div>
-    </div>
-  );
-}`;
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -77,8 +37,9 @@ interface SavedSim {
 }
 
 export default function SimulationPlayground() {
-  const [code, setCode] = useState(DEFAULT_CODE);
-  const [compiledCode, setCompiledCode] = useState("");
+  const [files, setFiles] = useState<Record<string, string>>(SIM_TEMPLATES["Default (Robot Arm)"]);
+  const [activeFile, setActiveFile] = useState("SimComponent.jsx");
+  const [compiledFiles, setCompiledFiles] = useState<Record<string, string>>({});
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -111,16 +72,20 @@ export default function SimulationPlayground() {
   }, [chatMessages]);
 
   // ── Compile logic ──
-  const compileCode = useCallback(async (source: string): Promise<string | null> => {
+  const compileCode = useCallback(async (sourceFiles: Record<string, string>): Promise<string | null> => {
     setIsCompiling(true);
     setCompileError(null);
     try {
       const babel = await loadBabel();
-      const result = babel.transform(source, {
-        presets: ["react"],
-        filename: "sim.jsx",
-      });
-      setCompiledCode(result.code || "");
+      const compiled: Record<string, string> = {};
+      for (const [filename, content] of Object.entries(sourceFiles)) {
+        const result = babel.transform(content, {
+          presets: ["env", "react"],
+          filename: filename,
+        });
+        compiled[filename] = result.code || "";
+      }
+      setCompiledFiles(compiled);
       return null;
     } catch (e) {
       const errMsg = (e as Error).message;
@@ -133,21 +98,67 @@ export default function SimulationPlayground() {
 
   const handleCodeChange = useCallback((value: string | undefined) => {
     const newCode = value || "";
-    setCode(newCode);
-    if (compileTimeoutRef.current) clearTimeout(compileTimeoutRef.current);
-    compileTimeoutRef.current = setTimeout(() => compileCode(newCode), 800);
-  }, [compileCode]);
+    setFiles(prev => {
+      const newFiles = { ...prev, [activeFile]: newCode };
+      if (compileTimeoutRef.current) clearTimeout(compileTimeoutRef.current);
+      compileTimeoutRef.current = setTimeout(() => compileCode(newFiles), 800);
+      return newFiles;
+    });
+  }, [activeFile, compileCode]);
 
   useEffect(() => {
-    compileCode(code);
+    compileCode(files);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleRun = () => compileCode(code);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleEditorDidMount = useCallback(async (editor: any, monaco: any) => {
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ESNext,
+      allowNonTsExtensions: true,
+      jsx: monaco.languages.typescript.JsxEmit.React,
+    });
+
+    try {
+      // Load ARESLib types
+      const aresRes = await fetch("/types/areslib.d.ts");
+      if (aresRes.ok) {
+        monaco.languages.typescript.javascriptDefaults.addExtraLib(
+          await aresRes.text(),
+          "file:///node_modules/@types/areslib/index.d.ts"
+        );
+      }
+
+      // Load minimal React types to prevent dependency errors with full @types/react
+      monaco.languages.typescript.javascriptDefaults.addExtraLib(
+        `declare module "react" {
+          export function useState<T>(initialState: T | (() => T)): [T, (newState: T | ((prevState: T) => T)) => void];
+          export function useEffect(effect: () => void | (() => void), deps?: any[]): void;
+          export function useRef<T>(initialValue: T): { current: T };
+          export function useCallback<T extends (...args: any[]) => any>(callback: T, deps: any[]): T;
+          export function useMemo<T>(factory: () => T, deps: any[]): T;
+        }
+        declare namespace React {
+          export function useState<T>(initialState: T | (() => T)): [T, (newState: T | ((prevState: T) => T)) => void];
+          export function useEffect(effect: () => void | (() => void), deps?: any[]): void;
+          export function useRef<T>(initialValue: T): { current: T };
+          export function useCallback<T extends (...args: any[]) => any>(callback: T, deps: any[]): T;
+          export function useMemo<T>(factory: () => T, deps: any[]): T;
+        }`,
+        "file:///node_modules/@types/react/index.d.ts"
+      );
+
+    } catch (e) {
+      console.error("[SimPlayground] Failed to load intellisense types:", e);
+    }
+  }, []);
+
+  const handleRun = () => compileCode(files);
 
   const handleReset = () => {
-    setCode(DEFAULT_CODE);
-    compileCode(DEFAULT_CODE);
+    setFiles(SIM_TEMPLATES["Default (Robot Arm)"]);
+    setActiveFile("SimComponent.jsx");
+    compileCode(SIM_TEMPLATES["Default (Robot Arm)"]);
     setSimId(null);
     setSimName("Untitled Simulation");
   };
@@ -174,10 +185,19 @@ export default function SimulationPlayground() {
       if (!res.ok) throw new Error("Not found");
       const data = await res.json() as { simulation: { id: number; name: string; code: string } };
       const sim = data.simulation;
-      setCode(sim.code);
+      let parsedFiles: Record<string, string> = { "SimComponent.jsx": sim.code };
+      try {
+        const parsed = JSON.parse(sim.code);
+        if (parsed && typeof parsed === "object" && parsed["SimComponent.jsx"]) {
+          parsedFiles = parsed;
+        }
+      } catch { /* legacy single file */ }
+      
+      setFiles(parsedFiles);
+      setActiveFile("SimComponent.jsx");
       setSimName(sim.name);
       setSimId(sim.id);
-      compileCode(sim.code);
+      compileCode(parsedFiles);
       setShowLibrary(false);
       const { toast } = await import("sonner");
       toast.success(`Loaded: ${sim.name}`);
@@ -207,7 +227,7 @@ export default function SimulationPlayground() {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(code);
+    await navigator.clipboard.writeText(JSON.stringify(files, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -226,16 +246,15 @@ export default function SimulationPlayground() {
       const systemContext = `You are a z.AI simulation code assistant for ARES 23247, an FTC robotics team. The user is building interactive React simulations that run in a sandboxed iframe.
 
 RULES:
-- The component MUST be named SimComponent (not exported, just function SimComponent)
+- The component MUST be named SimComponent (not exported, just function SimComponent in SimComponent.jsx)
 - Use React.useState, React.useEffect, etc. (React is a global, don't import it)
 - Available CSS classes: sim-container, sim-title, sim-label, sim-value, sim-slider, sim-canvas, sim-btn, sim-grid, sim-flex
-- SVG is great for visualizations. Canvas is also available.
-- Output ONLY the JavaScript/JSX code when generating. No markdown fences, no explanations outside of code comments.
-- When modifying code, output the COMPLETE updated code, not a diff.
+- Output ONLY a JSON object mapping filenames to their file content string. No markdown fences, no explanations outside of code comments.
+- When modifying code, output the COMPLETE updated files object, not a diff.
 
-CURRENT CODE:
-\`\`\`
-${code}
+CURRENT FILES:
+\`\`\`json
+${JSON.stringify(files, null, 2)}
 \`\`\`
 
 USER REQUEST: ${msg}`;
@@ -273,10 +292,10 @@ USER REQUEST: ${msg}`;
       const reply = accumulatedText.trim();
       setChatMessages(prev => [...prev, { role: "assistant", content: reply }]);
 
-      // Auto-apply code if the reply looks like a full component
-      if (reply.includes("function SimComponent") || reply.includes("SimComponent")) {
+      // Auto-apply code if the reply looks like JSON
+      if (reply.includes("{") && reply.includes("SimComponent.jsx")) {
         let cleaned = reply;
-        // Strip markdown fences — simple line-based approach (no regex)
+        // Strip markdown fences
         if (cleaned.includes("```")) {
           cleaned = cleaned
             .split("\n")
@@ -284,70 +303,76 @@ USER REQUEST: ${msg}`;
             .join("\n");
         }
         cleaned = cleaned.trim();
-        if (cleaned.includes("function SimComponent")) {
-          setCode(cleaned);
-          const err = await compileCode(cleaned);
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (parsed && typeof parsed === "object" && parsed["SimComponent.jsx"]) {
+            setFiles(parsed);
+            const err = await compileCode(parsed);
 
-          // Auto-heal: if compilation fails, send error back to AI for a fix
-          if (err) {
-            setChatMessages(prev => [...prev, { role: "assistant", content: "⚙️ Compile error detected — auto-fixing..." }]);
+            // Auto-heal: if compilation fails, send error back to AI for a fix
+            if (err) {
+              setChatMessages(prev => [...prev, { role: "assistant", content: "⚙️ Compile error detected — auto-fixing..." }]);
 
-            try {
-              const fixContext = `You are a z.AI simulation code assistant. The following JSX code has a compilation error. Fix ONLY the error and return the COMPLETE corrected code. Output ONLY code, no markdown fences, no explanations.
+              try {
+                const fixContext = `You are a z.AI simulation code assistant. The following JSON payload of files has a compilation error. Fix ONLY the error and return the COMPLETE corrected JSON. Output ONLY JSON, no markdown fences.
 
 ERROR:
 ${err}
 
-BROKEN CODE:
+BROKEN FILES:
 ${cleaned}`;
 
-              const fixRes = await fetch("/api/ai/liveblocks-copilot", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ documentContext: fixContext, action: "expand" }),
-              });
+                const fixRes = await fetch("/api/ai/liveblocks-copilot", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ documentContext: fixContext, action: "expand" }),
+                });
 
-              if (fixRes.ok && fixRes.body) {
-                let fixText = "";
-                const fixReader = fixRes.body.getReader();
-                const fixDecoder = new TextDecoder();
-                let fixBuffer = "";
+                if (fixRes.ok && fixRes.body) {
+                  let fixText = "";
+                  const fixReader = fixRes.body.getReader();
+                  const fixDecoder = new TextDecoder();
+                  let fixBuffer = "";
 
-                while (true) {
-                  const { done, value } = await fixReader.read();
-                  if (done) break;
-                  fixBuffer += fixDecoder.decode(value, { stream: true });
-                  const fixLines = fixBuffer.split("\n");
-                  fixBuffer = fixLines.pop() || "";
-                  for (const line of fixLines) {
-                    if (line.startsWith("data: ")) {
-                      try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.chunk) fixText += data.chunk;
-                      } catch { /* ignore */ }
+                  while (true) {
+                    const { done, value } = await fixReader.read();
+                    if (done) break;
+                    fixBuffer += fixDecoder.decode(value, { stream: true });
+                    const fixLines = fixBuffer.split("\n");
+                    fixBuffer = fixLines.pop() || "";
+                    for (const line of fixLines) {
+                      if (line.startsWith("data: ")) {
+                        try {
+                          const data = JSON.parse(line.slice(6));
+                          if (data.chunk) fixText += data.chunk;
+                        } catch { /* ignore */ }
+                      }
+                    }
+                  }
+
+                  let fixedCode = fixText.trim();
+                  if (fixedCode.includes("```")) {
+                    fixedCode = fixedCode.split("\n").filter(l => !l.trim().startsWith("```")).join("\n").trim();
+                  }
+
+                  const fixParsed = JSON.parse(fixedCode);
+                  if (fixParsed && typeof fixParsed === "object" && fixParsed["SimComponent.jsx"]) {
+                    setFiles(fixParsed);
+                    const fixErr = await compileCode(fixParsed);
+                    if (fixErr) {
+                      setChatMessages(prev => [...prev, { role: "assistant", content: `⚠️ Auto-fix failed: ${fixErr}\nPlease fix the code manually or describe the issue.` }]);
+                    } else {
+                      setChatMessages(prev => [...prev, { role: "assistant", content: "✅ Code fixed and applied!" }]);
                     }
                   }
                 }
-
-                let fixedCode = fixText.trim();
-                if (fixedCode.includes("```")) {
-                  fixedCode = fixedCode.split("\n").filter(l => !l.trim().startsWith("```")).join("\n").trim();
-                }
-
-                if (fixedCode.includes("function SimComponent")) {
-                  setCode(fixedCode);
-                  const fixErr = await compileCode(fixedCode);
-                  if (fixErr) {
-                    setChatMessages(prev => [...prev, { role: "assistant", content: `⚠️ Auto-fix failed: ${fixErr}\nPlease fix the code manually or describe the issue.` }]);
-                  } else {
-                    setChatMessages(prev => [...prev, { role: "assistant", content: "✅ Code fixed and applied!" }]);
-                  }
-                }
+              } catch {
+                // Auto-heal failed silently
               }
-            } catch {
-              // Auto-heal failed silently, user still sees the original error
             }
           }
+        } catch {
+           // not valid JSON
         }
       }
     } catch (e) {
@@ -369,10 +394,11 @@ ${cleaned}`;
     if (!simName.trim()) return;
     setIsSaving(true);
     try {
+      const codeToSave = JSON.stringify(files);
       const res = await fetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: simName, code, ...(simId ? { id: simId } : {}) }),
+        body: JSON.stringify({ name: simName, code: codeToSave, ...(simId ? { id: simId } : {}) }),
       });
       if (res.ok) {
         const data = await res.json() as { id?: number };
@@ -489,6 +515,30 @@ ${cleaned}`;
             )}
           </div>
 
+          <div className="relative group/templates">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 text-white/80 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">
+              Templates
+              <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+            </button>
+            <div className="absolute top-full left-0 mt-1 w-48 bg-[#1e1e1e] border border-white/10 rounded-md shadow-xl opacity-0 invisible group-hover/templates:opacity-100 group-hover/templates:visible transition-all z-50">
+              {Object.keys(SIM_TEMPLATES).map(templateName => (
+                <button
+                  key={templateName}
+                  onClick={() => {
+                    if (confirm(`Load template "${templateName}"? This will overwrite your current files.`)) {
+                      setFiles(SIM_TEMPLATES[templateName]);
+                      compileCode(SIM_TEMPLATES[templateName]);
+                      setActiveFile('SimComponent.jsx');
+                    }
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs text-white/80 hover:bg-white/10 transition-colors border-b border-white/5 last:border-0"
+                >
+                  {templateName}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button onClick={handleRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-emerald-600/30 transition-colors">
             <Play className="w-3.5 h-3.5" /> Run
           </button>
@@ -507,36 +557,52 @@ ${cleaned}`;
 
       {/* 3-Pane Split */}
       <div ref={containerRef} className="flex-1 flex min-h-0">
-        {/* ── Code Editor Pane ── */}
-        <div style={{ width: `${codePaneWidth}%` }} className="flex flex-col min-h-0 min-w-0">
-          <div className="px-3 py-1.5 border-b border-white/10 bg-[#1e1e1e] flex items-center gap-2">
-            <span className="text-white/40 text-xs font-mono">SimComponent.jsx</span>
-            {isCompiling && <Loader2 className="w-3 h-3 animate-spin text-ares-gold" />}
+        {/* ── Code Editor & Files Pane ── */}
+        <div style={{ width: `${codePaneWidth}%` }} className="flex flex-col min-h-0 min-w-0 border-r border-white/5">
+          <div className="px-3 py-1.5 border-b border-white/10 bg-[#1e1e1e] flex items-center justify-between">
+            <div className="flex gap-2 items-center">
+              <span className="text-white/40 text-xs font-mono">{activeFile}</span>
+              {isCompiling && <Loader2 className="w-3 h-3 animate-spin text-ares-gold" />}
+            </div>
           </div>
-          <div className="flex-1 min-h-0">
-            <Suspense fallback={<textarea className="w-full h-full bg-[#1e1e1e] text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={code} onChange={e => { setCode(e.target.value); compileCode(e.target.value); }} placeholder="Loading code editor..." />}>
-              <MonacoEditor
-                height="100%"
-                language="javascript"
-                theme="vs-dark"
-                value={code}
-                onChange={handleCodeChange}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                  padding: { top: 12 },
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                  tabSize: 2,
-                  wordWrap: "on",
-                  lineNumbers: "on",
-                  renderLineHighlight: "gutter",
-                  bracketPairColorization: { enabled: true },
-                  guides: { indentation: true },
-                }}
-              />
-            </Suspense>
+          <div className="flex-1 flex min-h-0">
+            {/* File Explorer Sidebar */}
+            <FileSidebar
+              files={files}
+              activeFile={activeFile}
+              onActiveFileChange={setActiveFile}
+              onFilesChange={setFiles}
+              onCompile={compileCode}
+            />
+            
+            {/* Monaco Editor */}
+            <div className="flex-1 min-h-0 min-w-0 relative bg-[#1e1e1e]">
+              <Suspense fallback={<textarea className="w-full h-full bg-[#1e1e1e] text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly placeholder="Loading code editor..." />}>
+                <MonacoEditor
+                  height="100%"
+                  language="javascript"
+                  theme="vs-dark"
+                  path={`file:///${activeFile}`}
+                  value={files[activeFile] || ''}
+                  onChange={handleCodeChange}
+                  onMount={handleEditorDidMount}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 13,
+                    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                    padding: { top: 12 },
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    wordWrap: "on",
+                    lineNumbers: "on",
+                    renderLineHighlight: "gutter",
+                    bracketPairColorization: { enabled: true },
+                    guides: { indentation: true },
+                  }}
+                />
+              </Suspense>
+            </div>
           </div>
         </div>
 
@@ -641,7 +707,7 @@ ${cleaned}`;
           </div>
           <div className="flex-1 min-h-0">
             <Suspense fallback={<div className="flex items-center justify-center h-full bg-[#0d1117] text-white/40 text-sm">Loading preview...</div>}>
-              <SimPreviewFrame compiledCode={compiledCode} compileError={compileError} />
+              <SimPreviewFrame compiledFiles={compiledFiles} compileError={compileError} />
             </Suspense>
           </div>
         </div>
