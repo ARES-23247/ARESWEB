@@ -2,14 +2,23 @@
 
 ## Milestones
 
+- ✅ **v4.5 AI Workers Migration & Copilot Expansion** — Phases 47-48 (shipped 2026-04-30)
 - ✅ **v4.4 AI Copilot & CI Stabilization** — Phases 45-46 (shipped 2026-04-30)
 - ✅ **v4.3 Inquiries, Notifications & Docs Restoration** — Phases 41-44 (shipped 2026-04-30)
 - ✅ **v4.2 Sponsor Fixes & Docs Quality** — Phases 38-40 (shipped 2026-04-30)
 ## Phases
 
-### ⏳ v4.5 Next Milestone (Phase 47+) — ACTIVE
+### ⏳ v4.6 Next Milestone (Phase 49+) — ACTIVE
 
-- [ ] **Phase 47: Next Feature** (TBD) — Describe next feature
+- [ ] **Phase 49: Next Feature** (TBD) — Describe next feature
+
+<details>
+<summary>✅ v4.5 AI Workers Migration & Copilot Expansion (Phases 47-48) — SHIPPED 2026-04-30</summary>
+
+- [x] **Phase 47: Workers AI Migration** (AI-02) — Migrated RAG chatbot from external z.ai API to Cloudflare Workers AI (Llama 3.1 8B, free tier 10K neurons/day). Added z.ai as premium copilot for the document editor with Workers AI fallback. Chatbot stays on free Cloudflare AI.
+- [x] **Phase 48: Copilot Expansion** (AI-03) — Expanded CopilotMenu (summarize/expand bubble menu) to all rich text editors: BlogEditor, EventEditor (description + private notes), SeasonEditor, and MassEmailComposer. Previously only DocsEditor had AI support.
+
+</details>
 
 <details>
 <summary>✅ v4.4 AI Copilot & CI Stabilization (Phases 45-46) — SHIPPED 2026-04-30</summary>

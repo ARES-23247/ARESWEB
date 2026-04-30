@@ -2,6 +2,7 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| v4.5 | ✅ SHIPPED | 2026-04-30 | AI Workers Migration & Copilot Expansion |
 | v4.4 | ✅ SHIPPED | 2026-04-30 | AI Copilot & CI Stabilization |
 | v4.3 | ✅ SHIPPED | 2026-04-30 | Inquiries, Notifications & Docs Restoration |
 | v4.2 | ✅ SHIPPED | 2026-04-30 | Sponsor Fixes & Docs Quality |

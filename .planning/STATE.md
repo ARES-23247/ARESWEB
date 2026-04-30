@@ -1,5 +1,5 @@
 ---
-milestone: v4.5
+milestone: v4.6
 name: Next Milestone
 status: planning
 progress:
@@ -13,10 +13,10 @@ progress:
 
 ## Current Position
 
-Phase: None active — awaiting v4.5 planning
+Phase: None active — awaiting v4.6 planning
 Plan: —
 Status: Ready for next milestone
-Last activity: 2026-04-30 — v4.4 shipped (AI Copilot & CI Stabilization)
+Last activity: 2026-04-30 — v4.5 shipped (AI Workers Migration & Copilot Expansion)
 
 ## Accumulated Context
 
@@ -27,6 +27,7 @@ Last activity: 2026-04-30 — v4.4 shipped (AI Copilot & CI Stabilization)
 - TODO: Fix Playwright headless WebGL crashes for RobotViewer component in TechStack.tsx. Currently commented out.
 - TODO: Remove CI sourcemap diagnostic step after 5+ consecutive green CI runs.
 - TODO: Add `BETTER_AUTH_SECRET` CI secret to suppress auth fallback warnings in E2E logs.
+- TODO: Implement inline AI auto-completion (Notion-style ghost text). Feasible with Tiptap but will burn free-tier neurons fast. Best as z.ai premium-only feature.
 
 ### Cross-Phase Decisions
 - Using Stripe Checkout to handle PCI compliance and mobile wallet payments.
@@ -35,4 +36,6 @@ Last activity: 2026-04-30 — v4.4 shipped (AI Copilot & CI Stabilization)
 - GlobalRAGChatbot MUST be lazy-loaded (`React.lazy()`) — eager import causes TDZ crashes in production builds.
 - manualChunks: syntax/highlight packages MUST stay in the `markdown` chunk to prevent circular chunk dependencies (`syntax → markdown → syntax`).
 - CI E2E uses `wrangler.ci.toml` swap strategy — `wrangler pages dev` does NOT support `--config` flag.
-- All `manualChunks` path matching must normalize separators with `id.replace(/\\/g, '/')` for cross-platform consistency.
+- All `manualChunks` path matching must normalize separators with `id.replace(/\\\\/g, '/')` for cross-platform consistency.
+- AI Architecture: RAG chatbot uses Cloudflare Workers AI (Llama 3.1 8B, free tier). Editor copilot uses z.ai (Claude) with Workers AI fallback. `Z_AI_API_KEY` is set in Cloudflare Pages secrets.
+- CopilotMenu is attached to ALL rich text editors (DocsEditor, BlogEditor, EventEditor, SeasonEditor, MassEmailComposer).
