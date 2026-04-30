@@ -148,6 +148,27 @@ apiRouter.route("/store", storeHandler);
 apiRouter.route("/points", pointsRouter);
 apiRouter.route("/ai", aiRouter);
 
+// ── Auto-Reindex Middleware (Incremental) ────────────────────────────
+// After any successful content mutation, triggers an INCREMENTAL re-index
+// via waitUntil. Only embeds changed docs (~50 neurons vs 7K full).
+// Safe for free tier: 10K neurons/day handles ~200 edits/day.
+const INDEXABLE_ROUTES = ["/posts", "/events", "/docs", "/seasons"];
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+apiRouter.use("*", async (c, next) => {
+  await next();
+  if (!MUTATION_METHODS.has(c.req.method)) return;
+  if (c.res.status >= 300) return;
+  const path = new URL(c.req.url).pathname.replace("/dashboard/api", "/api").replace("/api/", "/");
+  if (!INDEXABLE_ROUTES.some((r) => path.startsWith(r))) return;
+  if (!c.env.AI || !c.env.VECTORIZE_DB || !c.executionCtx) return;
+  const db = c.get("db");
+  if (!db) return;
+  c.executionCtx.waitUntil(
+    indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, c.env.RATE_LIMITS)
+      .catch((e) => console.error("[Auto-Reindex]", e))
+  );
+});
+
 import { communicationsRouter } from "./routes/communications";
 
 // Webhooks
@@ -269,7 +290,7 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   // Re-index site content for the RAG chatbot knowledge base
   if (env.AI && env.VECTORIZE_DB) {
     try {
-      const result = await indexSiteContent(db, env.AI, env.VECTORIZE_DB);
+      const result = await indexSiteContent(db, env.AI, env.VECTORIZE_DB, env.RATE_LIMITS);
       console.log(`[Cron] Vectorize indexed ${result.indexed} documents. Errors: ${result.errors.length}`);
       if (result.errors.length > 0) {
         console.error("[Cron] Indexing errors:", result.errors);

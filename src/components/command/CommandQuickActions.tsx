@@ -7,13 +7,15 @@ import { siteConfig } from "../../site.config";
 export default function CommandQuickActions() {
   const [isReindexing, setIsReindexing] = useState(false);
 
-  const handleReindex = async () => {
+  const handleReindex = async (force = false) => {
     setIsReindexing(true);
     try {
-      const res = await fetch("/api/ai/reindex", { method: "POST" });
-      const data = await res.json() as { success?: boolean; indexed?: number; errors?: string[]; error?: string };
+      const url = force ? "/api/ai/reindex?force=true" : "/api/ai/reindex";
+      const res = await fetch(url, { method: "POST" });
+      const data = await res.json() as { success?: boolean; indexed?: number; mode?: string; errors?: string[]; error?: string };
       if (res.ok && data.success) {
-        toast.success(`Knowledge base updated: ${data.indexed} documents indexed.`);
+        const mode = data.mode === "full" ? "Full" : "Incremental";
+        toast.success(`${mode} index complete: ${data.indexed} documents updated.`);
         if (data.errors && data.errors.length > 0) {
           toast.warning(`${data.errors.length} indexing warnings — check console.`);
           console.warn("[Reindex Warnings]", data.errors);
@@ -56,25 +58,39 @@ export default function CommandQuickActions() {
         ))}
 
         {/* AI Knowledge Base Re-Index */}
-        <button
-          onClick={handleReindex}
-          disabled={isReindexing}
-          className={`w-full flex items-center justify-between p-3 ares-cut-sm border transition-all ${
-            isReindexing
-              ? "bg-white/5 text-marble/40 border-white/5 cursor-not-allowed"
-              : "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:border-purple-500/40"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Brain size={16} className={isReindexing ? "animate-pulse" : ""} />
-            <span className="text-sm font-bold">
-              {isReindexing ? "Indexing Knowledge Base..." : "Re-index AI Knowledge Base"}
-            </span>
-          </div>
-          {isReindexing && (
-            <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
-          )}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleReindex(false)}
+            disabled={isReindexing}
+            className={`flex-1 flex items-center justify-between p-3 ares-cut-sm border transition-all ${
+              isReindexing
+                ? "bg-white/5 text-marble/40 border-white/5 cursor-not-allowed"
+                : "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:border-purple-500/40"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Brain size={16} className={isReindexing ? "animate-pulse" : ""} />
+              <span className="text-sm font-bold">
+                {isReindexing ? "Indexing..." : "Sync AI Knowledge"}
+              </span>
+            </div>
+            {isReindexing && (
+              <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
+            )}
+          </button>
+          <button
+            onClick={() => handleReindex(true)}
+            disabled={isReindexing}
+            title="Full rebuild — re-embeds all content (~7K neurons)"
+            className={`px-3 ares-cut-sm border text-xs font-bold transition-all ${
+              isReindexing
+                ? "bg-white/5 text-marble/40 border-white/5 cursor-not-allowed"
+                : "bg-white/5 text-marble/60 border-white/10 hover:border-purple-500/40 hover:text-purple-400"
+            }`}
+          >
+            FULL
+          </button>
+        </div>
       </div>
     </div>
   );

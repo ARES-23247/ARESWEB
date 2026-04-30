@@ -274,18 +274,19 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
 // ── Manual Re-Index Endpoint (admin-only) ─────────────────────────────
 
 aiRouter.post("/reindex", ensureAdmin, async (c) => {
-  // Require admin role (checked by middleware upstream)
   if (!c.env.AI || !c.env.VECTORIZE_DB) {
     return c.json({ error: "AI or Vectorize bindings not configured" }, 500);
   }
 
+  const force = c.req.query("force") === "true";
   const db = c.get("db") as Kysely<DB>;
   const { indexSiteContent } = await import("./indexer");
-  const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB);
+  const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, c.env.RATE_LIMITS, { force });
 
   return c.json({
     success: true,
     indexed: result.indexed,
+    mode: force ? "full" : "incremental",
     errors: result.errors,
   });
 });
