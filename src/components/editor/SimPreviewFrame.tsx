@@ -85,7 +85,9 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
     .sim-btn:hover { background: #e8b84a; }
     .sim-grid { display: grid; gap: 16px; }
     .sim-flex { display: flex; gap: 12px; align-items: center; }
-  </style>
+</style>
+  <script src="/vendor/react.production.min.js"></script>
+  <script src="/vendor/react-dom.production.min.js"></script>
 </head>
 <body>
   <div id="root"><div class="sim-loading">Loading React...</div></div>
@@ -95,54 +97,22 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
       document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
       return true;
     };
-
-    // Load a script with fallback
-    function loadScript(primary, fallback) {
-      return new Promise(function(resolve, reject) {
-        var s = document.createElement('script');
-        s.crossOrigin = 'anonymous';
-        s.src = primary;
-        s.onload = resolve;
-        s.onerror = function() {
-          var s2 = document.createElement('script');
-          s2.crossOrigin = 'anonymous';
-          s2.src = fallback;
-          s2.onload = resolve;
-          s2.onerror = reject;
-          document.head.appendChild(s2);
-        };
-        document.head.appendChild(s);
-      });
-    }
-
-    // Load React then ReactDOM, then run user code
-    loadScript(
-      'https://unpkg.com/react@18/umd/react.production.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js'
-    ).then(function() {
-      return loadScript(
-        'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js'
-      );
-    }).then(function() {
-      try {
-        ${compiledCode}
-        if (typeof SimComponent !== 'undefined') {
-          var root = ReactDOM.createRoot(document.getElementById('root'));
-          root.render(React.createElement(SimComponent));
-          parent.postMessage({ type: 'sim-ready' }, '*');
-        } else {
-          throw new Error('SimComponent is not defined. Your code must define: function SimComponent() { ... }');
-        }
-      } catch(e) {
-        parent.postMessage({ type: 'sim-error', message: e.message }, '*');
-        document.getElementById('root').innerHTML = '<div class="sim-error">' + e.message + '</div>';
+    try {
+      if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+        throw new Error('React failed to load. Please refresh the page.');
       }
-    }).catch(function() {
-      var msg = 'Failed to load React from CDN. Check your internet connection and try again.';
-      parent.postMessage({ type: 'sim-error', message: msg }, '*');
-      document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
-    });
+      ${compiledCode}
+      if (typeof SimComponent !== 'undefined') {
+        var root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(SimComponent));
+        parent.postMessage({ type: 'sim-ready' }, '*');
+      } else {
+        throw new Error('SimComponent is not defined. Your code must define: function SimComponent() { ... }');
+      }
+    } catch(e) {
+      parent.postMessage({ type: 'sim-error', message: e.message }, '*');
+      document.getElementById('root').innerHTML = '<div class="sim-error">' + e.message + '</div>';
+    }
   </script>
 </body>
 </html>`;
@@ -163,7 +133,7 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
       <iframe
         ref={iframeRef}
         title="Simulation Preview"
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
         className="flex-1 w-full h-full bg-[#0d1117] border-0 rounded-b-lg"
       />
     </div>
