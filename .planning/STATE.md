@@ -1,10 +1,10 @@
 ---
 milestone: v4.9
 name: Simulation Playground Evolution
-status: active
+status: completed
 progress:
-  phases_total: 7
-  phases_completed: 6
+  phases_total: 8
+  phases_completed: 8
   tasks_total: 0
   tasks_completed: 0
 ---
@@ -13,14 +13,15 @@ progress:
 
 ## Current Context
 - **Milestone:** v4.9 (Simulation Playground Evolution)
-- **Phase:** Phase 63 (Sim Layout Refactor)
-- **Status:** Active
-- **Next Step:** Move the simulation live window below the code and AI chat windows to provide more horizontal space for coding. Confirm editor rendering functionality.
+- **Phase:** 64 (Fix Sim)
+- **Status:** Completed
+- **Next Step:** Start next milestone or wrap up project.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 - Phase 63 added: Move sim live window below code and chat, verify code window.
+- Phase 64 added: Fix the sim (addressing PhysicsWorld undefined error in live preview).
 
 ### Active Blockers
 - None
