@@ -30,6 +30,7 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 - ✓ **Milestone 4.0 (Gamification)** — Implemented Gamified member activity points system and leaderboard.
 - ✓ **Milestone 4.0 (Documentation)** — Created comprehensive tech stack architecture and GSD orchestration documentation.
+- ✓ **Milestone 4.1 (System Evolution)** — Modernized tech stack UI with dynamic physics-based grid and integrated Playwright/Turnstile cards.
 
 ### Active
 - None
@@ -42,6 +43,15 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - TBD
 
 ## Current State
+
+<details>
+<summary>v4.1 Shipped Features</summary>
+
+- Modernized the `/tech-stack` page with a physics-based, glassmorphic grid layout.
+- Added integration documentation cards for Cloudflare Turnstile and Playwright E2E.
+- Resolved all remaining ESLint warnings to achieve 100% clean CI pipeline.
+- Established infrastructure for the 3D Hardware Visualizer (RobotViewer), tracked for future headless WebGL optimization.
+</details>
 
 <details>
 <summary>v4.0 Shipped Features</summary>
@@ -170,4 +180,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-29 after v3.9 milestone completion*
+*Last updated: 2026-04-30 after v4.1 milestone completion*

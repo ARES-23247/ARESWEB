@@ -1,10 +1,10 @@
 ---
-milestone: v4.0
-name: System Hardening, Storefront & Member Incentives
-status: planning
+milestone: v4.1
+name: System Evolution
+status: complete
 progress:
-  phases_total: 4
-  phases_completed: 0
+  phases_total: 1
+  phases_completed: 1
   tasks_total: 0
   tasks_completed: 0
 ---
@@ -13,10 +13,10 @@ progress:
 
 ## Current Position
 
-Phase: 33
-Plan: .planning/phases/33-testing-hardening/33-PLAN.md
-Status: Executing
-Last activity: 2026-04-29 — Phase 33 execution started
+Phase: 37
+Plan: none
+Status: Complete
+Last activity: 2026-04-30 — Phase 37 marked complete, milestone ready to complete
 
 ## Accumulated Context
 
@@ -24,9 +24,9 @@ Last activity: 2026-04-29 — Phase 33 execution started
 - None
 
 ### Deferred Debt
-- None
+- TODO: Fix Playwright headless WebGL crashes for RobotViewer component in TechStack.tsx. Currently commented out.
 
 ### Cross-Phase Decisions
 - Using Stripe Checkout to handle PCI compliance and mobile wallet payments.
 - Using Cloudflare D1 for inventory management and order fulfillment tracking.
-- Physical merchandise (shipping addresses required).
+- The 3D robot viewer is deferred until an environment configuration for headless WebGL is established.
