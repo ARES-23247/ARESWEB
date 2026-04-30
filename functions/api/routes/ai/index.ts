@@ -16,13 +16,16 @@ const scrubPII = (text: string): string => {
 };
 
 // ── Liveblocks AI Copilot Endpoint ────────────────────────────────────────
+// Premium: uses z.ai (Claude) if Z_AI_API_KEY is set, otherwise falls back to Workers AI (Llama 3.1)
 
 aiRouter.post("/liveblocks-copilot", async (c) => {
   const body = await c.req.json();
   const { documentContext, action } = body;
 
-  if (!c.env.AI) {
-    return c.json({ error: "AI service not configured. The Workers AI binding is missing." }, 500);
+  const hasZai = !!c.env.Z_AI_API_KEY;
+
+  if (!hasZai && !c.env.AI) {
+    return c.json({ error: "AI service not configured." }, 500);
   }
 
   const safeContext = scrubPII(documentContext || "");
@@ -33,6 +36,63 @@ aiRouter.post("/liveblocks-copilot", async (c) => {
 
   return streamSSE(c, async (stream) => {
     try {
+      // ── Premium path: z.ai (Claude) ──
+      if (hasZai) {
+        const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": c.env.Z_AI_API_KEY!,
+            "anthropic-version": "2023-06-01"
+          },
+          body: JSON.stringify({
+            model: "zai-5.1",
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [{ role: "user", content: safeContext }],
+            stream: true
+          })
+        });
+
+        if (!zaiRes.ok) {
+          console.error("z.ai copilot error:", await zaiRes.text());
+          // Fall through to Workers AI fallback
+        } else if (zaiRes.body) {
+          const reader = zaiRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const dataStr = line.slice(6).trim();
+                if (dataStr === "[DONE]") continue;
+                try {
+                  const data = JSON.parse(dataStr);
+                  if (data.type === "content_block_delta" && data.delta?.text) {
+                    await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                  }
+                } catch (_e) { /* ignore */ }
+              }
+            }
+          }
+          return; // z.ai succeeded, done
+        }
+      }
+
+      // ── Fallback path: Cloudflare Workers AI (Llama 3.1) ──
+      if (!c.env.AI) {
+        await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI service unavailable]" }) });
+        return;
+      }
+
       const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [
           { role: "system", content: systemPrompt },
@@ -58,21 +118,18 @@ aiRouter.post("/liveblocks-copilot", async (c) => {
           if (line.startsWith("data: ")) {
             const dataStr = line.slice(6).trim();
             if (dataStr === "[DONE]") continue;
-
             try {
               const data = JSON.parse(dataStr);
               const text = data.response || "";
               if (text) {
                 await stream.writeSSE({ data: JSON.stringify({ chunk: text }) });
               }
-            } catch (_e) {
-              // Ignore parse errors on partial chunks
-            }
+            } catch (_e) { /* ignore */ }
           }
         }
       }
     } catch (e) {
-      console.error("Liveblocks Copilot stream error:", e);
+      console.error("Copilot stream error:", e);
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
