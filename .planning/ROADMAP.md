@@ -2,14 +2,22 @@
 
 ## Milestones
 
-- ⏳ **v4.4 Next Milestone** — Phase 45 (active)
+- ✅ **v4.4 AI Copilot & CI Stabilization** — Phases 45-46 (shipped 2026-04-30)
 - ✅ **v4.3 Inquiries, Notifications & Docs Restoration** — Phases 41-44 (shipped 2026-04-30)
 - ✅ **v4.2 Sponsor Fixes & Docs Quality** — Phases 38-40 (shipped 2026-04-30)
 ## Phases
 
-### ⏳ v4.4 Next Milestone (Phase 45+) — ACTIVE
+### ⏳ v4.5 Next Milestone (Phase 47+) — ACTIVE
 
-- [ ] **Phase 45: Next Feature** (TBD) — Describe next feature
+- [ ] **Phase 47: Next Feature** (TBD) — Describe next feature
+
+<details>
+<summary>✅ v4.4 AI Copilot & CI Stabilization (Phases 45-46) — SHIPPED 2026-04-30</summary>
+
+- [x] **Phase 45: AI Copilot & RAG Chatbot Integration** (AI-01) — Integrated z.ai-powered RAG chatbot, copilot endpoint, PII scrubbing, D1 session persistence, and Turnstile-gated streaming.
+- [x] **Phase 46: CI/CD E2E Pipeline Stabilization** (CI-01) — Fixed admin dashboard nested frame layout, resolved Cloudflare API token CI errors via wrangler.ci.toml config swap, fixed circular chunk dependency (syntax→markdown→syntax) causing TDZ crash, lazy-loaded GlobalRAGChatbot, normalized cross-platform build paths.
+
+</details>
 
 <details>
 <summary>✅ v4.3 Inquiries, Notifications & Docs Restoration (Phases 41-44) — SHIPPED 2026-04-30</summary>
