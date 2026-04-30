@@ -25,21 +25,66 @@ aiRouter.post("/liveblocks-copilot", async (c) => {
   const safeContext = scrubPII(documentContext || "");
   const safePrompt = scrubPII(prompt || "");
 
-  // Here we would normally dispatch to z.ai via HTTP streaming.
-  // For MVP/Setup, we'll simulate an SSE stream returning mock data.
-  // In real implementation, you'd fetch from z.ai (Anthropic API format) and pipe the stream.
-  
   return streamSSE(c, async (stream) => {
-    const messages = [
-      `Action: ${action}`,
-      `Processing context securely...`,
-      `[AI RESPONSE STREAMING MOCK]`,
-      `Finished.`
-    ];
+    try {
+      const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": c.env.Z_AI_API_KEY,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: "zai-5.1",
+          max_tokens: 1024,
+          system: `You are an AI Copilot for ARES 23247. Action requested: ${action}`,
+          messages: [
+            { role: "user", content: `Context:\n${safeContext}\n\nPrompt:\n${safePrompt}` }
+          ],
+          stream: true
+        })
+      });
 
-    for (const msg of messages) {
-      await stream.writeSSE({ data: JSON.stringify({ chunk: msg }) });
-      await stream.sleep(500);
+      if (!zaiRes.ok) {
+        const errText = await zaiRes.text();
+        console.error("z.ai error:", errText);
+        await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[Error connecting to AI service]" }) });
+        return;
+      }
+
+      if (zaiRes.body) {
+        const reader = zaiRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const dataStr = line.slice(6).trim();
+              if (dataStr === "[DONE]") continue;
+              
+              try {
+                const data = JSON.parse(dataStr);
+                if (data.type === "content_block_delta" && data.delta?.text) {
+                  await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                }
+              } catch (e) {
+                // Ignore parse errors on partial chunks
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Liveblocks Copilot stream error:", e);
+      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[Stream interrupted]" }) });
     }
   });
 });
@@ -86,17 +131,64 @@ aiRouter.post("/rag-chatbot", async (c) => {
   }
 
   return streamSSE(c, async (stream) => {
-    await stream.writeSSE({ data: JSON.stringify({ chunk: `[RAG System] Found context: ${contextDocs ? 'Yes' : 'No'}` }) });
-    await stream.sleep(500);
-    await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[AI] Replying to: ${safeQuery}` }) });
-    
-    // Log history to D1
     try {
-      const db = c.get("db");
-      const sid = sessionId || crypto.randomUUID();
-      // Implementation for history storage...
+      const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": c.env.Z_AI_API_KEY,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: "zai-5.1",
+          max_tokens: 1024,
+          system: `You are the ARES 23247 Knowledge Bot. Use the following context to answer the user's query.\n\nContext:\n${contextDocs}`,
+          messages: [
+            { role: "user", content: safeQuery }
+          ],
+          stream: true
+        })
+      });
+
+      if (!zaiRes.ok) {
+        console.error("z.ai RAG error:", await zaiRes.text());
+        await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[Error connecting to knowledge base]" }) });
+        return;
+      }
+
+      if (zaiRes.body) {
+        const reader = zaiRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const dataStr = line.slice(6).trim();
+              if (dataStr === "[DONE]") continue;
+              
+              try {
+                const data = JSON.parse(dataStr);
+                if (data.type === "content_block_delta" && data.delta?.text) {
+                  await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+      }
     } catch (e) {
-      // Ignore D1 errors for stream
+      console.error("RAG stream error:", e);
+      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[Stream interrupted]" }) });
     }
   });
 });
