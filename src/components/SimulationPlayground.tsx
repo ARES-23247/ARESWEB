@@ -111,7 +111,7 @@ export default function SimulationPlayground() {
   }, [chatMessages]);
 
   // ── Compile logic ──
-  const compileCode = useCallback(async (source: string) => {
+  const compileCode = useCallback(async (source: string): Promise<string | null> => {
     setIsCompiling(true);
     setCompileError(null);
     try {
@@ -121,8 +121,11 @@ export default function SimulationPlayground() {
         filename: "sim.jsx",
       });
       setCompiledCode(result.code || "");
+      return null;
     } catch (e) {
-      setCompileError((e as Error).message);
+      const errMsg = (e as Error).message;
+      setCompileError(errMsg);
+      return errMsg;
     } finally {
       setIsCompiling(false);
     }
@@ -280,12 +283,71 @@ USER REQUEST: ${msg}`;
             .filter(line => !line.trim().startsWith("```"))
             .join("\n");
         }
-        // Strip any leading/trailing prose (keep only lines that look like code)
         cleaned = cleaned.trim();
-        // Only apply if it still has SimComponent
         if (cleaned.includes("function SimComponent")) {
           setCode(cleaned);
-          compileCode(cleaned);
+          const err = await compileCode(cleaned);
+
+          // Auto-heal: if compilation fails, send error back to AI for a fix
+          if (err) {
+            setChatMessages(prev => [...prev, { role: "assistant", content: "⚙️ Compile error detected — auto-fixing..." }]);
+
+            try {
+              const fixContext = `You are a z.AI simulation code assistant. The following JSX code has a compilation error. Fix ONLY the error and return the COMPLETE corrected code. Output ONLY code, no markdown fences, no explanations.
+
+ERROR:
+${err}
+
+BROKEN CODE:
+${cleaned}`;
+
+              const fixRes = await fetch("/api/ai/liveblocks-copilot", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ documentContext: fixContext, action: "expand" }),
+              });
+
+              if (fixRes.ok && fixRes.body) {
+                let fixText = "";
+                const fixReader = fixRes.body.getReader();
+                const fixDecoder = new TextDecoder();
+                let fixBuffer = "";
+
+                while (true) {
+                  const { done, value } = await fixReader.read();
+                  if (done) break;
+                  fixBuffer += fixDecoder.decode(value, { stream: true });
+                  const fixLines = fixBuffer.split("\n");
+                  fixBuffer = fixLines.pop() || "";
+                  for (const line of fixLines) {
+                    if (line.startsWith("data: ")) {
+                      try {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.chunk) fixText += data.chunk;
+                      } catch { /* ignore */ }
+                    }
+                  }
+                }
+
+                let fixedCode = fixText.trim();
+                if (fixedCode.includes("```")) {
+                  fixedCode = fixedCode.split("\n").filter(l => !l.trim().startsWith("```")).join("\n").trim();
+                }
+
+                if (fixedCode.includes("function SimComponent")) {
+                  setCode(fixedCode);
+                  const fixErr = await compileCode(fixedCode);
+                  if (fixErr) {
+                    setChatMessages(prev => [...prev, { role: "assistant", content: `⚠️ Auto-fix failed: ${fixErr}\nPlease fix the code manually or describe the issue.` }]);
+                  } else {
+                    setChatMessages(prev => [...prev, { role: "assistant", content: "✅ Code fixed and applied!" }]);
+                  }
+                }
+              }
+            } catch {
+              // Auto-heal failed silently, user still sees the original error
+            }
+          }
         }
       }
     } catch (e) {
