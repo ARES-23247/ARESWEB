@@ -68,6 +68,12 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
       font-size: 13px;
       white-space: pre-wrap;
     }
+    .sim-loading {
+      color: rgba(255,255,255,0.3);
+      font-size: 13px;
+      text-align: center;
+      padding: 32px;
+    }
     /* Utility classes for sim authors */
     .sim-container { padding: 24px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.03); }
     .sim-title { font-size: 18px; font-weight: 700; color: #d4a030; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -80,30 +86,63 @@ export default function SimPreviewFrame({ compiledCode, compileError }: SimPrevi
     .sim-grid { display: grid; gap: 16px; }
     .sim-flex { display: flex; gap: 12px; align-items: center; }
   </style>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root"><div class="sim-loading">Loading React...</div></div>
   <script>
     window.onerror = function(msg, source, line, col, error) {
       parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '*');
       document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
       return true;
     };
-    try {
-      ${compiledCode}
-      if (typeof SimComponent !== 'undefined') {
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(SimComponent));
-        parent.postMessage({ type: 'sim-ready' }, '*');
-      } else {
-        throw new Error('SimComponent is not defined. Your code must define: function SimComponent() { ... }');
-      }
-    } catch(e) {
-      parent.postMessage({ type: 'sim-error', message: e.message }, '*');
-      document.getElementById('root').innerHTML = '<div class="sim-error">' + e.message + '</div>';
+
+    // Load a script with fallback
+    function loadScript(primary, fallback) {
+      return new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.crossOrigin = 'anonymous';
+        s.src = primary;
+        s.onload = resolve;
+        s.onerror = function() {
+          var s2 = document.createElement('script');
+          s2.crossOrigin = 'anonymous';
+          s2.src = fallback;
+          s2.onload = resolve;
+          s2.onerror = reject;
+          document.head.appendChild(s2);
+        };
+        document.head.appendChild(s);
+      });
     }
+
+    // Load React then ReactDOM, then run user code
+    loadScript(
+      'https://unpkg.com/react@18/umd/react.production.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js'
+    ).then(function() {
+      return loadScript(
+        'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js'
+      );
+    }).then(function() {
+      try {
+        ${compiledCode}
+        if (typeof SimComponent !== 'undefined') {
+          var root = ReactDOM.createRoot(document.getElementById('root'));
+          root.render(React.createElement(SimComponent));
+          parent.postMessage({ type: 'sim-ready' }, '*');
+        } else {
+          throw new Error('SimComponent is not defined. Your code must define: function SimComponent() { ... }');
+        }
+      } catch(e) {
+        parent.postMessage({ type: 'sim-error', message: e.message }, '*');
+        document.getElementById('root').innerHTML = '<div class="sim-error">' + e.message + '</div>';
+      }
+    }).catch(function() {
+      var msg = 'Failed to load React from CDN. Check your internet connection and try again.';
+      parent.postMessage({ type: 'sim-error', message: msg }, '*');
+      document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
+    });
   </script>
 </body>
 </html>`;
