@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const WRANGLER_COMMAND = 'cross-env DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist -c wrangler.ci.toml --local -b SKIP_ENV_VALIDATION=true --env-file .env.test';
+const WRANGLER_COMMAND = 'cross-env DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist --local -b SKIP_ENV_VALIDATION=true --env-file .env.test';
 
 export default defineConfig({
   testDir: './tests/e2e',

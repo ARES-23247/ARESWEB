@@ -139,6 +139,12 @@ jobs:
         if: steps.check_e2e.outputs.run_e2e == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      - name: Swap to CI Wrangler Config
+        if: steps.check_e2e.outputs.run_e2e == 'true'
+        run: |
+          mv wrangler.toml wrangler.prod.toml
+          cp wrangler.ci.toml wrangler.toml
+
       - name: Setup D1 Database for E2E
         if: steps.check_e2e.outputs.run_e2e == 'true'
         env:
@@ -146,7 +152,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npm run db:setup:local
-          npx wrangler d1 migrations apply ares-db --local -c wrangler.ci.toml
+          npx wrangler d1 migrations apply ares-db --local
 
       - name: Playwright Tests (Shard ${{ matrix.shard }}/3)
         if: steps.check_e2e.outputs.run_e2e == 'true'
@@ -192,6 +198,12 @@ jobs:
       - name: Build with Vite
         if: steps.check_e2e.outputs.run_e2e == 'true'
         run: npm run build
+
+      - name: Swap to CI Wrangler Config
+        if: steps.check_e2e.outputs.run_e2e == 'true'
+        run: |
+          mv wrangler.toml wrangler.prod.toml
+          cp wrangler.ci.toml wrangler.toml
 
       - name: Setup D1 Database for E2E
         if: steps.check_e2e.outputs.run_e2e == 'true'
