@@ -2,7 +2,7 @@
 
 ## Milestones
 
-- **v4.2 Sponsor Fixes & Docs Quality** — Phases 38-39 (active)
+- **v4.2 Sponsor Fixes & Docs Quality** — Phases 38-40 (active)
 
 ## Phases
 
@@ -11,6 +11,7 @@
 |---|-------|------|--------------|--------|
 | 38 | Sponsor Logo Upload Fix | Resolve the bug preventing logo updates on the sponsor dashboard | SPON-01, SPON-02 | [x] |
 | 39 | Documentation Refactor | Audit, rewrite, and upgrade the documentation UI/content to match areslib standards | DOCS-01, DOCS-02, DOCS-03, DOCS-04 | [x] |
+| 40 | Extended Documentation | Add missing documentation for Autonomous, Vision, and PID Tuning | DOCS-05 | [x] |
 
 <details>
 <summary>✅ v4.1 System Evolution (Phase 37) — SHIPPED 2026-04-30</summary>
