@@ -31,7 +31,10 @@ export function useMergedNotifications(
     const rawNotifications = (notifRes?.body as any)?.notifications || [];
     
     // Filter out redundant DB notifications that duplicate our synthetic sticky action items
+    // and filter out read notifications so they don't persist in the notification bar
     const filteredRawNotifications = rawNotifications.filter((n: any) => {
+      if (n.is_read) return false;
+      
       const t = n.title || "";
       return !(t.includes("Inquiry") && t.startsWith("New ")) &&
              !(t === "📝 Pending Blog Post") &&

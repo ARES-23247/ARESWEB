@@ -37,6 +37,7 @@ export default function EventManagerTab({
   const deleteMutation = api.events.deleteEvent.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       setConfirmId(null);
       toast.success("Event deleted");
     },
@@ -62,6 +63,7 @@ export default function EventManagerTab({
   const localApproveMutation = api.events.approveEvent.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event approved");
     }
   });
@@ -69,6 +71,7 @@ export default function EventManagerTab({
   const localRejectMutation = api.events.rejectEvent.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event rejected");
     }
   });
@@ -76,6 +79,7 @@ export default function EventManagerTab({
   const localRestoreMutation = api.events.undeleteEvent.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event restored");
     }
   });
@@ -83,6 +87,7 @@ export default function EventManagerTab({
   const localPurgeMutation = api.events.purgeEvent.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event purged");
     }
   });

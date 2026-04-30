@@ -18,6 +18,8 @@ type Inquiry = {
   metadata: string | null;
   status: "pending" | "approved" | "resolved" | "rejected";
   created_at: string;
+  zulip_message_id: string | null;
+  notes: string | null;
 };
 
 type StatusFilter = "all" | "pending" | "resolved" | "rejected";
@@ -75,6 +77,7 @@ export default function AdminInquiries() {
       if (res.status === 200) {
         toast.success("Inquiry status updated.");
         queryClient.invalidateQueries({ queryKey: ["admin-inquiries"] });
+        queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       } else {
         toast.error("Failed to update status.");
       }
@@ -86,8 +89,20 @@ export default function AdminInquiries() {
       if (res.status === 200) {
         toast.success("Inquiry deleted.");
         queryClient.invalidateQueries({ queryKey: ["admin-inquiries"] });
+        queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       } else {
         toast.error("Failed to delete inquiry.");
+      }
+    }
+  });
+
+  const updateNotesMutation = api.inquiries.updateNotes.useMutation({
+    onSuccess: (res: { status: number }) => {
+      if (res.status === 200) {
+        toast.success("Notes updated.");
+        queryClient.invalidateQueries({ queryKey: ["admin-inquiries"] });
+      } else {
+        toast.error("Failed to update notes.");
       }
     }
   });
@@ -202,8 +217,28 @@ export default function AdminInquiries() {
                   </div>
                 )}
 
+                {/* Notes Section */}
+                <div className="mt-1">
+                  <label htmlFor={`notes-${inquiry.id}`} className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                    Notes
+                  </label>
+                  <textarea
+                    id={`notes-${inquiry.id}`}
+                    defaultValue={inquiry.notes || ""}
+                    onBlur={(e) => {
+                      if (e.target.value !== (inquiry.notes || "")) {
+                        updateNotesMutation.mutate({ params: { id: inquiry.id }, body: { notes: e.target.value } });
+                      }
+                    }}
+                    rows={2}
+                    placeholder="Add internal notes... (auto-saves on blur)"
+                    className="w-full bg-ares-gray-dark/50 border border-white/5 text-marble/80 text-xs px-3 py-2 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-colors resize-none placeholder-marble/30"
+                  />
+                </div>
+
                 {/* Action Bar */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
+                <div className="flex flex-wrap items-center justify-between pt-2 border-t border-white/10 gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                   {inquiry.status === "pending" ? (
                     <button
                       onClick={() => updateStatusMutation.mutate({ params: { id: inquiry.id }, body: { status: "resolved" } })}
@@ -245,6 +280,20 @@ export default function AdminInquiries() {
                     >
                       <Trash2 size={12} /> DELETE
                     </button>
+                  )}
+                  </div>
+
+                  {/* Right side: Zulip button */}
+                  {inquiry.zulip_message_id && (
+                    <a
+                      href={`https://aresfirst.zulipchat.com/#narrow/id/${inquiry.zulip_message_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-black text-white hover:text-white bg-[#5e82a6]/80 hover:bg-[#5e82a6] px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 shadow-[0_0_10px_rgba(94,130,166,0.2)]"
+                    >
+                      <MessageSquare size={12} />
+                      DISCUSS ON ZULIP
+                    </a>
                   )}
                 </div>
               </div>

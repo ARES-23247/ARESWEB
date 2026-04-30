@@ -11,6 +11,8 @@ export const inquirySchema = z.object({
   metadata: z.string().nullable().optional(), // JSON string from DB
   status: z.string(),
   created_at: z.string(),
+  zulip_message_id: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 export const inquiryInputSchema = z.object({
@@ -80,6 +82,25 @@ export const inquiryContract = c.router({
       500: z.object({ error: z.string() }),
     },
     summary: "Update inquiry status",
+  },
+  updateNotes: {
+    method: "PATCH",
+    path: "/admin/:id/notes",
+    pathParams: z.object({
+      id: z.string(),
+    }),
+    body: z.object({
+      notes: z.string().nullable(),
+    }),
+    responses: {
+      200: z.object({
+        success: z.boolean(),
+      }),
+      401: z.object({ error: z.string() }),
+      403: z.object({ error: z.string() }),
+      500: z.object({ error: z.string() }),
+    },
+    summary: "Update inquiry notes",
   },
   delete: {
     method: "DELETE",

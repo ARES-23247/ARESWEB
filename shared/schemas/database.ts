@@ -311,6 +311,8 @@ export interface Inquiries {
   name: string;
   status: Generated<string | null>;
   type: string;
+  zulip_message_id: string | null;
+  notes: string | null;
 }
 
 export interface JudgeAccessCodes {

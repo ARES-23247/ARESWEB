@@ -38,6 +38,7 @@ export default function PostManagerTab({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       setConfirmId(null);
       toast.success("Post deleted");
     },
@@ -50,6 +51,7 @@ export default function PostManagerTab({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post approved");
     }
   });
@@ -58,6 +60,7 @@ export default function PostManagerTab({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post rejected");
     }
   });
@@ -66,6 +69,7 @@ export default function PostManagerTab({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post restored");
     }
   });
@@ -74,6 +78,7 @@ export default function PostManagerTab({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post purged");
     }
   });

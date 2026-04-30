@@ -316,7 +316,9 @@ CREATE TABLE IF NOT EXISTS inquiries (
     metadata TEXT,
     status TEXT DEFAULT 'pending',
     is_deleted INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now'))
+    created_at TEXT DEFAULT (datetime('now')),
+    zulip_message_id TEXT,
+    notes TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries(status);
 CREATE INDEX IF NOT EXISTS idx_inquiries_created ON inquiries(created_at);

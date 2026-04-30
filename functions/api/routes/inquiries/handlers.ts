@@ -48,7 +48,7 @@ export const inquiryHandlers: any = {
       }
 
       let dbQuery = db.selectFrom("inquiries")
-        .select(["id", "type", "name", "email", "metadata", "status", "created_at"])
+        .select(["id", "type", "name", "email", "metadata", "status", "created_at", "zulip_message_id", "notes"])
         .orderBy("created_at", "desc")
         .limit(limit)
         .offset(offset);
@@ -99,7 +99,9 @@ export const inquiryHandlers: any = {
           email,
           metadata: metadata || null,
           status: r.status as any,
-          created_at: String(r.created_at)
+          created_at: String(r.created_at),
+          zulip_message_id: r.zulip_message_id,
+          notes: r.notes
         };
       }));
 
@@ -187,7 +189,11 @@ export const inquiryHandlers: any = {
         
         const topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
         const zulipContent = `**New ${type} inquiry received**\n\n**Name:** ${name}\n**Email:** ${email}\n**ID:** ${id.slice(0, 8)}\n\n[Review Inquiry](${baseUrl}/dashboard/inquiries)`;
-        await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => {});
+        const messageId = await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => null);
+
+        if (messageId) {
+          await db.updateTable("inquiries").set({ zulip_message_id: messageId }).where("id", "=", id).execute();
+        }
 
         const audiences: NotifyAudience[] = (type === "outreach" || type === "support") ? ["admin", "coach", "mentor", "student"] : ["admin", "coach", "mentor"];
         await notifyByRole(c, audiences, { 
@@ -225,6 +231,22 @@ export const inquiryHandlers: any = {
     } catch (err) {
       console.error("[Inquiry:UpdateStatus] Error", err);
       return { status: 500 as const, body: { error: "Update failed" } };
+    }
+  },
+  updateNotes: async (input: any, c: any) => {
+    try {
+      const { params, body } = input;
+      const db = c.get("db") as Kysely<DB>;
+      await db.updateTable("inquiries")
+        .set({ notes: body.notes })
+        .where("id", "=", params.id)
+        .execute();
+
+      c.executionCtx.waitUntil(logAuditAction(c, "inquiry_notes_change", "inquiries", params.id, `Notes updated`));
+      return { status: 200 as const, body: { success: true } };
+    } catch (err) {
+      console.error("[Inquiry:UpdateNotes] Error", err);
+      return { status: 500 as const, body: { error: "Notes update failed" } };
     }
   },
   delete: async (input: any, c: any) => {

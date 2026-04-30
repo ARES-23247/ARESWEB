@@ -32,6 +32,7 @@ export default function DocManagerTab({
   const deleteMutation = api.docs.deleteDoc.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       setConfirmId(null);
       toast.success("Doc soft-deleted");
     },
@@ -52,6 +53,7 @@ export default function DocManagerTab({
   const localApproveMutation = api.docs.approveDoc.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc approved");
     }
   });
@@ -59,6 +61,7 @@ export default function DocManagerTab({
   const localRejectMutation = api.docs.rejectDoc.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc rejected");
     }
   });
@@ -66,6 +69,7 @@ export default function DocManagerTab({
   const localRestoreMutation = api.docs.undeleteDoc.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc restored");
     }
   });
@@ -73,6 +77,7 @@ export default function DocManagerTab({
   const localPurgeMutation = api.docs.purgeDoc.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc purged");
     }
   });
