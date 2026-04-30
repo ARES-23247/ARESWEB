@@ -37,17 +37,22 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 4.4 (AI Copilot & CI Stabilization)** — Integrated z.ai RAG chatbot and copilot endpoint, stabilized CI pipelines, fixed TDZ chunk circular dependencies.
 - ✓ **Milestone 4.5 (AI Workers Migration & Copilot)** — Migrated RAG chatbot to Cloudflare Workers AI Llama 3.1 8B (free tier), expanded CopilotMenu to all editors.
 - ✓ **Milestone 4.6 (RAG Knowledge Base Pipeline)** — Built incremental site content indexer with Workers AI embeddings and Cloudflare Vectorize. Added admin reindex controls.
-- ✓ **Milestone 4.7 (Gap Closure / Tech Debt)** — Hardened RAG pipeline (tests, rate-limits, `updated_at` columns), added Simulation Playground with AI auto-heal, integrated GhostText AI inline suggestions.
+- ✓ **Milestone 4.8 (Simulation Playground UI Fixes)** — Resolved Monaco editor rendering failure by updating CSP to allow jsdelivr and blob web workers.
 
 ### Active
 - None
 
-## Current Milestone: v4.8 Simulation Playground UI Fixes
+## Current Milestone: v4.9 Simulation Playground Evolution
 
-**Goal:** Resolve rendering failures in the Simulation Playground to ensure the Monaco code editor mounts and displays correctly.
+**Goal:** Transform the Simulation Playground into a comprehensive, robust robotics development environment.
 
 **Target features:**
-- **Monaco Rendering Fix:** Diagnose and fix the blank/missing code window in the left pane of the simulation playground.
+- **Hardware & Physics IntelliSense:** Inject React, Three.js, and ARESLib physics types into Monaco.
+- **Multi-File Sandbox & Templates:** Implement CodeSandbox-style multi-file support and starting templates.
+- **Real-Time Telemetry:** Add a graphing panel for `useTelemetry` variables (velocity, error).
+- **Visual AI Feedback Loop:** Hook up iframe screenshots to pass visual context to the z.ai model.
+- **Built-in Physics Engine Abstractions:** Pre-load the sandbox environment with `@react-three/fiber` helpers.
+- **Cloud Save & Collaboration:** Save simulations to D1 and generate shareable shortlinks.
 - **Dependency Loading:** Ensure Monaco's AMD loader or React wrapper correctly resolves its web workers and core libraries.
 
 

@@ -2,6 +2,7 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| [v4.8](milestones/v4.8-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | Simulation Playground UI Fixes |
 | [v4.7](milestones/v4.7-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | Gap Closure (v4.6 Tech Debt) |
 | [v4.6](milestones/v4.6-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | RAG Knowledge Base Pipeline |
 | v4.5 | ✅ SHIPPED | 2026-04-30 | AI Workers Migration & Copilot Expansion |
