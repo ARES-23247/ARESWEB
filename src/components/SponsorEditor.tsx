@@ -34,7 +34,7 @@ export default function SponsorEditor() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<SponsorPayload>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<SponsorPayload>({
     resolver: zodResolver(sponsorSchema),
     defaultValues: {
       tier: "Gold",
@@ -102,7 +102,7 @@ export default function SponsorEditor() {
       } else {
         toast.error(data.error || "Upload failed");
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error("Failed to upload logo.");
     } finally {
       setIsUploading(false);
@@ -199,7 +199,7 @@ export default function SponsorEditor() {
                 {errors.tier && <p className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{errors.tier.message as string}</p>}
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-marble/40">Partner Logo</label>
+                <label htmlFor="sponsor-logo" className="text-xs font-bold uppercase tracking-widest text-marble/40">Partner Logo</label>
                 <div className="flex gap-2">
                   <DashboardInput
                     id="sponsor-logo"
