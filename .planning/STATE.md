@@ -16,7 +16,7 @@ progress:
 Phase: None active — awaiting v4.7 planning
 Plan: —
 Status: Ready for next milestone
-Last activity: 2026-04-30 — v4.6.1 hotfix (middleware removal + handler-based auto-reindex)
+Last activity: 2026-04-30 — v4.6.2 hotfix (dynamic import fix for autoReindex — static import crashed worker)
 
 ## Accumulated Context
 
@@ -41,4 +41,5 @@ Last activity: 2026-04-30 — v4.6.1 hotfix (middleware removal + handler-based 
 - AI Architecture: RAG chatbot uses Cloudflare Workers AI (Llama 3.1 8B, free tier). Editor copilot uses z.ai (Claude) with Workers AI fallback. `Z_AI_API_KEY` is set in Cloudflare Pages secrets.
 - CopilotMenu is attached to ALL rich text editors (DocsEditor, BlogEditor, EventEditor, SeasonEditor, MassEmailComposer).
 - RAG Indexing: Incremental via KV timestamp (`rag_last_indexed` in RATE_LIMITS KV). Only public data indexed (status != 'draft', is_deleted != 1). Auto-triggers via targeted `triggerBackgroundReindex()` calls inside individual route handlers (posts, events, docs, seasons) using `executionCtx.waitUntil()`. Catch-all middleware approach was removed — it caused API hangs by interfering with Hono's response chain.
+- **CRITICAL**: Any module under `routes/ai/` that references Workers AI or Vectorize bindings MUST be loaded via dynamic `import()`, never static `import`. Static imports pull the module into every route handler's startup graph, crashing the entire worker if the binding resolution fails during initialization. See `autoReindex.ts` and `ai/index.ts:283` for the correct pattern.
 - Vectorize index name: `ares_knowledge_base`. Embedding model: `@cf/baai/bge-base-en-v1.5`. Batch size: 20 vectors per upsert.
