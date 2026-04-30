@@ -114,9 +114,11 @@ export default function SimulationPlayground() {
   }, [activeFile, compileCode]);
 
   useEffect(() => {
-    compileCode(files);
+    if (!isChatLoading) {
+      compileCode(files);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simId, files]);
+  }, [simId, files, isChatLoading]);
 
   // Listen for Telemetry from Iframe
   useEffect(() => {

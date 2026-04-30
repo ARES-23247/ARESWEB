@@ -10,13 +10,13 @@
 - ✅ **v4.2 Sponsor Fixes & Docs Quality** — Phases 38-40 (shipped 2026-04-30)
 ## Phases
 
-### ⏳ v5.2 Knowledge Base Expansion (Phase 68) — ACTIVE
+### ✅ v5.2 Knowledge Base Expansion (Phase 68) — SHIPPED 2026-04-30
 
-- [ ] **Phase 68: Knowledge Base Expansion** — Enhance the RAG chatbot to ingest and query external FTC resources and the ARESLIB GitHub codebase, expanding its context beyond the internal D1 database.
+- [x] **Phase 68: Knowledge Base Expansion** — Enhance the RAG chatbot to ingest and query external FTC resources and the ARESLIB GitHub codebase, expanding its context beyond the internal D1 database.
 
-### ✅ v5.1 IDE Experience (Phase 66) — ACTIVE
+### ✅ v5.1 IDE Experience (Phase 66) — SHIPPED 2026-04-30
 
-- [ ] **Phase 66: Streaming Code Generation (IDE-like Experience)** — Overhaul the simulation playground's z.AI assistant to stream markdown-fenced code blocks directly into the Monaco Editor character-by-character, replacing the fragile all-at-once JSON payload mechanism.
+- [x] **Phase 66: Streaming Code Generation (IDE-like Experience)** — Overhaul the simulation playground's z.AI assistant to stream markdown-fenced code blocks directly into the Monaco Editor character-by-character, replacing the fragile all-at-once JSON payload mechanism.
 
 ### ✅ v5.0 Tech Debt (Phases 65, 67) — SHIPPED 2026-04-30
 
