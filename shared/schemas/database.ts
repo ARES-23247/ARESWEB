@@ -475,6 +475,15 @@ export interface Posts {
   title: string;
 }
 
+export interface PointsLedger {
+  id: string;
+  user_id: string;
+  points_delta: number;
+  reason: string;
+  created_by: string;
+  created_at: Generated<string | null>;
+}
+
 export interface PostsFts {
   ast: string | null;
   author: string | null;
@@ -799,6 +808,7 @@ export interface DB {
   pit_scouting: PitScouting;
   products: Products;
   posts: Posts;
+  points_ledger: PointsLedger;
   posts_fts: PostsFts;
   posts_fts_config: PostsFtsConfig;
   posts_fts_content: PostsFtsContent;
