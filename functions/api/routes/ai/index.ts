@@ -327,7 +327,8 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
           await saveHistory(db, sessionId, historyMessages, safeQuery, accumulatedText);
           return;
         } else {
-          console.error("[RAG] z.ai error, falling back to Workers AI:", zaiRes.status);
+          const errBody = await zaiRes.text().catch(() => "");
+          console.error("[RAG] z.ai error, falling back to Workers AI:", zaiRes.status, errBody);
         }
       }
 
