@@ -2,7 +2,8 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
-| v4.6 | ✅ SHIPPED | 2026-04-30 | RAG Knowledge Base Pipeline |
+| [v4.7](milestones/v4.7-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | Gap Closure (v4.6 Tech Debt) |
+| [v4.6](milestones/v4.6-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | RAG Knowledge Base Pipeline |
 | v4.5 | ✅ SHIPPED | 2026-04-30 | AI Workers Migration & Copilot Expansion |
 | v4.4 | ✅ SHIPPED | 2026-04-30 | AI Copilot & CI Stabilization |
 | v4.3 | ✅ SHIPPED | 2026-04-30 | Inquiries, Notifications & Docs Restoration |

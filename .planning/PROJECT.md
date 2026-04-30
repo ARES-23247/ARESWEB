@@ -32,20 +32,52 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 4.0 (Documentation)** — Created comprehensive tech stack architecture and GSD orchestration documentation.
 - ✓ **Milestone 4.1 (System Evolution)** — Modernized tech stack UI with dynamic physics-based grid and integrated Playwright/Turnstile cards.
 
+- ✓ **Milestone 4.2 (Sponsor Fixes & Docs Quality)** — Fixed sponsor logo uploads and upgraded documentation leveraging `areslib` patterns.
+- ✓ **Milestone 4.3 (Inquiries, Notifications & Docs)** — Fixed notification bugs, restored docs data, generated Zulip threads for inquiries, and added inquiry notes.
+- ✓ **Milestone 4.4 (AI Copilot & CI Stabilization)** — Integrated z.ai RAG chatbot and copilot endpoint, stabilized CI pipelines, fixed TDZ chunk circular dependencies.
+- ✓ **Milestone 4.5 (AI Workers Migration & Copilot)** — Migrated RAG chatbot to Cloudflare Workers AI Llama 3.1 8B (free tier), expanded CopilotMenu to all editors.
+- ✓ **Milestone 4.6 (RAG Knowledge Base Pipeline)** — Built incremental site content indexer with Workers AI embeddings and Cloudflare Vectorize. Added admin reindex controls.
+- ✓ **Milestone 4.7 (Gap Closure / Tech Debt)** — Hardened RAG pipeline (tests, rate-limits, `updated_at` columns), added Simulation Playground with AI auto-heal, integrated GhostText AI inline suggestions.
+
 ### Active
 - None
 
-## Current Milestone: v4.3 Inquiries, Notifications & Docs Restoration
+## Current Milestone: None
 
-**Goal:** Resolve persistent notification bugs, restore missing documentation entries, and enhance the inquiry management workflow with Zulip integration and a notes system.
+**Goal:** Planning next milestone.
 
-**Target features:**
-- **Notification State Fix:** Ensure notifications are properly dismissed and removed from the notification bar when marked as read or handled.
-- **Documentation Data Restoration:** Recover, recreate, or re-import documentation entries that were accidentally deleted to return the DB to a championship-grade state.
-- **Zulip Integration for Inquiries:** Automatically generate Zulip threads for new inquiries and include a "Discuss on Zulip" button on the inquiry details.
-- **Inquiry Notes System:** Add a "notes" section to inquiries similar to Kanban cards for internal tracking and discussion.
+
 
 ## Current State
+
+<details>
+<summary>v4.6 Shipped Features</summary>
+
+- Incremental Vectorize indexing pipeline for public site content (posts, events, docs, seasons).
+- Admin reindex controls (`POST /api/ai/reindex`) with incremental and force modes.
+</details>
+
+<details>
+<summary>v4.5 Shipped Features</summary>
+
+- Migrated chatbot to Cloudflare Workers AI (Llama 3.1 8B).
+- Expanded CopilotMenu to BlogEditor, EventEditor, SeasonEditor, and MassEmailComposer.
+</details>
+
+<details>
+<summary>v4.4 Shipped Features</summary>
+
+- Integrated z.ai-powered RAG chatbot with streaming and Turnstile gating.
+- Fixed Cloudflare API token CI errors and nested frame layouts.
+</details>
+
+<details>
+<summary>v4.3 Shipped Features</summary>
+
+- Fixed persistent notification state issues.
+- Restored missing documentation entries to the database.
+- Automated Zulip thread creation for new inquiries and added internal notes system.
+</details>
 
 <details>
 <summary>v4.2 Shipped Features</summary>
@@ -190,4 +222,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-30 after v4.2 milestone completion*
+*Last updated: 2026-04-30 after v4.7 milestone completion*

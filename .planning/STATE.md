@@ -1,21 +1,21 @@
 ---
-milestone: v4.7
-name: Gap Closure (v4.6 Tech Debt)
-status: active
+milestone: next
+name: Planning
+status: inactive
 progress:
-  phases_total: 5
-  phases_completed: 5
-  tasks_total: 8
-  tasks_completed: 8
+  phases_total: 0
+  phases_completed: 0
+  tasks_total: 0
+  tasks_completed: 0
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 55 — AI & Sim Hardening (completed)
-Plan: Executed inline (no formal PLAN.md)
-Status: All v4.7 phases complete — milestone ready for closure
+Phase: None
+Plan: Pending
+Status: Planning next milestone
 Last activity: 2026-04-30 — Phase 55 shipped (RAG grounding, sim preview fix, auto-heal, chatbot links)
 
 ## Accumulated Context
