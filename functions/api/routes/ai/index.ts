@@ -234,6 +234,8 @@ aiRouter.post("/rag-chatbot", async (c) => {
   }
 
   const safeQuery = scrubPII(query);
+  const nowIso = new Date().toISOString();
+  const todayReadable = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
   // Generate embedding using Cloudflare Workers AI (always needed for RAG)
   let contextDocs = "";
@@ -257,8 +259,33 @@ aiRouter.post("/rag-chatbot", async (c) => {
     }
   }
 
-  // Fetch history if session exists
+  // DB reference for both upcoming events and session history
   const db = c.get("db") as Kysely<DB>;
+
+  // Supplement with upcoming events from D1 (critical for time-sensitive queries)
+  let upcomingEventsContext = "";
+  try {
+    const upcomingEvents = await db.selectFrom("events")
+      .select(["title", "date_start", "date_end", "location", "category"])
+      .where("is_deleted", "!=", 1)
+      .where("status", "!=", "draft")
+      .where("date_start", ">=", nowIso)
+      .orderBy("date_start", "asc")
+      .limit(5)
+      .execute();
+
+    if (upcomingEvents.length > 0) {
+      upcomingEventsContext = "\n\nUpcoming events (from database):\n" + upcomingEvents.map(e => {
+        const start = e.date_start ? new Date(e.date_start).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "TBD";
+        const end = e.date_end ? ` to ${new Date(e.date_end).toLocaleDateString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}` : "";
+        return `- ${e.title} | ${start}${end} | ${e.location || "TBD"} | ${e.category || "general"}`;
+      }).join("\n");
+    }
+  } catch (e) {
+    console.error("[RAG] Upcoming events query failed:", e);
+  }
+
+  // Fetch history if session exists
   let historyMessages: any[] = [];
   
   if (sessionId) {
@@ -273,8 +300,10 @@ aiRouter.post("/rag-chatbot", async (c) => {
   }
 
   const systemPrompt = `You are the ARES 23247 Knowledge Bot — a helpful assistant for a FIRST Tech Challenge robotics team (Team 23247 ARES). 
+Today's date is ${todayReadable}.
 Answer questions about the team's schedule, code, rules, and activities. Be concise and helpful.
-${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : "\nNo relevant context found in the knowledge base. Answer based on general FTC knowledge."}`;
+When asked about upcoming events or practices, use the "Upcoming events" section below — those are the REAL scheduled events from the database.
+${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : "\nNo relevant context found in the knowledge base. Answer based on general FTC knowledge."}${upcomingEventsContext}`;
 
   const messages = [
     ...historyMessages.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
