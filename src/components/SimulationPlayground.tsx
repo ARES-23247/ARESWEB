@@ -201,6 +201,7 @@ USER REQUEST: ${msg}`;
         let cleaned = reply;
         // Strip markdown fences
         if (cleaned.includes("```")) {
+          // eslint-disable-next-line security/detect-unsafe-regex
           const match = cleaned.match(/```(?:jsx?|tsx?|javascript|typescript)?\n?([\s\S]*?)```/);
           if (match) cleaned = match[1];
         }
@@ -354,12 +355,14 @@ USER REQUEST: ${msg}`;
         </div>
 
         {/* ── Resize Handle: Code ↔ Chat ── */}
-        <div
+        <button
+          type="button"
+          aria-label="Resize code and chat panes"
           onMouseDown={handleMouseDown("code")}
-          className="w-1.5 bg-white/5 hover:bg-ares-gold/30 cursor-col-resize flex items-center justify-center transition-colors group"
+          className="w-1.5 bg-white/5 hover:bg-ares-gold/30 cursor-col-resize flex items-center justify-center transition-colors group border-0 p-0"
         >
           <GripVertical className="w-3 h-3 text-white/20 group-hover:text-ares-gold/60" />
-        </div>
+        </button>
 
         {/* ── z.AI Chat Pane ── */}
         <div style={{ width: `${chatPaneWidth}%` }} className="flex flex-col min-h-0 min-w-0 border-x border-white/5">
@@ -435,12 +438,14 @@ USER REQUEST: ${msg}`;
         </div>
 
         {/* ── Resize Handle: Chat ↔ Preview ── */}
-        <div
+        <button
+          type="button"
+          aria-label="Resize chat and preview panes"
           onMouseDown={handleMouseDown("chat")}
-          className="w-1.5 bg-white/5 hover:bg-ares-gold/30 cursor-col-resize flex items-center justify-center transition-colors group"
+          className="w-1.5 bg-white/5 hover:bg-ares-gold/30 cursor-col-resize flex items-center justify-center transition-colors group border-0 p-0"
         >
           <GripVertical className="w-3 h-3 text-white/20 group-hover:text-ares-gold/60" />
-        </div>
+        </button>
 
         {/* ── Live Preview Pane ── */}
         <div style={{ width: `${previewPaneWidth}%` }} className="flex flex-col min-h-0 min-w-0">
