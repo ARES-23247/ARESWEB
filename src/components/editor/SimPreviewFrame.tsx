@@ -151,10 +151,22 @@ export default function SimPreviewFrame({ compiledFiles, compileError }: SimPrev
         }
       }
     };
-    window.__virtualModules["three"] = { exports: window.AresPhysics?.THREE };
-    window.__virtualModules["@react-three/fiber"] = { exports: window.AresPhysics?.R3F };
-    window.__virtualModules["@react-three/drei"] = { exports: window.AresPhysics?.Drei };
-    window.__virtualModules["ares-physics"] = { exports: window.AresPhysics };
+    const createProxy = (moduleName) => new Proxy({}, {
+      get: function(target, prop) {
+        if (prop === '__esModule') return true;
+        const base = window.AresPhysics;
+        if (!base) return undefined;
+        
+        const mod = moduleName ? base[moduleName] : base;
+        if (prop === 'default') return mod;
+        return mod ? mod[prop] : undefined;
+      }
+    });
+
+    window.__virtualModules["three"] = { exports: createProxy('THREE') };
+    window.__virtualModules["@react-three/fiber"] = { exports: createProxy('R3F') };
+    window.__virtualModules["@react-three/drei"] = { exports: createProxy('Drei') };
+    window.__virtualModules["ares-physics"] = { exports: createProxy('') };
 
     try {
       if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {

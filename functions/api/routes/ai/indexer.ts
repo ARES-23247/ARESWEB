@@ -295,15 +295,24 @@ export async function indexExternalResources(
 
   for (const source of sources) {
     if (source.type === "github") {
-      const [owner, repo] = source.url.split("/");
+      let owner: string, repo: string;
+      if (source.url.includes("github.com/")) {
+        const parts = source.url.split("github.com/")[1].split("/");
+        owner = parts[0];
+        repo = parts[1];
+      } else {
+        const parts = source.url.split("/");
+        owner = parts[0];
+        repo = parts[1];
+      }
       if (!owner || !repo) {
         errors.push(`Invalid github url: ${source.url}`);
         continue;
       }
       
       const branch = source.branch || "main";
-      // Allow all file extensions for Github indexing as per requirements
-      const res = await fetchGithubRepoFiles(owner, repo, branch, [], githubPat);
+      const exts = [".md", ".txt", ".java", ".py", ".ts", ".tsx", ".js", ".json"];
+      const res = await fetchGithubRepoFiles(owner, repo, branch, exts, githubPat);
       
       if (res.error) {
         errors.push(`Fetch failed for ${source.url}: ${res.error}`);

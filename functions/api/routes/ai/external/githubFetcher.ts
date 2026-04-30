@@ -49,6 +49,7 @@ export async function fetchGithubRepoFiles(
     // 3. Filter files by extension
     const targetFiles = treeData.tree.filter((node: any) => {
       if (node.type !== "blob") return false;
+      if (!allowedExtensions || allowedExtensions.length === 0) return true;
       const ext = node.path.substring(node.path.lastIndexOf("."));
       return allowedExtensions.includes(ext);
     });
