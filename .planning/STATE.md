@@ -1,10 +1,10 @@
 ---
-milestone: v4.9
-name: Simulation Playground Evolution
+milestone: v5.0
+name: Tech Debt
 status: completed
 progress:
-  phases_total: 8
-  phases_completed: 8
+  phases_total: 1
+  phases_completed: 1
   tasks_total: 0
   tasks_completed: 0
 ---
@@ -12,8 +12,8 @@ progress:
 # Project State
 
 ## Current Context
-- **Milestone:** v4.9 (Simulation Playground Evolution)
-- **Phase:** 64 (Fix Sim)
+- **Milestone:** v5.0 (Tech Debt)
+- **Phase:** 65 (Fix Swerve Physics Template PhysicsWorld Error)
 - **Status:** Completed
 - **Next Step:** Start next milestone or wrap up project.
 
@@ -22,6 +22,7 @@ progress:
 ### Roadmap Evolution
 - Phase 63 added: Move sim live window below code and chat, verify code window.
 - Phase 64 added: Fix the sim (addressing PhysicsWorld undefined error in live preview).
+- Phase 65 added: Fix Swerve Physics Template PhysicsWorld Error (ensure iframe require resolves before bundling).
 
 ### Active Blockers
 - None

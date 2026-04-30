@@ -10,6 +10,10 @@
 - ✅ **v4.2 Sponsor Fixes & Docs Quality** — Phases 38-40 (shipped 2026-04-30)
 ## Phases
 
+### ⏳ v5.0 Tech Debt (Phase 65) — ACTIVE
+
+- [x] **Phase 65: Fix Swerve Physics Template PhysicsWorld Error** — Address the `PhysicsWorld is undefined` TypeError in the simulation playground by ensuring the iframe's `require` function is available before `ares-physics.min.js` loads, allowing its internal `require('react')` to resolve correctly.
+
 ### ✅ v4.9 Simulation Playground Evolution (Phases 57-64) — SHIPPED 2026-04-30
 
 - [x] **Phase 57: Hardware & Physics IntelliSense** (SIM-03) — Inject React, Three.js, and ARESLib physics `.d.ts` types into the Monaco Editor instances to enable real-time autocomplete, parameter hints, and JSDoc explanations for hardware kinematics.

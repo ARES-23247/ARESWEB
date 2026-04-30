@@ -100,43 +100,17 @@ export default function SimPreviewFrame({ compiledFiles, compileError }: SimPrev
     .sim-grid { display: grid; gap: 16px; }
     .sim-flex { display: flex; gap: 12px; align-items: center; }
 </style>
-  <script src="${window.location.origin}/vendor/react.production.min.js"></script>
-  <script src="${window.location.origin}/vendor/react-dom.production.min.js"></script>
-  <script src="${window.location.origin}/vendor/ares-physics.min.js"></script>
-</head>
-<body>
-  <div id="root"><div class="sim-loading">Loading Environment...</div></div>
   <script>
-    window.onerror = function(msg, source, line, col, error) {
-      parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '*');
-      document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
-      return true;
-    };
-    
-    // Virtual Module System
+    // Virtual Module System & require MUST be defined before ares-physics.min.js loads
+    // so that its internal require('react') calls succeed.
     window.__modules = {};
     window.__cache = {};
-    
-    window.__virtualModules = {
-      "areslib": {
-        exports: {
-          useTelemetry: function(key, value) {
-            React.useEffect(() => {
-              window.parent.postMessage({ type: "ARES_TELEMETRY", key, value, timestamp: performance.now() }, "*");
-            }, [key, value]);
-          }
-        }
-      },
-      "three": { exports: window.AresPhysics?.THREE },
-      "@react-three/fiber": { exports: window.AresPhysics?.R3F },
-      "@react-three/drei": { exports: window.AresPhysics?.Drei },
-      "ares-physics": { exports: window.AresPhysics }
-    };
+    window.__virtualModules = {};
     
     function require(name) {
-      if (window.__virtualModules[name]) return window.__virtualModules[name].exports;
       if (name === 'react') return window.React;
       if (name === 'react-dom') return window.ReactDOM;
+      if (window.__virtualModules[name]) return window.__virtualModules[name].exports;
       
       let resolveName = name;
       if (resolveName.startsWith('./')) resolveName = resolveName.slice(2);
@@ -153,6 +127,34 @@ export default function SimPreviewFrame({ compiledFiles, compileError }: SimPrev
       window.__modules[resolveName](require, module, module.exports);
       return module.exports;
     }
+  </script>
+  <script src="${window.location.origin}/vendor/react.production.min.js"></script>
+  <script src="${window.location.origin}/vendor/react-dom.production.min.js"></script>
+  <script src="${window.location.origin}/vendor/ares-physics.min.js"></script>
+</head>
+<body>
+  <div id="root"><div class="sim-loading">Loading Environment...</div></div>
+  <script>
+    window.onerror = function(msg, source, line, col, error) {
+      parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '*');
+      document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
+      return true;
+    };
+    
+    // Now that scripts are loaded, populate the virtual modules with the global exports
+    window.__virtualModules["areslib"] = {
+      exports: {
+        useTelemetry: function(key, value) {
+          React.useEffect(() => {
+            window.parent.postMessage({ type: "ARES_TELEMETRY", key, value, timestamp: performance.now() }, "*");
+          }, [key, value]);
+        }
+      }
+    };
+    window.__virtualModules["three"] = { exports: window.AresPhysics?.THREE };
+    window.__virtualModules["@react-three/fiber"] = { exports: window.AresPhysics?.R3F };
+    window.__virtualModules["@react-three/drei"] = { exports: window.AresPhysics?.Drei };
+    window.__virtualModules["ares-physics"] = { exports: window.AresPhysics };
 
     try {
       if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
