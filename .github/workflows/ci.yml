@@ -41,6 +41,27 @@ jobs:
       - name: Accessibility & Lint Audit
         run: npm run lint
 
+  migration-check:
+    name: D1 Migration Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Migration SQL
+        run: |
+          echo "## D1 Migration Check" >> $GITHUB_STEP_SUMMARY
+          for f in migrations/[0-9]*.sql; do
+            [ -f "$f" ] || continue
+            NAME=$(basename "$f")
+            if grep -qiE "^ALTER TABLE .+ ADD COLUMN" "$f" && ! grep -qiE "IF NOT EXISTS|-- idempotent" "$f"; then
+              echo "::warning file=$f::ALTER TABLE ADD COLUMN without idempotency guard"
+              echo "⚠️ $NAME — non-idempotent ALTER TABLE" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ $NAME" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
   security:
     name: Security Audit
     runs-on: ubuntu-latest

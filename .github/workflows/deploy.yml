@@ -32,7 +32,16 @@ jobs:
       - name: Build with Vite
         run: npm run build
 
+      - name: Check Pending D1 Migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations list ares-db --remote
+          packageManager: npm
+
       - name: Apply D1 Migrations
+        id: migrations
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -47,3 +56,19 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name aresweb --commit-dirty=true --branch ${{ github.head_ref || github.ref_name }}
           packageManager: npm
+
+      - name: Post Deploy Status
+        if: always()
+        run: |
+          echo "## Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.migrations.outcome }}" = "failure" ]; then
+            echo "❌ **D1 Migrations FAILED** — check migration SQL for duplicate columns or syntax errors" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Common fix: \`npx wrangler d1 execute ares-db --remote --command \"INSERT OR IGNORE INTO d1_migrations (name) VALUES ('MIGRATION_NAME.sql');\"\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ D1 Migrations applied successfully" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
