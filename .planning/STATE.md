@@ -16,7 +16,7 @@ progress:
 Phase: None active — awaiting v4.7 planning
 Plan: —
 Status: Ready for next milestone
-Last activity: 2026-04-30 — v4.6 shipped (RAG Knowledge Base Pipeline)
+Last activity: 2026-04-30 — v4.6.1 hotfix (middleware removal + handler-based auto-reindex)
 
 ## Accumulated Context
 
@@ -40,5 +40,5 @@ Last activity: 2026-04-30 — v4.6 shipped (RAG Knowledge Base Pipeline)
 - All `manualChunks` path matching must normalize separators with `id.replace(/\\\\/g, '/')` for cross-platform consistency.
 - AI Architecture: RAG chatbot uses Cloudflare Workers AI (Llama 3.1 8B, free tier). Editor copilot uses z.ai (Claude) with Workers AI fallback. `Z_AI_API_KEY` is set in Cloudflare Pages secrets.
 - CopilotMenu is attached to ALL rich text editors (DocsEditor, BlogEditor, EventEditor, SeasonEditor, MassEmailComposer).
-- RAG Indexing: Incremental via KV timestamp (`rag_last_indexed` in RATE_LIMITS KV). Only public data indexed (status != 'draft', is_deleted != 1). Auto-triggers via waitUntil middleware after content mutations on /posts, /events, /docs, /seasons.
+- RAG Indexing: Incremental via KV timestamp (`rag_last_indexed` in RATE_LIMITS KV). Only public data indexed (status != 'draft', is_deleted != 1). Auto-triggers via targeted `triggerBackgroundReindex()` calls inside individual route handlers (posts, events, docs, seasons) using `executionCtx.waitUntil()`. Catch-all middleware approach was removed — it caused API hangs by interfering with Hono's response chain.
 - Vectorize index name: `ares_knowledge_base`. Embedding model: `@cf/baai/bge-base-en-v1.5`. Batch size: 20 vectors per upsert.

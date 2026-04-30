@@ -16,7 +16,7 @@
 <details>
 <summary>✅ v4.6 RAG Knowledge Base Pipeline (Phases 49-50) — SHIPPED 2026-04-30</summary>
 
-- [x] **Phase 49: Vectorize Indexing Pipeline** (AI-04) — Built incremental site content indexer that crawls public events, posts, docs, and seasons from D1, generates BGE embeddings via Workers AI, and upserts into Cloudflare Vectorize. Uses KV timestamp tracking to only re-embed changed documents (~50 neurons/edit vs 7K full). Auto-triggers via waitUntil after content mutations.
+- [x] **Phase 49: Vectorize Indexing Pipeline** (AI-04) — Built incremental site content indexer that crawls public events, posts, docs, and seasons from D1, generates BGE embeddings via Workers AI, and upserts into Cloudflare Vectorize. Uses KV timestamp tracking to only re-embed changed documents (~50 neurons/edit vs 7K full). Auto-triggers via targeted `triggerBackgroundReindex()` handler hooks (not middleware — catch-all middleware caused API hangs).
 - [x] **Phase 50: Admin Reindex Controls** (AI-05) — Added admin-only POST /api/ai/reindex endpoint with ensureAdmin middleware. Command Center Quick Actions panel has "Sync AI Knowledge" (incremental) and "FULL" (full rebuild) buttons with loading states and toast feedback.
 
 </details>
