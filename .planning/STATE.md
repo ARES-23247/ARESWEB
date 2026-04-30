@@ -1,10 +1,10 @@
 ---
-milestone: v4.2
-name: Sponsor Fixes & Docs Quality
-status: completed
+milestone: none
+name: Preparing Next Milestone
+status: archived
 progress:
-  phases_total: 3
-  phases_completed: 3
+  phases_total: 0
+  phases_completed: 0
   tasks_total: 0
   tasks_completed: 0
 ---
@@ -13,10 +13,10 @@ progress:
 
 ## Current Position
 
-Phase: 40
-Plan: Extended Documentation
-Status: Completed
-Last activity: 2026-04-30 — Milestone v4.2 Extended Documentation Completed
+Phase: none
+Plan: none
+Status: Archived
+Last activity: 2026-04-30 — Milestone v4.2 Archived
 
 ## Accumulated Context
 
