@@ -3,9 +3,9 @@ milestone: v4.7
 name: Gap Closure (v4.6 Tech Debt)
 status: active
 progress:
-  phases_total: 3
+  phases_total: 4
   phases_completed: 2
-  tasks_total: 6
+  tasks_total: 7
   tasks_completed: 5
 ---
 
@@ -13,10 +13,10 @@ progress:
 
 ## Current Position
 
-Phase: 53 — Liveblocks Fix (next)
+Phase: 53 — AI Inline Suggestions (next)
 Plan: Pending
-Status: Liveblocks real-time collaboration not working in production
-Last activity: 2026-04-30 — Phase 53 created for Liveblocks debug
+Status: GhostTextExtension exists but trigger logic never implemented
+Last activity: 2026-04-30 — Phase 53 repurposed, Phase 54 (Sim Playground) added
 
 ## Accumulated Context
 
