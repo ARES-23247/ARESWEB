@@ -26,17 +26,17 @@ export function GlobalRAGChatbot() {
     if (sessionId && messages.length === 0) {
       fetch(`/api/ai/chat-session/${sessionId}`)
         .then(res => res.json())
-        .then((data: any) => {
+        .then((data: { messages?: { role: string; content: string }[] }) => {
           if (data && data.messages && data.messages.length > 0) {
-            setMessages(data.messages.map((m: any) => ({
-              role: m.role === "assistant" ? "ai" : m.role,
+            setMessages(data.messages.map(m => ({
+              role: m.role === "assistant" ? "ai" : (m.role as "ai" | "user"),
               content: m.content
             })));
           }
         })
         .catch(e => console.error("Failed to load chat history", e));
     }
-  }, [sessionId]);
+  }, [sessionId, messages.length]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
