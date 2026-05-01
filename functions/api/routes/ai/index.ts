@@ -103,7 +103,7 @@ aiRouter.post("/liveblocks-copilot", async (c) => {
               { role: "user", content: userContent }
             ],
             stream: true,
-            max_tokens: 4096
+            max_tokens: 8192
           })
         });
 
@@ -238,7 +238,7 @@ aiRouter.post("/sim-playground", async (c) => {
                 ...messages
               ],
               stream: true,
-              max_tokens: 4096
+              max_tokens: 8192
             })
           });
 
@@ -730,7 +730,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
               ...messages
             ],
             stream: true,
-            max_tokens: 4096
+            max_tokens: 8192
           })
         });
 
