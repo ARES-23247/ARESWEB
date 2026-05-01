@@ -221,59 +221,68 @@ aiRouter.post("/sim-playground", async (c) => {
 
   return streamSSE(c, async (stream) => {
     try {
+      let lastZaiError = "";
       if (hasZai) {
-        const zaiRes = await fetch("https://api.z.ai/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": c.env.Z_AI_API_KEY!,
-            "anthropic-version": "2023-06-01"
-          },
-          body: JSON.stringify({
-            model: "zai-5.1",
-            max_tokens: 128000,
-            system: systemPrompt,
-            messages: messages,
-            stream: true
-          })
-        });
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": c.env.Z_AI_API_KEY!,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "zai-5.1",
+              max_tokens: 128000,
+              system: systemPrompt,
+              messages: messages,
+              stream: true
+            })
+          });
 
-        if (zaiRes.ok && zaiRes.body) {
-          const reader = zaiRes.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
+          if (zaiRes.ok && zaiRes.body) {
+            const reader = zaiRes.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
 
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const dataStr = line.slice(6).trim();
-                if (dataStr === "[DONE]") continue;
-                try {
-                  const data = JSON.parse(dataStr);
-                  if (data.type === "content_block_delta" && data.delta?.text) {
-                    await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
-                  }
-                } catch (_e) { /* ignore */ }
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  const dataStr = line.slice(6).trim();
+                  if (dataStr === "[DONE]") continue;
+                  try {
+                    const data = JSON.parse(dataStr);
+                    if (data.type === "content_block_delta" && data.delta?.text) {
+                      await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                    }
+                  } catch (_e) { /* ignore */ }
+                }
               }
             }
+            return; // Successfully streamed z.ai, exit
+          } else {
+            lastZaiError = await zaiRes.text().catch(() => "");
+            console.error(`z.ai sim error (attempt ${attempt + 1}):`, zaiRes.status, lastZaiError);
+            if (zaiRes.status !== 429 && zaiRes.status !== 502 && zaiRes.status !== 503) {
+              break; // Do not retry client errors (like 400 Bad Request)
+            }
           }
-          return; // Successfully streamed z.ai, exit
-        } else {
-          const errBody = await zaiRes.text().catch(() => "");
-          console.error("z.ai sim error, falling back to Workers AI:", zaiRes.status, errBody);
+          
+          if (attempt === 0) await new Promise(r => setTimeout(r, 500));
         }
       }
 
       // ── Fallback: Cloudflare Workers AI (Llama 3.1) ──
       if (!c.env.AI) {
-        await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI service unavailable]" }) });
+        const errDetails = lastZaiError || "AI service unavailable";
+        await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[AI Error: ${errDetails}]` }) });
         return;
       }
 
@@ -326,7 +335,8 @@ aiRouter.post("/sim-playground", async (c) => {
       }
     } catch (e) {
       console.error("Sim IDE stream error:", e);
-      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
+      const errMsg = e instanceof Error ? e.message : String(e);
+      await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[AI processing error: ${errMsg}]` }) });
     }
   });
 });

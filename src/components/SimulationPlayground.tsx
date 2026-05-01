@@ -33,6 +33,8 @@ interface ChatMessage {
   content: string;
 }
 
+const DEFAULT_MESSAGE: ChatMessage = { role: "assistant", content: "I'm your z.AI simulation assistant. Describe what you want to build — a motor controller, sensor visualizer, PID tuner, field navigator — and I'll generate or modify the code for you." };
+
 interface SavedSim {
   id: string;
   name: string;
@@ -68,9 +70,14 @@ export default function SimulationPlayground() {
   const compileTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "I'm your z.AI simulation assistant. Describe what you want to build — a motor controller, sensor visualizer, PID tuner, field navigator — and I'll generate or modify the code for you." }
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const idParam = new URLSearchParams(window.location.search).get("simId");
+      const stored = localStorage.getItem(`sim_chat_${idParam || 'new'}`);
+      if (stored) return JSON.parse(stored);
+    } catch (e) { console.error(e); }
+    return [DEFAULT_MESSAGE];
+  });
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -80,6 +87,11 @@ export default function SimulationPlayground() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  // Persist chat to local storage
+  useEffect(() => {
+    localStorage.setItem(`sim_chat_${simId || 'new'}`, JSON.stringify(chatMessages));
+  }, [chatMessages, simId]);
 
   // ── Compile logic ──
   const compileCode = useCallback(async (sourceFiles: Record<string, string>): Promise<string | null> => {
@@ -207,6 +219,13 @@ export default function SimulationPlayground() {
     compileCode(SIM_TEMPLATES["Blank Canvas"]);
     setSimId(null);
     setSimName("Untitled Simulation");
+    
+    const storedChat = localStorage.getItem('sim_chat_new');
+    if (storedChat) {
+      try { setChatMessages(JSON.parse(storedChat)); } catch { setChatMessages([DEFAULT_MESSAGE]); }
+    } else {
+      setChatMessages([DEFAULT_MESSAGE]);
+    }
   };
 
   // ── Library ──
@@ -253,6 +272,13 @@ export default function SimulationPlayground() {
       setSimId(sim.id);
       compileCode(parsedFiles);
       setShowLibrary(false);
+      
+      const storedChat = localStorage.getItem(`sim_chat_${sim.id}`);
+      if (storedChat) {
+        try { setChatMessages(JSON.parse(storedChat)); } catch { setChatMessages([DEFAULT_MESSAGE]); }
+      } else {
+        setChatMessages([DEFAULT_MESSAGE]);
+      }
       
       // Update URL to match loaded sim
       const newUrl = new URL(window.location.href);
@@ -336,10 +362,23 @@ USER REQUEST: ${msg}`;
       const apiMessages = chatMessages.map(m => ({ role: m.role, content: m.content }));
       apiMessages.push({ role: "user", content: msg });
 
+      // Normalize for Anthropic: must start with user, must alternate roles
+      const normalizedMessages: {role: "user"|"assistant", content: string}[] = [];
+      for (const m of apiMessages) {
+        if (normalizedMessages.length === 0 && m.role === "assistant") {
+          continue; // Skip leading assistant messages
+        }
+        if (normalizedMessages.length > 0 && normalizedMessages[normalizedMessages.length - 1].role === m.role) {
+          normalizedMessages[normalizedMessages.length - 1].content += "\n\n" + m.content;
+        } else {
+          normalizedMessages.push({ ...m });
+        }
+      }
+
       const res = await fetch("/api/ai/sim-playground", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ systemPrompt: systemContext, messages: apiMessages, imageUrl: attachedImage }),
+        body: JSON.stringify({ systemPrompt: systemContext, messages: normalizedMessages, imageUrl: attachedImage }),
       });
       setAttachedImage(null);
 
