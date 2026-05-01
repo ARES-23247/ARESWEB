@@ -191,7 +191,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError }: SimPrev
         
         if (entryFile) {
           const entryExports = require(entryFile);
-          SimComponent = entryExports.default || entryExports[entryFile.replace(/\.[^/.]+$/, "")] || window.SimComponent;
+          SimComponent = entryExports.default || entryExports[entryFile.replace(/\\.[^/.]+$/, "")] || window.SimComponent;
           
           // Fallback: if it exports exactly one thing, use that
           if (!SimComponent && Object.keys(entryExports).length === 1) {
