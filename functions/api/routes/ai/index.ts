@@ -220,8 +220,8 @@ aiRouter.post("/sim-playground", async (c) => {
   }
 
   return streamSSE(c, async (stream) => {
+    let lastZaiError = "";
     try {
-      let lastZaiError = "";
       if (hasZai) {
         for (let attempt = 0; attempt < 2; attempt++) {
           const zaiRes = await fetch("https://api.z.ai/v1/messages", {
@@ -233,7 +233,7 @@ aiRouter.post("/sim-playground", async (c) => {
             },
             body: JSON.stringify({
               model: "zai-5.1",
-              max_tokens: 128000,
+              max_tokens: 4096,
               system: systemPrompt,
               messages: messages,
               stream: true
@@ -281,8 +281,8 @@ aiRouter.post("/sim-playground", async (c) => {
 
       // ── Fallback: Cloudflare Workers AI (Llama 3.1) ──
       if (!c.env.AI) {
-        const errDetails = lastZaiError || "AI service unavailable";
-        await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[AI Error: ${errDetails}]` }) });
+        const errDetails = lastZaiError || "Z.AI service unavailable";
+        await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Z.AI Error: ${errDetails}]` }) });
         return;
       }
 
@@ -336,7 +336,8 @@ aiRouter.post("/sim-playground", async (c) => {
     } catch (e) {
       console.error("Sim IDE stream error:", e);
       const errMsg = e instanceof Error ? e.message : String(e);
-      await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[AI processing error: ${errMsg}]` }) });
+      const details = lastZaiError ? `\n\nZ.AI Fallback Error: ${lastZaiError}` : "";
+      await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Workers AI processing error: ${errMsg}]${details}` }) });
     }
   });
 });
