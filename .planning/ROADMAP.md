@@ -1,8 +1,16 @@
-# Project Roadmap
+# Proposed Roadmap
 
-*Milestone v5.4 archived to [v5.4-ROADMAP.md](milestones/v5.4-ROADMAP.md)*
+**1 phases** | **2 requirements mapped** | All covered ✓
 
-## Milestone v5.5: Upcoming Features
+| # | Phase | Goal | Requirements | Success Criteria |
+|---|-------|------|--------------|------------------|
+| 80 | Simulation GitHub Loading Fix | Restore the ability to load existing simulations directly from the GitHub repository. | SIM-01, SIM-02 | 2 |
 
----
-*Roadmap generated for ARESWEB. Prior phases (1-79) are archived in completed milestones.*
+### Phase Details
+
+**Phase 80: Simulation GitHub Loading Fix**
+Goal: Fix the Simulation Playground menu so it can load existing simulations from the GitHub repository.
+Requirements: SIM-01, SIM-02
+Success criteria:
+1. The Simulation Playground menu populates with existing simulations from the GitHub repository.
+2. Clicking a simulation successfully fetches its contents and loads it into the editor.

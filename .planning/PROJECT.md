@@ -46,7 +46,10 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 ## Current Milestone: v5.5
 
-**Goal:** TBD based on new requirements.
+**Goal:** Fix the Simulation Playground menu so it can load existing simulations from the GitHub repository.
+
+**Target features:**
+- Simulation menu loads from GitHub
 
 ## Current State
 
