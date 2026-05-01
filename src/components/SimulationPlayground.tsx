@@ -532,7 +532,7 @@ ${reply}`;
           window.history.replaceState({}, "", newUrl.toString());
         }
         const { toast } = await import("sonner");
-        toast.success(simId ? "Committed to GitHub!" : "Committed to GitHub!");
+        toast.success("Saved simulation!");
       }
     } catch (e) {
       console.error("[SimPlayground] Save failed:", e);
