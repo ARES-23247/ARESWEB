@@ -99,11 +99,21 @@ export default function TaskBoardPage() {
   });
 
   // -- Handlers -------------------------------------------------------
-  const handleCreateTask = async (title: string) => {
+  const subteams = ["Software", "Mechanical", "Electrical", "Strategy", "Business", "Media"];
+  const [subteamFilter, setSubteamFilter] = useState<string | null>(null);
+
+  const filteredTasks = subteamFilter 
+    ? tasks.filter((t: TaskItem) => t.subteam?.toLowerCase() === subteamFilter.toLowerCase())
+    : tasks;
+
+  const handleCreateTaskWithSubteam = async (title: string) => {
     setIsCreating(true);
     try {
       const res = await api.tasks.create.mutation({
-        body: { title }
+        body: { 
+          title, 
+          subteam: subteamFilter // Auto-assign to current sub-board if active
+        }
       });
       if (res.status === 200 && res.body.success && res.body.task) {
         queryClient.setQueryData(queryKey, (old: TaskListResponse | undefined) => {
@@ -131,9 +141,9 @@ export default function TaskBoardPage() {
   };
 
   const boardContent = (
-    <div className={isFullscreen ? "fixed inset-0 z-50 bg-obsidian p-6 overflow-y-auto" : "space-y-6"}>
+    <div className={isFullscreen ? "fixed inset-0 z-50 bg-obsidian overflow-hidden flex flex-col" : "space-y-6 flex flex-col"}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className={`flex items-center justify-between ${isFullscreen ? "p-6 pb-2 shrink-0 border-b border-white/5 bg-obsidian" : "mb-2"}`}>
         <div>
           <h2 className="text-2xl font-black text-white flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-ares-cyan/20 to-ares-gold/20 ares-cut-sm border border-white/10">
@@ -153,16 +163,41 @@ export default function TaskBoardPage() {
         </button>
       </div>
 
-      <ProjectBoardKanban
-        tasks={tasks}
-        isLoading={isTasksLoading}
-        isCreating={isCreating}
-        onCreateTask={handleCreateTask}
-        onUpdateTask={handleUpdateTask}
-        onDeleteTask={handleDeleteTask}
-        onReorder={handleReorder}
-        onRefresh={() => queryClient.invalidateQueries({ queryKey })}
-      />
+      {/* Sub Boards Filter */}
+      <div className={`flex flex-wrap gap-2 ${isFullscreen ? "px-6 py-2 shrink-0 bg-obsidian/50" : "mb-6"}`}>
+        <button
+          onClick={() => setSubteamFilter(null)}
+          className={`px-3 py-1.5 text-xs font-bold ares-cut-sm transition-all ${
+            !subteamFilter ? "bg-ares-cyan text-black" : "bg-ares-gray-dark/50 text-ares-gray hover:text-white"
+          }`}
+        >
+          All Boards
+        </button>
+        {subteams.map(st => (
+          <button
+            key={st}
+            onClick={() => setSubteamFilter(st)}
+            className={`px-3 py-1.5 text-xs font-bold ares-cut-sm transition-all ${
+              subteamFilter === st ? "bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/30" : "bg-ares-gray-dark/50 text-ares-gray border border-white/5 hover:text-white"
+            }`}
+          >
+            {st}
+          </button>
+        ))}
+      </div>
+
+      <div className={isFullscreen ? "flex-1 overflow-y-auto p-6 pt-2" : ""}>
+        <ProjectBoardKanban
+          tasks={filteredTasks}
+          isLoading={isTasksLoading}
+          isCreating={isCreating}
+          onCreateTask={handleCreateTaskWithSubteam}
+          onUpdateTask={handleUpdateTask}
+          onDeleteTask={handleDeleteTask}
+          onReorder={handleReorder}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey })}
+        />
+      </div>
     </div>
   );
 
