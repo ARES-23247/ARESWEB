@@ -23,7 +23,7 @@ interface IndexableDocument {
   metadata: Record<string, string>;
 }
 
-const BATCH_SIZE = 20;
+const BATCH_SIZE = 100;
 const KV_KEY = "rag_last_indexed";
 
 export async function indexSiteContent(
@@ -331,7 +331,7 @@ export async function indexExternalResources(
           const chunks = chunkText(file.content, 1000, 100);
           for (const chunk of chunks) {
             documents.push({
-              id: `${source.id}_${file.sha}_${chunk.index}`,
+              id: `${source.id.substring(0, 8)}_${file.sha.substring(0, 8)}_${chunk.index}`,
               text: `${source.url} (${file.path}):\n${chunk.text}`,
               metadata: { type: "github", path: file.path, source: source.url }
             });
@@ -351,7 +351,6 @@ export async function indexExternalResources(
   }
 
   let indexed = 0;
-  const BATCH_SIZE = 20;
   
   for (let i = 0; i < documents.length; i += BATCH_SIZE) {
     const batch = documents.slice(i, i + BATCH_SIZE);

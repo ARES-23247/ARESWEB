@@ -32,10 +32,20 @@ export async function fetchGithubRepoFiles(
     }
 
     // 1. Get the latest commit SHA for the branch
-    const refRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`, { headers });
+    let refRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`, { headers });
+    
     if (!refRes.ok) {
-      return { files: [], commitSha: "", error: `Failed to fetch ref: ${refRes.statusText}` };
+      // Fallback: If "main" wasn't found, try "master", or vice-versa
+      const fallbackBranch = branch === "main" ? "master" : branch === "master" ? "main" : null;
+      if (fallbackBranch) {
+        refRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${fallbackBranch}`, { headers });
+      }
+      
+      if (!refRes.ok) {
+        return { files: [], commitSha: "", error: `Failed to fetch ref: ${refRes.statusText} for branch ${branch}` };
+      }
     }
+    
     const refData = await refRes.json() as any;
     const commitSha = refData.object.sha;
 
