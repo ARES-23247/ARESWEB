@@ -1,15 +1,8 @@
 # Project Roadmap
 
-*Milestone v5.3 archived to [v5.3-ROADMAP.md](milestones/v5.3-ROADMAP.md)*
+*Milestone v5.4 archived to [v5.4-ROADMAP.md](milestones/v5.4-ROADMAP.md)*
 
-## Milestone v5.4: Simulation Sandbox & GitHub Storage Migration
-
-- [x] **Phase 74:** Simulation Sandbox UX Enhancements
-- [x] **Phase 75:** Sim Maker Stream Hardening & Few-Shot Context
-- [x] **Phase 76:** Complete Migration to GitHub Storage
-- [x] **Phase 77:** Simulation IDE Hotfixes & GLM-5.1 Integration
-- [x] **Phase 78:** AI Chatbot Memory & Editor Integration
-- [x] **Phase 79:** Editor Fullscreen Maximize Toggle
+## Milestone v5.5: Upcoming Features
 
 ---
-*Roadmap generated for ARESWEB. Prior phases (1-73) are archived in completed milestones.*
+*Roadmap generated for ARESWEB. Prior phases (1-79) are archived in completed milestones.*

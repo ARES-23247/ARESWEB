@@ -44,11 +44,21 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ### Active
 - None
 
-## Current Milestone: v5.4
+## Current Milestone: v5.5
 
-**Goal:** Migrate the Simulation Sandbox entirely to the GitHub API, enhance UX with a vertical drag resizer, and harden the AI chunk parser against malformed code outputs using `?raw` vite imports.
+**Goal:** TBD based on new requirements.
 
 ## Current State
+
+<details>
+<summary>v5.4 Shipped Features</summary>
+
+- Migrated the Simulation Sandbox entirely to the GitHub API.
+- Replaced auto-fix loop with a dynamic manual prompt system in the simulation IDE.
+- Added fullscreen IDE mode for the simulation sandbox.
+- Integrated persistent Editor Chat Sidebar and resolved conversational "amnesia" bugs across RAG Chatbot.
+- Added Fullscreen Maximize toggle to the Rich Text Editor.
+</details>
 
 <details>
 <summary>v5.3 Shipped Features</summary>
