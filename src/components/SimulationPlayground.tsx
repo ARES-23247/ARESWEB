@@ -378,9 +378,10 @@ USER REQUEST: ${msg}`;
                       currentFile = null;
                       currentContent = [];
                     } else {
-                      const match = l.match(/```[a-zA-Z]*:(.+)/);
-                      if (match && match[1]) {
-                        currentFile = match[1].trim();
+                      // Strictly enforce single-file architecture by routing all code to the active file
+                      const match = l.match(/```[a-zA-Z]*/);
+                      if (match) {
+                        currentFile = activeFile;
                       }
                     }
                   } else if (currentFile) {
