@@ -269,6 +269,74 @@ aiRouter.post("/sim-playground", async (c) => {
   });
 });
 
+// ── Editor AI Chat Endpoint ──────────────────────────────────────────────
+aiRouter.post("/editor-chat", async (c) => {
+  const body = await c.req.json();
+  const { systemPrompt, messages, editorContent } = body;
+
+  const hasZai = !!c.env.Z_AI_API_KEY;
+  if (!hasZai) return c.json({ error: "AI service not configured." }, 500);
+
+  // Inject current editor content into the system prompt or as a hidden user message
+  const finalSystemPrompt = `${systemPrompt}\n\nCURRENT EDITOR CONTENT:\n${editorContent || "The document is currently empty."}`;
+
+  return streamSSE(c, async (stream) => {
+    try {
+      const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": c.env.Z_AI_API_KEY!,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: "zai-5.1",
+          max_tokens: 8192,
+          system: finalSystemPrompt,
+          messages: messages,
+          stream: true
+        })
+      });
+
+      if (!zaiRes.ok) {
+        console.error("z.ai editor chat error:", await zaiRes.text());
+        return;
+      }
+      
+      if (zaiRes.body) {
+        const reader = zaiRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const dataStr = line.slice(6).trim();
+              if (dataStr === "[DONE]") continue;
+              try {
+                const data = JSON.parse(dataStr);
+                if (data.type === "content_block_delta" && data.delta?.text) {
+                  await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                }
+              } catch (_e) { /* ignore */ }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Editor Chat stream error:", e);
+      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
+    }
+  });
+});
+
 // ── AI Inline Suggestions Endpoint ────────────────────────────────────────
 // Returns a short completion suggestion for ghost text in the editor
 

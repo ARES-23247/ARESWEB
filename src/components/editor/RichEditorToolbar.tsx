@@ -121,6 +121,7 @@ const Sep = () => <div className="w-px h-6 bg-white/10 mx-1" />;
 
 import { useCollaborativeEditor } from "./CollaborativeEditorRoom";
 import PresenceAvatars from "./PresenceAvatars";
+import EditorChatSidebar from "./EditorChatSidebar";
 
 /* ---------- Component ---------- */
 export default function RichEditorToolbar({ editor, documentTitle }: RichEditorToolbarProps) {
@@ -128,6 +129,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"Saved ✓" | "Saving...">("Saved ✓");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -322,6 +324,17 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <button type="button" aria-label="Clear all formatting" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} className="px-2 py-2 ares-cut-sm text-sm transition-all text-ares-red/70 hover:bg-ares-red hover:text-white">Clear</button>
         <Sep />
 
+        {/* AI Chat Button */}
+        <button
+          type="button"
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          aria-label="Toggle AI Chat"
+          className={`px-4 py-2 ares-cut-sm text-sm font-bold transition-all border border-indigo-500/50 shadow-sm flex items-center gap-1.5 ${isChatOpen ? "bg-indigo-600/30 text-indigo-300 shadow-[0_0_10px_rgba(79,70,229,0.3)]" : "text-indigo-400 hover:bg-indigo-600/20"}`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+          AI Chat
+        </button>
+
         {/* Import / Export */}
         <button
           type="button"
@@ -391,16 +404,21 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         </div>
       )}
 
-      {/* ===== EDITOR CONTENT AREA ===== */}
-      <div className="flex-1 bg-ares-black border-x border-b border-white/10 rounded-b-xl overflow-hidden shadow-inner w-full min-h-[400px] relative">
-        <EditorContent
-          editor={editor}
-          className="h-full p-4 md:p-6 pb-12"
-        />
-        {editor.storage.characterCount && (
-          <div className="absolute bottom-4 right-6 text-xs text-marble/40 font-mono">
-            {editor.storage.characterCount.words()} words | {editor.storage.characterCount.characters()} chars
-          </div>
+      {/* ===== EDITOR CONTENT AREA WITH CHAT SIDEBAR ===== */}
+      <div className="flex w-full">
+        <div className="flex-1 bg-ares-black border-x border-b border-white/10 rounded-b-xl overflow-hidden shadow-inner min-w-0 min-h-[400px] relative">
+          <EditorContent
+            editor={editor}
+            className="h-full p-4 md:p-6 pb-12"
+          />
+          {editor.storage.characterCount && (
+            <div className="absolute bottom-4 right-6 text-xs text-marble/40 font-mono">
+              {editor.storage.characterCount.words()} words | {editor.storage.characterCount.characters()} chars
+            </div>
+          )}
+        </div>
+        {isChatOpen && (
+          <EditorChatSidebar editor={editor} onClose={() => setIsChatOpen(false)} />
         )}
       </div>
 
