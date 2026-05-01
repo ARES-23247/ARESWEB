@@ -5,7 +5,7 @@
 **Status**: in_progress
 
 ## Context
-ARESWEB has completed Milestone v5.4. The Simulation Playground storage has been successfully migrated to GitHub, the editor supports dynamic streaming via AI, and the IDE reliably handles multi-file simulation dependencies. The Rich Text Editor now supports a persistent chat sidebar and fullscreen mode. Recent fixes include resolving a layout regression where the footer overlapped the fullscreen editor and fixing TypeScript compiler errors in the AI RAG Chatbot. The project is now starting Milestone v5.5.
+ARESWEB has completed Milestone v5.4. The Simulation Playground storage has been successfully migrated to GitHub, the editor supports dynamic streaming via AI, and the IDE reliably handles multi-file simulation dependencies. The Rich Text Editor now supports a persistent chat sidebar and fullscreen mode. Recent fixes include resolving a layout regression where the footer overlapped the fullscreen editor, integrating a "Fix Grammar" feature into the AI Copilot menu, and repositioning the Global RAG Chatbot toggle into the main Navbar. The project is now starting Milestone v5.5.
 
 ## Current Focus
 1. Awaiting requirements for the new milestone.

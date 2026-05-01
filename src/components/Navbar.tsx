@@ -1,7 +1,7 @@
  
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Search, LayoutDashboard, LogIn, Bell, Check, Heart, X, Bot } from "lucide-react";
+import { Search, LayoutDashboard, LogIn, Bell, Check, X, Bot } from "lucide-react";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 

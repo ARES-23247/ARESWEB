@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Bot, ShieldAlert } from "lucide-react";
+import { X, Send, Bot, ShieldAlert } from "lucide-react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
