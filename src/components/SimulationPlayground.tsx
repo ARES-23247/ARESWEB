@@ -536,7 +536,7 @@ ${reply}`;
           window.history.replaceState({}, "", newUrl.toString());
         }
         const { toast } = await import("sonner");
-        toast.success(simId ? "Simulation updated!" : "Simulation saved!");
+        toast.success(simId ? "Committed to GitHub!" : "Committed to GitHub!");
       }
     } catch (e) {
       console.error("[SimPlayground] Save failed:", e);
@@ -614,7 +614,7 @@ ${reply}`;
             {showLibrary && (
               <div className="absolute top-full right-0 mt-1 w-72 bg-[#161b22] border border-white/10 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
                 <div className="p-2 border-b border-white/10 flex items-center justify-between">
-                  <span className="text-white/50 text-[10px] uppercase tracking-wider font-bold">Saved Simulations</span>
+                  <span className="text-white/50 text-[10px] uppercase tracking-wider font-bold">GitHub Repository Sims</span>
                   <button onClick={handleReset} className="text-emerald-400 hover:text-emerald-300 text-[10px] uppercase tracking-wider font-bold flex items-center gap-1">
                     <Plus className="w-3 h-3" /> New
                   </button>
