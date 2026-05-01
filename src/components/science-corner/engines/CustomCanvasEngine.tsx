@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 
 interface CustomCanvasEngineProps {
-  initialState: Record<string, unknown> | null;
-  onStateChange: (state: Record<string, unknown>) => void;
+  initialState?: { x?: number; y?: number; [key: string]: unknown } | null;
+  onStateChange: (state: { x: number; y: number; [key: string]: unknown }) => void;
 }
 
 export const CustomCanvasEngine: React.FC<CustomCanvasEngineProps> = ({ initialState, onStateChange }) => {

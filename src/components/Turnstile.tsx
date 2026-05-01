@@ -3,9 +3,15 @@ import { siteConfig } from "../site.config";
 
 // Extend Window type for E2E tests
 declare global {
+  interface TurnstileWidget {
+    reset: (widgetId: string) => void;
+    render: (element: string | HTMLElement, options: Record<string, unknown>) => string;
+    remove: (widgetId: string) => void;
+  }
+
   interface Window {
     ARES_E2E_BYPASS?: boolean;
-    turnstile?: unknown;
+    turnstile?: TurnstileWidget;
   }
 }
 
