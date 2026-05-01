@@ -1,6 +1,8 @@
 # Proposed Roadmap
 
-**1 phases** | **2 requirements mapped** | All covered ✓
+**3 phases** | **4 requirements mapped** | All covered ✓
+
+## Milestone v5.5
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
@@ -8,9 +10,33 @@
 
 ### Phase Details
 
-**Phase 80: Simulation GitHub Loading Fix**
-Goal: Fix the Simulation Playground menu so it can load existing simulations from the GitHub repository.
-Requirements: SIM-01, SIM-02
-Success criteria:
-1. The Simulation Playground menu populates with existing simulations from the GitHub repository.
-2. Clicking a simulation successfully fetches its contents and loads it into the editor.
+### Phase 80: Simulation GitHub Loading Fix
+
+**Goal:** Restore the ability to load existing simulations directly from the GitHub repository.
+**Requirements:** SIM-01, SIM-02
+**Depends on:** None
+**Plans:** 1 plans
+
+Plans:
+- [x] Fix Simulation Playground menu
+- [x] Fetch contents from GitHub repository
+
+### Phase 81: Task & Goal Tracking
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 80
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 81 to break down)
+
+### Phase 82: Science Corner & Sandbox Expansion
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 81
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 82 to break down)
