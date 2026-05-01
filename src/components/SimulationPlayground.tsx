@@ -333,10 +333,13 @@ ${JSON.stringify(files, null, 2)}
 
 USER REQUEST: ${msg}`;
 
-      const res = await fetch("/api/ai/liveblocks-copilot", {
+      const apiMessages = chatMessages.map(m => ({ role: m.role, content: m.content }));
+      apiMessages.push({ role: "user", content: msg });
+
+      const res = await fetch("/api/ai/sim-playground", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentContext: systemContext, action: "expand", imageUrl: attachedImage }),
+        body: JSON.stringify({ systemPrompt: systemContext, messages: apiMessages, imageUrl: attachedImage }),
       });
       setAttachedImage(null);
 

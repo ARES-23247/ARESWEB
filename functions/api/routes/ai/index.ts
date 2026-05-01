@@ -180,6 +180,95 @@ aiRouter.post("/liveblocks-copilot", async (c) => {
   });
 });
 
+// ── Simulation Playground IDE Endpoint ──────────────────────────────────
+aiRouter.post("/sim-playground", async (c) => {
+  const body = await c.req.json();
+  const { systemPrompt, messages, imageUrl } = body;
+
+  const hasZai = !!c.env.Z_AI_API_KEY;
+  if (!hasZai) return c.json({ error: "AI service not configured." }, 500);
+
+  if (imageUrl && imageUrl.startsWith('data:image')) {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.role === "user") {
+      const [header, base64] = imageUrl.split(',');
+      const mediaType = header.split(';')[0].split(':')[1];
+      const textContent = lastMsg.content;
+      
+      lastMsg.content = [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: mediaType,
+            data: base64
+          }
+        },
+        {
+          type: "text",
+          text: textContent
+        }
+      ];
+    }
+  }
+
+  return streamSSE(c, async (stream) => {
+    try {
+      const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": c.env.Z_AI_API_KEY!,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: "zai-5.1",
+          max_tokens: 128000,
+          system: systemPrompt,
+          messages: messages,
+          stream: true
+        })
+      });
+
+      if (!zaiRes.ok) {
+        console.error("z.ai sim error:", await zaiRes.text());
+        return;
+      }
+      
+      if (zaiRes.body) {
+        const reader = zaiRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const dataStr = line.slice(6).trim();
+              if (dataStr === "[DONE]") continue;
+              try {
+                const data = JSON.parse(dataStr);
+                if (data.type === "content_block_delta" && data.delta?.text) {
+                  await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                }
+              } catch (_e) { /* ignore */ }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Sim IDE stream error:", e);
+      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
+    }
+  });
+});
+
 // ── AI Inline Suggestions Endpoint ────────────────────────────────────────
 // Returns a short completion suggestion for ghost text in the editor
 
