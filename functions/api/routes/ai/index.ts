@@ -54,9 +54,16 @@ aiRouter.post("/liveblocks-copilot", async (c) => {
 
   const safeContext = scrubPII(documentContext || "");
 
-  const systemPrompt = action === "summarize"
-    ? "You are an AI writing assistant for ARES 23247, a FIRST Tech Challenge robotics team. Summarize the following text concisely while preserving key details. Output only the summary, no preamble."
-    : "You are an AI writing assistant for ARES 23247, a FIRST Tech Challenge robotics team. Expand the following text with additional detail, examples, and context. Output only the expanded text, no preamble.";
+  let systemPrompt = "";
+  if (action === "summarize") {
+    systemPrompt = "You are an AI writing assistant for ARES 23247, a FIRST Tech Challenge robotics team. Summarize the following text concisely while preserving key details. Output only the summary, no preamble.";
+  } else if (action === "expand") {
+    systemPrompt = "You are an AI writing assistant for ARES 23247, a FIRST Tech Challenge robotics team. Expand the following text with additional detail, examples, and context. Output only the expanded text, no preamble.";
+  } else if (action === "grammar") {
+    systemPrompt = "You are an AI writing assistant for ARES 23247, a FIRST Tech Challenge robotics team. Fix the grammar and spelling in the following text. Do not change the meaning or tone. Output ONLY the corrected text, no preamble or explanation.";
+  } else {
+    systemPrompt = "You are an AI writing assistant for ARES 23247. Provide a helpful modification for the text. Output only the modified text, no preamble.";
+  }
 
   return streamSSE(c, async (stream) => {
     try {

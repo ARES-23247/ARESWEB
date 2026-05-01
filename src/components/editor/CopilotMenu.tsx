@@ -11,7 +11,7 @@ interface CopilotMenuProps {
 export function CopilotMenu({ editor }: CopilotMenuProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleAction = async (action: "summarize" | "expand" | "question") => {
+  const handleAction = async (action: "summarize" | "expand" | "question" | "grammar") => {
     const selection = editor.state.selection;
     if (selection.empty) {
       toast.error("Please select text to use the AI Copilot.");
@@ -95,6 +95,12 @@ export function CopilotMenu({ editor }: CopilotMenuProps) {
             className="px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700 transition-colors border-l border-zinc-700"
           >
             Expand
+          </button>
+          <button
+            onClick={() => handleAction("grammar")}
+            className="px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700 transition-colors border-l border-zinc-700"
+          >
+            Fix Grammar
           </button>
         </>
       )}
