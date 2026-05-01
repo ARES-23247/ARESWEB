@@ -14,7 +14,7 @@ const analyticsHandlers = {
   trackPageView: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
-    if (!(await checkRateLimit(c.env.RATE_LIMITS, `track:${ip}`, ua, 20, 600))) {
+    if (!(await checkRateLimit(c.env.ARES_KV, `track:${ip}`, ua, 20, 600))) {
       return { status: 429 as const, body: { success: false, error: "Rate limit exceeded" } as any };
     }
 
@@ -41,7 +41,7 @@ const analyticsHandlers = {
   trackSponsorClick: async ({ body }: { body: any }, c: Context<AppEnv>) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
-    if (!(await checkRateLimit(c.env.RATE_LIMITS, `click:${ip}`, ua, 10, 600))) {
+    if (!(await checkRateLimit(c.env.ARES_KV, `click:${ip}`, ua, 10, 600))) {
       return { status: 429 as const, body: { success: false, error: "Rate limit exceeded" } as any };
     }
 

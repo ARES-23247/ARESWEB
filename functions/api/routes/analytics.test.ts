@@ -83,7 +83,7 @@ describe("Analytics Router", () => {
       DB: {},
       TURNSTILE_SECRET_KEY: "test-secret",
       DEV_BYPASS: "true",
-      RATE_LIMITS: {
+      ARES_KV: {
         get: vi.fn().mockImplementation(async (k: string) => kvStore.get(k) || null),
         put: vi.fn().mockImplementation(async (k: string, v: string) => { kvStore.set(k, v); })
       }

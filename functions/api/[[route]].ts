@@ -51,7 +51,7 @@ app.use("*", async (c, next) => {
   const ua = c.req.header("User-Agent") || "unknown";
   if (ip !== "unknown" && !c.req.path.startsWith("/assets")) {
     const isBypass = c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1";
-    const allowed = isBypass || checkRateLimit(c.env.RATE_LIMITS, ip, ua, 150, 60); 
+    const allowed = isBypass || checkRateLimit(c.env.ARES_KV, ip, ua, 150, 60); 
     if (!allowed) return c.json({ error: "Too many requests" }, 429);
   }
   await next();
@@ -273,7 +273,7 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   if (env.AI && env.VECTORIZE_DB) {
     try {
       const { indexSiteContent } = await import("./routes/ai/indexer");
-      const result = await indexSiteContent(db, env.AI, env.VECTORIZE_DB, env.RATE_LIMITS);
+      const result = await indexSiteContent(db, env.AI, env.VECTORIZE_DB, env.ARES_KV);
       console.log(`[Cron] Vectorize indexed ${result.indexed} documents. Errors: ${result.errors.length}`);
       if (result.errors.length > 0) {
         console.error("[Cron] Indexing errors:", result.errors);
@@ -284,8 +284,8 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   }
 
   // KV heartbeat for cron validation (TD-05)
-  if (env.RATE_LIMITS) {
-    await env.RATE_LIMITS.put("cron_last_run", new Date().toISOString());
+  if (env.ARES_KV) {
+    await env.ARES_KV.put("cron_last_run", new Date().toISOString());
   }
 };
 

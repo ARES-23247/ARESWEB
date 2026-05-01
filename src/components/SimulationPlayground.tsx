@@ -505,11 +505,10 @@ ${reply}`;
     if (!simName.trim()) return;
     setIsSaving(true);
     try {
-      const codeToSave = JSON.stringify(files);
       const res = await fetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: simName, code: codeToSave, ...(simId ? { id: simId } : {}) }),
+        body: JSON.stringify({ name: simName, files: files, ...(simId ? { id: simId } : {}) }),
       });
       if (res.ok) {
         const data = await res.json() as { id?: string };

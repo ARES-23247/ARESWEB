@@ -55,7 +55,7 @@ export const mediaHandlers: any = {
   getMedia: async (_input: any, c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
-    const rl = await checkRateLimit(c.env.RATE_LIMITS, `media_list_${ip}`, ua, 30, 60);
+    const rl = await checkRateLimit(c.env.ARES_KV, `media_list_${ip}`, ua, 30, 60);
     if (!rl) {
       return { status: 429, body: { error: "Rate limit exceeded", media: [] } };
     }

@@ -30,7 +30,7 @@ describe("AI Router - /reindex endpoint", () => {
   const baseEnv: any = {
     AI: { run: vi.fn() },
     VECTORIZE_DB: { upsert: vi.fn() },
-    RATE_LIMITS: { get: vi.fn(), put: vi.fn() },
+    ARES_KV: { get: vi.fn(), put: vi.fn() },
     DB: {},
   };
   const mockExecutionContext: any = { waitUntil: vi.fn() };
@@ -57,7 +57,7 @@ describe("AI Router - /reindex endpoint", () => {
       mockDb,
       baseEnv.AI,
       baseEnv.VECTORIZE_DB,
-      baseEnv.RATE_LIMITS,
+      baseEnv.ARES_KV,
       { force: false }
     );
   });
@@ -71,7 +71,7 @@ describe("AI Router - /reindex endpoint", () => {
       mockDb,
       baseEnv.AI,
       baseEnv.VECTORIZE_DB,
-      baseEnv.RATE_LIMITS,
+      baseEnv.ARES_KV,
       { force: true }
     );
   });

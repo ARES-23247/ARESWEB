@@ -1,36 +1,38 @@
-# Phase 69: Hybrid Simulation Storage Architecture
+---
+title: "Phase 69 - Hybrid Storage & KV Fixes"
+phase: 69-hybrid-simulation-storage
+status: proposed
+references:
+  - ".planning/phases/69-hybrid-simulation-storage/69-UAT.md"
+---
 
-## 1. Goal
+# Fixes for Phase 69 UAT Gaps
 
-Implement a hybrid simulation storage architecture where "Official" templates are fetched from the ARES-23247/ARESLIB GitHub repository and user-created custom simulations are saved, retrieved, and managed in the Cloudflare D1 database.
+I have diagnosed the issues raised during UAT and compiled the following plan to resolve them. 
 
-## 2. Rationale
+## Identified Root Causes
 
-Currently, all simulation templates are hardcoded in `SimTemplates.ts`. This is difficult to maintain and prevents team members from creating and sharing custom simulation setups. A hybrid approach allows official robot code to serve as the single source of truth for standard templates while providing a dynamic database layer for student experimentation.
+**1. "no it does not save" / "no because it does not save them"**
+- The frontend `SimulationPlayground.tsx` was sending the code bundle under the key `code` (i.e. `body: JSON.stringify({ ... code: codeToSave })`). 
+- However, the backend `/api/simulations` route expects the key to be `files` and checks `if (!files) { return 400; }`. Because `files` was undefined, the server rejected the save silently.
 
-## 3. Assumptions & Context
+**2. "no I don't see it" / "no" (External Knowledge Sync)**
+- The backend routes (`/api/ai/index.ts` and `/api/ai/autoReindex.ts`) were trying to access the Cloudflare KV binding using `env.KV`. 
+- In our `wrangler.toml`, the KV namespace is actually bound as `RATE_LIMITS`. Since `env.KV` was undefined, all KV persistence for the AI indexer failed silently, so the Debug Console could never fetch or display any indexing errors.
 
-- Users must be authenticated to save custom simulations to the database.
-- Official templates will be stored in a `simulations/` directory on the GitHub repository.
-- We will reuse the `githubFetcher` utility to traverse and fetch the GitHub files.
+## Proposed Changes
 
-## 4. Implementation Steps
+### `wrangler.toml` & KV Mass Rename
+- Rename the KV binding in `wrangler.toml` from `RATE_LIMITS` to `ARES_KV`.
+- Perform a project-wide find-and-replace to update all instances of `c.env.RATE_LIMITS` and `env.RATE_LIMITS` to `c.env.ARES_KV` and `env.ARES_KV` respectively (spanning middleware, rate-limiters, event handlers, and tests).
+- Update the `AppEnv` interface in `functions/api/middleware/utils.ts` to rename `RATE_LIMITS?: KVNamespace` to `ARES_KV?: KVNamespace`.
 
-1.  **Database Migration**:
-    -   Create `migrations/000X_create_simulations.sql`.
-    -   Add `simulations` table to `shared/schemas/database.ts`. Include columns: `id`, `name`, `description`, `files`, `author_id`, `is_public`, `created_at`, `updated_at`.
-2.  **API Routes**:
-    -   Create `/functions/api/routes/simulations.ts`.
-    -   Implement `GET /api/simulations` to merge GitHub templates and DB templates.
-    -   Implement `POST /api/simulations` and `PUT /api/simulations/:id` to save user templates to D1.
-3.  **Frontend Integration**:
-    -   Delete `src/components/editor/SimTemplates.ts`.
-    -   Update `SimulationPlayground.tsx` to fetch templates via `ts-rest` instead of the hardcoded object.
-    -   Add a "Save Simulation" modal dialog in the editor.
-    -   Update template selector to show visual badges (GitHub vs. Custom).
+### `src/components/SimulationPlayground.tsx`
+- Change `code: codeToSave` to `files: files` in the POST body of `handleSave()`.
 
-## 5. Verification Steps
+### `functions/api/routes/ai/index.ts` & `autoReindex.ts`
+- Use `c.env.ARES_KV` instead of the broken `(c.env as any).KV` cast so that the Debug Console successfully fetches the index errors.
 
-1.  **Database**: Verify the migration applies successfully to D1.
-2.  **API**: Test `GET /api/simulations` using Bruno/Postman to ensure the GitHub payloads match the expected shape.
-3.  **Frontend**: Confirm templates load in the dropdown, modify a template, save it to the DB, and refresh to verify persistence.
+## User Review Required
+
+The plan has been updated to include the mass rename of `RATE_LIMITS` to `ARES_KV` across the 26 backend references. Once you approve, I will execute these changes!

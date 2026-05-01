@@ -40,10 +40,10 @@ export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userA
   try {
     // Cleanup old records occasionally to avoid table bloat
     if (Math.random() < 0.05) {
-      db.deleteFrom("rate_limits").where("expires_at", "<", now).execute().catch(console.error);
+      db.deleteFrom("ARES_KV").where("expires_at", "<", now).execute().catch(console.error);
     }
 
-    const result = await db.insertInto("rate_limits")
+    const result = await db.insertInto("ARES_KV")
       .values({ ip: compositeKey, count: 1, expires_at: now + windowSeconds })
       .onConflict(oc => oc.column("ip").doUpdateSet({
         count: sql`CASE WHEN expires_at < ${now} THEN 1 ELSE count + 1 END`,
@@ -124,8 +124,8 @@ export const rateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     
-    // Use the RATE_LIMITS KV namespace bound in wrangler.toml
-    const allowed = await checkRateLimit(c.env.RATE_LIMITS, `mw:${ip}`, ua, limit, windowSeconds);
+    // Use the ARES_KV KV namespace bound in wrangler.toml
+    const allowed = await checkRateLimit(c.env.ARES_KV, `mw:${ip}`, ua, limit, windowSeconds);
     if (!allowed) {
       const db = c.get("db") as Kysely<DB>;
       if (db) {

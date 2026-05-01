@@ -293,7 +293,7 @@ const postTsRestRouterObj: any = {
 
       c.executionCtx.waitUntil(pruneHistory(c, slug, 10));
       c.executionCtx.waitUntil(logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`));
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB, c.env.RATE_LIMITS);
+      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB, c.env.ARES_KV);
 
       const warnings: string[] = [];
 
@@ -412,7 +412,7 @@ const postTsRestRouterObj: any = {
         .execute();
 
       c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`));
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB, c.env.RATE_LIMITS);
+      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB, c.env.ARES_KV);
       return { status: 200, body: { success: true, slug } };
     } catch (e) {
       console.error("[Posts:Update] Error", e);
@@ -426,7 +426,7 @@ const postTsRestRouterObj: any = {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("posts").set({ is_deleted: 1, status: "draft", updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB, c.env.RATE_LIMITS);
+      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB, c.env.ARES_KV);
       return { status: 200, body: { success: true } };
     } catch (e) {
       console.error("[Posts:Delete] Error", e);

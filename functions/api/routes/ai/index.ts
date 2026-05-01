@@ -18,7 +18,7 @@ const scrubPII = (text: string): string => {
 // ── AI Status Diagnostic (admin only) ──────────────────────────────────────
 aiRouter.get("/status", ensureAdmin, async (c) => {
   let indexErrors = null;
-  const kv = (c.env as any).KV;
+  const kv = c.env.ARES_KV;
   if (kv) {
     const errStr = await kv.get("LAST_INDEX_ERRORS");
     if (errStr) {
@@ -563,7 +563,7 @@ aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), as
   const force = c.req.query("force") === "true";
   const db = c.get("db") as Kysely<DB>;
   const { indexSiteContent } = await import("./indexer");
-  const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, c.env.RATE_LIMITS, { force });
+  const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, c.env.ARES_KV, { force });
 
   return c.json({
     success: true,
@@ -582,7 +582,7 @@ aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(5,
   const { indexExternalResources } = await import("./indexer");
   // Assuming env.GITHUB_PAT is mapped if configured
   const githubPat = (c.env as any).GITHUB_PAT;
-  const result = await indexExternalResources(db, c.env.AI as any, c.env.VECTORIZE_DB, c.env.Z_AI_API_KEY, githubPat, (c.env as any).KV);
+  const result = await indexExternalResources(db, c.env.AI as any, c.env.VECTORIZE_DB, c.env.Z_AI_API_KEY, githubPat, c.env.ARES_KV);
 
   return c.json({
     success: true,
