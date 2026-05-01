@@ -13,7 +13,11 @@ import { FileSidebar } from "./editor/FileSidebar";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
 
-// Babel standalone for JSX transpilation
+// Real production templates for AI context
+import ArmKgSimRaw from "../sims/ArmKgSim.tsx?raw";
+import ElevatorPidSimRaw from "../sims/ElevatorPidSim.tsx?raw";
+
+// Babel standalone for JSX/TSX transpilation
 let Babel: { transform: (code: string, opts: Record<string, unknown>) => { code: string } } | null = null;
 const loadBabel = async () => {
   if (!Babel) {
@@ -71,8 +75,10 @@ export default function SimulationPlayground() {
 
   // Pane resize state
   const [codePaneWidth, setCodePaneWidth] = useState(60); // percent
-  const isDraggingRef = useRef<"code" | null>(null);
+  const [topPaneHeight, setTopPaneHeight] = useState(50); // percent
+  const isDraggingRef = useRef<"code" | "top" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -88,7 +94,7 @@ export default function SimulationPlayground() {
       const compiled: Record<string, string> = {};
       for (const [filename, content] of Object.entries(sourceFiles)) {
         const result = babel.transform(content, {
-          presets: ["env", "react"],
+          presets: ["env", "react", "typescript"],
           filename: filename,
         });
         compiled[filename] = result.code || "";
@@ -302,14 +308,25 @@ export default function SimulationPlayground() {
     try {
       const systemContext = `You are a z.AI simulation code assistant for ARES 23247, an FTC robotics team. The user is building interactive React simulations that run in a sandboxed iframe.
 RULES:
-- The component MUST be named SimComponent (not exported, just function SimComponent in SimComponent.jsx)
+- The entrypoint component MUST be a default export (e.g., export default function MySim() {...})
 - Use React.useState, React.useEffect, etc. (React is a global, don't import it)
-- Available CSS classes: sim-container, sim-title, sim-label, sim-value, sim-slider, sim-canvas, sim-btn, sim-grid, sim-flex
+- Use standard ARESWEB UI classes: sim-container, sim-title, sim-label, sim-value, sim-slider, sim-canvas, sim-btn, sim-grid, sim-flex
+- Use Vite-style raw typescript format (.tsx).
 - DO NOT use JSON. When modifying code, output the COMPLETE updated files using markdown code blocks with the filename in the language tag. Example:
-\`\`\`jsx:SimComponent.jsx
+\`\`\`tsx:MySim.tsx
 <code here>
 \`\`\`
 - Output ONLY the markdown code blocks. No explanations outside of code comments.
+
+EXAMPLES OF REAL ARESWEB SIMULATIONS:
+
+\`\`\`tsx:ArmKgSim.tsx
+${ArmKgSimRaw}
+\`\`\`
+
+\`\`\`tsx:ElevatorPidSim.tsx
+${ElevatorPidSimRaw}
+\`\`\`
 
 CURRENT FILES:
 \`\`\`json
@@ -529,22 +546,30 @@ ${reply}`;
   };
 
   // ── Resize handlers ──
-  const handleMouseDown = (pane: "code") => (e: React.MouseEvent) => {
+  const handleMouseDown = (pane: "code" | "top") => (e: React.MouseEvent) => {
     e.preventDefault();
     isDraggingRef.current = pane;
-    document.body.style.cursor = "col-resize";
+    document.body.style.cursor = pane === "code" ? "col-resize" : "row-resize";
     document.body.style.userSelect = "none";
   };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDraggingRef.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const pct = ((e.clientX - rect.left) / rect.width) * 100;
-
-      if (isDraggingRef.current === "code") {
+      if (!isDraggingRef.current) return;
+      
+      if (isDraggingRef.current === "code" && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const pct = ((e.clientX - rect.left) / rect.width) * 100;
         const clamped = Math.max(25, Math.min(80, pct));
         setCodePaneWidth(clamped);
+      }
+      
+      if (isDraggingRef.current === "top" && wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        // Since wrapperRef contains the header (approx 50px), we account for it roughly
+        const pct = ((e.clientY - rect.top) / rect.height) * 100;
+        const clamped = Math.max(20, Math.min(80, pct));
+        setTopPaneHeight(clamped);
       }
     };
 
@@ -563,7 +588,7 @@ ${reply}`;
   }, []);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] max-h-[900px]">
+    <div className="flex flex-col h-[calc(100vh-80px)]" ref={wrapperRef}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-obsidian">
         <div className="flex items-center gap-2 flex-1">
@@ -666,7 +691,7 @@ ${reply}`;
       {/* Layout Split: Top/Bottom */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Top Row: Code & Chat */}
-        <div ref={containerRef} className="flex-1 flex min-h-0 border-b border-white/10 relative z-10">
+        <div ref={containerRef} style={{ height: `${topPaneHeight}%` }} className="flex min-h-0 border-b border-white/10 relative z-10">
           {/* ── Code Editor & Files Pane ── */}
           <div style={{ width: `${codePaneWidth}%` }} className="flex flex-col min-h-0 min-w-0 border-r border-white/5">
           <div className="px-3 py-1.5 border-b border-white/10 bg-[#1e1e1e] flex items-center justify-between">
@@ -819,8 +844,16 @@ ${reply}`;
         </div>
         </div>
 
+        {/* ── Resize Handle: Top ↔ Bottom ── */}
+        <button
+          type="button"
+          aria-label="Resize vertical panes"
+          onMouseDown={handleMouseDown("top")}
+          className="h-1.5 w-full bg-white/5 hover:bg-ares-gold/30 cursor-row-resize flex items-center justify-center transition-colors border-0 p-0 z-20"
+        />
+
         {/* ── Live Preview Pane ── */}
-        <div className="flex-1 flex flex-col min-h-[400px] min-w-0 bg-[#0d1117] z-0">
+        <div style={{ height: `${100 - topPaneHeight}%` }} className="flex flex-col min-w-0 bg-[#0d1117] z-0">
           <div className="px-3 py-1.5 border-b border-white/10 bg-[#0d1117] flex items-center gap-2">
             <span className="text-white/40 text-xs font-mono">Live Preview</span>
             <div className={`w-2 h-2 rounded-full ${compileError ? 'bg-red-500' : 'bg-emerald-500'}`} />

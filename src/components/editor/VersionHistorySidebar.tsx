@@ -119,13 +119,12 @@ export default function VersionHistorySidebar({ roomId, editor, onClose }: Versi
               >
                 <Eye size={14} /> Preview
               </button>
-              <button 
+              <button
                 onClick={() => handleRestore(snapshot)}
-                className="flex-1 flex items-center justify-center gap-1 bg-ares-red/80 hover:bg-ares-red text-white text-xs font-bold py-1.5 rounded transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 bg-ares-red/80 hover:bg-ares-red text-white text-xs font-bold py-1.5 ares-cut-sm transition-colors"
               >
-                <RotateCcw size={14} /> Restore
-              </button>
-            </div>
+                <RotateCcw size={14} /> Restore Version
+              </button>            </div>
           </div>
         ))}
       </div>

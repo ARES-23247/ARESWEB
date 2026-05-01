@@ -32,7 +32,7 @@ export function FileSidebar({ files, activeFile, onActiveFileChange, onFilesChan
   };
 
   return (
-    <div className="w-40 bg-[#181818] border-r border-white/5 flex flex-col">
+    <div className="w-40 bg-obsidian border-r border-white/5 flex flex-col">
       <div className="p-2 text-xs font-bold text-white/50 uppercase tracking-wider flex justify-between items-center">
         Files
         <button onClick={handleAddFile} className="hover:text-white transition-colors">
@@ -45,7 +45,7 @@ export function FileSidebar({ files, activeFile, onActiveFileChange, onFilesChan
                role="button"
                tabIndex={0}
                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onActiveFileChange(f); }}
-               className={`px-3 py-1.5 text-xs cursor-pointer flex justify-between items-center group transition-colors ${activeFile === f ? 'bg-[#1e1e1e] text-ares-gold border-r-2 border-ares-gold' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
+               className={`px-3 py-1.5 text-xs cursor-pointer flex justify-between items-center group transition-colors ${activeFile === f ? 'bg-ares-gray-dark text-ares-gold border-r-2 border-ares-gold' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
                onClick={() => onActiveFileChange(f)}>
              <span className="truncate">{f}</span>
              {f !== 'SimComponent.jsx' && (

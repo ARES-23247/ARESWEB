@@ -3,111 +3,188 @@ import { AppEnv, ensureAdmin, persistentRateLimitMiddleware } from "../middlewar
 
 export const simulationsRouter = new Hono<AppEnv>();
 
-// List all simulations
+const GITHUB_REPO = "ARES-23247/ARESWEB";
+const GITHUB_BRANCH = "master"; // or main? We will assume master as per previous phases
+
+// Helper for GitHub API requests
+async function fetchGithub(path: string, token: string, method = "GET", body?: any) {
+  const url = `https://api.github.com/repos/${GITHUB_REPO}/${path}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github.v3+json",
+      "User-Agent": "ARESWEB-SimPlayground"
+    },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  });
+  return res;
+}
+
+// List all simulations directly from src/sims/
 simulationsRouter.get("/", async (c) => {
   try {
-    const sessionUser = c.get("sessionUser") as { id?: string } | undefined;
-    const userId = sessionUser?.id || "anonymous";
+    const token = c.env.GITHUB_PAT;
+    if (!token) return c.json({ error: "GITHUB_PAT not configured" }, 500);
 
-    // Fetch from database
-    const dbSims = await c.env.DB.prepare(
-      "SELECT id, name, description, author_id, is_public, created_at, updated_at FROM simulations WHERE is_public = 1 OR author_id = ? ORDER BY updated_at DESC"
-    ).bind(userId).all();
-
-    const formattedSims = (dbSims.results || []).map((sim: any) => ({
-      ...sim,
-      type: "database"
-    }));
-
-    // TODO: Add dynamic fetching of GitHub official templates
-    // For now, return the DB sims as the primary source
+    const res = await fetchGithub("contents/src/sims", token);
     
+    if (!res.ok) {
+      if (res.status === 404) return c.json({ simulations: [] });
+      throw new Error(`GitHub API error: ${res.statusText}`);
+    }
+
+    const files = await res.json() as any[];
+    
+    const formattedSims = files
+      .filter(f => f.type === "file" && f.name.endsWith(".tsx"))
+      .map(f => ({
+        id: f.name, // The filename is the ID
+        name: f.name,
+        author_id: "github",
+        created_at: new Date().toISOString(), // GitHub contents API doesn't return dates directly here
+        updated_at: new Date().toISOString(),
+        type: "github",
+        sha: f.sha
+      }));
+
     return c.json({ simulations: formattedSims });
   } catch (e) {
     console.error("[Simulations] List error:", e);
-    return c.json({ error: "Failed to list simulations" }, 500);
+    return c.json({ error: "Failed to list simulations from GitHub" }, 500);
   }
 });
 
-// Get a single simulation by ID
+// Get a single simulation file by filename
 simulationsRouter.get("/:id", async (c) => {
-  const id = c.req.param("id");
+  const filename = c.req.param("id"); // ID is the filename
   try {
-    const result = await c.env.DB.prepare(
-      "SELECT * FROM simulations WHERE id = ?"
-    ).bind(id).first();
-    
-    if (!result) {
-      // TODO: If not in DB, try fetching from GitHub using the id as the folder name
-      return c.json({ error: "Simulation not found" }, 404);
+    const token = c.env.GITHUB_PAT;
+    if (!token) return c.json({ error: "GITHUB_PAT not configured" }, 500);
+
+    const res = await fetchGithub(`contents/src/sims/${filename}`, token);
+    if (!res.ok) {
+      return c.json({ error: "Simulation not found on GitHub" }, 404);
     }
     
-    // Parse the JSON files payload
-    if (result.files && typeof result.files === 'string') {
-      try {
-        result.files = JSON.parse(result.files);
-      } catch (e) {
-        console.error("Failed to parse files JSON:", e);
-        result.files = {};
-      }
+    const fileData = await res.json() as any;
+    
+    if (fileData.encoding === "base64") {
+      const content = atob(fileData.content);
+      return c.json({
+        simulation: {
+          id: filename,
+          name: filename,
+          type: "github",
+          files: {
+            [filename]: content
+          },
+          sha: fileData.sha
+        }
+      });
     }
 
-    return c.json({ simulation: { ...result, type: "database" } });
+    return c.json({ error: "Unknown encoding from GitHub" }, 500);
   } catch (e) {
     console.error("[Simulations] Get error:", e);
-    return c.json({ error: "Failed to get simulation" }, 500);
+    return c.json({ error: "Failed to get simulation from GitHub" }, 500);
   }
 });
 
-// Create or update a simulation
+// Commit a simulation file to GitHub
 simulationsRouter.post("/", persistentRateLimitMiddleware(10, 60), ensureAdmin, async (c) => {
   const body = await c.req.json();
-  const { id, name, description, files, is_public } = body as { 
+  const { id, name, files } = body as { 
     id?: string; 
     name?: string; 
-    description?: string;
     files?: Record<string, string>;
-    is_public?: boolean;
   };
 
-  if (!name || !files || Object.keys(files).length === 0) {
+  const targetName = name || id;
+  if (!targetName || !files || Object.keys(files).length === 0) {
     return c.json({ error: "Name and files are required" }, 400);
   }
 
-  const sessionUser = c.get("sessionUser") as { id?: string } | undefined;
-  const authorId = sessionUser?.id || "unknown";
-  const filesJson = JSON.stringify(files);
-  const isPublicInt = is_public ? 1 : 0;
+  // Find the primary file content (if multiple, we just use the first .tsx or whatever matches name)
+  let targetFilename = targetName.endsWith(".tsx") ? targetName : `${targetName}.tsx`;
+  // Sanitize filename
+  targetFilename = targetFilename.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+  
+  // Try to find the file content, favoring one that matches the targetFilename or just grab the first one
+  let fileContent = files[targetFilename];
+  if (!fileContent) {
+    const firstKey = Object.keys(files)[0];
+    fileContent = files[firstKey];
+    if (firstKey.endsWith(".tsx")) {
+      targetFilename = firstKey;
+    }
+  }
 
   try {
-    if (id) {
-      // Update existing
-      await c.env.DB.prepare(
-        "UPDATE simulations SET name = ?, description = ?, files = ?, is_public = ?, updated_at = datetime('now') WHERE id = ?"
-      ).bind(name, description || "", filesJson, isPublicInt, id).run();
-      return c.json({ success: true, id });
-    } else {
-      // Create new
-      const newId = crypto.randomUUID();
-      await c.env.DB.prepare(
-        "INSERT INTO simulations (id, name, description, author_id, is_public, files) VALUES (?, ?, ?, ?, ?, ?)"
-      ).bind(newId, name, description || "", authorId, isPublicInt, filesJson).run();
-      return c.json({ success: true, id: newId });
+    const token = c.env.GITHUB_PAT;
+    if (!token) return c.json({ error: "GITHUB_PAT not configured" }, 500);
+
+    // 1. Get current SHA if the file exists
+    let currentSha: string | undefined;
+    const getRes = await fetchGithub(`contents/src/sims/${targetFilename}`, token);
+    if (getRes.ok) {
+      const existingFile = await getRes.json() as any;
+      currentSha = existingFile.sha;
     }
+
+    // 2. Commit the file
+    const message = currentSha 
+      ? `Update simulation ${targetFilename} via Playground`
+      : `Create simulation ${targetFilename} via Playground`;
+
+    const payload = {
+      message,
+      content: btoa(unescape(encodeURIComponent(fileContent))), // base64 encode UTF-8
+      branch: GITHUB_BRANCH,
+      ...(currentSha ? { sha: currentSha } : {})
+    };
+
+    const putRes = await fetchGithub(`contents/src/sims/${targetFilename}`, token, "PUT", payload);
+
+    if (!putRes.ok) {
+      const errText = await putRes.text();
+      console.error("GitHub PUT error:", errText);
+      throw new Error(`Failed to commit: ${putRes.statusText}`);
+    }
+
+    return c.json({ success: true, id: targetFilename });
   } catch (e) {
     console.error("[Simulations] Save error:", e);
-    return c.json({ error: "Failed to save simulation" }, 500);
+    return c.json({ error: "Failed to save simulation to GitHub" }, 500);
   }
 });
 
-// Delete a simulation (admin only)
+// Delete a simulation from GitHub
 simulationsRouter.delete("/:id", ensureAdmin, async (c) => {
-  const id = c.req.param("id");
+  const filename = c.req.param("id");
   try {
-    await c.env.DB.prepare("DELETE FROM simulations WHERE id = ?").bind(id).run();
+    const token = c.env.GITHUB_PAT;
+    if (!token) return c.json({ error: "GITHUB_PAT not configured" }, 500);
+
+    // 1. Get SHA
+    const getRes = await fetchGithub(`contents/src/sims/${filename}`, token);
+    if (!getRes.ok) return c.json({ error: "Simulation not found" }, 404);
+    
+    const fileData = await getRes.json() as any;
+    
+    // 2. Delete file
+    const payload = {
+      message: `Delete simulation ${filename} via Playground`,
+      sha: fileData.sha,
+      branch: GITHUB_BRANCH
+    };
+
+    const delRes = await fetchGithub(`contents/src/sims/${filename}`, token, "DELETE", payload);
+    if (!delRes.ok) throw new Error("Delete failed");
+
     return c.json({ success: true });
   } catch (e) {
     console.error("[Simulations] Delete error:", e);
-    return c.json({ error: "Failed to delete simulation" }, 500);
+    return c.json({ error: "Failed to delete simulation from GitHub" }, 500);
   }
 });

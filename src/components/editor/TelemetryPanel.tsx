@@ -14,14 +14,14 @@ export function TelemetryPanel({ data }: TelemetryPanelProps) {
 
   if (keys.length === 0) {
     return (
-      <div className="p-4 border-t border-white/10 bg-[#0d1117] text-white/40 text-xs italic text-center">
+      <div className="p-4 border-t border-white/10 bg-obsidian text-white/40 text-xs italic text-center">
         No telemetry data. Use <code className="text-ares-gold">useTelemetry(&apos;key&apos;, value)</code> in your simulation.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col border-t border-white/10 bg-[#0d1117] min-h-[150px] max-h-[250px] overflow-y-auto">
+    <div className="flex flex-col border-t border-white/10 bg-obsidian min-h-[150px] max-h-[250px] overflow-y-auto">
       <div className="px-3 py-1.5 border-b border-white/10 bg-[#1e1e1e] flex items-center gap-2 sticky top-0 z-10">
         <span className="text-white/40 text-xs font-mono uppercase tracking-widest">Telemetry</span>
       </div>
@@ -105,7 +105,7 @@ function TelemetryGraph({ title, points }: { title: string, points: TelemetryPoi
   const latestValue = points[points.length - 1]?.value || 0;
 
   return (
-    <div className="bg-[#1e1e1e] border border-white/5 rounded-md p-2 flex flex-col gap-1">
+    <div className="bg-ares-gray-dark border border-white/5 rounded-md p-2 flex flex-col gap-1">
       <div className="flex justify-between items-center px-1">
         <span className="text-white/60 text-[10px] font-mono">{title}</span>
         <span className="text-white font-mono text-xs">{latestValue.toFixed(3)}</span>
