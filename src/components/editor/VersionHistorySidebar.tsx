@@ -100,7 +100,7 @@ export default function VersionHistorySidebar({ roomId, editor, onClose }: Versi
         )}
 
         {history.map((snapshot) => (
-          <div key={snapshot.id} className="bg-white/5 border border-white/10 rounded-md p-3 hover:border-white/30 transition-colors">
+          <div key={snapshot.id} className="bg-white/5 border border-white/10 ares-cut-sm p-3 hover:border-white/30 transition-colors">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <p className="text-white text-sm font-bold">

@@ -106,6 +106,7 @@ const Btn = ({ active, onClick, children, className = "", disabled = false, aria
     onClick={onClick}
     disabled={disabled}
     aria-label={ariaLabel}
+    title={ariaLabel}
     className={`px-3 py-2 ares-cut-sm text-sm font-bold transition-all ${
       active
         ? "bg-ares-gray-dark text-white"
@@ -230,7 +231,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <Sep />
 
         {/* FIRST® */}
-        <button type="button" aria-label="Insert FIRST symbol" onClick={() => editor.chain().focus().insertContent('<em>FIRST</em>&reg; ').run()} className="px-3 py-2 ares-cut-sm text-sm font-black italic transition-all text-ares-red hover:bg-ares-red hover:text-white border border-ares-red/30 shadow-sm">FIRST</button>
+        <button type="button" aria-label="Insert FIRST symbol" title="Insert FIRST symbol" onClick={() => editor.chain().focus().insertContent('<em>FIRST</em>&reg; ').run()} className="px-3 py-2 ares-cut-sm text-sm font-black italic transition-all text-ares-red hover:bg-ares-red hover:text-white border border-ares-red/30 shadow-sm">FIRST</button>
         <Sep />
 
         {/* Lists */}
@@ -242,15 +243,15 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <Sep />
 
         {/* Media */}
-        <button type="button" aria-label="Select Image" onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
-        <button type="button" aria-label="Insert Simulator" onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
+        <button type="button" aria-label="Select Image" title="Select Image" onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
+        <button type="button" aria-label="Insert Simulator" title="Insert Simulator" onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
         <Sep />
 
         {/* Callouts + Reveal */}
-        <button type="button" aria-label="Insert Info Callout" onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()} className="px-3 py-2 border border-ares-cyan/30 text-ares-cyan hover:bg-ares-cyan hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Info</button>
-        <button type="button" aria-label="Insert Warning Callout" onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Warn</button>
-        <button type="button" aria-label="Insert Tip Callout" onClick={() => editor.chain().focus().toggleCallout({ type: 'tip' }).run()} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm">Tip</button>
-        <button type="button" aria-label="Insert Reveal Block" onClick={async () => {
+        <button type="button" aria-label="Insert Info Callout" title="Insert Info Callout" onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()} className="px-3 py-2 border border-ares-cyan/30 text-ares-cyan hover:bg-ares-cyan hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Info</button>
+        <button type="button" aria-label="Insert Warning Callout" title="Insert Warning Callout" onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()} className="px-3 py-2 border border-ares-red/30 text-ares-red hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm">Warn</button>
+        <button type="button" aria-label="Insert Tip Callout" title="Insert Tip Callout" onClick={() => editor.chain().focus().toggleCallout({ type: 'tip' }).run()} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm">Tip</button>
+        <button type="button" aria-label="Insert Reveal Block" title="Insert Reveal Block" onClick={async () => {
           const summary = await modal.prompt({
             title: "Reveal Button Label",
             description: "Enter the label for the button:",
@@ -261,7 +262,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         <Sep />
 
         {/* Link / YT */}
-        <button type="button" aria-label="Insert Link or YouTube Video" onClick={async () => {
+        <button type="button" aria-label="Insert Link or YouTube Video" title="Insert Link or YouTube Video" onClick={async () => {
           const previousUrl = editor.getAttributes('link').href;
           const url = await modal.prompt({
             title: "Insert Link",

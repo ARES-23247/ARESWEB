@@ -2,6 +2,7 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| [v5.3](milestones/v5.3-ROADMAP.md) | ✅ SHIPPED | 2026-05-01 | GitHub Indexing Rate Limits |
 | [v5.2](milestones/v5.2-ROADMAP.md) | ✅ SHIPPED | 2026-05-01 | Document Revision UX |
 | [v5.1](milestones/v5.1-ROADMAP.md) | ✅ SHIPPED | 2026-05-01 | IDE Experience |
 | [v4.8](milestones/v4.8-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | Simulation Playground UI Fixes |
