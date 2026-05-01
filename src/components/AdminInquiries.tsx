@@ -25,12 +25,8 @@ function DebouncedNotesArea({
 
   useEffect(() => {
     // If it hasn't changed from what was initially passed, do nothing
-    if (value === initialValue) {
-      setIsTyping(false);
-      return;
-    }
+    if (value === initialValue) return;
     
-    setIsTyping(true);
     const timeout = setTimeout(() => {
       onSave(value);
       setIsTyping(false);
@@ -44,7 +40,11 @@ function DebouncedNotesArea({
       <textarea
         id={`notes-${id}`}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          const val = e.target.value;
+          setValue(val);
+          setIsTyping(val !== initialValue);
+        }}
         rows={2}
         placeholder="Add internal notes... (auto-saves automatically)"
         className="w-full bg-ares-gray-dark/50 border border-white/5 text-marble/80 text-xs px-3 py-2 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-colors resize-none placeholder-marble/30"
