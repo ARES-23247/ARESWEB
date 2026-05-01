@@ -2,6 +2,7 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| [v5.2](milestones/v5.2-ROADMAP.md) | ✅ SHIPPED | 2026-05-01 | Document Revision UX |
 | [v5.1](milestones/v5.1-ROADMAP.md) | ✅ SHIPPED | 2026-05-01 | IDE Experience |
 | [v4.8](milestones/v4.8-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | Simulation Playground UI Fixes |
 | [v4.7](milestones/v4.7-ROADMAP.md) | ✅ SHIPPED | 2026-04-30 | Gap Closure (v4.6 Tech Debt) |

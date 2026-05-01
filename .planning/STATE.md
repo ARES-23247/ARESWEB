@@ -1,51 +1,16 @@
----
-milestone: v5.2
-name: Document Revision UX
-status: in_progress
-progress:
-  phases_total: 2
-  phases_completed: 1
-  tasks_total: 1
-  tasks_completed: 1
----
+# System State
 
-# Project State
+**Current Milestone**: v5.3 (GitHub Indexing Rate Limits)
+**Current Phase**: Phase 73 (Vectorize RAG Integration Verification)
+**Status**: completed
 
-## Current Context
-- **Milestone:** v5.2 (Document Revision UX)
-- **Phase:** 71-zulip-comments-below-editors
-- **Status:** Completed
-- **Next Step:** Advance milestone.
+## Context
+ARESWEB is transitioning to Milestone v5.3. The core goal is to resolve the Cloudflare Workers "Forbidden" (403) errors returned by the GitHub API during the incremental RAG indexing of external documentation sources.
 
-## Accumulated Context
+## Current Focus
+1. Added `GITHUB_PAT` to the local development environment (`.dev.vars`) and fixed UTF-16LE encoding.
+2. Verified `AppEnv` handles `GITHUB_PAT` effectively across contexts.
+3. Verified `fetchGithubRepoFiles` correctly uses the token in the `Authorization` header by successfully fetching `pmndrs/react-three-fiber`.
 
-### Roadmap Evolution
-- Phase 71 added: Show Zulip comments below the editors
-
-### Active Blockers
-- None
-
-### Deferred Debt
-- TODO: Fix Playwright headless WebGL crashes for RobotViewer component in TechStack.tsx. Currently commented out.
-- TODO: Remove CI sourcemap diagnostic step after 5+ consecutive green CI runs.
-- TODO: Add `BETTER_AUTH_SECRET` CI secret to suppress auth fallback warnings in E2E logs.
-- TODO: Implement inline AI auto-completion (Notion-style ghost text). Feasible with Tiptap but will burn free-tier neurons fast. Best as z.ai premium-only feature.
-- TODO: Events and Posts tables lack `updated_at` columns — incremental indexing for those tables does a full scan. Consider adding updated_at triggers.
-- TODO: Add unit tests for SimulationPlayground auto-heal and CRUD logic.
-
-### Cross-Phase Decisions
-- Using Stripe Checkout to handle PCI compliance and mobile wallet payments.
-- Using Cloudflare D1 for inventory management and order fulfillment tracking.
-- The 3D robot viewer is deferred until an environment configuration for headless WebGL is established.
-- GlobalRAGChatbot MUST be lazy-loaded (`React.lazy()`) — eager import causes TDZ crashes in production builds.
-- manualChunks: syntax/highlight packages MUST stay in the `markdown` chunk to prevent circular chunk dependencies (`syntax → markdown → syntax`).
-- CI E2E uses `wrangler.ci.toml` swap strategy — `wrangler pages dev` does NOT support `--config` flag.
-- All `manualChunks` path matching must normalize separators with `id.replace(/\\\\/g, '/')` for cross-platform consistency.
-- AI Architecture: RAG chatbot uses Cloudflare Workers AI (Llama 3.1 8B, free tier). Editor copilot uses z.ai (Claude) with Workers AI fallback. `Z_AI_API_KEY` is set in Cloudflare Pages secrets.
-- CopilotMenu is attached to ALL rich text editors (DocsEditor, BlogEditor, EventEditor, SeasonEditor, MassEmailComposer).
-- RAG Indexing: Incremental via KV timestamp (`rag_last_indexed` in RATE_LIMITS KV). Only public data indexed (status != 'draft', is_deleted != 1). Auto-triggers via targeted `triggerBackgroundReindex()` calls inside individual route handlers (posts, events, docs, seasons) using `executionCtx.waitUntil()`. Catch-all middleware approach was removed — it caused API hangs by interfering with Hono's response chain.
-- **CRITICAL**: Any module under `routes/ai/` that references Workers AI or Vectorize bindings MUST be loaded via dynamic `import()`, never static `import`. Static imports pull the module into every route handler's startup graph, crashing the entire worker if the binding resolution fails during initialization. See `autoReindex.ts` and `ai/index.ts:283` for the correct pattern.
-- Vectorize index name: `ares_knowledge_base`. Embedding model: `@cf/baai/bge-base-en-v1.5`. Batch size: 20 vectors per upsert.
-- Sim preview iframe uses `srcdoc` with `sandbox="allow-scripts allow-same-origin"`. React/ReactDOM UMD bundles are self-hosted in `public/vendor/` and loaded via absolute URLs (`${window.location.origin}/vendor/...`) because srcdoc iframes resolve relative paths against `about:srcdoc`.
-- Sim Playground AI auto-heal: single retry only. On Babel compile error, sends error + broken code back to z.ai, applies fix, re-compiles. No infinite loops.
-- RAG chatbot system prompt includes KEY LINKS section with all team action URLs (join, sponsors, outreach, blog, events, etc.) so the bot can direct users appropriately.
+## Next Steps
+- Execute `/gsd-new-milestone` to start the next project phase.

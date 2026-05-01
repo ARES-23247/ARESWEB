@@ -43,9 +43,9 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ### Active
 - None
 
-## Current Milestone: None
+## Current Milestone: v5.3
 
-**Goal:** *Run `/gsd-new-milestone` to define the next objective.*
+**Goal:** Address GitHub Rate limits ("Forbidden" errors) by injecting GITHUB_PAT authentication into the Vectorize RAG knowledge base indexing pipeline.
 
 ## Current State
 
@@ -208,7 +208,9 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 </details>
 
 ## Next Milestone Goals
-*Run `/gsd-new-milestone` to define the next objective.*
+1. Add `GITHUB_PAT` secrets configuration via `.dev.vars` and Cloudflare Secrets.
+2. Confirm indexing succeeds for all referenced external documentation sites.
+3. Validate Vectorize batch size limits.
 
 ## Key Decisions
 
