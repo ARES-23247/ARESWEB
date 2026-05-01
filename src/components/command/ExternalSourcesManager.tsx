@@ -8,6 +8,7 @@ export default function ExternalSourcesManager() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [newType, setNewType] = useState<"github" | "website">("github");
+  const [syncErrors, setSyncErrors] = useState<string[] | null>(null);
 
   const { data: sources = [], isLoading } = useQuery({
     queryKey: ["external-sources"],
@@ -67,8 +68,10 @@ export default function ExternalSourcesManager() {
       if (res.ok && data.success) {
         toast.success(`External sync complete: ${data.indexed} documents updated.`);
         if (data.errors && data.errors.length > 0) {
-          toast.warning(`${data.errors.length} indexing errors — check console.`);
-          console.warn("[External Sync Errors]", data.errors);
+          toast.warning(`${data.errors.length} indexing errors encountered.`);
+          setSyncErrors(data.errors);
+        } else {
+          setSyncErrors(null);
         }
         queryClient.invalidateQueries({ queryKey: ["external-sources"] });
         queryClient.invalidateQueries({ queryKey: ["ai-status"] });
@@ -165,12 +168,12 @@ export default function ExternalSourcesManager() {
         </button>
       </form>
 
-      {/* Admin Debug Console */}
-      {statusData?.indexErrors && (
+      {/* Admin Debug Console from KV */}
+      {statusData?.indexErrors && !syncErrors && (
         <div className="mt-6 border border-red-500/30 bg-black/50 p-3 relative group">
           <div className="absolute top-0 left-3 -translate-y-1/2 bg-obsidian px-2 flex items-center gap-1.5 text-red-400 text-[10px] font-bold uppercase tracking-widest border border-red-500/30">
             <Terminal size={10} />
-            Debug Console
+            Previous Sync Errors
           </div>
           <div className="text-[10px] text-marble/60 mb-2 font-mono">
             Last run: {new Date(statusData.indexErrors.timestamp).toLocaleString()}
@@ -179,6 +182,26 @@ export default function ExternalSourcesManager() {
             {statusData.indexErrors.errors.map((err, i) => (
               <div key={i} className="pl-2 border-l border-red-500/30">
                 &gt; {err}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Immediate Sync Errors */}
+      {syncErrors && (
+        <div className="mt-6 border border-red-500/50 bg-red-950/20 p-4 relative group rounded">
+          <div className="absolute top-0 left-3 -translate-y-1/2 bg-obsidian px-2 flex items-center gap-1.5 text-red-400 text-xs font-bold uppercase tracking-widest border border-red-500/50">
+            <Terminal size={12} />
+            Indexing Errors ({syncErrors.length})
+          </div>
+          <div className="text-xs text-marble/60 mb-3 font-mono">
+            These errors occurred during your most recent sync attempt.
+          </div>
+          <div className="space-y-2 max-h-60 overflow-y-auto font-mono text-xs text-red-200">
+            {syncErrors.map((err, i) => (
+              <div key={i} className="pl-3 border-l-2 border-red-500/50 bg-black/40 py-2 pr-2 rounded-r break-words whitespace-pre-wrap">
+                {err}
               </div>
             ))}
           </div>
