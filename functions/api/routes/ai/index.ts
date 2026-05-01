@@ -224,19 +224,20 @@ aiRouter.post("/sim-playground", async (c) => {
     try {
       if (hasZai) {
         for (let attempt = 0; attempt < 2; attempt++) {
-          const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+          const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-api-key": c.env.Z_AI_API_KEY!,
-              "anthropic-version": "2023-06-01"
+              "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
             },
             body: JSON.stringify({
-              model: "zai-5.1",
-              max_tokens: 4096,
-              system: systemPrompt,
-              messages: messages,
-              stream: true
+              model: "glm-4",
+              messages: [
+                { role: "system", content: systemPrompt },
+                ...messages
+              ],
+              stream: true,
+              max_tokens: 4096
             })
           });
 
@@ -259,8 +260,8 @@ aiRouter.post("/sim-playground", async (c) => {
                   if (dataStr === "[DONE]") continue;
                   try {
                     const data = JSON.parse(dataStr);
-                    if (data.type === "content_block_delta" && data.delta?.text) {
-                      await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                    if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                      await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
                     }
                   } catch (_e) { /* ignore */ }
                 }
@@ -349,26 +350,27 @@ aiRouter.post("/editor-chat", async (c) => {
 
   const hasZai = !!c.env.Z_AI_API_KEY;
   if (!hasZai) return c.json({ error: "AI service not configured." }, 500);
-
+  
   // Inject current editor content into the system prompt or as a hidden user message
   const finalSystemPrompt = `${systemPrompt}\n\nCURRENT EDITOR CONTENT:\n${editorContent || "The document is currently empty."}`;
 
   return streamSSE(c, async (stream) => {
     try {
       if (hasZai) {
-        const zaiRes = await fetch("https://api.z.ai/v1/messages", {
+        const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": c.env.Z_AI_API_KEY!,
-            "anthropic-version": "2023-06-01"
+            "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
           },
           body: JSON.stringify({
-            model: "zai-5.1",
-            max_tokens: 8192,
-            system: finalSystemPrompt,
-            messages: messages,
-            stream: true
+            model: "glm-4",
+            messages: [
+              { role: "system", content: finalSystemPrompt },
+              ...messages
+            ],
+            stream: true,
+            max_tokens: 8192
           })
         });
 
@@ -391,8 +393,8 @@ aiRouter.post("/editor-chat", async (c) => {
                 if (dataStr === "[DONE]") continue;
                 try {
                   const data = JSON.parse(dataStr);
-                  if (data.type === "content_block_delta" && data.delta?.text) {
-                    await stream.writeSSE({ data: JSON.stringify({ chunk: data.delta.text }) });
+                  if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                    await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
                   }
                 } catch (_e) { /* ignore */ }
               }
