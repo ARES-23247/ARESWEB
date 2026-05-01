@@ -1,7 +1,7 @@
  
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Search, LayoutDashboard, LogIn, Bell, Check, Heart, X } from "lucide-react";
+import { Search, LayoutDashboard, LogIn, Bell, Check, Heart, X, Bot } from "lucide-react";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -14,7 +14,7 @@ import { useMergedNotifications, MergedNotification } from "../hooks/useMergedNo
 import { useUIStore } from "../store/uiStore";
 
 export default function Navbar() {
-  const { setSidebarOpen } = useUIStore();
+  const { setSidebarOpen, isChatbotOpen, setChatbotOpen } = useUIStore();
   const [open, setOpen] = useState(false);
 
   const navigate = useNavigate();
@@ -208,11 +208,14 @@ export default function Navbar() {
               <span className="text-xs font-bold text-white group-hover:text-ares-gold uppercase tracking-wider">Internal Portal</span>
               </Link>          )}
 
-
-          <Link id="nav-support-us" to="/sponsors" className="hidden md:flex bg-ares-red-dark text-white px-6 h-9 ares-cut-sm font-bold uppercase tracking-widest text-xs hover:bg-ares-red hover:text-white transition-all shadow-lg border border-ares-red-dark items-center gap-2">
-            <Heart size={14} className="fill-white" />
-            Support Us
-          </Link>
+          <button 
+            id="nav-chatbot" 
+            onClick={() => setChatbotOpen(!isChatbotOpen)}
+            className={`hidden md:flex text-white px-6 h-9 ares-cut-sm font-bold uppercase tracking-widest text-xs transition-all shadow-lg border items-center gap-2 ${isChatbotOpen ? 'bg-indigo-700 border-indigo-600 hover:bg-indigo-600' : 'bg-indigo-600 border-indigo-500 hover:bg-indigo-500'}`}
+          >
+            <Bot size={14} className="fill-white" />
+            AI Chat
+          </button>
         </div>
 
 

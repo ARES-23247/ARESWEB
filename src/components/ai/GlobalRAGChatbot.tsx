@@ -4,9 +4,10 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { v4 as uuidv4 } from "uuid";
+import { useUIStore } from "../../store/uiStore";
 
 export function GlobalRAGChatbot() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isChatbotOpen, setChatbotOpen } = useUIStore();
   const [messages, setMessages] = useState<{ role: "ai" | "user"; content: string }[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -108,23 +109,15 @@ export function GlobalRAGChatbot() {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        aria-label="Open AI Assistant"
-        className={`fixed bottom-20 left-6 p-4 rounded-full shadow-2xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all transform hover:scale-110 z-50 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
-      >
-        <MessageSquare className="w-6 h-6" />
-      </button>
-
       <div 
-        className={`fixed bottom-20 left-6 w-96 h-[32rem] bg-zinc-900 border border-zinc-700 shadow-2xl rounded-2xl flex flex-col transition-all origin-bottom-left z-50 overflow-hidden ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
+        className={`fixed top-20 right-6 w-96 h-[32rem] bg-zinc-900 border border-zinc-700 shadow-2xl rounded-2xl flex flex-col transition-all origin-top-right z-[100] overflow-hidden ${isChatbotOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
       >
         <div className="flex items-center justify-between p-4 bg-zinc-800 border-b border-zinc-700">
           <div className="flex items-center space-x-2">
             <Bot className="w-5 h-5 text-indigo-400" />
             <div className="font-bold text-zinc-100">ARES Knowledge Bot</div>
           </div>
-          <button onClick={() => setIsOpen(false)} aria-label="Close AI Assistant" className="text-zinc-400 hover:text-white transition-colors">
+          <button onClick={() => setChatbotOpen(false)} aria-label="Close AI Assistant" className="text-zinc-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
