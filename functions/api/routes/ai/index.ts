@@ -778,4 +778,18 @@ aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
   return c.json({ success: true });
 });
 
+aiRouter.get("/chat-session/:id", async (c) => {
+  const db = c.get("db") as Kysely<DB>;
+  const id = c.req.param("id") as string;
+  try {
+    const session = await db.selectFrom("chat_sessions").select("history").where("id", "=", id).executeTakeFirst();
+    if (session && session.history) {
+      return c.json({ messages: JSON.parse(session.history) });
+    }
+  } catch (e) {
+    console.error("Failed to fetch chat session history", e);
+  }
+  return c.json({ messages: [] });
+});
+
 export default aiRouter;

@@ -82,7 +82,7 @@ If you provide text that the user should insert into their document, format it i
                   return updated;
                 });
               }
-            } catch (e) {
+            } catch (_e) {
               // ignore parse errors
             }
           }

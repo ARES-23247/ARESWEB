@@ -11,7 +11,32 @@ export function GlobalRAGChatbot() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [sessionId] = useState(() => uuidv4());
+  const [sessionId] = useState(() => {
+    if (typeof window !== "undefined") {
+      const existing = sessionStorage.getItem("ares_rag_session");
+      if (existing) return existing;
+      const newId = uuidv4();
+      sessionStorage.setItem("ares_rag_session", newId);
+      return newId;
+    }
+    return uuidv4();
+  });
+
+  useEffect(() => {
+    if (sessionId && messages.length === 0) {
+      fetch(`/api/ai/chat-session/${sessionId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.messages && data.messages.length > 0) {
+            setMessages(data.messages.map((m: any) => ({
+              role: m.role === "assistant" ? "ai" : m.role,
+              content: m.content
+            })));
+          }
+        })
+        .catch(e => console.error("Failed to load chat history", e));
+    }
+  }, [sessionId]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
