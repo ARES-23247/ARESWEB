@@ -246,6 +246,9 @@ export interface Events {
   tba_event_key: string | null;
   title: string;
   updated_at: Generated<string | null>;
+  recurring_group_id: string | null;
+  rrule: string | null;
+  recurring_exception: Generated<number | null>;
 }
 
 export interface EventsFts {

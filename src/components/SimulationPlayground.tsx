@@ -330,11 +330,11 @@ export default function SimulationPlayground() {
       setFiles(parsedFiles);
       setActiveFile(filename);
       setSimName(sim.name);
-      setSimId(null);
+      setSimId(`github:${sim.id}`);
       compileCode(parsedFiles);
       setShowLibrary(false);
       
-      const storedChat = localStorage.getItem(`sim_chat_new`);
+      const storedChat = localStorage.getItem(`sim_chat_github:${sim.id}`);
       if (storedChat) {
         try { setChatMessages(JSON.parse(storedChat)); } catch { setChatMessages([DEFAULT_MESSAGE]); }
       } else {
@@ -342,7 +342,7 @@ export default function SimulationPlayground() {
       }
       
       const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete("simId");
+      newUrl.searchParams.set("simId", `github:${sim.id}`);
       window.history.replaceState({}, "", newUrl.toString());
 
       const { toast } = await import("sonner");
@@ -404,8 +404,17 @@ RULES:
 - Use React.useState, React.useEffect, etc. (React is a global, don't import it)
 - Use standard ARESWEB UI classes: sim-container, sim-title, sim-label, sim-value, sim-slider, sim-canvas, sim-btn, sim-grid, sim-flex
 - Use Vite-style raw typescript format (.tsx).
-- Output the COMPLETE updated file using a markdown code block with the EXACT existing filename in the language tag (e.g. \`\`\`tsx:SimComponent.tsx). Overwrite the existing file!
-- Output ONLY the markdown code block. No explanations outside of code comments.
+
+OUTPUT FORMAT:
+- You can either output the COMPLETE updated file or use a PATCH block to edit specific parts efficiently.
+- To output the COMPLETE file (e.g. for initial creation or major rewrites), use: \`\`\`tsx
+- To surgically edit an existing file, use: \`\`\`patch
+  Inside the patch block, use this EXACT format:
+<<<<
+old code to find (must match exactly)
+====
+new code to replace it with
+>>>>
 
 EXAMPLES OF REAL ARESWEB SIMULATIONS:
 
@@ -417,7 +426,7 @@ ${ArmKgSimRaw}
 ${ElevatorPidSimRaw}
 \`\`\`
 
-CURRENT FILES (Overwrite these by matching the filename exactly!):
+CURRENT FILES:
 \`\`\`json
 ${JSON.stringify(files, null, 2)}
 \`\`\`
@@ -476,19 +485,39 @@ USER REQUEST: ${msg}`;
                 const newFiles: Record<string, string> = {};
                 let currentFile: string | null = null;
                 let currentContent: string[] = [];
+                let isPatchBlock = false;
                 
                 for (let i = 0; i < blockLines.length; i++) {
                   const l = blockLines[i];
                   if (l.startsWith('```')) {
                     if (currentFile) {
-                      newFiles[currentFile] = currentContent.join('\n');
+                      if (isPatchBlock) {
+                        const patchStr = currentContent.join('\n');
+                        const originalCode = initialFiles[currentFile] || "";
+                        
+                        let patchedCode = originalCode;
+                        // Extract all completed <<<< ==== >>>> blocks
+                        const patchRegex = /<<<<\n([\s\S]*?)\n====\n([\s\S]*?)\n>>>>/g;
+                        let match;
+                        while ((match = patchRegex.exec(patchStr)) !== null) {
+                          const oldText = match[1];
+                          const newText = match[2];
+                          if (patchedCode.includes(oldText)) {
+                            patchedCode = patchedCode.replace(oldText, newText);
+                          }
+                        }
+                        newFiles[currentFile] = patchedCode;
+                      } else {
+                        newFiles[currentFile] = currentContent.join('\n');
+                      }
                       currentFile = null;
                       currentContent = [];
+                      isPatchBlock = false;
                     } else {
-                      // Strictly enforce single-file architecture by routing all code to the active file
-                      const match = l.match(/```[a-zA-Z]*/);
+                      const match = l.match(/```(tsx|patch)[^\n]*/);
                       if (match) {
                         currentFile = activeFile;
+                        isPatchBlock = match[1] === "patch";
                       }
                     }
                   } else if (currentFile) {
@@ -497,7 +526,23 @@ USER REQUEST: ${msg}`;
                 }
                 
                 if (currentFile) {
-                  newFiles[currentFile] = currentContent.join('\n');
+                  if (isPatchBlock) {
+                    const patchStr = currentContent.join('\n');
+                    const originalCode = initialFiles[currentFile] || "";
+                    let patchedCode = originalCode;
+                    const patchRegex = /<<<<\n([\s\S]*?)\n====\n([\s\S]*?)\n>>>>/g;
+                    let match;
+                    while ((match = patchRegex.exec(patchStr)) !== null) {
+                      const oldText = match[1];
+                      const newText = match[2];
+                      if (patchedCode.includes(oldText)) {
+                        patchedCode = patchedCode.replace(oldText, newText);
+                      }
+                    }
+                    newFiles[currentFile] = patchedCode;
+                  } else {
+                    newFiles[currentFile] = currentContent.join('\n');
+                  }
                 }
                 
                 if (Object.keys(newFiles).length > 0) {

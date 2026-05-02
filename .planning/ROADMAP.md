@@ -60,3 +60,13 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 84 to break down)
+
+### Phase 85: Upgrade Simulation Playground IDE
+
+**Goal:** Upgrade the Simulation Playground with Monaco Editor, AI Ghost Text, a Multi-file sandbox with folders, Live Error Squiggles, resizable split-pane layout, in-browser console logging, Prettier auto-formatting, and Vim/Emacs keybindings.
+**Requirements**: TBD
+**Depends on:** Phase 84
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 85 to break down)

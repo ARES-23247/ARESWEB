@@ -17,6 +17,11 @@ export const eventSchema = z.object({
   seasonId: z.union([z.string(), z.number()]).transform(v => v === "" ? undefined : Number(v)).optional(),
   meetingNotes: z.string().max(200000).optional(),
   socials: z.record(z.string().max(255), z.boolean()).optional(),
+  rrule: z.string().max(1000).optional().or(z.literal("")),
+  recurringGroupId: z.string().optional(),
+  recurringException: z.boolean().optional(),
+  updateMode: z.enum(["single", "following"]).optional(),
+  deleteMode: z.enum(["single", "following"]).optional(),
 });
 
 export type EventPayload = z.infer<typeof eventSchema>;

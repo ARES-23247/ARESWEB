@@ -79,12 +79,16 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
         facebook: false,
         twitter: false,
         instagram: false
-      }
+      },
+      rrule: ""
     }
   });
 
   const formValues = useWatch({ control });
   const socials = formValues.socials || {};
+
+  const [recurringGroupId, setRecurringGroupId] = useState<string | null>(null);
+  const [updateMode, setUpdateMode] = useState<"single" | "following">("single");
 
   const { data: locations = [] } = useQuery<LocationRow[]>({
     queryKey: ["locations"],
@@ -137,8 +141,11 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
         isVolunteer: event.is_volunteer === 1,
         publishedAt: event.published_at || "",
         seasonId: event.season_id ? Number(event.season_id) : undefined,
-        socials: (eventRes.body as unknown as { socials?: Record<string, boolean> })?.socials || {}
+        socials: (eventRes.body as unknown as { socials?: Record<string, boolean> })?.socials || {},
+        rrule: event.rrule || ""
       });
+
+      setRecurringGroupId((event as any).recurring_group_id || null);
 
       if (editor) {
         const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
@@ -210,7 +217,7 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
 
   const onFormSubmit = (data: EventPayload, isDraft = false) => {
     const finalDescription = editor ? JSON.stringify(editor.getJSON()) : data.description;
-    const payload = { ...data, description: finalDescription, meetingNotes: "", isDraft };
+    const payload = { ...data, description: finalDescription, meetingNotes: "", isDraft, updateMode };
     if (editId) {
       updateMutation.mutate({ params: { id: editId }, body: payload });
     } else {
@@ -220,15 +227,27 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
 
   const handleDelete = async () => {
     if (!editId) return;
-    const confirmed = await modal.confirm({
-      title: "Delete Event",
-      description: "Are you sure you want to permanently delete this event?",
-      confirmText: "Delete",
-      destructive: true,
-    });
-    if (!confirmed) return;
+    
+    let deleteMode: "single" | "following" = "single";
+    if (recurringGroupId) {
+      const confirmFollowing = await modal.confirm({
+        title: "Delete Recurring Event",
+        description: "This is a recurring event. Do you want to delete all following events in the series too?",
+        confirmText: "Delete Following",
+        cancelText: "Only This Event"
+      });
+      if (confirmFollowing) deleteMode = "following";
+    } else {
+      const confirmed = await modal.confirm({
+        title: "Delete Event",
+        description: "Are you sure you want to permanently delete this event?",
+        confirmText: "Delete",
+        destructive: true,
+      });
+      if (!confirmed) return;
+    }
 
-    deleteMutation.mutate({ params: { id: editId }, body: {} });
+    deleteMutation.mutate({ params: { id: editId }, body: { deleteMode } });
   };
 
   const handleFileUpload = async (file: File) => {
@@ -375,6 +394,22 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
         </div>
       </div>
 
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
+          <label htmlFor="event-rrule" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Repeats</label>
+          <select
+            id="event-rrule"
+            {...register("rrule")}
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
+          >
+            <option value="">Never</option>
+            <option value="FREQ=DAILY">Daily</option>
+            <option value="FREQ=WEEKLY">Weekly</option>
+            <option value="FREQ=MONTHLY">Monthly</option>
+          </select>
+        </div>
+      </div>
+
       <EventPotluckVolunteerFlags 
         isPotluck={formValues.isPotluck || false} 
         isVolunteer={formValues.isVolunteer || false} 
@@ -403,6 +438,23 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
               <h4 className="text-white font-bold text-xs tracking-wide uppercase">Critical Error</h4>
               <p id="event-error-msg" className="text-white text-sm mt-1 font-bold">{errorMsg}</p>
             </div>
+          </div>
+        )}
+
+        {recurringGroupId && editId && (
+          <div className="p-4 bg-obsidian border border-white/10 ares-cut flex items-center justify-between gap-4">
+            <div>
+              <h4 className="text-white font-bold text-sm tracking-wide">Recurring Event Options</h4>
+              <p className="text-white/60 text-xs mt-1">This event is part of a series. Choose how your updates will be applied.</p>
+            </div>
+            <select
+              value={updateMode}
+              onChange={(e) => setUpdateMode(e.target.value as "single" | "following")}
+              className="bg-black border border-white/20 ares-cut-sm px-4 py-2 text-white text-sm focus:border-ares-red focus:outline-none transition-all shadow-inner"
+            >
+              <option value="single">Only this instance</option>
+              <option value="following">This and all following instances</option>
+            </select>
           </div>
         )}
 

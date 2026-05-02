@@ -140,6 +140,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "resend": "^6.12.2",
+    "rrule": "^2.8.1",
     "sonner": "^2.0.7",
     "stripe": "^22.1.0",
     "tailwind-merge": "^3.5.0",
