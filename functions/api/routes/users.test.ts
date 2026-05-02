@@ -231,12 +231,12 @@ describe("Hono Backend - /users Router", () => {
     expect(res.status).toBe(500);
   });
 
-  it("GET /admin/list - list users with masked email for student", async () => {
+  it("GET /admin/list - list users without masking email", async () => {
     mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "Student", email: "student123@test.com", member_type: "student", role: "user" }]);
     const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, any>;
-    expect(body.users[0].email).toBe("st********@test.com");
+    expect(body.users[0].email).toBe("student123@test.com");
   });
 
   it("GET /admin/:id/profile - handles decryption error", async () => {
