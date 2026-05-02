@@ -130,7 +130,7 @@ const zulipHandlers = {
 
       const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
       const authHeader = "Basic " + btoa(unescape(encodeURIComponent(credentials)));
-      const url = `${config.ZULIP_URL || "https://aresfirst.zulipchat.com"}/api/v1/users`;
+      const url = `${config.ZULIP_URL || "https://aresfirst.zulipchat.com"}/api/v1/users?client_gravatar=false`;
 
       const zulipRes = await fetch(url, {
         method: "GET",
@@ -200,7 +200,20 @@ const zulipHandlers = {
       });
 
       if (!inviteRes.ok) {
-        return { status: 500 as const, body: { success: false, error: await inviteRes.text() } as any };
+        const errText = await inviteRes.text();
+        console.error("Zulip Invite Error:", errText);
+        
+        try {
+          const errJson = JSON.parse(errText);
+          if (errJson.result === "error" && errJson.sent_invitations === true) {
+            // Partial success: Some users already had accounts, but others were invited.
+            return { status: 200 as const, body: { success: true, invitedCount: emails.length } as any };
+          }
+        } catch (_e) {
+          // Not a JSON error or couldn't parse
+        }
+        
+        return { status: 500 as const, body: { success: false, error: errText } as any };
       }
 
       return { status: 200 as const, body: { success: true, invitedCount: emails.length } as any };
