@@ -50,6 +50,9 @@ export default function TaskBoardPage() {
         queryClient.setQueryData(queryKey, context.previousTasks);
       }
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", "list"] });
+    },
   });
 
   const deleteMutation = api.tasks.delete.useMutation({
@@ -69,6 +72,9 @@ export default function TaskBoardPage() {
       if (context?.previousTasks) {
         queryClient.setQueryData(queryKey, context.previousTasks);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", "list"] });
     },
   });
 
@@ -96,6 +102,9 @@ export default function TaskBoardPage() {
         queryClient.setQueryData(queryKey, context.previousTasks);
       }
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", "list"] });
+    },
   });
 
   // -- Handlers -------------------------------------------------------
@@ -120,6 +129,7 @@ export default function TaskBoardPage() {
           if (!old?.body?.tasks) return old;
           return { ...old, body: { ...old.body, tasks: [res.body.task, ...old.body.tasks] } };
         });
+        queryClient.invalidateQueries({ queryKey: ["tasks", "list"] });
       }
     } catch (err) {
       console.error("Create task failed:", err);

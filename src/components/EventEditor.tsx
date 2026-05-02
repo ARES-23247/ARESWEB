@@ -455,8 +455,9 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
       {rruleFreq && (
         <div className="flex flex-col md:flex-row gap-4 p-4 border border-white/10 bg-black/20 ares-cut-sm mb-4">
           <div className="flex-1">
-            <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Recurrence Limit</label>
+            <label htmlFor="limitType" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Recurrence Limit</label>
             <select
+              id="limitType"
               value={limitType}
               onChange={(e) => setLimitType(e.target.value as "none" | "count" | "date")}
               className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
@@ -469,8 +470,9 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
           
           {limitType === 'count' && (
             <div className="flex-1">
-              <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Number of Occurrences</label>
+              <label htmlFor="limitCount" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Number of Occurrences</label>
               <input
+                id="limitCount"
                 type="number"
                 min="1"
                 max="52"
@@ -484,8 +486,9 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
           
           {limitType === 'date' && (
             <div className="flex-1">
-              <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">End Date</label>
+              <label htmlFor="limitDate" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">End Date</label>
               <input
+                id="limitDate"
                 type="date"
                 value={limitDate}
                 onChange={(e) => setLimitDate(e.target.value)}
