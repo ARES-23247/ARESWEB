@@ -281,7 +281,7 @@ export const eventHandlers: any = {
                 id: i === 0 ? genId : crypto.randomUUID(), // first instance gets the original genId
                 title: title || "", category: cat, date_start: instStart, date_end: instEnd,
                 location: location || "", description: description || "", cover_image: coverImage || "",
-                gcal_event_id: null, cf_email: user?.email || "anonymous_admin", status,
+                gcal_event_id: null, status,
                 is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0, tba_event_key: tbaEventKey || null,
                 published_at: publishedAt || null, season_id: seasonId || null, meeting_notes: meetingNotes || null,
                 recurring_group_id: recurringGroupId, rrule: body.rrule, recurring_exception: 0
@@ -296,14 +296,17 @@ export const eventHandlers: any = {
         instances.push({
             id: genId, title: title || "", category: cat, date_start: dateStart, date_end: dateEnd || null,
             location: location || "", description: description || "", cover_image: coverImage || "",
-            gcal_event_id: null, cf_email: user?.email || "anonymous_admin", status,
+            gcal_event_id: null, status,
             is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0, tba_event_key: tbaEventKey || null,
             published_at: publishedAt || null, season_id: seasonId || null, meeting_notes: meetingNotes || null,
             recurring_group_id: null, rrule: null, recurring_exception: 0
         });
       }
 
-      await db.insertInto("events").values(instances).execute();
+      const CHUNK_SIZE = 5;
+      for (let i = 0; i < instances.length; i += CHUNK_SIZE) {
+        await db.insertInto("events").values(instances.slice(i, i + CHUNK_SIZE)).execute();
+      }
 
       // Push snapshot to collaborative editor history
       if (description) {
@@ -350,9 +353,9 @@ export const eventHandlers: any = {
       triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB, c.env.ARES_KV);
 
       return { status: 200 as const, body: { success: true, id: genId } };
-    } catch (e) {
+    } catch (e: any) {
       console.error("[Events:Save] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Write failed" } } as any;
+      return { status: 500 as const, body: { success: false, error: e.message || "Write failed" } } as any;
     }
   },
   updateEvent: async (input: any, c: any) => {
@@ -404,14 +407,17 @@ export const eventHandlers: any = {
                 id: crypto.randomUUID(),
                 title: title || "", category: cat, date_start: instStart, date_end: instEnd,
                 location: location || "", description: description || "", cover_image: coverImage || "",
-                gcal_event_id: null, cf_email: user?.email || "anonymous_admin", status,
+                gcal_event_id: null, status,
                 is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0, tba_event_key: tbaEventKey || null,
                 published_at: publishedAt || null, season_id: seasonId || null, meeting_notes: meetingNotes || null,
                 recurring_group_id: existing.recurring_group_id, rrule: body.rrule, recurring_exception: 0
               };
             });
             if (instances.length > 0) {
-              await db.insertInto("events").values(instances).execute();
+              const CHUNK_SIZE = 5;
+              for (let i = 0; i < instances.length; i += CHUNK_SIZE) {
+                await db.insertInto("events").values(instances.slice(i, i + CHUNK_SIZE)).execute();
+              }
             }
           } catch(e) { console.error("RRule update parse error", e); }
         }
