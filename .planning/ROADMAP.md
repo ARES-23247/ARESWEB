@@ -91,3 +91,13 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 87 to break down)
+
+### Phase 88: Refactor recurring events: fix calendar overflow, add repeat frequency limits, and support individual instance deletion
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 87
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 88 to break down)
