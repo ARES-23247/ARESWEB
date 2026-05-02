@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap } from "lucide-react";
+import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap, Users, Mail } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
 import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +36,8 @@ export default function AdminUsers() {
   const [pointsReason, setPointsReason] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useQueryState("q", { defaultValue: "" });
+  const [showZulipAudit, setShowZulipAudit] = useState(false);
+  const [auditResult, setAuditResult] = useState<string[] | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = api.users.getUsers.useQuery(["admin_users"], {});
@@ -104,6 +106,27 @@ export default function AdminUsers() {
       }
     });
   };
+
+  const auditMutation = api.zulip.auditMissingUsers.useMutation({
+    onSuccess: (data) => {
+      if (data.body?.missingEmails) {
+        setAuditResult(data.body.missingEmails);
+        setShowZulipAudit(true);
+      } else {
+        toast.error("Failed to parse audit results.");
+      }
+    },
+    onError: (err: Error) => toast.error(err.message || "Audit failed")
+  });
+
+  const inviteMutation = api.zulip.inviteUsers.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Successfully invited ${data.body?.invitedCount || 0} users!`);
+      setShowZulipAudit(false);
+      setAuditResult(null);
+    },
+    onError: (err: Error) => toast.error(err.message || "Invite failed")
+  });
 
   const columns = useMemo(() => [
     columnHelper.accessor("name", {
@@ -233,6 +256,15 @@ export default function AdminUsers() {
           <Shield size={20} className="text-ares-red" /> User Management
         </h2>
         <div className="flex items-center gap-4">
+           <button
+             onClick={() => auditMutation.mutate({})}
+             disabled={auditMutation.isPending}
+             className="flex items-center gap-2 bg-ares-red hover:bg-ares-red/80 text-white font-bold py-2 px-4 ares-cut-sm transition-colors text-sm disabled:opacity-50"
+             title="Audit missing Zulip users"
+           >
+             {auditMutation.isPending ? <RefreshCw size={16} className="animate-spin" /> : <Users size={16} />}
+             <span className="hidden sm:inline">Audit Zulip</span>
+           </button>
            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
               <input
@@ -373,6 +405,54 @@ export default function AdminUsers() {
                 {pointsMutation.isPending ? "Processing..." : "Submit Transaction"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showZulipAudit && auditResult && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4">
+          <div className="bg-obsidian border border-white/10 ares-cut w-full max-w-lg shadow-2xl relative p-6">
+            <div className="flex justify-between items-start mb-4 pb-4 border-b border-white/10">
+              <div>
+                <h3 className="text-xl font-black text-ares-cyan flex items-center gap-2">
+                  <Mail size={20} />
+                  Zulip User Audit
+                </h3>
+                <p className="text-white/60 text-sm mt-1">Found {auditResult.length} ARESWEB users missing from Zulip.</p>
+              </div>
+              <button 
+                onClick={() => { setShowZulipAudit(false); setAuditResult(null); }} 
+                title="Close"
+                className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/60 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-white/5 border border-white/10 ares-cut-sm p-4 max-h-64 overflow-y-auto">
+                {auditResult.length === 0 ? (
+                  <p className="text-sm text-white/60 italic text-center py-4">All ARESWEB users are already in Zulip!</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {auditResult.map(email => (
+                      <li key={email} className="text-sm text-marble font-mono bg-black/40 px-3 py-2 border border-white/5">{email}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              
+              {auditResult.length > 0 && (
+                <button
+                  onClick={() => inviteMutation.mutate({ body: { emails: auditResult } })}
+                  disabled={inviteMutation.isPending}
+                  className="w-full flex items-center justify-center gap-2 py-3 font-bold bg-ares-cyan hover:bg-ares-cyan/80 text-obsidian ares-cut-sm transition-all disabled:opacity-50 mt-4"
+                >
+                  {inviteMutation.isPending ? <RefreshCw className="animate-spin" size={18} /> : <Mail size={18} />}
+                  {inviteMutation.isPending ? "Sending Invites..." : `Send ${auditResult.length} Zulip Invites`}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

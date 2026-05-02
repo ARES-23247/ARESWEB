@@ -63,4 +63,25 @@ export const zulipContract = c.router({
     },
     summary: "Get messages for a specific Zulip topic",
   },
+  auditMissingUsers: {
+    method: "GET",
+    path: "/invites/audit",
+    responses: {
+      200: z.object({ success: z.boolean(), missingEmails: z.array(z.string()) }),
+      500: z.object({ success: z.boolean(), error: z.string() }),
+    },
+    summary: "Audit ARESWEB database against Zulip directory to find missing users",
+  },
+  inviteUsers: {
+    method: "POST",
+    path: "/invites/send",
+    body: z.object({
+      emails: z.array(z.string()),
+    }),
+    responses: {
+      200: z.object({ success: z.boolean(), invitedCount: z.number() }),
+      500: z.object({ success: z.boolean(), error: z.string() }),
+    },
+    summary: "Send Zulip invitations to the specified emails",
+  },
 });

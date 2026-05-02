@@ -121,11 +121,106 @@ const zulipHandlers = {
       return { status: 500 as const, body: { success: false, error: (err as Error).message } as any };
     }
   },
+  auditMissingUsers: async (_: any, c: Context<AppEnv>) => {
+    try {
+      const config = await getSocialConfig(c);
+      if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
+        return { status: 500 as const, body: { success: false, error: "Zulip not configured." } as any };
+      }
+
+      const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
+      const authHeader = "Basic " + btoa(unescape(encodeURIComponent(credentials)));
+      const url = `${config.ZULIP_URL || "https://aresfirst.zulipchat.com"}/api/v1/users`;
+
+      const zulipRes = await fetch(url, {
+        method: "GET",
+        headers: { "Authorization": authHeader }
+      });
+
+      if (!zulipRes.ok) {
+        return { status: 500 as const, body: { success: false, error: "Failed to fetch Zulip users" } as any };
+      }
+
+      const zulipData = await zulipRes.json() as { members: Array<{ email: string }> };
+      const zulipEmails = new Set(zulipData.members.map(m => m.email.toLowerCase()));
+
+      const db = c.get("db") as import("kysely").Kysely<import("../../../shared/schemas/database").DB>;
+      const aresUsers = await db.selectFrom("user").select("email").execute();
+      
+      const missingEmails = aresUsers
+        .map(u => u.email)
+        .filter(email => email && !zulipEmails.has(email.toLowerCase()));
+
+      return { status: 200 as const, body: { success: true, missingEmails } as any };
+    } catch (err) {
+      return { status: 500 as const, body: { success: false, error: (err as Error).message } as any };
+    }
+  },
+  inviteUsers: async ({ body }: any, c: Context<AppEnv>) => {
+    try {
+      const config = await getSocialConfig(c);
+      if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
+        return { status: 500 as const, body: { success: false, error: "Zulip not configured." } as any };
+      }
+
+      const { emails } = body;
+      if (!emails || emails.length === 0) {
+        return { status: 200 as const, body: { success: true, invitedCount: 0 } as any };
+      }
+
+      const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
+      const authHeader = "Basic " + btoa(unescape(encodeURIComponent(credentials)));
+      const baseUrl = config.ZULIP_URL || "https://aresfirst.zulipchat.com";
+
+      // Fetch default streams to add the users to
+      const streamsRes = await fetch(`${baseUrl}/api/v1/streams?include_default=true`, {
+        method: "GET",
+        headers: { "Authorization": authHeader }
+      });
+
+      let streamIds: number[] = [];
+      if (streamsRes.ok) {
+        const streamsData = await streamsRes.json() as { streams?: Array<{ stream_id: number; is_default?: boolean }> };
+        // Zulip API doesn't strictly filter by default in the response, we must check is_default (or just rely on the API returning defaults if include_default=true).
+        // To be safe, we'll try to find streams marked as default or just pass [] if include_realm_default_subscriptions works.
+        // Actually, stream_ids is required by the API. Let's pass the IDs of default streams if available.
+        streamIds = (streamsData.streams || [])
+          .filter(s => s.is_default !== false)
+          .map(s => s.stream_id);
+      }
+      
+      // If we couldn't fetch streams, fallback to empty array. The `include_realm_default_subscriptions` boolean should do the heavy lifting.
+      
+      const params = new URLSearchParams();
+      params.append("invitee_emails", emails.join(","));
+      params.append("stream_ids", JSON.stringify(streamIds));
+      params.append("include_realm_default_subscriptions", "true");
+      params.append("invite_as", "400"); // Member
+
+      const inviteRes = await fetch(`${baseUrl}/api/v1/invites`, {
+        method: "POST",
+        headers: { 
+          "Authorization": authHeader,
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: params
+      });
+
+      if (!inviteRes.ok) {
+        return { status: 500 as const, body: { success: false, error: await inviteRes.text() } as any };
+      }
+
+      return { status: 200 as const, body: { success: true, invitedCount: emails.length } as any };
+    } catch (err) {
+      return { status: 500 as const, body: { success: false, error: (err as Error).message } as any };
+    }
+  },
 };
 
 const zulipTsRestRouter = s.router(zulipContract, zulipHandlers as any);
 
 zulipRouter.use("/presence", ensureAdmin);
+zulipRouter.use("/invites/*", ensureAdmin);
 zulipRouter.use("/messages", ensureAuth);
 createHonoEndpoints(zulipContract, zulipTsRestRouter, zulipRouter);
 export default zulipRouter;
