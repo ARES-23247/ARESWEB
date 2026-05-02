@@ -6,8 +6,7 @@ import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { initServer } from "ts-rest-hono";
-import rrulePkg from 'rrule';
-const { rrulestr } = rrulePkg;
+import { rrulestr } from 'rrule';
 
 const _s = initServer<AppEnv>();
 
