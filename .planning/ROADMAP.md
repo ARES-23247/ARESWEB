@@ -54,13 +54,16 @@ Plans:
 
 ### Phase 84: make recurring calendar events
 
-**Goal:** [To be planned]
+**Goal:** Implement recurring calendar events by adding an `rrule` field to track recurrence and auto-generating child events in the database.
 **Requirements**: TBD
 **Depends on:** Phase 83
-**Plans:** 0 plans
+**Plans:** 1 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 84 to break down)
+- [ ] 84-01: Schema Update for Recurrence
+- [ ] 84-02: Update Event Contracts
+- [ ] 84-03: Backend Route for Recurring Event Generation
+- [ ] 84-04: UI Implementation
 
 ### Phase 85: Upgrade Simulation Playground IDE
 
