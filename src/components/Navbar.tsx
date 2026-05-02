@@ -1,7 +1,7 @@
  
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Search, LayoutDashboard, LogIn, Bell, Check, X, Bot } from "lucide-react";
+import { Search, LayoutDashboard, LogIn, Bell, Check, X } from "lucide-react";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -14,7 +14,7 @@ import { useMergedNotifications, MergedNotification } from "../hooks/useMergedNo
 import { useUIStore } from "../store/uiStore";
 
 export default function Navbar() {
-  const { setSidebarOpen, isChatbotOpen, setChatbotOpen } = useUIStore();
+  const { setSidebarOpen } = useUIStore();
   const [open, setOpen] = useState(false);
 
   const navigate = useNavigate();
@@ -85,6 +85,7 @@ export default function Navbar() {
           <Link to="/outreach" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Outreach</Link>
           <Link to="/events" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Events</Link>
           <Link to="/blog" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Blog</Link>
+          <Link to="/science-corner" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Science Corner</Link>
           <Link to="/store" className="text-marble hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-2 py-1">Store</Link>
           <Link to="/docs" aria-label="ARES Documentation Library" className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group border border-white/5 bg-white/5">
             <span className="bg-ares-red h-full px-3 flex items-center text-xs font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">ARES</span>
@@ -206,16 +207,8 @@ export default function Navbar() {
             <Link to="/login" className="flex items-center gap-2 px-4 h-9 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-ares-gold/30 ares-cut-sm transition-all group" aria-label="Sign In">
               <LogIn size={14} className="text-ares-gold" />
               <span className="text-xs font-bold text-white group-hover:text-ares-gold uppercase tracking-wider">Internal Portal</span>
-              </Link>          )}
-
-          <button 
-            id="nav-chatbot" 
-            onClick={() => setChatbotOpen(!isChatbotOpen)}
-            className={`hidden md:flex text-white px-6 h-9 ares-cut-sm font-bold uppercase tracking-widest text-xs transition-all shadow-lg border items-center gap-2 ${isChatbotOpen ? 'bg-indigo-700 border-indigo-600 hover:bg-indigo-600' : 'bg-indigo-600 border-indigo-500 hover:bg-indigo-500'}`}
-          >
-            <Bot size={14} className="fill-white" />
-            AI Chat
-          </button>
+            </Link>
+          )}
         </div>
 
 
@@ -248,6 +241,7 @@ export default function Navbar() {
           <Link to="/outreach" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">OUTREACH</Link>
           <Link to="/events" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">EVENTS</Link>
           <Link to="/blog" onClick={() => setOpen(false)} className="text-xl font-black italic tracking-tighter text-ares-gold">TEAM BLOG</Link>
+          <Link to="/science-corner" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">SCIENCE CORNER</Link>
           <Link to="/store" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">STORE</Link>
           <Link to="/sponsors" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">SUPPORT US</Link>
         </div>

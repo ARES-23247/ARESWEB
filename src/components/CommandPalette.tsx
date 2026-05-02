@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, FileText, Calendar, ShieldCheck, HelpCircle, Terminal, Home, ArrowRight } from "lucide-react";
+import { Search, FileText, Calendar, ShieldCheck, HelpCircle, Terminal, Home, ArrowRight, Bot } from "lucide-react";
 import { authClient } from "../utils/auth-client";
 import { sanitizeHtml } from "../utils/security";
 import { api } from "../api/client";
@@ -20,7 +20,7 @@ interface SearchResult {
 }
 
 export default function CommandPalette() {
-  const { isCommandPaletteOpen: isOpen, setCommandPaletteOpen: setIsOpen } = useUIStore();
+  const { isCommandPaletteOpen: isOpen, setCommandPaletteOpen: setIsOpen, setChatbotOpen } = useUIStore();
   const [inputValue, setInputValue] = useState("");
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -243,6 +243,26 @@ export default function CommandPalette() {
               loop
               className="flex flex-col w-full h-full"
             >
+              {/* Tabs Header */}
+              <div className="flex border-b border-white/5 bg-white/[0.02]">
+                <button
+                  className="flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors text-white border-b-2 border-ares-cyan flex justify-center items-center gap-2"
+                >
+                  <Search size={14} />
+                  Search
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    setChatbotOpen(true);
+                  }}
+                  className="flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors text-marble/40 hover:text-white border-b-2 border-transparent hover:border-white/20 flex justify-center items-center gap-2"
+                >
+                  <Bot size={14} />
+                  Ask AI
+                </button>
+              </div>
+
               {/* Input Header */}
               <div className="flex items-center px-6 py-5 border-b border-white/5 bg-white/[0.02]">
                 <Search className={`transition-colors ${isPending ? 'text-ares-cyan animate-pulse' : 'text-marble/40'} mr-3 shrink-0`} size={20} />

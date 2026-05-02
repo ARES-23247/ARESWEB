@@ -42,6 +42,7 @@ ARESWEB has completed Milestone v5.4. The Simulation Playground storage has been
 - Phase 83 added: fix e2e errors.
 - Phase 84 added: make recurring calendar events
 - Phase 86 added and completed (off-protocol): Fixed network error during recurring event publication by resolving D1 variable limits and invalid schema mappings. Added Monte Hall simulation to registry.
+- Phase 87 added: fix up the science corner. Add a link in the footer. The science corner sims do not work. Also is there an admin interface to put sims/lessons in the sicence corner. I would like things to be more like documents/blogs with both text and embedded sims. I am not sure it needs to have seperate storage as we can use the regular sims. Should be integrate the science corner better with our sims (give the sims better access to the physics engines?) I would like help brainstorming
 
 ## Current Position
 
