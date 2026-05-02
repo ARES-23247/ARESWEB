@@ -349,7 +349,7 @@ export default function TaskEditDrawer({ task, onClose, onSave, onDelete }: Task
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between p-5 border-t border-white/5 bg-obsidian">
+        <div className="flex-shrink-0 flex items-center justify-between p-5 pb-14 border-t border-white/5 bg-obsidian">
           <div>
             {confirmDelete ? (
               <div className="flex items-center gap-2">
