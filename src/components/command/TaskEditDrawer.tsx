@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { api } from "../../api/client";
 import type { TaskItem } from "./ProjectBoardKanban";
+import { KANBAN_SUBTEAMS } from "./ProjectBoardKanban";
 import ZulipThreadViewer from "../events/ZulipThreadViewer";
 
 interface TaskEditDrawerProps {
@@ -29,9 +30,7 @@ const PRIORITY_OPTIONS = [
   { value: "urgent", label: "Urgent", color: "bg-ares-red/20 text-ares-red" },
 ];
 
-const SUBTEAMS = [
-  "Hardware", "Software", "Electrical", "Business", "Outreach", "Strategy"
-];
+const SUBTEAMS = KANBAN_SUBTEAMS;
 
 export default function TaskEditDrawer({ task, onClose, onSave, onDelete }: TaskEditDrawerProps) {
   const [title, setTitle] = useState(task.title);

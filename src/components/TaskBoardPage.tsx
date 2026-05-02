@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Layout } from "lucide-react";
 import ProjectBoardKanban from "./command/ProjectBoardKanban";
 import type { TaskItem } from "./command/ProjectBoardKanban";
+import { KANBAN_SUBTEAMS } from "./command/ProjectBoardKanban";
 import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { RoomProvider, ClientSideSuspense } from "@liveblocks/react";
@@ -108,7 +109,7 @@ export default function TaskBoardPage() {
   });
 
   // -- Handlers -------------------------------------------------------
-  const subteams = ["Software", "Mechanical", "Electrical", "Strategy", "Business", "Media"];
+  const subteams = KANBAN_SUBTEAMS;
   const [subteamFilter, setSubteamFilter] = useState<string | null>(null);
 
   const filteredTasks = subteamFilter 

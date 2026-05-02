@@ -27,6 +27,16 @@ export interface TaskItem {
   subteam?: string | null;
 }
 
+export const KANBAN_SUBTEAMS = [
+  "Software", 
+  "Mechanical", 
+  "Electrical", 
+  "Strategy", 
+  "Business", 
+  "Media", 
+  "Outreach"
+];
+
 interface ProjectBoardKanbanProps {
   tasks: TaskItem[];
   isLoading: boolean;
