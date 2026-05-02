@@ -57,7 +57,7 @@ test.describe('Kanban Task Board', () => {
     }]);
 
     await page.addInitScript(() => {
-      (window as any).__PLAYWRIGHT_TEST__ = true;
+      Object.assign(window, { __PLAYWRIGHT_TEST__: true });
     });
 
     // In-memory tasks store for the mock session

@@ -213,7 +213,7 @@ export default function TaskBoardPage() {
   );
 
   // Bypass Liveblocks realtime connections during E2E testing
-  const isE2E = typeof window !== "undefined" && (window as any).__PLAYWRIGHT_TEST__;
+  const isE2E = typeof window !== "undefined" && "__PLAYWRIGHT_TEST__" in window;
   if (isE2E) {
     return boardContent;
   }
