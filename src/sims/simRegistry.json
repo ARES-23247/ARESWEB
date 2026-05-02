@@ -6,6 +6,7 @@
     { "id": "FaultSim", "name": "Fault Tolerant State Manager", "path": "./FaultSim", "requiresContext": true },
     { "id": "FieldVisualizer", "name": "PathPlanner Canvas Renderer", "path": "./FieldVisualizer", "requiresContext": true },
     { "id": "FlywheelKvSim", "name": "Flywheel KV Optimization", "path": "./FlywheelKvSim", "requiresContext": false },
+    { "id": "MonteHall", "name": "Monte Hall Paradox Simulation", "path": "./MonteHall", "requiresContext": false },
     { "id": "PerformanceDashboard", "name": "AdvantageScope Telemetry Dashboard", "path": "./PerformanceDashboard", "requiresContext": true },
     { "id": "PhysicsSim", "name": "Dyn4j Physics Subsystem", "path": "./PhysicsSim", "requiresContext": true },
     { "id": "PowerSheddingSim", "name": "Brownout Protection Sandbox", "path": "./PowerSheddingSim", "requiresContext": false },
