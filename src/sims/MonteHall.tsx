@@ -11,10 +11,11 @@ interface RoundResult {
 }
 
 export default function SimComponent() {
+  const [numDoors, setNumDoors] = useState(3);
   const [doors, setDoors] = useState<DoorContent[]>(['goat', 'goat', 'goat']);
   const [phase, setPhase] = useState<GamePhase>('pick');
   const [playerPick, setPlayerPick] = useState<number | null>(null);
-  const [revealedDoor, setRevealedDoor] = useState<number | null>(null);
+  const [revealedDoors, setRevealedDoors] = useState<number[]>([]);
   const [finalPick, setFinalPick] = useState<number | null>(null);
   const [message, setMessage] = useState('Pick a door to begin!');
   const [won, setWon] = useState<boolean | null>(null);
@@ -40,17 +41,17 @@ export default function SimComponent() {
   const stayRate = stayTotal > 0 ? ((stayWins / stayTotal) * 100).toFixed(1) : '—';
 
   const initRound = useCallback(() => {
-    const carDoor = Math.floor(Math.random() * 3);
-    const newDoors: DoorContent[] = ['goat', 'goat', 'goat'];
+    const carDoor = Math.floor(Math.random() * numDoors);
+    const newDoors: DoorContent[] = Array(numDoors).fill('goat');
     newDoors[carDoor] = 'car';
     setDoors(newDoors);
     setPhase('pick');
     setPlayerPick(null);
-    setRevealedDoor(null);
+    setRevealedDoors([]);
     setFinalPick(null);
     setWon(null);
     setMessage('Pick a door to begin!');
-  }, []);
+  }, [numDoors]);
 
   // FIX: Initialize the first round on mount so the car is placed
   useEffect(() => {
@@ -62,20 +63,28 @@ export default function SimComponent() {
     if (phase !== 'pick') return;
     setPlayerPick(doorIndex);
 
-    // Monty reveals a goat door (not the player's pick, not the car)
     const carIndex = doors.indexOf('car');
-    const candidates = [0, 1, 2].filter(i => i !== doorIndex && i !== carIndex);
-    const toReveal = candidates[Math.floor(Math.random() * candidates.length)];
-    setRevealedDoor(toReveal);
+    const goatIndices: number[] = [];
+    for (let i = 0; i < doors.length; i++) {
+        if (i !== doorIndex && i !== carIndex) {
+            goatIndices.push(i);
+        }
+    }
+    
+    const numToReveal = doors.length - 2;
+    const shuffledGoats = [...goatIndices].sort(() => Math.random() - 0.5);
+    const toReveal = shuffledGoats.slice(0, numToReveal);
+    
+    setRevealedDoors(toReveal);
     setPhase('revealed');
-    setMessage(`Door ${toReveal + 1} has a goat! Do you want to switch?`);
+    setMessage(`Door${numToReveal > 1 ? 's' : ''} ${toReveal.map(i=>i+1).join(', ')} ${numToReveal > 1 ? 'have goats' : 'has a goat'}! Switch?`);
   }, [phase, doors]);
 
   const handleSwitch = useCallback((doSwitch: boolean) => {
-    if (phase !== 'revealed' || playerPick === null || revealedDoor === null) return;
+    if (phase !== 'revealed' || playerPick === null || revealedDoors.length === 0) return;
 
     const finalDoor = doSwitch
-      ? [0, 1, 2].find(i => i !== playerPick && i !== revealedDoor)!
+      ? doors.map((_, i) => i).find(i => i !== playerPick && !revealedDoors.includes(i))!
       : playerPick;
 
     setFinalPick(finalDoor);
@@ -95,18 +104,23 @@ export default function SimComponent() {
       switched: doSwitch,
       won: didWin,
     }]);
-  }, [phase, playerPick, revealedDoor, doors]);
+  }, [phase, playerPick, revealedDoors, doors]);
 
   const runAutoRound = useCallback((strategy: 'switch' | 'stay' | 'both') => {
-    const carIndex = Math.floor(Math.random() * 3);
-    const playerInitial = Math.floor(Math.random() * 3);
+    const carIndex = Math.floor(Math.random() * numDoors);
+    const playerInitial = Math.floor(Math.random() * numDoors);
 
-    const candidates = [0, 1, 2].filter(i => i !== playerInitial && i !== carIndex);
-    const revealed = candidates[Math.floor(Math.random() * candidates.length)];
+    const goatIndices: number[] = [];
+    for (let i = 0; i < numDoors; i++) {
+        if (i !== playerInitial && i !== carIndex) goatIndices.push(i);
+    }
+    const numToReveal = numDoors - 2;
+    const shuffledGoats = [...goatIndices].sort(() => Math.random() - 0.5);
+    const revealed = shuffledGoats.slice(0, numToReveal);
 
     const doSwitch = strategy === 'both' ? Math.random() > 0.5 : strategy === 'switch';
     const finalDoor = doSwitch
-      ? [0, 1, 2].find(i => i !== playerInitial && i !== revealed)!
+      ? Array.from({length: numDoors}, (_, i) => i).find(i => i !== playerInitial && !revealed.includes(i))!
       : playerInitial;
     const didWin = finalDoor === carIndex;
 
@@ -116,7 +130,7 @@ export default function SimComponent() {
       switched: doSwitch,
       won: didWin,
     }]);
-  }, []);
+  }, [numDoors]);
 
   const runAutoBatch = useCallback((count: number) => {
     const strategy = strategyRef.current;
@@ -127,16 +141,85 @@ export default function SimComponent() {
 
   useEffect(() => {
     if (!autoRunning) return;
-    const interval = setInterval(() => {
-      if (!autoRef.current) return;
-      runAutoBatch(Math.max(1, Math.floor(speedRef.current / 10)));
-    }, 50);
-    return () => clearInterval(interval);
-  }, [autoRunning, runAutoBatch]);
+    let isCancelled = false;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const runSlowAutoplay = async () => {
+      // If speed > 100, just run batches instantly
+      if (speedRef.current > 100) {
+        while (!isCancelled && autoRef.current) {
+          runAutoBatch(Math.floor(speedRef.current / 10));
+          await new Promise(r => setTimeout(r, 50));
+        }
+        return;
+      }
+      
+      // Slower visual autoplay
+      while (!isCancelled && autoRef.current) {
+        const delay = Math.max(50, 1000 - (speedRef.current * 9));
+        
+        // Pick Phase
+        const carDoor = Math.floor(Math.random() * numDoors);
+        const newDoors: DoorContent[] = Array(numDoors).fill('goat');
+        newDoors[carDoor] = 'car';
+        setDoors(newDoors);
+        const playerInitial = Math.floor(Math.random() * numDoors);
+        setPlayerPick(playerInitial);
+        setPhase('pick');
+        setRevealedDoors([]);
+        setFinalPick(null);
+        setWon(null);
+        
+        await new Promise(r => { timeoutId = setTimeout(r, delay); });
+        if (isCancelled || !autoRef.current) break;
+        
+        // Reveal Phase
+        const goatIndices: number[] = [];
+        for (let i = 0; i < numDoors; i++) {
+            if (i !== playerInitial && i !== carDoor) goatIndices.push(i);
+        }
+        const numToReveal = numDoors - 2;
+        const shuffledGoats = [...goatIndices].sort(() => Math.random() - 0.5);
+        const toReveal = shuffledGoats.slice(0, numToReveal);
+        setRevealedDoors(toReveal);
+        setPhase('revealed');
+        
+        await new Promise(r => { timeoutId = setTimeout(r, delay); });
+        if (isCancelled || !autoRef.current) break;
+        
+        // Switch/Result Phase
+        const strategy = strategyRef.current;
+        const doSwitch = strategy === 'both' ? Math.random() > 0.5 : strategy === 'switch';
+        const finalDoor = doSwitch
+          ? newDoors.map((_, i) => i).find(i => i !== playerInitial && !toReveal.includes(i))!
+          : playerInitial;
+          
+        setFinalPick(finalDoor);
+        const didWin = newDoors[finalDoor] === 'car';
+        setWon(didWin);
+        setPhase('result');
+        setHistory(prev => [...prev, {
+          initialPick: playerInitial,
+          finalPick: finalDoor,
+          switched: doSwitch,
+          won: didWin,
+        }]);
+        
+        await new Promise(r => { timeoutId = setTimeout(r, delay); });
+      }
+    };
+
+    runSlowAutoplay();
+    
+    return () => {
+      isCancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [autoRunning, runAutoBatch, numDoors]);
 
   const getDoorStyle = (index: number): React.CSSProperties => {
     const isPlayerPick = playerPick === index;
-    const isRevealed = revealedDoor === index;
+    const isRevealed = revealedDoors.includes(index);
     const isFinalPick = finalPick === index;
     const isCar = doors[index] === 'car';
 
@@ -186,7 +269,7 @@ export default function SimComponent() {
   };
 
   const renderDoorContent = (index: number) => {
-    const isRevealed = revealedDoor === index;
+    const isRevealed = revealedDoors.includes(index);
 
     if (phase === 'pick') {
       return <span style={{ fontSize: '48px', lineHeight: 1 }}>🚪</span>;
@@ -283,9 +366,24 @@ export default function SimComponent() {
           {message}
         </div>
 
-        {/* Doors */}
+        {/* Door Count Control */}
+        <div style={{ width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--ares-cyan)' }}>NUMBER OF DOORS:</span>
+          <input
+            type="range"
+            min={3}
+            max={50}
+            value={numDoors}
+            onChange={(e) => {
+              setNumDoors(parseInt(e.target.value));
+              setHistory([]);
+            }}
+            style={{ flex: 1 }}
+          />
+          <span style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 'bold' }}>{numDoors}</span>
+        </div>
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
-          {[0, 1, 2].map(i => (
+          {Array.from({length: numDoors}, (_, i) => i).map(i => (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <div
                 role="button"

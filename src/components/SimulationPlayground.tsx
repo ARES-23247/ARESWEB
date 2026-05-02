@@ -563,6 +563,9 @@ export default function SimulationPlayground() {
     setIsChatLoading(true);
 
     try {
+      const filesJson = JSON.stringify(files, null, 2);
+      const includeExamples = filesJson.length < 15000;
+      
       const systemContext = `You are a z.AI simulation code assistant for ARES 23247, an FTC robotics team. The user is building interactive React simulations that run in a sandboxed iframe.
 RULES:
 - You MUST put EVERYTHING (all components, logic, and styling) into a SINGLE .tsx file. NEVER generate multiple files.
@@ -582,7 +585,7 @@ old code to find (must match exactly)
 new code to replace it with
 >>>>
 
-EXAMPLES OF REAL ARESWEB SIMULATIONS:
+${includeExamples ? `EXAMPLES OF REAL ARESWEB SIMULATIONS:
 
 \`\`\`tsx:ArmKgSim.tsx
 ${ArmKgSimRaw}
@@ -591,10 +594,10 @@ ${ArmKgSimRaw}
 \`\`\`tsx:ElevatorPidSim.tsx
 ${ElevatorPidSimRaw}
 \`\`\`
-
+` : ''}
 CURRENT FILES:
 \`\`\`json
-${JSON.stringify(files, null, 2)}
+${filesJson}
 \`\`\`
 
 USER REQUEST: ${msg}`;
@@ -736,8 +739,9 @@ USER REQUEST: ${msg}`;
         }
       }
 
-    } catch (e) {
-      setChatMessages(prev => [...prev, { role: "assistant", content: `⚠️ Error: ${(e as Error).message}` }]);
+    } catch (e: unknown) {
+      console.error(e);
+      setChatMessages(prev => [...prev, { role: "assistant", content: `⚠️ Error: ${(e as Error)?.message || "Network error"}` }]);
     } finally {
       setIsChatLoading(false);
     }
