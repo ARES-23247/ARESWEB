@@ -112,8 +112,6 @@ CREATE TABLE IF NOT EXISTS events (
     is_potluck INTEGER DEFAULT 0,
     is_volunteer INTEGER DEFAULT 0,
     revision_of TEXT,
-    rrule TEXT,
-    recurring_group_id TEXT REFERENCES events(id) ON DELETE CASCADE,
     published_at TEXT,
     meeting_notes TEXT,
     season_id INTEGER REFERENCES seasons(start_year) ON DELETE SET NULL
