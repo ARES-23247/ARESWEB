@@ -54,7 +54,8 @@ export default function SimComponent() {
 
   // FIX: Initialize the first round on mount so the car is placed
   useEffect(() => {
-    initRound();
+    const timer = setTimeout(() => initRound(), 0);
+    return () => clearTimeout(timer);
   }, [initRound]);
 
   const handlePick = useCallback((doorIndex: number) => {
@@ -142,7 +143,7 @@ export default function SimComponent() {
     let bg = 'linear-gradient(180deg, #2a2a3a 0%, #1a1a2a 100%)';
     let border = '2px solid #3a3a4a';
     let shadow = '0 4px 12px rgba(0,0,0,0.3)';
-    let cursor = phase === 'pick' ? 'pointer' : 'default';
+    const cursor = phase === 'pick' ? 'pointer' : 'default';
 
     if (isPlayerPick && (phase === 'revealed' || phase === 'result')) {
       border = '2px solid var(--ares-cyan)';
@@ -287,6 +288,14 @@ export default function SimComponent() {
           {[0, 1, 2].map(i => (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <div
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handlePick(i);
+                  }
+                }}
                 onClick={() => handlePick(i)}
                 style={getDoorStyle(i)}
                 onMouseEnter={(e) => {

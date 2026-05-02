@@ -70,3 +70,13 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 85 to break down)
+
+### Phase 86: I get a Network error when I try to publish a recurrent event.
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 85
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 86 to break down)

@@ -145,7 +145,7 @@ function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userR
         rrule: event.rrule || ""
       });
 
-      setRecurringGroupId((event as any).recurring_group_id || null);
+      setRecurringGroupId(event.recurring_group_id || null);
 
       if (editor) {
         const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;

@@ -90,8 +90,11 @@ export default function SimulationPlayground() {
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   
   // Editor Refs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const monacoRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const vimRef = useRef<any>(null);
 
   const compileTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -245,7 +248,8 @@ export default function SimulationPlayground() {
     
     // Ghost text provider (Manual trigger: user types, but we only show if requested, or just provide it but require Ctrl+Space to trigger)
     monaco.languages.registerInlineCompletionsProvider('javascript', {
-      provideInlineCompletions: async (model: any, position: any, context: any, token: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      provideInlineCompletions: async (model: any, position: any, context: any, _token: any) => {
         // Only trigger if explicitly requested by user (e.g. context.triggerKind === 1 for explicit invoke like Ctrl+Space)
         if (context.triggerKind !== monaco.languages.InlineCompletionTriggerKind.Explicit) {
           return { items: [] };

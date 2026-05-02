@@ -94,7 +94,7 @@ simulationsRouter.post("/", async (c) => {
     }
     
     const body = await c.req.json();
-    const { name, files, id } = body;
+    const { name, files } = body;
     
     if (!files || Object.keys(files).length === 0) {
       return c.json({ error: "No files provided" }, 400);

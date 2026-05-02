@@ -114,7 +114,10 @@ CREATE TABLE IF NOT EXISTS events (
     revision_of TEXT,
     published_at TEXT,
     meeting_notes TEXT,
-    season_id INTEGER REFERENCES seasons(start_year) ON DELETE SET NULL
+    season_id INTEGER REFERENCES seasons(start_year) ON DELETE SET NULL,
+    recurring_group_id TEXT,
+    rrule TEXT,
+    recurring_exception INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_events_season ON events(season_id);
 

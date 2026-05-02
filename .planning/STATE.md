@@ -41,6 +41,7 @@ ARESWEB has completed Milestone v5.4. The Simulation Playground storage has been
 - Out-of-band Phase completed: Migrated all AI endpoints to GLM-5.1 with comprehensive fallback error handling and Turnstile protection.
 - Phase 83 added: fix e2e errors.
 - Phase 84 added: make recurring calendar events
+- Phase 86 added: I get a Network error when I try to publish a recurrent event.
 
 ## Current Position
 

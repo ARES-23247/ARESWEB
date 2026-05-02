@@ -1,5 +1,5 @@
 import { useState, useMemo, ReactNode } from "react";
-import { Folder, File, FileCode, Plus, FolderPlus, Trash2, Edit2, ChevronRight, ChevronDown } from "lucide-react";
+import { Folder, File, FileCode, Plus, Trash2, Edit2, ChevronRight } from "lucide-react";
 
 interface SimFileExplorerProps {
   files: Record<string, string>;
@@ -120,7 +120,19 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles }: 
     return (
       <div key={node.path}>
         <div
-          className={`group flex items-center justify-between px-2 py-1 text-xs cursor-pointer select-none transition-colors ${
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (isFolder) {
+                toggleFolder(node.path);
+              } else {
+                setActiveFile(node.path);
+              }
+            }
+          }}
+          className={`group w-full flex items-center justify-between px-2 py-1 text-xs cursor-pointer select-none transition-colors ${
             isActive ? "bg-ares-gold/20 text-ares-gold" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
           }`}
           style={{ paddingLeft: `${(level * 12) + 8}px` }}
@@ -138,7 +150,7 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles }: 
                 {node.name.endsWith(".tsx") || node.name.endsWith(".ts") ? (
                   <FileCode className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
                 ) : (
-                  <File className="w-3.5 h-3.5 shrink-0" />
+                  <File className="w-3.5 h-3.5 shrink-0 text-zinc-400" />
                 )}
               </>
             )}
@@ -168,7 +180,7 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles }: 
               title="Delete"
             >
               <Trash2 className="w-3 h-3" />
-            </button>
+              </button>
           </div>
         </div>
 

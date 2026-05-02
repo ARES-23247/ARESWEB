@@ -17,6 +17,8 @@ export const eventResponseSchema = z.object({
   is_deleted: z.number().nullish(),
   season_id: z.coerce.number().nullish(),
   meeting_notes: z.string().nullish(),
+  recurring_group_id: z.string().nullish(),
+  rrule: z.string().nullish(),
 });
 
 export const eventSignupSchema = z.object({
@@ -81,6 +83,10 @@ export const eventContract = c.router({
         id: z.string().optional(),
         warning: z.string().optional(),
       }),
+      500: z.object({
+        success: z.boolean(),
+        error: z.string(),
+      }),
     },
     summary: "Create or update an event",
   },
@@ -107,6 +113,10 @@ export const eventContract = c.router({
         success: z.boolean(),
         id: z.string().optional(),
         error: z.string().optional(),
+      }),
+      500: z.object({
+        success: z.boolean(),
+        error: z.string(),
       }),
     },
     summary: "Update an event (or create revision)",
