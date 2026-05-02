@@ -27,15 +27,10 @@ const userHandlers = {
         .execute();
 
       const users = results.map((u) => {
-        const isStudent = u.member_type === "student" || u.role === "user";
-        const maskedEmail = isStudent 
-          ? u.email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => `${a}${"*".repeat(b.length)}`)
-          : u.email;
-
         return {
           id: String(u.id),
           name: u.name || null,
-          email: maskedEmail,
+          email: u.email,
           emailVerified: !!u.emailVerified,
           image: u.image || null,
           role: u.role || "user",

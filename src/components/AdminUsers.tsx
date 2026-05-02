@@ -121,15 +121,7 @@ export default function AdminUsers() {
     }),
     columnHelper.accessor("email", {
       header: "Email",
-      cell: info => {
-        const email = info.getValue();
-        const isStudent = info.row.original.member_type === "student";
-        if (isStudent && email && email.includes("@")) {
-          const [local, domain] = email.split("@");
-          return <span className="text-sm text-white/60">{local[0]}***@{domain}</span>;
-        }
-        return <span className="text-sm text-white/60">{email || "—"}</span>;
-      },
+      cell: info => <span className="text-sm text-white/60">{info.getValue() || "—"}</span>,
     }),
     columnHelper.accessor("role", {
       header: "Role",
