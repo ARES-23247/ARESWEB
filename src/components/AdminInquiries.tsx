@@ -97,8 +97,7 @@ export default function AdminInquiries() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const { data: res, isLoading, isError } = useGetAdminInquiries({ limit: 200, offset: 0 });
-  // Memoize inquiries data to avoid dependency warnings
-  const inquiries = res?.inquiries || [];
+  const inquiries = useMemo(() => (res?.inquiries || []) as Inquiry[], [res?.inquiries]);
 
   const filtered = useMemo(() => {
     let result = inquiries as Inquiry[];
