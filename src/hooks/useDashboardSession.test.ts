@@ -20,7 +20,7 @@ describe("useDashboardSession", () => {
 
   it("should compute permissions correctly for admin", async () => {
     server.use(
-      http.get("*/profiles/me", () => {
+      http.get("*/profile/me", () => {
         return HttpResponse.json({
           auth: {
             id: "admin-123",
@@ -47,7 +47,7 @@ describe("useDashboardSession", () => {
 
   it("should compute permissions correctly for unverified student", async () => {
     server.use(
-      http.get("*/profiles/me", () => {
+      http.get("*/profile/me", () => {
         return HttpResponse.json({
           auth: {
             id: "student-123",
@@ -75,7 +75,7 @@ describe("useDashboardSession", () => {
 
   it("should handle session fetch failure", async () => {
     server.use(
-      http.get("*/profiles/me", () => {
+      http.get("*/profile/me", () => {
         return new HttpResponse(null, { status: 401 });
       })
     );
@@ -90,7 +90,7 @@ describe("useDashboardSession", () => {
 
   it("should allow coach to see inquiries", async () => {
     server.use(
-      http.get("*/profiles/me", () => {
+      http.get("*/profile/me", () => {
         return HttpResponse.json({
           auth: {
             id: "coach-123",
@@ -114,7 +114,7 @@ describe("useDashboardSession", () => {
 
   it("should allow lead to see inquiries", async () => {
     server.use(
-      http.get("*/profiles/me", () => {
+      http.get("*/profile/me", () => {
         return HttpResponse.json({
           auth: {
             id: "lead-123",
@@ -138,7 +138,7 @@ describe("useDashboardSession", () => {
 
   it("should allow manager to see inquiries", async () => {
     server.use(
-      http.get("*/profiles/me", () => {
+      http.get("*/profile/me", () => {
         return HttpResponse.json({
           auth: {
             id: "manager-123",
