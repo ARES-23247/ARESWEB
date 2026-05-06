@@ -34,9 +34,10 @@ export default function PostManagerTab({
 }: PostManagerTabProps) {
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
 
-  const { data, isLoading, isError } = useGetAdminPosts();
+  const { data, isLoading, isError, error } = useGetAdminPosts();
 
   const posts = (data?.posts || []) as unknown as PostItem[];
+  const errorMessage = error instanceof Error ? error.message : "Failed to load posts";
 
   const deleteMutation = useDeletePost({
     onSuccess: () => {
@@ -82,6 +83,7 @@ export default function PostManagerTab({
         view={view}
         isLoading={isLoading}
         isError={isError}
+        errorMessage={errorMessage}
         emptyIcon={<FileText size={24} />}
         emptyMessage={`No ${view} posts found.`}
         headerTitle={

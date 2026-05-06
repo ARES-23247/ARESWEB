@@ -81,13 +81,13 @@ export default function EventDetail() {
       <SEO 
         title={event.title} 
         description={parsedAst ? extractTextFromAst(parsedAst).slice(0, 160) + "..." : (event.description?.slice(0, 160) || "") + "..."} 
-        image={event.cover_image || undefined}
+        image={event.cover_image ?? undefined}
         type="event"
         schemaData={{
-          startDate: event.date_start,
-          endDate: event.date_end,
-          locationName: event.location,
-          locationAddress: locationAddress || event.location,
+          startDate: event.date_start ?? undefined,
+          endDate: event.date_end ?? undefined,
+          locationName: event.location ?? undefined,
+          locationAddress: locationAddress ?? event.location ?? undefined,
         }}
       />
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-bronze">

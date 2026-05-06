@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 
 import { format } from "date-fns";
 import { History, RotateCcw, X, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetDocHistory, useRestoreDocHistory } from "../api/docs";
-import { useGetPostHistory, useRestorePostHistory } from "../api/posts";
+import { useGetDocHistory, useRestoreDocHistory, type DocHistoryResponse } from "../api/docs";
+import { useGetPostHistory, useRestorePostHistory, type PostHistoryResponse } from "../api/posts";
 
 export interface Revision {
   id: number;
@@ -58,7 +58,8 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
 
   const isLoading = historyQuery.isLoading;
   const isError = historyQuery.isError;
-  const revisions = (historyQuery.data as any)?.history || [];
+  const historyData = historyQuery.data as DocHistoryResponse | PostHistoryResponse | undefined;
+  const revisions = (historyData?.history || []) as Revision[];
 
   const restoreRevision = (id: number) => {
     if (type === "post") {
@@ -120,7 +121,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
                         {format(new Date(rev.created_at), 'MMM do, yyyy @ HH:mm')}
                       </span>
                       <span className="text-xs text-ares-cyan truncate max-w-[150px]">
-                        By {rev.author_email}
+                        By {rev.author_email || rev.author || "Unknown"}
                       </span>
                     </div>
                   </div>

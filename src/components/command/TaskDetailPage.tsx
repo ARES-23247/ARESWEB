@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,20 +10,21 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetTasks, useGetUsers, useUpdateTask, useDeleteTask } from "../../api";
 import type { TaskItem } from "./ProjectBoardKanban";
+import type { UpdateTaskRequest } from "../../api";
 
 const STATUS_OPTIONS = [
   { value: "todo", label: "Todo", icon: Circle, color: "text-white/60", bg: "bg-ares-gray-dark/60", border: "border-ares-gray/30" },
   { value: "in_progress", label: "In Progress", icon: Clock, color: "text-ares-cyan", bg: "bg-ares-cyan/10", border: "border-ares-cyan/30" },
   { value: "done", label: "Done", icon: CheckCircle2, color: "text-ares-gold", bg: "bg-ares-gold/10", border: "border-ares-gold/30" },
   { value: "blocked", label: "Parked", icon: AlertTriangle, color: "text-ares-red", bg: "bg-ares-red/10", border: "border-ares-red/30" },
-];
+] as const;
 
 const PRIORITY_OPTIONS = [
   { value: "low", label: "Low", color: "bg-white/5 text-ares-gray/50 border-white/5" },
   { value: "normal", label: "Normal", color: "bg-white/5 text-ares-gray border-white/5" },
   { value: "high", label: "High", color: "bg-ares-bronze/20 text-ares-bronze border-ares-bronze/30" },
   { value: "urgent", label: "Urgent", color: "bg-ares-red/20 text-ares-red border-ares-red/30" },
-];
+] as const;
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -37,15 +38,29 @@ export default function TaskDetailPage() {
 
   const tasks = tasksData?.tasks ?? [];
   const task = tasks.find((t: TaskItem) => t.id === taskId);
+  if (!task) return <div className="p-8 text-white/50 text-center">Task not found.</div>;
 
   // Local edit state — synced from task on first load
-  const [edits, setEdits] = useState<Record<string, unknown>>({});
-  const getValue = (field: string) => {
-    if (field in edits) return edits[field] as string;
-
-    return ((task as Record<string, unknown>)?.[field] as string) || "";
+  const [edits, setEdits] = useState<UpdateTaskRequest>({});
+  
+  const getValue = <K extends keyof UpdateTaskRequest>(field: K) => {
+    if (field in edits) return edits[field];
+    return task[field as keyof TaskItem];
   };
-  const setField = (field: string, value: unknown) => setEdits(prev => ({ ...prev, [field]: value }));
+  
+  const setField = <K extends keyof UpdateTaskRequest>(field: K, value: UpdateTaskRequest[K]) => 
+    setEdits(prev => ({ ...prev, [field]: value }));
+
+  const getAssigneeId = () => {
+    if ("assignees" in edits) {
+      return edits.assignees?.[0] || "";
+    }
+    return task.assignees?.[0]?.id || "";
+  };
+
+  const setAssigneeId = (val: string) => {
+    setEdits(prev => ({ ...prev, assignees: val ? [val] : [] }));
+  };
 
   // Fetch team members for assignee picker
   const { data: usersData } = useGetUsers({ limit: 100 });
@@ -58,7 +73,7 @@ export default function TaskDetailPage() {
     if (!taskId || Object.keys(edits).length === 0) return;
     setIsSaving(true);
     try {
-      await updateMutation.mutateAsync({ id: taskId, updates: edits as any });
+      await updateMutation.mutateAsync({ id: taskId, updates: edits });
       setEdits({});
     } finally {
       setIsSaving(false);
@@ -94,9 +109,9 @@ export default function TaskDetailPage() {
     );
   }
 
-  const currentStatus = getValue("status") || "todo";
-  const currentPriority = getValue("priority") || "normal";
-  const currentDue = getValue("due_date");
+  const currentStatus = (getValue("status") as string) || "todo";
+  const currentPriority = (getValue("priority") as string) || "normal";
+  const currentDue = getValue("due_date") as string | null;
   const isOverdue = currentDue && new Date(currentDue) < new Date() && currentStatus !== "done";
   const isDirty = Object.keys(edits).length > 0;
 
@@ -148,7 +163,7 @@ export default function TaskDetailPage() {
             id="task-title"
             title="Task Title"
             type="text"
-            value={getValue("title")}
+            value={(getValue("title") as string) || ""}
             onChange={(e) => setField("title", e.target.value)}
             className="w-full bg-transparent text-white text-xl font-black outline-none placeholder-ares-gray border-b border-transparent focus:border-ares-cyan/30 transition-colors pb-1"
             placeholder="Task title..."
@@ -214,8 +229,8 @@ export default function TaskDetailPage() {
             <select
               id="assignee-select"
               title="Assignee"
-              value={getValue("assigned_to")}
-              onChange={(e) => setField("assigned_to", e.target.value || null)}
+              value={getAssigneeId()}
+              onChange={(e) => setAssigneeId(e.target.value)}
               className="w-full bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
             >
               <option value="">Unassigned</option>
@@ -240,7 +255,7 @@ export default function TaskDetailPage() {
               title="Due Date"
               placeholder="Due Date"
               type="date"
-              value={getValue("due_date")}
+              value={(getValue("due_date") as string) || ""}
               onChange={(e) => setField("due_date", e.target.value || null)}
               className={`w-full bg-ares-gray-dark/50 border text-sm px-3 py-2.5 ares-cut-sm outline-none transition-colors ${
                 isOverdue
@@ -259,7 +274,7 @@ export default function TaskDetailPage() {
           <textarea
             id="task-description"
             title="Task Description"
-            value={getValue("description")}
+            value={(getValue("description") as string) || ""}
             onChange={(e) => setField("description", e.target.value)}
             rows={8}
             className="w-full bg-ares-gray-dark/30 border border-white/5 text-white text-sm px-4 py-3 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-colors resize-none scrollbar-thin scrollbar-thumb-white/5"

@@ -1,28 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- roster API shape is dynamic */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery } from "@tanstack/react-query";
 import { Search, Clock, Users, Activity } from "lucide-react";
 import { useState } from "react";
 
 
-interface RosterMember {
-  user_id: string;
-  first_name: string;
-  last_name: string;
-  nickname: string;
-  member_type: string;
-  attended_events: number;
-  manual_prep_hours: number;
-  event_volunteer_hours: number;
-  avatar: string | null;
-}
+import { useGetRosterStats, type RosterStat } from "../api";
 
-interface EnrichedRosterMember extends RosterMember {
+interface EnrichedRosterMember extends RosterStat {
   total_hours: number;
   display_name: string;
 }
 
-import { useGetRosterStats } from "../api";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
 export default function MemberImpactOverview() {
@@ -41,10 +29,10 @@ export default function MemberImpactOverview() {
   }
 
   // Calculate full roster stats
-  const enrichedRoster: EnrichedRosterMember[] = roster.map((m: any) => ({
+  const enrichedRoster: EnrichedRosterMember[] = roster.map((m: RosterStat) => ({
     ...m,
     total_hours: m.manual_prep_hours + m.event_volunteer_hours,
-    display_name: m.nickname || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "ARES Member"
+    display_name: m.nickname || "ARES Member"
   }));
 
   // Filtering for MVPs (top 3 students only)
@@ -56,7 +44,7 @@ export default function MemberImpactOverview() {
   // Search filter
   const filteredRoster = enrichedRoster.filter((m: EnrichedRosterMember) => 
     m.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.member_type.toLowerCase().includes(searchTerm.toLowerCase())
+    (m.member_type || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

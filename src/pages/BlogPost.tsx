@@ -72,11 +72,11 @@ export default function BlogPost() {
       <SEO 
         title={post.title} 
         description={extractTextFromAst(parsedAst).slice(0, 160) + "..."} 
-        image={post.thumbnail || undefined}
+        image={post.thumbnail ?? undefined}
         type="article"
         schemaData={{
-          authorName: post.author_nickname || "ARES Author",
-          datePublished: post.date,
+          authorName: post.author_nickname ?? undefined,
+          datePublished: post.date ?? undefined,
         }}
       />
       {/* ─── STANDALONE BLOG HERO ─── */}

@@ -251,7 +251,8 @@ postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(
         .limit(Number(limit) || 50)
         .offset(Number(offset) || 0)
         .execute();
-    } catch (_e) {
+    } catch (primaryError) {
+      console.error("[Posts:AdminList] Primary query failed, trying fallback:", primaryError);
       results = await db
         .selectFrom("posts")
         .select(["slug", "title", "date", "snippet", "thumbnail", "cf_email", "is_deleted", "author"])

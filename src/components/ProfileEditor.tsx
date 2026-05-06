@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { LogisticsForm } from "./profile/LogisticsForm";
 import { SecuritySettings } from "./profile/SecuritySettings";
 import { ProfileData } from "./profile/types";
 import { useForm, useWatch } from "react-hook-form";
-import { useGetMe, useUpdateMe, useGetUserProfile, useUpdateUserProfile } from "../api";
+import { useGetMe, useUpdateMe, useGetUserProfile, useUpdateUserProfile, type ProfileMe } from "../api";
 
 
 const DEFAULT_PROFILE: ProfileData = {
@@ -60,10 +60,11 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
   useEffect(() => {
     if (profileRes) {
-      const data = (adminEditUserId ? rawAdminRes?.profile : rawMeRes) as any;
+      const data = (adminEditUserId ? rawAdminRes?.profile : rawMeRes) as ProfileMe;
+      const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== null));
       reset({
         ...DEFAULT_PROFILE,
-        ...data,
+        ...cleanData,
         email: data.auth?.email || "",
         subteams: safeJSONParse(data.subteams, []),
         dietary_restrictions: safeJSONParse(data.dietary_restrictions, []),

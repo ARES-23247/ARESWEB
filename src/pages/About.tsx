@@ -20,12 +20,10 @@ export default function About() {
   const members: TeamMember[] = useMemo(() => {
     const rawMembers = rosterRes?.members || [];
     
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response type compatibility
-    return rawMembers.map((m: any): TeamMember => ({
+    return rawMembers.map((m): TeamMember => ({
       user_id: m.user_id,
-      nickname: m.nickname || m.first_name || "ARES Member",
-      first_name: m.first_name,
-      last_name: m.last_name,
+      nickname: m.nickname || m.name || "ARES Member",
+      name: m.name,
       avatar: m.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${m.user_id}`,
       pronouns: m.pronouns,
       subteams: m.subteams,

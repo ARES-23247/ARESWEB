@@ -167,8 +167,7 @@ export default function JudgesHub() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio doc type compatibility */}
-                {portfolio?.portfolioDocs.filter((d: any) => d.is_executive_summary === 1).map((doc: any) => (
+                {portfolio?.portfolioDocs.filter((d) => d.is_executive_summary === 1).map((doc) => (
                   <motion.a 
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
@@ -200,8 +199,7 @@ export default function JudgesHub() {
               </div>
               
               <div className="grid grid-cols-1 gap-4">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio doc type compatibility */}
-                {portfolio?.portfolioDocs.filter((d: any) => d.is_executive_summary !== 1).map((doc: any) => (
+                {portfolio?.portfolioDocs.filter((d) => d.is_executive_summary !== 1).map((doc) => (
                   <motion.a 
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
@@ -232,8 +230,7 @@ export default function JudgesHub() {
               </div>
               
               <div className="space-y-4">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio outreach type compatibility */}
-                {portfolio?.outreach.map((log: any, i: number) => (
+                {portfolio?.outreach.map((log, i: number) => (
                   <div key={i} className="p-6 bg-black/40 border border-white/10 ares-cut-lg">
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-xs font-bold text-ares-gold bg-ares-gold/10 px-3 py-1 ares-cut-sm uppercase tracking-widest">{format(new Date(log.date), 'MMM yyyy')}</div>
@@ -261,8 +258,7 @@ export default function JudgesHub() {
               </div>
               
               <div className="space-y-4">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio awards type compatibility */}
-                {portfolio?.awards.map((award: any, i: number) => (
+                {portfolio?.awards.map((award, i: number) => (
                   <motion.div 
                     key={i}
                     initial={{ opacity: 0, x: 20 }}
@@ -289,13 +285,11 @@ export default function JudgesHub() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-marble text-sm">Engagement Reach</span>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Outreach data type compatibility */}
-                  <span className="font-black text-white">~{portfolio?.outreach.reduce((acc: number, curr: any) => acc + (curr.reach_count || 0), 0)} Impacted</span>
+                  <span className="font-black text-white">~{portfolio?.outreach.reduce((acc: number, curr) => acc + (curr.reach_count || 0), 0)} Impacted</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-ares-cyan/20 pt-6">
                   <span className="text-marble font-bold uppercase tracking-tighter text-xs">Total Service Hours</span>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Outreach data type compatibility */}
-                  <span className="font-black text-2xl text-ares-cyan">{portfolio?.outreach.reduce((acc: number, curr: any) => acc + (curr.hours_logged || 0), 0)}</span>
+                  <span className="font-black text-2xl text-ares-cyan">{portfolio?.outreach.reduce((acc: number, curr) => acc + (curr.hours_logged || 0), 0)}</span>
                 </div>
               </div>
             </section>

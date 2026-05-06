@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -143,7 +143,7 @@ export default function ProjectBoardKanban({
             key={task.id}
             task={task}
             onDelete={onDeleteTask}
-            onUpdateStatus={(id, s) => onUpdateTask(id, { status: s as any })}
+            onUpdateStatus={(id, s) => onUpdateTask(id, { status: s as import("../../api").UpdateTaskRequest["status"] })}
             onEdit={(t) => setEditingTask(t)}
           />
         )}

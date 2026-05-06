@@ -4,22 +4,7 @@ import { fetchJson } from "../api";
 import { useQuery } from "@tanstack/react-query";
 import { trackPageView } from "../utils/analytics";
 
-export interface DocRecord {
-  slug: string;
-  title: string;
-  category: string;
-  sort_order: number;
-  description: string;
-  content?: string;
-  updated_at?: string;
-  snippet?: string;
-  cf_email?: string;
-  original_author_nickname?: string;
-  original_author_avatar?: string;
-  display_in_areslib?: number;
-  display_in_math_corner?: number;
-  display_in_science_corner?: number;
-}
+import { type DocRecord, type DocDetail } from "../api";
 
 export interface Contributor {
   author_email: string;
@@ -62,7 +47,7 @@ export function useAcademy(slug: string | undefined) {
 
   const ObjectQuery = useQuery({
     queryKey: ["doc", slug],
-    queryFn: () => fetchJson<{ doc: DocRecord, contributors: Contributor[] }>(`/api/docs/${slug}`),
+    queryFn: () => fetchJson<{ doc: DocDetail, contributors: Contributor[] }>(`/api/docs/${slug}`),
     enabled: !!slug
   });
 

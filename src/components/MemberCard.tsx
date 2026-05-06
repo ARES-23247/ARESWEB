@@ -5,22 +5,21 @@ import { BrandLogo } from "./BrandLogo";
 export interface TeamMember {
   user_id: string;
   nickname: string;
-  first_name?: string;
-  last_name?: string;
+  name?: string | null;
   avatar: string;
-  pronouns?: string;
-  subteams?: string | string[];
+  pronouns?: string | null;
+  subteams?: string | string[] | null;
   member_type: string;
-  bio?: string;
-  fun_fact?: string;
-  favorite_first_thing?: string;
-  colleges?: string;
-  employers?: string;
+  bio?: string | null;
+  fun_fact?: string | null;
+  favorite_first_thing?: string | null;
+  colleges?: string | unknown[] | null;
+  employers?: string | unknown[] | null;
 }
 
 export function MemberCard({ member }: { member: TeamMember }) {
-  const subteams = typeof member.subteams === "string" ? JSON.parse(member.subteams || "[]") : (member.subteams || []);
-  const colleges = typeof member.colleges === "string" ? JSON.parse(member.colleges || "[]") : [];
+  const subteams = Array.isArray(member.subteams) ? member.subteams : (typeof member.subteams === "string" ? JSON.parse(member.subteams || "[]") : []);
+  const colleges = Array.isArray(member.colleges) ? member.colleges : (typeof member.colleges === "string" ? JSON.parse(member.colleges || "[]") : []);
 
   return (
     <Link to={`/profile/${member.user_id}`} className="group block h-full">
@@ -34,7 +33,7 @@ export function MemberCard({ member }: { member: TeamMember }) {
           />
         </div>
         <h4 className="text-white font-bold text-base mb-0.5 group-hover:text-ares-red transition-colors">
-          {member.nickname || member.first_name || "ARES Member"}
+          {member.nickname || member.name || "ARES Member"}
         </h4>
         {member.pronouns && (
           <p className="text-marble/60 text-xs mb-2">{member.pronouns}</p>

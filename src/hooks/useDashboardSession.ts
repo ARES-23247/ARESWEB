@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchJson } from "../api";
+
+import { useGetMe } from "../api";
 
 export interface DashboardSession {
   authenticated: boolean;
@@ -35,10 +35,7 @@ export function useDashboardSession() {
   // permission changes (role updates, member_type changes) may not reflect
   // immediately for the user. For sensitive operations requiring immediate
   // permission validation, use server-side checks instead.
-  const { data: res, isLoading: isPending } = useQuery({
-    queryKey: ["dashboard", "session"],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response shape varies based on auth state
-    queryFn: () => fetchJson<any>("/api/profile/me"),
+  const { data: res, isLoading: isPending } = useGetMe({
     staleTime: 1000 * 60 * 5, // 5 minutes cache
     retry: false,
   });
@@ -49,10 +46,12 @@ export function useDashboardSession() {
       authenticated: true,
       user: {
         ..._res.auth,
-        member_type: _res.member_type,
-        first_name: _res.first_name,
-        last_name: _res.last_name,
-        nickname: _res.nickname,
+        name: _res.auth.name ?? undefined,
+        image: _res.auth.image ?? undefined,
+        member_type: _res.member_type || "student",
+        first_name: _res.first_name || "",
+        last_name: _res.last_name || "",
+        nickname: _res.nickname || "",
         role: (_res.auth.role as string) || "unverified",
       },
     } : null;

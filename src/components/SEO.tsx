@@ -7,8 +7,15 @@ interface SEOProps {
   image?: string;
   url?: string;
   type?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schemaData?: Record<string, any>;
+  schemaData?: {
+    authorName?: string;
+    datePublished?: string;
+    startDate?: string;
+    endDate?: string;
+    locationName?: string;
+    locationAddress?: string;
+    [key: string]: unknown;
+  };
 }
 
 export default function SEO({ 

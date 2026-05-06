@@ -9,6 +9,7 @@ interface GenericManagerListProps<T> {
   view: ViewType;
   isLoading: boolean;
   isError: boolean;
+  errorMessage?: string;
   emptyIcon: ReactNode;
   emptyMessage: string;
 
@@ -52,6 +53,7 @@ export default function GenericManagerList<T>({
   view,
   isLoading,
   isError,
+  errorMessage,
   emptyIcon,
   emptyMessage,
   headerTitle,
@@ -95,7 +97,7 @@ export default function GenericManagerList<T>({
 
       <div className="text-xs text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
         <span>VIEW: {view} | RAW: {rawCount} | FILTERED: {items.length}</span>
-        {isError && <span className="text-ares-red font-bold animate-pulse">API ERROR!</span>}
+        {isError && <span className="text-ares-red font-bold animate-pulse" title={errorMessage}>{errorMessage || "API ERROR!"}</span>}
       </div>
 
       <div className="flex flex-col gap-3">

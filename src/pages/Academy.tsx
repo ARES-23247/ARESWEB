@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- DocRecord type bridge between hooks */
+
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -102,7 +102,7 @@ export default function Academy() {
       <div className="flex flex-1">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         <DocsSidebar
-          groupedDocs={groupedDocs as any}
+          groupedDocs={groupedDocs}
           currentSlug={slug}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
@@ -305,7 +305,7 @@ export default function Academy() {
         </main>
         
         {currentDoc && (
-          <DocsTableOfContents content={currentDoc.content} />
+          <DocsTableOfContents content={currentDoc.content ?? undefined} />
         )}
       </div>
       </div>

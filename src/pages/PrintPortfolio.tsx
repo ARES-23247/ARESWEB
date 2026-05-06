@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import { useState, useEffect } from "react";
 import { ShieldCheck, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import { STORAGE_KEYS } from "../utils/storageKeys";
-import { useGetJudgePortfolio } from "../api";
+import { useGetJudgePortfolio, type PortfolioDoc, type OutreachItem, type AwardItem } from "../api";
 
 // Helper to detect if content is JSON AST or markdown
 function parseContent(content: string | null | undefined) {
@@ -63,9 +63,9 @@ export default function PrintPortfolio() {
   }
 
    
-  const execDocs = portfolio.portfolioDocs?.filter((d: any) => d.is_executive_summary === 1) || [];
+  const execDocs = portfolio.portfolioDocs?.filter((d: PortfolioDoc) => d.is_executive_summary === 1) || [];
    
-  const techDocs = portfolio.portfolioDocs?.filter((d: any) => d.is_executive_summary !== 1) || [];
+  const techDocs = portfolio.portfolioDocs?.filter((d: PortfolioDoc) => d.is_executive_summary !== 1) || [];
 
   return (
     <div className="print-layout bg-white text-black min-h-screen">
@@ -93,7 +93,7 @@ export default function PrintPortfolio() {
             <h2 className="text-3xl font-black uppercase tracking-tight text-ares-red border-b-4 border-black pb-4 mb-8">Executive Summaries</h2>
           </div>
           
-          {execDocs.map((doc: { slug: string; title: string; description: string; content: string | null; }) => {
+          {execDocs.map((doc: PortfolioDoc) => {
             const { parsedAst, isAst } = parseContent(doc.content);
             return (
               <div key={doc.slug} className="mb-12 page-break-inside-avoid">
@@ -116,7 +116,7 @@ export default function PrintPortfolio() {
           </div>
 
           <div className="space-y-12">
-            {techDocs.map((doc: { slug: string; title: string; description: string; category: string; content: string | null; }, idx: number) => {
+            {techDocs.map((doc: PortfolioDoc, idx: number) => {
               const { parsedAst, isAst } = parseContent(doc.content);
               return (
                 <div key={doc.slug} className={`print-doc ${idx > 0 ? "pt-12 border-t-2 border-black/10" : ""}`}>
@@ -145,13 +145,13 @@ export default function PrintPortfolio() {
           <div className="grid grid-cols-2 gap-6 mb-10">
             <div className="bg-black/5 p-6 ares-cut-sm text-center border border-black/10">
                 <div className="text-4xl font-black text-black">
-                  {portfolio.outreach.reduce((acc: number, curr: any) => acc + (curr.hours_logged || 0), 0)}
+                  {portfolio.outreach.reduce((acc: number, curr: OutreachItem) => acc + (curr.hours_logged || 0), 0)}
                 </div>
                <div className="text-sm font-bold uppercase tracking-widest text-black/50 mt-2">Total Outreach Hours</div>
             </div>
             <div className="bg-black/5 p-6 ares-cut-sm text-center border border-black/10">
                 <div className="text-4xl font-black text-ares-gold">
-                  {portfolio.outreach.reduce((acc: number, curr: any) => acc + (curr.reach_count || 0), 0).toLocaleString()}
+                  {portfolio.outreach.reduce((acc: number, curr: OutreachItem) => acc + (curr.reach_count || 0), 0).toLocaleString()}
                 </div>
                <div className="text-sm font-bold uppercase tracking-widest text-black/50 mt-2">Estimated People Impacted</div>
             </div>
@@ -188,7 +188,7 @@ export default function PrintPortfolio() {
           </div>
           
           <div className="grid grid-cols-2 gap-6">
-            {portfolio.awards.map((award: { title: string; event_name: string; year: number; }, i: number) => (
+            {portfolio.awards.map((award: AwardItem, i: number) => (
               <div key={i} className="border-l-4 border-ares-gold pl-4 py-2 mb-6 page-break-inside-avoid">
                 <h4 className="text-lg font-black uppercase">{award.title}</h4>
                 <div className="text-sm font-bold text-black/60 mt-1">{award.event_name}</div>
