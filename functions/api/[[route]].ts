@@ -72,7 +72,15 @@ app.use("*", dbMiddleware);
 // ── 4. Origin Integrity Check (Non-GET) ────
 app.use("*", originIntegrityMiddleware());
 
-const apiRouter = new OpenAPIHono<AppEnv>();
+import { fromError } from "zod-validation-error";
+
+const apiRouter = new OpenAPIHono<AppEnv>({
+  defaultHook: (result, c) => {
+    if (!result.success) {
+      return c.json({ error: fromError(result.error).toString() }, 400);
+    }
+  }
+});
 
 // SCA-P01: Prevent CDN Cache Poisoning
 apiRouter.use("*", async (c, next) => {

@@ -188,7 +188,7 @@ describe("Hono Backend - /docs Router", () => {
     authBypass = false;
     const res = await testApp.request("/admin/save", {
       method: "POST",
-      body: JSON.stringify({ slug: "fail" }),
+      body: JSON.stringify({ slug: "fail", title: "Test", category: "Manuals", content: "content" }),
       headers: { "Content-Type": "application/json" }
     }, { DEV_BYPASS: "false" }, mockExecutionContext);
 

@@ -246,7 +246,7 @@ analyticsRouter.openapi(getRosterStatsRoute, async (c) => {
 
     return c.json({ roster }, 200);
   } catch {
-    return c.json({ roster: [] } as any, 200);
+    return c.json({ error: "Failed to fetch roster stats" } as any, 500);
   }
 });
 

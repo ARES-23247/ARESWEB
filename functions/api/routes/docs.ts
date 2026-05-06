@@ -11,6 +11,28 @@ import * as docsRoutes from "../../../shared/routes/docs";
 
 export const docsRouter = new OpenAPIHono<AppEnv>();
 
+// SEC-F01: Authenticated users can submit revisions via /admin/save
+docsRouter.use("/admin/save", ensureAuth);
+
+// SEC-F02: All other /admin paths require full admin privileges.
+// We list them explicitly to avoid matching /admin/save.
+const adminPrivilegedPaths = [
+  "/admin/list",
+  "/admin/:slug/detail",
+  "/admin/:slug/sort",
+  "/admin/:slug/history",
+  "/admin/:slug/history/*",
+  "/admin/:slug/approve",
+  "/admin/:slug/reject",
+  "/admin/:slug/undelete",
+  "/admin/:slug/purge",
+  "/admin/:slug" // deleteDoc
+];
+
+adminPrivilegedPaths.forEach(path => {
+  docsRouter.use(path, ensureAdmin);
+});
+
 // SEC-Z01: Cache doc search results
 const MAX_CACHE_SIZE = 100;
 
@@ -406,7 +428,7 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, async (c) => {
 });
 
 // POST /docs/admin/save - Save or update doc
-docsRouter.openapi(docsRoutes.saveDocRoute, ensureAuth, async (c) => {
+docsRouter.openapi(docsRoutes.saveDocRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = c.req.valid("json");
@@ -774,29 +796,6 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, async (c) => {
   } catch (_e) {
     return c.json({ error: "Purge failed" }, 500);
   }
-});
-
-// Apply middleware/protections
-// SEC-F01: Authenticated users can submit revisions via /admin/save
-docsRouter.use("/admin/save", ensureAuth);
-
-// SEC-F02: All other /admin paths require full admin privileges.
-// We list them explicitly to avoid matching /admin/save.
-const adminPrivilegedPaths = [
-  "/admin/list",
-  "/admin/:slug/detail",
-  "/admin/:slug/sort",
-  "/admin/:slug/history",
-  "/admin/:slug/history/*",
-  "/admin/:slug/approve",
-  "/admin/:slug/reject",
-  "/admin/:slug/undelete",
-  "/admin/:slug/purge",
-  "/admin/:slug" // deleteDoc
-];
-
-adminPrivilegedPaths.forEach(path => {
-  docsRouter.use(path, ensureAdmin);
 });
 
 export default docsRouter;
