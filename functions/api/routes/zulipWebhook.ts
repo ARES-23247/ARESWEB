@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -27,7 +28,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 // ── POST /webhooks/zulip — Handle outgoing webhook from Zulip ────────
-zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: any) => {
+zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
   const body = c.req.valid("json");
 
   const config = await getSocialConfig(c);

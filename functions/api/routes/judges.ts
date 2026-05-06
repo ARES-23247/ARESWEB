@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit } from "../middleware";
 import {
@@ -34,7 +35,7 @@ const portfolioCache = new Map<string, { data: unknown; expiresAt: number; versi
 // Helper to get the current portfolio cache key with version
 const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
-judgesRouter.openapi(judgeLoginRoute, async (c: any) => {
+judgesRouter.openapi(judgeLoginRoute, async (c: Context<AppEnv>) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const db = c.get("db") as Kysely<DB>;
 
@@ -74,7 +75,7 @@ judgesRouter.openapi(judgeLoginRoute, async (c: any) => {
   }
 });
 
-judgesRouter.openapi(judgePortfolioRoute, async (c: any) => {
+judgesRouter.openapi(judgePortfolioRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { "x-judge-code": code } = c.req.valid("header");
@@ -169,7 +170,7 @@ judgesRouter.openapi(judgePortfolioRoute, async (c: any) => {
 // Admin routes require ensureAdmin middleware
 judgesRouter.use("/admin/*", ensureAdmin);
 
-judgesRouter.openapi(listJudgeCodesRoute, async (c: any) => {
+judgesRouter.openapi(listJudgeCodesRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("judge_access_codes")
@@ -189,7 +190,7 @@ judgesRouter.openapi(listJudgeCodesRoute, async (c: any) => {
   }
 });
 
-judgesRouter.openapi(createJudgeCodeRoute, async (c: any) => {
+judgesRouter.openapi(createJudgeCodeRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { label, expiresAt } = c.req.valid("json");
@@ -216,7 +217,7 @@ judgesRouter.openapi(createJudgeCodeRoute, async (c: any) => {
   }
 });
 
-judgesRouter.openapi(deleteJudgeCodeRoute, async (c: any) => {
+judgesRouter.openapi(deleteJudgeCodeRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { id } = c.req.valid("param");

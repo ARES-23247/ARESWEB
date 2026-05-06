@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../../../shared/types/api";
 import { Kysely } from "kysely";
@@ -11,7 +12,7 @@ import {
 
 export const pointsRouter = new OpenAPIHono<AppEnv>();
 
-pointsRouter.openapi(getPointsBalanceRoute, async (c: any) => {
+pointsRouter.openapi(getPointsBalanceRoute, async (c: Context<AppEnv>) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -39,7 +40,7 @@ pointsRouter.openapi(getPointsBalanceRoute, async (c: any) => {
   }
 });
 
-pointsRouter.openapi(getPointsHistoryRoute, async (c: any) => {
+pointsRouter.openapi(getPointsHistoryRoute, async (c: Context<AppEnv>) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -70,7 +71,7 @@ pointsRouter.openapi(getPointsHistoryRoute, async (c: any) => {
   }
 });
 
-pointsRouter.openapi(awardPointsRoute, async (c: any) => {
+pointsRouter.openapi(awardPointsRoute, async (c: Context<AppEnv>) => {
   const { user_id, points_delta, reason } = c.req.valid("json");
   try {
     const sessionUser = c.get("sessionUser");
@@ -103,7 +104,7 @@ pointsRouter.openapi(awardPointsRoute, async (c: any) => {
   }
 });
 
-pointsRouter.openapi(getPointsLeaderboardRoute, async (c: any) => {
+pointsRouter.openapi(getPointsLeaderboardRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
 

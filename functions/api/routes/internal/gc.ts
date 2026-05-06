@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
 import { gcRoute } from "../../../../shared/routes/internal";
@@ -5,7 +6,7 @@ import { gcRoute } from "../../../../shared/routes/internal";
 export const gcRouter = new OpenAPIHono<AppEnv>();
 
 // This is an internal cron trigger endpoint
-gcRouter.openapi(gcRoute, async (c: any) => {
+gcRouter.openapi(gcRoute, async (c: Context<AppEnv>) => {
   try {
     const cronSecret = c.env.CRON_SECRET;
     const providedSecret = c.req.header("x-cron-secret");

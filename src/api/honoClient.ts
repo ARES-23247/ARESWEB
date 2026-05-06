@@ -1,13 +1,13 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
-import { type apiRouter } from "../../functions/api/[[route]].ts";
+import { type AppType } from "../../functions/api/[[route]].ts";
 
 /**
  * Type-safe Hono client for API calls.
  * 
- * NOTE: We use hc<typeof apiRouter> to get full RPC type safety.
+ * NOTE: We use hc<AppType> to get full RPC type safety.
  */
-export const client = hc<typeof apiRouter>("/api", {
+export const client = hc<AppType>("/api", {
   init: {
     credentials: "include",
   },

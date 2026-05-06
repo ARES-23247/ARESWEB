@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { z } from "zod";
@@ -17,7 +18,7 @@ export const locationsRouter = new OpenAPIHono<AppEnv>();
 
 locationsRouter.use("/admin/*", ensureAdmin);
 
-locationsRouter.openapi(listLocationsRoute, async (c: any) => {
+locationsRouter.openapi(listLocationsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("locations")
@@ -39,7 +40,7 @@ locationsRouter.openapi(listLocationsRoute, async (c: any) => {
   }
 });
 
-locationsRouter.openapi(adminListLocationsRoute, async (c: any) => {
+locationsRouter.openapi(adminListLocationsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("locations")
@@ -60,7 +61,7 @@ locationsRouter.openapi(adminListLocationsRoute, async (c: any) => {
   }
 });
 
-locationsRouter.openapi(saveLocationRoute, async (c: any) => {
+locationsRouter.openapi(saveLocationRoute, async (c: Context<AppEnv>) => {
   try {
     const validatedData = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -90,7 +91,7 @@ locationsRouter.openapi(saveLocationRoute, async (c: any) => {
   }
 });
 
-locationsRouter.openapi(deleteLocationRoute, async (c: any) => {
+locationsRouter.openapi(deleteLocationRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

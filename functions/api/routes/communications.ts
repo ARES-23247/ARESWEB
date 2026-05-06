@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, logSystemError } from "../middleware";
 import type { _HonoContext } from "@shared/types/api";
@@ -15,7 +16,7 @@ communicationsRouter.use("/mass-email", ensureAdmin);
 communicationsRouter.use("/stats", ensureAdmin);
 
 // Get stats
-communicationsRouter.openapi(getStatsRoute, async (c: any) => {
+communicationsRouter.openapi(getStatsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB> | null;
     if (!db) {
@@ -35,7 +36,7 @@ communicationsRouter.openapi(getStatsRoute, async (c: any) => {
 });
 
 // Send mass email
-communicationsRouter.openapi(sendMassEmailRoute, async (c: any) => {
+communicationsRouter.openapi(sendMassEmailRoute, async (c: Context<AppEnv>) => {
   try {
     const { subject, htmlContent } = c.req.valid("json");
     const socialConfig = await getSocialConfig(c);

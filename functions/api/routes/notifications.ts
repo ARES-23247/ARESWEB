@@ -1,6 +1,7 @@
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { 
   getNotificationsRoute, 
@@ -17,7 +18,7 @@ notificationsRouter.use("*", ensureAuth);
 notificationsRouter.use("/:id/read", rateLimitMiddleware(20, 60));
 notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 
-notificationsRouter.openapi(getNotificationsRoute, async (c: any) => {
+notificationsRouter.openapi(getNotificationsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -48,7 +49,7 @@ notificationsRouter.openapi(getNotificationsRoute, async (c: any) => {
   }
 });
 
-notificationsRouter.openapi(markNotificationReadRoute, async (c: any) => {
+notificationsRouter.openapi(markNotificationReadRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -67,7 +68,7 @@ notificationsRouter.openapi(markNotificationReadRoute, async (c: any) => {
   }
 });
 
-notificationsRouter.openapi(markAllNotificationsReadRoute, async (c: any) => {
+notificationsRouter.openapi(markAllNotificationsReadRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -84,7 +85,7 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, async (c: any) => {
   }
 });
 
-notificationsRouter.openapi(deleteNotificationRoute, async (c: any) => {
+notificationsRouter.openapi(deleteNotificationRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -102,7 +103,7 @@ notificationsRouter.openapi(deleteNotificationRoute, async (c: any) => {
   }
 });
 
-notificationsRouter.openapi(getPendingCountsRoute, async (c: any) => {
+notificationsRouter.openapi(getPendingCountsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -139,7 +140,7 @@ notificationsRouter.openapi(getPendingCountsRoute, async (c: any) => {
   }
 });
 
-notificationsRouter.openapi(getDashboardActionItemsRoute, async (c: any) => {
+notificationsRouter.openapi(getDashboardActionItemsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);

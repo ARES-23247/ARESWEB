@@ -32,7 +32,7 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   return { deleted: res.length };
 }
 
-export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv> = async (c: any) => {
+export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv> = async (c: Context<AppEnv>) => {
   try {
     const { limit = 50, offset = 0 } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -115,7 +115,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
   }
 };
 
-export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv> = async (c: any) => {
+export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv> = async (c: Context<AppEnv>) => {
   try {
     const { type, name, email, metadata } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -222,7 +222,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
   }
 };
 
-export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, AppEnv> = async (c: any) => {
+export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, AppEnv> = async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const { status } = c.req.valid("json");
@@ -240,7 +240,7 @@ export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, A
   }
 };
 
-export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, AppEnv> = async (c: any) => {
+export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, AppEnv> = async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const { notes } = c.req.valid("json");
@@ -258,7 +258,7 @@ export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, App
   }
 };
 
-export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv> = async (c: any) => {
+export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv> = async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

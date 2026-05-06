@@ -53,12 +53,14 @@ describe("Auth Router", () => {
         id: "u1", 
         email: "test@example.com", 
         name: "Test User", 
-        nickname: "Test", 
         image: null, 
-        role: "admin", 
-        member_type: "mentor" 
+        role: "admin"
       };
-      vi.mocked(shared.getSessionUser).mockResolvedValue(mockUser);
+      vi.mocked(shared.getSessionUser).mockResolvedValue({
+        ...mockUser,
+        nickname: "Test",
+        member_type: "mentor"
+      } as any);
 
       const res = await app.request("/auth-check", {
         headers: { "ENVIRONMENT": "development" }

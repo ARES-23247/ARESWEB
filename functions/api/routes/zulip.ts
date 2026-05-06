@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, ensureAuth, getSocialConfig } from "../middleware";
 import {
@@ -34,7 +35,7 @@ zulipRouter.use("*", ensureAuth);
 zulipRouter.use("/presence", ensureAdmin);
 zulipRouter.use("/invites/*", ensureAdmin);
 
-zulipRouter.openapi(getPresenceRoute, async (c: any) => {
+zulipRouter.openapi(getPresenceRoute, async (c: Context<AppEnv>) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -88,7 +89,7 @@ zulipRouter.openapi(getPresenceRoute, async (c: any) => {
   }
 });
 
-zulipRouter.openapi(sendMessageRoute, async (c: any) => {
+zulipRouter.openapi(sendMessageRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const { sendZulipMessage } = await import("../../utils/zulipSync");
@@ -126,7 +127,7 @@ zulipRouter.openapi(sendMessageRoute, async (c: any) => {
   }
 });
 
-zulipRouter.openapi(getTopicMessagesRoute, async (c: any) => {
+zulipRouter.openapi(getTopicMessagesRoute, async (c: Context<AppEnv>) => {
   try {
     const query = c.req.valid("query");
     const config = await getSocialConfig(c);
@@ -178,7 +179,7 @@ zulipRouter.openapi(getTopicMessagesRoute, async (c: any) => {
   }
 });
 
-zulipRouter.openapi(auditMissingUsersRoute, async (c: any) => {
+zulipRouter.openapi(auditMissingUsersRoute, async (c: Context<AppEnv>) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -291,7 +292,7 @@ zulipRouter.openapi(auditMissingUsersRoute, async (c: any) => {
   }
 });
 
-zulipRouter.openapi(inviteUsersRoute, async (c: any) => {
+zulipRouter.openapi(inviteUsersRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const config = await getSocialConfig(c);

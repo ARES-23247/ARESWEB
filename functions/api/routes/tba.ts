@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, rateLimitMiddleware } from "../middleware";
 import { getRankingsRoute, getMatchesRoute, getFtcEventsRoute } from "../../../shared/routes/tba";
@@ -48,7 +49,7 @@ async function getTBA(path: string, c: HonoContext) {
   return data;
 }
 
-tbaRouter.openapi(getRankingsRoute, async (c: any) => {
+tbaRouter.openapi(getRankingsRoute, async (c: Context<AppEnv>) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -62,7 +63,7 @@ tbaRouter.openapi(getRankingsRoute, async (c: any) => {
   }
 });
 
-tbaRouter.openapi(getMatchesRoute, async (c: any) => {
+tbaRouter.openapi(getMatchesRoute, async (c: Context<AppEnv>) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -77,7 +78,7 @@ tbaRouter.openapi(getMatchesRoute, async (c: any) => {
   }
 });
 
-tbaRouter.openapi(getFtcEventsRoute, async (c: any) => {
+tbaRouter.openapi(getFtcEventsRoute, async (c: Context<AppEnv>) => {
   try {
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;

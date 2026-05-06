@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -20,7 +21,7 @@ badgesRouter.use("/", ensureAuth);
 badgesRouter.use("/admin/*", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-badgesRouter.openapi(listBadgesRoute, async (c: any) => {
+badgesRouter.openapi(listBadgesRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -45,7 +46,7 @@ badgesRouter.openapi(listBadgesRoute, async (c: any) => {
   }
 });
 
-badgesRouter.openapi(createBadgeRoute, async (c: any) => {
+badgesRouter.openapi(createBadgeRoute, async (c: Context<AppEnv>) => {
   try {
     const { id, name, description, icon, color_theme } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -66,7 +67,7 @@ badgesRouter.openapi(createBadgeRoute, async (c: any) => {
   }
 });
 
-badgesRouter.openapi(grantBadgeRoute, async (c: any) => {
+badgesRouter.openapi(grantBadgeRoute, async (c: Context<AppEnv>) => {
   try {
     const { userId, badgeId } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -130,7 +131,7 @@ badgesRouter.openapi(grantBadgeRoute, async (c: any) => {
   }
 });
 
-badgesRouter.openapi(revokeBadgeRoute, async (c: any) => {
+badgesRouter.openapi(revokeBadgeRoute, async (c: Context<AppEnv>) => {
   try {
     const { userId, badgeId } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -146,7 +147,7 @@ badgesRouter.openapi(revokeBadgeRoute, async (c: any) => {
   }
 });
 
-badgesRouter.openapi(deleteBadgeRoute, async (c: any) => {
+badgesRouter.openapi(deleteBadgeRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -158,7 +159,7 @@ badgesRouter.openapi(deleteBadgeRoute, async (c: any) => {
   }
 });
 
-badgesRouter.openapi(leaderboardBadgeRoute, async (c: any) => {
+badgesRouter.openapi(leaderboardBadgeRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db

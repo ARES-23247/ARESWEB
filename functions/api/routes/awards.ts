@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -6,7 +7,7 @@ import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../share
 
 export const awardsRouter = new OpenAPIHono<AppEnv>();
 
-awardsRouter.openapi(getAwardsRoute, async (c: any) => {
+awardsRouter.openapi(getAwardsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit = 50, offset = 0 } = c.req.valid('query');
@@ -40,7 +41,7 @@ awardsRouter.openapi(getAwardsRoute, async (c: any) => {
 
 awardsRouter.use("/admin/*", ensureAdmin);
 
-awardsRouter.openapi(saveAwardRoute, async (c: any) => {
+awardsRouter.openapi(saveAwardRoute, async (c: Context<AppEnv>) => {
   try {
     const validatedData = c.req.valid('json');
     const db = c.get("db") as Kysely<DB>;
@@ -126,7 +127,7 @@ awardsRouter.openapi(saveAwardRoute, async (c: any) => {
   }
 });
 
-awardsRouter.openapi(deleteAwardRoute, async (c: any) => {
+awardsRouter.openapi(deleteAwardRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const params = c.req.valid('param');

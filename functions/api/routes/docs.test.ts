@@ -494,7 +494,7 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("POST /:slug/feedback - feedback error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.execute.mockRejectedValue(new Error("DB fail"));
     const res = await testApp.request("/test-doc/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

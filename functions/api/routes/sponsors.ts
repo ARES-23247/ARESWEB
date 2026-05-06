@@ -1,5 +1,6 @@
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
 import { sendZulipAlert } from "../../utils/zulipSync";
@@ -32,7 +33,7 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
 // Get all public sponsors
-sponsorsRouter.openapi(getSponsorsRoute, async (c: any) => {
+sponsorsRouter.openapi(getSponsorsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -60,7 +61,7 @@ sponsorsRouter.openapi(getSponsorsRoute, async (c: any) => {
 });
 
 // Get ROI dashboard by token
-sponsorsRouter.openapi(getRoiRoute, async (c: any) => {
+sponsorsRouter.openapi(getRoiRoute, async (c: Context<AppEnv>) => {
   try {
     const { token } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -118,7 +119,7 @@ sponsorsRouter.openapi(getRoiRoute, async (c: any) => {
 });
 
 // Admin list all sponsors
-sponsorsRouter.openapi(adminListSponsorsRoute, async (c: any) => {
+sponsorsRouter.openapi(adminListSponsorsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const sponsors = await db.selectFrom("sponsors").selectAll().execute();
@@ -144,7 +145,7 @@ sponsorsRouter.openapi(adminListSponsorsRoute, async (c: any) => {
 });
 
 // Save/create sponsor
-sponsorsRouter.openapi(saveSponsorRoute, async (c: any) => {
+sponsorsRouter.openapi(saveSponsorRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -188,7 +189,7 @@ sponsorsRouter.openapi(saveSponsorRoute, async (c: any) => {
 });
 
 // Delete sponsor
-sponsorsRouter.openapi(deleteSponsorRoute, async (c: any) => {
+sponsorsRouter.openapi(deleteSponsorRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -203,7 +204,7 @@ sponsorsRouter.openapi(deleteSponsorRoute, async (c: any) => {
 });
 
 // Get admin tokens
-sponsorsRouter.openapi(getAdminTokensRoute, async (c: any) => {
+sponsorsRouter.openapi(getAdminTokensRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -229,7 +230,7 @@ sponsorsRouter.openapi(getAdminTokensRoute, async (c: any) => {
 });
 
 // Generate token
-sponsorsRouter.openapi(generateTokenRoute, async (c: any) => {
+sponsorsRouter.openapi(generateTokenRoute, async (c: Context<AppEnv>) => {
   try {
     const { sponsor_id } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;

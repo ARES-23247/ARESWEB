@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   AppEnv,
@@ -52,7 +53,7 @@ const settingsSchema = z.record(z.string(), z.string().max(10000));
 // Admin protection - Apply only to admin routes
 settingsRouter.use("/admin/*", ensureAdmin);
 
-settingsRouter.openapi(getSettingsRoute, async (c: any) => {
+settingsRouter.openapi(getSettingsRoute, async (c: Context<AppEnv>) => {
   try {
     const settings = await getDbSettings(c);
     const masked: Record<string, string> = {};
@@ -66,7 +67,7 @@ settingsRouter.openapi(getSettingsRoute, async (c: any) => {
   }
 });
 
-settingsRouter.openapi(updateSettingsRoute, async (c: any) => {
+settingsRouter.openapi(updateSettingsRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const body = c.req.valid("json");
@@ -126,7 +127,7 @@ settingsRouter.openapi(updateSettingsRoute, async (c: any) => {
   }
 });
 
-settingsRouter.openapi(getStatsRoute, async (c: any) => {
+settingsRouter.openapi(getStatsRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
@@ -152,7 +153,7 @@ settingsRouter.openapi(getStatsRoute, async (c: any) => {
   }
 });
 
-settingsRouter.openapi(getPublicSettingsRoute, async (c: any) => {
+settingsRouter.openapi(getPublicSettingsRoute, async (c: Context<AppEnv>) => {
   try {
     const settings = await getDbSettings(c);
     const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
@@ -170,7 +171,7 @@ settingsRouter.openapi(getPublicSettingsRoute, async (c: any) => {
 });
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
-settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: any) => {
+settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const SAFE_TABLES = [

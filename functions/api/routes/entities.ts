@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -8,7 +9,7 @@ export const entitiesRouter = new OpenAPIHono<AppEnv>();
 
 entitiesRouter.use("*", ensureAuth);
 
-entitiesRouter.openapi(getEntityLinksRoute, async (c: any) => {
+entitiesRouter.openapi(getEntityLinksRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { type, id } = c.req.valid("query");
@@ -72,7 +73,7 @@ entitiesRouter.openapi(getEntityLinksRoute, async (c: any) => {
   }
 });
 
-entitiesRouter.openapi(saveEntityLinkRoute, async (c: any) => {
+entitiesRouter.openapi(saveEntityLinkRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const body = c.req.valid("json");
@@ -97,7 +98,7 @@ entitiesRouter.openapi(saveEntityLinkRoute, async (c: any) => {
   }
 });
 
-entitiesRouter.openapi(deleteEntityLinkRoute, async (c: any) => {
+entitiesRouter.openapi(deleteEntityLinkRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { id } = c.req.valid("param");

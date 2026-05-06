@@ -1,10 +1,11 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
 import { toaProxyRoute } from "../../../../shared/routes/scouting";
 
 const toaProxy = new OpenAPIHono<AppEnv>();
 
-toaProxy.openapi(toaProxyRoute, async (c: any) => {
+toaProxy.openapi(toaProxyRoute, async (c: Context<AppEnv>) => {
   const { path } = c.req.valid("param");
   const toaKey = c.env.TOA_API_KEY;
 

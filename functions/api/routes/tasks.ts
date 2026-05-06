@@ -1,5 +1,6 @@
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, getSessionUser, rateLimitMiddleware, getSocialConfig, originIntegrityMiddleware } from "../middleware";
 import {
@@ -21,7 +22,7 @@ tasksRouter.use("*", rateLimitMiddleware(30, 60));
 // WR-11: Add origin integrity to prevent CSRF attacks on task operations
 tasksRouter.use("*", originIntegrityMiddleware());
 
-tasksRouter.openapi(listTasksRoute, async (c: any) => {
+tasksRouter.openapi(listTasksRoute, async (c: Context<AppEnv>) => {
   try {
     const query = c.req.valid("query") || {};
     const db = c.get("db") as Kysely<DB>;
@@ -99,7 +100,7 @@ tasksRouter.openapi(listTasksRoute, async (c: any) => {
   }
 });
 
-tasksRouter.openapi(createTaskRoute, async (c: any) => {
+tasksRouter.openapi(createTaskRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -221,7 +222,7 @@ tasksRouter.openapi(createTaskRoute, async (c: any) => {
   }
 });
 
-tasksRouter.openapi(reorderTasksRoute, async (c: any) => {
+tasksRouter.openapi(reorderTasksRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -255,7 +256,7 @@ tasksRouter.openapi(reorderTasksRoute, async (c: any) => {
   }
 });
 
-tasksRouter.openapi(updateTaskRoute, async (c: any) => {
+tasksRouter.openapi(updateTaskRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -362,7 +363,7 @@ tasksRouter.openapi(updateTaskRoute, async (c: any) => {
   }
 });
 
-tasksRouter.openapi(deleteTaskRoute, async (c: any) => {
+tasksRouter.openapi(deleteTaskRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

@@ -1,6 +1,7 @@
 import { AppEnv, ensureAdmin } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { getLogisticsSummaryRoute, exportLogisticsEmailsRoute } from "../../../shared/routes/logistics";
 import { decrypt } from "../../utils/crypto";
@@ -9,7 +10,7 @@ export const logisticsRouter = new OpenAPIHono<AppEnv>();
 
 logisticsRouter.use("/admin/*", ensureAdmin);
 
-logisticsRouter.openapi(getLogisticsSummaryRoute, async (c: any) => {
+logisticsRouter.openapi(getLogisticsSummaryRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
 
   try {
@@ -51,7 +52,7 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, async (c: any) => {
   }
 });
 
-logisticsRouter.openapi(exportLogisticsEmailsRoute, async (c: any) => {
+logisticsRouter.openapi(exportLogisticsEmailsRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   const secret = c.env.ENCRYPTION_SECRET;
 

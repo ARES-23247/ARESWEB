@@ -1,10 +1,11 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
 import { ftcEventsProxyRoute } from "../../../../shared/routes/scouting";
 
 const ftcEventsProxy = new OpenAPIHono<AppEnv>();
 
-ftcEventsProxy.openapi(ftcEventsProxyRoute, async (c: any) => {
+ftcEventsProxy.openapi(ftcEventsProxyRoute, async (c: Context<AppEnv>) => {
   const { path } = c.req.valid("param");
   const username = c.env.FTC_EVENTS_USERNAME;
   const apiKey = c.env.FTC_EVENTS_API_KEY;

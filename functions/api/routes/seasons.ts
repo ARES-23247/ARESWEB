@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
@@ -25,7 +26,7 @@ seasonsRouter.use("/:year", edgeCacheMiddleware(300, 60));
 seasonsRouter.use("/admin/*", ensureAdmin);
 seasonsRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-seasonsRouter.openapi(listSeasonsRoute, async (c: any) => {
+seasonsRouter.openapi(listSeasonsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db");
     const results = await db
@@ -64,7 +65,7 @@ seasonsRouter.openapi(listSeasonsRoute, async (c: any) => {
   }
 });
 
-seasonsRouter.openapi(adminListSeasonsRoute, async (c: any) => {
+seasonsRouter.openapi(adminListSeasonsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db");
     const results = await db
@@ -101,7 +102,7 @@ seasonsRouter.openapi(adminListSeasonsRoute, async (c: any) => {
   }
 });
 
-seasonsRouter.openapi(adminDetailSeasonRoute, async (c: any) => {
+seasonsRouter.openapi(adminDetailSeasonRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -145,7 +146,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, async (c: any) => {
   }
 });
 
-seasonsRouter.openapi(getSeasonDetailRoute, async (c: any) => {
+seasonsRouter.openapi(getSeasonDetailRoute, async (c: Context<AppEnv>) => {
   try {
     const { year } = c.req.valid("param");
     const db = c.get("db");
@@ -254,7 +255,7 @@ seasonsRouter.openapi(getSeasonDetailRoute, async (c: any) => {
   }
 });
 
-seasonsRouter.openapi(saveSeasonRoute, async (c: any) => {
+seasonsRouter.openapi(saveSeasonRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db");
@@ -339,7 +340,7 @@ seasonsRouter.openapi(saveSeasonRoute, async (c: any) => {
   }
 });
 
-seasonsRouter.openapi(deleteSeasonRoute, async (c: any) => {
+seasonsRouter.openapi(deleteSeasonRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -359,7 +360,7 @@ seasonsRouter.openapi(deleteSeasonRoute, async (c: any) => {
   }
 });
 
-seasonsRouter.openapi(undeleteSeasonRoute, async (c: any) => {
+seasonsRouter.openapi(undeleteSeasonRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -377,7 +378,7 @@ seasonsRouter.openapi(undeleteSeasonRoute, async (c: any) => {
   }
 });
 
-seasonsRouter.openapi(purgeSeasonRoute, async (c: any) => {
+seasonsRouter.openapi(purgeSeasonRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");

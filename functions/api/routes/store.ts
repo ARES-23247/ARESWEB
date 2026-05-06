@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, logSystemError, ensureAdmin } from "../middleware";
 import Stripe from "stripe";
@@ -94,7 +95,7 @@ storeRouter.post("/webhook", async (c) => {
 storeRouter.use("/orders/*", ensureAdmin);
 storeRouter.use("/orders", ensureAdmin);
 
-storeRouter.openapi(getProductsRoute, async (c: any) => {
+storeRouter.openapi(getProductsRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const products = await db
@@ -123,7 +124,7 @@ storeRouter.openapi(getProductsRoute, async (c: any) => {
   }
 });
 
-storeRouter.openapi(createCheckoutSessionRoute, async (c: any) => {
+storeRouter.openapi(createCheckoutSessionRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const { items, successUrl, cancelUrl } = body;
@@ -196,7 +197,7 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c: any) => {
   }
 });
 
-storeRouter.openapi(getOrdersRoute, async (c: any) => {
+storeRouter.openapi(getOrdersRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const orders = await db.selectFrom("orders").selectAll().orderBy("created_at", "desc").execute();
@@ -208,7 +209,7 @@ storeRouter.openapi(getOrdersRoute, async (c: any) => {
   }
 });
 
-storeRouter.openapi(updateOrderStatusRoute, async (c: any) => {
+storeRouter.openapi(updateOrderStatusRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");

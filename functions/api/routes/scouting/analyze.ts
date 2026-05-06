@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth } from "../../middleware";
 import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
@@ -60,7 +61,7 @@ Be specific and use the data provided. Reference team numbers and stats.`,
 
 const analyzeRouter = new OpenAPIHono<AppEnv>();
 
-analyzeRouter.openapi(analyzeScoutingRoute, async (c: any) => {
+analyzeRouter.openapi(analyzeScoutingRoute, async (c: Context<AppEnv>) => {
   const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
   if (!SYSTEM_PROMPTS[mode]) {

@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   AppEnv,
@@ -62,7 +63,7 @@ profilesRouter.use("/me", ensureAuth);
 profilesRouter.use("/update-me", ensureAuth);
 profilesRouter.use("/avatar", ensureAuth);
 
-profilesRouter.openapi(getMeRoute, async (c: any) => {
+profilesRouter.openapi(getMeRoute, async (c: Context<AppEnv>) => {
   const user = (await getSessionUser(c))!;
   const db = c.get("db") as Kysely<DB>;
 
@@ -169,7 +170,7 @@ profilesRouter.openapi(getMeRoute, async (c: any) => {
   }
 });
 
-profilesRouter.openapi(updateMeRoute, async (c: any) => {
+profilesRouter.openapi(updateMeRoute, async (c: Context<AppEnv>) => {
   const user = (await getSessionUser(c))!;
   try {
     const body = c.req.valid("json");
@@ -189,7 +190,7 @@ profilesRouter.openapi(updateMeRoute, async (c: any) => {
   }
 });
 
-profilesRouter.openapi(updateAvatarRoute, async (c: any) => {
+profilesRouter.openapi(updateAvatarRoute, async (c: Context<AppEnv>) => {
   try {
     const body = c.req.valid("json");
     const image = (body as { image?: string | null }).image;
@@ -203,7 +204,7 @@ profilesRouter.openapi(updateAvatarRoute, async (c: any) => {
 
 // ─── Public Routes ────────────────────────────────────────────────────────
 
-profilesRouter.openapi(getTeamRosterRoute, async (c: any) => {
+profilesRouter.openapi(getTeamRosterRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db
@@ -283,7 +284,7 @@ profilesRouter.openapi(getTeamRosterRoute, async (c: any) => {
   }
 });
 
-profilesRouter.openapi(getPublicProfileRoute, async (c: any) => {
+profilesRouter.openapi(getPublicProfileRoute, async (c: Context<AppEnv>) => {
   const { userId } = c.req.valid("param");
   const db = c.get("db") as Kysely<DB>;
   try {

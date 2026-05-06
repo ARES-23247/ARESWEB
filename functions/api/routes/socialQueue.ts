@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, getSessionUser, originIntegrityMiddleware } from "../middleware";
 import {
@@ -38,7 +39,7 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
 });
 
 // List posts
-socialQueueRouter.openapi(listSocialQueueRoute, async (c: any) => {
+socialQueueRouter.openapi(listSocialQueueRoute, async (c: Context<AppEnv>) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -80,7 +81,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, async (c: any) => {
 });
 
 // Calendar view
-socialQueueRouter.openapi(calendarSocialQueueRoute, async (c: any) => {
+socialQueueRouter.openapi(calendarSocialQueueRoute, async (c: Context<AppEnv>) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -112,7 +113,7 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, async (c: any) => {
 });
 
 // Create post
-socialQueueRouter.openapi(createSocialQueueRoute, async (c: any) => {
+socialQueueRouter.openapi(createSocialQueueRoute, async (c: Context<AppEnv>) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -161,7 +162,7 @@ socialQueueRouter.openapi(createSocialQueueRoute, async (c: any) => {
 });
 
 // Update post
-socialQueueRouter.openapi(updateSocialQueueRoute, async (c: any) => {
+socialQueueRouter.openapi(updateSocialQueueRoute, async (c: Context<AppEnv>) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -204,7 +205,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, async (c: any) => {
 });
 
 // Delete post
-socialQueueRouter.openapi(deleteSocialQueueRoute, async (c: any) => {
+socialQueueRouter.openapi(deleteSocialQueueRoute, async (c: Context<AppEnv>) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -236,7 +237,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, async (c: any) => {
 });
 
 // Send post now
-socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c: any) => {
+socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c: Context<AppEnv>) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
@@ -278,7 +279,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c: any) => {
 });
 
 // Analytics
-socialQueueRouter.openapi(analyticsSocialQueueRoute, async (c: any) => {
+socialQueueRouter.openapi(analyticsSocialQueueRoute, async (c: Context<AppEnv>) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {

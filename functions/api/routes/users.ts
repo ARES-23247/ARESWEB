@@ -1,5 +1,6 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, logAuditAction, parsePagination } from "../middleware";
 import { upsertProfile } from "./_profileUtils";
@@ -20,7 +21,7 @@ export const usersRouter = new OpenAPIHono<AppEnv>();
 // CR-07 FIX: Apply authentication to all admin routes
 usersRouter.use("/admin/*", ensureAdmin);
 
-usersRouter.openapi(getUsersRoute, async (c: any) => {
+usersRouter.openapi(getUsersRoute, async (c: Context<AppEnv>) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit, cursor } = parsePagination(c, 50, 100);
@@ -90,7 +91,7 @@ usersRouter.openapi(getUsersRoute, async (c: any) => {
   }
 });
 
-usersRouter.openapi(adminDetailRoute, async (c: any) => {
+usersRouter.openapi(adminDetailRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -142,7 +143,7 @@ usersRouter.openapi(adminDetailRoute, async (c: any) => {
   }
 });
 
-usersRouter.openapi(patchUserRoute, async (c: any) => {
+usersRouter.openapi(patchUserRoute, async (c: Context<AppEnv>) => {
   try {
     // Defense-in-depth: Re-validate admin authorization for sensitive role changes
     const sessionUser = c.get("sessionUser") as
@@ -229,7 +230,7 @@ usersRouter.openapi(patchUserRoute, async (c: any) => {
   }
 });
 
-usersRouter.openapi(updateUserProfileRoute, async (c: any) => {
+usersRouter.openapi(updateUserProfileRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -240,7 +241,7 @@ usersRouter.openapi(updateUserProfileRoute, async (c: any) => {
   }
 });
 
-usersRouter.openapi(adminGetProfileRoute, async (c: any) => {
+usersRouter.openapi(adminGetProfileRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -366,7 +367,7 @@ usersRouter.openapi(adminGetProfileRoute, async (c: any) => {
   }
 });
 
-usersRouter.openapi(deleteUserRoute, async (c: any) => {
+usersRouter.openapi(deleteUserRoute, async (c: Context<AppEnv>) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

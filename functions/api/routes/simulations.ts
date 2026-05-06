@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth } from "../middleware";
 import { 
@@ -106,7 +107,7 @@ async function canModifySimulation(c: { get: (key: "db") => AppEnv["Variables"][
 }
 
 // List all simulations from GitHub
-simulationsRouter.openapi(listSimulationsRoute, async (c: any) => {
+simulationsRouter.openapi(listSimulationsRoute, async (c: Context<AppEnv>) => {
   try {
     const ghConfig = getGitHubConfig(c);
     let pat = c.env.GITHUB_PAT;
@@ -152,7 +153,7 @@ simulationsRouter.openapi(listSimulationsRoute, async (c: any) => {
 });
 
 // Get a single simulation file by id from GitHub
-simulationsRouter.openapi(getSimulationRoute, async (c: any) => {
+simulationsRouter.openapi(getSimulationRoute, async (c: Context<AppEnv>) => {
   const { id } = c.req.valid("param");
 
   if (!id || !id.startsWith("github:")) {
@@ -226,7 +227,7 @@ simulationsRouter.openapi(getSimulationRoute, async (c: any) => {
 });
 
 // Save simulation to GitHub
-simulationsRouter.openapi(saveSimulationRoute, async (c: any) => {
+simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -366,7 +367,7 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: any) => {
 });
 
 // Delete simulation from GitHub
-simulationsRouter.openapi(deleteSimulationRoute, async (c: any) => {
+simulationsRouter.openapi(deleteSimulationRoute, async (c: Context<AppEnv>) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -467,7 +468,7 @@ simulationsRouter.openapi(deleteSimulationRoute, async (c: any) => {
 });
 
 // Create a new GitHub Gist for a simulation
-simulationsRouter.openapi(createGistRoute, async (c: any) => {
+simulationsRouter.openapi(createGistRoute, async (c: Context<AppEnv>) => {
   try {
     const { name, files } = c.req.valid("json");
     if (Object.keys(files).length === 0) {
@@ -520,7 +521,7 @@ simulationsRouter.openapi(createGistRoute, async (c: any) => {
 });
 
 // Fetch a GitHub Gist by ID
-simulationsRouter.openapi(getGistRoute, async (c: any) => {
+simulationsRouter.openapi(getGistRoute, async (c: Context<AppEnv>) => {
   const { id } = c.req.valid("param");
 
   try {

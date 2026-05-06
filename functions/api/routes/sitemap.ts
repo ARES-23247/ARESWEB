@@ -1,3 +1,4 @@
+import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
@@ -8,7 +9,7 @@ export const sitemapRouter = new OpenAPIHono<AppEnv>();
 // SEC-DoW: Cache sitemap to prevent repeated D1 queries from bots/crawlers
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
 
-sitemapRouter.openapi(getSitemapRoute, async (c: any) => {
+sitemapRouter.openapi(getSitemapRoute, async (c: Context<AppEnv>) => {
   const db = c.get("db");
   try {
     const now = Date.now();
