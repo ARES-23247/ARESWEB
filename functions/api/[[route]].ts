@@ -46,10 +46,14 @@ import scoutingRouter from "./routes/scouting/index";
 
 import { logger } from "hono/logger";
 import { sentry } from "@hono/sentry";
+import { secureHeaders } from "hono/secure-headers";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { apiReference } from "@scalar/hono-api-reference";
 
 const app = new Hono<AppEnv>();
 
 app.use("*", logger());
+app.use("*", secureHeaders());
 app.use("*", async (c, next) => {
   if (c.env.SENTRY_DSN) {
     return sentry({ dsn: c.env.SENTRY_DSN })(c, next);
@@ -68,13 +72,24 @@ app.use("*", dbMiddleware);
 // ── 4. Origin Integrity Check (Non-GET) ────
 app.use("*", originIntegrityMiddleware());
 
-const apiRouter = new Hono<AppEnv>();
+const apiRouter = new OpenAPIHono<AppEnv>();
 
 // SCA-P01: Prevent CDN Cache Poisoning
 apiRouter.use("*", async (c, next) => {
   await next();
   c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
 });
+
+// Mount OpenAPI documentation
+apiRouter.doc('/openapi.json', {
+  openapi: '3.1.0',
+  info: { title: 'ARESWEB API', version: 'v6.8' }
+});
+
+apiRouter.get('/reference', apiReference({
+  spec: { url: '/api/openapi.json' },
+  theme: 'moon'
+}));
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";
