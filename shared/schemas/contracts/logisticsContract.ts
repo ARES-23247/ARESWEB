@@ -1,8 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const logisticsSummarySchema = z.object({
   totalCount: z.number(),
@@ -11,32 +8,38 @@ export const logisticsSummarySchema = z.object({
   tshirts: z.record(z.string(), z.number()),
 });
 
-export const logisticsContract = c.router({
-  getSummary: {
-    method: "GET",
-    path: "/admin/summary",
-    responses: {
-      ...standardErrors,
-      200: logisticsSummarySchema,
+export const getLogisticsSummaryRoute = createRoute({
+  method: "get",
+  path: "/admin/summary",
+  responses: {
+    200: {
+      description: "Get aggregated logistics for event planning",
+      content: { "application/json": { schema: logisticsSummarySchema } },
     },
-    summary: "Get aggregated logistics for event planning",
-  },
-  exportEmails: {
-    method: "GET",
-    path: "/admin/export-emails",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        users: z.array(z.object({
-          name: z.string(),
-          email: z.string(),
-          role: z.string(),
-          emergencyName: z.string().nullable().optional(),
-          emergencyPhone: z.string().nullable().optional(),
-        }))
-      }),
-    },
-    summary: "Get all active member emails for mass communication",
+    ...openApiStandardErrors,
   },
 });
-export type LogisticsContract = typeof logisticsContract;
+
+export const exportLogisticsEmailsRoute = createRoute({
+  method: "get",
+  path: "/admin/export-emails",
+  responses: {
+    200: {
+      description: "Get all active member emails for mass communication",
+      content: {
+        "application/json": {
+          schema: z.object({
+            users: z.array(z.object({
+              name: z.string(),
+              email: z.string(),
+              role: z.string(),
+              emergencyName: z.string().nullable().optional(),
+              emergencyPhone: z.string().nullable().optional(),
+            }))
+          })
+        }
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});

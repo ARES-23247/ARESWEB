@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap, Users, Mail } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
 import { api } from "../api/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
 import {
@@ -103,7 +103,16 @@ export default function AdminUsers() {
 
   const columnHelper = useMemo(() => createColumnHelper<User>(), []);
 
-  const pointsMutation = api.points.awardPoints.useMutation({
+  const pointsMutation = useMutation({
+    mutationFn: async (data: { body: { user_id: string; points_delta: number; reason: string } }) => {
+      const res = await fetch("/api/points/transaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
     onSuccess: () => {
       toast.success("Points transaction successful");
       setPointsUserId(null);

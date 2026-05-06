@@ -1,7 +1,7 @@
-
 import { Link2, ExternalLink, FileText, CheckCircle, Target, Trophy } from "lucide-react";
-import { api } from "../api/client";
+import { fetchJson } from "../api/client";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 interface LinkedEntitiesProps {
   type: 'doc' | 'task' | 'event' | 'post' | 'outreach';
@@ -25,11 +25,12 @@ const typePathMap = {
 };
 
 export default function LinkedEntities({ type, id }: LinkedEntitiesProps) {
-  const { data: linksRes, isLoading } = api.entities.getLinks.useQuery(["entity-links", type, id], {
-    query: { type, id }
+  const { data: linksRes, isLoading } = useQuery({
+    queryKey: ["entity-links", type, id],
+    queryFn: () => fetchJson<{ links: { id: string; target_type: string; target_id: string; target_title?: string }[] }>(`/api/entities/links?type=${type}&id=${id}`)
   });
 
-  const links = linksRes?.status === 200 ? linksRes.body.links : [];
+  const links = linksRes?.links || [];
 
   if (isLoading) return <div className="h-12 w-full animate-pulse bg-white/5 ares-cut-sm"></div>;
   if (links.length === 0) return null;

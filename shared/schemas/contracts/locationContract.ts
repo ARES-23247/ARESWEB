@@ -1,8 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const locationSchema = z.object({
   id: z.string().optional(),
@@ -12,45 +9,58 @@ export const locationSchema = z.object({
   is_deleted: z.number().default(0),
 });
 
-export const locationContract = c.router({
-  list: {
-    method: "GET",
-    path: "/",
-    responses: {
-      ...standardErrors,
-      200: z.object({ locations: z.array(locationSchema) }),
+export const listLocationsRoute = createRoute({
+  method: "get",
+  path: "/",
+  responses: {
+    200: {
+      description: "Get all public locations",
+      content: { "application/json": { schema: z.object({ locations: z.array(locationSchema) }) } },
     },
-    summary: "Get all public locations",
-  },
-  adminList: {
-    method: "GET",
-    path: "/admin/list",
-    responses: {
-      ...standardErrors,
-      200: z.object({ locations: z.array(locationSchema) }),
-    },
-    summary: "Get all locations (admin)",
-  },
-  save: {
-    method: "POST",
-    path: "/admin/save",
-    body: locationSchema,
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean(), id: z.string().optional() }),
-    },
-    summary: "Create or update a location",
-  },
-  delete: {
-    method: "DELETE",
-    path: "/admin/:id",
-    pathParams: z.object({ id: z.string() }),
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Delete a location",
+    ...openApiStandardErrors,
   },
 });
-export type LocationContract = typeof locationContract;
+
+export const adminListLocationsRoute = createRoute({
+  method: "get",
+  path: "/admin/list",
+  responses: {
+    200: {
+      description: "Get all locations (admin)",
+      content: { "application/json": { schema: z.object({ locations: z.array(locationSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const saveLocationRoute = createRoute({
+  method: "post",
+  path: "/admin/save",
+  request: {
+    body: {
+      content: { "application/json": { schema: locationSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create or update a location",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), id: z.string().optional() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteLocationRoute = createRoute({
+  method: "delete",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Delete a location",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

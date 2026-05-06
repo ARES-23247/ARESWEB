@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipWebhookRouter from "./zulipWebhook";
 import { mockExecutionContext, flushWaitUntil, createMockExpressionBuilder } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 
 vi.mock("../../utils/zulipSync", () => ({
   sendZulipMessage: vi.fn().mockResolvedValue(1),

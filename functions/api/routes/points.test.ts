@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import pointsRouter from "./points";
 
 describe("Hono Backend - /points Router", () => {

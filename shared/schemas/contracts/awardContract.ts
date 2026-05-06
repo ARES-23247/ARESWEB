@@ -1,8 +1,15 @@
-import { initContract } from "@ts-rest/core";
 import { z } from "zod";
+import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 
-const c = initContract();
+// Convert standardErrors to OpenAPI responses format
+const openApiErrorResponses = {
+  400: { content: { "application/json": { schema: standardErrors[400] } }, description: "Bad Request" },
+  401: { content: { "application/json": { schema: standardErrors[401] } }, description: "Unauthorized" },
+  403: { content: { "application/json": { schema: standardErrors[403] } }, description: "Forbidden" },
+  404: { content: { "application/json": { schema: standardErrors[404] } }, description: "Not Found" },
+  500: { content: { "application/json": { schema: standardErrors[500] } }, description: "Internal Server Error" },
+};
 
 export const awardSchema = z.object({
   id: z.string(),
@@ -16,50 +23,78 @@ export const awardSchema = z.object({
   updated_at: z.string(),
 });
 
-export const awardContract = c.router({
-  getAwards: {
-    method: "GET",
-    path: "/",
+export const getAwardsRoute = createRoute({
+  method: "get",
+  path: "/",
+  request: {
     query: z.object({
       limit: z.coerce.number().optional(),
       offset: z.coerce.number().optional(),
     }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        awards: z.array(awardSchema),
-      }),
-    },
-    summary: "Get all awards",
   },
-  saveAward: {
-    method: "POST",
-    path: "/admin/save",
-    body: z.object({
-      id: z.string().optional(),
-      title: z.string(),
-      year: z.coerce.number(),
-      event_name: z.string().optional().nullable(),
-      description: z.string().optional().nullable(),
-      image_url: z.string().optional().nullable(),
-      season_id: z.coerce.number().optional().nullable(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean(), id: z.string().optional() }),
+  responses: {
+    ...openApiErrorResponses,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            awards: z.array(awardSchema),
+          }),
+        },
+      },
+      description: "Get all awards",
     },
-    summary: "Create or update an award",
-  },
-  deleteAward: {
-    method: "DELETE",
-    path: "/admin/:id",
-    pathParams: z.object({ id: z.string() }),
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Soft-delete an award",
   },
 });
-export type AwardContract = typeof awardContract;
+
+export const saveAwardRoute = createRoute({
+  method: "post",
+  path: "/admin/save",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            id: z.string().optional(),
+            title: z.string(),
+            year: z.coerce.number(),
+            event_name: z.string().optional().nullable(),
+            description: z.string().optional().nullable(),
+            image_url: z.string().optional().nullable(),
+            season_id: z.coerce.number().optional().nullable(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    ...openApiErrorResponses,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({ success: z.boolean(), id: z.string().optional() }),
+        },
+      },
+      description: "Create or update an award",
+    },
+  },
+});
+
+export const deleteAwardRoute = createRoute({
+  method: "delete",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    ...openApiErrorResponses,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({ success: z.boolean() }),
+        },
+      },
+      description: "Soft-delete an award",
+    },
+  },
+});

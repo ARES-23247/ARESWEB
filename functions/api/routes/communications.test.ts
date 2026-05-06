@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import communicationsRouter from "./communications";

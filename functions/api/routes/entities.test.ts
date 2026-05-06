@@ -1,16 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import entitiesRouter from "./entities";
 
-interface EntitiesResponse {
-  success?: boolean;
-  entities?: unknown[];
-  error?: string;
-  [key: string]: unknown;
-}
+
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();

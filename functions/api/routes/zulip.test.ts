@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono, Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import zulipRouter from "./zulip";
 
 interface ZulipConfig {

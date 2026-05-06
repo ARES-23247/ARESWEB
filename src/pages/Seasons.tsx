@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
 import SEO from "../components/SEO";
-import { api } from "../api/client";
+import { fetchJson } from "../api/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Season {
   start_year: number;
@@ -23,11 +24,17 @@ interface Award {
 }
 
 export default function Seasons() {
-  const { data: seasonsRes, isLoading: isLoadingSeasons } = api.seasons.list.useQuery(["public-seasons"], {});
-  const seasons: Season[] = seasonsRes?.status === 200 ? seasonsRes.body.seasons : [];
+  const { data: seasonsRes, isLoading: isLoadingSeasons } = useQuery({
+    queryKey: ["public-seasons"],
+    queryFn: () => fetchJson<{ seasons: Season[] }>("/api/seasons")
+  });
+  const seasons: Season[] = seasonsRes?.seasons || [];
 
-  const { data: awardsRes, isLoading: isLoadingAwards } = api.awards.getAwards.useQuery(["public-awards"], {});
-  const awards: Award[] = awardsRes?.status === 200 ? awardsRes.body.awards : [];
+  const { data: awardsRes, isLoading: isLoadingAwards } = useQuery({
+    queryKey: ["public-awards"],
+    queryFn: () => fetchJson<{ awards: Award[] }>("/api/awards")
+  });
+  const awards: Award[] = awardsRes?.awards || [];
 
   return (
     <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">

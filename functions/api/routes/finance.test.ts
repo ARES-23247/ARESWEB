@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { MockKysely, TestEnv } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 import { createMockExpressionBuilder } from "../../../src/test/utils";
 
@@ -19,12 +19,7 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import financeRouter from "./finance";
 
-interface FinanceResponse {
-  success?: boolean;
-  data?: unknown;
-  error?: string;
-  [key: string]: unknown;
-}
+
 
 const mockEnv = {
   DB: {} as D1Database,

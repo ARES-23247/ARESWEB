@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Utensils, Shirt, RefreshCw, AlertCircle, Users, Mail, Copy, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../api/client";
 
 interface LogisticsData {
   dietary: Record<string, number>;
@@ -27,9 +25,10 @@ export default function DietarySummary() {
   const handleExportEmails = async () => {
     setExporting(true);
     try {
-      const res = await api.logistics.exportEmails.query();
-      if (res.status === 200) {
-        const users = (res.body as unknown as { users: { name: string; email: string; role: string; emergencyName?: string; emergencyPhone?: string }[] }).users;
+      const res = await fetch("/api/logistics/export");
+      if (res.ok) {
+        const body = await res.json() as { users: { name: string; email: string; role: string; emergencyName?: string; emergencyPhone?: string }[] };
+        const users = body.users as { name: string; email: string; role: string; emergencyName?: string; emergencyPhone?: string }[];
         setExportedEmails(users.map((u) => u.email).join(", "));
         
         const csvContent = "Name,Email,Role,Emergency Contact,Emergency Phone\n" + 
@@ -60,14 +59,14 @@ export default function DietarySummary() {
   };
 
   useEffect(() => {
-    api.logistics.getSummary.query()
-      .then((res: { status: number; body: unknown }) => {
-        if (res.status === 200) {
-           
-          setData(res.body as LogisticsData);
+    fetch("/api/logistics/summary")
+      .then(async (res) => {
+        if (res.ok) {
+          const body = await res.json();
+          setData(body as LogisticsData);
         } else {
-           
-          setError((res.body as { error?: string })?.error || "Failed to load logistics summary");
+          const body = await res.json().catch(() => ({})) as { error?: string };
+          setError(body.error || "Failed to load logistics summary");
         }
         setLoading(false);
       })

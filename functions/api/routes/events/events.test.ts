@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext, createMockExpressionBuilder } from "../../../../src/test/utils";
-import { MockKysely, TestEnv } from "../../../../src/test/types";
+import { TestEnv } from "../../../../src/test/types";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
 

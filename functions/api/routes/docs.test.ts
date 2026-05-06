@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { MockKysely, TestEnv } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { createMockUser } from "../../../src/test/factories/userFactory";
 
 const mockUser = createMockUser({ id: "1", email: "admin@test.com", role: "admin" });

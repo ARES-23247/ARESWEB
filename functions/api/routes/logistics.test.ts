@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { MockKysely, TestEnv } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 
 vi.mock("../middleware", async (importOriginal) => {

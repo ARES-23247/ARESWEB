@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy, Award, Medal, Crown, Star, ArrowLeft } from "lucide-react";
 import SEO from "../components/SEO";
-import { api } from "../api/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface LeaderboardUser {
   user_id: string;
@@ -16,10 +16,17 @@ interface LeaderboardUser {
 }
 
 export default function Leaderboard() {
-  const { data: leaderboardRes, isLoading } = api.points.getLeaderboard.useQuery(["points-leaderboard"], {});
+  const { data: leaderboardRes, isLoading } = useQuery({
+    queryKey: ["points-leaderboard"],
+    queryFn: async () => {
+      const res = await fetch("/api/points/leaderboard");
+      if (!res.ok) throw new Error("Failed to fetch");
+      return { status: res.status, body: await res.json() };
+    }
+  });
 
   const leaders = useMemo(() => {
-    return (leaderboardRes?.status === 200 ? leaderboardRes.body.leaderboard : []) as LeaderboardUser[];
+    return (leaderboardRes?.status === 200 ? (leaderboardRes.body as unknown as { leaderboard: LeaderboardUser[] }).leaderboard : []) as LeaderboardUser[];
   }, [leaderboardRes]);
 
   if (isLoading) {

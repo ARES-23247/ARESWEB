@@ -3,17 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
-import { MockKysely, TestEnv } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import postsRouter from "./posts";
 import { createMockPost } from "../../../src/test/factories/contentFactory";
 
-interface PostsResponse {
-  success?: boolean;
-  posts?: unknown[];
-  post?: unknown;
-  error?: string;
-  [key: string]: unknown;
-}
+
 
 // Mock global dependencies
 vi.stubGlobal("crypto", {

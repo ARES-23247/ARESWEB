@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, CheckCircle } from "lucide-react";
-import { api } from "../api/client";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { locationSchema } from "@shared/schemas/contracts/locationContract";
 import { z } from "zod";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 interface CreateLocationModalProps {
   isOpen: boolean;
@@ -40,7 +39,16 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
     setErrorMsg("");
   }, [reset]);
 
-  const saveMutation = api.locations.save.useMutation({
+  const saveMutation = useMutation({
+    mutationFn: async (data: { body: unknown }) => {
+      const res = await fetch("/api/locations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return { status: res.status, body: await res.json() };
+    },
     onSuccess: (res: { status: number }) => {
       if (res.status === 200) {
         toast.success("Venue record synchronized.");

@@ -30,3 +30,30 @@ export const standardErrors = {
     success: z.boolean().optional() 
   }),
 };
+
+export const openApiStandardErrors = {
+  400: {
+    description: "Bad Request",
+    content: { "application/json": { schema: standardErrors[400] } }
+  },
+  401: {
+    description: "Unauthorized",
+    content: { "application/json": { schema: standardErrors[401] } }
+  },
+  403: {
+    description: "Forbidden",
+    content: { "application/json": { schema: standardErrors[403] } }
+  },
+  404: {
+    description: "Not Found",
+    content: { "application/json": { schema: standardErrors[404] } }
+  },
+  429: {
+    description: "Too Many Requests",
+    content: { "application/json": { schema: standardErrors[429] } }
+  },
+  500: {
+    description: "Internal Server Error",
+    content: { "application/json": { schema: standardErrors[500] } }
+  }
+};

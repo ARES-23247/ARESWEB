@@ -1,10 +1,10 @@
 
 import { useState, useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { getLucideIcon } from "../types/components";
-import { api } from "../api/client";
+import { fetchJson } from "../api/client";
 import { ClickToDeleteButton } from "./ContentManager/shared";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
@@ -25,49 +25,47 @@ export default function BadgeManager() {
   const [selectedBadge, setSelectedBadge] = useState<string>("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const { data: badgesData, isLoading: badgesLoading, isError: isBadgesError } = api.badges.list.useQuery(["admin_badges"], {});
-
-  const { data: usersData, isError: isUsersError } = api.users.getUsers.useQuery(["admin_users_list"], {});
-
-  const createBadgeMutation = api.badges.create.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Badge definition created.");
-        queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
-        setShowCreate(false);
-        setNewBadgeId("");
-        setNewBadgeName("");
-        setNewBadgeDesc("");
-      } else {
-        toast.error("Failed to create badge.");
-      }
-    }
+  const { data: badgesData, isLoading: badgesLoading, isError: isBadgesError } = useQuery({
+    queryKey: ["admin_badges"],
+    queryFn: () => fetchJson<{ badges: BadgeRecord[] }>("/api/badges")
   });
 
-  const awardBadgeMutation = api.badges.grant.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Badge awarded successfully!");
-        setSelectedUser("");
-        setSelectedBadge("");
-      } else {
-        toast.error("Failed to award badge.");
-      }
+  const { data: usersData, isError: isUsersError } = useQuery({
+    queryKey: ["admin_users_list"],
+    queryFn: () => fetchJson<{ users: UserRecord[] }>("/api/users")
+  });
+
+  const createBadgeMutation = useMutation({
+    mutationFn: (body: unknown) => fetchJson("/api/badges", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      toast.success("Badge definition created.");
+      queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
+      setShowCreate(false);
+      setNewBadgeId("");
+      setNewBadgeName("");
+      setNewBadgeDesc("");
+    },
+    onError: () => toast.error("Failed to create badge.")
+  });
+
+  const awardBadgeMutation = useMutation({
+    mutationFn: (body: unknown) => fetchJson("/api/badges/grant", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      toast.success("Badge awarded successfully!");
+      setSelectedUser("");
+      setSelectedBadge("");
     },
     onError: (err: Error) => {
       toast.error(`Error awarding badge: ${err.message}`);
     }
   });
 
-  const deleteBadgeMutation = api.badges.delete.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Badge definition deleted.");
-        queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
-        setConfirmId(null);
-      } else {
-        toast.error("Failed to delete badge definition.");
-      }
+  const deleteBadgeMutation = useMutation({
+    mutationFn: (id: string) => fetchJson(`/api/badges/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Badge definition deleted.");
+      queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
+      setConfirmId(null);
     },
     onError: (err: Error) => {
       toast.error(`Error deleting badge: ${err.message}`);
@@ -75,22 +73,19 @@ export default function BadgeManager() {
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const revokeBadgeMutation = api.badges.revoke.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Badge revoked successfully.");
-        queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
-      } else {
-        toast.error("Failed to revoke badge.");
-      }
+  const revokeBadgeMutation = useMutation({
+    mutationFn: ({ userId, badgeId }: { userId: string, badgeId: string }) => fetchJson(`/api/badges/${userId}/${badgeId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Badge revoked successfully.");
+      queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
     },
     onError: (err: Error) => {
       toast.error(`Error revoking badge: ${err.message}`);
     }
   });
 
-  const badges = useMemo(() => badgesData?.body?.badges || [], [badgesData]);
-  const users = useMemo(() => usersData?.body?.users || [], [usersData]);
+  const badges = useMemo(() => badgesData?.badges || [], [badgesData]);
+  const users = useMemo(() => usersData?.users || [], [usersData]);
 
   return (
     <div className="space-y-8">
@@ -147,7 +142,7 @@ export default function BadgeManager() {
               <input id="badge-desc" type="text" value={newBadgeDesc} onChange={e => setNewBadgeDesc(e.target.value)} placeholder="Awarded to members who attain top 3 in outreach hours." className="w-full bg-ares-gray-dark border border-white/5 ares-cut-sm px-4 py-2.5 text-white focus:outline-none focus:border-ares-gold mt-1" />
             </div>
             <button 
-              onClick={() => createBadgeMutation.mutate({ body: { id: newBadgeId, name: newBadgeName, description: newBadgeDesc, icon: newBadgeIcon, color_theme: newBadgeColor } })} 
+              onClick={() => createBadgeMutation.mutate({ id: newBadgeId, name: newBadgeName, description: newBadgeDesc, icon: newBadgeIcon, color_theme: newBadgeColor })} 
               disabled={createBadgeMutation.isPending || !newBadgeId || !newBadgeName}
               className="px-6 py-2.5 bg-white text-black font-bold text-sm ares-cut-sm hover:bg-white transition-all disabled:opacity-50"
             >
@@ -179,8 +174,8 @@ export default function BadgeManager() {
                   <div className="flex-shrink-0 self-start">
                     <ClickToDeleteButton 
                       id={`badge-def-${b.id}`}
-                      onDelete={() => deleteBadgeMutation.mutate({ params: { id: b.id }, body: null })}
-                      isDeleting={deleteBadgeMutation.isPending && deleteBadgeMutation.variables?.params.id === b.id}
+                      onDelete={() => deleteBadgeMutation.mutate(b.id)}
+                      isDeleting={deleteBadgeMutation.isPending && deleteBadgeMutation.variables === b.id}
                       confirmId={confirmId}
                       setConfirmId={setConfirmId}
                     />
@@ -220,7 +215,7 @@ export default function BadgeManager() {
           </div>
         </div>
         <button 
-          onClick={() => awardBadgeMutation.mutate({ body: { userId: selectedUser, badgeId: selectedBadge } })}
+          onClick={() => awardBadgeMutation.mutate({ userId: selectedUser, badgeId: selectedBadge })}
           disabled={!selectedUser || !selectedBadge || awardBadgeMutation.isPending}
           className="mt-6 px-8 py-3 bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-ares-danger transition-all disabled:opacity-50 flex items-center gap-2"
         >

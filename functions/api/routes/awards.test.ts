@@ -1,4 +1,4 @@
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
