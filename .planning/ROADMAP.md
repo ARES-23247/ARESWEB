@@ -56,7 +56,7 @@
 - Inline `eslint-disable-next-line`: 58
 - `@ts-expect-error`: 17
 
-- [ ] **Phase 38: Typed Hono Handler Wrapper** - Create generic `typedHandler<R>()` that infers `c.req.valid()` types from route schema
+- [x] **Phase 38: Typed Hono Handler Wrapper** - Create generic `typedHandler<R>()` that infers `c.req.valid()` types from route schema (completed 2026-05-06)
   - **Plans**: 0
 - [ ] **Phase 39: Frontend API Type Unification** - Re-export `z.infer<>` types from shared/routes/ into frontend hooks and components
   - **Plans**: 0
