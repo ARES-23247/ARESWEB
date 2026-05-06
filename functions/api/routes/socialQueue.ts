@@ -1,7 +1,7 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, getSessionUser, originIntegrityMiddleware } from "../middleware";
 import {
   listSocialQueueRoute,
@@ -11,11 +11,12 @@ import {
   deleteSocialQueueRoute,
   sendNowSocialQueueRoute,
   analyticsSocialQueueRoute,
-  _socialQueueSchema,
   type SocialQueuePost,
 } from "../../../shared/routes/socialQueue";
 import { nanoid } from "nanoid";
 import { dispatchQueuePost } from "../../utils/socialSync";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const socialQueueRouter = new OpenAPIHono<AppEnv>();
 
@@ -39,7 +40,7 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
 });
 
 // List posts
-socialQueueRouter.openapi(listSocialQueueRoute, async (c: Context<AppEnv>) => {
+socialQueueRouter.openapi(listSocialQueueRoute, (async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -78,10 +79,10 @@ socialQueueRouter.openapi(listSocialQueueRoute, async (c: Context<AppEnv>) => {
     console.error("Social queue list error:", error);
     return c.json({ error: "Failed to fetch scheduled posts" }, 500);
   }
-});
+}) as AppRouteHandler<typeof listSocialQueueRoute>);
 
 // Calendar view
-socialQueueRouter.openapi(calendarSocialQueueRoute, async (c: Context<AppEnv>) => {
+socialQueueRouter.openapi(calendarSocialQueueRoute, (async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -110,10 +111,10 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, async (c: Context<AppEnv>) =
     console.error("Social queue calendar error:", error);
     return c.json({ error: "Failed to fetch calendar posts" }, 500);
   }
-});
+}) as AppRouteHandler<typeof calendarSocialQueueRoute>);
 
 // Create post
-socialQueueRouter.openapi(createSocialQueueRoute, async (c: Context<AppEnv>) => {
+socialQueueRouter.openapi(createSocialQueueRoute, (async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -159,10 +160,10 @@ socialQueueRouter.openapi(createSocialQueueRoute, async (c: Context<AppEnv>) => 
     console.error("Social queue create error:", error);
     return c.json({ error: "Failed to schedule post" }, 500);
   }
-});
+}) as AppRouteHandler<typeof createSocialQueueRoute>);
 
 // Update post
-socialQueueRouter.openapi(updateSocialQueueRoute, async (c: Context<AppEnv>) => {
+socialQueueRouter.openapi(updateSocialQueueRoute, (async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -175,6 +176,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, async (c: Context<AppEnv>) => 
 
     const existing = await db
       .selectFrom("social_queue")
+      .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();
 
@@ -202,10 +204,10 @@ socialQueueRouter.openapi(updateSocialQueueRoute, async (c: Context<AppEnv>) => 
     console.error("Social queue update error:", error);
     return c.json({ error: "Failed to update post" }, 500);
   }
-});
+}) as AppRouteHandler<typeof updateSocialQueueRoute>);
 
 // Delete post
-socialQueueRouter.openapi(deleteSocialQueueRoute, async (c: Context<AppEnv>) => {
+socialQueueRouter.openapi(deleteSocialQueueRoute, (async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -217,6 +219,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, async (c: Context<AppEnv>) => 
 
     const existing = await db
       .selectFrom("social_queue")
+      .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();
 
@@ -234,10 +237,10 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, async (c: Context<AppEnv>) => 
     console.error("Social queue delete error:", error);
     return c.json({ error: "Failed to delete post" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteSocialQueueRoute>);
 
 // Send post now
-socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c: Context<AppEnv>) => {
+socialQueueRouter.openapi(sendNowSocialQueueRoute, (async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
@@ -276,10 +279,10 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c: Context<AppEnv>) =>
     console.error("Social queue sendNow error:", error);
     return c.json({ error: "Failed to send post" }, 500);
   }
-});
+}) as AppRouteHandler<typeof sendNowSocialQueueRoute>);
 
 // Analytics
-socialQueueRouter.openapi(analyticsSocialQueueRoute, async (c: Context<AppEnv>) => {
+socialQueueRouter.openapi(analyticsSocialQueueRoute, (async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
@@ -343,6 +346,6 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, async (c: Context<AppEnv>) 
     console.error("Social queue analytics error:", error);
     return c.json({ error: "Failed to fetch analytics" }, 500);
   }
-});
+}) as AppRouteHandler<typeof analyticsSocialQueueRoute>);
 
 export default socialQueueRouter;

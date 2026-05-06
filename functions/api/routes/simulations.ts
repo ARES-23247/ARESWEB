@@ -1,33 +1,32 @@
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth } from "../middleware";
-import { 
-  listSimulationsRoute, 
-  getSimulationRoute, 
-  saveSimulationRoute, 
-  deleteSimulationRoute, 
-  createGistRoute, 
-  getGistRoute 
+import type { SessionUser } from "../middleware/utils";
+import {
+  listSimulationsRoute,
+  getSimulationRoute,
+  saveSimulationRoute,
+  deleteSimulationRoute,
+  createGistRoute,
+  getGistRoute
 } from "../../../shared/routes/simulations";
-import { logger } from "../../../src/utils/logger";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
+/** Row shape returned by settings table queries */
+interface SettingsRow { key: string | null; value: string }
 
 // GitHub repository configuration
 function getGitHubConfig(c: { env: AppEnv["Bindings"] }) {
   const owner = c.env.GITHUB_REPO_OWNER || 'ARES-23247';
   const repo = c.env.GITHUB_REPO_NAME || 'ARESWEB';
   const branch = c.env.GITHUB_BRANCH || 'main';
-  return {
-    owner,
-    repo,
-    branch,
-    apiBase: `https://api.github.com/repos/${owner}/${repo}`
-  };
+  return { owner, repo, branch, apiBase: `https://api.github.com/repos/${owner}/${repo}` };
 }
 
 // SECURITY: Enforce limits to prevent DoS via large payloads
 const MAX_FILES = 10;
 const MAX_TOTAL_SIZE = 2 * 1024 * 1024; // 2MB total
-const MAX_FILE_SIZE = 500000; // 500KB per file
 const SIM_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const SIM_FILENAME_PATTERN = /^[a-zA-Z0-9_.-]+\.(tsx?|jsx?|json|css)$/;
 
@@ -43,11 +42,12 @@ simulationsRouter.use("/", (c, next) => {
 });
 
 // Helper: Check if user owns a simulation or is admin
-async function canModifySimulation(c: { get: (key: "db") => AppEnv["Variables"]["db"]; env: AppEnv["Bindings"]; sessionUser?: AppEnv["Variables"]["sessionUser"] }, simId: string): Promise<boolean> {
+async function canModifySimulation(
+  c: { get: (key: "db") => AppEnv["Variables"]["db"]; env: AppEnv["Bindings"]; sessionUser?: SessionUser },
+  simId: string
+): Promise<boolean> {
   const sessionUser = c.sessionUser;
   if (!sessionUser) return false;
-
-  // Admins can modify any simulation
   if (sessionUser.role === "admin") return true;
 
   try {
@@ -57,7 +57,6 @@ async function canModifySimulation(c: { get: (key: "db") => AppEnv["Variables"][
 
     const patSetting = config.find((s) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
-
     if (!pat) return false;
 
     const headers: Record<string, string> = {
@@ -66,37 +65,29 @@ async function canModifySimulation(c: { get: (key: "db") => AppEnv["Variables"][
       "Accept": "application/vnd.github.v3+json"
     };
 
-    // Get the file metadata to check creation
     const path = `src/sims/${simId}.tsx`;
     const url = `${ghConfig.apiBase}/commits?path=${path}&per_page=1`;
 
     const res = await fetch(url, { headers });
     if (!res.ok) return false;
 
-    const commits = await res.json() as { 
+    const commits = await res.json() as {
       author?: { email: string };
       committer?: { login: string };
       commit?: { verification?: { verified: boolean } };
     }[];
     if (!commits || commits.length === 0) return false;
 
-    // Multi-factor ownership verification to prevent spoofing
     const commit = commits[0];
     const authorEmail = commit.author?.email;
     const committerLogin = commit.committer?.login;
     const verified = commit.commit?.verification?.verified;
 
-    // Primary: email must match
     if (authorEmail !== sessionUser.email) return false;
-
-    // Secondary: if commit is cryptographically verified, email is trustworthy
     if (verified) return true;
 
-    // Tertiary: for unverified commits, verify committer identity via GitHub API
-    if (committerLogin && (sessionUser as any).github_login) {
-      if (committerLogin === (sessionUser as any).github_login) {
-        return true;
-      }
+    if (committerLogin && sessionUser.github_login) {
+      if (committerLogin === sessionUser.github_login) return true;
     }
 
     return false;
@@ -107,15 +98,15 @@ async function canModifySimulation(c: { get: (key: "db") => AppEnv["Variables"][
 }
 
 // List all simulations from GitHub
-simulationsRouter.openapi(listSimulationsRoute, async (c: Context<AppEnv>) => {
+simulationsRouter.openapi(listSimulationsRoute, (async (c) => {
   try {
     const ghConfig = getGitHubConfig(c);
     let pat = c.env.GITHUB_PAT;
-    
+
     try {
       const db = c.get("db");
       const config = await db.selectFrom("settings").selectAll().execute();
-      const patSetting = config.find(s => s.key === "GITHUB_PAT");
+      const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
     } catch (e) {
       console.warn("[Simulations] DB Settings fetch failed (likely missing table):", e);
@@ -131,10 +122,10 @@ simulationsRouter.openapi(listSimulationsRoute, async (c: Context<AppEnv>) => {
     if (!ghRes.ok) {
        return c.json({ simulations: [] }, 200);
     }
-    
+
     const registryText = await ghRes.text();
     const registry = JSON.parse(registryText);
-    
+
     const githubSims = (registry.simulators || []).map((s: { id: string; name: string }) => ({
       id: `github:${s.id}`,
       name: s.name,
@@ -150,10 +141,10 @@ simulationsRouter.openapi(listSimulationsRoute, async (c: Context<AppEnv>) => {
     console.error("[Simulations] List error:", e);
     return c.json({ error: "Failed to list simulations from GitHub" }, 500);
   }
-});
+}) as AppRouteHandler<typeof listSimulationsRoute>);
 
 // Get a single simulation file by id from GitHub
-simulationsRouter.openapi(getSimulationRoute, async (c: Context<AppEnv>) => {
+simulationsRouter.openapi(getSimulationRoute, (async (c) => {
   const { id } = c.req.valid("param");
 
   if (!id || !id.startsWith("github:")) {
@@ -176,7 +167,7 @@ simulationsRouter.openapi(getSimulationRoute, async (c: Context<AppEnv>) => {
     const db = c.get("db");
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
-    const patSetting = config.find(s => s.key === "GITHUB_PAT");
+    const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
     const headers: Record<string, string> = {
@@ -195,12 +186,9 @@ simulationsRouter.openapi(getSimulationRoute, async (c: Context<AppEnv>) => {
       const code = await legacyRes.text();
       return c.json({
         simulation: {
-          id: id,
-          name: simId,
-          type: "github",
+          id, name: simId, type: "github",
           files: { [`${simId}.tsx`]: code },
-          author_id: "ARES-23247",
-          is_public: 1,
+          author_id: "ARES-23247", is_public: 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -210,12 +198,9 @@ simulationsRouter.openapi(getSimulationRoute, async (c: Context<AppEnv>) => {
     const code = await ghRes.text();
     return c.json({
       simulation: {
-        id: id,
-        name: simId,
-        type: "github",
+        id, name: simId, type: "github",
         files: { "index.tsx": code },
-        author_id: "ARES-23247",
-        is_public: 1,
+        author_id: "ARES-23247", is_public: 1,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -224,10 +209,10 @@ simulationsRouter.openapi(getSimulationRoute, async (c: Context<AppEnv>) => {
     console.error("[Simulations] GitHub get error:", ghErr);
     return c.json({ error: "Failed to get simulation from GitHub" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getSimulationRoute>);
 
 // Save simulation to GitHub
-simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
+simulationsRouter.openapi(saveSimulationRoute, (async (c) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -240,12 +225,11 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
       return c.json({ error: "No files provided" }, 400);
     }
 
-    // Manual validation for file constraints (since shared schema might be broader)
     const fileCount = Object.keys(files).length;
     if (fileCount > MAX_FILES) {
       return c.json({ error: `Too many files: ${fileCount} (max ${MAX_FILES})` }, 400);
     }
-    const totalSize = Object.values(files).reduce((sum, content) => sum + content.length, 0);
+    const totalSize = (Object.values(files) as string[]).reduce((sum, content) => sum + content.length, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
       return c.json({ error: `Total size too large: ${totalSize} bytes (max ${MAX_TOTAL_SIZE})` }, 400);
     }
@@ -258,9 +242,9 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
     const db = c.get("db");
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
-    const patSetting = config.find(s => s.key === "GITHUB_PAT");
+    const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
-    
+
     if (!pat) {
       return c.json({ error: "GitHub PAT not configured" }, 500);
     }
@@ -271,7 +255,7 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
       "Accept": "application/vnd.github.v3+json",
       "Content-Type": "application/json"
     };
-    
+
     const rawFilename = Object.keys(files)[0];
     let filename = rawFilename;
     let simIdStr = filename.replace(/\.tsx?$/, '');
@@ -281,7 +265,7 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
       filename = `${simIdStr}.tsx`;
     }
 
-    const content = files[rawFilename];
+    const content = String(files[rawFilename]);
     const base64Content = btoa(unescape(encodeURIComponent(content)));
 
     const path = `src/sims/${filename}`;
@@ -300,13 +284,9 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
     const putRes = await fetch(url, {
       method: "PUT",
       headers,
-      body: JSON.stringify({
-        message: `feat(sims): update ${filename} via Simulation Playground`,
-        content: base64Content,
-        sha: sha
-      })
+      body: JSON.stringify({ message: `feat(sims): update ${filename} via Simulation Playground`, content: base64Content, sha })
     });
-    
+
     if (!putRes.ok) {
       return c.json({ error: "Failed to upload to GitHub" }, 500);
     }
@@ -327,12 +307,7 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
           const registry = JSON.parse(regContentStr);
 
           if (!registry.simulators.some((s: { id: string }) => s.id === simIdStr)) {
-            registry.simulators.push({
-              id: simIdStr,
-              name: name || simIdStr,
-              path: `./${simIdStr}`,
-              requiresContext: false
-            });
+            registry.simulators.push({ id: simIdStr, name: name || simIdStr, path: `./${simIdStr}`, requiresContext: false });
 
             const newRegContent = JSON.stringify(registry, null, 2);
             const newRegBase64 = btoa(unescape(encodeURIComponent(newRegContent)));
@@ -340,11 +315,7 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
             const regPutRes = await fetch(regUrl, {
               method: "PUT",
               headers,
-              body: JSON.stringify({
-                message: `feat(sims): register ${simIdStr} in simRegistry.json`,
-                content: newRegBase64,
-                sha: regSha
-              })
+              body: JSON.stringify({ message: `feat(sims): register ${simIdStr} in simRegistry.json`, content: newRegBase64, sha: regSha })
             });
 
             if (regPutRes.ok) break;
@@ -358,16 +329,16 @@ simulationsRouter.openapi(saveSimulationRoute, async (c: Context<AppEnv>) => {
         }
       }
     }
-    
+
     return c.json({ id: `github:${simIdStr}` }, 200);
   } catch (e) {
     console.error("[Simulations] Save error:", e);
     return c.json({ error: "Failed to save simulation" }, 500);
   }
-});
+}) as AppRouteHandler<typeof saveSimulationRoute>);
 
 // Delete simulation from GitHub
-simulationsRouter.openapi(deleteSimulationRoute, async (c: Context<AppEnv>) => {
+simulationsRouter.openapi(deleteSimulationRoute, (async (c) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -394,9 +365,9 @@ simulationsRouter.openapi(deleteSimulationRoute, async (c: Context<AppEnv>) => {
     const db = c.get("db");
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
-    const patSetting = config.find(s => s.key === "GITHUB_PAT");
+    const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
-    
+
     if (!pat) {
       return c.json({ error: "GitHub PAT not configured" }, 500);
     }
@@ -425,13 +396,10 @@ simulationsRouter.openapi(deleteSimulationRoute, async (c: Context<AppEnv>) => {
       await fetch(url, {
         method: "DELETE",
         headers,
-        body: JSON.stringify({
-          message: `feat(sims): delete ${filename} via Simulation Playground`,
-          sha: sha
-        })
+        body: JSON.stringify({ message: `feat(sims): delete ${filename} via Simulation Playground`, sha })
       });
     }
-    
+
     const regUrl = `${ghConfig.apiBase}/contents/src/sims/simRegistry.json`;
     const regGetRes = await fetch(regUrl, { headers });
     if (regGetRes.ok) {
@@ -448,11 +416,7 @@ simulationsRouter.openapi(deleteSimulationRoute, async (c: Context<AppEnv>) => {
           await fetch(regUrl, {
             method: "PUT",
             headers,
-            body: JSON.stringify({
-              message: `feat(sims): remove ${simIdStr} from simRegistry.json`,
-              content: newRegBase64,
-              sha: regSha
-            })
+            body: JSON.stringify({ message: `feat(sims): remove ${simIdStr} from simRegistry.json`, content: newRegBase64, sha: regSha })
           });
         }
       } catch (e) {
@@ -465,10 +429,10 @@ simulationsRouter.openapi(deleteSimulationRoute, async (c: Context<AppEnv>) => {
     console.error("[Simulations] Delete error:", e);
     return c.json({ error: "Failed to delete simulation" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteSimulationRoute>);
 
 // Create a new GitHub Gist for a simulation
-simulationsRouter.openapi(createGistRoute, async (c: Context<AppEnv>) => {
+simulationsRouter.openapi(createGistRoute, (async (c) => {
   try {
     const { name, files } = c.req.valid("json");
     if (Object.keys(files).length === 0) {
@@ -477,9 +441,9 @@ simulationsRouter.openapi(createGistRoute, async (c: Context<AppEnv>) => {
 
     const db = c.get("db");
     const config = await db.selectFrom("settings").selectAll().execute();
-    const patSetting = config.find(s => s.key === "GITHUB_PAT");
+    const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
-    
+
     if (!pat) {
       return c.json({ error: "GitHub PAT not configured" }, 500);
     }
@@ -493,7 +457,7 @@ simulationsRouter.openapi(createGistRoute, async (c: Context<AppEnv>) => {
 
     const gistFiles: Record<string, { content: string }> = {};
     for (const [filename, content] of Object.entries(files)) {
-      gistFiles[filename] = { content: content || "// Empty file" };
+      gistFiles[filename] = { content: (content as string) || "// Empty file" };
     }
 
     const gistData = {
@@ -518,10 +482,10 @@ simulationsRouter.openapi(createGistRoute, async (c: Context<AppEnv>) => {
     console.error("[Simulations] Gist POST error:", e);
     return c.json({ error: "Failed to create Gist" }, 500);
   }
-});
+}) as AppRouteHandler<typeof createGistRoute>);
 
 // Fetch a GitHub Gist by ID
-simulationsRouter.openapi(getGistRoute, async (c: Context<AppEnv>) => {
+simulationsRouter.openapi(getGistRoute, (async (c) => {
   const { id } = c.req.valid("param");
 
   try {
@@ -529,7 +493,7 @@ simulationsRouter.openapi(getGistRoute, async (c: Context<AppEnv>) => {
     let pat = c.env.GITHUB_PAT;
     try {
       const config = await db.selectFrom("settings").selectAll().execute();
-      const patSetting = config.find(s => s.key === "GITHUB_PAT");
+      const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
     } catch (e) {
       console.warn("[Simulations] DB Settings fetch failed:", e);
@@ -542,17 +506,24 @@ simulationsRouter.openapi(getGistRoute, async (c: Context<AppEnv>) => {
     if (pat) headers["Authorization"] = `Bearer ${pat}`;
 
     const res = await fetch(`https://api.github.com/gists/${id}`, { headers });
-    
+
     if (!res.ok) {
       if (res.status === 404) return c.json({ error: "Gist not found" }, 404);
       return c.json({ error: "Failed to fetch from GitHub API" }, 500);
     }
 
-    const gist = await res.json() as { description: string; files: Record<string, { content: string }>; owner: { login: string }; public: boolean; created_at: string; updated_at: string };
-    
-    const files: Record<string, string> = {};
+    const gist = await res.json() as {
+      description: string;
+      files: Record<string, { content: string }>;
+      owner: { login: string };
+      public: boolean;
+      created_at: string;
+      updated_at: string;
+    };
+
+    const gistFiles: Record<string, string> = {};
     for (const [filename, fileObj] of Object.entries(gist.files)) {
-      files[filename] = fileObj.content || "";
+      gistFiles[filename] = fileObj.content || "";
     }
 
     return c.json({
@@ -560,7 +531,7 @@ simulationsRouter.openapi(getGistRoute, async (c: Context<AppEnv>) => {
         id: `gist:${id}`,
         name: gist.description || "Gist Simulation",
         type: "gist",
-        files: files,
+        files: gistFiles,
         author_id: gist.owner?.login || "anonymous",
         is_public: gist.public ? 1 : 0,
         created_at: gist.created_at,
@@ -571,6 +542,6 @@ simulationsRouter.openapi(getGistRoute, async (c: Context<AppEnv>) => {
     console.error("[Simulations] Gist GET error:", e);
     return c.json({ error: "Failed to fetch Gist" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getGistRoute>);
 
 export default simulationsRouter;

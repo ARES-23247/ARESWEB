@@ -1,7 +1,7 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import {
   AppEnv,
   ensureAdmin,
@@ -19,27 +19,17 @@ import {
   getBackupRoute as _getBackupRoute,
 } from "../../../shared/routes/settings";
 import { z } from "zod";
-import type { HonoContext } from "@shared/types/api";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const settingsRouter = new OpenAPIHono<AppEnv>();
 
-// SEC-03: Infrastructure secrets that must never be returned in plaintext
 const SENSITIVE_KEYS = new Set([
-  "ENCRYPTION_SECRET",
-  "BETTER_AUTH_SECRET",
-  "BLUESKY_APP_PASSWORD",
-  "BAND_ACCESS_TOKEN",
-  "FACEBOOK_ACCESS_TOKEN",
-  "TWITTER_API_SECRET",
-  "TWITTER_ACCESS_SECRET",
-  "INSTAGRAM_ACCESS_TOKEN",
-  "GCAL_PRIVATE_KEY",
-  "ZULIP_API_KEY",
-  "GITHUB_PAT",
-  "GITHUB_WEBHOOK_SECRET",
-  "CLOUDFLARE_API_TOKEN",
-  "R2_ACCESS_KEY",
-  "R2_SECRET_KEY",
+  "ENCRYPTION_SECRET", "BETTER_AUTH_SECRET", "BLUESKY_APP_PASSWORD",
+  "BAND_ACCESS_TOKEN", "FACEBOOK_ACCESS_TOKEN", "TWITTER_API_SECRET",
+  "TWITTER_ACCESS_SECRET", "INSTAGRAM_ACCESS_TOKEN", "GCAL_PRIVATE_KEY",
+  "ZULIP_API_KEY", "GITHUB_PAT", "GITHUB_WEBHOOK_SECRET",
+  "CLOUDFLARE_API_TOKEN", "R2_ACCESS_KEY", "R2_SECRET_KEY",
 ]);
 
 function maskSecret(value: string): string {
@@ -47,13 +37,11 @@ function maskSecret(value: string): string {
   return "••••••••" + value.slice(-4);
 }
 
-// Schema for settings: keys and values must be strings, values max 10000 chars
 const settingsSchema = z.record(z.string(), z.string().max(10000));
 
-// Admin protection - Apply only to admin routes
 settingsRouter.use("/admin/*", ensureAdmin);
 
-settingsRouter.openapi(getSettingsRoute, async (c: Context<AppEnv>) => {
+settingsRouter.openapi(getSettingsRoute, (async (c) => {
   try {
     const settings = await getDbSettings(c);
     const masked: Record<string, string> = {};
@@ -65,19 +53,16 @@ settingsRouter.openapi(getSettingsRoute, async (c: Context<AppEnv>) => {
     console.error("GET_SETTINGS ERROR", e);
     return c.json({ success: false, error: "Failed to fetch settings" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getSettingsRoute>);
 
-settingsRouter.openapi(updateSettingsRoute, async (c: Context<AppEnv>) => {
+settingsRouter.openapi(updateSettingsRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const body = c.req.valid("json");
     const validationResult = settingsSchema.safeParse(body);
     if (!validationResult.success) {
       return c.json(
-        {
-          success: false,
-          error: "Invalid settings format: " + validationResult.error.issues.map((i) => i.message).join(", "),
-        },
+        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i) => i.message).join(", ") },
         400
       );
     }
@@ -87,16 +72,8 @@ settingsRouter.openapi(updateSettingsRoute, async (c: Context<AppEnv>) => {
     const sensitiveKeysUpdated: string[] = [];
     for (const [key, value] of entries) {
       if (SENSITIVE_KEYS.has(key)) {
-        if (value.startsWith("••••")) {
-          continue;
-        }
-        return c.json(
-          {
-            success: false,
-            error: `Cannot update ${key} via API. Please use the admin console.`,
-          },
-          403
-        );
+        if (value.startsWith("••••")) continue;
+        return c.json({ success: false, error: `Cannot update ${key} via API. Please use the admin console.` }, 403);
       }
 
       const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);
@@ -109,15 +86,12 @@ settingsRouter.openapi(updateSettingsRoute, async (c: Context<AppEnv>) => {
         .execute();
 
       updatedCount++;
-      if (SENSITIVE_KEYS.has(key)) {
-        sensitiveKeysUpdated.push(key);
-      }
+      if (SENSITIVE_KEYS.has(key)) sensitiveKeysUpdated.push(key);
     }
 
-    const auditMessage =
-      sensitiveKeysUpdated.length > 0
-        ? `Updated ${updatedCount} integration keys (sensitive: ${sensitiveKeysUpdated.join(", ")})`
-        : `Updated ${updatedCount} integration keys.`;
+    const auditMessage = sensitiveKeysUpdated.length > 0
+      ? `Updated ${updatedCount} integration keys (sensitive: ${sensitiveKeysUpdated.join(", ")})`
+      : `Updated ${updatedCount} integration keys.`;
 
     c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
     return c.json({ success: true, updated: updatedCount }, 200);
@@ -125,9 +99,9 @@ settingsRouter.openapi(updateSettingsRoute, async (c: Context<AppEnv>) => {
     console.error("UPDATE_SETTINGS ERROR", e);
     return c.json({ success: false, error: "Update failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof updateSettingsRoute>);
 
-settingsRouter.openapi(getStatsRoute, async (c: Context<AppEnv>) => {
+settingsRouter.openapi(getStatsRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
@@ -137,82 +111,52 @@ settingsRouter.openapi(getStatsRoute, async (c: Context<AppEnv>) => {
       db.selectFrom("inquiries").select(db.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst(),
       db.selectFrom("user").select(db.fn.count("id").as("count")).executeTakeFirst(),
     ]);
-    return c.json(
-      {
-        posts: Number(posts?.count || 0),
-        events: Number(events?.count || 0),
-        docs: Number(docs?.count || 0),
-        inquiries: Number(inquiries?.count || 0),
-        users: Number(users?.count || 0),
-      },
-      200
-    );
+    return c.json({
+      posts: Number(posts?.count || 0),
+      events: Number(events?.count || 0),
+      docs: Number(docs?.count || 0),
+      inquiries: Number(inquiries?.count || 0),
+      users: Number(users?.count || 0),
+    }, 200);
   } catch (e) {
     console.error("GET_STATS ERROR", e);
     return c.json({ error: "Failed to fetch stats" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getStatsRoute>);
 
-settingsRouter.openapi(getPublicSettingsRoute, async (c: Context<AppEnv>) => {
+settingsRouter.openapi(getPublicSettingsRoute, (async (c) => {
   try {
     const settings = await getDbSettings(c);
     const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
     const publicSettings: Record<string, string> = {};
     for (const key of publicKeys) {
-      if (settings[key]) {
-        publicSettings[key] = settings[key];
-      }
+      if (settings[key]) publicSettings[key] = settings[key];
     }
     return c.json({ success: true, settings: publicSettings }, 200);
   } catch (e) {
     console.error("GET_PUBLIC_SETTINGS ERROR", e);
     return c.json({ success: false, error: "Failed to fetch public settings" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getPublicSettingsRoute>);
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
-settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: Context<AppEnv>) => {
+settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const SAFE_TABLES = [
-      "posts",
-      "events",
-      "docs",
-      "docs_history",
-      "docs_feedback",
-      "media_tags",
-      "user_profiles",
-      "event_signups",
-      "badges",
-      "user_badges",
-      "inquiries",
-      "locations",
-      "sponsor_metrics",
-      "sponsor_tokens",
-      "notifications",
-      "sponsors",
-      "comments",
-      "awards",
-      "page_analytics",
-      "audit_log",
+      "posts", "events", "docs", "docs_history", "docs_feedback",
+      "media_tags", "user_profiles", "event_signups", "badges",
+      "user_badges", "inquiries", "locations", "sponsor_metrics",
+      "sponsor_tokens", "notifications", "sponsors", "comments",
+      "awards", "page_analytics", "audit_log",
     ] as const;
 
     const TABLE_COLUMNS: Record<string, string[]> = {
       user_profiles: [
-        "user_id",
-        "nickname",
-        "pronouns",
-        "subteams",
-        "member_type",
-        "bio",
-        "favorite_first_thing",
-        "fun_fact",
-        "show_on_about",
-        "favorite_robot_mechanism",
-        "pre_match_superstition",
-        "leadership_role",
-        "rookie_year",
-        "updated_at",
+        "user_id", "nickname", "pronouns", "subteams", "member_type",
+        "bio", "favorite_first_thing", "fun_fact", "show_on_about",
+        "favorite_robot_mechanism", "pre_match_superstition",
+        "leadership_role", "rookie_year", "updated_at",
       ],
       inquiries: ["id", "type", "name", "email", "status", "created_at"],
       audit_log: ["id", "action", "resource_type", "resource_id", "actor", "created_at"],
@@ -222,15 +166,11 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: Conte
     const backupPromises = SAFE_TABLES.map(async (tableName) => {
       try {
         const cols = TABLE_COLUMNS[tableName];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely dynamic query builder
-        let q: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely dynamic query builder
-        const anyDb = db as any;
-        if (cols) {
-          q = anyDb.selectFrom(tableName).select(cols);
-        } else {
-          q = anyDb.selectFrom(tableName).selectAll();
-        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely dynamic query builder requires dynamic table names
+        const anyDb = db as unknown as Kysely<Record<string, Record<string, unknown>>>;
+        const q = cols
+          ? anyDb.selectFrom(tableName).select(cols)
+          : anyDb.selectFrom(tableName).selectAll();
         const data = (await q.limit(1000).execute()) as unknown[];
 
         if (tableName === "inquiries") {
@@ -238,11 +178,7 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: Conte
             tableName,
             data: (data || []).map((r) => {
               const row = r as Record<string, unknown>;
-              return {
-                ...row,
-                name: row.name ? String(row.name).substring(0, 1) + "***" : "***",
-                email: "***@***.***",
-              };
+              return { ...row, name: row.name ? String(row.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
             }),
           };
         }
@@ -253,9 +189,7 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: Conte
     });
 
     const results = await Promise.all(backupPromises);
-    for (const res of results) {
-      backup[res.tableName] = res.data;
-    }
+    for (const res of results) backup[res.tableName] = res.data;
 
     c.executionCtx.waitUntil(logAuditAction(c, "database_export", "system", null, "Exported full D1 database backup as JSON."));
     return c.json({ success: true, timestamp: new Date().toISOString(), backup }, 200);
