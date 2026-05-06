@@ -8,8 +8,7 @@ import { SIM_COMPONENTS } from "./generated/sim-registry";
 /* ---------- Lazy Loaded Simulators & Tools ---------- */
 const CodePlayground = lazy(() => import('./docs/CodePlayground').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CodePlayground</div> })));
 const InteractiveTutorial = lazy(() => import('./InteractiveTutorial').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load InteractiveTutorial</div> })));
-// @ts-expect-error -- CoreValueCallout uses named export; catch fallback provides default shape
-const CoreValueCallout = lazy(() => import('./CoreValueCallout').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CoreValueCallout</div> })));
+const CoreValueCallout = lazy(() => import('./CoreValueCallout').then(m => ({ default: m.CoreValueCallout })).catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CoreValueCallout</div> })));
 const ConfigVisualizer = lazy(() => import('./docs/ConfigVisualizer'));
 const ScreenshotGallery = lazy(() => import('./docs/ScreenshotGallery'));
 const SimulationPlayground = lazy(() => import('./SimulationPlayground').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load SimulationPlayground</div> })));
