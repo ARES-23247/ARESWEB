@@ -62,11 +62,11 @@
 - [x] **Phase 39: Frontend API Type Unification** - Re-export `z.infer<>` types from shared/routes/ into frontend hooks and components
   - **Plans**: 0
   - **Depends on**: Phase 38
-- [ ] **Phase 40: D1 Kysely Type Wrappers** - Replace `@ts-expect-error` with typed query helper functions
+- [x] **Phase 40: D1 Kysely Type Wrappers** - Replace `@ts-expect-error` with typed query helper functions
   - **Plans**: 0
-- [ ] **Phase 41: React Hooks Dependency Audit** - Refactor suppressed `exhaustive-deps` in SimulationPlayground, ProfileEditor
-  - **Plans**: 0
-- [ ] **Phase 42: Final Sweep and CI Hardening** - Remove all remaining `eslint-disable` directives, verify zero bypasses
+- [x] **Phase 41: React Hooks Dependency Audit** - Refactor suppressed `exhaustive-deps` in SimulationPlayground, ProfileEditor
+  - **Plans**: 1
+- [x] **Phase 42: Final Sweep and CI Hardening** - Remove all remaining `eslint-disable` directives, verify zero bypasses
   - **Plans**: 0
   - **Depends on**: Phase 38, 39, 40, 41
 

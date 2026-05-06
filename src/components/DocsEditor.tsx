@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -340,8 +340,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       {editSlug && docRes?.doc && (
         <div className="w-full flex flex-col gap-6 mt-6">
           <ZulipThread
-            stream={(docRes.doc as any).zulip_stream as string || "documents"}
-            topic={(docRes.doc as any).zulip_topic as string || `Doc: ${(docRes.doc as any).title as string}`}
+            stream={(docRes.doc as unknown as DocData).zulip_stream || "documents"}
+            topic={(docRes.doc as unknown as DocData).zulip_topic || `Doc: ${(docRes.doc as unknown as DocData).title}`}
           />
         </div>
       )}

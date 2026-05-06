@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import { useState } from "react";
 import { z } from "zod";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
@@ -145,7 +145,7 @@ export default function FinanceManager() {
           { label: "Total Income", value: `$${(summary?.total_income ?? 0).toLocaleString()}`, icon: <TrendingUp className="text-ares-green" /> },
           { label: "Total Expenses", value: `$${(summary?.total_expenses ?? 0).toLocaleString()}`, icon: <TrendingDown className="text-ares-red" /> },
           { label: "Cash Balance", value: `$${(summary?.balance ?? 0).toLocaleString()}`, icon: <Wallet className="text-ares-gold" /> },
-          { label: "Pipeline Value", value: `$${pipeline.reduce((acc: number, p: any) => acc + (p.status !== 'lost' ? (Number(p.estimated_value) || 0) : 0), 0).toLocaleString()}`, icon: <PieChart className="text-ares-cyan" /> },
+          { label: "Pipeline Value", value: `$${pipeline.reduce((acc: number, p: PipelineItem) => acc + (p.status !== 'lost' ? (Number(p.estimated_value) || 0) : 0), 0).toLocaleString()}`, icon: <PieChart className="text-ares-cyan" /> },
         ]}
       />
 
@@ -240,7 +240,7 @@ export default function FinanceManager() {
               // we only care about status updates since sort_order is not saved
               // to optimize, just update the items that changed status
               updates.forEach(update => {
-                const item = pipeline.find((p: any) => String(p.id) === update.id);
+                const item = pipeline.find((p: PipelineItem) => String(p.id) === update.id);
                 if (item && item.status !== update.status) {
                   const pipelineItem = item as PipelineItem & { id?: string; season_id?: number | null };
                   savePipeline.mutate({
@@ -316,7 +316,7 @@ export default function FinanceManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {transactions.map((t: any) => (
+              {transactions.map((t: TransactionItem) => (
                 <tr key={t.id} className="hover:bg-white/5 transition-colors group">
                   <td className="p-4 text-xs font-bold text-marble/60">{t.date}</td>
                   <td className="p-4">

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -148,9 +148,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           tbaEventKey: event.tba_event_key || "",
           isPotluck: event.is_potluck === 1,
           isVolunteer: event.is_volunteer === 1,
-          publishedAt: (event as any).published_at || "",
+          publishedAt: ((event as unknown) as Record<string, unknown>).published_at as string || "",
           seasonId: event.season_id ? Number(event.season_id) : undefined,
-          socials: (eventRes as any).socials || {},
+          socials: ((eventRes as unknown) as Record<string, unknown>).socials as Record<string, boolean> || {},
         });
 
         // Parse rrule
@@ -198,10 +198,10 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
 
 
   const saveMutation = useSaveEvent({
-    onSuccess: (data: any) => {
+    onSuccess: (data: Record<string, unknown>) => {
       if (data.success) {
         toast.success("Event published!");
-        if (data.warning) toast.info(data.warning);
+        if (data.warning) toast.info(data.warning as string);
         navigate("/dashboard");
       } else {
         setErrorMsg("Event save failed.");
@@ -213,13 +213,13 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   });
 
   const updateMutation = useUpdateEvent({
-    onSuccess: (data: any) => {
+    onSuccess: (data: Record<string, unknown>) => {
       if (data.success) {
         toast.success("Event updated!");
-        if (data.warning) toast.info(data.warning);
+        if (data.warning) toast.info(data.warning as string);
         navigate("/dashboard");
       } else {
-        setErrorMsg(data.error || "Event update failed.");
+        setErrorMsg((data.error as string) || "Event update failed.");
       }
     },
     onError: (err: Error) => {

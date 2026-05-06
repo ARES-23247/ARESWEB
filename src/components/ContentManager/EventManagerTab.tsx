@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { Radio, Calendar } from "lucide-react";
@@ -74,7 +74,7 @@ export default function EventManagerTab({
   }, [events, cursor]);
 
    
-  const lastSyncedAt = (eventsData as any)?.lastSyncedAt;
+  const lastSyncedAt = (eventsData as unknown as Record<string, unknown>)?.lastSyncedAt as string | undefined;
 
   const deleteMutation = useDeleteEvent({
     onSuccess: () => {
@@ -89,7 +89,7 @@ export default function EventManagerTab({
   const syncGcalMutation = useSyncEvents({
     onSuccess: (res) => {
       if (res.success) {
-        toast.success(`Sync Complete! Fetched ${(res as any).count || 0} events.`);
+        toast.success(`Sync Complete! Fetched ${(res as unknown as Record<string, unknown>).count || 0} events.`);
       } else {
         toast.error("Sync failed");
       }
@@ -100,12 +100,13 @@ export default function EventManagerTab({
   });
 
   const repairGcalMutation = useRepairCalendar({
-    onSuccess: (res: any) => {  
-      if (res.success) {
-        const msg = `Repair Complete! Pushed ${res.pushed || 0} events to GCal.`;
-        if (res.failed) {
-          toast.warning(`${msg} (${res.failed} failed)`);
-          console.warn("[RepairCalendar] Errors:", res.errors);
+    onSuccess: (res: unknown) => {  
+      const result = res as Record<string, unknown>;
+      if (result.success) {
+        const msg = `Repair Complete! Pushed ${result.pushed || 0} events to GCal.`;
+        if (result.failed) {
+          toast.warning(`${msg} (${result.failed} failed)`);
+          console.warn("[RepairCalendar] Errors:", (res as any).errors);
         } else {
           toast.success(msg);
         }

@@ -90,11 +90,8 @@ apiRouter.doc('/openapi.json', {
   info: { title: 'ARESWEB API', version: 'v6.8' }
 });
 
-apiRouter.get('/reference', apiReference({
-  // @ts-expect-error - Scalar Hono type mismatch
-  spec: { url: '/api/openapi.json' },
-  theme: 'moon'
-}));
+const scalarConfig = { spec: { url: '/api/openapi.json' }, theme: 'moon' as const };
+apiRouter.get('/reference', apiReference(scalarConfig as unknown as Parameters<typeof apiReference>[0]));
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
+
 import React, { useState } from "react";
 import { Layout } from "lucide-react";
 import ProjectBoardKanban from "./command/ProjectBoardKanban";
@@ -189,14 +189,14 @@ export default function TaskBoardPage() {
     });
   };
 
-  const handleUpdateTask = async (id: string, updates: any) => {
+  const handleUpdateTask = async (id: string, updates: import("../api").UpdateTaskRequest | Record<string, unknown>) => {
     // Structural mapping for assignees - API expects string[] of IDs
-    const apiUpdates: any = { ...updates };
+    const apiUpdates: Record<string, unknown> = { ...updates };
     if (updates.assignees && Array.isArray(updates.assignees)) {
-      apiUpdates.assignees = updates.assignees.map((a: any) => typeof a === 'string' ? a : a.id);
+      apiUpdates.assignees = updates.assignees.map((a: unknown) => typeof a === 'string' ? a : (a as {id: string}).id);
     }
 
-    updateMutation.mutate({ id, updates: apiUpdates }, {
+    updateMutation.mutate({ id, updates: apiUpdates as import("../api").UpdateTaskRequest }, {
       onSuccess: () => broadcastTaskUpdate()
     });
   };

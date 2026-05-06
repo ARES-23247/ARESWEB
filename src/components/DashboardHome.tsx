@@ -11,8 +11,7 @@ import "driver.js/dist/driver.css";
 export default function DashboardHome({ stats: prefetchedStats }: { stats?: unknown }) {
   const { data: session } = useSession();
   
-  // @ts-expect-error - BetterAuth session typing
-  const role = session?.user?.role || "unverified";
+  const role = (session?.user as Record<string, unknown> | undefined)?.role || "unverified";
   const canSeeInquiries = role !== "unverified";
 
   // Using prefetched stats from parent to avoid waterfall

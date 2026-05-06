@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- Zod schemas used only for type inference */
+
 /**
  * Docs API - Documentation, Knowledge Base
  *
@@ -10,7 +10,7 @@ import { z } from "zod";
 import { client, unwrapResponse } from "./honoClient";
 
 // Inline schema definitions
-const DocResponseSchema = z.object({
+export const DocResponseSchema = z.object({
   slug: z.string(),
   title: z.string(),
   category: z.string(),
@@ -26,7 +26,7 @@ const DocResponseSchema = z.object({
   original_author_avatar: z.string().optional(),
 });
 
-const DocDetailResponseSchema = DocResponseSchema.extend({
+export const DocDetailResponseSchema = DocResponseSchema.extend({
   content: z.string().nullable().optional(),
   updated_at: z.string().optional(),
   status: z.string().optional(),
@@ -36,12 +36,12 @@ const DocDetailResponseSchema = DocResponseSchema.extend({
   cf_email: z.string().nullable().optional(),
 });
 
-const ContributorSchema = z.object({
+export const ContributorSchema = z.object({
   nickname: z.string().nullable(),
   avatar: z.string().nullable(),
 });
 
-const SearchResultSchema = z.object({
+export const SearchResultSchema = z.object({
   slug: z.string(),
   title: z.string(),
   category: z.string(),
@@ -49,7 +49,7 @@ const SearchResultSchema = z.object({
   snippet: z.string(),
 });
 
-const DocHistorySchema = z.object({
+export const DocHistorySchema = z.object({
   id: z.number(),
   slug: z.string(),
   title: z.string(),
@@ -59,7 +59,7 @@ const DocHistorySchema = z.object({
   created_at: z.string().nullable().optional(),
 });
 
-const DocSchema = z.object({
+export const DocSchema = z.object({
   slug: z.string(),
   title: z.string().optional(),
   category: z.string().optional(),

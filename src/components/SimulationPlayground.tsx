@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { Play, Save, Loader2, RotateCcw, Copy, Check, Send, Trash2, GripVertical, FolderOpen, Plus, ChevronDown, Camera, X, Maximize, Minimize, Link2, Keyboard, History, Upload, AlertTriangle } from "lucide-react";
@@ -59,9 +59,10 @@ import ElevatorPidSimRaw from "../sims/elevatorpid/index.tsx?raw";
 let Babel: { transform: (code: string, opts: Record<string, unknown>) => { code: string } } | null = null;
 const loadBabel = async () => {
   if (!Babel) {
-    // @ts-expect-error -- @babel/standalone provides a global export
-    const mod = await import("@babel/standalone");
-    Babel = mod.default || mod;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - no types available
+    const mod = (await import("@babel/standalone")) as { default?: { transform: (code: string, opts: Record<string, unknown>) => { code: string } } };
+    Babel = mod.default || (mod as unknown as { transform: (code: string, opts: Record<string, unknown>) => { code: string } });
   }
   return Babel!;
 };
@@ -724,7 +725,7 @@ export default function SimulationPlayground() {
       const position = editor.getPosition();
       if (position) {
         editor.executeEdits("component-library", [{
-          range: new (window as any).monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+          range: new ((window as unknown as { monaco: { Range: new (a: number, b: number, c: number, d: number) => import("monaco-editor").IRange } }).monaco.Range)(position.lineNumber, position.column, position.lineNumber, position.column),
           text: code,
           forceMoveMarkers: true
         }]);

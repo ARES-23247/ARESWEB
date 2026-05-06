@@ -47,7 +47,7 @@ inquiriesRouter.get("/admin/clear-rate-limits", ensureAdmin, async (c) => {
   const db = c.get("db") as import("kysely").Kysely<import("../../../../shared/schemas/database").DB>;
   try {
     const result = await db.deleteFrom("rate_limits").execute();
-    return c.json({ success: true, deleted: result.meta.numDeletedRows });
+    return c.json({ success: true, deleted: Number(result[0]?.numDeletedRows || 0) });
   } catch (err) {
     console.error("[ClearRateLimits] Error:", err);
     return c.json({ error: "Failed to clear rate limits" }, 500);

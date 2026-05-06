@@ -18,5 +18,5 @@ export interface TransactionItem {
   amount: number;
   category: string;
   date: string;
-  description: string;
+  description?: string | null;
 }

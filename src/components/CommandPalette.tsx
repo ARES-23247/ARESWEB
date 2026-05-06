@@ -112,8 +112,7 @@ export default function CommandPalette() {
     });
   };
 
-  // @ts-expect-error - BetterAuth session typing
-  const userRole = session?.user?.role;
+  const userRole = (session?.user as Record<string, unknown> | undefined)?.role;
 
   // Static Quick Links routes
   const staticLinks = useMemo(() => {
