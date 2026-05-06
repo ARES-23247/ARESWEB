@@ -1,5 +1,4 @@
 import { typedHandler } from "../utils/handler";
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { Kysely } from "kysely";
@@ -50,24 +49,24 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
       ]);
 
     if (query.status) {
-      baseQuery = baseQuery.where("tasks.status", "=", query.status as any);
+      baseQuery = baseQuery.where("tasks.status", "=", query.status);
     }
     if (query.subteam) {
-      baseQuery = baseQuery.where("tasks.subteam", "=", query.subteam as any);
+      baseQuery = baseQuery.where("tasks.subteam", "=", query.subteam);
     }
     if (query.assigned_to) {
-      baseQuery = baseQuery.where("tasks.assigned_to", "=", query.assigned_to as any);
+      baseQuery = baseQuery.where("tasks.assigned_to", "=", query.assigned_to);
     }
 
     const tasks = await baseQuery
       .orderBy("tasks.sort_order", "asc")
       .orderBy("tasks.created_at", "desc")
       .limit(limit)
-      .offset(offset as any)
+      .offset(Number(offset))
       .execute();
 
     const formattedTasks = tasks.map((t: any) => {
-      let assignees = [];
+      let assignees: any[] = [];
       if (t.assignees_json) {
         try {
           const parsed = JSON.parse(t.assignees_json);
@@ -88,7 +87,7 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
 
     return c.json({
       success: true,
-      tasks: formattedTasks as any[],
+      tasks: formattedTasks,
       pagination: {
         total: tasks.length, // Simplified
         limit,
@@ -119,7 +118,7 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
       priority: body.priority || "normal",
       subteam: body.subteam || null,
       due_date: body.due_date || null,
-      sort_order: (body as any).sort_order || 0,
+      sort_order: body.sort_order || 0,
       parent_id: body.parent_id || null,
       time_spent_seconds: 0,
       created_by: user.id,
@@ -127,8 +126,8 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
       updated_at: now,
     };
 
-    if ((body as any).assigned_to) {
-      taskData.assigned_to = (body as any).assigned_to;
+    if (body.assigned_to) {
+      taskData.assigned_to = body.assigned_to;
     }
 
     await db.insertInto("tasks").values(taskData).execute();
@@ -179,7 +178,7 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
       assignee_name: null,
     };
 
-    return c.json({ success: true, task: createdTask as any }, 200);
+    return c.json({ success: true, task: createdTask }, 200);
   } catch (err) {
     console.error("[Tasks] Create error:", err);
     return c.json({ error: "Failed to create task" }, 500);
@@ -239,7 +238,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
     if (body.sort_order !== undefined) updates.sort_order = body.sort_order;
     if (body.parent_id !== undefined) updates.parent_id = body.parent_id;
     if (body.time_spent_seconds !== undefined) updates.time_spent_seconds = body.time_spent_seconds;
-    if ((body as any).assigned_to !== undefined) updates.assigned_to = (body as any).assigned_to;
+    if (body.assigned_to !== undefined) updates.assigned_to = body.assigned_to;
 
     await db.updateTable("tasks")
       .set(updates)

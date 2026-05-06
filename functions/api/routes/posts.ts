@@ -531,7 +531,6 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
       .executeTakeFirst();
 
     if (current) {
-      // @ts-expect-error -- manual casting for history
       await captureHistory(c, slug, current);
     }
 

@@ -1,5 +1,4 @@
 import { typedHandler } from "../utils/handler";
-/* eslint-disable @typescript-eslint/no-explicit-any -- Zulip webhook payloads are dynamic and external */
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { Kysely } from "kysely";
@@ -44,7 +43,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
     return c.json({ content: "❌ Unauthorized: Invalid webhook token." }, 401);
   }
 
-  const rawContent = (body as any).message?.content || "";
+  const rawContent = body.message?.content || "";
   const cleaned = rawContent.replace(/@\*\*[^*]+\*\*/g, "").trim();
   
   if (!cleaned) {
@@ -61,7 +60,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
   const db = c.get("db") as Kysely<DB>;
 
   if (PRIVILEGED_COMMANDS.includes(command || "")) {
-    const senderEmail = (body as any).message?.sender_email;
+    const senderEmail = body.message?.sender_email;
     if (senderEmail) {
       const user = await db.selectFrom("user as u")
         .select("u.role")
@@ -115,8 +114,8 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         });
 
         const totalRes = await db.selectFrom("tasks")
-          .select((eb: any) => eb.fn.count("id").as("count"))
-          .executeTakeFirst() as any;
+          .select((eb) => eb.fn.count("id").as("count"))
+          .executeTakeFirst() ;
         const total = Number(totalRes?.count || taskResults.length);
 
         return c.json({
@@ -151,7 +150,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         }
 
         const title = taskArgs.join(" ");
-        const senderEmail = (body as any).message?.sender_email;
+        const senderEmail = body.message?.sender_email;
         let creatorId = "system";
         if (senderEmail) {
           const senderUser = await db.selectFrom("user")
@@ -167,7 +166,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           .values({
             id: taskId,
             title,
-            description: `Created via Zulip by ${(body as any).message.sender_full_name}`,
+            description: `Created via Zulip by ${body.message.sender_full_name}`,
             status: "todo",
             priority: "normal",
             sort_order: 0,
@@ -182,10 +181,10 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
       case "!stats": {
         const [postsRes, eventsRes, usersRes, inquiriesRes] = await Promise.all([
-          db.selectFrom("posts").select((eb: any) => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() as Promise<any>,
-          db.selectFrom("events").select((eb: any) => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() as Promise<any>,
-          db.selectFrom("user_profiles").select((eb: any) => eb.fn.count("user_id").as("count")).executeTakeFirst() as Promise<any>,
-          db.selectFrom("inquiries").select((eb: any) => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst() as Promise<any>,
+          db.selectFrom("posts").select((eb) => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
+          db.selectFrom("events").select((eb) => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
+          db.selectFrom("user_profiles").select((eb) => eb.fn.count("user_id").as("count")).executeTakeFirst() ,
+          db.selectFrom("inquiries").select((eb) => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst() ,
         ]);
 
         return c.json({
@@ -204,9 +203,9 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
       case "!inquiries": {
         const result = await db.selectFrom("inquiries")
-          .select((eb: any) => eb.fn.count("id").as("count"))
+          .select((eb) => eb.fn.count("id").as("count"))
           .where("status", "=", "pending")
-          .executeTakeFirst() as any;
+          .executeTakeFirst() ;
         const count = Number(result?.count || 0);
         return c.json({
           content: count > 0
@@ -229,7 +228,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           return c.json({ content: "📅 No upcoming events scheduled." }, 200);
         }
 
-        const lines = results.map((e: any) => {
+        const lines = results.map((e) => {
           const dtStart = new Date(String(e.date_start)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
           const dtEnd = e.date_end ? ` - ${new Date(String(e.date_end)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "";
           return `• **${e.title}** — ${dtStart}${dtEnd}${e.location ? ` @ ${e.location}` : ""}`;
@@ -247,7 +246,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
            return c.json({ content: "⚠️ Usage: `!broadcast <stream> <message...>` (use quotes for stream names with spaces)" }, 200);
         }
         
-        const broadcastContent = `${msgCore}\n\n*— Broadcasted by ${(body as any).message.sender_full_name} via ARES Bot*`;
+        const broadcastContent = `${msgCore}\n\n*— Broadcasted by ${body.message.sender_full_name} via ARES Bot*`;
 
         c.executionCtx.waitUntil((async () => {
           const socialConfig = await getSocialConfig(c);
@@ -275,7 +274,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           }, 200);
         }
 
-        const senderEmail = (body as any).message?.sender_email;
+        const senderEmail = body.message?.sender_email;
 
         // Helper to check admin
         const ensureAdmin = async () => {
@@ -310,7 +309,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
             .values({ key: `rcv_poll_${pollId}`, value: JSON.stringify(pollData) })
             .execute();
 
-          const optionsList = options.map((opt: any, i: any) => `${i + 1}️⃣ **${opt}**`).join("\n");
+          const optionsList = options.map((opt: string, i: number) => `${i + 1}️⃣ **${opt}**`).join("\n");
           return c.json({
             content: `📊 **Poll Created: ${title}** (ID: \`${pollId}\`)\n\n**Options:**\n${optionsList}\n\nTo vote, reply with: \`!rcv vote ${pollId} <1st_choice> <2nd_choice>...\`\nExample ranking option 2 first, then 1: \`!rcv vote ${pollId} 2 1\``
           }, 200);
@@ -411,8 +410,8 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
       }
 
       default:
-        if ((body as any).message?.type === "stream" && ((body as any).message.topic || (body as any).message.subject)) {
-          const topicStr = (body as any).message.topic || (body as any).message.subject;
+        if (body.message?.type === "stream" && (body.message.topic || body.message.subject)) {
+          const topicStr = body.message.topic || body.message.subject || "";
           const topicParts = topicStr.split("/");
           if (topicParts.length >= 2 && ["post", "event", "doc"].includes(topicParts[0])) {
             const targetType = topicParts[0];
@@ -420,7 +419,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
             const existingUser = await db.selectFrom("user")
               .select(["id", "role"])
-              .where("email", "=", (body as any).message.sender_email || "")
+              .where("email", "=", body.message.sender_email || "")
               .executeTakeFirst();
 
             if (!existingUser || existingUser.role === "unverified" || !existingUser.id) {
@@ -434,9 +433,9 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
                 .values({
                   target_type: targetType,
                   target_id: targetId,
-                  user_id: userId as any,
+                  user_id: userId ,
                   content: rawContent,
-                  zulip_message_id: String((body as any).trigger === "message" ? (body as any).message.id : 0),
+                  zulip_message_id: String(body.trigger === "message" ? body.message.id : 0),
                   created_at: new Date().toISOString()
                 })
                 .execute();

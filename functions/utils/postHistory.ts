@@ -69,18 +69,18 @@ export async function approveAndMergeRevision(
   c: Context<AppEnv>,
   shadowSlug: string,
   originalSlug: string,
-  row: { title: string; author: string; thumbnail: string; snippet: string; ast: string; cf_email: string; season_id?: string }
+  row: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cf_email: string | null; season_id?: string | number | null }
 ) {
   const db = c.get("db");
 
   // Update original
   await db.updateTable("posts")
     .set({
-      title: row.title as string,
+      title: row.title || "Untitled",
       author: row.author || "ARES Team",
-      thumbnail: row.thumbnail,
-      snippet: row.snippet,
-      ast: row.ast,
+      thumbnail: row.thumbnail || "",
+      snippet: row.snippet || "",
+      ast: row.ast || "",
       status: 'published',
       season_id: row.season_id ? Number(row.season_id) : null
     })
@@ -140,17 +140,17 @@ export async function pruneHistory(c: Context<AppEnv>, slug: string, limit = 10)
 export async function captureHistory(
   c: Context<AppEnv>,
   slug: string,
-  data: { title: string; author: string; thumbnail: string; snippet: string; ast: string; cf_email: string; season_id?: string }
+  data: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cf_email: string | null; season_id?: string | number | null }
 ) {
   const db = c.get("db");
   await db.insertInto("posts_history")
     .values({
       slug,
-      title: data.title,
-      author: data.author,
-      thumbnail: data.thumbnail,
-      snippet: data.snippet,
-      ast: data.ast,
+      title: data.title || "Untitled",
+      author: data.author || "Unknown",
+      thumbnail: data.thumbnail || "",
+      snippet: data.snippet || "",
+      ast: data.ast || "",
       author_email: data.cf_email || "unknown",
       season_id: data.season_id ? Number(data.season_id) : null
     })
@@ -199,7 +199,6 @@ export async function restorePostFromHistory(
     .executeTakeFirst();
   
   if (current) {
-    // @ts-expect-error -- kysely types and manual casting
     await captureHistory(c, slug, current);
   }
 
@@ -232,7 +231,6 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
   if (!row) return { success: false, error: "Post not found" };
 
   if (row.revision_of) {
-    // @ts-expect-error -- kysely types and manual casting
     await approveAndMergeRevision(c, slug, row.revision_of, row);
     return { success: true, warnings: [] };
   }
