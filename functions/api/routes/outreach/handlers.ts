@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { getSessionUser, logAuditAction } from "../../middleware";

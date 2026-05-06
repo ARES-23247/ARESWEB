@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { outreachContract } from "../../../../shared/schemas/contracts/outreachContract";
