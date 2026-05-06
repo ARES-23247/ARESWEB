@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
-import { api } from "../api/client";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../api";
 
 export function useAdminSettings() {
   const [availableSocials, setAvailableSocials] = useState<string[]>([]);
   const [isPending, setIsPending] = useState(true);
 
-  const { data, isLoading } = api.settings.getSettings.useQuery({}, {
+  const { data: rawData, isLoading } = useQuery({
     queryKey: ["admin_settings_hook"],
+    queryFn: () => fetchJson<{ settings: Record<string, string | undefined> }>("/api/settings")
   });
 
   useEffect(() => {
-    if (data?.body?.settings) {
-      const config = data.body.settings;
+    if (rawData?.settings) {
+      const config = rawData.settings;
       const available = [];
       if (config.DISCORD_WEBHOOK_URL) available.push("discord");
       if (config.BLUESKY_HANDLE && config.BLUESKY_APP_PASSWORD) available.push("bluesky");
@@ -29,7 +31,7 @@ export function useAdminSettings() {
     } else if (!isLoading) {
       setIsPending(false);
     }
-  }, [data, isLoading]);
+  }, [rawData, isLoading]);
 
   return { availableSocials, isPending };
 }

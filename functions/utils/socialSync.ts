@@ -14,7 +14,7 @@ import { logSystemError } from '../api/middleware';
 import pRetry from 'p-retry';
 import { Kysely } from "kysely";
 import { DB } from "../../shared/schemas/database";
-import { SocialQueuePost } from "../../shared/schemas/contracts/socialQueueContract";
+import { SocialQueuePost } from "../../shared/routes/socialQueue";
 
 export interface SocialConfig {
   DISCORD_WEBHOOK_URL?: string;

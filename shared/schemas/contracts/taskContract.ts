@@ -1,7 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const taskSchema = z.object({
   id: z.string(),
@@ -29,93 +27,126 @@ export const taskSchema = z.object({
   time_spent_seconds: z.number().nullable().optional(),
 });
 
-export const taskContract = c.router({
-  list: {
-    method: "GET",
-    path: "/",
+export const listTasksRoute = createRoute({
+  method: "get",
+  path: "/",
+  request: {
     query: z.object({
       status: z.string().optional(),
       parent_id: z.string().optional(),
-    }).optional(),
-    responses: {
-      200: z.object({ tasks: z.array(taskSchema) }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "List all tasks",
-  },
-  create: {
-    method: "POST",
-    path: "/",
-    body: z.object({
-      title: z.string().min(1).max(500),
-      description: z.string().max(10000).optional(),
-      status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
-      priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
-      subteam: z.string().nullable().optional(),
-      assignees: z.array(z.string()).optional(),
-      due_date: z.string().optional(),
-      parent_id: z.string().nullable().optional(),
-      time_spent_seconds: z.number().optional(),
     }),
-    responses: {
-      200: z.object({ success: z.boolean(), task: taskSchema }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Create a new task",
   },
-  reorder: {
-    method: "PATCH",
-    path: "/reorder",
-    body: z.object({
-      items: z.array(z.object({
-        id: z.string(),
-        status: z.string(),
-        sort_order: z.number(),
-      })),
-    }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+  responses: {
+    200: {
+      description: "List all tasks",
+      content: { "application/json": { schema: z.object({ tasks: z.array(taskSchema) }) } },
     },
-    summary: "Batch reorder tasks (for drag-and-drop)",
-  },
-  update: {
-    method: "PATCH",
-    path: "/:id",
-    pathParams: z.object({ id: z.string() }),
-    body: z.object({
-      title: z.string().min(1).max(500).optional(),
-      description: z.string().max(10000).nullable().optional(),
-      status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
-      priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
-      subteam: z.string().nullable().optional(),
-      assignees: z.array(z.string()).optional(),
-      due_date: z.string().nullable().optional(),
-      sort_order: z.number().optional(),
-      parent_id: z.string().nullable().optional(),
-      time_spent_seconds: z.number().optional(),
-    }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Update a task",
-  },
-  delete: {
-    method: "DELETE",
-    path: "/:id",
-    pathParams: z.object({ id: z.string() }),
-    body: c.type<null>(),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Delete a task",
+    ...openApiStandardErrors,
   },
 });
-export type TaskContract = typeof taskContract;
+
+export const createTaskRoute = createRoute({
+  method: "post",
+  path: "/",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            title: z.string().min(1).max(500),
+            description: z.string().max(10000).optional(),
+            status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
+            priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
+            subteam: z.string().nullable().optional(),
+            assignees: z.array(z.string()).optional(),
+            due_date: z.string().optional(),
+            parent_id: z.string().nullable().optional(),
+            time_spent_seconds: z.number().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create a new task",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), task: taskSchema }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const reorderTasksRoute = createRoute({
+  method: "patch",
+  path: "/reorder",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(z.object({
+              id: z.string(),
+              status: z.string(),
+              sort_order: z.number(),
+            })),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Batch reorder tasks (for drag-and-drop)",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateTaskRoute = createRoute({
+  method: "patch",
+  path: "/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            title: z.string().min(1).max(500).optional(),
+            description: z.string().max(10000).nullable().optional(),
+            status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
+            priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
+            subteam: z.string().nullable().optional(),
+            assignees: z.array(z.string()).optional(),
+            due_date: z.string().nullable().optional(),
+            sort_order: z.number().optional(),
+            parent_id: z.string().nullable().optional(),
+            time_spent_seconds: z.number().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update a task",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteTaskRoute = createRoute({
+  method: "delete",
+  path: "/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Delete a task",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

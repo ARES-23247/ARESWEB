@@ -7,7 +7,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Use single worker locally to avoid route pollution between tests
+  // Some tests mock API routes that can interfere with parallel execution
+  workers: 1,
   reporter: 'html',
   timeout: 60000,
   use: {

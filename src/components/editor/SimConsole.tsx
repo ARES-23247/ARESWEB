@@ -141,7 +141,7 @@ export function SimConsole({
         {activeTab === "tests" && (
           testResults.length === 0 ? (
             <div className="text-white/20 px-2 py-1 italic">
-              No tests have run yet. Use test('name', function() {'{'} expect(value).toBe(true) {'}'}) in your code.
+              No tests have run yet. Use test(&apos;name&apos;, function() {'{'} expect(value).toBe(true) {'}'}) in your code.
             </div>
           ) : (
             testResults.map((tr, i) => (

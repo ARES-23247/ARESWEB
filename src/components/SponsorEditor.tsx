@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sponsorSchema, SponsorPayload } from "@shared/schemas/sponsorSchema";
 
-import { api } from "../api/client";
+import { useGetAdminSponsors, useSaveSponsor, useDeleteSponsor } from "../api";
 
 const TIERS = [
   { name: "Titanium", icon: <Gem className="text-ares-cyan" />, color: "text-ares-cyan", border: "border-ares-cyan/30" },
@@ -42,14 +42,13 @@ export default function SponsorEditor() {
     }
   });
 
-  const { data, isLoading, isError } = api.sponsors.adminList.useQuery(["admin-sponsors"], {});
-  const rawBody = (data as unknown as { body?: { sponsors?: unknown[] } | unknown[] })?.body;
-  const sponsors = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (rawBody && !Array.isArray(rawBody) && Array.isArray(rawBody.sponsors) ? rawBody.sponsors : [])) : [];
+  const { data: res, isLoading, isError } = useGetAdminSponsors();
+  const sponsors = res?.sponsors || [];
 
-  const saveMutation = api.sponsors.saveSponsor.useMutation({
-    onSuccess: (res: { status: number; body: { success?: boolean } }) => {
-      if (res.status === 200 && res.body.success) {
-        queryClient.invalidateQueries({ queryKey: ["admin-sponsors"] });
+  const saveMutation = useSaveSponsor({
+    onSuccess: (res) => {
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
         setIsFormOpen(false);
         setEditingId(null);
         reset();
@@ -71,13 +70,13 @@ export default function SponsorEditor() {
     }
   });
 
-  const deleteMutation = api.sponsors.deleteSponsor.useMutation({
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-sponsors"] })
+  const deleteMutation = useDeleteSponsor({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] })
   });
 
   const onFormSubmit = (data: SponsorPayload) => {
     const finalId = editingId || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    saveMutation.mutate({ body: { ...data, id: finalId } });
+    saveMutation.mutate({ ...data, id: finalId });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +131,7 @@ export default function SponsorEditor() {
       destructive: true
     });
     if (confirmed) {
-      deleteMutation.mutate({ params: { id: s.id }, body: {} });
+      deleteMutation.mutate(s.id);
     }
   };
 

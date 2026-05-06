@@ -1,9 +1,8 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any -- roster API shape is dynamic */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery } from "@tanstack/react-query";
 import { Search, Clock, Users, Activity } from "lucide-react";
 import { useState } from "react";
-import { api } from "../api/client";
 
 
 interface RosterMember {
@@ -23,14 +22,15 @@ interface EnrichedRosterMember extends RosterMember {
   display_name: string;
 }
 
+import { useGetRosterStats } from "../api";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
 export default function MemberImpactOverview() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: rosterRes, isLoading, isError } = api.analytics.getRosterStats.useQuery(["admin-roster-stats"], {});
+  const { data: rosterRes, isLoading, isError } = useGetRosterStats();
    
-  const roster = (rosterRes?.body as unknown as { roster?: RosterMember[] })?.roster || [];
+  const roster = rosterRes?.roster || [];
 
   if (isLoading) {
     return (
@@ -41,7 +41,7 @@ export default function MemberImpactOverview() {
   }
 
   // Calculate full roster stats
-  const enrichedRoster: EnrichedRosterMember[] = roster.map((m: RosterMember) => ({
+  const enrichedRoster: EnrichedRosterMember[] = roster.map((m: any) => ({
     ...m,
     total_hours: m.manual_prep_hours + m.event_volunteer_hours,
     display_name: m.nickname || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "ARES Member"

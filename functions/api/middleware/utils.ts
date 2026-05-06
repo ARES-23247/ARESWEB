@@ -4,14 +4,14 @@ import { parseAstToText } from "../../utils/content";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { safeJSONParse } from "../../utils/json";
-import type { D1Database, R2Bucket, VectorizeIndex } from "@cloudflare/workers-types";
+import type { D1Database, R2Bucket, VectorizeIndex, Ai } from "@cloudflare/workers-types";
 
 // ── Cloudflare Bindings ──────────────────────────────────────────────
 export type Bindings = {
   DB: D1Database;
   ENVIRONMENT?: string;
   ARES_STORAGE: R2Bucket;
-  AI: { run: (model: string, input: unknown) => Promise<unknown> };
+  AI: Ai;
   VECTORIZE_DB?: VectorizeIndex;
   Z_AI_API_KEY?: string;
   DISCORD_WEBHOOK_URL?: string;
@@ -27,6 +27,9 @@ export type Bindings = {
   GITHUB_PROJECT_ID?: string;
   GITHUB_ORG?: string;
   GITHUB_WEBHOOK_SECRET?: string;
+  GITHUB_REPO_OWNER?: string;
+  GITHUB_REPO_NAME?: string;
+  GITHUB_BRANCH?: string;
   ENCRYPTION_SECRET: string;
   ZULIP_CLIENT_ID: string;
   ZULIP_CLIENT_SECRET: string;
@@ -45,6 +48,12 @@ export type Bindings = {
   STRIPE_WEBHOOK_SECRET?: string;
   SENTRY_DSN?: string;
   TOA_API_KEY?: string;
+  TWITTER_API_KEY?: string;
+  BLUESKY_HANDLE?: string;
+  FACEBOOK_ACCESS_TOKEN?: string;
+  INSTAGRAM_ACCESS_TOKEN?: string;
+  SLACK_WEBHOOK_URL?: string;
+  LINKEDIN_ACCESS_TOKEN?: string;
   FTC_EVENTS_USERNAME?: string;
   FTC_EVENTS_API_KEY?: string;
   AUDIT_LOG_RETENTION_DAYS?: string;
@@ -82,6 +91,7 @@ export interface SessionUser {
   email: string;
   name: string | null;
   nickname: string | null;
+  github_login?: string | null;
   image: string | undefined | null;
   role: string | "admin" | "author" | "unverified";
   member_type: string;

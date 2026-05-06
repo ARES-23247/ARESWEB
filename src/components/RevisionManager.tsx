@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 
 import { format } from "date-fns";
 import { History, RotateCcw, X, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useGetDocHistory, useRestoreDocHistory } from "../api/docs";
+import { useGetPostHistory, useRestorePostHistory } from "../api/posts";
 
 export interface Revision {
   id: number;
@@ -25,28 +27,15 @@ interface RevisionManagerProps {
 export default function RevisionManager({ isOpen, onClose, type, slug, displayTitle }: RevisionManagerProps) {
   const queryClient = useQueryClient();
 
-  const historyQuery = type === "post" 
-    ? api.posts.getPostHistory.useQuery(["history", "post", slug], {
-        params: { slug },
-      }, {
-        enabled: isOpen && !!slug && type === "post"
-      })
-    : api.docs.getHistory.useQuery(["history", "doc", slug], {
-        params: { slug },
-      }, {
-        enabled: isOpen && !!slug && type === "doc"
-      });
-
-  const postRestoreMutation = api.posts.restorePostHistory.useMutation({
-    onSuccess: () => {
-      toast.success("Post restored successfully");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      onClose();
-    },
-    onError: (err: Error) => toast.error(err.message || "Post restoration failed")
+  const docHistory = useGetDocHistory(slug, {
+    enabled: isOpen && !!slug && type === "doc"
   });
 
-  const docRestoreMutation = api.docs.restoreHistory.useMutation({
+  const postHistory = useGetPostHistory(slug, {
+    enabled: isOpen && !!slug && type === "post"
+  });
+
+  const docRestore = useRestoreDocHistory({
     onSuccess: () => {
       toast.success("Doc restored successfully");
       queryClient.invalidateQueries({ queryKey: ["docs"] });
@@ -55,21 +44,33 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
     onError: (err: Error) => toast.error(err.message || "Doc restoration failed")
   });
 
+  const postRestore = useRestorePostHistory({
+    onSuccess: () => {
+      toast.success("Post restored successfully");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      onClose();
+    },
+    onError: (err: Error) => toast.error(err.message || "Post restoration failed")
+  });
+
+  const historyQuery = type === "post" ? postHistory : docHistory;
+  const restoreMutation = type === "post" ? postRestore : docRestore;
+
   const isLoading = historyQuery.isLoading;
   const isError = historyQuery.isError;
-  const revisions = historyQuery.data?.status === 200 ? (historyQuery.data.body as { history: Revision[] }).history : [];
+  const revisions = (historyQuery.data as any)?.history || [];
 
   const restoreRevision = (id: number) => {
     if (type === "post") {
-      postRestoreMutation.mutate({ params: { slug, id: id.toString() }, body: {} });
+      (restoreMutation as { mutate: (args: { slug: string; id: string }) => void }).mutate({ slug, id: id.toString() });
     } else {
-      docRestoreMutation.mutate({ params: { slug, id: id.toString() }, body: {} });
+      (restoreMutation as { mutate: (args: { slug: string; id: number }) => void }).mutate({ slug, id });
     }
   };
 
-  const isRestoring = postRestoreMutation.isPending || docRestoreMutation.isPending;
-   
-  const restoringId = (postRestoreMutation.variables as unknown as { params?: { id: string } })?.params?.id || (docRestoreMutation.variables as unknown as { params?: { id: string } })?.params?.id;
+  const isRestoring = restoreMutation.isPending;
+
+  const restoringId = (restoreMutation.variables as { id: string | number } | undefined)?.id || null;
 
   if (!isOpen) return null;
 
@@ -110,7 +111,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
             </div>
           ) : (
             <div className="space-y-3">
-              {revisions.map((rev) => (
+              {revisions.map((rev: Revision) => (
                 <div key={rev.id} className="bg-white/5 border border-white/10 ares-cut p-4 flex items-center justify-between hover:border-white/20 transition-colors">
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-white truncate">{rev.title}</div>

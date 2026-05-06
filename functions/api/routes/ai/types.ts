@@ -13,6 +13,15 @@ export interface ChatMessage {
   content: MessageContent;
 }
 
+// Type guard for text content parts in MessageContent arrays
+export function isTextContentPart(part: {
+  type: string;
+  text?: string;
+  source?: unknown;
+}): part is { type: "text"; text: string } {
+  return part.type === "text" && typeof part.text === "string";
+}
+
 export interface ZaiChatResponse {
   choices?: Array<{
     delta?: {
@@ -26,3 +35,4 @@ export interface ZaiChatResponse {
     message?: string;
   };
 }
+

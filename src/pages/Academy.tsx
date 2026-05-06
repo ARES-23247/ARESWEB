@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- DocRecord type bridge between hooks */
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +9,7 @@ import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
 import DocsSidebar from "../components/docs/DocsSidebar";
 import DocsTableOfContents from "../components/docs/DocsTableOfContents";
 import AutonomousLogicDiagram from "../components/docs/AutonomousLogicDiagram";
-import { api } from "../api/client";
+import { fetchJson } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import ZulipThread from "../components/ZulipThread";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -101,7 +102,7 @@ export default function Academy() {
       <div className="flex flex-1">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         <DocsSidebar
-          groupedDocs={groupedDocs}
+          groupedDocs={groupedDocs as any}
           currentSlug={slug}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
@@ -264,9 +265,9 @@ export default function Academy() {
                   <div className="flex flex-wrap gap-4">
                     <button 
                       onClick={async () => {
-                        await api.docs.submitFeedback.mutation({
-                          params: { slug: slug! },
-                          body: { isHelpful: true, turnstileToken: feedbackToken }
+                        await fetchJson(`/api/docs/${slug}/feedback`, {
+                          method: "POST",
+                          body: JSON.stringify({ isHelpful: true, turnstileToken: feedbackToken })
                         });
                         toast.success('Thanks for your feedback!');
                       }}
@@ -282,9 +283,9 @@ export default function Academy() {
                           submitText: "Submit",
                         });
                         if (comment !== null) {
-                          await api.docs.submitFeedback.mutation({
-                            params: { slug: slug! },
-                            body: { isHelpful: false, turnstileToken: feedbackToken, comment: comment || "" }
+                          await fetchJson(`/api/docs/${slug}/feedback`, {
+                            method: "POST",
+                            body: JSON.stringify({ isHelpful: false, turnstileToken: feedbackToken, comment: comment || "" })
                           });
                           toast.success('Thank you! We will use your feedback to improve this page.');
                         }

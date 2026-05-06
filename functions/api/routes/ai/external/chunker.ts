@@ -76,3 +76,4 @@ export function chunkText(text: string, maxChunkSize = 1000, overlapSize = 100):
 
   return chunks.map((text, index) => ({ text, index }));
 }
+

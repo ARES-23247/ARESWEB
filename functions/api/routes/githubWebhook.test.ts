@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import githubWebhookRouter from "./githubWebhook";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
@@ -465,7 +465,7 @@ describe("GitHub Webhook Router", () => {
         props: {},
       };
 
-      const res = await githubWebhookRouter.request(req, {}, env, badCtx);
+      const res = await githubWebhookRouter.request(req, {}, env, badCtx as any);
       expect(res.status).toBe(200);
       expect(consoleSpy).toHaveBeenCalled();
     });
@@ -697,3 +697,4 @@ describe("GitHub Webhook Router", () => {
     expect(res.status).toBe(401);
   });
 });
+

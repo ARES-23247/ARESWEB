@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Context } from "hono";
 import { AppEnv, SessionUser, getSocialConfig } from "../api/middleware";
 import { emitNotification } from "./notifications";
@@ -55,9 +54,9 @@ export async function createShadowRevision(
       cf_email: user.email,
       status: 'pending',
       revision_of: originalSlug,
-      published_at: data.publishedAt || "" as any,
+      published_at: data.publishedAt || null,
       season_id: data.seasonId ? Number(data.seasonId) : null
-    } as any)
+    })
     .execute();
 
   return revSlug;
@@ -84,7 +83,7 @@ export async function approveAndMergeRevision(
       ast: row.ast,
       status: 'published',
       season_id: row.season_id ? Number(row.season_id) : null
-    } as any)
+    })
     .where("slug", "=", originalSlug)
     .execute();
   
@@ -153,7 +152,7 @@ export async function captureHistory(
       snippet: data.snippet,
       ast: data.ast,
       author_email: data.cf_email || "unknown",
-      season_id: data.season_id || "" as any
+      season_id: data.season_id ? Number(data.season_id) : null
     })
     .execute();
 
@@ -212,7 +211,7 @@ export async function restorePostFromHistory(
       snippet: row.snippet,
       ast: row.ast,
       cf_email: restorerEmail,
-      season_id: row.season_id || "" as any
+      season_id: row.season_id ? Number(row.season_id) : null
     })
     .where("slug", "=", slug)
     .execute();

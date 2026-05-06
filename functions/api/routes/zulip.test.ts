@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Hono } from "hono";
+import { Hono, Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import zulipRouter from "./zulip";
+
+type MockKysely = any;
 
 interface ZulipConfig {
   ZULIP_BOT_EMAIL?: string;
@@ -24,8 +27,8 @@ vi.mock("../middleware", async (importOriginal) => {
   return {
     ...actual,
     ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ensureAuth: async (c: any, next: () => Promise<void>) => {
+ 
+    ensureAuth: async (c: Context<TestEnv>, next: () => Promise<void>) => {
       c.set("sessionUser", { id: "test-user", email: "test@test.com", name: "Test User", nickname: "TestNick", image: null, role: "admin", member_type: "mentor" });
       return next();
     },
@@ -50,7 +53,7 @@ describe("Hono Backend - /zulip Router", () => {
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
       if (c.env && (c.env).DB) {
-        c.set("db", (c.env).DB);
+        c.set("db", (c.env).DB as unknown as MockKysely);
       }
       await next();
     });
@@ -158,7 +161,7 @@ describe("Hono Backend - /zulip Router", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
     expect(body.messages).toHaveLength(1);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect((body.messages as any[])[0].content).toBe("hi");
   });
 
@@ -252,7 +255,12 @@ describe("Hono Backend - /zulip Router", () => {
       execute: vi.fn().mockResolvedValue([
         { email: "alice@test.com" },
         { email: "charlie@test.com" }
-      ])
+      ]),
+      insertInto: vi.fn().mockReturnThis(),
+      updateTable: vi.fn().mockReturnThis(),
+      deleteFrom: vi.fn().mockReturnThis(),
+      values: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
     };
 
     const res = await testApp.request("/invites/audit", {}, { DB: mockDb }, mockExecutionContext);
@@ -296,3 +304,4 @@ describe("Hono Backend - /zulip Router", () => {
     expect(body.invitedCount).toBe(1);
   });
 });
+

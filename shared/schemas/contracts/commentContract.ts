@@ -1,8 +1,6 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 import { commentSchema as commentInputSchema } from "../commentSchema";
-
-const c = initContract();
 
 /**
  * Comment response schema (database record).
@@ -18,61 +16,86 @@ export const commentSchema = z.object({
   updated_at: z.string(),
 });
 
-export const commentContract = c.router({
-  list: {
-    method: "GET",
-    path: "/:targetType/:targetId",
-    pathParams: z.object({
+export const listCommentsRoute = createRoute({
+  method: "get",
+  path: "/{targetType}/{targetId}",
+  request: {
+    params: z.object({
       targetType: z.enum(["post", "event", "doc"]),
       targetId: z.string(),
     }),
-    responses: {
-      200: z.object({
-        comments: z.array(commentSchema),
-        authenticated: z.boolean(),
-        role: z.string().nullable(),
-      }),
-    },
-    summary: "List comments for a target",
   },
-  submit: {
-    method: "POST",
-    path: "/:targetType/:targetId",
-    pathParams: z.object({
-      targetType: z.enum(["post", "event", "doc"]),
-      targetId: z.string(),
-    }),
-    // IN-03: Use shared input schema instead of duplicating definition
-    body: commentInputSchema,
-    responses: {
-      200: z.object({ success: z.boolean() }),
+  responses: {
+    200: {
+      description: "List comments for a target",
+      content: {
+        "application/json": {
+          schema: z.object({
+            comments: z.array(commentSchema),
+            authenticated: z.boolean(),
+            role: z.string().nullable(),
+          }),
+        },
+      },
     },
-    summary: "Submit a new comment",
-  },
-  update: {
-    method: "PATCH",
-    path: "/:id",
-    pathParams: z.object({
-      id: z.string(),
-    }),
-    // IN-03: Use shared input schema instead of duplicating definition
-    body: commentInputSchema,
-    responses: {
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Update an existing comment",
-  },
-  delete: {
-    method: "DELETE",
-    path: "/:id",
-    pathParams: z.object({
-      id: z.string(),
-    }),
-    body: z.object({}),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Delete a comment",
+    ...openApiStandardErrors,
   },
 });
-export type CommentContract = typeof commentContract;
+
+export const submitCommentRoute = createRoute({
+  method: "post",
+  path: "/{targetType}/{targetId}",
+  request: {
+    params: z.object({
+      targetType: z.enum(["post", "event", "doc"]),
+      targetId: z.string(),
+    }),
+    body: {
+      content: { "application/json": { schema: commentInputSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Submit a new comment",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateCommentRoute = createRoute({
+  method: "patch",
+  path: "/{id}",
+  request: {
+    params: z.object({
+      id: z.string(),
+    }),
+    body: {
+      content: { "application/json": { schema: commentInputSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update an existing comment",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteCommentRoute = createRoute({
+  method: "delete",
+  path: "/{id}",
+  request: {
+    params: z.object({
+      id: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Delete a comment",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

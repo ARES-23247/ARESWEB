@@ -15,8 +15,7 @@ import { compressImage } from "../../utils/imageProcessor";
 import { Maximize, Minimize } from "lucide-react";
 import AssetPickerModal from "../AssetPickerModal";
 import SimPickerModal from "../SimPickerModal";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { api, uploadFile } from "../../api/client";
+import { uploadFile } from "../../utils/apiClient";
 import { useModal } from "../../contexts/ModalContext";
 
 /* ---------- Props ---------- */

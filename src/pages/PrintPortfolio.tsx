@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import { useState, useEffect } from "react";
 import { ShieldCheck, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
-import { api } from "../api/client";
 import { STORAGE_KEYS } from "../utils/storageKeys";
+import { useGetJudgePortfolio } from "../api";
 
 // Helper to detect if content is JSON AST or markdown
 function parseContent(content: string | null | undefined) {
@@ -20,67 +21,22 @@ function parseContent(content: string | null | undefined) {
   return { parsedAst: null, isAst: false };
 }
 
-interface PortfolioData {
-  portfolioDocs: Array<{
-    title: string;
-    slug: string;
-    category: string;
-    is_executive_summary: number;
-    description: string;
-    content: string;
-  }>;
-  awards: Array<{
-    title: string;
-    award_name: string;
-    date: string;
-    event_name: string;
-  }>;
-  outreach: Array<{
-    date: string;
-    event_name: string;
-    location: string;
-    students_count: number;
-    hours_logged: number;
-    reach_count: number;
-    description: string;
-  }>;
-  sponsors: Array<{
-    name: string;
-    tier: string;
-  }>;
-}
-
 export default function PrintPortfolio() {
-  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [readyToPrint, setReadyToPrint] = useState(false);
-  const code = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEYS.JUDGE_CODE) : null;
-  const [error, setError] = useState<string | null>(!code ? "Unauthorized. Please login through the Judges Hub first." : null);
+  const code = typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEYS.JUDGE_CODE) : null;
+  const error = !code ? "Unauthorized. Please login through the Judges Hub first." : null;
+
+  const { data: portfolioRes } = useGetJudgePortfolio(code || "");
+  const portfolio = portfolioRes;
 
   useEffect(() => {
-    if (!code) return;
-
-    const fetchPortfolio = async () => {
-      try {
-        const res = await api.judges.portfolio.query({
-          headers: { "Authorization": `Bearer ${code}` }
-        });
-
-        if (res.status === 200) {
-          setPortfolio(res.body as PortfolioData);
-        }
-
-        // Wait for rendering to complete before triggering print dialog
-        setTimeout(() => {
-          setReadyToPrint(true);
-        }, 1500); 
-
-      } catch {
-        setError("Network error fetching portfolio.");
-      }
-    };
-
-    fetchPortfolio();
-  }, [code]);
+    if (portfolio && !readyToPrint) {
+      const timer = setTimeout(() => {
+        setReadyToPrint(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [portfolio, readyToPrint]);
 
   useEffect(() => {
     if (readyToPrint) {
@@ -106,8 +62,10 @@ export default function PrintPortfolio() {
     );
   }
 
-  const execDocs = portfolio.portfolioDocs?.filter(d => d.is_executive_summary) || [];
-  const techDocs = portfolio.portfolioDocs?.filter(d => !d.is_executive_summary) || [];
+   
+  const execDocs = portfolio.portfolioDocs?.filter((d: any) => d.is_executive_summary === 1) || [];
+   
+  const techDocs = portfolio.portfolioDocs?.filter((d: any) => d.is_executive_summary !== 1) || [];
 
   return (
     <div className="print-layout bg-white text-black min-h-screen">
@@ -135,7 +93,7 @@ export default function PrintPortfolio() {
             <h2 className="text-3xl font-black uppercase tracking-tight text-ares-red border-b-4 border-black pb-4 mb-8">Executive Summaries</h2>
           </div>
           
-          {execDocs.map(doc => {
+          {execDocs.map((doc: { slug: string; title: string; description: string; content: string | null; }) => {
             const { parsedAst, isAst } = parseContent(doc.content);
             return (
               <div key={doc.slug} className="mb-12 page-break-inside-avoid">
@@ -158,7 +116,7 @@ export default function PrintPortfolio() {
           </div>
 
           <div className="space-y-12">
-            {techDocs.map((doc, idx) => {
+            {techDocs.map((doc: { slug: string; title: string; description: string; category: string; content: string | null; }, idx: number) => {
               const { parsedAst, isAst } = parseContent(doc.content);
               return (
                 <div key={doc.slug} className={`print-doc ${idx > 0 ? "pt-12 border-t-2 border-black/10" : ""}`}>
@@ -186,15 +144,15 @@ export default function PrintPortfolio() {
           
           <div className="grid grid-cols-2 gap-6 mb-10">
             <div className="bg-black/5 p-6 ares-cut-sm text-center border border-black/10">
-               <div className="text-4xl font-black text-black">
-                 {portfolio.outreach.reduce((acc, curr) => acc + (curr.hours_logged || 0), 0)}
-               </div>
+                <div className="text-4xl font-black text-black">
+                  {portfolio.outreach.reduce((acc: number, curr: any) => acc + (curr.hours_logged || 0), 0)}
+                </div>
                <div className="text-sm font-bold uppercase tracking-widest text-black/50 mt-2">Total Outreach Hours</div>
             </div>
             <div className="bg-black/5 p-6 ares-cut-sm text-center border border-black/10">
-               <div className="text-4xl font-black text-ares-gold">
-                 {portfolio.outreach.reduce((acc, curr) => acc + ((curr.hours_logged || 0) * 5), 0).toLocaleString()}
-               </div>
+                <div className="text-4xl font-black text-ares-gold">
+                  {portfolio.outreach.reduce((acc: number, curr: any) => acc + (curr.reach_count || 0), 0).toLocaleString()}
+                </div>
                <div className="text-sm font-bold uppercase tracking-widest text-black/50 mt-2">Estimated People Impacted</div>
             </div>
           </div>
@@ -209,9 +167,9 @@ export default function PrintPortfolio() {
               </tr>
             </thead>
             <tbody>
-              {portfolio.outreach.map((event, i) => (
+              {portfolio.outreach.map((event: import("../api").OutreachItem, i: number) => (
                 <tr key={i} className="even:bg-black/5">
-                  <td className="p-3 border border-black font-bold">{event.event_name}</td>
+                  <td className="p-3 border border-black font-bold">{event.title}</td>
                   <td className="p-3 border border-black">{event.location}</td>
                   <td className="p-3 border border-black">{format(new Date(event.date), "MMM d, yyyy")}</td>
                   <td className="p-3 border border-black text-center font-bold text-ares-gold">{event.hours_logged}</td>
@@ -223,19 +181,19 @@ export default function PrintPortfolio() {
       )}
 
       {/* ── AWARDS ─────────────────────────────────────────────────────── */}
-      {portfolio.awards && portfolio.awards.length > 0 && (
+      {portfolio?.awards && portfolio.awards.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header border-b-4 border-black pb-4 mb-8">
             <h2 className="text-3xl font-black uppercase tracking-tight text-ares-gold">Official Awards</h2>
           </div>
           
           <div className="grid grid-cols-2 gap-6">
-            {portfolio.awards.map((award, i) => (
+            {portfolio.awards.map((award: { title: string; event_name: string; year: number; }, i: number) => (
               <div key={i} className="border-l-4 border-ares-gold pl-4 py-2 mb-6 page-break-inside-avoid">
-                <h4 className="text-lg font-black uppercase">{award.award_name}</h4>
-                <div className="text-sm font-bold text-black/60 mt-1">{award.title}</div>
+                <h4 className="text-lg font-black uppercase">{award.title}</h4>
+                <div className="text-sm font-bold text-black/60 mt-1">{award.event_name}</div>
                 <div className="text-sm text-black/50 mt-1 flex items-center gap-2">
-                  <Calendar size={14} /> {format(new Date(award.date), "MMMM yyyy")} &bull; {award.event_name}
+                  <Calendar size={14} /> {award.year} &bull; {award.event_name}
                 </div>
               </div>
             ))}

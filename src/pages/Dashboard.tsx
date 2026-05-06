@@ -5,7 +5,8 @@ import { useDashboardSession } from "../hooks/useDashboardSession";
 import { useDashboardNotifications } from "../hooks/useDashboardNotifications";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import DashboardRoutes from "../components/dashboard/DashboardRoutes";
-import { api } from "../api/client";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../api";
 import SEO from "../components/SEO";
 
 export default function Dashboard() {
@@ -14,22 +15,19 @@ export default function Dashboard() {
   // Lift common dashboard queries to the top level to prevent waterfalls
   // We use parallel queries here so they all start at the same time
   const notifications = useDashboardNotifications(session, permissions);
-  
-  const { data: statsRes } = api.analytics.getStats.useQuery(
-    ["dashboard-stats-shared"], 
-    {}, 
-    { 
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      // We don't wait for session here to avoid waterfall; the server will handle auth
-    }
-  );
+
+  const { data: statsRes } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => fetchJson<{ posts?: number; events?: number; docs?: number; securityBlocks?: number; integrations?: Record<string, boolean> }>("/api/analytics/admin/stats"),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const stats = {
-    posts: statsRes?.status === 200 ? statsRes.body.posts : 0,
-    events: statsRes?.status === 200 ? statsRes.body.events : 0,
-    docs: statsRes?.status === 200 ? statsRes.body.docs : 0,
-    securityBlocks: statsRes?.status === 200 ? statsRes.body.securityBlocks : 0,
-    integrations: statsRes?.status === 200 ? statsRes.body.integrations : {
+    posts: statsRes?.posts || 0,
+    events: statsRes?.events || 0,
+    docs: statsRes?.docs || 0,
+    securityBlocks: statsRes?.securityBlocks || 0,
+    integrations: statsRes?.integrations || {
       zulip: false,
       github: false,
       discord: false,

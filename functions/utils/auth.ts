@@ -4,11 +4,11 @@ import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
 import { siteConfig } from "./site.config";
+import { DB } from "../../shared/schemas/database";
 import type { D1Database } from "@cloudflare/workers-types";
 
 export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl?: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely requires generic DB type; better-auth's adapter expects any
-    const kyselyDb = new Kysely<any>({
+    const kyselyDb = new Kysely<DB>({
         dialect: new D1Dialect({
             database: db,
         }),
@@ -52,8 +52,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                             image: "avatar_url"
                         }
                      
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- genericOAuth config type is untyped
-                    } as any
+                    } as unknown as import("better-auth/plugins").GenericOAuthConfig
                 ] : []
             }),
         ],
@@ -187,17 +186,18 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                     .execute();
                                 
                                 if (admins.length > 0) {
-                                    const values = admins.map(admin => ({
-                                        id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
-                                        user_id: admin.id,
-                                        title: "New User Registration",
-                                        message: `A new user (${user.name || user.email}) has registered and is pending verification.`,
-                                        link: "/dashboard/users",
-                                        priority: "medium"
-                                    }));
+                                    const values = admins
+                                        .filter(admin => admin.id !== null)
+                                        .map(admin => ({
+                                            id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
+                                            user_id: admin.id as string,
+                                            title: "New User Registration",
+                                            message: `A new user (${user.name || user.email}) has registered and is pending verification.`,
+                                            link: "/dashboard/users",
+                                            priority: "medium" as const
+                                        }));
                                     
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                    await kyselyDb.insertInto("notifications" as any).values(values).execute();
+                                    await kyselyDb.insertInto("notifications").values(values).execute();
                                 }
                             } catch (err) {
                                 console.error("[Auth] Failed to notify admins of new user:", err);

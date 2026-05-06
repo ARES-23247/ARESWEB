@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import { useParams, useNavigate } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -13,14 +14,14 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { eventSchema, EventPayload } from "@shared/schemas/eventSchema";
-import { api } from "../api/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { useModal } from "../contexts/ModalContext";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { useGetAdminEventDetail, useSaveEvent, useUpdateEvent, useDeleteEvent } from "../api";
 
 export interface LocationRow {
   id: string;
@@ -36,7 +37,7 @@ import { LocationCombobox } from "./LocationCombobox";
 
 function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: string | unknown, roomId?: string | null }) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Reserved for future query invalidation
   const modal = useModal();
   
   const { ydoc, provider } = useCollaborativeEditor();
@@ -115,20 +116,14 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     }
   });
 
-  // Use standard API query instead of useEntityFetch
-  const { data: eventRes, isLoading, isError } = api.events.adminDetail.useQuery(
-    ["admin_event_detail", editId || ""],
-    {
-      params: { id: editId || "" }
-    },
-    {
-      enabled: !!editId
-    }
-  );
+  // Use Hono client query for admin event detail
+  const { data: eventRes, isLoading, isError } = useGetAdminEventDetail(editId || "", {
+    enabled: !!editId
+  });
 
   useEffect(() => {
-    if (eventRes?.status === 200 && eventRes.body.event) {
-      const event = eventRes.body.event;
+    if (eventRes?.event) {
+      const event = eventRes.event;
       const formatForInput = (d: string | null | undefined) => {
         if (!d) return "";
         if (d.length === 10) return d + "T00:00";
@@ -149,9 +144,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         tbaEventKey: event.tba_event_key || "",
         isPotluck: event.is_potluck === 1,
         isVolunteer: event.is_volunteer === 1,
-        publishedAt: event.published_at || "",
+        publishedAt: (event as any).published_at || "",
         seasonId: event.season_id ? Number(event.season_id) : undefined,
-        socials: (eventRes.body as unknown as { socials?: Record<string, boolean> })?.socials || {},
+        socials: (eventRes as any).socials || {},
       });
 
       // Parse rrule
@@ -195,17 +190,14 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   }, [eventRes, reset, editor, ydoc]);
 
 
-  const saveMutation = api.events.saveEvent.useMutation({
-    onSuccess: (data: { status: number; body: { warning?: string; error?: string } }) => {
-      if (data.status === 200) {
+  const saveMutation = useSaveEvent({
+    onSuccess: (data: any) => {
+      if (data.success) {
         toast.success("Event published!");
-        if (data.body.warning) toast.info(data.body.warning);
-
-        queryClient.invalidateQueries({ queryKey: ["events"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
+        if (data.warning) toast.info(data.warning);
         navigate("/dashboard");
       } else {
-        setErrorMsg(data.body.error || "Event save failed.");
+        setErrorMsg("Event save failed.");
       }
     },
     onError: (err: Error) => {
@@ -213,18 +205,14 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     }
   });
 
-  const updateMutation = api.events.updateEvent.useMutation({
-    onSuccess: (data: { status: number; body: { warning?: string; error?: string } }) => {
-      if (data.status === 200) {
+  const updateMutation = useUpdateEvent({
+    onSuccess: (data: any) => {
+      if (data.success) {
         toast.success("Event updated!");
-        if (data.body?.warning) toast.info(data.body.warning);
-
-        queryClient.invalidateQueries({ queryKey: ["events"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-        if (editId) queryClient.invalidateQueries({ queryKey: ["event", editId] });
+        if (data.warning) toast.info(data.warning);
         navigate("/dashboard");
       } else {
-        setErrorMsg(data.body?.error || "Event update failed.");
+        setErrorMsg(data.error || "Event update failed.");
       }
     },
     onError: (err: Error) => {
@@ -232,15 +220,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     }
   });
 
-  const deleteMutation = api.events.deleteEvent.useMutation({
-    onSuccess: (data: { status: number; body: { warning?: string; error?: string } }) => {
-      if (data.status === 200) {
-        queryClient.invalidateQueries({ queryKey: ["events"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-        navigate("/dashboard");
-      } else {
-        setErrorMsg("Failed to delete the event.");
-      }
+  const deleteMutation = useDeleteEvent({
+    onSuccess: () => {
+      navigate("/dashboard");
     },
     onError: () => {
       setErrorMsg("Failed to delete the event.");
@@ -258,9 +240,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     const finalDescription = editor ? JSON.stringify(editor.getJSON()) : data.description;
     const payload = { ...data, description: finalDescription, meetingNotes: "", isDraft, updateMode, rrule: finalRrule };
     if (editId) {
-      updateMutation.mutate({ params: { id: editId }, body: payload });
+      updateMutation.mutate({ id: editId, body: payload });
     } else {
-      saveMutation.mutate({ body: payload });
+      saveMutation.mutate(payload);
     }
   };
 
@@ -286,7 +268,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       if (!confirmed) return;
     }
 
-    deleteMutation.mutate({ params: { id: editId }, body: { deleteMode } });
+    deleteMutation.mutate({ id: editId, deleteMode });
   };
 
   const handleFileUpload = async (file: File) => {

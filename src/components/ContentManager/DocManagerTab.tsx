@@ -4,7 +4,18 @@ import { Download, ChevronUp, ChevronDown, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { DocItem, ViewType, contentFilter } from "./shared";
 import RevisionManager from "../RevisionManager";
-import { api } from "../../api/client";
+import {
+  useGetAdminDocs,
+  useDeleteDoc,
+  useUpdateDocSort,
+  useApproveDoc,
+  useRejectDoc,
+  useUndeleteDoc,
+  usePurgeDoc,
+  useExportAllDocs,
+  useExportSingleDoc,
+  // type Doc, // Unused - reserved for future type safety
+} from "../../api";
 import { useQueryClient } from "@tanstack/react-query";
 import GenericManagerList from "./GenericManagerList";
 
@@ -24,12 +35,11 @@ export default function DocManagerTab({
   const queryClient = useQueryClient();
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
 
-  const { data, isLoading, isError } = api.docs.adminList.useQuery(["admin-docs"], {});
+  const { data, isLoading, isError } = useGetAdminDocs();
 
-  const rawBody = (data as unknown as { body: { docs: DocItem[] } })?.body;
-  const docs = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.docs) ? rawBody.docs : [])) as unknown as DocItem[] : [];
+  const docs = (data?.docs || []) as unknown as DocItem[];
 
-  const deleteMutation = api.docs.deleteDoc.useMutation({
+  const deleteMutation = useDeleteDoc({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
@@ -41,7 +51,7 @@ export default function DocManagerTab({
     }
   });
 
-  const sortMutation = api.docs.updateSort.useMutation({
+  const sortMutation = useUpdateDocSort({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
     },
@@ -50,7 +60,7 @@ export default function DocManagerTab({
     }
   });
 
-  const localApproveMutation = api.docs.approveDoc.useMutation({
+  const localApproveMutation = useApproveDoc({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
@@ -58,7 +68,7 @@ export default function DocManagerTab({
     }
   });
 
-  const localRejectMutation = api.docs.rejectDoc.useMutation({
+  const localRejectMutation = useRejectDoc({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
@@ -66,7 +76,7 @@ export default function DocManagerTab({
     }
   });
 
-  const localRestoreMutation = api.docs.undeleteDoc.useMutation({
+  const localRestoreMutation = useUndeleteDoc({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
@@ -74,7 +84,7 @@ export default function DocManagerTab({
     }
   });
 
-  const localPurgeMutation = api.docs.purgeDoc.useMutation({
+  const localPurgeMutation = usePurgeDoc({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
@@ -82,12 +92,11 @@ export default function DocManagerTab({
     }
   });
 
+  const exportSingleDocMutation = useExportSingleDoc();
+
   const exportSingleDoc = async (slug: string) => {
     try {
-      const res = await fetch(`/api/docs/${slug}`);
-      const data = await res.json();
-      const doc = (data as unknown as { doc?: DocItem })?.doc;
-      if (!doc) { toast.error("Doc not found."); return; }
+      const doc = await exportSingleDocMutation.mutateAsync(slug);
       const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -100,10 +109,12 @@ export default function DocManagerTab({
     }
   };
 
+  const exportAllDocsMutation = useExportAllDocs();
+
   const exportAllDocs = async () => {
     try {
-      const res = await fetch("/api/docs/admin/export-all", { credentials: "include" });
-      const blob = await res.blob();
+      const data = await exportAllDocsMutation.mutateAsync();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -157,8 +168,8 @@ export default function DocManagerTab({
             </span>
             {view === 'active' && (
               <span className="flex items-center text-xs text-marble/60 bg-obsidian border border-white/10 ares-cut-sm overflow-hidden">
-                <button 
-                  onClick={() => sortMutation.mutate({ params: { slug: d.slug }, body: { sortOrder: d.sort_order - 1 } })}
+                <button
+                  onClick={() => sortMutation.mutate({ slug: d.slug, sortOrder: d.sort_order - 1 })}
                   disabled={sortMutation.isPending}
                   className="px-1 py-0.5 hover:bg-white/10 hover:text-ares-cyan transition-colors disabled:opacity-50"
                   aria-label="Move Up"
@@ -166,8 +177,8 @@ export default function DocManagerTab({
                   <ChevronUp size={12} />
                 </button>
                 <span className="px-2 border-x border-white/10">Order: {d.sort_order}</span>
-                <button 
-                  onClick={() => sortMutation.mutate({ params: { slug: d.slug }, body: { sortOrder: d.sort_order + 1 } })}
+                <button
+                  onClick={() => sortMutation.mutate({ slug: d.slug, sortOrder: d.sort_order + 1 })}
                   disabled={sortMutation.isPending}
                   className="px-1 py-0.5 hover:bg-white/10 hover:text-ares-red transition-colors disabled:opacity-50"
                   aria-label="Move Down"
@@ -191,21 +202,21 @@ export default function DocManagerTab({
         )}
         onEdit={onEditDoc ? (d) => onEditDoc(d.slug) : undefined}
         onHistory={(d) => setHistoryTarget({ slug: d.slug, title: d.title })}
-        onApprove={(d) => localApproveMutation.mutate({ params: { slug: d.slug }, body: {} })}
+        onApprove={(d) => localApproveMutation.mutate(d.slug)}
         isApprovePending={() => localApproveMutation.isPending}
-        onReject={(d) => localRejectMutation.mutate({ params: { slug: d.slug }, body: {} })}
+        onReject={(d) => localRejectMutation.mutate({ slug: d.slug })}
         isRejectPending={() => localRejectMutation.isPending}
-        onDelete={(d) => deleteMutation.mutate({ params: { slug: d.slug }, body: {} })}
-        isDeletePending={(d) => deleteMutation.isPending && (deleteMutation.variables as { params?: { slug: string } })?.params?.slug === d.slug}
-        onRestore={(d) => localRestoreMutation.mutate({ params: { slug: d.slug }, body: {} })}
-        isRestorePending={(d) => localRestoreMutation.isPending && (localRestoreMutation.variables as { params?: { slug: string } })?.params?.slug === d.slug}
-        onPurge={(d) => localPurgeMutation.mutate({ params: { slug: d.slug }, body: {} })}
-        isPurgePending={(d) => localPurgeMutation.isPending && (localPurgeMutation.variables as { params?: { slug: string } })?.params?.slug === d.slug}
+        onDelete={(d) => deleteMutation.mutate(d.slug)}
+        isDeletePending={(d) => deleteMutation.isPending && deleteMutation.variables === d.slug}
+        onRestore={(d) => localRestoreMutation.mutate(d.slug)}
+        isRestorePending={(d) => localRestoreMutation.isPending && localRestoreMutation.variables === d.slug}
+        onPurge={(d) => localPurgeMutation.mutate(d.slug)}
+        isPurgePending={(d) => localPurgeMutation.isPending && localPurgeMutation.variables === d.slug}
         confirmId={confirmId}
         setConfirmId={setConfirmId}
       />
-      
-      <RevisionManager 
+
+      <RevisionManager
         isOpen={!!historyTarget}
         onClose={() => setHistoryTarget(null)}
         type="doc"

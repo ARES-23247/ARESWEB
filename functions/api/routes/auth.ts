@@ -1,9 +1,9 @@
-import { Hono } from "hono";
-import type { Context } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, getSessionUser, persistentRateLimitMiddleware } from "../middleware";
 import { getAuth } from "../../utils/auth";
+import { authCheckRoute } from "../../../shared/routes/auth";
 
-const authRouter = new Hono<AppEnv>();
+const authRouter = new OpenAPIHono<AppEnv>();
 
 // NOTE: Rate limiting is applied to authentication endpoints to prevent brute force attacks.
 // For enhanced security, consider implementing account lockout after N failed attempts:
@@ -13,17 +13,24 @@ const authRouter = new Hono<AppEnv>();
 // - See AUTH_PATTERNS.md for security best practices
 
 // ── GET /api/auth-check — verify session (UI gate only) ────────────────
-authRouter.get("/auth-check", persistentRateLimitMiddleware(60, 60), async (c: Context<AppEnv>) => {
+authRouter.openapi(authCheckRoute, async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ authenticated: false }, 401);
   return c.json({ 
     authenticated: true, 
-    user
-  });
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      image: user.image || null,
+    }
+  }, 200);
 });
 
 // ── Better Auth Routes ────────────────────────────────────────────────
-authRouter.on(["POST", "GET"], "/*", persistentRateLimitMiddleware(20, 60), async (c: Context<AppEnv>) => {
+// Catch-all for Better Auth internal routes
+authRouter.on(["POST", "GET"], "/*", persistentRateLimitMiddleware(20, 60), async (c) => {
   try {
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     const response = await auth.handler(c.req.raw);
@@ -42,3 +49,5 @@ authRouter.on(["POST", "GET"], "/*", persistentRateLimitMiddleware(20, 60), asyn
 });
 
 export default authRouter;
+
+

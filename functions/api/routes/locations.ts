@@ -1,133 +1,112 @@
-import { Hono } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { z } from "zod";
 import { DB } from "../../../shared/schemas/database";
-import { createHonoEndpoints } from "ts-rest-hono";
-import { locationContract, locationSchema } from "../../../shared/schemas/contracts/locationContract";
-import { AppEnv, ensureAdmin, logAuditAction, s } from "../middleware";
-import type { HonoContext } from "@shared/types/api";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- ts-rest handler input parameters are typed by the contract library
+import { 
+  locationSchema,
+  listLocationsRoute,
+  adminListLocationsRoute,
+  saveLocationRoute,
+  deleteLocationRoute
+} from "../../../shared/routes/locations";
+import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 
-// IN-01: Type inference for location schema
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 type LocationInput = z.infer<typeof locationSchema>;
 
-
-export const locationsRouter = new Hono<AppEnv>();
-
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
-const locationsTsRestRouter = s.router(locationContract, {
-  list: async (input: any, c: HonoContext) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const results = await db.selectFrom("locations")
-        .select(["id", "name", "address", "maps_url", "is_deleted"])
-        .where("is_deleted", "=", 0)
-        .orderBy("name", "asc")
-        .execute();
-
-      const locations = results.map(r => ({
-        ...r,
-        id: r.id || undefined,
-        is_deleted: Number(r.is_deleted || 0)
-      }));
-
-      // IN-01: Cast to LocationInput[] instead of any[]
-      return { status: 200 as const, body: { locations: locations as LocationInput[] } };
-    } catch (e) {
-      console.error("LIST_LOCATIONS ERROR", e);
-      return { status: 500 as const, body: { error: "Failed to fetch locations" } };
-    }
-  },
-    adminList: async (input: any, c: HonoContext) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const results = await db.selectFrom("locations")
-        .select(["id", "name", "address", "maps_url", "is_deleted"])
-        .orderBy("name", "asc")
-        .execute();
-
-      const locations = results.map(r => ({
-        ...r,
-        id: r.id || undefined,
-        is_deleted: Number(r.is_deleted || 0)
-      }));
-
-      // IN-01: Cast to LocationInput[] instead of any[]
-      return { status: 200 as const, body: { locations: locations as LocationInput[] } };
-    } catch (e) {
-      console.error("ADMIN_LIST_LOCATIONS ERROR", e);
-      return { status: 500 as const, body: { error: "Failed to fetch locations" } };
-    }
-  },
-    save: async (input: any, c: HonoContext) => {
-    try {
-      // Validate input against schema before database insertion
-      const validationResult = locationSchema.safeParse(input.body);
-      if (!validationResult.success) {
-        return {
-          status: 400 as const,
-          body: {
-            error: "Invalid input: " + validationResult.error.issues.map(i => i.message).join(", ")
-          }
-        };
-      }
-
-      const db = c.get("db") as Kysely<DB>;
-      const validatedData = validationResult.data;
-      const id = validatedData.id || crypto.randomUUID();
-
-      await db.insertInto("locations")
-        .values({
-          id,
-          name: validatedData.name,
-          address: validatedData.address,
-          maps_url: validatedData.maps_url || null,
-          is_deleted: validatedData.is_deleted || 0,
-        })
-        .onConflict(oc => oc.column("id").doUpdateSet({
-          name: validatedData.name,
-          address: validatedData.address,
-          maps_url: validatedData.maps_url || null,
-          is_deleted: validatedData.is_deleted || 0,
-        }))
-        .execute();
-
-      c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
-      return { status: 200 as const, body: { success: true, id } };
-    } catch (e) {
-      console.error("SAVE_LOCATION ERROR", e);
-      return { status: 500 as const, body: { error: "Failed to save location", success: false } };
-    }
-  },
-    delete: async (input: any, c: HonoContext) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      await db.updateTable("locations")
-        .set({ is_deleted: 1 })
-        .where("id", "=", input.params.id)
-        .execute();
-      c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", input.params.id, "Location soft-deleted"));
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("DELETE_LOCATION ERROR", e);
-      return { status: 500 as const, body: { error: "Failed to delete location", success: false } };
-    }
-  },
-});
+export const locationsRouter = new OpenAPIHono<AppEnv>();
 
 locationsRouter.use("/admin/*", ensureAdmin);
-createHonoEndpoints(
-  locationContract,
-  locationsTsRestRouter,
-  locationsRouter,
-  {
-    responseValidation: true,
-    responseValidationErrorHandler: (err, _c) => {
-      console.error('[Contract] Response validation failed:', err.cause);
-      return { error: { message: 'Internal server error' }, status: 500 };
-    }
+
+locationsRouter.openapi(listLocationsRoute, (async (c) => {
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const results = await db.selectFrom("locations")
+      .select(["id", "name", "address", "maps_url", "is_deleted"])
+      .where("is_deleted", "=", 0)
+      .orderBy("name", "asc")
+      .execute();
+
+    const locations = results.map(r => ({
+      ...r,
+      id: r.id || undefined,
+      is_deleted: Number(r.is_deleted || 0)
+    }));
+
+    return c.json({ locations: locations as LocationInput[] }, 200);
+  } catch (e) {
+    console.error("LIST_LOCATIONS ERROR", e);
+    return c.json({ error: "Failed to fetch locations" }, 500);
   }
-);
-/* eslint-enable @typescript-eslint/no-explicit-any */
+}) as AppRouteHandler<typeof listLocationsRoute>);
+
+locationsRouter.openapi(adminListLocationsRoute, (async (c) => {
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const results = await db.selectFrom("locations")
+      .select(["id", "name", "address", "maps_url", "is_deleted"])
+      .orderBy("name", "asc")
+      .execute();
+
+    const locations = results.map(r => ({
+      ...r,
+      id: r.id || undefined,
+      is_deleted: Number(r.is_deleted || 0)
+    }));
+
+    return c.json({ locations: locations as LocationInput[] }, 200);
+  } catch (e) {
+    console.error("ADMIN_LIST_LOCATIONS ERROR", e);
+    return c.json({ error: "Failed to fetch locations" }, 500);
+  }
+}) as AppRouteHandler<typeof adminListLocationsRoute>);
+
+locationsRouter.openapi(saveLocationRoute, (async (c) => {
+  try {
+    const validatedData = c.req.valid("json");
+    const db = c.get("db") as Kysely<DB>;
+    const id = validatedData.id || crypto.randomUUID();
+
+    await db.insertInto("locations")
+      .values({
+        id,
+        name: validatedData.name,
+        address: validatedData.address,
+        maps_url: validatedData.maps_url || null,
+        is_deleted: validatedData.is_deleted || 0,
+      })
+      .onConflict(oc => oc.column("id").doUpdateSet({
+        name: validatedData.name,
+        address: validatedData.address,
+        maps_url: validatedData.maps_url || null,
+        is_deleted: validatedData.is_deleted || 0,
+      }))
+      .execute();
+
+    c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
+    return c.json({ success: true, id }, 200);
+  } catch (e) {
+    console.error("SAVE_LOCATION ERROR", e);
+    return c.json({ error: "Failed to save location", success: false }, 500);
+  }
+}) as AppRouteHandler<typeof saveLocationRoute>);
+
+locationsRouter.openapi(deleteLocationRoute, (async (c) => {
+  try {
+    const { id } = c.req.valid("param");
+    const db = c.get("db") as Kysely<DB>;
+    await db.updateTable("locations")
+      .set({ is_deleted: 1 })
+      .where("id", "=", id)
+      .execute();
+    c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location soft-deleted"));
+    return c.json({ success: true }, 200);
+  } catch (e) {
+    console.error("DELETE_LOCATION ERROR", e);
+    return c.json({ error: "Failed to delete location", success: false }, 500);
+  }
+}) as AppRouteHandler<typeof deleteLocationRoute>);
 
 export default locationsRouter;

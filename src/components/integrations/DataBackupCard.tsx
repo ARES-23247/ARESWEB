@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Database, Download } from "lucide-react";
-import { fetchBlob } from "../../api/client";
+import { fetchBlob } from "../../api";
 
 export function DataBackupCard() {
   const [isExporting, setIsExporting] = useState(false);

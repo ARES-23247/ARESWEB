@@ -4,7 +4,7 @@ import { Rocket, Wrench, Code, PenTool, CheckCircle, GraduationCap } from "lucid
 import SEO from "../components/SEO";
 import { GreekMeander } from "../components/GreekMeander";
 import Turnstile from "../components/Turnstile";
-import { api } from "../api/client";
+import { useSubmitInquiry } from "../api";
 import { inquirySchema } from "@shared/schemas/inquirySchema";
 
 export default function Join() {
@@ -22,20 +22,16 @@ export default function Join() {
   const [errorMessage, setErrorMessage] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
 
-  const submitMutation = api.inquiries.submit.useMutation({
+  const submitMutation = useSubmitInquiry({
     onMutate: () => setIsSubmitting(true),
     onSettled: () => setIsSubmitting(false),
-    onSuccess: (res: { status: number; body: unknown }) => {
-      if (res.status === 200 || res.status === 207) {
+    onSuccess: (res) => {
+      if (res.success) {
         setSubmitStatus("success");
         setName(""); setEmail(""); setPhone(""); setSchool(""); setGrade(""); setOccupation(""); setInterests([]); setAdditional("");
       } else {
         setSubmitStatus("error");
-        setErrorMessage(
-          res.body && typeof res.body === "object" && "error" in res.body 
-            ? String((res.body as { error?: unknown }).error) 
-            : "Something went wrong"
-        );
+        setErrorMessage("Something went wrong");
       }
     },
     onError: (err: Error | unknown) => {
@@ -57,7 +53,8 @@ export default function Join() {
         throw new Error(payloadResult.error.issues[0].message);
       }
 
-      submitMutation.mutate({ body: payloadResult.data });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API mutation data compatibility
+      submitMutation.mutate(payloadResult.data as any);
     } catch (err) {
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");

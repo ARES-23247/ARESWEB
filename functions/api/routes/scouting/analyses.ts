@@ -1,12 +1,14 @@
-import { Hono } from "hono";
-import type { Context } from "hono";
-import { AppEnv, ensureAuth } from "../../middleware";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+import { AppEnv } from "../../middleware";
+import { listScoutingAnalysesRoute } from "../../../../shared/routes/scouting";
 
-const analysesRouter = new Hono<AppEnv>();
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
-analysesRouter.get("/", ensureAuth, async (c: Context<AppEnv>) => {
-  const teamNumberStr = c.req.query("teamNumber");
-  const eventKey = c.req.query("eventKey");
+const analysesRouter = new OpenAPIHono<AppEnv>();
+
+analysesRouter.openapi(listScoutingAnalysesRoute, (async (c) => {
+  const { teamNumber: teamNumberStr, eventKey } = c.req.valid("query");
   const db = c.get("db");
 
   try {
@@ -24,11 +26,12 @@ analysesRouter.get("/", ensureAuth, async (c: Context<AppEnv>) => {
     }
 
     const results = await query.orderBy("created_at", "desc").execute();
-    return c.json(results);
+    return c.json(results, 200);
   } catch (err) {
     console.error("[Scouting Analyses] Database error:", err);
     return c.json({ error: "Failed to fetch saved analyses" }, 500);
   }
-});
+}) as AppRouteHandler<typeof listScoutingAnalysesRoute>);
 
 export default analysesRouter;
+

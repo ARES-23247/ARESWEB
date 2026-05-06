@@ -1,8 +1,8 @@
 
 import { History } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { ViewType } from "./shared";
-import { api } from "../../api/client";
+import { fetchJson } from "../../api";
 import { toast } from "sonner";
 import GenericManagerList from "./GenericManagerList";
 
@@ -30,12 +30,15 @@ export default function SeasonManagerTab({
 }: SeasonManagerTabProps) {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError } = api.seasons.adminList.useQuery(["admin-seasons"], {});
+  const { data: rawSeasons, isLoading, isError } = useQuery({
+    queryKey: ["admin-seasons"],
+    queryFn: () => fetchJson<{ seasons?: SeasonItem[] } | SeasonItem[]>("/api/seasons/admin")
+  });
 
-  const rawBody = (data as unknown as { body: { seasons: unknown[] } })?.body;
-  const seasons = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.seasons) ? rawBody.seasons : [])) : [];
+  const seasons = Array.isArray(rawSeasons) ? rawSeasons : (rawSeasons?.seasons || []);
 
-  const deleteMutation = api.seasons.delete.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       setConfirmId(null);
@@ -43,14 +46,16 @@ export default function SeasonManagerTab({
     }
   });
 
-  const restoreMutation = api.seasons.undelete.useMutation({
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/${id}/restore`, { method: "POST" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       toast.success("Season restored");
     }
   });
 
-  const purgeMutation = api.seasons.purge.useMutation({
+  const purgeMutation = useMutation({
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/${id}/purge`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       setConfirmId(null);
@@ -95,12 +100,12 @@ export default function SeasonManagerTab({
         </span>
       )}
       onEdit={onEdit ? (s) => onEdit(s.start_year.toString()) : undefined}
-      onDelete={(s) => deleteMutation.mutate({ params: { id: s.start_year.toString() }, body: null })}
-      isDeletePending={(s) => deleteMutation.isPending && (deleteMutation.variables as unknown as { params?: { id: string } })?.params?.id === s.start_year.toString()}
-      onRestore={(s) => restoreMutation.mutate({ params: { id: s.start_year.toString() }, body: null })}
-      isRestorePending={(s) => restoreMutation.isPending && (restoreMutation.variables as unknown as { params?: { id: string } })?.params?.id === s.start_year.toString()}
-      onPurge={(s) => purgeMutation.mutate({ params: { id: s.start_year.toString() }, body: null })}
-      isPurgePending={(s) => purgeMutation.isPending && (purgeMutation.variables as unknown as { params?: { id: string } })?.params?.id === s.start_year.toString()}
+      onDelete={(s) => deleteMutation.mutate(s.start_year.toString())}
+      isDeletePending={(s) => deleteMutation.isPending && deleteMutation.variables === s.start_year.toString()}
+      onRestore={(s) => restoreMutation.mutate(s.start_year.toString())}
+      isRestorePending={(s) => restoreMutation.isPending && restoreMutation.variables === s.start_year.toString()}
+      onPurge={(s) => purgeMutation.mutate(s.start_year.toString())}
+      isPurgePending={(s) => purgeMutation.isPending && purgeMutation.variables === s.start_year.toString()}
       confirmId={confirmId}
       setConfirmId={setConfirmId}
     />

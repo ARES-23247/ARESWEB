@@ -22,6 +22,8 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| v6.8 | ACTIVE | 2026-05-06 | Hono Zod OpenAPI Migration |
+| v6.7 | ✅ SHIPPED | 2026-05-06 | TypeScript Any Elimination |
 | [v6.5](milestones/v6.5-ROADMAP.md) | ✅ SHIPPED | 2026-05-04 | Zulip Sync & Social Media Formalization |
 | [v6.4](milestones/v6.4-ROADMAP.md) | ✅ SHIPPED | 2026-05-04 | Science & Math Corner Expansion |
 | [v6.3](milestones/v6.3-ROADMAP.md) | ✅ SHIPPED | 2026-05-04 | Interactive Tools & Impact Logging |

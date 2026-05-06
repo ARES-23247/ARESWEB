@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -11,10 +10,11 @@ import { ContributorStack } from "../components/ui/ContributorStack";
 
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import ZulipThread from "../components/ZulipThread";
-import { api } from "../api/client";
+import { fetchJson } from "../api";
 import SEO from "../components/SEO";
 import { extractTextFromAst } from "../utils/content";
 import { validateUrlParam } from "../utils/security";
+import { type PostDetail } from "../api";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface PostRow {
@@ -32,15 +32,15 @@ export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const validatedSlug = validateUrlParam(slug);
   const { data: session } = useSession();
-  
-  const { data: postRes, isLoading, isError } = api.posts.getPost.useQuery(["post", validatedSlug], {
-    params: { slug: validatedSlug || "" },
-  }, {
+
+  const { data: postRes, isLoading, isError } = useQuery({
+    queryKey: ["post", validatedSlug],
+    queryFn: () => fetchJson<{ post: PostDetail }>(`/api/posts/${validatedSlug}`),
     enabled: !!validatedSlug,
     retry: false,
   });
 
-  const post = postRes?.status === 200 ? postRes.body.post : null;
+  const post = postRes?.post;
 
   useEffect(() => {
     if (post && validatedSlug) {
@@ -72,7 +72,7 @@ export default function BlogPost() {
       <SEO 
         title={post.title} 
         description={extractTextFromAst(parsedAst).slice(0, 160) + "..."} 
-        image={post.thumbnail}
+        image={post.thumbnail || undefined}
         type="article"
         schemaData={{
           authorName: post.author_nickname || "ARES Author",

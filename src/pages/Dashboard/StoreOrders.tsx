@@ -1,25 +1,37 @@
 import React, { useState } from "react";
-import { api } from "../../api/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchJson } from "../../api";
 import { Package, Truck, CheckCircle2, Loader2, Search } from "lucide-react";
 import { format } from "date-fns";
-import { Order } from "../../../shared/schemas/contracts/storeContract";
+import { Order } from "@shared/routes/store";
 
 export const StoreOrders: React.FC = () => {
-  const { data, isLoading, refetch } = api.store.getOrders.useQuery();
-  const updateStatus = api.store.updateOrderStatus.useMutation();
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["store", "orders"],
+    queryFn: () => fetchJson<{ orders: Order[] }>("/api/store/orders")
+  });
+  const updateStatus = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { fulfillment_status: string } }) => fetchJson(`/api/store/orders/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(body)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store", "orders"] });
+    }
+  });
   const [filter, setFilter] = useState<"all" | "unfulfilled" | "fulfilled">("all");
   const [search, setSearch] = useState("");
 
   const handleToggleStatus = async (orderId: string, currentStatus: string | null) => {
     const newStatus = currentStatus === "fulfilled" ? "unfulfilled" : "fulfilled";
     await updateStatus.mutateAsync({
-      params: { id: orderId },
+      id: orderId,
       body: { fulfillment_status: newStatus }
     });
-    refetch();
   };
 
-  const orders: Order[] = data?.body || [];
+  const orders: Order[] = data?.orders || [];
   const filteredOrders = orders.filter(o => {
     if (filter !== "all" && o.fulfillment_status !== filter) return false;
     if (search && !o.customer_email?.toLowerCase().includes(search.toLowerCase()) && !o.id.includes(search)) return false;

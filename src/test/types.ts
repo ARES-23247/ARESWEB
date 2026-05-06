@@ -10,7 +10,7 @@
  * All types use vi.fn mock types and avoid `any` for compile-time safety.
  */
 
-import type { vi } from "vitest";
+import type { vi, Mock } from "vitest";
 
 // ── MockKysely ────────────────────────────────────────────────────────────────
 /**
@@ -29,29 +29,30 @@ import type { vi } from "vitest";
  * });
  */
 export type MockKysely = {
-  selectFrom?: ReturnType<typeof vi.fn>;
-  insertInto?: ReturnType<typeof vi.fn>;
-  updateTable?: ReturnType<typeof vi.fn>;
-  deleteFrom?: ReturnType<typeof vi.fn>;
+  selectFrom: ReturnType<typeof vi.fn>;
+  insertInto: ReturnType<typeof vi.fn>;
+  updateTable: ReturnType<typeof vi.fn>;
+  deleteFrom: ReturnType<typeof vi.fn>;
   onConflict?: ReturnType<typeof vi.fn>;
   doUpdateSet?: ReturnType<typeof vi.fn>;
   /** Chain methods for fluent query building */
   innerJoin?: ReturnType<typeof vi.fn>;
   leftJoin?: ReturnType<typeof vi.fn>;
-  select?: ReturnType<typeof vi.fn>;
+  select: ReturnType<typeof vi.fn>;
   selectAll?: ReturnType<typeof vi.fn>;
-  where?: ReturnType<typeof vi.fn>;
+  where: ReturnType<typeof vi.fn>;
   orderBy?: ReturnType<typeof vi.fn>;
   limit?: ReturnType<typeof vi.fn>;
   offset?: ReturnType<typeof vi.fn>;
   groupBy?: ReturnType<typeof vi.fn>;
-  values?: ReturnType<typeof vi.fn>;
-  set?: ReturnType<typeof vi.fn>;
+  values: ReturnType<typeof vi.fn>;
+  set: ReturnType<typeof vi.fn>;
   /** Execution methods */
   execute: ReturnType<typeof vi.fn>;
   executeTakeFirst: ReturnType<typeof vi.fn>;
   run?: ReturnType<typeof vi.fn>;
   getExecutor?: ReturnType<typeof vi.fn>;
+  fn?: unknown; // Kysely's function builder is complex to type accurately in mocks
 };
 
 // ── TestEnv ───────────────────────────────────────────────────────────────────
@@ -76,6 +77,8 @@ export type TestEnv = {
       id: string;
       email: string;
       name: string | null;
+      nickname?: string | null;
+      image?: string | null;
       role: string;
       member_type: string;
     };
@@ -86,6 +89,7 @@ export type TestEnv = {
     DEV_BYPASS?: string;
     DB: D1Database;
     ENVIRONMENT?: string;
+    [key: string]: unknown;
   };
 };
 
@@ -103,11 +107,11 @@ export type TestEnv = {
  *   await flushWaitUntil(); // Awaits all waitUntil promises
  * });
  */
-export interface MockExecutionContext {
+export interface MockExecutionContext extends ExecutionContext {
   /** Registers a promise to execute in the background */
-  waitUntil: ((promise: Promise<unknown>) => void) & ReturnType<typeof vi.fn>;
+  waitUntil: Mock<(promise: Promise<unknown>) => void | Promise<unknown>>;
   /** Passes through exceptions to the runtime */
-  passThroughOnException: (() => void) & ReturnType<typeof vi.fn>;
+  passThroughOnException: Mock<() => void>;
   /** Execution Context Props */
   props: Record<string, unknown>;
 }

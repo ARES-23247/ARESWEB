@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api/client";
+import { fetchJson } from "../api";
+import { useQuery } from "@tanstack/react-query";
 import { trackPageView } from "../utils/analytics";
 
 export interface DocRecord {
@@ -49,28 +50,32 @@ export function useAcademy(slug: string | undefined) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [feedbackToken, setFeedbackToken] = useState("");
 
-  const { data: allDocsRes } = api.docs.getDocs.useQuery(["docs-list"], {});
+  const { data: rawAllDocs } = useQuery({
+    queryKey: ["docs-list"],
+    queryFn: () => fetchJson<{ docs: DocRecord[] }>("/api/docs")
+  });
+  
   const allDocs = useMemo(() => {
-    if (allDocsRes?.status !== 200) return [];
-    return allDocsRes.body.docs.filter((doc: DocRecord) => doc.display_in_math_corner === 1 || doc.display_in_science_corner === 1);
-  }, [allDocsRes]);
+    if (!rawAllDocs?.docs) return [];
+    return rawAllDocs.docs.filter((doc: DocRecord) => doc.display_in_math_corner === 1 || doc.display_in_science_corner === 1);
+  }, [rawAllDocs]);
 
-  const ObjectQuery = api.docs.getDoc.useQuery(
-    ["doc", slug],
-    { params: { slug: slug || "" } },
-    { enabled: !!slug }
-  );
+  const ObjectQuery = useQuery({
+    queryKey: ["doc", slug],
+    queryFn: () => fetchJson<{ doc: DocRecord, contributors: Contributor[] }>(`/api/docs/${slug}`),
+    enabled: !!slug
+  });
 
-  const currentDoc = ObjectQuery.data?.status === 200 ? ObjectQuery.data.body.doc : undefined;
-  const contributors = ObjectQuery.data?.status === 200 ? ObjectQuery.data.body.contributors : [];
+  const currentDoc = ObjectQuery.data?.doc;
+  const contributors = ObjectQuery.data?.contributors || [];
   const docLoading = ObjectQuery.isLoading;
 
-  const { data: searchRes } = api.docs.searchDocs.useQuery(
-    ["docs-search", searchQuery],
-    { query: { q: searchQuery } },
-    { enabled: searchQuery.length >= 2 }
-  );
-  const searchResults = searchRes?.status === 200 ? searchRes.body.results : [];
+  const { data: rawSearch } = useQuery({
+    queryKey: ["docs-search", searchQuery],
+    queryFn: () => fetchJson<{ results: SearchResult[] }>(`/api/docs/search?q=${encodeURIComponent(searchQuery)}`),
+    enabled: searchQuery.length >= 2
+  });
+  const searchResults = rawSearch?.results || [];
 
   const groupedDocs = useMemo(() => {
     const groups: Record<string, DocRecord[]> = {};

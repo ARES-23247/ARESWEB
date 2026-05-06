@@ -1,10 +1,9 @@
-
-
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { MockKysely, TestEnv } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 
 
 // Mock Zulip and Notifications
@@ -35,7 +34,7 @@ describe("Hono Backend - /comments Router", () => {
 
 
 
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -176,7 +175,7 @@ describe("Hono Backend - /comments Router", () => {
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => (r.type === 'return' ? r.value : Promise.resolve())));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => (r.type === 'return' ? r.value : Promise.resolve())));
   });
 
   it("PATCH edit - handles not found", async () => {
@@ -220,7 +219,7 @@ describe("Hono Backend - /comments Router", () => {
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => (r.type === 'return' ? r.value : Promise.resolve())));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => (r.type === 'return' ? r.value : Promise.resolve())));
   });
 
   it("DELETE - handles not found", async () => {
@@ -263,6 +262,7 @@ describe("Hono Backend - /comments Router", () => {
       body: JSON.stringify({})
     }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => (r.type === 'return' ? r.value : Promise.resolve())));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => (r.type === 'return' ? r.value : Promise.resolve())));
   });
 });
+

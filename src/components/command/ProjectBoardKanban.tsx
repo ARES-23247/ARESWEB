@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,28 +9,9 @@ import { SortableTaskCard } from "./kanban/SortableTaskCard";
 import TaskDetailsModal from "../kanban/TaskDetailsModal";
 import { GenericKanbanBoard } from "../kanban/GenericKanbanBoard";
 
-// ── Types ────────────────────────────────────────────────────────────
-export interface TaskItem {
-  id: string;
-  title: string;
-  description?: string | null;
-  status: string;
-  priority: string;
-  sort_order: number;
-  assignees: { id: string; nickname?: string | null }[];
-  created_by: string;
-  creator_name?: string | null;
-  due_date: string | null;
-  zulip_stream?: string | null;
-  zulip_topic?: string | null;
-  parent_id?: string | null;
-  time_spent_seconds?: number | null;
-  created_at: string;
-  updated_at: string;
-  assigned_to?: string | null;
-  assignee_name?: string | null;
-  subteam?: string | null;
-}
+import { type Task } from "../../api";
+export type TaskItem = Task;
+
 
 export const KANBAN_SUBTEAMS = [
   "Software", 
@@ -45,7 +27,7 @@ interface ProjectBoardKanbanProps {
   tasks: TaskItem[];
   isLoading: boolean;
   onCreateTask: (title: string) => void;
-  onUpdateTask: (id: string, updates: Partial<TaskItem>) => Promise<void>;
+  onUpdateTask: (id: string, updates: import("../../api").UpdateTaskRequest) => Promise<void>;
   onDeleteTask: (id: string) => void;
   onReorder: (items: { id: string; status: string; sort_order: number }[]) => void;
   onRefresh: () => void;
@@ -161,7 +143,7 @@ export default function ProjectBoardKanban({
             key={task.id}
             task={task}
             onDelete={onDeleteTask}
-            onUpdateStatus={(id, s) => onUpdateTask(id, { status: s })}
+            onUpdateStatus={(id, s) => onUpdateTask(id, { status: s as any })}
             onEdit={(t) => setEditingTask(t)}
           />
         )}

@@ -1,9 +1,11 @@
 /**
  * Logger utility that disables debug output in production.
  * Prevents leaking debugging information in production builds.
+ *
+ * SAFETY: Uses optional chaining for Cloudflare Workers compatibility.
+ * In Workers runtime, import.meta.env might not have DEV replaced.
  */
-
-const isDev = import.meta.env.DEV;
+const isDev = import.meta.env?.DEV ?? false;
 
 export const logger = {
   debug: (message: string, ...args: unknown[]) => {

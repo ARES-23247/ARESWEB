@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { MockKysely, TestEnv } from "../../../src/test/types";
@@ -52,7 +53,9 @@ describe("Hono Backend - /store Router", () => {
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis()
+      set: vi.fn().mockReturnThis(),
+      deleteFrom: vi.fn().mockReturnThis(), // Added missing required method
+      select: vi.fn().mockReturnThis(), // Added missing required method
     };
 
     app = new Hono<TestEnv>();
@@ -62,20 +65,18 @@ describe("Hono Backend - /store Router", () => {
       c.env = {
         STRIPE_SECRET_KEY: "sk_test_123",
         STRIPE_WEBHOOK_SECRET: "whsec_123",
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-        DB: {} as any,
+        DB: {} as unknown as D1Database,
         ENVIRONMENT: "test",
         DEV_BYPASS: "true",
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      } as TestEnv["Bindings"];
       await next();
     });
-    app.route("/", storeRouter);
+    app.route("/store", storeRouter);
   });
 
-  describe("POST /webhook", () => {
+  describe("POST /store/webhook", () => {
     it("returns 400 if signature is missing", async () => {
-      const res = await app.request("/webhook", {
+      const res = await app.request("/store/webhook", {
         method: "POST",
         body: JSON.stringify({ type: "checkout.session.completed" })
       });
@@ -85,7 +86,7 @@ describe("Hono Backend - /store Router", () => {
     });
 
     it("returns 400 if signature is invalid", async () => {
-      const res = await app.request("/webhook", {
+      const res = await app.request("/store/webhook", {
         method: "POST",
         headers: {
           "stripe-signature": "invalid"
@@ -113,7 +114,7 @@ describe("Hono Backend - /store Router", () => {
         }
       };
 
-      const res = await app.request("/webhook", {
+      const res = await app.request("/store/webhook", {
         method: "POST",
         headers: {
           "stripe-signature": "valid"
@@ -126,7 +127,7 @@ describe("Hono Backend - /store Router", () => {
       expect(mockDb.values).toHaveBeenCalled();
       expect(mockDb.execute).toHaveBeenCalled();
       
-      const valuesArg = (mockDb.values ).mock.calls[0][0];
+      const valuesArg = (mockDb.values as any).mock.calls[0][0];
       expect(valuesArg.stripe_session_id).toBe("cs_test_123");
       expect(valuesArg.customer_email).toBe("test@example.com");
       expect(valuesArg.total_cents).toBe(1500);
@@ -135,12 +136,12 @@ describe("Hono Backend - /store Router", () => {
     });
   });
 
-  describe("GET /api/store/products", () => {
+  describe("GET /store/products", () => {
     it("returns active products", async () => {
       mockDb.execute.mockResolvedValueOnce([
         { id: "prod_1", name: "T-Shirt", active: 1, price_cents: 2000, description: "Cool shirt", image_url: null, stock_count: 10, created_at: null }
       ]);
-      const res = await app.request("/api/store/products");
+      const res = await app.request("/store/products");
       expect(res.status).toBe(200);
       const data = (await res.json()) as Array<{ id: string }>;
       expect(data).toHaveLength(1);
@@ -148,13 +149,13 @@ describe("Hono Backend - /store Router", () => {
     });
   });
 
-  describe("POST /api/store/checkout", () => {
+  describe("POST /store/checkout", () => {
     it("creates a checkout session", async () => {
       mockDb.execute.mockResolvedValueOnce([
         { id: "prod_1", name: "T-Shirt", active: 1, price_cents: 2000, description: "Cool shirt", image_url: null, stock_count: 10, created_at: null }
       ]);
 
-      const res = await app.request("/api/store/checkout", {
+      const res = await app.request("/store/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -171,3 +172,4 @@ describe("Hono Backend - /store Router", () => {
     });
   });
 });
+

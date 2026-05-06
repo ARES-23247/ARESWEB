@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Building, DollarSign, Type, AlignLeft, User, CheckCircle2, Plus } from "lucide-react";
-import { api } from "../../api/client";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../../utils/apiClient";
 import ZulipThread from "../ZulipThread";
 import type { PipelineItem } from "../../types/finance";
 
@@ -25,12 +26,12 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
   const [isSaving, setIsSaving] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: usersRes } = api.users.getUsers.useQuery(
-    ["team-members-for-sponsorships"],
-    {},
-    { staleTime: 60000 }
-  );
-  const teamMembers = usersRes?.status === 200 ? usersRes.body.users : [];
+  const { data: usersData } = useQuery({
+    queryKey: ["users", "list"],
+    queryFn: () => fetchJson<{ users: Array<{ id: string; name: string; nickname?: string | null }> }>("/api/users/admin/list?limit=100"),
+    staleTime: 60000,
+  });
+  const teamMembers = usersData?.users ?? [];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

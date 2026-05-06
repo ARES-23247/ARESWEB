@@ -2,9 +2,9 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { logger } from "./logger";
 
 describe("logger", () => {
-  const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-  const consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
-  const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const _consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  const _consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+  const _consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
   afterEach(() => {

@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, CheckCircle } from "lucide-react";
-import { api } from "../api/client";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { locationSchema } from "@shared/schemas/contracts/locationContract";
-import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { locationSchema } from "@shared/routes/locations";
+import { z } from "zod";
+import { useCreateLocation } from "../api";
 
 interface CreateLocationModalProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ interface CreateLocationModalProps {
 
 export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocationModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const [errorMsg, setErrorMsg] = useState("");
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
   const [suggestions, setSuggestions] = useState<{ display_name: string }[]>([]);
@@ -40,12 +40,10 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
     setErrorMsg("");
   }, [reset]);
 
-  const saveMutation = api.locations.save.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
+  const saveMutation = useCreateLocation({
+    onSuccess: (res) => {
+      if (res.success) {
         toast.success("Venue record synchronized.");
-        queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-        queryClient.invalidateQueries({ queryKey: ["locations"] });
         
         // Pass the new name back
         const formValues = control._formValues;
@@ -89,7 +87,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
 
   const onFormSubmit = (data: z.infer<typeof locationSchema>) => {
     setErrorMsg("");
-    saveMutation.mutate({ body: { ...data, id: undefined } });
+    saveMutation.mutate({ ...data, id: undefined });
   };
 
   // Keyboard handling

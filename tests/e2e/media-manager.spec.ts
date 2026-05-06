@@ -110,8 +110,8 @@ test.describe('Media Manager - Advanced Scenarios', () => {
       });
     });
 
-    // Mock POST /api/media/admin/syndicate for broadcast functionality
-    await page.route('**/api/media/admin/syndicate', async route => {
+    // Mock POST /api/media/**/syndicate for broadcast functionality
+    await page.route('**/api/media/**/syndicate', async route => {
       await route.fulfill({
         status: 200,
         json: {

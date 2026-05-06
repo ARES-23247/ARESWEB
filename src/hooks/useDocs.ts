@@ -1,37 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api/client";
 import { trackPageView } from "../utils/analytics";
+import { useGetAllDocs, useGetDocWithContributors, useSearchDocs, type DocRecord } from "../api/docs";
 
-export interface DocRecord {
-  slug: string;
-  title: string;
-  category: string;
-  sort_order: number;
-  description: string;
-  content?: string;
-  updated_at?: string;
-  snippet?: string;
-  cf_email?: string;
-  original_author_nickname?: string;
-  original_author_avatar?: string;
-  display_in_areslib?: number;
-  display_in_math_corner?: number;
-  display_in_science_corner?: number;
-}
-
-export interface Contributor {
-  author_email: string;
-  nickname?: string;
-  avatar?: string;
-}
-
-export interface SearchResult {
-  slug: string;
-  title: string;
-  category: string;
-  snippet: string;
-}
+export type { Doc, DocRecord, Contributor, DocSearchResult as SearchResult } from "../api/docs";
 
 const SIDEBAR_ORDER = [
   "Getting Started",
@@ -52,34 +24,26 @@ export function useDocs(slug: string | undefined) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [feedbackToken, setFeedbackToken] = useState("");
 
-  const { data: allDocsRes } = api.docs.getDocs.useQuery(["docs-list"], {});
+  const { data: allDocsData } = useGetAllDocs();
+
   const allDocs = useMemo(() => {
-    if (allDocsRes?.status !== 200) return [];
-    return allDocsRes.body.docs.filter((doc: DocRecord) => doc.display_in_areslib === 1);
-  }, [allDocsRes]);
+    if (!allDocsData?.docs) return [];
+    return allDocsData.docs.filter((doc) => doc.display_in_areslib === 1);
+  }, [allDocsData]);
 
-  const ObjectQuery = api.docs.getDoc.useQuery(
-    ["doc", slug],
-    { params: { slug: slug || "" } },
-    { enabled: !!slug }
-  );
+  const { data: docWithData, isLoading: docLoading } = useGetDocWithContributors(slug || "");
 
-  const currentDoc = ObjectQuery.data?.status === 200 ? ObjectQuery.data.body.doc : undefined;
-  const contributors = ObjectQuery.data?.status === 200 ? ObjectQuery.data.body.contributors : [];
-  const docLoading = ObjectQuery.isLoading;
+  const currentDoc = docWithData?.doc;
+  const contributors = docWithData?.contributors || [];
 
-  const { data: searchRes } = api.docs.searchDocs.useQuery(
-    ["docs-search", searchQuery],
-    { query: { q: searchQuery } },
-    { enabled: searchQuery.length >= 2 }
-  );
-  const searchResults = searchRes?.status === 200 ? searchRes.body.results : [];
+  const { data: searchRes } = useSearchDocs(searchQuery);
+  const searchResults = searchRes?.results || [];
 
   const groupedDocs = useMemo(() => {
     const groups: Record<string, DocRecord[]> = {};
     for (const doc of allDocs) {
       if (!groups[doc.category]) groups[doc.category] = [];
-      groups[doc.category].push(doc);
+      groups[doc.category].push(doc as unknown as DocRecord);
     }
     const ordered: [string, DocRecord[]][] = [];
     for (const cat of SIDEBAR_ORDER) {

@@ -1,8 +1,6 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 import { sponsorSchema } from "../sponsorSchema";
-
-const c = initContract();
 
 export const sponsorRoiMetricSchema = z.object({
   id: z.string().nullable(),
@@ -19,85 +17,113 @@ export const sponsorTokenSchema = z.object({
   last_used: z.string().nullable(),
 });
 
-export const sponsorContract = c.router({
-  // --- PUBLIC ---
-  getSponsors: {
-    method: "GET",
-    path: "/",
-    responses: {
-      200: z.object({
-        sponsors: z.array(sponsorSchema),
-      }),
-    },
-    summary: "Get all public sponsors",
-  },
-  getRoi: {
-    method: "GET",
-    path: "/roi/:token",
-    responses: {
-      200: z.object({
-        sponsor: sponsorSchema,
-        metrics: z.array(sponsorRoiMetricSchema),
-      }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Get public (hidden) ROI dashboard",
-  },
+// --- PUBLIC ---
 
-  // --- ADMIN ---
-  adminList: {
-    method: "GET",
-    path: "/admin/list",
-    responses: {
-      200: z.object({
-        sponsors: z.array(sponsorSchema),
-      }),
+export const getSponsorsRoute = createRoute({
+  method: "get",
+  path: "/",
+  responses: {
+    200: {
+      description: "Get all public sponsors",
+      content: { "application/json": { schema: z.object({ sponsors: z.array(sponsorSchema) }) } },
     },
-    summary: "Get all sponsors (admin view)",
-  },
-  saveSponsor: {
-    method: "POST",
-    path: "/admin/save",
-    body: sponsorSchema,
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-        id: z.string().optional(),
-      }),
-    },
-    summary: "Create or update a sponsor",
-  },
-  deleteSponsor: {
-    method: "DELETE",
-    path: "/admin/:id",
-    body: z.object({}),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-      }),
-    },
-    summary: "Delete a sponsor",
-  },
-  getAdminTokens: {
-    method: "GET",
-    path: "/admin/tokens",
-    responses: {
-      200: z.object({
-        tokens: z.array(sponsorTokenSchema),
-      }),
-      500: z.object({ error: z.string() }),
-    },
-  },
-  generateToken: {
-    method: "POST",
-    path: "/admin/tokens/generate",
-    body: z.object({ sponsor_id: z.string() }),
-    responses: {
-      200: z.object({ success: z.boolean(), token: z.string().optional() }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
+    ...openApiStandardErrors,
   },
 });
-export type SponsorContract = typeof sponsorContract;
+
+export const getRoiRoute = createRoute({
+  method: "get",
+  path: "/roi/{token}",
+  request: {
+    params: z.object({ token: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get public (hidden) ROI dashboard",
+      content: {
+        "application/json": {
+          schema: z.object({
+            sponsor: sponsorSchema,
+            metrics: z.array(sponsorRoiMetricSchema),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+// --- ADMIN ---
+
+export const adminListSponsorsRoute = createRoute({
+  method: "get",
+  path: "/admin/list",
+  responses: {
+    200: {
+      description: "Get all sponsors (admin view)",
+      content: { "application/json": { schema: z.object({ sponsors: z.array(sponsorSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const saveSponsorRoute = createRoute({
+  method: "post",
+  path: "/admin/save",
+  request: {
+    body: {
+      content: { "application/json": { schema: sponsorSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create or update a sponsor",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), id: z.string().optional() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteSponsorRoute = createRoute({
+  method: "delete",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Delete a sponsor",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getAdminTokensRoute = createRoute({
+  method: "get",
+  path: "/admin/tokens",
+  responses: {
+    200: {
+      description: "Get all sponsor tokens",
+      content: { "application/json": { schema: z.object({ tokens: z.array(sponsorTokenSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const generateTokenRoute = createRoute({
+  method: "post",
+  path: "/admin/tokens/generate",
+  request: {
+    body: {
+      content: { "application/json": { schema: z.object({ sponsor_id: z.string() }) } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Generate a new sponsor token",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), token: z.string().optional() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

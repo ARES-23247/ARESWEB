@@ -1,21 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import { useState } from "react";
+import { z } from "zod";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
-import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, DollarSign, PieChart, TrendingUp, TrendingDown, RefreshCw, Wallet, Building, Circle, UserPlus, Handshake, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
 import { GenericKanbanBoard, KanbanColumnConfig } from "./kanban/GenericKanbanBoard";
 import { SortablePipelineCard } from "./kanban/SortablePipelineCard";
 import SponsorshipEditModal from "./kanban/SponsorshipEditModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../api/client";
 import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { financeTransactionSchema, sponsorshipPipelineSchema, type SponsorshipPipelinePayload } from "@shared/schemas/financeSchema";
 import type { PipelineItem, TransactionItem } from "../types/finance";
+import { 
+  useGetFinanceSummary, 
+  useListSponsorshipPipeline, 
+  useSaveSponsorshipPipeline, 
+  useDeleteSponsorshipPipeline, 
+  useListFinanceTransactions, 
+  useSaveFinanceTransaction, 
+  useDeleteFinanceTransaction 
+} from "../api";
 
 // ── Status config for Sponsorship ─────────────────────────────────────
 const PIPELINE_COLUMNS = ["potential", "contacted", "pledged", "secured", "lost"] as const;
@@ -31,7 +40,6 @@ const pipelineConfig: Record<string, KanbanColumnConfig> = {
 export type { PipelineItem, TransactionItem };
 
 export default function FinanceManager() {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"pipeline" | "ledger">("pipeline");
   const [isAdding, setIsAdding] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
@@ -39,59 +47,60 @@ export default function FinanceManager() {
   const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
 
   // ── Queries ──
-  const { data: summaryRes } = api.finance.getSummary.useQuery(["finance-summary", selectedSeason], { query: { season_id: selectedSeason || undefined } });
-  const { data: pipelineRes } = api.finance.listPipeline.useQuery(["finance-pipeline", selectedSeason], { query: { season_id: selectedSeason || undefined } });
-  const { data: transactionsRes } = api.finance.listTransactions.useQuery(["finance-transactions", selectedSeason], { query: { season_id: selectedSeason || undefined } });
+  const { data: summaryRes, error: summaryError } = useGetFinanceSummary(selectedSeason);
+  const { data: pipelineDataRes, error: pipelineError } = useListSponsorshipPipeline(selectedSeason);
+  const { data: transactionsDataRes, error: transactionsError } = useListFinanceTransactions(selectedSeason);
 
-  const summary = summaryRes?.status === 200 ? summaryRes.body : null;
-  const pipeline: PipelineItem[] = pipelineRes?.status === 200 ? pipelineRes.body.pipeline : [];
-
-  const transactions: TransactionItem[] = transactionsRes?.status === 200 ? transactionsRes.body.transactions : [];
-
-  const isError = summaryRes?.status === 500 || pipelineRes?.status === 500 || transactionsRes?.status === 500;
-
+  const summary = summaryRes;
+  const pipeline = pipelineDataRes?.pipeline || [];
+  const transactions = transactionsDataRes?.transactions || [];
+  const isError = !!(summaryError || pipelineError || transactionsError);
 
   // ── Mutations ──
-  const savePipeline = api.finance.savePipeline.useMutation({
-    onSuccess: () => {
-      toast.success("Sponsorship updated.");
-      queryClient.invalidateQueries({ queryKey: ["finance-pipeline"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
-      setIsAdding(false);
-      pipelineForm.reset();
-    },
-    onError: (err: Error & { body?: { error?: string } }) => {
-      toast.error(`Failed to save lead: ${err?.body?.error || err?.message || "Unknown error"}`);
-    }
-  });
+  const savePipeline = useSaveSponsorshipPipeline();
+  const saveTransaction = useSaveFinanceTransaction();
+  const deleteTransaction = useDeleteFinanceTransaction();
+  const deletePipeline = useDeleteSponsorshipPipeline();
 
-  const saveTransaction = api.finance.saveTransaction.useMutation({
-    onSuccess: () => {
-      toast.success("Transaction recorded.");
-      queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
-      setIsAdding(false);
-      transactionForm.reset();
-    },
-    onError: (err: Error & { body?: { error?: string } }) => {
-      toast.error(`Failed to save transaction: ${err?.body?.error || err?.message || "Unknown error"}`);
-    }
-  });
+  const handleSavePipeline = (data: z.infer<typeof sponsorshipPipelineSchema>) => {
+    savePipeline.mutate(data, {
+      onSuccess: () => {
+        toast.success("Sponsorship updated.");
+        setIsAdding(false);
+        pipelineForm.reset();
+      },
+      onError: (err: Error) => {
+        toast.error(`Failed to save lead: ${err.message || "Unknown error"}`);
+      }
+    });
+  };
 
-  const deleteTransaction = api.finance.deleteTransaction.useMutation({
-    onSuccess: () => {
-      toast.success("Transaction deleted.");
-      queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
-    }
-  });
+  const handleSaveTransaction = (data: z.infer<typeof financeTransactionSchema>) => {
+    saveTransaction.mutate(data, {
+      onSuccess: () => {
+        toast.success("Transaction recorded.");
+        setIsAdding(false);
+        transactionForm.reset();
+      },
+      onError: (err: Error) => {
+        toast.error(`Failed to save transaction: ${err.message || "Unknown error"}`);
+      }
+    });
+  };
 
-  const deletePipeline = api.finance.deletePipeline.useMutation({
-    onSuccess: () => {
-      toast.success("Pipeline item deleted.");
-      queryClient.invalidateQueries({ queryKey: ["finance-pipeline"] });
-    }
-  });
+  const handleDeleteTransaction = (id: string) => {
+    deleteTransaction.mutate(id, {
+      onSuccess: () => toast.success("Transaction deleted."),
+      onError: (err: Error) => toast.error(`Failed to delete: ${err.message}`)
+    });
+  };
+
+  const handleDeletePipeline = (id: string) => {
+    deletePipeline.mutate(id, {
+      onSuccess: () => toast.success("Pipeline item deleted."),
+      onError: (err: Error) => toast.error(`Failed to delete: ${err.message}`)
+    });
+  };
 
   // ── Forms ──
   const pipelineForm = useForm({
@@ -113,7 +122,7 @@ export default function FinanceManager() {
         <h3 className="text-ares-red font-black uppercase tracking-widest text-lg mb-2">Financial Link Severed</h3>
         <p className="text-marble/60 text-sm mb-4">An error occurred while connecting to the team ledger.</p>
         <div className="font-mono text-[10px] py-1 px-2 bg-black/40 text-ares-red/80 inline-block ares-cut-sm">
-          STATUS: {summaryRes?.status || pipelineRes?.status || transactionsRes?.status || "UNKNOWN"}
+          STATUS: ERROR
         </div>
       </div>
     );
@@ -136,7 +145,7 @@ export default function FinanceManager() {
           { label: "Total Income", value: `$${(summary?.total_income ?? 0).toLocaleString()}`, icon: <TrendingUp className="text-ares-green" /> },
           { label: "Total Expenses", value: `$${(summary?.total_expenses ?? 0).toLocaleString()}`, icon: <TrendingDown className="text-ares-red" /> },
           { label: "Cash Balance", value: `$${(summary?.balance ?? 0).toLocaleString()}`, icon: <Wallet className="text-ares-gold" /> },
-          { label: "Pipeline Value", value: `$${pipeline.reduce((acc, p) => acc + (p.status !== 'lost' ? (Number(p.estimated_value) || 0) : 0), 0).toLocaleString()}`, icon: <PieChart className="text-ares-cyan" /> },
+          { label: "Pipeline Value", value: `$${pipeline.reduce((acc: number, p: any) => acc + (p.status !== 'lost' ? (Number(p.estimated_value) || 0) : 0), 0).toLocaleString()}`, icon: <PieChart className="text-ares-cyan" /> },
         ]}
       />
 
@@ -182,7 +191,7 @@ export default function FinanceManager() {
             className="bg-obsidian border border-ares-red/30 ares-cut-lg p-8 shadow-2xl"
           >
             {activeTab === 'pipeline' ? (
-              <form onSubmit={pipelineForm.handleSubmit(data => savePipeline.mutate({ body: { ...data, season_id: selectedSeason || undefined } }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <form onSubmit={pipelineForm.handleSubmit(data => handleSavePipeline({ ...data, season_id: selectedSeason || undefined }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <DashboardInput id="pipeline-company" label="Company Name" {...pipelineForm.register("company_name")} error={pipelineForm.formState.errors.company_name?.message} fullWidth />
                 <DashboardInput id="pipeline-value" label="Est. Value ($)" type="number" {...pipelineForm.register("estimated_value")} error={pipelineForm.formState.errors.estimated_value?.message} />
                 <div className="flex flex-col gap-1">
@@ -196,7 +205,7 @@ export default function FinanceManager() {
                 </div>
               </form>
             ) : (
-              <form onSubmit={transactionForm.handleSubmit(data => saveTransaction.mutate({ body: { ...data, season_id: selectedSeason || undefined } }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <form onSubmit={transactionForm.handleSubmit(data => handleSaveTransaction({ ...data, season_id: selectedSeason || undefined }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col gap-1">
                   <label htmlFor="transaction-type" className="text-[10px] font-black uppercase tracking-widest text-marble/60 px-1">Type</label>
                   <select id="transaction-type" {...transactionForm.register("type")} className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none">
@@ -231,20 +240,18 @@ export default function FinanceManager() {
               // we only care about status updates since sort_order is not saved
               // to optimize, just update the items that changed status
               updates.forEach(update => {
-                const item = pipeline.find(p => String(p.id) === update.id);
+                const item = pipeline.find((p: any) => String(p.id) === update.id);
                 if (item && item.status !== update.status) {
                   const pipelineItem = item as PipelineItem & { id?: string; season_id?: number | null };
                   savePipeline.mutate({
-                    body: {
-                      id: pipelineItem.id,
-                      company_name: pipelineItem.company_name,
-                      status: update.status,
-                      estimated_value: Number(pipelineItem.estimated_value),
-                      contact_person: pipelineItem.contact_person ?? null,
-                      notes: pipelineItem.notes ?? null,
-                      season_id: pipelineItem.season_id ?? null,
-                      assignees: pipelineItem.assignees ?? [],
-                    },
+                    id: pipelineItem.id,
+                    company_name: pipelineItem.company_name,
+                    status: update.status as "potential" | "contacted" | "pledged" | "secured" | "lost",
+                    estimated_value: Number(pipelineItem.estimated_value),
+                    contact_person: pipelineItem.contact_person ?? null,
+                    notes: pipelineItem.notes ?? null,
+                    season_id: pipelineItem.season_id ?? null,
+                    assignees: pipelineItem.assignees ?? [],
                   });
                 }
               });
@@ -257,7 +264,7 @@ export default function FinanceManager() {
               <SortablePipelineCard
                 key={item.id}
                 item={item}
-                onDelete={(id) => deletePipeline.mutate({ params: { id } })}
+                onDelete={(id) => handleDeletePipeline(id)}
                 onEdit={(item) => setEditingLead(item)}
               />
             )}
@@ -285,11 +292,11 @@ export default function FinanceManager() {
                     season_id: updates.season_id ?? lead.season_id ?? null,
                     assignees: updates.assignees ?? lead.assignees ?? [],
                   };
-                  await savePipeline.mutateAsync({ body: updatePayload });
+                  handleSavePipeline(updatePayload);
                   setEditingLead(null);
                 }}
                 onDelete={(id) => {
-                  deletePipeline.mutate({ params: { id } });
+                  handleDeletePipeline(id);
                   setEditingLead(null);
                 }}
               />
@@ -309,7 +316,7 @@ export default function FinanceManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {transactions.map(t => (
+              {transactions.map((t: any) => (
                 <tr key={t.id} className="hover:bg-white/5 transition-colors group">
                   <td className="p-4 text-xs font-bold text-marble/60">{t.date}</td>
                   <td className="p-4">
@@ -323,7 +330,7 @@ export default function FinanceManager() {
                   </td>
                   <td className="p-4">
                     <button 
-                      onClick={() => confirm("Delete transaction?") && deleteTransaction.mutate({ params: { id: t.id! } })} 
+                      onClick={() => confirm("Delete transaction?") && handleDeleteTransaction(t.id!)} 
                       className="opacity-0 group-hover:opacity-100 text-marble/20 hover:text-ares-red transition-all"
                       title="Delete transaction"
                       aria-label="Delete transaction"

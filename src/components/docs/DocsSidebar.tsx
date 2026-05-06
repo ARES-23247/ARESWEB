@@ -3,15 +3,10 @@ import { siteConfig } from "../../site.config";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
-import { api } from "../../api/client";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../../api";
 
-interface DocRecord {
-  slug: string;
-  title: string;
-  category: string;
-  sort_order: number;
-  description: string;
-}
+import { type DocRecord } from "../../hooks/useDocs";
 
 interface DocsSidebarProps {
   groupedDocs: [string, DocRecord[]][];
@@ -32,8 +27,11 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
     setExpandedCats(new Set(groupedDocs.map(([cat]) => cat)));
   }
 
-  const { data: settingsRes } = api.settings.getPublicSettings.useQuery(["public_settings"], {});
-  const docsDriveUrl = settingsRes?.status === 200 ? settingsRes.body.settings["COMMUNITY_DOCS_URL"] : null;
+  const { data: settingsRes } = useQuery({
+    queryKey: ["public_settings"],
+    queryFn: () => fetchJson<{ settings: Record<string, string> }>("/api/settings/public")
+  });
+  const docsDriveUrl = settingsRes?.settings?.["COMMUNITY_DOCS_URL"] || null;
 
   const [prevCurrentSlug, setPrevCurrentSlug] = useState(currentSlug);
   if (currentSlug !== prevCurrentSlug) {

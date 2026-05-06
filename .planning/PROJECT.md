@@ -53,18 +53,22 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 6.4 (Science & Math Expansion)** — Introduced Math Corner UI, added universal document visibility fields, and added persistence to AI Scouting Analyses.
 - ✓ **Milestone 6.5 (Zulip Sync & Social Media)** — Resolved `aresfirst.org` Google Workspace dot-mismatches and created architectural documentation for the Social Media Manager.
 
+- ✓ **Milestone 6.7 (TypeScript Any Elimination)** — Created shared type infrastructure, migrated all route handlers to contract inference, typed test mocks, and eliminated explicit any violations.
+
 ### Active
 
 (None currently active)
 
-## Current Milestone: v6.7 TypeScript Any Elimination
+## Current Milestone: v6.8 Hono Zod OpenAPI Migration
 
-**Goal:** Systematically eliminate all `@typescript-eslint/no-explicit-any` violations across the codebase through shared type creation and parallel agent execution.
+**Goal:** Replace ts-rest with `@hono/zod-openapi` to achieve full compile-time type safety, eliminate all `s.router(contract, handlers as any)` casts, and gain auto-generated OpenAPI documentation.
 
 **Target features:**
-- Create shared types (HonoEnv binding, D1Row<T> generic) — ~60% impact
-- Fix violations in big files (events/handlers.ts: 77, docs.ts: 51, comments.ts: 33, sponsors.ts: 31)
-- Fix test files with `as unknown as T` patterns
+- Convert 27 `initContract().router()` contract definitions to `createRoute()` format
+- Replace 27 `createHonoEndpoints()` handler mounts with native `app.openapi()` routing
+- Remove `@ts-rest/core`, `@ts-rest/open-api`, `ts-rest-hono` dependencies
+- Add `/api/docs` endpoint serving auto-generated OpenAPI spec
+- Maintain identical public API URLs and behavior
 
 ## Current State
 
@@ -315,7 +319,7 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 </details>
 
 ## Next Milestone Goals
-- TBD during v6.2 completion.
+- Migrate API contract layer from ts-rest to @hono/zod-openapi for native Zod v4 type inference.
 
 ## Key Decisions
 
@@ -343,4 +347,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-04 after v6.3 milestone completion*
+*Last updated: 2026-05-06 after v6.8 milestone start*

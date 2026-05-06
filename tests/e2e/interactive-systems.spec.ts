@@ -39,6 +39,9 @@ test.describe('Interactive Systems & Workflows', () => {
     // Intercept the API submission so we don't pollute the database,
     // and instead force a success response.
     await page.route(url => url.pathname.includes('/inquiries'), async route => {
+      if (route.request().resourceType() !== 'fetch' && route.request().resourceType() !== 'xhr') {
+        return route.fallback();
+      }
       // Small artificial delay to ensure "Sending..." state is visible if quickly checked
       await new Promise(resolve => setTimeout(resolve, 300));
       await route.fulfill({

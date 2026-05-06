@@ -1,14 +1,13 @@
 import React, { useEffect } from "react";
-import { api } from "../api/client";
 import { ShoppingCart, Loader2, Search, CheckCircle2 } from "lucide-react";
-import { Product } from "../../shared/schemas/contracts/storeContract";
 import { ProductCard } from "../components/store/ProductCard";
 import { CartDrawer } from "../components/store/CartDrawer";
 import { useCartStore } from "../store/useCartStore";
 import { useSearchParams } from "react-router-dom";
+import { useGetProducts, type Product } from "../api";
 
 export const Store: React.FC = () => {
-  const { data, isLoading, error } = api.store.getProducts.useQuery();
+  const { data: products = [], isLoading, error } = useGetProducts();
   const { setIsOpen, getCartCount, clearCart } = useCartStore();
   const [searchParams] = useSearchParams();
 
@@ -90,13 +89,13 @@ export const Store: React.FC = () => {
           <div className="py-24 text-center text-red-400 bg-red-400/10 rounded-2xl border border-red-400/20">
             Failed to load products. Please try again later.
           </div>
-        ) : !data || data.body.length === 0 ? (
+        ) : !products || products.length === 0 ? (
           <div className="py-24 text-center text-slate-500 bg-slate-900 rounded-2xl border border-slate-800">
             No products available at the moment. Check back soon!
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {data.body.map((product: Product) => (
+            {products.map((product: Product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

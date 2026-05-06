@@ -1,7 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 const platformSchema = z.object({
   twitter: z.boolean().optional(),
@@ -70,152 +68,198 @@ export const socialQueueSchema = z.object({
 
 export type SocialQueuePost = z.infer<typeof socialQueueSchema>;
 
-export const socialQueueContract = c.router({
-  list: {
-    method: "GET",
-    path: "/",
+export const listSocialQueueRoute = createRoute({
+  method: "get",
+  path: "/",
+  request: {
     query: z.object({
       status: z.enum(["pending", "processing", "sent", "failed", "cancelled", "all"]).optional(),
       limit: z.coerce.number().min(1).max(100).default(20),
       offset: z.coerce.number().min(0).default(0),
     }),
-    responses: {
-      200: z.object({
-        posts: z.array(socialQueueSchema),
-        total: z.number(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "List all scheduled social posts",
   },
-  calendar: {
-    method: "GET",
-    path: "/calendar",
+  responses: {
+    200: {
+      description: "List all scheduled social posts",
+      content: {
+        "application/json": {
+          schema: z.object({
+            posts: z.array(socialQueueSchema),
+            total: z.number(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const calendarSocialQueueRoute = createRoute({
+  method: "get",
+  path: "/calendar",
+  request: {
     query: z.object({
       start: z.string(), // ISO start date
       end: z.string(), // ISO end date
     }),
-    responses: {
-      200: z.object({
-        posts: z.array(socialQueueSchema),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Get posts within a date range for calendar view",
   },
-  create: {
-    method: "POST",
-    path: "/",
-    body: socialQueueSchema.omit({
-      id: true,
-      status: true,
-      created_at: true,
-      sent_at: true,
-      error_message: true,
-      analytics: true,
-    }),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-        post: socialQueueSchema,
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+  responses: {
+    200: {
+      description: "Get posts within a date range for calendar view",
+      content: { "application/json": { schema: z.object({ posts: z.array(socialQueueSchema) }) } },
     },
-    summary: "Create a new scheduled social post",
+    ...openApiStandardErrors,
   },
-  update: {
-    method: "PATCH",
-    path: "/:id",
-    pathParams: z.object({
+});
+
+export const createSocialQueueRoute = createRoute({
+  method: "post",
+  path: "/",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: socialQueueSchema.omit({
+            id: true,
+            status: true,
+            created_at: true,
+            sent_at: true,
+            error_message: true,
+            analytics: true,
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create a new scheduled social post",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            post: socialQueueSchema,
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateSocialQueueRoute = createRoute({
+  method: "patch",
+  path: "/{id}",
+  request: {
+    params: z.object({
       id: z.string(),
     }),
-    body: socialQueueSchema.omit({
-      id: true,
-      created_at: true,
-      created_by: true,
-    }).partial(),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-        post: socialQueueSchema,
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: socialQueueSchema
+            .omit({
+              id: true,
+              created_at: true,
+              created_by: true,
+            })
+            .partial(),
+        },
+      },
     },
-    summary: "Update a scheduled social post",
   },
-  delete: {
-    method: "DELETE",
-    path: "/:id",
-    pathParams: z.object({
+  responses: {
+    200: {
+      description: "Update a scheduled social post",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            post: socialQueueSchema,
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteSocialQueueRoute = createRoute({
+  method: "delete",
+  path: "/{id}",
+  request: {
+    params: z.object({
       id: z.string(),
     }),
-    body: c.noBody(),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Cancel/delete a scheduled social post",
   },
-  sendNow: {
-    method: "POST",
-    path: "/:id/send-now",
-    pathParams: z.object({
+  responses: {
+    200: {
+      description: "Cancel/delete a scheduled social post",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const sendNowSocialQueueRoute = createRoute({
+  method: "post",
+  path: "/{id}/send-now",
+  request: {
+    params: z.object({
       id: z.string(),
     }),
-    body: c.noBody(),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Immediately send a scheduled post",
   },
-  analytics: {
-    method: "GET",
-    path: "/analytics",
+  responses: {
+    200: {
+      description: "Immediately send a scheduled post",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const analyticsSocialQueueRoute = createRoute({
+  method: "get",
+  path: "/analytics",
+  request: {
     query: z.object({
       start: z.string().optional(), // ISO start date
       end: z.string().optional(), // ISO end date
     }),
-    responses: {
-      200: z.object({
-        total_posts: z.number(),
-        total_sent: z.number(),
-        total_pending: z.number(),
-        total_failed: z.number(),
-        by_platform: z.object({
-          twitter: z.number(),
-          bluesky: z.number(),
-          facebook: z.number(),
-          instagram: z.number(),
-          discord: z.number(),
-          slack: z.number(),
-          teams: z.number(),
-          gchat: z.number(),
-          linkedin: z.number(),
-          tiktok: z.number(),
-          band: z.number(),
-        }),
-        engagement: z.object({
-          total_impressions: z.number(),
-          total_likes: z.number(),
-          total_shares: z.number(),
-          total_comments: z.number(),
-        }),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get analytics for social media posts",
+      content: {
+        "application/json": {
+          schema: z.object({
+            total_posts: z.number(),
+            total_sent: z.number(),
+            total_pending: z.number(),
+            total_failed: z.number(),
+            by_platform: z.object({
+              twitter: z.number(),
+              bluesky: z.number(),
+              facebook: z.number(),
+              instagram: z.number(),
+              discord: z.number(),
+              slack: z.number(),
+              teams: z.number(),
+              gchat: z.number(),
+              linkedin: z.number(),
+              tiktok: z.number(),
+              band: z.number(),
+            }),
+            engagement: z.object({
+              total_impressions: z.number(),
+              total_likes: z.number(),
+              total_shares: z.number(),
+              total_comments: z.number(),
+            }),
+          }),
+        },
+      },
     },
-    summary: "Get analytics for social media posts",
+    ...openApiStandardErrors,
   },
 });
-export type SocialQueueContract = typeof socialQueueContract;

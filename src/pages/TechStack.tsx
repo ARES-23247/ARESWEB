@@ -145,9 +145,9 @@ export default function TechStack() {
             <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
               <Rocket size={24} />
             </div>
-            <h3 className="text-2xl font-bold font-heading mb-4">Hono Edge Framework</h3>
+            <h3 className="text-2xl font-bold font-heading mb-4">OpenAPI Edge Architecture</h3>
             <p className="text-marble leading-relaxed mb-4 flex-1">
-              We replaced legacy Express.js backends with <strong>Hono</strong>. It is an ultra-fast, lightweight web framework built natively for Edge computing. It allows us to process API requests with zero cold starts globally.
+              Our API is powered by <strong>Hono</strong> and <strong>Zod</strong>. By replacing legacy unified contracts with OpenAPI schemas natively on the Edge, we achieve complete end-to-end type safety, zero cold starts, and automatic interactive documentation generation via Scalar.
             </p>
             <div className="text-xs font-bold uppercase tracking-widest text-marble mt-auto">Cost: Open Source</div>
           </div>

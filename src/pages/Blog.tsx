@@ -3,23 +3,23 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import SEO from "../components/SEO";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
-import { api } from "../api/client";
+import { useGetPosts, type Post as _Post } from "../api";
 
 interface PostRecord {
   slug: string;
   title: string;
-  date: string | null;
-  snippet: string | null;
-  thumbnail: string | null;
+  date?: string | null;
+  snippet?: string | null;
+  thumbnail?: string | null;
   author_nickname?: string | null;
   author_avatar?: string | null;
   cf_email?: string;
 }
 
 export default function Blog() {
-  const { data: postsRes, isLoading } = api.posts.getPosts.useQuery(["posts"], {});
+  const { data: postsRes, isLoading } = useGetPosts();
 
-  const posts = postsRes?.status === 200 ? postsRes.body.posts : [];
+  const posts = postsRes?.posts || [];
 
   return (
     <motion.div 

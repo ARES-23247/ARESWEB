@@ -4,9 +4,9 @@ import {
   X, Save, Trash2, Calendar, User, AlertTriangle, Flag,
   CheckCircle2, Circle, Clock, Plus, Layout, Layers
 } from "lucide-react";
-import { api } from "../../api/client";
 import { useQueryClient } from "@tanstack/react-query";
-import type { TaskItem } from "../command/ProjectBoardKanban";
+import { useGetUsers, useCreateTask, useGetTasks } from "../../api";
+import { type Task as TaskItem } from "../../api";
 import { KANBAN_SUBTEAMS } from "../command/ProjectBoardKanban";
 import ZulipThread from "../ZulipThread";
 
@@ -18,7 +18,7 @@ import type { Editor } from "@tiptap/react";
 interface TaskDetailsModalProps {
   task: TaskItem;
   onClose: () => void;
-  onSave: (id: string, updates: Partial<TaskItem>) => Promise<void>;
+  onSave: (id: string, updates: import("../../api").UpdateTaskRequest) => Promise<void>;
   onDelete: (id: string) => void;
   onTaskClick?: (task: TaskItem) => void;
 }
@@ -111,7 +111,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState(task.priority);
   const [subteam, setSubteam] = useState(task.subteam || "");
-  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map(a => a.id) || []);
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map((a: { id: string }) => a.id) || []);
   const [dueDate, setDueDate] = useState(task.due_date || "");
   const [isSaving, setIsSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -121,25 +121,18 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(task.time_spent_seconds || 0);
 
   const queryClient = useQueryClient();
-  const createSubtaskMutation = api.tasks.create.useMutation({
+
+  const createSubtaskMutation = useCreateTask({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "subtasks", task.id] });
-    }
+    },
   });
 
-  const { data: usersRes } = api.users.getUsers.useQuery(
-    ["team-members-for-tasks"],
-    {},
-    { staleTime: 60000 }
-  );
-  const teamMembers = usersRes?.status === 200 ? usersRes.body.users : [];
+  const { data: usersData } = useGetUsers({ limit: 100 });
+  const teamMembers = usersData?.users ?? [];
 
-  const { data: subtasksRes } = api.tasks.list.useQuery(
-    ["tasks", "subtasks", task.id],
-    { query: { parent_id: task.id } },
-    { staleTime: 10000 }
-  );
-  const subtasks = subtasksRes?.status === 200 ? subtasksRes.body.tasks : [];
+  const { data: subtasksData } = useGetTasks({ parent_id: task.id }, { staleTime: 10000 });
+  const subtasks = subtasksData?.tasks ?? [];
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -162,20 +155,20 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const updates: Partial<TaskItem> = {};
+      const updates: import("../../api").UpdateTaskRequest = {};
       if (title !== task.title) updates.title = title;
       if (description !== (task.description || "")) updates.description = description || null;
-      if (status !== task.status) updates.status = status;
-      if (priority !== task.priority) updates.priority = priority;
+      if (status !== task.status) updates.status = status as "todo" | "in_progress" | "done" | "blocked";
+      if (priority !== task.priority) updates.priority = priority as "low" | "normal" | "high" | "urgent";
       if (subteam !== (task.subteam || "")) updates.subteam = subteam || null;
       if (dueDate !== (task.due_date || "")) updates.due_date = dueDate || null;
       
-      const currentIds = task.assignees?.map(a => a.id) || [];
+      const currentIds = task.assignees?.map((a: { id: string }) => a.id) || [];
       const hasAssigneeChange = assigneeIds.length !== currentIds.length || 
         !assigneeIds.every(id => currentIds.includes(id));
       
       if (hasAssigneeChange) {
-        updates.assignees = assigneeIds as unknown as { id: string }[];
+        updates.assignees = assigneeIds;
       }
       
       if (timeSpentSeconds !== (task.time_spent_seconds || 0)) {
@@ -304,9 +297,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                         e.currentTarget.value = "";
                         e.currentTarget.disabled = true;
                         try {
-                          await createSubtaskMutation.mutateAsync({
-                            body: { title, parent_id: task.id }
-                          });
+                          await createSubtaskMutation.mutateAsync({ title, parent_id: task.id });
                         } catch (err) {
                           console.error("Failed to create subtask:", err);
                         } finally {

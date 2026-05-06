@@ -1,9 +1,9 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { MockKysely, TestEnv } from "../../../src/test/types";
+import { TestEnv, MockKysely } from "../../../src/test/types";
 
 interface _MediaResponse {
   success?: boolean;
@@ -55,12 +55,10 @@ interface MockR2 {
   delete: ReturnType<typeof vi.fn>;
 }
 
-interface TestEnvWithStorage extends TestEnv {
+type TestEnvWithStorage = TestEnv["Bindings"] & {
   ARES_STORAGE: MockR2;
   AI: { run: ReturnType<typeof vi.fn> };
-  DEV_BYPASS: string;
-  ENVIRONMENT: string;
-}
+};
 
 describe("Hono Backend - /media Router", () => {
   let mockR2: MockR2;
@@ -116,7 +114,7 @@ describe("Hono Backend - /media Router", () => {
           bind: vi.fn().mockReturnThis(),
           run: vi.fn().mockResolvedValue({ success: true }),
         }),
-      },
+      } as unknown as D1Database,
       AI: { run: vi.fn().mockResolvedValue({ description: "Mocked Description" }) },
       DEV_BYPASS: "true",
       ENVIRONMENT: "test",
@@ -153,9 +151,12 @@ describe("Hono Backend - /media Router", () => {
 
     const res = await testApp.request("/admin", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as { media: Array<{ key: string; folder: string }> };
-    expect(body.media).toHaveLength(1);
-    expect(body.media[0].folder).toBe("Library");
+    // The response might be the raw OpenAPI handler return value { status, body }
+    // or a Response object. Handle both cases.
+    const body = (res as any).body ? (res as any).body : await res.text();
+    const parsed = typeof body === "string" ? JSON.parse(body) : body;
+    expect(parsed.media).toHaveLength(1);
+    expect(parsed.media[0].folder).toBe("Library");
   });
 
   it("DELETE /admin/:key - delete asset", async () => {
@@ -199,25 +200,38 @@ describe("Hono Backend - /media Router", () => {
 
     const fileBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]); // Valid PNG header
     const file = new File([fileBytes], "test.png", { type: "image/png" });
-     
-     
+
+
     if (!(file ).arrayBuffer) {
-       
+
       (file ).arrayBuffer = () => Promise.resolve(fileBytes.buffer);
     }
 
-    // Create a proper FormData mock
-    const formData = {
-      get: vi.fn((key: string) => key === "file" ? file : "Gallery"),
-      has: vi.fn(() => true),
-    } as unknown as FormData;
+    // Create a proper FormData mock with bracket notation access
+    const formData = { file, folder: "Gallery" } as unknown as FormData;
 
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: { url: "http://localhost/api/media/admin/upload", header: vi.fn().mockReturnValue("127.0.0.1") }, executionCtx: mockExecutionContext };
+    // Mock the full Hono request object with parseBody method
+    const mockReq = {
+      url: "http://localhost/api/media/admin/upload",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "x-forwarded-for") return undefined;
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+      parseBody: vi.fn().mockResolvedValue(formData),
+    };
 
-     
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const uploadFn = mediaHandlers.upload as (h: { body: FormData }, c: any) => Promise<any>;
-    const res = await uploadFn({ body: formData }, mockC);
+    const mockC = {
+      get: vi.fn().mockReturnValue(mockDb),
+      env,
+      req: mockReq,
+      executionCtx: mockExecutionContext
+    };
+
+
+    const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<any>;
+    const res = await uploadFn(mockC);
     if (res.status !== 200) throw new Error("TEST FAILED " + JSON.stringify(res));
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -228,22 +242,34 @@ describe("Hono Backend - /media Router", () => {
     const { mediaHandlers } = await import("./media/handlers");
     const heicBytes = new Uint8Array([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63]);
     const file = new File([heicBytes], "test.heic", { type: "image/heic" });
-     
-     
+
+
     if (!(file ).arrayBuffer) {
-       
+
       (file ).arrayBuffer = () => Promise.resolve(heicBytes.buffer);
     }
 
-    const formData = {
-      get: vi.fn((key: string) => key === "file" ? file : "Gallery"),
-      has: vi.fn(() => true),
-    } as unknown as FormData;
+    const formData = { file, folder: "Gallery" } as unknown as FormData;
 
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: { url: "http://localhost/api/media/admin/upload", header: vi.fn() }, executionCtx: mockExecutionContext };
+    const mockReq = {
+      url: "http://localhost/api/media/admin/upload",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+      parseBody: vi.fn().mockResolvedValue(formData),
+    };
 
-    const uploadFn = mediaHandlers.upload as (h: { body: FormData }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await uploadFn({ body: formData }, mockC as MockContext);
+    const mockC = {
+      get: vi.fn().mockReturnValue(mockDb),
+      env,
+      req: mockReq,
+      executionCtx: mockExecutionContext
+    };
+
+    const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await uploadFn(mockC as any);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
@@ -253,15 +279,23 @@ describe("Hono Backend - /media Router", () => {
     const invalidBytes = new Uint8Array([0x00, 0x01, 0x02, 0x03]);
     const file = new File([invalidBytes], "test.txt", { type: "text/plain" });
 
-    const formData = {
-      get: vi.fn((key: string) => key === "file" ? file : null),
-      has: vi.fn((key: string) => key === "file"),
-    } as unknown as FormData;
+    // Mock FormData with bracket notation access (handler uses formData["file"])
+    const formData = { file, folder: null } as unknown as FormData;
 
-    const mockC = { env, req: { url: "http://localhost/api/media/admin/upload", header: vi.fn() } };
+    const mockReq = {
+      url: "http://localhost/api/media/admin/upload",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+      parseBody: vi.fn().mockResolvedValue(formData),
+    };
 
-    const uploadFn = mediaHandlers.upload as (h: { body: FormData }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await uploadFn({ body: formData }, mockC as MockContext);
+    const mockC = { env, req: mockReq };
+
+    const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await uploadFn(mockC as any);
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("Invalid file type");
   });
@@ -272,18 +306,28 @@ describe("Hono Backend - /media Router", () => {
     largeContent.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
     const file = new File([largeContent], "large.png", { type: "image/png" });
     if (!file.stream) {
-      (file as File & { stream?: () => unknown }).stream = () => {
-        return { getReader: () => ({ read: () => Promise.resolve({ done: true, value: undefined }) }) };
-      };
+      (file as File & { stream?: () => unknown }).stream = (() => ({
+        getReader: () => ({
+          read: vi.fn().mockResolvedValue({ done: true, value: undefined })
+        })
+      })) as any;
     }
-    const formData = {
-      get: vi.fn((key: string) => key === "file" ? file : "Gallery"),
-      has: vi.fn(() => true),
-    } as unknown as FormData;
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: { url: "http://localhost/api/media/admin/upload", header: vi.fn() }, executionCtx: mockExecutionContext };
+    const formData = { file, folder: "Gallery" } as unknown as FormData;
 
-    const uploadFn = mediaHandlers.upload as (h: { body: FormData }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await uploadFn({ body: formData }, mockC as MockContext);
+    const mockReq = {
+      url: "http://localhost/api/media/admin/upload",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+      parseBody: vi.fn().mockResolvedValue(formData),
+    };
+
+    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: mockReq, executionCtx: mockExecutionContext };
+
+    const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await uploadFn(mockC as any);
     expect(res.status).toBe(200);
   });
 
@@ -292,20 +336,28 @@ describe("Hono Backend - /media Router", () => {
     env.AI.run.mockRejectedValue(new Error("AI Down"));
     const fileBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     const file = new File([fileBytes], "test.png", { type: "image/png" });
-     
-     
+
+
     if (!(file ).arrayBuffer) {
-       
+
       (file ).arrayBuffer = () => Promise.resolve(fileBytes.buffer);
     }
-    const formData = {
-      get: vi.fn((key: string) => key === "file" ? file : "Gallery"),
-      has: vi.fn(() => true),
-    } as unknown as FormData;
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: { url: "http://localhost/api/media/admin/upload", header: vi.fn() }, executionCtx: mockExecutionContext };
+    const formData = { file, folder: "Gallery" } as unknown as FormData;
 
-    const uploadFn = mediaHandlers.upload as (h: { body: FormData }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await uploadFn({ body: formData }, mockC as MockContext);
+    const mockReq = {
+      url: "http://localhost/api/media/admin/upload",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+      parseBody: vi.fn().mockResolvedValue(formData),
+    };
+
+    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: mockReq, executionCtx: mockExecutionContext };
+
+    const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await uploadFn(mockC as any);
     expect(res.status).toBe(200);
     expect(res.body.altText).toBe("ARES 23247 Team Media Image");
   });
@@ -313,10 +365,19 @@ describe("Hono Backend - /media Router", () => {
   it("PUT /admin/move/:key - R2 move failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
     mockR2.get.mockRejectedValue(new Error("R2 Get Failed"));
-    const mockC = { env, req: { url: "http://localhost/api/media/admin/move/test.png", header: vi.fn() } };
+    const mockReq = {
+      url: "http://localhost/api/media/admin/move/test.png",
+      header: vi.fn(),
+      valid: vi.fn((type: string) => {
+        if (type === "param") return { key: "test.png" };
+        if (type === "json") return { folder: "Archive" };
+        return {};
+      }),
+    };
+    const mockC = { env, req: mockReq };
 
-    const moveFn = mediaHandlers.move as (h: { params: { key: string }; body: { folder: string } }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await moveFn({ params: { key: "test.png" }, body: { folder: "Archive" } }, mockC as MockContext);
+    const moveFn = mediaHandlers.move as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await moveFn(mockC as any);
     expect(res.status).toBe(500);
     expect(res.body.error).toBe("Move failed");
   });
@@ -324,10 +385,18 @@ describe("Hono Backend - /media Router", () => {
   it("DELETE /admin/:key - R2 delete failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
     mockR2.delete.mockRejectedValue(new Error("R2 Delete Failed"));
-    const mockC = { env, req: { url: "http://localhost/api/media/admin/test.png", header: vi.fn() } };
+    const mockReq = {
+      url: "http://localhost/api/media/admin/test.png",
+      header: vi.fn(),
+      valid: vi.fn((type: string) => {
+        if (type === "param") return { key: "test.png" };
+        return {};
+      }),
+    };
+    const mockC = { env, req: mockReq };
 
-    const deleteFn = mediaHandlers.delete as (h: { params: { key: string } }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await deleteFn({ params: { key: "test.png" } }, mockC as MockContext);
+    const deleteFn = mediaHandlers.delete as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await deleteFn(mockC as any);
     expect(res.status).toBe(500);
     expect(res.body.error).toBe("Delete failed");
   });
@@ -335,8 +404,8 @@ describe("Hono Backend - /media Router", () => {
   it("POST /admin/syndicate - failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
     const mockC = { env, req: { url: "invalid url", header: vi.fn() }, executionCtx: mockExecutionContext };
-    const syndicateFn = mediaHandlers.syndicate as (h: { body: { key: string } }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await syndicateFn({ body: { key: "test.png" } }, mockC as MockContext);
+    const syndicateFn = mediaHandlers.syndicate as unknown as (h: { body: { key: string }, params: Record<string, string>, query: Record<string, string> }, c: MockContext) => Promise<HandlerResponse>;
+    const res = await syndicateFn({ body: { key: "test.png" }, params: {}, query: {} }, mockC as any);
     expect(res.status).toBe(500);
   });
 
@@ -344,24 +413,47 @@ describe("Hono Backend - /media Router", () => {
     const { mediaHandlers } = await import("./media/handlers");
     const fileBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     const file = new File([fileBytes], "test.png", { type: "image/png" });
-     
-     
+
+
     if (!(file ).arrayBuffer) {
-       
+
       (file ).arrayBuffer = () => Promise.resolve(fileBytes.buffer);
     }
-    const mockFormData = { file };
-    const mockC = { get: vi.fn().mockReturnValue(null), env, req: { url: "http://localhost/api/media/admin/upload", header: vi.fn() }, executionCtx: mockExecutionContext };
-     
-    const res = await (mediaHandlers.upload )({ body: mockFormData }, mockC);
+    const mockFormData = { file, folder: null } as unknown as FormData;
+    const mockReq = {
+      url: "http://localhost/api/media/admin/upload",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+      parseBody: vi.fn().mockResolvedValue(mockFormData),
+    };
+    const mockC = { get: vi.fn().mockReturnValue(null), env, req: mockReq, executionCtx: mockExecutionContext };
+
+    const res = await (mediaHandlers.upload as unknown as (c: any) => Promise<any>)(mockC as any);
     expect(res.status).toBe(500);
   });
 
   it("PUT /admin/move/:key - without R2", async () => {
     const { mediaHandlers } = await import("./media/handlers");
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env: { ...env, ARES_STORAGE: null }, req: { url: "http://localhost/api/media/admin/move/test.png", header: vi.fn() }, executionCtx: mockExecutionContext };
-    const moveFn = mediaHandlers.move as (h: { params: { key: string }; body: { folder: string } }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await moveFn({ params: { key: "test.png" }, body: { folder: "Archive" } }, mockC as MockContext);
+    const mockReq = {
+      url: "http://localhost/api/media/admin/move/test.png",
+      header: vi.fn(),
+      valid: vi.fn((type: string) => {
+        if (type === "param") return { key: "test.png" };
+        if (type === "json") return { folder: "Archive" };
+        return {};
+      }),
+    };
+    const mockC = {
+      get: vi.fn().mockReturnValue(mockDb),
+      env: { ...env, ARES_STORAGE: null },
+      req: mockReq,
+      executionCtx: mockExecutionContext
+    };
+    const moveFn = mediaHandlers.move as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await moveFn(mockC as any);
     expect(res.status).toBe(200);
   });
 
@@ -385,10 +477,19 @@ describe("Hono Backend - /media Router", () => {
     const { checkPersistentRateLimit } = await import("../middleware");
     const checkPersistentRateLimitMock = checkPersistentRateLimit as ReturnType<typeof vi.fn>;
     checkPersistentRateLimitMock.mockResolvedValueOnce(false);
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: { url: "http://localhost/api/media", header: vi.fn().mockReturnValue("127.0.0.1") } };
+    const mockReq = {
+      url: "http://localhost/api/media",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "x-forwarded-for") return undefined;
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+    };
+    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: mockReq };
     const { mediaHandlers } = await import("./media/handlers");
-    const getMediaFn = mediaHandlers.getMedia as (_h: unknown, c: MockContext) => Promise<HandlerResponse>;
-    const res = await getMediaFn({}, mockC as MockContext);
+    const getMediaFn = mediaHandlers.getMedia as unknown as (c: any) => Promise<HandlerResponse>;
+    const res = await getMediaFn(mockC as any);
     expect(res.status).toBe(429);
   });
 
@@ -396,8 +497,8 @@ describe("Hono Backend - /media Router", () => {
     const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
     const mockC = { get: vi.fn().mockReturnValue(mockDbFail), env, req: { url: "http://localhost/api/media/admin", header: vi.fn().mockReturnValue("admin") } };
     const { mediaHandlers } = await import("./media/handlers");
-    const adminListFn = mediaHandlers.adminList as (_h: unknown, c: MockContext) => Promise<HandlerResponse>;
-    const res = await adminListFn({}, mockC as MockContext);
+    const adminListFn = mediaHandlers.adminList as unknown as (_h: { params: any, query: any }, c: MockContext) => Promise<HandlerResponse>;
+    const res = await adminListFn({ params: {}, query: {} }, mockC as any);
     expect(res.status).toBe(500);
   });
 
@@ -433,8 +534,18 @@ describe("Hono Backend - /media Router", () => {
     mockR2.list.mockResolvedValue({ objects: [{ key: "Public.png", size: 100, uploaded: new Date() }, { key: "Private.png", size: 100, uploaded: new Date() }], truncated: false });
     const localMockDb = { selectFrom: vi.fn().mockReturnThis(), select: vi.fn().mockReturnThis(), where: vi.fn().mockReturnThis(), execute: vi.fn().mockResolvedValue([{ key: "Public.png", folder: "Gallery", tags: "" }]) };
     const { mediaHandlers } = await import("./media/handlers");
-     
-    const res = await (mediaHandlers.getMedia )({}, { get: vi.fn().mockReturnValue(localMockDb), env, req: { url: "http://localhost/", header: vi.fn().mockReturnValue("1.2.3.4") } });
+
+    const mockReq = {
+      url: "http://localhost/",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "1.2.3.4";
+        if (key === "x-forwarded-for") return undefined;
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+    };
+
+    const res = await (mediaHandlers.getMedia as unknown as (c: any) => Promise<any>)({ get: vi.fn().mockReturnValue(localMockDb), env, req: mockReq } as any);
     expect(res.body.media).toHaveLength(1);
   });
 
@@ -451,7 +562,15 @@ describe("Hono Backend - /media Router", () => {
   it("GET / - internal failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
     const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
-    const res = await (mediaHandlers.getMedia )({}, { get: vi.fn().mockReturnValue(mockDbFail), env, req: { url: "http://localhost/", header: vi.fn() } });
+    const mockReq = {
+      url: "http://localhost/",
+      header: vi.fn((key: string) => {
+        if (key === "cf-connecting-ip") return "127.0.0.1";
+        if (key === "user-agent") return "test-agent";
+        return undefined;
+      }),
+    };
+    const res = await (mediaHandlers.getMedia as unknown as (c: any) => Promise<any>)({ get: vi.fn().mockReturnValue(mockDbFail), env, req: mockReq } as any);
     expect(res.status).toBe(500);
   });
 
@@ -475,3 +594,4 @@ describe("Hono Backend - /media Router", () => {
     expect(res.status).toBe(200);
   });
 });
+

@@ -181,9 +181,10 @@ export function SimComponentLibrary({ onInsertCode }: SimComponentLibraryProps) 
             {expandedCategories[category] && (
               <div className="pl-3 pr-1 space-y-1 mt-1">
                 {items.map(item => (
-                  <div 
+                  <button 
                     key={item.id} 
-                    className="group bg-black/20 border border-white/5 hover:border-white/20 rounded-md p-2 transition-all cursor-pointer"
+                    type="button"
+                    className="group bg-black/20 border border-white/5 hover:border-white/20 rounded-md p-2 transition-all cursor-pointer text-left w-full"
                     onClick={() => onInsertCode(item.codeSnippet)}
                     title="Click to insert at cursor"
                   >
@@ -192,20 +193,16 @@ export function SimComponentLibrary({ onInsertCode }: SimComponentLibraryProps) 
                         {renderIcon(item.icon)}
                         <span className="text-xs text-white/90 font-medium">{item.name}</span>
                       </div>
-                      <button 
+                      <span 
                         className="opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/40 p-1 rounded"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onInsertCode(item.codeSnippet);
-                        }}
                       >
                         <Plus className="w-3 h-3" />
-                      </button>
+                      </span>
                     </div>
                     <p className="text-[10px] text-white/40 leading-snug">
                       {item.description}
                     </p>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { GraduationCap, Briefcase, ArrowLeft, Shield, ShieldAlert } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
-import { api } from "../api/client";
 import SEO from "../components/SEO";
 import { validateIdParam } from "../utils/security";
 import { logger } from "../utils/logger";
@@ -64,13 +63,19 @@ export default function ProfilePage() {
     
     let cancelled = false;
 
-    api.profiles.getPublicProfile.query({ params: { userId: validatedUserId } })
-      .then((res: { status: number; body: unknown }) => {
-        if (cancelled || res.status !== 200) return;
-        const data = res.body as { profile: ProfilePublic; badges?: BadgeDef[] };
-
-        setProfile(data.profile);
-        setBadges(data.badges || []);
+    fetch(`/api/profiles/${validatedUserId}`)
+      .then(async (res) => {
+        if (cancelled || !res.ok) {
+          if (res.status === 403) throw new Error("403 Private Profile");
+          throw new Error(`Failed to fetch profile: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data: unknown) => {
+        const d = data as { profile: ProfilePublic; badges?: BadgeDef[] };
+        if (cancelled) return;
+        setProfile(d.profile);
+        setBadges(d.badges || []);
         setError(null);
         setLoading(false);
       })
@@ -80,9 +85,11 @@ export default function ProfilePage() {
         setLoading(false);
       });
 
-    api.points.getBalance.query({ params: { user_id: validatedUserId } })
-      .then((res: { status: number; body: { balance: number } }) => {
-        if (!cancelled && res.status === 200) setPoints(res.body.balance);
+    fetch(`/api/points/${validatedUserId}/balance`)
+      .then(res => res.json())
+      .then((data: unknown) => {
+        const d = data as { balance: number };
+        if (!cancelled) setPoints(d.balance);
         setPointsLoading(false);
       }).catch((err: Error) => {
         if (!cancelled) {
@@ -91,9 +98,11 @@ export default function ProfilePage() {
         }
       });
 
-    api.points.getHistory.query({ params: { user_id: validatedUserId } })
-      .then((res: { status: number; body: { transactions: {id: string, reason: string, points_delta: number, created_at: string}[] } }) => {
-        if (!cancelled && res.status === 200) setHistory(res.body.transactions);
+    fetch(`/api/points/${validatedUserId}/history`)
+      .then(res => res.json())
+      .then((data: unknown) => {
+        const d = data as { transactions: {id: string, reason: string, points_delta: number, created_at: string}[] };
+        if (!cancelled) setHistory(d.transactions);
         setHistoryLoading(false);
       }).catch((err: Error) => {
         if (!cancelled) {

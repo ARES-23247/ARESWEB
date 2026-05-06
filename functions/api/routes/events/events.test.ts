@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext, createMockExpressionBuilder } from "../../../../src/test/utils";
-import { MockKysely, TestEnv } from "~/src/test/types";
+import { TestEnv } from "../../../../src/test/types";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
+import { eventHandlers } from "./handlers";
 
 vi.mock("kysely", async (importOriginal) => {
   const actual = await importOriginal<typeof import("kysely")>();
@@ -69,12 +71,16 @@ describe("Hono Backend - Events Router", () => {
   
   
    
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Reset socialSync mock to default behavior
+    const { dispatchSocials } = await import("../../../utils/socialSync");
+    vi.mocked(dispatchSocials).mockResolvedValue(undefined as any);
 
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
@@ -118,7 +124,7 @@ describe("Hono Backend - Events Router", () => {
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
       c.set("db", mockDb);
-      const user = c.get("sessionUser") || { id: "local-dev", email: "admin@test.com", role: "admin", name: "Local Dev", nickname: "Local Dev", image: null, member_type: "mentor" };
+      const user = (c.get("sessionUser") as any) || { id: "local-dev", email: "admin@test.com", role: "admin", name: "Local Dev", nickname: "Local Dev", image: null, member_type: "mentor" };
       vi.mocked(shared.getSessionUser).mockResolvedValue(user);
       await next();
     });
@@ -127,7 +133,7 @@ describe("Hono Backend - Events Router", () => {
 
   afterEach(async () => {
     if (mockExecutionContext.waitUntil.mock.calls.length > 0) {
-      const promises = mockExecutionContext.waitUntil.mock.calls.map((call) => call[0]);
+      const promises = mockExecutionContext.waitUntil.mock.calls.map((call: any) => call[0]);
       await Promise.all(promises);
     }
   });
@@ -174,9 +180,10 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /calendar-settings - handles database error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
-    const res = await testApp.request("/calendar-settings", {}, env, mockExecutionContext);
-    expect(res.status).toBe(500);
+    const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("Fail"); }) };
+    const mockC = { get: vi.fn((key: string) => key === "db" ? mockDbFail : undefined), env, req: { url: "http://localhost/calendar-settings" } };
+    const result = await eventHandlers.getCalendarSettings({} as any, mockC as any);
+    expect(result.status).toBe(500);
   });
 
   it("GET /:id - handles location lookup error", async () => {
@@ -235,7 +242,7 @@ describe("Hono Backend - Events Router", () => {
     }, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
   });
 
   it("POST /admin/save - handles pushEventToGcal failure gracefully", async () => {
@@ -252,7 +259,7 @@ describe("Hono Backend - Events Router", () => {
       headers: { "Content-Type": "application/json" }
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
   });
 
   it("DELETE /admin/:id - delete event", async () => {
@@ -313,7 +320,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
   });
 
   it("POST /admin/:id/reject - reject event", async () => {
@@ -368,7 +375,19 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/repush - repush event", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "1", title: "Test", status: "published" });
+    mockDb.executeTakeFirst.mockResolvedValueOnce({
+      id: "1",
+      title: "Test",
+      status: "published",
+      category: "internal",
+      date_start: "2026-01-01T10:00:00Z",
+      date_end: "2026-01-01T12:00:00Z",
+      location: "Lab",
+      description: "Test description",
+      cover_image: null,
+      gcal_event_id: null,
+      meeting_notes: null
+    });
     const res = await testApp.request("http://localhost/admin/1/repush", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -433,7 +452,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/save - db error", async () => {
-    mockDb.insertInto.mockImplementationOnce(() => { throw new Error("DB error") });
+    (mockDb.insertInto as any).mockImplementationOnce(() => { throw new Error("DB error") });
     mockDb.executeTakeFirst.mockResolvedValueOnce(null); // not duplicate
     mockDb.executeTakeFirst.mockResolvedValueOnce(null); // not recent
     const res = await testApp.request("/admin/save", {
@@ -747,7 +766,7 @@ describe("Hono Backend - Events Router", () => {
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
     // Flush waitUntil promises
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
     expect(consoleSpy).toHaveBeenCalledWith("GCAL_UNDELETE_FAIL", expect.any(Error));
     consoleSpy.mockRestore();
   });
@@ -761,7 +780,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
     expect(deleteEventFromGcal).toHaveBeenCalled();
   });
 
@@ -778,7 +797,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
     expect(consoleSpy).toHaveBeenCalledWith("GCAL_APPROVE_FAIL", expect.any(Error));
     consoleSpy.mockRestore();
   });
@@ -789,7 +808,7 @@ describe("Hono Backend - Events Router", () => {
     testApp = new Hono();
     testApp.use("*", async (c, next) => {
       c.set("db", mockDb);
-      c.set("sessionUser", { id: "author-1", role: "author" });
+      c.set("sessionUser", { id: "author-1", role: "author" } as any);
       await next();
     });
     testApp.route("/", eventsRouter);
@@ -817,7 +836,7 @@ describe("Hono Backend - Events Router", () => {
       body: JSON.stringify({ title: "New", category: "internal", dateStart: "2026-01-01T00:00:00Z" })
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
     expect(consoleSpy).toHaveBeenCalledWith("GCAL_UPDATE_FAIL", expect.any(Error));
     consoleSpy.mockRestore();
   });
@@ -902,10 +921,11 @@ describe("Hono Backend - Events Router", () => {
     console.log("WAIT_UNTIL_CALLS", vi.mocked(mockExecutionContext.waitUntil).mock.calls.length);
 
     // Flush waitUntil promises
-    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r) => r.value));
+    await Promise.all(vi.mocked(mockExecutionContext.waitUntil).mock.results.map((r: any) => r.value));
     
     expect(pushEventToGcal).toHaveBeenCalled();
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/GCAL_(SAVE|UPDATE)_FAIL/), expect.any(Error));
     consoleSpy.mockRestore();
   });
 });
+

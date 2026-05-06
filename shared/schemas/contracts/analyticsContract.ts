@@ -1,7 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const topPageSchema = z.object({
   path: z.string(),
@@ -42,145 +40,197 @@ export const leaderboardEntrySchema = z.object({
   avatar: z.string().nullable().optional(),
 });
 
-export const analyticsContract = c.router({
-  trackPageView: {
-    method: "POST",
-    path: "/track",
-    body: z.object({
-      path: z.string().optional(),
-      category: z.string().optional(),
-      referrer: z.string().optional(),
-      "cf-turnstile-response": z.string().optional(),
-    }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      429: z.object({ success: z.boolean(), error: z.string() }),
-      500: z.object({ success: z.boolean() }),
-    },
-    summary: "Log a page view",
-  },
-  trackSponsorClick: {
-    method: "POST",
-    path: "/sponsor-click",
-    body: z.object({
-      sponsor_id: z.string(),
-      "cf-turnstile-response": z.string().optional(),
-    }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      429: z.object({ success: z.boolean(), error: z.string() }),
-      500: z.object({ success: z.boolean() }),
-    },
-    summary: "Log a sponsor link click",
-  },
-  getRosterStats: {
-    method: "GET",
-    path: "/admin/roster-stats",
-    responses: {
-      200: z.object({
-        roster: z.array(rosterStatSchema),
-      }),
-      500: z.object({
-        roster: z.array(rosterStatSchema),
-      }),
-    },
-    summary: "Get member impact roster stats",
-  },
-  getLeaderboard: {
-    method: "GET",
-    path: "/leaderboard",
-    responses: {
-      200: z.object({
-        leaderboard: z.array(leaderboardEntrySchema),
-      }),
-      500: z.object({ error: z.string() }),
+export const trackPageViewRequestBodySchema = z.object({
+  path: z.string().optional(),
+  category: z.string().optional(),
+  referrer: z.string().optional(),
+  "cf-turnstile-response": z.string().optional(),
+});
+
+export const trackSponsorClickRequestBodySchema = z.object({
+  sponsor_id: z.string(),
+  "cf-turnstile-response": z.string().optional(),
+});
+
+export const trackPageViewRoute = createRoute({
+  method: "post",
+  path: "/track",
+  request: {
+    body: {
+      content: { "application/json": { schema: trackPageViewRequestBodySchema } },
     },
   },
-  getStats: {
-    method: "GET",
-    path: "/admin/stats",
-    responses: {
-      200: z.object({
-        posts: z.number(),
-        events: z.number(),
-        docs: z.number(),
-        integrations: z.object({
-          zulip: z.boolean(),
-          github: z.boolean(),
-          discord: z.boolean(),
-          bluesky: z.boolean(),
-          slack: z.boolean(),
-          gcal: z.boolean(),
-        }),
-        securityBlocks: z.number().optional(),
-      }),
-      500: z.object({ error: z.string() }),
+  responses: {
+    200: {
+      description: "Log a page view",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
-  },
-  getPlatformAnalytics: {
-    method: "GET",
-    path: "/admin/platform-analytics",
-    responses: {
-      200: z.object({
-        totalPageViews: z.number(),
-        uniqueVisitors: z.number(),
-        topPages: z.array(z.object({
-          path: z.string(),
-          category: z.string(),
-          views: z.number(),
-        })),
-        topReferrers: z.array(z.object({
-          referrer: z.string(),
-          visits: z.number(),
-        })),
-        recentViews: z.array(z.object({
-          path: z.string(),
-          category: z.string(),
-          user_agent: z.string(),
-          referrer: z.string(),
-          timestamp: z.string(),
-        })),
-        totals: z.array(z.object({
-          category: z.string(),
-          total: z.number(),
-        })),
-        userActivity: z.array(z.object({
-          date: z.string(),
-          pageViews: z.number(),
-        })),
-        latency: z.array(z.object({
-          date: z.string(),
-          avg_latency: z.number(),
-        })).optional(),
-        resourceUsage: z.object({
-          totalAssets: z.number(),
-          totalStorage: z.number(),
-          apiCalls: z.number(),
-        }),
-      }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Get comprehensive platform analytics",
-  },
-  search: {
-    method: "GET",
-    path: "/search",
-    query: z.object({
-      q: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        results: z.array(
-          z.object({
-            type: z.string(),
-            id: z.string(),
-            title: z.string(),
-            matched_text: z.string().optional(),
-          }),
-        ),
-      }),
-      500: z.object({ error: z.string() }),
-    },
+    ...openApiStandardErrors,
   },
 });
-export type AnalyticsContract = typeof analyticsContract;
+
+export const trackSponsorClickRoute = createRoute({
+  method: "post",
+  path: "/sponsor-click",
+  request: {
+    body: {
+      content: { "application/json": { schema: trackSponsorClickRequestBodySchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Log a sponsor link click",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getRosterStatsRoute = createRoute({
+  method: "get",
+  path: "/admin/roster-stats",
+  responses: {
+    200: {
+      description: "Get member impact roster stats",
+      content: { "application/json": { schema: z.object({ roster: z.array(rosterStatSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getLeaderboardRoute = createRoute({
+  method: "get",
+  path: "/leaderboard",
+  responses: {
+    200: {
+      description: "Get badge leaderboard",
+      content: { "application/json": { schema: z.object({ leaderboard: z.array(leaderboardEntrySchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getStatsRoute = createRoute({
+  method: "get",
+  path: "/admin/stats",
+  responses: {
+    200: {
+      description: "Get platform statistics",
+      content: {
+        "application/json": {
+          schema: z.object({
+            posts: z.number(),
+            events: z.number(),
+            docs: z.number(),
+            integrations: z.object({
+              zulip: z.boolean(),
+              github: z.boolean(),
+              discord: z.boolean(),
+              bluesky: z.boolean(),
+              slack: z.boolean(),
+              gcal: z.boolean(),
+            }),
+            securityBlocks: z.number().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getPlatformAnalyticsRoute = createRoute({
+  method: "get",
+  path: "/admin/platform-analytics",
+  responses: {
+    200: {
+      description: "Get comprehensive platform analytics",
+      content: {
+        "application/json": {
+          schema: z.object({
+            totalPageViews: z.number(),
+            uniqueVisitors: z.number(),
+            topPages: z.array(
+              z.object({
+                path: z.string(),
+                category: z.string(),
+                views: z.number(),
+              })
+            ),
+            topReferrers: z.array(
+              z.object({
+                referrer: z.string(),
+                visits: z.number(),
+              })
+            ),
+            recentViews: z.array(
+              z.object({
+                path: z.string(),
+                category: z.string(),
+                user_agent: z.string(),
+                referrer: z.string(),
+                timestamp: z.string(),
+              })
+            ),
+            totals: z.array(
+              z.object({
+                category: z.string(),
+                total: z.number(),
+              })
+            ),
+            userActivity: z.array(
+              z.object({
+                date: z.string(),
+                pageViews: z.number(),
+              })
+            ),
+            latency: z.array(
+              z.object({
+                date: z.string(),
+                avg_latency: z.number(),
+              })
+            ).optional(),
+            resourceUsage: z.object({
+              totalAssets: z.number(),
+              totalStorage: z.number(),
+              apiCalls: z.number(),
+            }),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const searchAnalyticsQuerySchema = z.object({
+  q: z.string(),
+});
+
+export const searchAnalyticsRoute = createRoute({
+  method: "get",
+  path: "/search",
+  request: {
+    query: searchAnalyticsQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Search analytics data",
+      content: {
+        "application/json": {
+          schema: z.object({
+            results: z.array(
+              z.object({
+                type: z.string(),
+                id: z.string(),
+                title: z.string(),
+                matched_text: z.string().optional(),
+              })
+            ),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});

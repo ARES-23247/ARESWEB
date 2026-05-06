@@ -8,13 +8,8 @@ export const mockAuthState = {
 
 export const authHandlers = [
   // Session / Profile
-  http.get("*/me", () => {
-    const s = mockAuthState.session;
-    return HttpResponse.json({
-      ...s.user,
-      auth: s.user,
-    });
-  }),
+  // Note: No default handler for /me since it conflicts with /api/profiles/me
+  // Tests should mock /api/profiles/me explicitly with server.use()
 
   // Auth check
   http.get("*/auth/auth-check", () => {

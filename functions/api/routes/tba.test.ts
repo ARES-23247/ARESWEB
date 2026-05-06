@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import tbaRouter from "./tba";
 
 interface TBAResponse {
@@ -10,6 +11,8 @@ interface TBAResponse {
   error?: string;
   [key: string]: unknown;
 }
+
+type MockKysely = any;
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -34,6 +37,11 @@ describe("Hono Backend - /tba Router", () => {
       where: vi.fn().mockReturnThis(),
       executeTakeFirst: vi.fn().mockResolvedValue({ value: "test-api-key" }),
       execute: vi.fn().mockResolvedValue([]),
+      insertInto: vi.fn().mockReturnThis(),
+      updateTable: vi.fn().mockReturnThis(),
+      deleteFrom: vi.fn().mockReturnThis(),
+      values: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
     };
 
     testApp = new Hono<TestEnv>();
@@ -217,7 +225,7 @@ describe("Hono Backend - /tba Router", () => {
     const res = await testApp.request("/rankings/2023fallback", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as TBAResponse;
-    expect((body ).rankings[0].team_key).toBe("frc999");
+    expect((body as any).rankings[0].team_key).toBe("frc999");
     vi.useRealTimers();
   });
 
@@ -240,3 +248,4 @@ describe("Hono Backend - /tba Router", () => {
     vi.useRealTimers();
   });
 });
+

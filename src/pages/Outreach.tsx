@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Target, Clock, ArrowRight, Activity, MapPin, Heart, X, CheckCircle } from "lucide-react";
 import SEO from "../components/SEO";
 import Turnstile from "../components/Turnstile";
-import { api } from "../api/client";
-import { inquirySchema } from "@shared/schemas/inquirySchema";
+import { useSubmitInquiry, useGetPublicOutreach } from "../api";
 
 interface OutreachLog {
   id: string;
@@ -54,45 +53,42 @@ export default function Outreach() {
   const [organization, setOrganization] = useState("");
   const [description, setDescription] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
+  const submitInquiry = useSubmitInquiry();
+
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitStatus("idle");
-    try {
-      const payloadResult = inquirySchema.safeParse({
-        type: "outreach",
-        name,
-        email,
-        metadata: { organization, description, phone: phone || undefined },
-        turnstileToken
-      });
 
-      if (!payloadResult.success) {
-        throw new Error(payloadResult.error.issues[0].message);
-      }
+    const payload = {
+      type: "outreach" as const,
+      name,
+      email,
+      metadata: { organization, description, phone: phone || undefined },
+      turnstileToken
+    };
 
-      const res = await api.inquiries.submit.mutation({ body: payloadResult.data });
-      if (res.status === 200 || res.status === 207) {
-        setSubmitStatus("success");
-        setName(""); setEmail(""); setPhone(""); setOrganization(""); setDescription("");
-      } else {
+    submitInquiry.mutate(payload, {
+      onSuccess: (res) => {
+        if (res.success) {
+          setSubmitStatus("success");
+          setName(""); setEmail(""); setPhone(""); setOrganization(""); setDescription("");
+        } else {
+          setSubmitStatus("error");
+          setErrorMessage("Submission failed.");
+        }
+      },
+      onError: (err) => {
         setSubmitStatus("error");
-        setErrorMessage("error" in res.body ? String(res.body.error) : "Something went wrong.");
+        setErrorMessage(err instanceof Error ? err.message : "Something went wrong.");
       }
-    } catch (err) {
-      setSubmitStatus("error");
-      setErrorMessage(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
-  const { data: logsRes, isLoading } = api.outreach.adminList.useQuery(["public-outreach"], {});
-  const logs: OutreachLog[] = logsRes?.status === 200 ? logsRes.body.logs : [];
+  const { data: logsRes, isLoading } = useGetPublicOutreach();
+  const logs: OutreachLog[] = (logsRes?.logs || []) as OutreachLog[];
 
   const totals = logs.reduce((acc: { hours: number; reach: number; events: number }, l: OutreachLog) => ({
     hours: acc.hours + (l.hours_logged || 0),
@@ -237,12 +233,12 @@ export default function Outreach() {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
+              <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }} 
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-              onClick={() => !isSubmitting && setIsModalOpen(false)}
+              onClick={() => !submitInquiry.isPending && setIsModalOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -255,7 +251,7 @@ export default function Outreach() {
                 aria-label="Close"
                 onClick={() => setIsModalOpen(false)} 
                 className="absolute top-6 right-6 text-ares-gray hover:text-white transition-colors"
-                disabled={isSubmitting}
+                disabled={submitInquiry.isPending}
               >
                 <X size={24} />
               </button>
@@ -281,36 +277,36 @@ export default function Outreach() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label htmlFor="demo-name" className="block text-xs font-bold text-marble/90 uppercase tracking-widest mb-2 ml-1">Your Name *</label>
-                      <input id="demo-name" type="text" value={name} onChange={e => setName(e.target.value)} required disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" />
+                      <input id="demo-name" type="text" value={name} onChange={e => setName(e.target.value)} required disabled={submitInquiry.isPending} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" />
                     </div>
                     <div>
                       <label htmlFor="demo-email" className="block text-xs font-bold text-marble/90 uppercase tracking-widest mb-2 ml-1">Email Address *</label>
-                      <input id="demo-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" />
+                      <input id="demo-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={submitInquiry.isPending} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" />
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label htmlFor="demo-org" className="block text-xs font-bold text-marble/90 uppercase tracking-widest mb-2 ml-1">Organization / School (Optional)</label>
-                      <input id="demo-org" type="text" value={organization} onChange={e => setOrganization(e.target.value)} disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="e.g. Morgantown Public Market" />
+                      <input id="demo-org" type="text" value={organization} onChange={e => setOrganization(e.target.value)} disabled={submitInquiry.isPending} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="e.g. Morgantown Public Market" />
                     </div>
                     <div>
                       <label htmlFor="demo-phone" className="block text-xs font-bold text-marble/90 uppercase tracking-widest mb-2 ml-1">Phone Number (Optional)</label>
-                      <input id="demo-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} disabled={isSubmitting} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="(304) 555-1234" />
+                      <input id="demo-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} disabled={submitInquiry.isPending} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all" placeholder="(304) 555-1234" />
                     </div>
                   </div>
 
                   <div>
                     <label htmlFor="demo-desc" className="block text-xs font-bold text-marble/90 uppercase tracking-widest mb-2 ml-1">Event Details & Dates *</label>
-                    <textarea id="demo-desc" value={description} onChange={e => setDescription(e.target.value)} required disabled={isSubmitting} rows={4} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all resize-none" placeholder="What are you hosting, and when do you need us?"></textarea>
+                    <textarea id="demo-desc" value={description} onChange={e => setDescription(e.target.value)} required disabled={submitInquiry.isPending} rows={4} className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-red transition-all resize-none" placeholder="What are you hosting, and when do you need us?"></textarea>
                   </div>
 
                   <div className="pt-2">
                     <Turnstile onVerify={setTurnstileToken} theme="dark" size="normal" className="mb-4" />
                   </div>
 
-                  <button type="submit" disabled={isSubmitting || !turnstileToken} className="w-full py-4 bg-ares-red text-white font-black hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all ares-cut-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest">
-                    {isSubmitting ? "Submitting..." : "Submit Request"}
+                  <button type="submit" disabled={submitInquiry.isPending || !turnstileToken} className="w-full py-4 bg-ares-red text-white font-black hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all ares-cut-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest">
+                    {submitInquiry.isPending ? "Submitting..." : "Submit Request"}
                   </button>
                 </form>
               )}

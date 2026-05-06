@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * ARESLib Simulation Physics and Hardware Abstractions
  * Built for ARES 23247 Simulation Playground

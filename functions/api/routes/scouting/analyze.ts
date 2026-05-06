@@ -1,19 +1,9 @@
-// ── AI Scouting Analysis Endpoint ────────────────────────────────────
-// POST endpoint that accepts team/event data and sends it to Z.ai GLM 5.1
-// for analysis. Supports three modes: team_analysis, match_prediction,
-// and event_overview.
+import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+import { AppEnv } from "../../middleware";
+import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
 
-import { Hono } from "hono";
-import type { Context } from "hono";
-import { AppEnv, ensureAuth } from "../../middleware";
-
-interface AnalyzeBody {
-  mode: "team_analysis" | "match_prediction" | "event_overview";
-  teamNumber?: number;
-  eventKey?: string;
-  seasonKey: string;
-  context: Record<string, unknown>;
-}
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   team_analysis: `You are an expert FTC (FIRST Tech Challenge) scouting analyst for Team ARES 23247. Analyze the provided team data thoroughly. Structure your response with clear markdown headings:
@@ -71,18 +61,13 @@ What ARES should focus on at this event. Alliance selection recommendations.
 Be specific and use the data provided. Reference team numbers and stats.`,
 };
 
-const analyzeRouter = new Hono<AppEnv>();
+const analyzeRouter = new OpenAPIHono<AppEnv>();
 
-analyzeRouter.post("/", ensureAuth, async (c: Context<AppEnv>) => {
-  const body = await c.req.json<AnalyzeBody>();
-  const { mode, teamNumber, eventKey, seasonKey, context } = body;
+analyzeRouter.openapi(analyzeScoutingRoute, (async (c) => {
+  const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
-  if (!mode || !SYSTEM_PROMPTS[mode]) {
-    return c.json({ error: `Invalid analysis mode: ${mode}. Must be one of: team_analysis, match_prediction, event_overview.` }, 400);
-  }
-
-  if (!seasonKey) {
-    return c.json({ error: "seasonKey is required." }, 400);
+  if (!SYSTEM_PROMPTS[mode]) {
+    return c.json({ error: `Invalid analysis mode: ${mode}.` }, 400);
   }
 
   const zaiKey = c.env.Z_AI_API_KEY;
@@ -113,7 +98,7 @@ analyzeRouter.post("/", ensureAuth, async (c: Context<AppEnv>) => {
     if (!zaiRes.ok) {
       const errText = await zaiRes.text();
       console.error(`[Scouting Analyze] Z.ai error ${zaiRes.status}:`, errText);
-      return c.json({ error: `AI analysis failed (${zaiRes.status})`, details: errText }, 502);
+      return c.json({ error: `AI analysis failed (${zaiRes.status})` }, 502);
     }
 
     const data = (await zaiRes.json()) as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string }; usage?: { total_tokens?: number } };
@@ -143,18 +128,18 @@ analyzeRouter.post("/", ensureAuth, async (c: Context<AppEnv>) => {
       }).execute();
     } catch (dbErr) {
       console.error("[Scouting Analyze] Failed to persist analysis:", dbErr);
-      // We don't fail the request if saving fails, just log it.
     }
 
     return c.json({
       markdown,
       model: "GLM-5.1",
       tokensUsed,
-    });
+    }, 200);
   } catch (err) {
     console.error("[Scouting Analyze] Error:", err);
     return c.json({ error: "AI analysis request failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof analyzeScoutingRoute>);
 
 export default analyzeRouter;
+

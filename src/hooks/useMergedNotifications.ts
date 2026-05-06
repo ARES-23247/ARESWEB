@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { api } from "../api/client";
+import { useQuery } from "@tanstack/react-query";
 import { useDashboardNotifications } from "./useDashboardNotifications";
 import { DashboardSession, DashboardPermissions } from "./useDashboardSession";
 
@@ -21,7 +21,13 @@ export function useMergedNotifications(
   const { pendingInquiries, pendingPosts, pendingEvents, pendingDocs } = 
     useDashboardNotifications(session, permissions);
 
-  const { data: notifRes } = api.notifications.getNotifications.useQuery(["notifications"], {}, {
+  const { data: notifRes } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications");
+      if (!res.ok) throw new Error("Failed to fetch");
+      return { body: await res.json() };
+    },
     enabled: isSignedIn,
     refetchInterval: 30000 
   });

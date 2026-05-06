@@ -1,14 +1,12 @@
-
 import { useState, useEffect, useMemo } from "react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation, XCircle } from "lucide-react";
-import { api } from "../api/client";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { locationSchema } from "@shared/schemas/contracts/locationContract";
+import { locationSchema } from "@shared/routes/locations";
 import { z } from "zod";
 
 interface LocationRow {
@@ -42,12 +40,28 @@ export default function LocationsManager() {
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const { data: locationsData, isLoading, isError } = api.locations.adminList.useQuery(["admin_locations"], {});
+  const { data: locationsData, isLoading, isError } = useQuery({
+    queryKey: ["admin_locations"],
+    queryFn: async () => {
+      const res = await fetch("/api/locations/admin-list");
+      if (!res.ok) throw new Error("Failed to fetch");
+      return { body: await res.json() };
+    }
+  });
 
    
   const locations: LocationRow[] = useMemo(() => (locationsData?.body as unknown as { locations?: LocationRow[] })?.locations || [], [locationsData]);
 
-  const saveMutation = api.locations.save.useMutation({
+  const saveMutation = useMutation({
+    mutationFn: async (data: { body: unknown }) => {
+      const res = await fetch("/api/locations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return { status: res.status, body: await res.json() };
+    },
      
     onSuccess: (res: { status: number }) => {
       if (res.status === 200) {
@@ -65,7 +79,14 @@ export default function LocationsManager() {
     }
   });
 
-  const deleteMutation = api.locations.delete.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: async (data: { params: { id: string } }) => {
+      const res = await fetch(`/api/locations/${data.params.id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return { status: res.status };
+    },
      
     onSuccess: (res: { status: number }) => {
       if (res.status === 200) {
@@ -178,7 +199,7 @@ export default function LocationsManager() {
                       ) : (
                         <>
                           <button onClick={() => handleEdit(l)} title="Edit venue" className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"><Edit3 size={16} /></button>
-                          <button onClick={() => deleteMutation.mutate({ params: { id: l.id }, body: {} })} title="Delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
+                          <button onClick={() => deleteMutation.mutate({ params: { id: l.id } })} title="Delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
                         </>
                       )}
                     </div>

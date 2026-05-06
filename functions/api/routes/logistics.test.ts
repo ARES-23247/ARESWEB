@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { MockKysely, TestEnv } from "~/src/test/types";
+import { TestEnv, MockKysely } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -33,7 +33,8 @@ describe("Hono Backend - /logistics Router", () => {
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
-    };
+      executeTakeFirst: vi.fn().mockResolvedValue(null),
+    } as unknown as MockKysely;
 
     env = {
       ENCRYPTION_SECRET: "test-secret"
@@ -85,3 +86,4 @@ describe("Hono Backend - /logistics Router", () => {
     expect(body.users[1]).toEqual({ name: "Bob", email: "bob@test.com", role: "mentor", emergencyName: "—", emergencyPhone: "—" });
   });
 });
+

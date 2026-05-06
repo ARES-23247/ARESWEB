@@ -1,5 +1,5 @@
- 
-import { TestEnv, MockKysely } from "../../../src/test/types";
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
+import { TestEnv } from "../../../src/test/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
@@ -31,7 +31,7 @@ describe("Hono Backend - /judges Router", () => {
   
   
    
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 
@@ -82,7 +82,7 @@ describe("Hono Backend - /judges Router", () => {
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
       c.set("db", mockDb);
-      c.set("user", { id: "1", email: "admin@test.com", role: "admin" });
+      c.set("sessionUser", { id: "1", email: "admin@test.com", role: "admin" } as any);
       await next();
     });
     testApp.route("/", judgesRouter);
@@ -129,7 +129,7 @@ describe("Hono Backend - /judges Router", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as JudgesResponse;
     expect(body.portfolioDocs).toHaveLength(1);
-    expect(body.portfolioDocs[0].content).toBe("Championship info.");
+    expect((body as any).portfolioDocs[0].content).toBe("Championship info.");
   });
 
   it("GET /portfolio - returns cached data on second call", async () => {
@@ -280,3 +280,4 @@ describe("Hono Backend - /judges Router", () => {
     }
   });
 });
+

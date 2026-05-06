@@ -1,8 +1,6 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 import { eventSchema, EventCategoryEnum } from "../eventSchema";
-
-const c = initContract();
 
 export const eventResponseSchema = z.object({
   id: z.string(),
@@ -34,245 +32,399 @@ export const eventSignupSchema = z.object({
   is_own: z.boolean().optional(),
 });
 
-export const eventContract = c.router({
-  getEvents: {
-    method: "GET",
-    path: "/",
+export const getEventsRoute = createRoute({
+  method: "get",
+  path: "/",
+  request: {
     query: z.object({
       q: z.string().optional(),
       limit: z.coerce.number().optional(),
       offset: z.coerce.number().optional(),
     }),
-    responses: {
-      200: z.object({
-        events: z.array(eventResponseSchema),
-      }),
-    },
-    summary: "Get all public events",
   },
-  getAdminEvents: {
-    method: "GET",
-    path: "/admin/list",
+  responses: {
+    200: {
+      description: "Get all public events",
+      content: { "application/json": { schema: z.object({ events: z.array(eventResponseSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getAdminEventsRoute = createRoute({
+  method: "get",
+  path: "/admin/list",
+  request: {
     query: z.object({
       limit: z.coerce.number().optional(),
       cursor: z.string().optional(),
     }),
-    responses: {
-      200: z.object({
-        events: z.array(eventResponseSchema),
-        lastSyncedAt: z.string().nullable(),
-        nextCursor: z.string().nullable().optional(),
-      }),
-    },
-    summary: "Get all events (admin view)",
   },
-  adminDetail: {
-    method: "GET",
-    path: "/admin/:id",
-    responses: {
-      200: z.object({
-        event: eventResponseSchema,
-      }),
-      404: z.object({ error: z.string() }),
+  responses: {
+    200: {
+      description: "Get all events (admin view)",
+      content: {
+        "application/json": {
+          schema: z.object({
+            events: z.array(eventResponseSchema),
+            lastSyncedAt: z.string().nullable(),
+            nextCursor: z.string().nullable().optional(),
+          }),
+        },
+      },
     },
-    summary: "Get single event (admin view)",
-  },
-  saveEvent: {
-    method: "POST",
-    path: "/admin/save",
-    body: eventSchema,
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-        id: z.string().optional(),
-        warning: z.string().optional(),
-      }),
-      500: z.object({
-        success: z.boolean(),
-        error: z.string(),
-      }),
-    },
-    summary: "Create or update an event",
-  },
-  getEvent: {
-    method: "GET",
-    path: "/:id",
-    responses: {
-      200: z.object({
-        event: eventResponseSchema,
-        is_editor: z.boolean().optional(),
-        signups: z.array(eventSignupSchema).optional(),
-        my_signup: eventSignupSchema.optional(),
-      }),
-      404: z.object({ error: z.string() }),
-    },
-    summary: "Get a single event by id",
-  },
-  updateEvent: {
-    method: "PATCH",
-    path: "/admin/:id",
-    body: eventSchema.partial(),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-        id: z.string().optional(),
-        error: z.string().optional(),
-      }),
-      500: z.object({
-        success: z.boolean(),
-        error: z.string(),
-      }),
-    },
-    summary: "Update an event (or create revision)",
-  },
-  deleteEvent: {
-    method: "DELETE",
-    path: "/admin/:id",
-    body: c.noBody(),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Soft-delete an event",
-  },
-  syncEvents: {
-    method: "POST",
-    path: "/admin/sync",
-    body: c.noBody(),
-    responses: {
-      200: z.object({ success: z.boolean(), count: z.number().optional() }),
-    },
-    summary: "Sync events from Google Calendar",
-  },
-  repairCalendar: {
-    method: "POST",
-    path: "/admin/repair-calendar",
-    body: c.noBody(),
-    responses: {
-      200: z.object({ success: z.boolean(), pushed: z.number(), failed: z.number(), errors: z.array(z.string()).optional() }),
-      500: z.object({ success: z.boolean(), error: z.string() }),
-    },
-    summary: "Push all published events missing from GCal",
-  },
-  approveEvent: {
-    method: "POST",
-    path: "/admin/:id/approve",
-    body: c.noBody(),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Approve a pending event or revision",
-  },
-  rejectEvent: {
-    method: "POST",
-    path: "/admin/:id/reject",
-    body: z.object({ reason: z.string().optional() }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Reject a pending event",
-  },
-  undeleteEvent: {
-    method: "POST",
-    path: "/admin/:id/restore",
-    body: c.noBody(),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Restore a soft-deleted event",
-  },
-  purgeEvent: {
-    method: "DELETE",
-    path: "/admin/:id/purge",
-    body: c.noBody(),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Permanently delete an event",
-  },
-  repushEvent: {
-    method: "POST",
-    path: "/admin/:id/repush",
-    body: z.object({
-      socials: z.array(z.string()).optional(),
-    }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      404: z.object({ error: z.string() }),
-      502: z.object({ error: z.string() }),
-    },
-    summary: "Re-broadcast event to social media",
-  },
-  getCalendarSettings: {
-    method: "GET",
-    path: "/calendar-settings",
-    responses: {
-      200: z.object({
-        calendarIdInternal: z.string(),
-        calendarIdOutreach: z.string(),
-        calendarIdExternal: z.string(),
-      }),
-    },
-    summary: "Get public calendar IDs",
-  },
-  getSignups: {
-    method: "GET",
-    path: "/:id/signups",
-    responses: {
-      200: z.object({
-        signups: z.array(eventSignupSchema),
-        dietary_summary: z.record(z.string(), z.number()).nullable(),
-        team_dietary_summary: z.record(z.string(), z.number()).nullable(),
-        authenticated: z.boolean(),
-        role: z.string().nullable(),
-        member_type: z.string().nullable(),
-        can_manage: z.boolean(),
-      }),
-    },
-    summary: "Get signups for an event",
-  },
-  submitSignup: {
-    method: "POST",
-    path: "/:id/signups",
-    body: z.object({
-      bringing: z.string().optional(),
-      notes: z.string().optional(),
-      prep_hours: z.coerce.number().optional(),
-    }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      403: z.object({ error: z.string() }),
-    },
-    summary: "Sign up for an event",
-  },
-  deleteMySignup: {
-    method: "DELETE",
-    path: "/:id/signups",
-    body: c.noBody(),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-    },
-    summary: "Remove my signup",
-  },
-  updateMyAttendance: {
-    method: "PATCH",
-    path: "/:id/signups/me/attendance",
-    body: z.object({ attended: z.boolean() }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-    },
-    summary: "Update my own attendance",
-  },
-  updateUserAttendance: {
-    method: "PATCH",
-    path: "/admin/:id/signups/:userId/attendance",
-    body: z.object({ attended: z.boolean() }),
-    responses: {
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-    },
-    summary: "Update user attendance (admin/manager)",
+    ...openApiStandardErrors,
   },
 });
-export type EventContract = typeof eventContract;
+
+export const adminDetailEventRoute = createRoute({
+  method: "get",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get single event (admin view)",
+      content: { "application/json": { schema: z.object({ event: eventResponseSchema }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const saveEventRoute = createRoute({
+  method: "post",
+  path: "/admin/save",
+  request: {
+    body: {
+      content: { "application/json": { schema: eventSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create or update an event",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            id: z.string().optional(),
+            warning: z.string().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getEventRoute = createRoute({
+  method: "get",
+  path: "/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get a single event by id",
+      content: {
+        "application/json": {
+          schema: z.object({
+            event: eventResponseSchema,
+            is_editor: z.boolean().optional(),
+            signups: z.array(eventSignupSchema).optional(),
+            my_signup: eventSignupSchema.optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateEventRoute = createRoute({
+  method: "patch",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: { "application/json": { schema: eventSchema.partial() } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update an event (or create revision)",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            id: z.string().optional(),
+            error: z.string().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteEventRoute = createRoute({
+  method: "delete",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Soft-delete an event",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const syncEventsRoute = createRoute({
+  method: "post",
+  path: "/admin/sync",
+  responses: {
+    200: {
+      description: "Sync events from Google Calendar",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), count: z.number().optional() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const repairCalendarRoute = createRoute({
+  method: "post",
+  path: "/admin/repair-calendar",
+  responses: {
+    200: {
+      description: "Push all published events missing from GCal",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            pushed: z.number(),
+            failed: z.number(),
+            errors: z.array(z.string()).optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const approveEventRoute = createRoute({
+  method: "post",
+  path: "/admin/{id}/approve",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Approve a pending event or revision",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const rejectEventRoute = createRoute({
+  method: "post",
+  path: "/admin/{id}/reject",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: { "application/json": { schema: z.object({ reason: z.string().optional() }) } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Reject a pending event",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const undeleteEventRoute = createRoute({
+  method: "post",
+  path: "/admin/{id}/restore",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Restore a soft-deleted event",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const purgeEventRoute = createRoute({
+  method: "delete",
+  path: "/admin/{id}/purge",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Permanently delete an event",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const repushEventRoute = createRoute({
+  method: "post",
+  path: "/admin/{id}/repush",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            socials: z.array(z.string()).optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Re-broadcast event to social media",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    502: {
+      description: "Bad Gateway",
+      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+    },
+  },
+});
+
+export const getCalendarSettingsRoute = createRoute({
+  method: "get",
+  path: "/calendar-settings",
+  responses: {
+    200: {
+      description: "Get public calendar IDs",
+      content: {
+        "application/json": {
+          schema: z.object({
+            calendarIdInternal: z.string(),
+            calendarIdOutreach: z.string(),
+            calendarIdExternal: z.string(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getSignupsRoute = createRoute({
+  method: "get",
+  path: "/{id}/signups",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get signups for an event",
+      content: {
+        "application/json": {
+          schema: z.object({
+            signups: z.array(eventSignupSchema),
+            dietary_summary: z.record(z.string(), z.number()).nullable(),
+            team_dietary_summary: z.record(z.string(), z.number()).nullable(),
+            authenticated: z.boolean(),
+            role: z.string().nullable(),
+            member_type: z.string().nullable(),
+            can_manage: z.boolean(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const submitSignupRoute = createRoute({
+  method: "post",
+  path: "/{id}/signups",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            bringing: z.string().optional(),
+            notes: z.string().optional(),
+            prep_hours: z.coerce.number().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Sign up for an event",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteMySignupRoute = createRoute({
+  method: "delete",
+  path: "/{id}/signups",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Remove my signup",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateMyAttendanceRoute = createRoute({
+  method: "patch",
+  path: "/{id}/signups/me/attendance",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: { "application/json": { schema: z.object({ attended: z.boolean() }) } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update my own attendance",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateUserAttendanceRoute = createRoute({
+  method: "patch",
+  path: "/admin/{id}/signups/{userId}/attendance",
+  request: {
+    params: z.object({ id: z.string(), userId: z.string() }),
+    body: {
+      content: { "application/json": { schema: z.object({ attended: z.boolean() }) } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update user attendance (admin/manager)",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

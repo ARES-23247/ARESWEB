@@ -1,33 +1,14 @@
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
 import SEO from "../components/SEO";
-import { api } from "../api/client";
-
-interface Season {
-  start_year: number;
-  end_year: number;
-  challenge_name: string;
-  robot_name: string | null;
-  robot_image: string | null;
-  summary: string | null;
-  robot_cad_url: string | null;
-}
-
-interface Award {
-  id: string;
-  title: string;
-  year: number;
-  event_name: string | null;
-  image_url: string | null;
-  description: string | null;
-}
+import { useGetSeasons, useGetAwards, type Season, type Award } from "../api";
 
 export default function Seasons() {
-  const { data: seasonsRes, isLoading: isLoadingSeasons } = api.seasons.list.useQuery(["public-seasons"], {});
-  const seasons: Season[] = seasonsRes?.status === 200 ? seasonsRes.body.seasons : [];
+  const { data: seasonsRes, isLoading: isLoadingSeasons } = useGetSeasons();
+  const seasons: Season[] = seasonsRes?.seasons || [];
 
-  const { data: awardsRes, isLoading: isLoadingAwards } = api.awards.getAwards.useQuery(["public-awards"], {});
-  const awards: Award[] = awardsRes?.status === 200 ? awardsRes.body.awards : [];
+  const { data: awardsRes, isLoading: isLoadingAwards } = useGetAwards();
+  const awards: Award[] = awardsRes?.awards || [];
 
   return (
     <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">

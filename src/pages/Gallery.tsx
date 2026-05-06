@@ -1,26 +1,14 @@
 import SEO from "../components/SEO";
 import LazyImage from "../components/LazyImage";
-import { api } from "../api/client";
-
-interface R2MediaItem {
-  key: string;
-  size: number;
-  uploaded: string;
-  httpMetadata?: {
-    contentType?: string;
-  };
-}
-
-interface R2MediaResponse {
-  media: R2MediaItem[];
-}
+import { useGetMedia, useGetPublicSettings, type R2MediaItem } from "../api";
 
 export default function Gallery() {
-  const { data: mediaRes, isLoading, isError } = api.media.getMedia.useQuery(["media"], {});
-  const { data: settingsRes } = api.settings.getPublicSettings.useQuery(["public_settings"], {});
+  const { data: mediaRes, isLoading, isError } = useGetMedia();
 
-  const data = mediaRes?.status === 200 ? (mediaRes.body as R2MediaResponse) : null;
-  const photoDriveUrl = settingsRes?.status === 200 ? (settingsRes.body as { settings: Record<string, string> }).settings?.["COMMUNITY_PHOTO_DRIVE_URL"] : null;
+  const { data: settingsRes } = useGetPublicSettings();
+
+  const data = mediaRes || null;
+  const photoDriveUrl = settingsRes?.settings?.["COMMUNITY_PHOTO_DRIVE_URL"] || null;
 
   // Filter only images and reverse to show newest first
   const photos = data?.media

@@ -1,11 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Search, LayoutDashboard, LogIn, Bell, Check, X, ChevronDown, Users, Trophy, BookOpen, ShoppingBag, Calendar as CalendarIcon, GraduationCap } from "lucide-react";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 import { GreekMeander } from "./GreekMeander";
-import { api } from "../api/client";
 import { useDashboardSession } from "../hooks/useDashboardSession";
 import { useMergedNotifications, MergedNotification } from "../hooks/useMergedNotifications";
 import { useUIStore } from "../store/uiStore";
@@ -54,19 +52,34 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const markAllRead = api.notifications.markAllAsRead.useMutation({
+  const markAllRead = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/notifications/mark-all-read", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to mark all read");
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     }
   });
 
-  const markRead = api.notifications.markAsRead.useMutation({
+  const markRead = useMutation({
+    mutationFn: async (data: { params: { id: string } }) => {
+      const res = await fetch(`/api/notifications/${data.params.id}/read`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to mark read");
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     }
   });
 
-  const deleteNotif = api.notifications.deleteNotification.useMutation({
+  const deleteNotif = useMutation({
+    mutationFn: async (data: { params: { id: string } }) => {
+      const res = await fetch(`/api/notifications/${data.params.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete notification");
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     }
@@ -190,7 +203,7 @@ export default function Navbar() {
                     <h3 className="text-sm font-bold text-white">Notifications</h3>
                     {unreadCount > 0 && (
                       <button 
-                        onClick={() => markAllRead.mutate({ body: {} })}
+                        onClick={() => markAllRead.mutate()}
                         className="text-xs text-ares-gold hover:text-white flex items-center gap-1"
                       >
                         <Check size={12} /> Mark Read
@@ -213,14 +226,14 @@ export default function Navbar() {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
 
-                                if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: null });
+                                if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id } });
                                 if (n.link) navigate(n.link);
                                 setShowNotifs(false);
                               }
                             }}
                             onClick={() => {
                               
-                              if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: null });
+                              if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id } });
                               if (n.link) navigate(n.link);
                               setShowNotifs(false);
                             }}
@@ -235,7 +248,7 @@ export default function Navbar() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deleteNotif.mutate({ params: { id: n.id }, body: {} });
+                                deleteNotif.mutate({ params: { id: n.id } });
                               }}
                               className="absolute top-2 right-2 p-1 text-marble/60 hover:text-ares-red opacity-0 group-hover/notif:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:text-ares-red"
                               aria-label="Delete notification"

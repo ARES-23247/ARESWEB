@@ -2,24 +2,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../../api/client";
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface R2MediaResponse {
-  media: {
-    key: string;
-    httpMetadata: {
-      contentType: string;
-    };
-  }[];
-}
+import { useGetMedia } from "../../api";
 
 export default function ScreenshotGallery() {
-  const { data: mediaRes, isLoading } = api.media.getMedia.useQuery(["media"], {});
+  const { data: mediaRes, isLoading } = useGetMedia();
 
-  const data = mediaRes?.status === 200 ? mediaRes.body : null;
+  const data = mediaRes || null;
 
   const [index, setIndex] = useState(0);
 

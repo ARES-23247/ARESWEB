@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Calendar, BarChart3, Plus } from "lucide-react";
 import { SocialComposer, SocialCalendar, SocialAnalytics } from "./social";
-import type { SocialQueuePost } from "@shared/schemas/contracts/socialQueueContract";
+import type { SocialQueuePost } from "@shared/routes/socialQueue";
 
 type Tab = "compose" | "calendar" | "analytics";
 

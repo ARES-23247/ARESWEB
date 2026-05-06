@@ -436,3 +436,4 @@ export async function indexExternalResources(
 
   return { indexed, skipped: 0, errors };
 }
+

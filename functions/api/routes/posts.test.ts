@@ -1,20 +1,13 @@
-
-
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
-import { MockKysely, TestEnv } from "../../../src/test/types";
+import { TestEnv, MockKysely } from "../../../src/test/types";
 import postsRouter from "./posts";
 import { createMockPost } from "../../../src/test/factories/contentFactory";
 
-interface PostsResponse {
-  success?: boolean;
-  posts?: unknown[];
-  post?: unknown;
-  error?: string;
-  [key: string]: unknown;
-}
+
 
 // Mock global dependencies
 vi.stubGlobal("crypto", {
@@ -81,7 +74,7 @@ describe("Hono Backend - /posts Router", () => {
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockImplementation((arg1) => {
         if (typeof arg1 === "function") {
-          const ebMock = vi.fn().mockReturnThis();
+          const ebMock = vi.fn().mockReturnThis() as any;
           ebMock.or = vi.fn().mockReturnThis();
           ebMock.and = vi.fn().mockReturnThis();
           ebMock.val = vi.fn().mockReturnThis();
@@ -110,15 +103,15 @@ describe("Hono Backend - /posts Router", () => {
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
         transformQuery: vi.fn((q) => q),
       }),
-    };
+    } as unknown as MockKysely;
 
     testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
+    testApp.use("*", async (c: any, next: () => Promise<void>) => {
       c.set("db", mockDb);
       c.set("sessionUser", { id: "1", email: "admin@test.com", name: null, nickname: "Admin", image: null, role: "admin", member_type: "student" });
       await next();
     });
-    testApp.route("/", postsRouter);
+    testApp.route("/", postsRouter as any);
   });
 
   it("GET / - list published posts", async () => {
@@ -127,7 +120,7 @@ describe("Hono Backend - /posts Router", () => {
 
     const res = await testApp.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as PostsResponse;
+    const body = await res.json() as any;
     expect(body.posts).toHaveLength(2);
   });
 
@@ -137,7 +130,7 @@ describe("Hono Backend - /posts Router", () => {
 
     const res = await testApp.request("/test-post", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as PostsResponse;
+    const body = await res.json() as any;
     expect(body.post).toBeDefined();
     expect((body.post as { slug: string }).slug).toBe("test-post");
   });
@@ -153,7 +146,7 @@ describe("Hono Backend - /posts Router", () => {
     const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     expect(mockDb.selectFrom).toHaveBeenCalledWith("posts");
-    const body = await res.json() as PostsResponse;
+    const body = await res.json() as any;
     expect(body.posts[0].season_id).toBe(3);
   });
 
@@ -175,7 +168,7 @@ describe("Hono Backend - /posts Router", () => {
       headers: { "Content-Type": "application/json" },
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith("posts");
+    expect((mockDb as any).insertInto).toHaveBeenCalledWith("posts");
   });
 
   it("DELETE /admin/:slug - soft delete", async () => {
@@ -185,7 +178,7 @@ describe("Hono Backend - /posts Router", () => {
       headers: { "Content-Type": "application/json" }
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith("posts");
+    expect((mockDb as any).updateTable).toHaveBeenCalledWith("posts");
   });
 
   it("POST /admin/:slug/undelete - restore", async () => {
@@ -195,7 +188,7 @@ describe("Hono Backend - /posts Router", () => {
       headers: { "Content-Type": "application/json" }
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith("posts");
+    expect((mockDb as any).updateTable).toHaveBeenCalledWith("posts");
   });
 
   it("DELETE /admin/:slug/purge - permanent delete with storage", async () => {
@@ -215,7 +208,7 @@ describe("Hono Backend - /posts Router", () => {
     mockDb.executeTakeFirst.mockResolvedValueOnce({ slug: "test", title: "Test Post", season_id: "5", is_deleted: 1, ast: "{\"type\":\"doc\"}" });
     const res = await testApp.request("/admin/test", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as PostsResponse;
+    const body = await res.json() as any;
     expect(body.post.season_id).toBe(5);
   });
 
@@ -236,7 +229,7 @@ describe("Hono Backend - /posts Router", () => {
       snippet: "Old snippet",
       ast: "{\"type\":\"doc\"}",
       created_at: "2024-01-01T00:00:00Z",
-    }]);
+    } as any]);
     const res = await testApp.request("/admin/test/history", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
@@ -264,7 +257,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("POST /admin/:slug/reject - handles db error", async () => {
-    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB Fail")) }) }) });
+    (mockDb as any).updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB Fail")) }) }) });
     const res = await testApp.request("/admin/test/reject", {
       method: "POST",
       body: JSON.stringify({ reason: "Needs work" }),
@@ -276,7 +269,7 @@ describe("Hono Backend - /posts Router", () => {
   it("GET / - search published posts", async () => {
     mockDb.execute.mockResolvedValue({ rows: [createMockPost()] });
     // For sql template tag
-    mockDb.getExecutor().executeQuery.mockResolvedValueOnce({ rows: [createMockPost()] });
+    (mockDb as any).getExecutor().executeQuery.mockResolvedValueOnce({ rows: [createMockPost()] });
     const res = await testApp.request("/?q=test", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
@@ -284,7 +277,7 @@ describe("Hono Backend - /posts Router", () => {
   it("GET / - search error", async () => {
     mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
     // Kysely sql tag execute might look for getExecutor().executeQuery
-    mockDb.getExecutor().executeQuery = vi.fn().mockRejectedValueOnce(new Error("Fail"));
+    (mockDb as any).getExecutor().executeQuery = vi.fn().mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/?q=fail", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -318,12 +311,12 @@ describe("Hono Backend - /posts Router", () => {
       body: JSON.stringify({ title: "Updated", ast: { type: "doc", content: [] } })
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith("posts");
+    expect((mockDb as any).updateTable).toHaveBeenCalledWith("posts");
   });
 
 
   it("POST /admin/:slug - handles update error", async () => {
-    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Update fail")) }) }) });
+    (mockDb as any).updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Update fail")) }) }) });
     const res = await testApp.request("/admin/test-post", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -402,12 +395,12 @@ describe("Hono Backend - /posts Router", () => {
       body: JSON.stringify({ slug: "existing-slug", title: "Updated", ast: { type: "doc", content: [] } })
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith("posts");
+    expect((mockDb as any).updateTable).toHaveBeenCalledWith("posts");
   });
 
 
   it("POST /admin/save - handles save error", async () => {
-    mockDb.insertInto.mockReturnValue({ values: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Save fail")) }) });
+    (mockDb as any).insertInto.mockReturnValue({ values: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Save fail")) }) });
     const res = await testApp.request("/admin/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -445,7 +438,7 @@ describe("Hono Backend - /posts Router", () => {
   it("POST /admin/:slug - non-admin creates shadow revision", async () => {
     // Override getSessionUser for this test
     const { getSessionUser } = await import("../middleware");
-    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "2", email: "author@test.com", role: "author" });
+    vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "2", email: "author@test.com", role: "author" } as any);
     
     const res = await testApp.request("/admin/test-post", {
       method: "POST",
@@ -454,7 +447,7 @@ describe("Hono Backend - /posts Router", () => {
     }, env, mockExecutionContext);
     
     expect(res.status).toBe(200);
-    const body = await res.json() as PostsResponse;
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.slug).toBe("new-slug");
   });
@@ -465,7 +458,7 @@ describe("Hono Backend - /posts Router", () => {
 
     const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as PostsResponse;
+    const body = await res.json() as any;
     expect(body.posts[0].slug).toBe("fallback-post");
   });
 
@@ -478,7 +471,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("POST /admin/:slug/undelete - handles db error", async () => {
-    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB fail")) }) }) });
+    (mockDb as any).updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB fail")) }) }) });
     const res = await testApp.request("/admin/test-post/undelete", { 
       method: "POST",
       body: JSON.stringify({}),
@@ -573,7 +566,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("DELETE /admin/:slug - handles db error", async () => {
-    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB fail")) }) }) });
+    (mockDb as any).updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("DB fail")) }) }) });
     const res = await testApp.request("/admin/test-post", { 
       method: "DELETE",
       body: JSON.stringify({}),
@@ -582,3 +575,4 @@ describe("Hono Backend - /posts Router", () => {
     expect(res.status).toBe(500);
   });
 });
+

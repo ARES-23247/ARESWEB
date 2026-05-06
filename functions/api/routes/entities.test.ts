@@ -1,15 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import entitiesRouter from "./entities";
 
-interface EntitiesResponse {
-  success?: boolean;
-  entities?: unknown[];
-  error?: string;
-  [key: string]: unknown;
-}
+
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -23,7 +19,7 @@ vi.mock("../middleware", async (importOriginal) => {
 import { logAuditAction } from "../middleware";
 
 describe("Hono Backend - /entities Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -75,7 +71,7 @@ describe("Hono Backend - /entities Router", () => {
 
     const res = await testApp.request("/links?type=doc&id=doc1", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as EntitiesResponse;
+    const body = await res.json() as any;
     
     expect(body.links).toHaveLength(4);
     expect(body.links[0]).toEqual({
@@ -95,7 +91,7 @@ describe("Hono Backend - /entities Router", () => {
 
     const res = await testApp.request("/links?type=task&id=task1", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as EntitiesResponse;
+    const body = await res.json() as any;
     
     expect(body.links[0].target_title).toBe("Doc 2");
   });
@@ -143,3 +139,4 @@ describe("Hono Backend - /entities Router", () => {
     expect(res.status).toBe(500);
   });
 });
+

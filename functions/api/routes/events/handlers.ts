@@ -1,19 +1,16 @@
-import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, AppEnv } from "../../middleware";
+/* eslint-disable @typescript-eslint/no-explicit-any -- Event handlers work with dynamic external data (Gcal, rrule, Zulip, etc.) */
+import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import { initServer } from "ts-rest-hono";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 
 import type { SocialConfig } from "../../middleware";
-
-
-const _s = initServer<AppEnv>();
 
 /**
  * Sanitize FTS query to prevent SQL injection via SQLite FTS syntax.
@@ -34,7 +31,7 @@ type EventSaveBody = {
   description?: string;
   coverImage?: string;
   tbaEventKey?: string;
-  socials?: string[];
+  socials?: Record<string, boolean>;
   isPotluck?: boolean;
   isVolunteer?: boolean;
   isDraft?: boolean;
@@ -59,7 +56,7 @@ type SignupBody = {
 };
 
 type SocialsBody = {
-  socials?: string[];
+  socials?: string[];  // repush uses array format
 };
 
 // Type for partial event results from fallback queries (older schema compatibility)
@@ -71,7 +68,7 @@ type PartialEvent = Pick<SelectableRow<"events">, "id" | "title" | "category" | 
 };
 
 export const eventHandlers = {
-  getEvents: async (input: HandlerInput, c: HonoContext) => {
+  getEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -80,8 +77,8 @@ export const eventHandlers = {
       if (q) {
         // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
         const cleanQ = sanitizeFtsQuery(String(q || ''));
-        const results = await sql<{ id: string, title: string, category: string, date_start: string, date_end: string | null, location: string | null, description: string | null, cover_image: string | null, status: string, is_deleted: number, season_id: number | null, meeting_notes: string | null }>`
-          SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.status, e.is_deleted, e.season_id, e.meeting_notes
+        const results = await sql<{ id: string, title: string, category: string, date_start: string, date_end: string | null, location: string | null, description: string | null, cover_image: string | null, status: string, is_deleted: number, season_id: number | null, meeting_notes: string | null, tba_event_key: string | null, recurring_exception: number, is_potluck: number, is_volunteer: number }>`
+          SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.status, e.is_deleted, e.season_id, e.meeting_notes, e.tba_event_key, e.recurring_exception, e.is_potluck, e.is_volunteer
            FROM events_fts f
            JOIN events e ON f.id = e.id
            WHERE e.is_deleted = 0 AND e.status = 'published' AND (e.published_at IS NULL OR datetime(e.published_at) <= datetime('now'))
@@ -101,7 +98,7 @@ export const eventHandlers = {
       let results;
       try {
         results = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes"])
+          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
           .where("is_deleted", "=", 0)
           .where("status", "=", "published")
           .where((eb) => eb.or([
@@ -112,7 +109,7 @@ export const eventHandlers = {
           .limit(Number(limit) || 50)
           .offset(Number(offset) || 0)
           .execute();
-      } catch (errInner) {
+      } catch (_errInner) {
         // Fallback for older schemas
         results = await db.selectFrom("events")
           .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image"])
@@ -149,7 +146,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
   },
-  getCalendarSettings: async (_input: HandlerInput, c: HonoContext) => {
+  getCalendarSettings: async (_input: HandlerInput, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("settings")
@@ -169,7 +166,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: {} };
     }
   },
-  getEvent: async (input: HandlerInput, c: HonoContext) => {
+  getEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -177,7 +174,7 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
 
       const row = await db.selectFrom("events")
-        .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic"])
+        .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
         .where("id", "=", id)
         .where("is_deleted", "=", 0)
         .where("status", "=", "published")
@@ -212,7 +209,7 @@ export const eventHandlers = {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
-  getAdminEvents: async (input: HandlerInput, c: HonoContext) => {
+  getAdminEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -227,7 +224,7 @@ export const eventHandlers = {
       let results;
       try {
         results = await baseQuery
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic"])
+          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
           .execute();
       } catch {
         results = await baseQuery
@@ -254,7 +251,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
   },
-  adminDetail: async (input: HandlerInput, c: HonoContext) => {
+  adminDetail: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -262,7 +259,7 @@ export const eventHandlers = {
       let row;
       try {
         row = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes"])
+          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
           .where("id", "=", id)
           .executeTakeFirst();
       } catch {
@@ -292,7 +289,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Database error" } };
     }
   },
-  saveEvent: async (input: HandlerInput<EventSaveBody>, c: HonoContext) => {
+  saveEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -447,8 +444,7 @@ export const eventHandlers = {
         if (status === "published") {
           const baseUrl = new URL(c.req.url).origin;
           if (socials) {
-            const socialsFilter: Record<string, boolean> = socials;
-            await dispatchSocials(db, { title: title || "", url: `${baseUrl}/events`, snippet: "New event scheduled!", thumbnail: coverImage || "/gallery_1.png", baseUrl }, socialConfig, socialsFilter).catch(() => {});
+          await dispatchSocials(db, { title: title || "", url: `${baseUrl}/events`, snippet: "New event scheduled!", thumbnail: coverImage || "/gallery_1.png", baseUrl }, socialConfig, socials).catch(() => {});
           }
           const eventTopic = `Event: ${title}`;
           const eventContent = `📅 **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
@@ -466,7 +462,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: errorMessage } };
     }
   },
-  updateEvent: async (input: HandlerInput<EventSaveBody>, c: HonoContext) => {
+  updateEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
     const { params, body } = input;
     const { id } = params;
     try {
@@ -617,7 +613,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Update failed" } };
     }
   },
-  deleteEvent: async (input: HandlerInput<Pick<EventSaveBody, 'deleteMode'>>, c: HonoContext) => {
+  deleteEvent: async (input: HandlerInput<Pick<EventSaveBody, 'deleteMode'>>, c: any) => {
     const { params, body } = input;
     const { id } = params;
     try {
@@ -683,7 +679,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Delete failed" } };
     }
   },
-  approveEvent: async (input: HandlerInput, c: HonoContext) => {
+  approveEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -733,7 +729,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Approval failed" } };
     }
   },
-  rejectEvent: async (input: HandlerInput, c: HonoContext) => {
+  rejectEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -745,7 +741,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Rejection failed" } };
     }
   },
-  undeleteEvent: async (input: HandlerInput, c: HonoContext) => {
+  undeleteEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -780,7 +776,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Restore failed" } };
     }
   },
-  purgeEvent: async (input: HandlerInput, c: HonoContext) => {
+  purgeEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -1129,3 +1125,4 @@ export const eventHandlers = {
     }
   },
 };
+

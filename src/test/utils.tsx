@@ -23,10 +23,8 @@ vi.mock("../contexts/ModalContext", async (importOriginal) => {
 
 // Mock ExecutionContext for Hono request testing
 export const mockExecutionContext: MockExecutionContext = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  waitUntil: vi.fn((promise: Promise<unknown>) => promise) as any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  passThroughOnException: vi.fn() as any,
+  waitUntil: vi.fn((promise: Promise<unknown>) => promise) as unknown as MockExecutionContext["waitUntil"],
+  passThroughOnException: vi.fn() as unknown as MockExecutionContext["passThroughOnException"],
   props: {},
 };
 

@@ -60,6 +60,13 @@ test.describe('Admin Dashboard', () => {
   });
 
   test('Admin dashboard loads and displays authorized management hubs', async ({ page }) => {
+    // Mock Zulip presence to avoid "body stream already read" error triggering a11y violations
+    await page.route('**/api/zulip/presence', async route => {
+      await route.fulfill({
+        status: 200,
+        json: { success: true, presence: {}, userNames: {} }
+      });
+    });
 
     await page.goto('/dashboard');
     

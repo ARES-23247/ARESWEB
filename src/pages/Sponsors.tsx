@@ -4,16 +4,8 @@ import { motion } from "framer-motion";
 import { Gem, Award, ShieldCheck, Zap, ExternalLink, Heart, Package } from "lucide-react";
 import SEO from "../components/SEO";
 import Turnstile from "../components/Turnstile";
-import { api } from "../api/client";
-import { inquirySchema } from "@shared/schemas/inquirySchema";
-
-interface Sponsor {
-  id: string;
-  name: string;
-  tier: string;
-  logo_url: string | null;
-  website_url: string | null;
-}
+import { useGetSponsors, useTrackSponsorClick, useSubmitInquiry, type Sponsor } from "../api";
+import { inquiryInputSchema as inquirySchema } from "@shared/routes/inquiries";
 
 const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; border: string; glow: string; text: string }> = {
   Titanium: { 
@@ -54,17 +46,17 @@ const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; borde
 };
 
 export default function Sponsors() {
-  const { data: sponsorsRes } = api.sponsors.getSponsors.useQuery(["public-sponsors"], {});
-  const sponsors = sponsorsRes?.status === 200 ? sponsorsRes.body.sponsors : [];
+  const { data: sponsorsRes } = useGetSponsors();
+  const sponsors = sponsorsRes?.sponsors || [];
 
-  const grouped = sponsors.reduce((acc: Record<string, Sponsor[]>, s: Sponsor) => {
+  const grouped = sponsors.reduce((acc, s: Sponsor) => {
     if (!acc[s.tier]) acc[s.tier] = [];
     acc[s.tier].push(s);
     return acc;
-  }, {} as Record<string, Sponsor[]>);
+  }, {} as Record<string, typeof sponsors>);
 
   const tiersOrdered = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"];
-  const existingTiers = Array.from(new Set<string>(sponsors.map((s: Sponsor) => s.tier as string))).filter(Boolean);
+  const existingTiers = Array.from(new Set<string>(sponsors.map((s: Sponsor) => s.tier))).filter(Boolean);
   const dropdownTiers = existingTiers.length > 0 ? existingTiers : tiersOrdered;
 
   const [name, setName] = useState("");
@@ -76,21 +68,16 @@ export default function Sponsors() {
   const [errorMessage, setErrorMessage] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
 
+  const trackSponsorClickMutation = useTrackSponsorClick();
+
   const trackSponsorClick = (sponsorId: string) => {
-    api.analytics.trackSponsorClick.mutation({
-      body: { sponsor_id: sponsorId }
-    }).catch(() => {});
+    trackSponsorClickMutation.mutate({ sponsor_id: sponsorId });
   };
 
-  const submitMutation = api.inquiries.submit.useMutation({
-    onSuccess: (res: { status: number; body: unknown | { error: string } }) => {
-      if (res.status === 200 || res.status === 207) {
-        setSubmitStatus("success");
-        setName(""); setEmail(""); setPhone(""); setLevel("Interested in Details"); setMessage("");
-      } else {
-        setSubmitStatus("error");
-        setErrorMessage("error" in (res.body as { error?: string }) ? String((res.body as { error?: string }).error) : "Something went wrong");
-      }
+  const submitMutation = useSubmitInquiry({
+    onSuccess: () => {
+      setSubmitStatus("success");
+      setName(""); setEmail(""); setPhone(""); setLevel("Interested in Details"); setMessage("");
     },
     onError: (err: Error) => {
       setSubmitStatus("error");
@@ -116,7 +103,7 @@ export default function Sponsors() {
       return;
     }
 
-    submitMutation.mutate({ body: payloadResult.data });
+    submitMutation.mutate(payloadResult.data);
   };
 
   return (
@@ -170,7 +157,7 @@ export default function Sponsors() {
                 </div>
 
                 <div className={`grid grid-cols-1 md:grid-cols-2 ${tier === 'Titanium' ? 'lg:grid-cols-2' : tier === 'Gold' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
-                  {grouped[tier].map((s: Sponsor) => (
+                  {grouped[tier].map((s: { id: string; name: string; logo_url: string | null; website_url: string | null; }) => (
                     <motion.a
                       key={s.id}
                       href={s.website_url || "#"}

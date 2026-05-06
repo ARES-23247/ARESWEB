@@ -1,10 +1,18 @@
-import { Hono } from "hono";
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { createHonoEndpoints } from "ts-rest-hono";
-import { postContract } from "../../../shared/schemas/contracts/postContract";
-import { siteConfig } from "../../utils/site.config";
-import { AppEnv, getSocialConfig, extractAstText, getSessionUser, ensureAdmin, ensureAuth, validateLength, MAX_INPUT_LENGTHS, logAuditAction, s } from "../middleware";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+import {
+  AppEnv,
+  getSessionUser,
+  extractAstText,
+  ensureAdmin,
+  validateLength,
+  MAX_INPUT_LENGTHS,
+  logAuditAction,
+  getSocialConfig,
+} from "../middleware";
 import { getStandardDate } from "../../utils/content";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -16,330 +24,432 @@ import {
   restorePostFromHistory,
   createShadowRevision,
   captureHistory,
-  pruneHistory
+  pruneHistory,
 } from "../../utils/postHistory";
+import {
+  getPostsRoute,
+  getPostRoute,
+  getAdminPostsRoute,
+  getAdminPostRoute,
+  savePostRoute,
+  updatePostRoute,
+  deletePostRoute,
+  undeletePostRoute,
+  purgePostRoute,
+  approvePostRoute,
+  rejectPostRoute,
+  getPostHistoryRoute,
+  restorePostHistoryRoute,
+  repushSocialsRoute,
+  postSchema as _postSchema,
+} from "../../../shared/routes/posts";
+import { siteConfig } from "../../utils/site.config";
+import { edgeCacheMiddleware } from "../middleware/cache";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
+const postsRouter = new OpenAPIHono<AppEnv>();
+
+// ─── Middleware Configuration ─────────────────────────────────────────────
+// Apply edge caching to public read-only routes
+postsRouter.use("/", edgeCacheMiddleware(300, 60));
+postsRouter.use("/:slug", edgeCacheMiddleware(300, 60));
+// Admin routes require authentication
+postsRouter.use("/admin/:slug/history", ensureAdmin);
+postsRouter.use("/admin/:slug/history/*", ensureAdmin);
+postsRouter.use("/admin/*", ensureAdmin);
 
 /**
  * Sanitize FTS query to prevent SQL injection via SQLite FTS syntax.
  * Allows alphanumeric, spaces, hyphens, and periods. Uses proper FTS5 phrase search.
  */
 const sanitizeFtsQuery = (query: string): string => {
-  // Allow only alphanumeric, spaces, hyphens, and periods
   const cleanQ = (query || "").replace(/[^\w\s\-.]/g, "").trim();
   if (!cleanQ) return "";
-  // Escape double quotes for FTS5 phrase search and use prefix search
   return `"${cleanQ.replace(/"/g, '""')}*`;
 };
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
-const postTsRestRouterObj = {
-  getPosts: async (input: any, c: Context<AppEnv>) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const { limit = 10, offset = 0, q } = input.query;
+// ─── Public Routes ───────────────────────────────────────────────────────
 
-      if (q) {
-        // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
-        const cleanQ = sanitizeFtsQuery(String(q || ''));
-        // Return empty results if sanitized query is empty (only special chars)
-        if (!cleanQ) return { status: 200, body: { posts: [] } };
+postsRouter.openapi(getPostsRoute, (async (c) => {
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const { limit = 10, offset = 0, q } = c.req.valid("query");
 
-        const results = await sql<{
-          slug: string;
-          title: string;
-          date: string | null;
-          snippet: string | null;
-          thumbnail: string | null;
-          status: string;
-          season_id: number | null;
-          author: string | null;
-          author_nickname: string | null;
-          author_avatar: string | null;
-          published_at: string | null;
-        }>`
-          SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.status, p.season_id, p.author,
-                  uP.nickname as author_nickname, u.image as author_avatar, p.published_at
-           FROM posts_fts f
-           JOIN posts p ON f.slug = p.slug
-           LEFT JOIN user u ON p.cf_email = u.email
-           LEFT JOIN user_profiles uP ON u.id = uP.user_id
-           WHERE p.is_deleted = 0 AND p.status = 'published' AND (p.published_at IS NULL OR datetime(p.published_at) <= datetime('now'))
-           AND f.posts_fts MATCH ${cleanQ}
-           ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
-        `.execute(db);
-        
-        const posts = results.rows.map(p => ({
-          ...p,
-          season_id: p.season_id ? Number(p.season_id) : null,
-          is_deleted: 0,
-          is_portfolio: 0
-        }));
+    if (q) {
+      const cleanQ = sanitizeFtsQuery(String(q || ""));
+      if (!cleanQ) return c.json({ posts: [] }, 200);
 
-        return { status: 200, body: { posts } };
-      }
+      const results = await sql<{
+        slug: string;
+        title: string;
+        date: string | null;
+        snippet: string | null;
+        thumbnail: string | null;
+        status: string;
+        season_id: number | null;
+        author: string | null;
+        author_nickname: string | null;
+        author_avatar: string | null;
+        published_at: string | null;
+      }>`
+        SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.status, p.season_id, p.author,
+                uP.nickname as author_nickname, u.image as author_avatar, p.published_at
+         FROM posts_fts f
+         JOIN posts p ON f.slug = p.slug
+         LEFT JOIN user u ON p.cf_email = u.email
+         LEFT JOIN user_profiles uP ON u.id = uP.user_id
+         WHERE p.is_deleted = 0 AND p.status = 'published' AND (p.published_at IS NULL OR datetime(p.published_at) <= datetime('now'))
+         AND f.posts_fts MATCH ${cleanQ}
+         ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
+      `.execute(db);
 
-      const results = await db.selectFrom("posts")
-        .leftJoin("user as u", "posts.cf_email", "u.email")
-        .leftJoin("user_profiles as uP", "u.id", "uP.user_id")
-        .select([
-          "posts.slug",
-          "posts.title",
-          "posts.date",
-          "posts.snippet",
-          "posts.thumbnail",
-          "posts.status",
-          "posts.author",
-          "posts.season_id",
-          "posts.published_at",
-          "uP.nickname as author_nickname",
-          "u.image as author_avatar"
-        ])
-        .where("posts.is_deleted", "=", 0)
-        .where("posts.status", "=", "published")
-        .where((eb) => eb.or([
-          eb("published_at", "is", null),
-          eb("published_at", "<=", new Date().toISOString())
-        ]))
-        .orderBy("posts.date", "desc")
-        .limit(Number(limit) || 10)
-        .offset(Number(offset) || 0)
-        .execute();
-
-      const posts = results.map(p => ({
+      const posts = results.rows.map((p) => ({
         ...p,
         season_id: p.season_id ? Number(p.season_id) : null,
         is_deleted: 0,
-        is_portfolio: 0
+        is_portfolio: 0,
       }));
 
-      c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
-
-      return { status: 200, body: { posts } };
-    } catch (e) {
-      console.error("[Posts:List] Error", e);
-      return { status: 500, body: { error: "Failed to fetch posts" } };
+      return c.json({ posts }, 200);
     }
-  },
-  getPost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const user = await getSessionUser(c);
-      
-      const row = await db.selectFrom("posts")
-        .leftJoin("user as u", "posts.cf_email", "u.email")
-        .leftJoin("user_profiles as uP", "u.id", "uP.user_id")
-        .select([
-          "posts.slug",
-          "posts.title",
-          "posts.date",
-          "posts.ast",
-          "posts.thumbnail",
-          "posts.status",
-          "posts.author",
-          "posts.season_id",
-          "posts.published_at",
-          "posts.zulip_stream",
-          "posts.zulip_topic",
-          "uP.nickname as author_nickname",
-          "u.image as author_avatar"
-        ])
-        .where("posts.slug", "=", slug)
-        .where("posts.is_deleted", "=", 0)
-        .where("posts.status", "=", "published")
-        .where((eb) => eb.or([
+
+    const results = await db
+      .selectFrom("posts")
+      .leftJoin("user as u", "posts.cf_email", "u.email")
+      .leftJoin("user_profiles as uP", "u.id", "uP.user_id")
+      .select([
+        "posts.slug",
+        "posts.title",
+        "posts.date",
+        "posts.snippet",
+        "posts.thumbnail",
+        "posts.status",
+        "posts.author",
+        "posts.season_id",
+        "posts.published_at",
+        "uP.nickname as author_nickname",
+        "u.image as author_avatar",
+      ])
+      .where("posts.is_deleted", "=", 0)
+      .where("posts.status", "=", "published")
+      .where((eb) =>
+        eb.or([
           eb("published_at", "is", null),
-          eb("published_at", "<=", new Date().toISOString())
-        ]))
-        .executeTakeFirst();
+          eb("published_at", "<=", new Date().toISOString()),
+        ])
+      )
+      .orderBy("posts.date", "desc")
+      .limit(Number(limit) || 10)
+      .offset(Number(offset) || 0)
+      .execute();
 
-      if (!row) return { status: 404, body: { error: "Post not found" } };
+    const posts = results.map((p) => ({
+      ...p,
+      season_id: p.season_id ? Number(p.season_id) : null,
+      is_deleted: 0,
+      is_portfolio: 0,
+    }));
 
+    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
+    return c.json({ posts }, 200);
+  } catch (e) {
+    console.error("[Posts:List] Error", e);
+    return c.json({ error: "Failed to fetch posts" }, 500);
+  }
+}) as AppRouteHandler<typeof getPostsRoute>);
+
+postsRouter.openapi(getPostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const user = await getSessionUser(c);
+
+    const row = await db
+      .selectFrom("posts")
+      .leftJoin("user as u", "posts.cf_email", "u.email")
+      .leftJoin("user_profiles as uP", "u.id", "uP.user_id")
+      .select([
+        "posts.slug",
+        "posts.title",
+        "posts.date",
+        "posts.ast",
+        "posts.thumbnail",
+        "posts.status",
+        "posts.author",
+        "posts.season_id",
+        "posts.published_at",
+        "posts.zulip_stream",
+        "posts.zulip_topic",
+        "uP.nickname as author_nickname",
+        "u.image as author_avatar",
+      ])
+      .where("posts.slug", "=", slug)
+      .where("posts.is_deleted", "=", 0)
+      .where("posts.status", "=", "published")
+      .where((eb) =>
+        eb.or([
+          eb("published_at", "is", null),
+          eb("published_at", "<=", new Date().toISOString()),
+        ])
+      )
+      .executeTakeFirst();
+
+    if (!row) return c.json({ error: "Post not found" }, 404);
+
+    return c.json(
+      {
+        post: {
+          ...row,
+          season_id: row.season_id ? Number(row.season_id) : null,
+          is_deleted: 0,
+          is_portfolio: 0,
+          ast: row.ast || "{}",
+        },
+        is_editor: user?.role === "admin" || user?.role === "author",
+        author: {
+          id: row.author || "system",
+          name: row.author_nickname || null,
+          image: row.author_avatar || null,
+          role: "author",
+        },
+      },
+      200
+    );
+  } catch (e) {
+    console.error("[Posts:Detail] Error", e);
+    return c.json({ error: "Failed to fetch post" }, 500);
+  }
+}) as AppRouteHandler<typeof getPostRoute>);
+
+// ─── Admin Routes ────────────────────────────────────────────────────────
+
+postsRouter.openapi(getAdminPostsRoute, (async (c) => {
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const { limit = 50, offset = 0 } = c.req.valid("query");
+
+    let results;
+    try {
+      results = await db
+        .selectFrom("posts")
+        .select([
+          "slug",
+          "title",
+          "date",
+          "snippet",
+          "thumbnail",
+          "cf_email",
+          "is_deleted",
+          "status",
+          "revision_of",
+          "published_at",
+          "season_id",
+          "author",
+        ])
+        .orderBy("date", "desc")
+        .limit(Number(limit) || 50)
+        .offset(Number(offset) || 0)
+        .execute();
+    } catch (_e) {
+      results = await db
+        .selectFrom("posts")
+        .select(["slug", "title", "date", "snippet", "thumbnail", "cf_email", "is_deleted", "author"])
+        .orderBy("date", "desc")
+        .limit(Number(limit) || 50)
+        .offset(Number(offset) || 0)
+        .execute();
+    }
+
+    const posts = results.map((p) => {
+      const item = p as { season_id?: unknown; is_deleted?: unknown };
       return {
-        status: 200,
-        body: {
-          post: {
-            ...row,
-            season_id: row.season_id ? Number(row.season_id) : null,
-            is_deleted: 0,
-            is_portfolio: 0,
-            ast: row.ast || "{}"
-          },
-          is_editor: user?.role === "admin" || user?.role === "author",
-          author: {
-            id: row.author || "system",
-            name: row.author_nickname || null,
-            image: row.author_avatar || null,
-            role: "author"
-          }
-        }
+        ...p,
+        season_id: item.season_id ? Number(item.season_id) : null,
+        is_deleted: Number(item.is_deleted ?? 0),
+        is_portfolio: 0,
       };
-    } catch (e) {
-      console.error("[Posts:Detail] Error", e);
-      return { status: 500, body: { error: "Failed to fetch post" } };
-    }
-  },
-  getAdminPosts: async (input: any, c: Context<AppEnv>) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const { limit = 50, offset = 0 } = input.query;
-      
-      let results;
-      try {
-        results = await db.selectFrom("posts")
-          .select(["slug", "title", "date", "snippet", "thumbnail", "cf_email", "is_deleted", "status", "revision_of", "published_at", "season_id", "author"])
-          .orderBy("date", "desc")
-          .limit(Number(limit) || 50)
-          .offset(Number(offset) || 0)
-          .execute();
-      } catch (_e) {
-        // Fallback for older D1 schemas without status/published_at columns
-        results = await db.selectFrom("posts")
-          .select(["slug", "title", "date", "snippet", "thumbnail", "cf_email", "is_deleted", "author"])
-          .orderBy("date", "desc")
-          .limit(Number(limit) || 50)
-          .offset(Number(offset) || 0)
-          .execute();
-      }
-      
-      const posts = results.map(p => {
-        const item = p as { season_id?: unknown; is_deleted?: unknown };
-        return {
-          ...p,
-          season_id: item.season_id ? Number(item.season_id) : null,
-          is_deleted: Number(item.is_deleted ?? 0),
-          is_portfolio: 0
-        };
-      });
+    });
 
-      return { status: 200, body: { posts } };
-    } catch (e) {
-      console.error("[Posts:AdminList] Error", e);
-      return { status: 500, body: { error: "Failed to fetch posts" } };
-    }
-  },
-  getAdminPost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const row = await db.selectFrom("posts")
-        .select(["slug", "title", "date", "snippet", "thumbnail", "ast", "is_deleted", "status", "revision_of", "published_at", "season_id", "author", "zulip_stream", "zulip_topic"])
-        .where("slug", "=", slug)
+    return c.json({ posts }, 200);
+  } catch (e) {
+    console.error("[Posts:AdminList] Error", e);
+    return c.json({ error: "Failed to fetch posts" }, 500);
+  }
+}) as AppRouteHandler<typeof getAdminPostsRoute>);
+
+postsRouter.openapi(getAdminPostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const row = await db
+      .selectFrom("posts")
+      .select([
+        "slug",
+        "title",
+        "date",
+        "snippet",
+        "thumbnail",
+        "ast",
+        "is_deleted",
+        "status",
+        "revision_of",
+        "published_at",
+        "season_id",
+        "author",
+        "zulip_stream",
+        "zulip_topic",
+      ])
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+
+    if (!row) return c.json({ error: "Post not found" }, 404);
+
+    return c.json(
+      {
+        post: {
+          ...row,
+          season_id: row.season_id ? Number(row.season_id) : null,
+          is_deleted: Number(row.is_deleted),
+          is_portfolio: 0,
+          ast: row.ast || "{}",
+        },
+      },
+      200
+    );
+  } catch (e) {
+    console.error("[Posts:AdminDetail] Error", e);
+    return c.json({ error: "Failed to fetch post" }, 500);
+  }
+}) as AppRouteHandler<typeof getAdminPostRoute>);
+
+postsRouter.openapi(savePostRoute, (async (c) => {
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const body = c.req.valid("json");
+
+    // If slug is provided, update existing post
+    if (body.slug) {
+      const existing = await db.selectFrom("posts")
+        .select(["slug", "title", "ast"] as any)
+        .where("slug", "=", body.slug)
         .executeTakeFirst();
 
-      if (!row) return { status: 404, body: { error: "Post not found" } };
-      
-      return { 
-        status: 200, 
-        body: { 
-          post: {
-            ...row,
-            season_id: row.season_id ? Number(row.season_id) : null,
-            is_deleted: Number(row.is_deleted),
-            is_portfolio: 0,
-            ast: row.ast || "{}"
-          }
-        }
-      };
-    } catch (e) {
-      console.error("[Posts:AdminDetail] Error", e);
-      return { status: 500, body: { error: "Failed to fetch post" } };
-    }
-  },
-  savePost: async (input: any, c: Context<AppEnv>) => {
-    try {
-      const db = c.get("db") as Kysely<DB>;
-
-      if (input.body.slug) {
-        // Redirect to updatePost
-        return postTsRestRouterObj.updatePost({ params: { slug: input.body.slug }, body: input.body }, c);
+      if (!existing) {
+        return c.json({ error: "Post not found" }, 404);
       }
-
-      const titleError = validateLength(input.body.title, MAX_INPUT_LENGTHS.title, "Title");
-      if (titleError) return { status: 400, body: { error: titleError } };
 
       const user = await getSessionUser(c);
-      const email = user?.email || "anonymous_dashboard_user";
-      const dateStr = getStandardDate();
+      const _email = user?.email || "anonymous_dashboard_user";
 
-      const recent = await db.selectFrom("posts")
-        .select("slug")
-        .where("title", "=", input.body.title)
-        .where("cf_email", "=", email)
-        .where("date", "=", dateStr)
-        .executeTakeFirst();
-      
-      if (recent) {
-        return { status: 409, body: { error: "A post with this title already exists for today" } };
-      }
+      // Create shadow revision for history
+      await captureHistory(c, body.slug, existing as any);
 
-      let slug = input.body.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "") || `untitled-${Date.now()}`;
-
-      const existing = await db.selectFrom("posts").select("slug").where("slug", "=", slug).executeTakeFirst();
-      if (existing) {
-        const suffix = Math.random().toString(36).substring(2, 6);
-        slug = `${slug}-${suffix}`;
-      }
-
-      const astStr = JSON.stringify(input.body.ast);
-      const snippet = extractAstText(input.body.ast).substring(0, 200);
-
-      const status = input.body.isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
-
-      await db.insertInto("posts")
-        .values({
-          slug,
-          title: input.body.title,
-          author: "ARES Team",
-          date: dateStr,
-          thumbnail: input.body.thumbnail || "",
-          snippet,
-          ast: astStr,
-          cf_email: email,
-          status,
-          published_at: input.body.publishedAt || null,
-          season_id: input.body.seasonId ? Number(input.body.seasonId) : null,
-          zulip_stream: "blog",
-          zulip_topic: `Blog: ${input.body.title}`
-        })
+      await db.updateTable("posts")
+        .set({
+          title: body.title,
+          ast: body.ast as string,
+          content: typeof body.content === "string" ? body.content : null,
+          category: body.category,
+          is_portfolio: body.isPortfolio ? 1 : 0,
+          updated_at: new Date().toISOString()
+        } as any)
+        .where("slug", "=", body.slug)
         .execute();
 
-      // Push snapshot to collaborative editor history
+      return c.json({ success: true, slug: body.slug });
+    }
+
+    const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
+    if (titleError) return c.json({ error: titleError }, 400);
+
+    const user = await getSessionUser(c);
+    const email = user?.email || "anonymous_dashboard_user";
+    const dateStr = getStandardDate();
+
+    const recent = await db
+      .selectFrom("posts")
+      .select("slug")
+      .where("title", "=", body.title)
+      .where("cf_email", "=", email)
+      .where("date", "=", dateStr)
+      .executeTakeFirst();
+
+    if (recent) {
+      return c.json({ error: "A post with this title already exists for today" }, 409);
+    }
+
+    let slug = body.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || `untitled-${Date.now()}`;
+
+    const existing = await db.selectFrom("posts").select("slug").where("slug", "=", slug).executeTakeFirst();
+    if (existing) {
+      const suffix = Math.random().toString(36).substring(2, 6);
+      slug = `${slug}-${suffix}`;
+    }
+
+    const astStr = JSON.stringify(body.ast);
+    const snippet = extractAstText(body.ast).substring(0, 200);
+
+    const status = body.isDraft ? "pending" : user?.role === "admin" ? "published" : "pending";
+
+    await db
+      .insertInto("posts")
+      .values({
+        slug,
+        title: body.title,
+        author: "ARES Team",
+        date: dateStr,
+        thumbnail: body.thumbnail || "",
+        snippet,
+        ast: astStr,
+        cf_email: email,
+        status,
+        published_at: body.publishedAt || null,
+        season_id: body.seasonId ? Number(body.seasonId) : null,
+        zulip_stream: "blog",
+        zulip_topic: `Blog: ${body.title}`,
+      })
+      .execute();
+
+    c.executionCtx.waitUntil(
+      db
+        .insertInto("document_history")
+        .values({
+          room_id: `post_${slug}`,
+          content: astStr,
+          created_by: email,
+          created_at: new Date().toISOString(),
+        })
+        .execute()
+    );
+
+    c.executionCtx.waitUntil(pruneHistory(c, slug, 10));
+    c.executionCtx.waitUntil(
+      logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`)
+    );
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+
+    const warnings: string[] = [];
+
+    if (status === "published") {
+      const socialConfig = await getSocialConfig(c);
+      const socialsFilter = body.socials || null;
+      const baseUrl = new URL(c.req.url).origin;
+
       c.executionCtx.waitUntil(
-        db.insertInto("document_history")
-          .values({
-            room_id: `post_${slug}`,
-            content: astStr,
-            created_by: email,
-            created_at: new Date().toISOString()
-          })
-          .execute()
-      );
-
-      c.executionCtx.waitUntil(pruneHistory(c, slug, 10));
-      c.executionCtx.waitUntil(logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${input.body.title} (${status})`));
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
-
-      const warnings: string[] = [];
-
-      if (status === "published") {
-        const socialConfig = await getSocialConfig(c);
-        const socialsFilter = input.body.socials || null;
-        const baseUrl = new URL(c.req.url).origin;
-
-        c.executionCtx.waitUntil((async () => {
+        (async () => {
           try {
             await dispatchSocials(
               c.get("db") as Kysely<DB>,
               {
-                title: input.body.title,
+                title: body.title,
                 url: `${baseUrl}/blog/${slug}`,
                 snippet: snippet || "Read the latest engineering update from ARES 23247!",
-                thumbnail: input.body.thumbnail || "/gallery_1.png",
-                baseUrl: baseUrl
+                thumbnail: body.thumbnail || "/gallery_1.png",
+                baseUrl: baseUrl,
               },
               socialConfig,
               socialsFilter
@@ -347,288 +457,309 @@ const postTsRestRouterObj = {
           } catch (err) {
             console.error("Social dispatch failed:", err);
           }
-        })());
-
-        try {
-          c.executionCtx.waitUntil(sendZulipMessage(
-            socialConfig,
-            "blog",
-            `Blog: ${input.body.title}`,
-            `🚀 **New Blog Post Published:** [${input.body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
-          ).catch(err => {
-            console.error("[Posts] Zulip announcement failed:", err);
-            warnings.push("Zulip Notification Failed");
-          }));
-        } catch (err) {
-          console.error("Zulip prepare failed", err);
-          warnings.push("Zulip Notification Failed");
-        }
-      }
-
-      if (status === "pending") {
-        const notifyPromise = notifyByRole(c, ["admin", "coach", "mentor"], {
-          title: "📝 Pending Blog Post",
-          message: `"${input.body.title}" submitted by ${email} needs review.`,
-          link: "/dashboard/manage_blog",
-          external: true,
-          priority: "medium"
-        });
-        
-        c.executionCtx.waitUntil(
-          notifyPromise.catch(function handleNotifyError(e) {
-            console.error("[Posts] notifyByRole error:", e);
-          })
-        );
-      }
-
-      return { 
-        status: 200, 
-        body: { success: true, slug, warning: warnings.join(" | ") }
-      };
-    } catch (e) {
-      console.error("[Posts:Save] Error", e);
-      return { status: 500, body: { error: "Database write failed" } };
-    }
-  },
-  updatePost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const astStr = JSON.stringify(input.body.ast);
-      const snippet = extractAstText(input.body.ast).substring(0, 200);
-      const user = await getSessionUser(c);
-
-      if (user?.role !== "admin") {
-        const revSlug = await createShadowRevision(c, slug, user!, {
-          title: input.body.title,
-          author: "ARES Team",
-          thumbnail: input.body.thumbnail,
-          snippet,
-          astStr,
-          publishedAt: input.body.publishedAt,
-          seasonId: input.body.seasonId
-        });
-        return { status: 200, body: { success: true, slug: revSlug } };
-      }
-
-      const status = input.body.isDraft ? "pending" : "published";
-      
-      const current = await db.selectFrom("posts")
-        .select(["title", "author", "thumbnail", "snippet", "ast", "cf_email", "season_id"])
-        .where("slug", "=", slug)
-        .executeTakeFirst();
-      
-      if (current) {
-        // @ts-expect-error -- manual casting for history
-        await captureHistory(c, slug, current);
-      }
-
-      await db.updateTable("posts")
-        .set({
-          title: input.body.title,
-          thumbnail: input.body.thumbnail || "",
-          snippet,
-          ast: astStr,
-          status,
-          content_draft: null,
-          published_at: input.body.publishedAt || null,
-          season_id: input.body.seasonId ? Number(input.body.seasonId) : null,
-          updated_at: new Date().toISOString()
-        })
-        .where("slug", "=", slug)
-        .execute();
-
-      // Push snapshot to collaborative editor history
-      c.executionCtx.waitUntil(
-        db.insertInto("document_history")
-          .values({
-            room_id: `post_${slug}`,
-            content: astStr,
-            created_by: user?.email || "anonymous",
-            created_at: new Date().toISOString()
-          })
-          .execute()
+        })()
       );
 
-      c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${input.body.title} (${status})`));
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
-      return { status: 200, body: { success: true, slug } };
-    } catch (e) {
-      console.error("[Posts:Update] Error", e);
-      return { status: 500, body: { error: "Database write failed" } };
-    }
-  },
-  deletePost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      await db.updateTable("posts").set({ is_deleted: 1, status: "draft", updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
-      c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- System Boundary Type: Cloudflare AI binding
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB);
-      return { status: 200, body: { success: true } };
-    } catch (e) {
-      console.error("[Posts:Delete] Error", e);
-      return { status: 500, body: { error: "Delete failed" } };
-    }
-  },
-  undeletePost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      await db.updateTable("posts").set({ is_deleted: 0, status: "draft", updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
-      c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
-      return { status: 200, body: { success: true } };
-    } catch (e) {
-      console.error("[Posts:Undelete] Error", e);
-      return { status: 500, body: { error: "Undelete failed" } };
-    }
-  },
-  purgePost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      
-      const post = await db.selectFrom("posts")
-        .select("thumbnail")
-        .where("slug", "=", slug)
-        .executeTakeFirst();
-      
-      if (post?.thumbnail && c.env.ARES_STORAGE) {
-        try {
-          const url = new URL(post.thumbnail);
-          const key = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
-          c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(key));
-        } catch (e) {
-          console.error("[Posts] Failed to parse/delete thumbnail:", e);
-        }
+      try {
+        c.executionCtx.waitUntil(
+          sendZulipMessage(
+            socialConfig,
+            "blog",
+            `Blog: ${body.title}`,
+            `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
+          ).catch((err) => {
+            console.error("[Posts] Zulip announcement failed:", err);
+            warnings.push("Zulip Notification Failed");
+          })
+        );
+      } catch (err) {
+        console.error("Zulip prepare failed", err);
+        warnings.push("Zulip Notification Failed");
       }
-
-      await db.deleteFrom("posts").where("slug", "=", slug).execute();
-      c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
-      return { status: 200, body: { success: true } };
-    } catch (e) {
-      console.error("[Posts:Purge] Error", e);
-      return { status: 500, body: { error: "Purge failed" } };
     }
-  },
-  approvePost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const result = await approvePost(c, slug);
-      if (!result.success) return { status: 404, body: { error: result.error || "Approval failed" } };
-      return { status: 200, body: { success: true, warnings: result.warnings } };
-    } catch (e) {
-      console.error("[Posts:Approve] Error", e);
-      return { status: 500, body: { error: "Approval failed" } };
-    }
-  },
-  rejectPost: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    const { reason } = input.body;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const row = await db.selectFrom("posts").select(["title", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
-      
-      await db.updateTable("posts").set({ status: "rejected", updated_at: new Date().toISOString() }).where("slug", "=", slug).execute();
 
-      if (row?.cf_email) {
-        const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
-        if (author) {
-          c.executionCtx.waitUntil(emitNotification(c, {
+    if (status === "pending") {
+      const notifyPromise = notifyByRole(c, ["admin", "coach", "mentor"], {
+        title: "📝 Pending Blog Post",
+        message: `"${body.title}" submitted by ${email} needs review.`,
+        link: "/dashboard/manage_blog",
+        external: true,
+        priority: "medium",
+      });
+
+      c.executionCtx.waitUntil(
+        notifyPromise.catch(function handleNotifyError(e: unknown) {
+          console.error("[Posts] notifyByRole error:", e);
+        })
+      );
+    }
+
+    return c.json({ success: true, slug, warning: warnings.join(" | ") }, 200);
+  } catch (e) {
+    console.error("[Posts:Save] Error", e);
+    return c.json({ error: "Database write failed" }, 500);
+  }
+}) as AppRouteHandler<typeof savePostRoute>);
+
+postsRouter.openapi(updatePostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const body = c.req.valid("json");
+    const astStr = JSON.stringify(body.ast);
+    const snippet = extractAstText(body.ast).substring(0, 200);
+    const user = await getSessionUser(c);
+
+    if (user?.role !== "admin") {
+      const revSlug = await createShadowRevision(c, slug, user!, {
+        title: body.title,
+        author: "ARES Team",
+        thumbnail: body.thumbnail,
+        snippet,
+        astStr,
+        publishedAt: body.publishedAt,
+        seasonId: body.seasonId,
+      });
+      return c.json({ success: true, slug: revSlug }, 200);
+    }
+
+    const status = body.isDraft ? "pending" : "published";
+
+    const current = await db
+      .selectFrom("posts")
+      .select(["title", "author", "thumbnail", "snippet", "ast", "cf_email", "season_id"])
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+
+    if (current) {
+      // @ts-expect-error -- manual casting for history
+      await captureHistory(c, slug, current);
+    }
+
+    await db
+      .updateTable("posts")
+      .set({
+        title: body.title,
+        thumbnail: body.thumbnail || "",
+        snippet,
+        ast: astStr,
+        status,
+        content_draft: null,
+        published_at: body.publishedAt || null,
+        season_id: body.seasonId ? Number(body.seasonId) : null,
+        updated_at: new Date().toISOString(),
+      })
+      .where("slug", "=", slug)
+      .execute();
+
+    c.executionCtx.waitUntil(
+      db
+        .insertInto("document_history")
+        .values({
+          room_id: `post_${slug}`,
+          content: astStr,
+          created_by: user?.email || "anonymous",
+          created_at: new Date().toISOString(),
+        })
+        .execute()
+    );
+
+    c.executionCtx.waitUntil(
+      logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`)
+    );
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    return c.json({ success: true, slug }, 200);
+  } catch (e) {
+    console.error("[Posts:Update] Error", e);
+    return c.json({ error: "Database write failed" }, 500);
+  }
+}) as AppRouteHandler<typeof updatePostRoute>);
+
+postsRouter.openapi(deletePostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    await db
+      .updateTable("posts")
+      .set({ is_deleted: 1, status: "draft", updated_at: new Date().toISOString() })
+      .where("slug", "=", slug)
+      .execute();
+    c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
+
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    return c.json({ success: true }, 200);
+  } catch (e) {
+    console.error("[Posts:Delete] Error", e);
+    return c.json({ error: "Delete failed" }, 500);
+  }
+}) as AppRouteHandler<typeof deletePostRoute>);
+
+postsRouter.openapi(undeletePostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    await db
+      .updateTable("posts")
+      .set({ is_deleted: 0, status: "draft", updated_at: new Date().toISOString() })
+      .where("slug", "=", slug)
+      .execute();
+    c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
+    return c.json({ success: true }, 200);
+  } catch (e) {
+    console.error("[Posts:Undelete] Error", e);
+    return c.json({ error: "Undelete failed" }, 500);
+  }
+}) as AppRouteHandler<typeof undeletePostRoute>);
+
+postsRouter.openapi(purgePostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+
+    const post = await db
+      .selectFrom("posts")
+      .select("thumbnail")
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+
+    if (post?.thumbnail && c.env.ARES_STORAGE) {
+      try {
+        const url = new URL(post.thumbnail);
+        const key = url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname;
+        c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(key));
+      } catch (e) {
+        console.error("[Posts] Failed to parse/delete thumbnail:", e);
+      }
+    }
+
+    await db.deleteFrom("posts").where("slug", "=", slug).execute();
+    c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
+    return c.json({ success: true }, 200);
+  } catch (e) {
+    console.error("[Posts:Purge] Error", e);
+    return c.json({ error: "Purge failed" }, 500);
+  }
+}) as AppRouteHandler<typeof purgePostRoute>);
+
+postsRouter.openapi(approvePostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const result = await approvePost(c, slug);
+    if (!result.success) return c.json({ error: result.error || "Approval failed" }, 404);
+    return c.json({ success: true, warnings: result.warnings }, 200);
+  } catch (e) {
+    console.error("[Posts:Approve] Error", e);
+    return c.json({ error: "Approval failed" }, 500);
+  }
+}) as AppRouteHandler<typeof approvePostRoute>);
+
+postsRouter.openapi(rejectPostRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  const _body = c.req.valid("json");
+  const { reason } = c.req.valid("json");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const row = await db
+      .selectFrom("posts")
+      .select(["title", "cf_email"])
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+
+    await db
+      .updateTable("posts")
+      .set({ status: "rejected", updated_at: new Date().toISOString() })
+      .where("slug", "=", slug)
+      .execute();
+
+    if (row?.cf_email) {
+      const author = await db
+        .selectFrom("user")
+        .select("id")
+        .where("email", "=", row.cf_email)
+        .executeTakeFirst();
+      if (author) {
+        c.executionCtx.waitUntil(
+          emitNotification(c, {
             userId: String(author.id),
             title: "Post Rejected",
             message: `Your post "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`,
             link: "/dashboard/manage_blog",
-            priority: "high"
-          }));
-        }
+            priority: "high",
+          })
+        );
       }
-      c.executionCtx.waitUntil(logAuditAction(c, "REJECT_POST", "posts", slug));
-      return { status: 200, body: { success: true } };
-    } catch (e) {
-      console.error("[Posts:Reject] Error", e);
-      return { status: 500, body: { error: "Reject failed" } };
     }
-  },
-  getPostHistory: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    try {
-      const historyRows = await getPostHistory(c, slug);
-      const history = historyRows.map(h => ({
-        ...h,
-        id: Number(h.id)
-      }));
-      return { status: 200, body: { history } };
-    } catch (e) {
-      console.error("[Posts:History] Error", e);
-      return { status: 500, body: { error: "Failed to fetch history" } };
-    }
-  },
-  restorePostHistory: async (input: any, c: Context<AppEnv>) => {
-    const { slug, id } = input.params;
-    const user = await getSessionUser(c);
-    const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
-    if (!result.success) return { status: 404, body: { error: result.error || "Restore failed" } };
-    return { status: 200, body: { success: true } };
-  },
-  repushSocials: async (input: any, c: Context<AppEnv>) => {
-    const { slug } = input.params;
-    const { socials } = input.body;
-    try {
-      const db = c.get("db") as Kysely<DB>;
-      const post = await db.selectFrom("posts").select(["title", "snippet", "thumbnail"]).where("slug", "=", slug).executeTakeFirst();
-      if (!post) return { status: 404, body: { error: "Post not found" } };
-
-      const socialConfig = await getSocialConfig(c);
-      const baseUrl = new URL(c.req.url).origin;
-      
-      c.executionCtx.waitUntil(
-        dispatchSocials(
-          c.get("db") as Kysely<DB>,
-          {
-            title: String(post.title),
-            url: `${baseUrl}/blog/${slug}`,
-            snippet: post.snippet || "Read the latest update from ARES 23247!",
-            thumbnail: post.thumbnail || "",
-            baseUrl: baseUrl
-          },
-          socialConfig,
-          socials ? socials.reduce((acc: Record<string, boolean>, curr: string) => ({...acc, [curr]: true}), {} as Record<string, boolean>) : null
-        ).catch(err => console.error("[Repush] Social dispatch failed:", err))
-      );
-      return { status: 200, body: { success: true } };
-    } catch (err) {
-      return { status: 502, body: { error: (err as Error).message } };
-    }
+    c.executionCtx.waitUntil(logAuditAction(c, "REJECT_POST", "posts", slug));
+    return c.json({ success: true }, 200);
+  } catch (e) {
+    console.error("[Posts:Reject] Error", e);
+    return c.json({ error: "Reject failed" }, 500);
   }
-};
-/* eslint-enable @typescript-eslint/no-explicit-any */
+}) as AppRouteHandler<typeof rejectPostRoute>);
 
-const postTsRestRouter = s.router(postContract, postTsRestRouterObj);
-
-export const postsRouter = new Hono<AppEnv>();
-
-import { edgeCacheMiddleware } from "../middleware/cache";
-
-// Apply middleware/protections
-postsRouter.use("/", edgeCacheMiddleware(300, 60)); // Cache list
-postsRouter.use("/:slug", edgeCacheMiddleware(300, 60)); // Cache single
-postsRouter.use("/admin/:slug/history", ensureAuth);
-postsRouter.use("/admin/:slug/history/*", ensureAuth);
-postsRouter.use("/admin/*", ensureAdmin);
-
-createHonoEndpoints(
-  postContract,
-  postTsRestRouter,
-  postsRouter,
-  {
-    responseValidation: true,
-    responseValidationErrorHandler: (err, _c) => {
-      console.error('[Contract] Response validation failed:', err.cause);
-      return { error: { message: 'Internal server error' }, status: 500 };
-    }
+postsRouter.openapi(getPostHistoryRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  try {
+    const historyRows = await getPostHistory(c, slug);
+    const history = historyRows.map((h) => ({
+      ...h,
+      id: Number(h.id),
+    }));
+    return c.json({ history }, 200);
+  } catch (e) {
+    console.error("[Posts:History] Error", e);
+    return c.json({ error: "Failed to fetch history" }, 500);
   }
-);
+}) as AppRouteHandler<typeof getPostHistoryRoute>);
+
+postsRouter.openapi(restorePostHistoryRoute, (async (c) => {
+  const { slug, id } = c.req.valid("param");
+  const user = await getSessionUser(c);
+  const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
+  if (!result.success) return c.json({ error: result.error || "Restore failed" }, 404);
+  return c.json({ success: true }, 200);
+}) as AppRouteHandler<typeof restorePostHistoryRoute>);
+
+postsRouter.openapi(repushSocialsRoute, (async (c) => {
+  const { slug } = c.req.valid("param");
+  const _body = c.req.valid("json");
+  const { socials } = c.req.valid("json");
+  try {
+    const db = c.get("db") as Kysely<DB>;
+    const post = await db
+      .selectFrom("posts")
+      .select(["title", "snippet", "thumbnail"])
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+    if (!post) return c.json({ error: "Post not found" }, 404);
+
+    const socialConfig = await getSocialConfig(c);
+    const baseUrl = new URL(c.req.url).origin;
+
+    c.executionCtx.waitUntil(
+      dispatchSocials(
+        c.get("db") as Kysely<DB>,
+        {
+          title: String(post.title),
+          url: `${baseUrl}/blog/${slug}`,
+          snippet: post.snippet || "Read the latest update from ARES 23247!",
+          thumbnail: post.thumbnail || "",
+          baseUrl: baseUrl,
+        },
+        socialConfig,
+        socials
+          ? socials.reduce(
+              (acc: Record<string, boolean>, curr: string) => ({ ...acc, [curr]: true }),
+              {} as Record<string, boolean>
+            )
+          : null
+      ).catch((err) => console.error("[Repush] Social dispatch failed:", err))
+    );
+    return c.json({ success: true }, 200);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return c.json({ error: message }, 502);
+  }
+}) as AppRouteHandler<typeof repushSocialsRoute>);
 
 export default postsRouter;

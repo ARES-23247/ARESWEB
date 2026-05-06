@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
@@ -26,7 +27,7 @@ import { badgesRouter } from "./badges";
 describe("Hono Backend - /badges Router", () => {
   let mockDb: MockKysely;
   let testApp: Hono<TestEnv>;
-  const mockEnv: TestEnv["Bindings"] = { DEV_BYPASS: "true" };
+  const mockEnv: TestEnv["Bindings"] = { DEV_BYPASS: "true", DB: {} as any };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -273,3 +274,4 @@ describe("Hono Backend - /badges Router", () => {
     expect(res.status).toBe(500);
   });
 });
+

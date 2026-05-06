@@ -1,48 +1,55 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
-const c = initContract();
-
-export const tbaContract = c.router({
-  getRankings: {
-    method: "GET",
-    path: "/rankings/:eventKey",
-    pathParams: z.object({
+export const getRankingsRoute = createRoute({
+  method: "get",
+  path: "/rankings/{eventKey}",
+  request: {
+    params: z.object({
       eventKey: z.string(),
     }),
-    responses: {
-      200: z.object({ rankings: z.array(z.any()) }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Get TBA rankings for an event",
   },
-  getMatches: {
-    method: "GET",
-    path: "/matches/:eventKey",
-    pathParams: z.object({
+  responses: {
+    200: {
+      description: "Get TBA rankings for an event",
+      content: { "application/json": { schema: z.object({ rankings: z.array(z.unknown()) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getMatchesRoute = createRoute({
+  method: "get",
+  path: "/matches/{eventKey}",
+  request: {
+    params: z.object({
       eventKey: z.string(),
     }),
-    responses: {
-      200: z.object({ matches: z.array(z.any()) }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Get TBA matches for an event",
   },
-  getFtcEvents: {
-    method: "GET",
-    path: "/ftc-events/:season/:eventCode/:type",
-    pathParams: z.object({
+  responses: {
+    200: {
+      description: "Get TBA matches for an event",
+      content: { "application/json": { schema: z.object({ matches: z.array(z.unknown()) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getFtcEventsRoute = createRoute({
+  method: "get",
+  path: "/ftc-events/{season}/{eventCode}/{type}",
+  request: {
+    params: z.object({
       season: z.string(),
       eventCode: z.string(),
       type: z.enum(["matches", "rankings", "alliances"]),
     }),
-    responses: {
-      200: z.any(),
-      500: z.object({ error: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Fetch official data from FTC Events API",
+      content: { "application/json": { schema: z.unknown() } },
     },
-    summary: "Fetch official data from FTC Events API",
+    ...openApiStandardErrors,
   },
 });
-export type TbaContract = typeof tbaContract;

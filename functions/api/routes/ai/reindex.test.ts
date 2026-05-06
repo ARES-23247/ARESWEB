@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
@@ -79,7 +80,7 @@ describe("AI Router - /reindex endpoint", () => {
   });
 
   it("POST /reindex - incremental mode by default", async () => {
-    const res = await app.request("/reindex", { method: "POST" }, baseEnv, mockExecutionContext);
+    const res = await app.request("/reindex", { method: "POST" }, baseEnv, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { success: boolean; mode: string; indexed: number };
     expect(body.success).toBe(true);
@@ -94,7 +95,7 @@ describe("AI Router - /reindex endpoint", () => {
   });
 
   it("POST /reindex?force=true - full rebuild mode", async () => {
-    const res = await app.request("/reindex?force=true", { method: "POST" }, baseEnv, mockExecutionContext);
+    const res = await app.request("/reindex?force=true", { method: "POST" }, baseEnv, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { mode: string };
     expect(body.mode).toBe("full");
@@ -108,7 +109,7 @@ describe("AI Router - /reindex endpoint", () => {
 
   it("POST /reindex - returns 500 when AI binding missing", async () => {
     const envNoAi: TestBindings = { ...baseEnv, AI: undefined };
-    const res = await app.request("/reindex", { method: "POST" }, envNoAi, mockExecutionContext);
+    const res = await app.request("/reindex", { method: "POST" }, envNoAi, mockExecutionContext as any);
     expect(res.status).toBe(500);
     const body = await res.json() as { error: string };
     expect(body.error).toContain("not configured");
@@ -116,15 +117,16 @@ describe("AI Router - /reindex endpoint", () => {
 
   it("POST /reindex - returns 500 when Vectorize binding missing", async () => {
     const envNoVec: TestBindings = { ...baseEnv, VECTORIZE_DB: undefined };
-    const res = await app.request("/reindex?force=true", { method: "POST" }, envNoVec, mockExecutionContext);
+    const res = await app.request("/reindex?force=true", { method: "POST" }, envNoVec, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
   it("POST /reindex - returns errors from indexer", async () => {
     mockIndexSiteContent.mockResolvedValue({ indexed: 1, skipped: 0, errors: ["Batch 0 failed"] });
-    const res = await app.request("/reindex", { method: "POST" }, baseEnv, mockExecutionContext);
+    const res = await app.request("/reindex", { method: "POST" }, baseEnv, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { errors: string[] };
     expect(body.errors).toEqual(["Batch 0 failed"]);
   });
 });
+

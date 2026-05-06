@@ -4,6 +4,13 @@ interface Env {
   DB: D1Database;
 }
 
+interface ProseMirrorNode {
+  type: string;
+  content?: ProseMirrorNode[];
+  text?: string;
+  attrs?: Record<string, unknown>;
+}
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const host = context.request.headers.get("host") || "";
@@ -61,8 +68,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const ast = JSON.parse(snippet);
             if (ast.type === "doc" && ast.content) {
               // Extract raw text from ProseMirror AST
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              snippet = ast.content.map((n: any) => n.content?.map((c: any) => c.text).join(" ")).join(" ");
+              snippet = (ast.content as ProseMirrorNode[]).map(n => n.content?.map(c => c.text).join(" ")).join(" ");
             }
           } catch {
             // Probably raw text already

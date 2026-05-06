@@ -1,15 +1,18 @@
-
-import { useQueryClient } from "@tanstack/react-query";
+// import { useQueryClient } from "@tanstack/react-query"; // Reserved for future query invalidation
 import { Trash2, MessageSquare, Mail, CheckSquare, Clock, Search } from "lucide-react";
 import { format } from "date-fns";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQueryState } from "nuqs";
-import { api } from "../api/client";
+import {
+  useGetAdminInquiries,
+  useUpdateInquiryStatus,
+  useUpdateInquiryNotes,
+  useDeleteInquiry
+} from "../api";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
 import { toast } from "sonner";
-import { useEffect } from "react";
 
 function DebouncedNotesArea({
   id,
@@ -88,20 +91,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminInquiries() {
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Reserved for future query invalidation
   const [globalFilter, setGlobalFilter] = useQueryState("q", { defaultValue: "" });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const { data: inquiriesData, isLoading, isError } = api.inquiries.list.useQuery(["admin-inquiries"], {
-    query: { limit: 200, offset: 0 }
-  });
-
-  const inquiries = useMemo(() => {
-    const rawBody = (inquiriesData as unknown as { body?: { inquiries?: unknown[] } | unknown[] })?.body;
-    if (inquiriesData?.status !== 200) return [];
-    return Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.inquiries) ? rawBody.inquiries : []);
-  }, [inquiriesData]);
+  const { data: res, isLoading, isError } = useGetAdminInquiries({ limit: 200, offset: 0 });
+  const inquiries = useMemo(() => (res?.inquiries || []) as Inquiry[], [res?.inquiries]);
 
   const filtered = useMemo(() => {
     let result = inquiries as Inquiry[];
@@ -118,41 +114,18 @@ export default function AdminInquiries() {
       );
     }
     return result;
-  }, [inquiries, statusFilter, globalFilter]);
+  }, [inquiries, statusFilter, globalFilter]); // Dependencies are stable: inquiries is memoized, statusFilter and globalFilter are from state
 
-  const updateStatusMutation = api.inquiries.updateStatus.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Inquiry status updated.");
-        queryClient.invalidateQueries({ queryKey: ["admin-inquiries"] });
-        queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
-      } else {
-        toast.error("Failed to update status.");
-      }
-    }
+  const updateStatusMutation = useUpdateInquiryStatus({
+    onSuccess: () => toast.success("Inquiry status updated.")
   });
 
-  const deleteInquiryMutation = api.inquiries.delete.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Inquiry deleted.");
-        queryClient.invalidateQueries({ queryKey: ["admin-inquiries"] });
-        queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
-      } else {
-        toast.error("Failed to delete inquiry.");
-      }
-    }
+  const deleteInquiryMutation = useDeleteInquiry({
+    onSuccess: () => toast.success("Inquiry deleted.")
   });
 
-  const updateNotesMutation = api.inquiries.updateNotes.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Notes updated.");
-        queryClient.invalidateQueries({ queryKey: ["admin-inquiries"] });
-      } else {
-        toast.error("Failed to update notes.");
-      }
-    }
+  const updateNotesMutation = useUpdateInquiryNotes({
+    onSuccess: () => toast.success("Notes updated.")
   });
 
   const parseMetadata = (metadata: string | null): Record<string, unknown> | null => {
@@ -273,7 +246,7 @@ export default function AdminInquiries() {
                     id={inquiry.id}
                     initialValue={inquiry.notes || ""}
                     onSave={(val) => {
-                      updateNotesMutation.mutate({ params: { id: inquiry.id }, body: { notes: val } });
+                      updateNotesMutation.mutate({ id: inquiry.id, notes: val });
                     }}
                   />
                 </div>
@@ -283,7 +256,7 @@ export default function AdminInquiries() {
                   <div className="flex flex-wrap items-center gap-2">
                   {inquiry.status === "pending" ? (
                     <button
-                      onClick={() => updateStatusMutation.mutate({ params: { id: inquiry.id }, body: { status: "resolved" } })}
+                      onClick={() => updateStatusMutation.mutate({ id: inquiry.id, status: "resolved" })}
                       disabled={updateStatusMutation.isPending}
                       className="text-xs font-bold text-marble/60 hover:text-ares-cyan bg-white/5 hover:bg-ares-cyan/10 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
                     >
@@ -291,7 +264,7 @@ export default function AdminInquiries() {
                     </button>
                   ) : (
                     <button
-                      onClick={() => updateStatusMutation.mutate({ params: { id: inquiry.id }, body: { status: "pending" } })}
+                      onClick={() => updateStatusMutation.mutate({ id: inquiry.id, status: "pending" })}
                       disabled={updateStatusMutation.isPending}
                       className="text-xs font-bold text-marble/60 hover:text-ares-gold bg-white/5 hover:bg-ares-gold/10 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
                     >
@@ -303,7 +276,7 @@ export default function AdminInquiries() {
                   {isConfirming ? (
                     <>
                       <button
-                        onClick={() => { deleteInquiryMutation.mutate({ params: { id: inquiry.id }, body: {} }); setConfirmId(null); }}
+                        onClick={() => { deleteInquiryMutation.mutate(inquiry.id); setConfirmId(null); }}
                         className="text-xs font-bold text-white bg-ares-red hover:bg-ares-red/80 px-3 py-1 ares-cut-sm shadow-[0_0_20px_rgba(204,0,0,0.4)] transition-all animate-pulse"
                       >
                         CONFIRM DELETE

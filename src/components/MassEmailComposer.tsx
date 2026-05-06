@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Mail, Users, Send, AlertTriangle } from "lucide-react";
-import { api } from "../api/client";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { fetchJson } from "../api";
 import { toast } from "sonner";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -13,23 +14,29 @@ export default function MassEmailComposer() {
     placeholder: "<p>Start drafting your mass email here...</p>"
   });
 
-  const { isPending, data: statsRes } = api.communications.getStats.useQuery(["mass_email_stats"], {});
-  const sendMutation = api.communications.sendMassEmail.useMutation({
-    onSuccess: (res: { status: number; body: { success?: boolean; recipientCount?: number; error?: string; message?: string } }) => {
-      if (res?.status === 200 && res?.body?.success) {
-        toast.success(`Mass email dispatched successfully to ${res.body.recipientCount} recipients.`);
+  const { isLoading: isStatsLoading, data: statsRes } = useQuery({
+    queryKey: ["mass_email_stats"],
+    queryFn: () => fetchJson<{ activeUsers: number }>("/api/communications/admin/stats")
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: (body: { subject: string, htmlContent: string }) => 
+      fetchJson<{ success?: boolean; recipientCount?: number; error?: string; message?: string }>("/api/communications/admin/send-mass-email", {
+        method: "POST",
+        body: JSON.stringify(body)
+      }),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(`Mass email dispatched successfully to ${data.recipientCount} recipients.`);
         setSubject("");
         editor?.commands.setContent("");
       } else {
-        const errorMsg = res?.body?.error || res?.body?.message || `Server returned status ${res?.status || "unknown"}`;
+        const errorMsg = data.error || data.message || "Unknown error";
         toast.error(`Email send failed: ${errorMsg}`);
       }
     },
-    onError: (err: Error & { body?: { error?: string; message?: string } }) => {
-      // ts-rest fires onError when the response doesn't match any contract schema.
-      // Try to extract the actual error from the raw response.
-      const detail = err?.body?.error || err?.body?.message || err?.message || "An unexpected server error occurred. Check Resend API key configuration.";
-      toast.error(`Email send failed: ${detail}`);
+    onError: (err: Error) => {
+      toast.error(`Email send failed: ${err.message}`);
     }
   });
 
@@ -45,12 +52,12 @@ export default function MassEmailComposer() {
     }
     
     if (confirm("Are you sure you want to send this mass email to all registered website users?")) {
-      sendMutation.mutate({ body: { subject, htmlContent } });
+      sendMutation.mutate({ subject, htmlContent });
     }
   };
 
 
-  const recipientCount = statsRes?.status === 200 ? statsRes.body.activeUsers : 0;
+
 
   return (
     <div className="flex flex-col h-full bg-obsidian text-white font-sans animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto">
@@ -73,9 +80,9 @@ export default function MassEmailComposer() {
           
           <button
             onClick={handleSend}
-            disabled={sendMutation.isPending || !recipientCount || !subject}
+            disabled={sendMutation.isPending || !statsRes?.activeUsers || !subject}
             className={`flex items-center gap-2 px-8 py-3 ares-cut-sm font-black tracking-widest transition-all ${
-              sendMutation.isPending || !recipientCount || !subject
+              sendMutation.isPending || !statsRes?.activeUsers || !subject
                 ? "bg-white/5 text-marble/60 cursor-not-allowed border border-white/5"
                 : "bg-ares-red text-white hover:bg-red-700 hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(192,0,0,0.4)]"
             }`}
@@ -107,17 +114,17 @@ export default function MassEmailComposer() {
             <p className="text-xs text-marble/60">Sourced directly from registered website users.</p>
           </div>
           <div className="text-right">
-             {isPending ? (
+             {isStatsLoading ? (
                <div className="h-6 w-16 bg-white/10 animate-pulse rounded"></div>
              ) : (
                <div className="text-2xl font-black text-ares-cyan tracking-tighter">
-                 {recipientCount} <span className="text-sm font-bold text-marble/60 uppercase tracking-widest">Recipients</span>
+                 {statsRes?.activeUsers || 0} <span className="text-sm font-bold text-marble/60 uppercase tracking-widest">Recipients</span>
                </div>
              )}
           </div>
         </div>
 
-        {recipientCount === 0 && !isPending && (
+        {statsRes?.activeUsers === 0 && !isStatsLoading && (
           <div className="bg-ares-red/10 border border-ares-red/30 p-4 flex items-start gap-3 ares-cut-sm text-sm text-ares-red-soft">
             <AlertTriangle className="shrink-0 mt-0.5" size={18} />
             <div>

@@ -95,6 +95,9 @@ test.describe('Kanban Task Board', () => {
 
     // Mock Tasks API
     await page.route('**/api/tasks*', async (route, request) => {
+      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
+        return route.fallback();
+      }
       const method = request.method();
 
       if (method === 'GET') {
@@ -171,7 +174,10 @@ test.describe('Kanban Task Board', () => {
 
   test('Loads existing task description into the editor', async ({ page }) => {
     // Override the mock to return a task with an existing description
-    await page.route('**/api/tasks*', async (route) => {
+    await page.route('**/api/tasks*', async (route, request) => {
+      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
+        return route.fallback();
+      }
       await route.fulfill({
         status: 200,
         json: { 

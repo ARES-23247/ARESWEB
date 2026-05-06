@@ -1,97 +1,51 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, BookOpen, Trophy, Users, ArrowRight, Lock, AlertCircle, FileText, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import Turnstile from "../components/Turnstile";
-import { api } from "../api/client";
 import SEO from "../components/SEO";
 import { STORAGE_KEYS } from "../utils/storageKeys";
-
-interface PortfolioData {
-  docs: Array<{
-    title: string;
-    slug: string;
-    category: string;
-    is_executive_summary: number;
-    description: string;
-  }>;
-  awards: Array<{
-    title: string;
-    award_name: string;
-    date: string;
-    event_name: string;
-  }>;
-  outreach: Array<{
-    date: string;
-    event_name: string;
-    total_hours: number;
-    description: string;
-  }>;
-}
+import { useJudgeLogin, useGetJudgePortfolio } from "../api";
 
 export default function JudgesHub() {
   const [accessCode, setAccessCode] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
 
-  const fetchPortfolio = useCallback(async (code: string) => {
-    try {
-      const res = await api.judges.portfolio.query({
-        headers: { "Authorization": `Bearer ${code}` }
-      });
-      if (res.status === 200) {
-        setPortfolio(res.body as PortfolioData);
-      }
-    } catch {
-      console.error("Failed to fetch portfolio");
-    }
-  }, []);
+  const savedCode = sessionStorage.getItem(STORAGE_KEYS.JUDGE_CODE);
+  const isAuthenticated = Boolean(savedCode);
+  const { data: portfolioRes, isLoading: isLoadingPortfolio, refetch } = useGetJudgePortfolio(savedCode || "");
+  const portfolio = portfolioRes;
+
+  const loginMutation = useJudgeLogin();
 
   const handleLogin = useCallback(async (code: string) => {
     if (!code) return;
-
-    setIsLoading(true);
     setError("");
 
-    try {
-      const res = await api.judges.login.mutation({
-        body: { code, turnstileToken }
-      });
-      if (res.status === 200 && res.body.success) {
-                sessionStorage.setItem(STORAGE_KEYS.JUDGE_CODE, code);
-        setIsAuthenticated(true);
-        fetchPortfolio(code);
-      } else {
-        const body = res.body as { error?: string };
-        setError(body?.error || "Invalid access code.");
-                sessionStorage.removeItem(STORAGE_KEYS.JUDGE_CODE);
+    loginMutation.mutate({ code, turnstileToken }, {
+      onSuccess: (data) => {
+        if (data.success) {
+          sessionStorage.setItem(STORAGE_KEYS.JUDGE_CODE, code);
+          refetch();
+        } else {
+          setError("Invalid access code.");
+          sessionStorage.removeItem(STORAGE_KEYS.JUDGE_CODE);
+        }
+      },
+      onError: (err: Error) => {
+        setError(err.message || "Login failed");
+        sessionStorage.removeItem(STORAGE_KEYS.JUDGE_CODE);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error. Please try again.");
-              sessionStorage.removeItem(STORAGE_KEYS.JUDGE_CODE);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchPortfolio, turnstileToken]);
-
-  useEffect(() => {
-    const savedCode =     sessionStorage.getItem(STORAGE_KEYS.JUDGE_CODE);
-    if (savedCode) {
-      setTimeout(() => {
-        handleLogin(savedCode);
-      }, 0);
-    }
-  }, [handleLogin]);
+    });
+  }, [loginMutation, turnstileToken, refetch]);
 
   const logout = () => {
-            sessionStorage.removeItem(STORAGE_KEYS.JUDGE_CODE);
-    setIsAuthenticated(false);
-    setPortfolio(null);
+    sessionStorage.removeItem(STORAGE_KEYS.JUDGE_CODE);
     setAccessCode("");
   };
+
+  const isLoading = loginMutation.isPending || isLoadingPortfolio;
 
   if (!isAuthenticated) {
     return (
@@ -211,9 +165,10 @@ export default function JudgesHub() {
                 </div>
                 <h3 className="text-xl font-black uppercase tracking-tight">Executive Summaries</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {portfolio?.docs.filter(d => d.is_executive_summary).map(doc => (
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio doc type compatibility */}
+                {portfolio?.portfolioDocs.filter((d: any) => d.is_executive_summary === 1).map((doc: any) => (
                   <motion.a 
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
@@ -245,7 +200,8 @@ export default function JudgesHub() {
               </div>
               
               <div className="grid grid-cols-1 gap-4">
-                {portfolio?.docs.filter(d => !d.is_executive_summary).map(doc => (
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio doc type compatibility */}
+                {portfolio?.portfolioDocs.filter((d: any) => d.is_executive_summary !== 1).map((doc: any) => (
                   <motion.a 
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
@@ -276,13 +232,14 @@ export default function JudgesHub() {
               </div>
               
               <div className="space-y-4">
-                {portfolio?.outreach.map((log, i) => (
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio outreach type compatibility */}
+                {portfolio?.outreach.map((log: any, i: number) => (
                   <div key={i} className="p-6 bg-black/40 border border-white/10 ares-cut-lg">
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-xs font-bold text-ares-gold bg-ares-gold/10 px-3 py-1 ares-cut-sm uppercase tracking-widest">{format(new Date(log.date), 'MMM yyyy')}</div>
-                      <div className="text-lg font-black text-white">{log.total_hours} <span className="text-xs text-marble uppercase tracking-tighter">Team Hours</span></div>
+                      <div className="text-lg font-black text-white">{log.hours_logged} <span className="text-xs text-marble uppercase tracking-tighter">Team Hours</span></div>
                     </div>
-                    <h4 className="font-bold text-white">{log.event_name}</h4>
+                    <h4 className="font-bold text-white">{log.title}</h4>
                     <p className="text-marble text-sm mt-2 leading-relaxed">{log.description}</p>
                   </div>
                 ))}
@@ -304,7 +261,8 @@ export default function JudgesHub() {
               </div>
               
               <div className="space-y-4">
-                {portfolio?.awards.map((award, i) => (
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Portfolio awards type compatibility */}
+                {portfolio?.awards.map((award: any, i: number) => (
                   <motion.div 
                     key={i}
                     initial={{ opacity: 0, x: 20 }}
@@ -314,8 +272,8 @@ export default function JudgesHub() {
                   >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-ares-gold/5 blur-2xl rounded-full" />
                     <div className="text-xs font-black text-ares-gold/70 uppercase tracking-widest mb-1">{award.event_name}</div>
-                    <h4 className="font-bold text-white text-lg leading-tight group-hover:text-ares-gold transition-colors">{award.award_name}</h4>
-                    <div className="text-xs text-marble mt-2 font-mono uppercase italic">{award.title}</div>
+                    <h4 className="font-bold text-white text-lg leading-tight group-hover:text-ares-gold transition-colors">{award.title}</h4>
+                    <div className="text-xs text-marble mt-2 font-mono uppercase italic">{award.description}</div>
                   </motion.div>
                 ))}
               </div>
@@ -331,11 +289,13 @@ export default function JudgesHub() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-marble text-sm">Engagement Reach</span>
-                  <span className="font-black text-white">~{portfolio?.outreach.reduce((acc, curr) => acc + (curr.total_hours * 5), 0)} Impacted</span>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Outreach data type compatibility */}
+                  <span className="font-black text-white">~{portfolio?.outreach.reduce((acc: number, curr: any) => acc + (curr.reach_count || 0), 0)} Impacted</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-ares-cyan/20 pt-6">
                   <span className="text-marble font-bold uppercase tracking-tighter text-xs">Total Service Hours</span>
-                  <span className="font-black text-2xl text-ares-cyan">{portfolio?.outreach.reduce((acc, curr) => acc + curr.total_hours, 0)}</span>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Outreach data type compatibility */}
+                  <span className="font-black text-2xl text-ares-cyan">{portfolio?.outreach.reduce((acc: number, curr: any) => acc + (curr.hours_logged || 0), 0)}</span>
                 </div>
               </div>
             </section>

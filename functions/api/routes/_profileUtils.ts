@@ -112,3 +112,4 @@ export async function upsertProfile(
     .onConflict((oc) => oc.column("user_id").doUpdateSet(updateSet))
     .execute();
 }
+

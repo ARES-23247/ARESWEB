@@ -1,7 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const outreachSchema = z.object({
   id: z.string(),
@@ -21,61 +19,73 @@ export const outreachSchema = z.object({
   mentor_hours: z.number().min(0).max(1000, "Mentor hours seem too high").optional(),
 });
 
-export const outreachContract = c.router({
-  list: {
-    method: "GET",
-    path: "/",
-    responses: {
-      200: z.object({
-        logs: z.array(outreachSchema),
-      }),
-      500: z.object({ error: z.string() }),
+export const listOutreachRoute = createRoute({
+  method: "get",
+  path: "/",
+  responses: {
+    200: {
+      description: "List all outreach logs",
+      content: { "application/json": { schema: z.object({ logs: z.array(outreachSchema) }) } },
     },
-    summary: "List all outreach logs",
-  },
-  adminList: {
-    method: "GET",
-    path: "/admin/list",
-    responses: {
-      200: z.object({
-        logs: z.array(outreachSchema),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "List all outreach logs (admin)",
-  },
-  save: {
-    method: "POST",
-    path: "/admin/save",
-    body: outreachSchema.omit({ id: true }).extend({
-      id: z.string().optional(),
-    }),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-        id: z.string().optional(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Create or Update an outreach log",
-  },
-  delete: {
-    method: "DELETE",
-    path: "/admin/:id",
-    pathParams: z.object({
-      id: z.string(),
-    }),
-    body: c.noBody(),
-    responses: {
-      200: z.object({
-        success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
-    },
-    summary: "Delete an outreach log",
+    ...openApiStandardErrors,
   },
 });
-export type OutreachContract = typeof outreachContract;
+
+export const adminListOutreachRoute = createRoute({
+  method: "get",
+  path: "/admin/list",
+  responses: {
+    200: {
+      description: "List all outreach logs (admin)",
+      content: { "application/json": { schema: z.object({ logs: z.array(outreachSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const saveOutreachRoute = createRoute({
+  method: "post",
+  path: "/admin/save",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: outreachSchema.omit({ id: true }).extend({
+            id: z.string().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create or Update an outreach log",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            id: z.string().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteOutreachRoute = createRoute({
+  method: "delete",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({
+      id: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Delete an outreach log",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

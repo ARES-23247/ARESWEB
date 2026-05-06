@@ -19,34 +19,51 @@ export type AppEnv = MiddlewareAppEnv;
 /**
  * Hono context with ARES-specific environment bindings.
  */
-export type HonoContext = Context<AppEnv, any, {}>;
+export type HonoContext = Context<AppEnv>;
 
 /**
  * Standard handler input structure with typed body and params.
  *
- * @deprecated Use AppRouteInput from ts-rest-hono for ts-rest handlers.
- * This type is still useful for non-ts-rest Hono middleware.
- * @see Migration guide in Phase 29 summary.
- *
- * @example
- * interface CreateSponsorInput extends HandlerInput<SponsorCreateBody, {}> {}
+ * Useful for non-OpenAPI Hono middleware and custom handlers.
  */
 export type HandlerInput<
   TBody = unknown,
-  TParams extends Record<string, string> = Record<string, string>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic type parameters for dynamic records
+  TParams extends Record<string, any> = Record<string, any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic type parameters for dynamic records
+  TQuery extends Record<string, any> = Record<string, any>
 > = {
   body: TBody;
-  query: Record<string, string>;
+  query: TQuery;
   params: TParams;
 };
 
 /**
  * Standard handler output structure with status and typed body.
- *
- * @example
- * interface SponsorListOutput extends HandlerOutput<Sponsor[]> {}
  */
 export type HandlerOutput<TBody = unknown> = {
   status: number;
   body: TBody;
+};
+
+import { z } from "zod";
+
+/**
+ * Custom Zod type extractor for OpenAPI route inference.
+ */
+type InferZodOrType<T> = T extends z.ZodTypeAny
+  ? z.infer<T>
+  : T extends { _type: infer U }
+    ? U
+    : T;
+
+/**
+ * Custom ServerInferRequest for OpenAPI route type inference.
+ * Extracts params, body, query, and headers types from OpenAPI route definitions.
+ */
+export type ServerInferRequest<T> = {
+  params: T extends { pathParams: infer P } ? InferZodOrType<P> : never;
+  body: T extends { body: infer B } ? InferZodOrType<B> : never;
+  query: T extends { query: infer Q } ? InferZodOrType<Q> : never;
+  headers: T extends { headers: infer H } ? InferZodOrType<H> : never;
 };

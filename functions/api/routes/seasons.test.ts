@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { TestEnv } from "../../../src/test/types";
+import type { TestEnv, MockKysely } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 import seasonsRouter from "./seasons";
 
@@ -15,27 +15,28 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockDb: any = {
-  selectFrom: vi.fn().mockReturnThis(),
-  select: vi.fn().mockReturnThis(),
-  where: vi.fn().mockReturnThis(),
-  orderBy: vi.fn().mockReturnThis(),
-  execute: vi.fn(),
-  executeTakeFirst: vi.fn(),
-  updateTable: vi.fn().mockReturnThis(),
-  set: vi.fn().mockReturnThis(),
-  insertInto: vi.fn().mockReturnThis(),
-  values: vi.fn().mockReturnThis(),
-  deleteFrom: vi.fn().mockReturnThis(),
-};
-
 describe("Seasons Router", () => {
   let app: Hono<TestEnv>;
-  const env = { DB: {} };
+  let mockDb: MockKysely;
+  const env: TestEnv["Bindings"] = { DB: {} as unknown as D1Database };
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mockDb = {
+      selectFrom: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      execute: vi.fn(),
+      executeTakeFirst: vi.fn(),
+      updateTable: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      insertInto: vi.fn().mockReturnThis(),
+      values: vi.fn().mockReturnThis(),
+      deleteFrom: vi.fn().mockReturnThis(),
+    };
+
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
       c.set("db", mockDb);
@@ -176,3 +177,4 @@ describe("Seasons Router", () => {
     expect(res.status).toBe(404);
   });
 });
+

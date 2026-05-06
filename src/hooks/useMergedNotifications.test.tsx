@@ -3,18 +3,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useMergedNotifications } from "./useMergedNotifications";
 import { useDashboardNotifications } from "./useDashboardNotifications";
-import { api } from "../api/client";
 
-// Mock the API client
-vi.mock("../api/client", () => ({
-  api: {
-    notifications: {
-      getNotifications: {
-        useQuery: vi.fn(),
-      },
-    },
-  },
-}));
+import { useQuery } from "@tanstack/react-query";
+
+vi.mock("@tanstack/react-query", async () => {
+  const actual = await vi.importActual("@tanstack/react-query");
+  return {
+    ...actual,
+    useQuery: vi.fn(),
+  };
+});
 
 // Mock useDashboardNotifications
 vi.mock("./useDashboardNotifications", () => ({
@@ -28,8 +26,7 @@ describe("useMergedNotifications hook", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Default mock returns
-    (api.notifications.getNotifications.useQuery as any).mockReturnValue({
+    (useQuery as any).mockReturnValue({
       data: { body: { notifications: [] } },
     });
 
@@ -49,7 +46,7 @@ describe("useMergedNotifications hook", () => {
   });
 
   it("should return unread count correctly for raw API notifications", () => {
-    (api.notifications.getNotifications.useQuery as any).mockReturnValue({
+    (useQuery as any).mockReturnValue({
       data: {
         body: {
           notifications: [
@@ -68,7 +65,7 @@ describe("useMergedNotifications hook", () => {
   });
 
   it("should filter out redundant DB notifications", () => {
-    (api.notifications.getNotifications.useQuery as any).mockReturnValue({
+    (useQuery as any).mockReturnValue({
       data: {
         body: {
           notifications: [
@@ -138,9 +135,7 @@ describe("useMergedNotifications hook", () => {
     renderHook(() => useMergedNotifications(null, mockPermissions));
     
     // Check if useQuery was called with enabled: false
-    expect(api.notifications.getNotifications.useQuery).toHaveBeenCalledWith(
-      ["notifications"],
-      {},
+    expect(useQuery).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: false })
     );
   });

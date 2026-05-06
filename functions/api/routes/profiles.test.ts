@@ -1,4 +1,4 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
@@ -61,6 +61,7 @@ describe("Hono Backend - /profiles Router", () => {
       updateTable: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
+      deleteFrom: vi.fn().mockReturnThis(), // Added missing required method
       run: vi.fn().mockResolvedValue({ success: true }),
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
@@ -76,7 +77,7 @@ describe("Hono Backend - /profiles Router", () => {
         first: vi.fn(),
         all: vi.fn(),
         run: vi.fn(),
-      } as D1Database,
+      } as unknown as D1Database,
       DEV_BYPASS: "true",
     };
 
@@ -115,7 +116,7 @@ describe("Hono Backend - /profiles Router", () => {
   });
 
   it("should update /me profile", async () => {
-    mockDb.run.mockResolvedValue({ success: true });
+    (mockDb as any).run.mockResolvedValue({ success: true });
 
     const res = await testApp.request("/me", {
       method: "PUT",
@@ -158,7 +159,7 @@ describe("Hono Backend - /profiles Router", () => {
     const { getAuth } = await import("../../utils/auth");
     vi.mocked(getAuth).mockReturnValueOnce({
       api: { updateUser: vi.fn().mockRejectedValueOnce(new Error("API Error")) }
-    } );
+    } as any);
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await testApp.request("/avatar", {
@@ -313,7 +314,7 @@ describe("Hono Backend - /profiles Router", () => {
   it("should handle empty results in team-roster with warning", async () => {
     mockDb.execute.mockResolvedValueOnce([{ user_id: "1", show_on_about: 1 }]);
 
-    vi.mocked(shared.sanitizeProfileForPublic).mockReturnValueOnce(null );
+    vi.mocked(shared.sanitizeProfileForPublic).mockReturnValueOnce(null as any);
 
     const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const res = await testApp.request("/team-roster", {}, env, mockExecutionContext);
@@ -322,3 +323,4 @@ describe("Hono Backend - /profiles Router", () => {
     consoleSpy.mockRestore();
   });
 });
+

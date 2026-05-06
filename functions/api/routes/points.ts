@@ -1,181 +1,146 @@
-import { Hono } from "hono";
-import { createHonoEndpoints } from "ts-rest-hono";
-import { pointsContract } from "../../../shared/schemas/contracts/pointsContract";
-import type { AppEnv } from "../middleware/utils";
-import { s } from "../middleware";
-import { Kysely, sql } from "kysely";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+import type { AppEnv } from "../../../shared/types/api";
+import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
+import { 
 
-import type { HonoContext } from "@shared/types/api";
+  getPointsBalanceRoute, 
+  getPointsHistoryRoute, 
+  awardPointsRoute, 
+  getPointsLeaderboardRoute 
+} from "../../../shared/routes/points";
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
-const app = new Hono<AppEnv>();
+export const pointsRouter = new OpenAPIHono<AppEnv>();
 
-
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
-const pointsHandlers = {
-  getBalance: async (input: any, c: HonoContext) => {
-    try {
-      const sessionUser = c.get("sessionUser");
-      if (!sessionUser) {
-        return { status: 401 as const, body: { error: "Unauthorized" } };
-      }
-
-      const { user_id } = input.params;
-      if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
-        return { status: 403 as const, body: { error: "Forbidden" } };
-      }
-
-      const db = c.get("db") as Kysely<DB>;
-      const ledger = await db
-        .selectFrom("points_ledger")
-        .select(["points_delta"])
-        .where("user_id", "=", user_id)
-        .execute();
-
-      const balance = ledger.reduce((sum, tx) => sum + tx.points_delta, 0);
-
-      return {
-        status: 200 as const,
-        body: { user_id, balance }
-      };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      console.error("[Points] Get balance failed:", err);
-      return { status: 500 as const, body: { error: err.message } };
+pointsRouter.openapi(getPointsBalanceRoute, (async (c) => {
+  const { user_id } = c.req.valid("param");
+  try {
+    const sessionUser = c.get("sessionUser");
+    if (!sessionUser) {
+      return c.json({ error: "Unauthorized" }, 401);
     }
-  },
-  getHistory: async (input: any, c: HonoContext) => {
-    try {
-      const sessionUser = c.get("sessionUser");
-      if (!sessionUser) {
-        return { status: 401 as const, body: { error: "Unauthorized" } };
-      }
 
-      const { user_id } = input.params;
-      if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
-        return { status: 403 as const, body: { error: "Forbidden" } };
-      }
-
-      const db = c.get("db") as Kysely<DB>;
-      const history = await db
-        .selectFrom("points_ledger")
-        .selectAll()
-        .where("user_id", "=", user_id)
-        .orderBy("created_at", "desc")
-        .execute();
-
-      return {
-        status: 200 as const,
-        body: history.map((tx) => ({
-          ...tx,
-          id: tx.id || "",
-          created_at: tx.created_at || null
-        }))
-      };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      console.error("[Points] Get history failed:", err);
-      return { status: 500 as const, body: { error: err.message } };
+    if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
+      return c.json({ error: "Forbidden" }, 403);
     }
-  },
-  awardPoints: async (input: any, c: HonoContext) => {
-    try {
-      const sessionUser = c.get("sessionUser");
-      if (!sessionUser || sessionUser.role !== "admin") {
-        return { status: 401 as const, body: { error: "Unauthorized" } };
-      }
 
-      const { user_id, points_delta, reason } = input.body;
-      const db = c.get("db") as Kysely<DB>;
-
-      const id =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `pt-${Date.now()}`;
-
-      const newTx = {
-        id,
-        user_id,
-        points_delta,
-        reason,
-        created_by: sessionUser.id,
-      };
-
-      await db
-        .insertInto("points_ledger")
-        .values(newTx)
-        .execute();
-
-      return {
-        status: 200 as const,
-        body: {
-          ...newTx,
-          created_at: new Date().toISOString()
-        }
-      };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      console.error("[Points] Award points failed:", err);
-      return { status: 500 as const, body: { error: err.message } };
-    }
-  },
-  getLeaderboard: async (_input: any, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
-    try {
-      const results = await db.selectFrom("user as u")
-        .innerJoin("user_profiles as p", "u.id", "p.user_id")
-        .leftJoin("points_ledger as pl", "u.id", "pl.user_id")
-        .select([
-          "u.id as user_id",
-          "u.name as first_name",
-          "p.last_name",
-          "p.nickname",
-          "p.member_type",
-          "u.image as avatar",
-          (eb) => eb.fn.coalesce(eb.fn.sum("pl.points_delta"), sql<number>`0`).as("points_balance")
-        ])
-        .where("p.show_on_about", "=", 1)
-        .groupBy(["u.id", "u.name", "p.last_name", "p.nickname", "p.member_type", "u.image"])
-        .having((eb) => eb.fn.coalesce(eb.fn.sum("pl.points_delta"), sql<number>`0`), ">", 0)
-        .orderBy("points_balance", "desc")
-        .limit(50)
-        .execute();
+    const ledger = await db
+      .selectFrom("points_ledger")
+      .select(["points_delta"])
+      .where("user_id", "=", user_id)
+      .execute();
 
-      const leaderboard = results.map(r => {
-        const isMinor = r.member_type === "student";
-        return {
-          user_id: String(r.user_id),
-          first_name: isMinor ? "ARES Member" : String(r.first_name || "ARES"),
-          last_name: isMinor ? null : (r.last_name || null),
-          nickname: r.nickname || null,
-          member_type: String(r.member_type || "student"),
-          points_balance: Number(r.points_balance),
-          avatar: r.avatar ? String(r.avatar) : null
-        };
-      });
+    const balance = ledger.reduce((sum, tx) => sum + tx.points_delta, 0);
 
-      return { status: 200 as const, body: { leaderboard } };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      console.error("[Points] Get leaderboard failed:", err);
-      return { status: 500 as const, body: { error: err.message } };
-    }
+    return c.json({ user_id, balance }, 200);
+  } catch (err) {
+    console.error("[Points] Get balance failed:", err);
+    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
-};
-/* eslint-enable @typescript-eslint/no-explicit-any */
+}) as AppRouteHandler<typeof getPointsBalanceRoute>);
 
-const pointsTsRestRouter = s.router(pointsContract, pointsHandlers);
-createHonoEndpoints(
-  pointsContract,
-  pointsTsRestRouter,
-  app,
-  {
-    responseValidation: true,
-    responseValidationErrorHandler: (err, _c) => {
-      console.error('[Contract] Response validation failed:', err.cause);
-      return { error: { message: 'Internal server error' }, status: 500 };
+pointsRouter.openapi(getPointsHistoryRoute, (async (c) => {
+  const { user_id } = c.req.valid("param");
+  try {
+    const sessionUser = c.get("sessionUser");
+    if (!sessionUser) {
+      return c.json({ error: "Unauthorized" }, 401);
     }
-  }
-);
 
-export default app;
+    if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+
+    const db = c.get("db") as Kysely<DB>;
+    const history = await db
+      .selectFrom("points_ledger")
+      .selectAll()
+      .where("user_id", "=", user_id)
+      .orderBy("created_at", "desc")
+      .execute();
+
+    return c.json(history.map((tx) => ({
+      ...tx,
+      id: tx.id || "",
+      created_at: tx.created_at || null
+    })), 200);
+  } catch (err) {
+    console.error("[Points] Get history failed:", err);
+    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
+  }
+}) as AppRouteHandler<typeof getPointsHistoryRoute>);
+
+pointsRouter.openapi(awardPointsRoute, (async (c) => {
+  const { user_id, points_delta, reason } = c.req.valid("json");
+  try {
+    const sessionUser = c.get("sessionUser");
+    if (!sessionUser || sessionUser.role !== "admin") {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const db = c.get("db") as Kysely<DB>;
+
+    const id = crypto.randomUUID();
+
+    const newTx = {
+      id,
+      user_id,
+      points_delta,
+      reason,
+      created_at: new Date().toISOString(),
+      created_by: sessionUser.id
+    };
+
+    await db.insertInto("points_ledger").values(newTx).execute();
+
+    return c.json({ 
+      success: true, 
+      transaction_id: id 
+    }, 201);
+  } catch (err) {
+    console.error("[Points] Award points failed:", err);
+    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
+  }
+}) as AppRouteHandler<typeof awardPointsRoute>);
+
+pointsRouter.openapi(getPointsLeaderboardRoute, (async (c) => {
+  try {
+    const db = c.get("db") as Kysely<DB>;
+
+    const results = await db
+      .selectFrom("user")
+      .leftJoin("points_ledger", "user.id", "points_ledger.user_id")
+      .select([
+        "user.id",
+        "user.name",
+        "user.role",
+        (eb) => eb.fn.sum<number>("points_ledger.points_delta").as("points_balance")
+      ])
+      .groupBy("user.id")
+      .orderBy("points_balance", "desc")
+      .limit(50)
+      .execute();
+
+    const leaderboard = results.map((r) => {
+      return {
+        id: String(r.id),
+        name: r.name || "Anonymous",
+        nickname: null,
+        member_type: String(r.role || "student"),
+        points_balance: Number(r.points_balance || 0),
+        avatar: null
+      };
+    });
+
+    return c.json({ leaderboard }, 200);
+  } catch (err) {
+    console.error("[Points] Get leaderboard failed:", err);
+    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
+  }
+}) as AppRouteHandler<typeof getPointsLeaderboardRoute>);
+
+export default pointsRouter;
+

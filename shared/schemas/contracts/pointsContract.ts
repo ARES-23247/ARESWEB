@@ -1,9 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-
-const c = initContract();
-
-export const ErrorSchema = z.object({ error: z.string() });
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const PointsTransactionSchema = z.object({
   id: z.string(),
@@ -20,69 +16,77 @@ export const PointsBalanceSchema = z.object({
 });
 
 export const PointsLeaderboardEntrySchema = z.object({
-  user_id: z.string(),
-  first_name: z.string(),
-  last_name: z.string().nullable(),
+  id: z.string(),
+  name: z.string().nullable(),
   nickname: z.string().nullable(),
-  member_type: z.string(),
+  member_type: z.string().nullable(),
   points_balance: z.number(),
-  avatar: z.string().nullable().optional(),
+  avatar: z.string().nullable(),
 });
 
-export type PointsTransaction = z.infer<typeof PointsTransactionSchema>;
-
-export const pointsContract = c.router({
-  getBalance: {
-    method: "GET",
-    path: "/balance/:user_id",
-    pathParams: z.object({ user_id: z.string() }),
-    responses: {
-      200: PointsBalanceSchema,
-      401: ErrorSchema,
-      403: ErrorSchema,
-      500: ErrorSchema,
-    },
-    summary: "Get user point balance",
+export const getPointsBalanceRoute = createRoute({
+  method: "get",
+  path: "/balance/{user_id}",
+  request: {
+    params: z.object({ user_id: z.string() }),
   },
-  getHistory: {
-    method: "GET",
-    path: "/history/:user_id",
-    pathParams: z.object({ user_id: z.string() }),
-    responses: {
-      200: z.array(PointsTransactionSchema),
-      401: ErrorSchema,
-      403: ErrorSchema,
-      500: ErrorSchema,
+  responses: {
+    200: {
+      description: "Get user point balance",
+      content: { "application/json": { schema: PointsBalanceSchema } },
     },
-    summary: "Get user point history",
-  },
-  awardPoints: {
-    method: "POST",
-    path: "/transaction",
-    body: z.object({
-      user_id: z.string(),
-      points_delta: z.number(),
-      reason: z.string().min(1),
-    }),
-    responses: {
-      200: PointsTransactionSchema,
-      400: ErrorSchema,
-      401: ErrorSchema,
-      403: ErrorSchema,
-      500: ErrorSchema,
-    },
-    summary: "Award or deduct points (Admin)",
-  },
-  getLeaderboard: {
-    method: "GET",
-    path: "/leaderboard",
-    responses: {
-      200: z.object({
-        leaderboard: z.array(PointsLeaderboardEntrySchema),
-      }),
-      500: ErrorSchema,
-    },
-    summary: "Get global points leaderboard",
+    ...openApiStandardErrors,
   },
 });
-export type PointsContract = typeof pointsContract;
+
+export const getPointsHistoryRoute = createRoute({
+  method: "get",
+  path: "/history/{user_id}",
+  request: {
+    params: z.object({ user_id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get user point history",
+      content: { "application/json": { schema: z.array(PointsTransactionSchema) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const awardPointsRoute = createRoute({
+  method: "post",
+  path: "/transaction",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            user_id: z.string(),
+            points_delta: z.number(),
+            reason: z.string().min(1),
+          })
+        }
+      }
+    }
+  },
+  responses: {
+    201: {
+      description: "Award or deduct points (Admin)",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), transaction_id: z.string() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getPointsLeaderboardRoute = createRoute({
+  method: "get",
+  path: "/leaderboard",
+  responses: {
+    200: {
+      description: "Get global points leaderboard",
+      content: { "application/json": { schema: z.object({ leaderboard: z.array(PointsLeaderboardEntrySchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

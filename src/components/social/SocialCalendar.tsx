@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Trash2, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../api/client";
-import type { SocialQueuePost } from "@shared/schemas/contracts/socialQueueContract";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchJson } from "../../utils/apiClient";
+import type { SocialQueuePost } from "@shared/routes/socialQueue";
 
 interface SocialCalendarProps {
   onEditPost?: (post: SocialQueuePost) => void;
@@ -33,12 +34,15 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
   const monthStart = format(startOfCurrentMonth, "yyyy-MM-dd");
   const monthEnd = format(endOfCurrentMonth, "yyyy-MM-dd");
 
-  const { data: calendarData, isLoading } = api.socialQueue.calendar.useQuery(
-    ["social-queue", "calendar", monthStart, monthEnd],
-    { query: { start: monthStart, end: monthEnd } }
-  );
+  const { data: calendarData, isLoading } = useQuery({
+    queryKey: ["social-queue", "calendar", monthStart, monthEnd],
+    queryFn: async () => {
+      return fetchJson<{ posts: SocialQueuePost[] }>(`/api/social-queue/calendar?start=${monthStart}&end=${monthEnd}`);
+    },
+    enabled: !!(monthStart && monthEnd),
+  });
 
-  const posts = useMemo(() => calendarData?.body?.posts || [], [calendarData?.body?.posts]);
+  const posts = useMemo(() => calendarData?.posts || [], [calendarData?.posts]);
 
   // Group posts by day
   const postsByDay = useMemo(() => {
@@ -54,15 +58,21 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
   const handlePreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
 
-  const deleteMutation = api.socialQueue.delete.useMutation({
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      return fetchJson(`/api/social-queue/${postId}`, { method: "DELETE" });
+    },
     onSuccess: () => {
-      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
     },
   });
 
   const handleDelete = (postId: string) => {
     if (confirm("Cancel this scheduled post?")) {
-      deleteMutation.mutate({ params: { id: postId }, body: null });
+      deleteMutation.mutate(postId);
     }
   };
 

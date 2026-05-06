@@ -11,7 +11,7 @@ import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { z } from "zod";
 import { postSchema, PostPayload } from "@shared/schemas/postSchema";
-import { api } from "../api/client";
+import { useGetAdminPost, useSavePost, useUpdatePost, useDeletePost, type SavePostResponse, type UpdatePostResponse } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
@@ -76,26 +76,18 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   });
 
   // Use standard API query instead of custom useEntityFetch
-  const { data: postRes, isLoading, isError } = api.posts.getAdminPost.useQuery(
-    ["admin_post_detail", editSlug || ""],
-    { 
-      params: { slug: editSlug || "" } 
-    },
-    { 
-      enabled: !!editSlug
-    }
-  );
+  const { data: postRes, isLoading, isError } = useGetAdminPost(editSlug || "");
 
   useEffect(() => {
-    if (postRes?.status === 200 && postRes.body.post) {
-      const post = postRes.body.post;
+    if (postRes && postRes.post) {
+      const post = postRes.post;
       reset({
         title: post.title || "",
         publishedAt: post.published_at || "",
         seasonId: post.season_id ? Number(post.season_id) : undefined,
         thumbnail: post.thumbnail || DEFAULT_COVER_IMAGE,
         ast: post.ast ? JSON.parse(post.ast) : {},
-        socials: (postRes.body as unknown as { socials?: Record<string, boolean> }).socials || {}
+        socials: (postRes as unknown as { socials?: Record<string, boolean> }).socials || {}
       });
       if (editor && post.ast) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
@@ -113,64 +105,44 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
   }, [postRes, reset, editor, ydoc]);
 
-  const saveMutation = api.posts.savePost.useMutation({
-    onSuccess: (data: { status: number; body?: { warning?: string; error?: string; slug?: string; isDraft?: boolean } | null }) => {
-      if (data.status === 200 || data.status === 207) {
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-        
-        if (data.body?.warning) {
-          toast.info("Post saved successfully, but social syndication had issues:\n\n" + data.body.warning);
-        }
+  const saveMutation = useSavePost({
+    onSuccess: (data: SavePostResponse) => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
 
-        if (data.body?.isDraft || userRole === "author") {
-          navigate("/dashboard");
-        } else {
-          navigate(`/blog/${data.body?.slug}`);
-        }
-      } else {
-        setErrorMsg(data.body?.error || "Failed to publish");
+      if (data.warning) {
+        toast.info("Post saved successfully, but social syndication had issues:\n\n" + data.warning);
       }
+
+      navigate("/dashboard");
     },
     onError: (err: Error) => {
       setErrorMsg(err.message || "Publication failed");
     }
   });
 
-  const updateMutation = api.posts.updatePost.useMutation({
-    onSuccess: (data: { status: number; body: { warning?: string; isDraft?: boolean; slug?: string; error?: string } }) => {
-      if (data.status === 200 || data.status === 207) {
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-        if (editSlug) queryClient.invalidateQueries({ queryKey: ["post", editSlug] });
-        
-        if (data.body?.warning) {
-          toast.info("Post updated successfully, but social syndication had issues:\n\n" + data.body.warning);
-        }
+  const updateMutation = useUpdatePost({
+    onSuccess: (data: UpdatePostResponse) => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
+      if (editSlug) queryClient.invalidateQueries({ queryKey: ["post", editSlug] });
 
-        if (data.body?.isDraft || userRole === "author") {
-          navigate("/dashboard");
-        } else {
-          navigate(`/blog/${data.body?.slug || editSlug}`);
-        }
-      } else {
-        setErrorMsg(data.body?.error || "Failed to update");
+      if (data.warning) {
+        toast.info("Post updated successfully, but social syndication had issues:\n\n" + data.warning);
       }
+
+      navigate(`/blog/${data.slug || editSlug}`);
     },
     onError: (err: Error) => {
       setErrorMsg(err.message || "Update failed");
     }
   });
 
-  const deleteMutation = api.posts.deletePost.useMutation({
-    onSuccess: (data: { status: number }) => {
-      if (data.status === 200) {
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-        navigate("/dashboard");
-      } else {
-        setErrorMsg("Failed to delete the post. Please try again.");
-      }
+  const deleteMutation = useDeletePost({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
+      navigate("/dashboard");
     },
     onError: () => {
       setErrorMsg("Failed to delete the post. Please try again.");
@@ -182,9 +154,9 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     const ast = editor.getJSON();
     const payload = { ...data, ast, isDraft, thumbnail: data.thumbnail === DEFAULT_COVER_IMAGE ? "" : data.thumbnail };
     if (editSlug) {
-      updateMutation.mutate({ params: { slug: editSlug }, body: payload });
+      updateMutation.mutate({ slug: editSlug, body: payload });
     } else {
-      saveMutation.mutate({ body: payload });
+      saveMutation.mutate(payload);
     }
   };
 
@@ -198,7 +170,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     });
     if (!confirmed) return;
 
-    deleteMutation.mutate({ params: { slug: editSlug }, body: {} });
+    deleteMutation.mutate(editSlug);
   };
 
 
@@ -322,11 +294,11 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       )}
       </div>
 
-      {editSlug && postRes?.body?.post && (
+      {editSlug && postRes?.post && (
         <div className="w-full flex flex-col gap-6 mt-6">
           <ZulipThread 
-            stream={postRes.body.post.zulip_stream || "blog"} 
-            topic={postRes.body.post.zulip_topic || `Blog: ${postRes.body.post.title}`} 
+            stream={postRes.post.zulip_stream || "blog"} 
+            topic={postRes.post.zulip_topic || `Blog: ${postRes.post.title}`} 
           />
         </div>
       )}

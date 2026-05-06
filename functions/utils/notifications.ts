@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Context } from "hono";
 import { AppEnv } from "../api/middleware/utils";
 import { sendZulipAlert } from "./zulipSync";
@@ -30,7 +29,7 @@ export async function emitNotification(
     // 1. Database Persistence
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Date.now()}`;
     
-    await db.insertInto("notifications" as any)
+    await db.insertInto("notifications")
       .values({
         id,
         user_id: userId,
@@ -89,7 +88,7 @@ export async function notifyByRole(
           eb.exists(
             db.selectFrom("user_profiles as p")
               .select("p.user_id")
-              .whereRef("p.user_id" as any, "=", "u.id" as any)
+              .whereRef("p.user_id", "=", eb.ref("u.id"))
               .where("p.member_type", "in", profileTypes)
           )
         ])
@@ -112,17 +111,19 @@ export async function notifyByRole(
     for (let i = 0; i < results.length; i += MAX_BATCH_SIZE) {
       const chunk = results.slice(i, i + MAX_BATCH_SIZE);
       
-      const values = chunk.map(row => ({
-        id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
-        user_id: row.id,
-        title: payload.title,
-        message: payload.message,
-        link: payload.link || "",
-        priority: payload.priority || "low"
-      }));
+      const values = chunk
+        .filter(row => row.id !== null)
+        .map(row => ({
+          id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
+          user_id: row.id as string,
+          title: payload.title,
+          message: payload.message,
+          link: payload.link || "",
+          priority: (payload.priority || "low") as "low" | "high" | "medium"
+        }));
 
       try {
-        await db.insertInto("notifications" as any).values(values).execute();
+        await db.insertInto("notifications").values(values).execute();
       } catch (chunkErr) {
         console.error(`[Notification] Batch chunk starting at index ${i} failed:`, chunkErr);
       }

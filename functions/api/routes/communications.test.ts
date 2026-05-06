@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import communicationsRouter from "./communications";
@@ -20,7 +21,7 @@ import { getSocialConfig, logAuditAction, logSystemError } from "../middleware";
 const globalFetch = globalThis.fetch;
 
 describe("Hono Backend - /communications Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -31,7 +32,7 @@ describe("Hono Backend - /communications Router", () => {
       selectFrom: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
-    };
+    } as any;
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
@@ -61,7 +62,7 @@ describe("Hono Backend - /communications Router", () => {
   it("GET /stats - returns 500 when DB is null", async () => {
     const errorApp = new Hono<TestEnv>();
     errorApp.use("*", async (c, next) => {
-      c.set("db", null);
+      c.set("db", null as any);
       await next();
     });
     errorApp.route("/", communicationsRouter);
@@ -180,3 +181,4 @@ describe("Hono Backend - /communications Router", () => {
     expect(logAuditAction).toHaveBeenCalled();
   });
 });
+

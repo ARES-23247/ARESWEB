@@ -1,12 +1,23 @@
-import { Hono } from "hono";
-import type { Context } from "hono";
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
+import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, persistentRateLimitMiddleware, verifyTurnstile } from "../../middleware";
 import { streamSSE } from "hono/streaming";
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import { MessageContent, ZaiChatResponse, ChatMessage } from "./types";
+import { MessageContent, ZaiChatResponse, ChatMessage, isTextContentPart } from "./types";
+import { 
 
-export const aiRouter = new Hono<AppEnv>();
+  aiStatusRoute, 
+  liveblocksCopilotRoute, 
+  simPlaygroundRoute, 
+  editorChatRoute, 
+  aiSuggestRoute, 
+  ragChatbotRoute 
+} from "../../../../shared/routes/ai";
+type _AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
+export const aiRouter = new OpenAPIHono<AppEnv>();
 
 // PII Scrubber Utility
 const scrubPII = (text: string): string => {
@@ -24,7 +35,7 @@ const truncateForFallback = (text: string, maxChars = 18000): string => {
 };
 
 // ── AI Status Diagnostic (admin only) ──────────────────────────────────────
-aiRouter.get("/status", ensureAdmin, async (c: Context<AppEnv>) => {
+aiRouter.openapi(aiStatusRoute, async (c) => {
   let indexErrors = null;
   const db = c.get("db") as Kysely<DB>;
   
@@ -47,16 +58,15 @@ aiRouter.get("/status", ensureAdmin, async (c: Context<AppEnv>) => {
     vectorize: !!c.env.VECTORIZE_DB,
     primaryModel: c.env.Z_AI_API_KEY ? "zai-5.1" : c.env.AI ? "llama-3.1-8b" : "none",
     indexErrors,
-  });
+  }, 200);
 });
 
 // ── Liveblocks AI Copilot Endpoint ────────────────────────────────────────
 // Premium: uses z.ai (Claude) if Z_AI_API_KEY is set, otherwise falls back to Workers AI (Llama 3.1)
 
 // WR-07: Add rate limiting to prevent abuse of AI endpoints
-aiRouter.post("/liveblocks-copilot", persistentRateLimitMiddleware(30, 60), async (c: Context<AppEnv>) => {
-  const body = await c.req.json();
-  const { documentContext, action, imageUrl } = body;
+aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
+  const { documentContext, action, imageUrl } = c.req.valid("json");
 
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -184,7 +194,7 @@ aiRouter.post("/liveblocks-copilot", persistentRateLimitMiddleware(30, 60), asyn
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -220,9 +230,8 @@ aiRouter.post("/liveblocks-copilot", persistentRateLimitMiddleware(30, 60), asyn
 });
 
 // ── Simulation Playground IDE Endpoint ──────────────────────────────────
-aiRouter.post("/sim-playground", persistentRateLimitMiddleware(20, 60), async (c: Context<AppEnv>) => {
-  const body = await c.req.json();
-  const { systemPrompt, messages, imageUrl } = body;
+aiRouter.openapi(simPlaygroundRoute, async (c) => {
+  const { systemPrompt, messages, imageUrl } = c.req.valid("json");
 
   const hasZai = !!c.env.Z_AI_API_KEY;
   if (!hasZai && !c.env.AI) return c.json({ error: "AI service not configured." }, 500);
@@ -232,7 +241,9 @@ aiRouter.post("/sim-playground", persistentRateLimitMiddleware(20, 60), async (c
     if (lastMsg && lastMsg.role === "user") {
       const [header, base64] = imageUrl.split(',');
       const mediaType = header.split(';')[0].split(':')[1];
-      const textContent = lastMsg.content;
+      const textContent = typeof lastMsg.content === 'string' 
+        ? lastMsg.content 
+        : (Array.isArray(lastMsg.content) ? lastMsg.content.find(p => p.type === 'text')?.text || "" : "");
       
       lastMsg.content = [
         {
@@ -333,8 +344,7 @@ aiRouter.post("/sim-playground", persistentRateLimitMiddleware(20, 60), async (c
       // Normalize images back out for Llama 3.1, which may not support Vision in the standard instruct route
       const cleanMessages = (messages as ChatMessage[]).map((m) => {
         if (Array.isArray(m.content)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- External Library Type Gap: MessageContent union type
-          const textPart = m.content.find((p: any) => p.type === "text");
+          const textPart = m.content.find(isTextContentPart);
           return { role: m.role, content: textPart ? truncateForFallback(textPart.text) : "" };
         }
         return { role: m.role, content: truncateForFallback(m.content as string) };
@@ -350,7 +360,7 @@ aiRouter.post("/sim-playground", persistentRateLimitMiddleware(20, 60), async (c
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -389,9 +399,8 @@ aiRouter.post("/sim-playground", persistentRateLimitMiddleware(20, 60), async (c
 });
 
 // ── Editor AI Chat Endpoint ──────────────────────────────────────────────
-aiRouter.post("/editor-chat", persistentRateLimitMiddleware(30, 60), async (c: Context<AppEnv>) => {
-  const body = await c.req.json();
-  const { systemPrompt, messages, editorContent } = body;
+aiRouter.openapi(editorChatRoute, async (c) => {
+  const { systemPrompt, messages, editorContent } = c.req.valid("json");
 
   const hasZai = !!c.env.Z_AI_API_KEY;
   if (!hasZai) return c.json({ error: "AI service not configured." }, 500);
@@ -492,7 +501,7 @@ aiRouter.post("/editor-chat", persistentRateLimitMiddleware(30, 60), async (c: C
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -530,10 +539,8 @@ aiRouter.post("/editor-chat", persistentRateLimitMiddleware(30, 60), async (c: C
 
 // ── AI Inline Suggestions Endpoint ────────────────────────────────────────
 // Returns a short completion suggestion for ghost text in the editor
-
-aiRouter.post("/suggest", persistentRateLimitMiddleware(30, 60), ensureAdmin, async (c: Context<AppEnv>) => {
-  const body = await c.req.json();
-  const { context } = body;
+aiRouter.openapi(aiSuggestRoute, async (c) => {
+  const { context } = c.req.valid("json");
 
   if (!context || typeof context !== "string" || context.trim().length < 10) {
     return c.json({ suggestion: "" }, 200);
@@ -602,10 +609,8 @@ aiRouter.post("/suggest", persistentRateLimitMiddleware(30, 60), ensureAdmin, as
 });
 
 // ── RAG Chatbot Endpoint ──────────────────────────────────────────────────
-
-aiRouter.post("/rag-chatbot", persistentRateLimitMiddleware(15, 60), async (c: Context<AppEnv>) => {
-  const body = await c.req.json();
-  const { query, turnstileToken, sessionId } = body;
+aiRouter.openapi(ragChatbotRoute, async (c) => {
+  const { query, turnstileToken, sessionId } = c.req.valid("json");
 
   if (!query || !turnstileToken) {
     return c.json({ error: "Missing required fields" }, 400);
@@ -875,7 +880,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -939,7 +944,7 @@ async function saveHistory(db: Kysely<DB>, sessionId: string | undefined, histor
 
 // ── Manual Re-Index Endpoint (admin-only) ─────────────────────────────
 
-aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), async (c: Context<AppEnv>) => {
+aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), async (c: any) => {
   if (!c.env.AI || !c.env.VECTORIZE_DB) {
     return c.json({ error: "AI or Vectorize bindings not configured" }, 500);
   }
@@ -957,7 +962,7 @@ aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), as
   });
 });
 
-aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50, 600), async (c: Context<AppEnv>) => {
+aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50, 600), async (c: any) => {
   if (!c.env.VECTORIZE_DB) {
     return c.json({ error: "Vectorize DB binding not configured" }, 500);
   }
@@ -968,9 +973,7 @@ aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50
   const db = c.get("db") as Kysely<DB>;
   const { indexExternalResources } = await import("./indexer");
   const githubPat = c.env.GITHUB_PAT;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- System Boundary Type: Cloudflare AI binding has version conflicts
-  const ai = c.env.AI as any;
-  const result = await indexExternalResources(db, ai, c.env.VECTORIZE_DB, c.env.Z_AI_API_KEY, githubPat, sourceId);
+  const result = await indexExternalResources(db, c.env.AI, c.env.VECTORIZE_DB, c.env.Z_AI_API_KEY, githubPat, sourceId);
 
   return c.json({
     success: true,
@@ -980,13 +983,13 @@ aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50
   });
 });
 
-aiRouter.get("/external-sources", ensureAdmin, async (c: Context<AppEnv>) => {
+aiRouter.get("/external-sources", ensureAdmin, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const sources = await db.selectFrom("external_knowledge_sources").selectAll().execute();
   return c.json(sources);
 });
 
-aiRouter.post("/external-sources", ensureAdmin, async (c: Context<AppEnv>) => {
+aiRouter.post("/external-sources", ensureAdmin, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const body = await c.req.json();
   const id = crypto.randomUUID();
@@ -1000,14 +1003,14 @@ aiRouter.post("/external-sources", ensureAdmin, async (c: Context<AppEnv>) => {
   return c.json({ success: true, id });
 });
 
-aiRouter.delete("/external-sources/:id", ensureAdmin, async (c: Context<AppEnv>) => {
+aiRouter.delete("/external-sources/:id", ensureAdmin, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const id = c.req.param("id") as string;
   await db.deleteFrom("external_knowledge_sources").where("id", "=", id).execute();
   return c.json({ success: true });
 });
 
-aiRouter.get("/chat-session/:id", async (c: Context<AppEnv>) => {
+aiRouter.get("/chat-session/:id", async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const id = c.req.param("id") as string;
   try {
@@ -1022,3 +1025,4 @@ aiRouter.get("/chat-session/:id", async (c: Context<AppEnv>) => {
 });
 
 export default aiRouter;
+

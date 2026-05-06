@@ -1,9 +1,10 @@
-import { Hono } from "hono";
-import type { Context } from "hono";
+/* eslint-disable @typescript-eslint/no-explicit-any -- GitHub webhook payloads are dynamic and external */
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
+import { githubWebhookRoute } from "../../../shared/routes/webhooks";
 
-const githubWebhookRouter = new Hono<AppEnv>();
+const githubWebhookRouter = new OpenAPIHono<AppEnv>();
 
 // ── HMAC-SHA256 Signature Verification ───────────────────────────────
 async function verifyGitHubSignature(
@@ -21,18 +22,14 @@ async function verifyGitHubSignature(
       ["verify"]
     );
 
-    // WR-10: Use constant-time comparison for prefix check to prevent timing attacks
     const PREFIX = "sha256=";
-    // Always extract signature hex, even if prefix doesn't match
     const sigHex = signature.length >= PREFIX.length ? signature.slice(PREFIX.length) : signature;
     const sigBytes = new Uint8Array((sigHex.match(/.{1,2}/g) || []).map(byte => parseInt(byte, 16)));
 
-    // Check prefix matches AFTER doing the work (constant-time)
     const prefixMatches = signature.length >= PREFIX.length &&
       signature.substring(0, PREFIX.length) === PREFIX;
 
     if (!prefixMatches || sigBytes.length === 0) {
-      // Still do HMAC verification to normalize timing
       await crypto.subtle.verify("HMAC", key, new Uint8Array(64), enc.encode(payload));
       return false;
     }
@@ -49,11 +46,10 @@ async function verifyGitHubSignature(
 }
 
 // ── POST /webhooks/github — Receive GitHub webhook events ────────────
-githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
+githubWebhookRouter.openapi(githubWebhookRoute, async (c) => {
   const secret = c.env.GITHUB_WEBHOOK_SECRET;
   const rawBody = await c.req.text();
 
-  // SEC-02: Fail-closed — reject all requests if secret is not configured
   if (!secret) {
     console.warn("[GitHubWebhook] GITHUB_WEBHOOK_SECRET not configured. Rejecting request.");
     return c.json({ error: "Webhook not configured" }, 503);
@@ -67,7 +63,7 @@ githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
   }
 
   const event = c.req.header("X-GitHub-Event") || "unknown";
-  let payload: Record<string, unknown>;
+  let payload: any; // Webhook payloads are dynamic, 'any' is acceptable for top-level switch
   try {
     payload = JSON.parse(rawBody);
   } catch {
@@ -79,9 +75,9 @@ githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
   try {
     switch (event) {
       case "projects_v2_item": {
-        const action = payload.action as string;
-        const item = payload.projects_v2_item as { node_id?: string; content_node_id?: string } | undefined;
-        const changes = payload.changes as Record<string, { from?: unknown; to?: unknown }> | undefined;
+        const action = payload.action;
+        const item = payload.projects_v2_item;
+        const changes = payload.changes;
 
         if (action === "created") {
           c.executionCtx.waitUntil(sendZulipMessage(
@@ -91,9 +87,8 @@ githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
             `📋 **New project item created**\nItem ID: \`${item?.node_id || "unknown"}\``
           ).catch(err => console.error(err)));
         } else if (action === "edited" && changes) {
-          // Check if status field changed
           const fieldChanges = Object.entries(changes)
-            .map(([key, val]) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
+            .map(([key, val]: [string, any]) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
             .join("\n");
 
           if (fieldChanges) {
@@ -116,16 +111,16 @@ githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
       }
 
       case "push": {
-        const ref = payload.ref as string;
-        const commits = payload.commits as { message: string; author: { name: string } }[] | undefined;
-        const repo = (payload.repository as { full_name?: string })?.full_name || "unknown";
+        const ref = payload.ref;
+        const commits = payload.commits;
+        const repo = payload.repository?.full_name || "unknown";
         const branch = ref?.replace("refs/heads/", "") || "unknown";
         const commitCount = commits?.length || 0;
 
         if (commitCount > 0) {
           const commitList = (commits || [])
             .slice(0, 5)
-            .map(c => `• ${c.message.split("\n")[0]} *(${c.author.name})*`)
+            .map((comm: any) => `• ${comm.message.split("\n")[0]} *(${comm.author?.name || 'unknown'})*`)
             .join("\n");
 
           c.executionCtx.waitUntil(sendZulipMessage(
@@ -139,9 +134,9 @@ githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
       }
 
       case "pull_request": {
-        const action2 = payload.action as string;
-        const pr = payload.pull_request as { title?: string; html_url?: string; user?: { login?: string }; merged?: boolean } | undefined;
-        const repo2 = (payload.repository as { full_name?: string })?.full_name || "unknown";
+        const action2 = payload.action;
+        const pr = payload.pull_request;
+        const repo2 = payload.repository?.full_name || "unknown";
 
         if (["opened", "closed", "reopened"].includes(action2)) {
           const emoji = action2 === "opened" ? "🟢" : pr?.merged ? "🟣" : action2 === "closed" ? "🔴" : "🟡";
@@ -157,9 +152,9 @@ githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
       }
 
       case "issues": {
-        const action3 = payload.action as string;
-        const issue = payload.issue as { title?: string; html_url?: string; user?: { login?: string } } | undefined;
-        const repo3 = (payload.repository as { full_name?: string })?.full_name || "unknown";
+        const action3 = payload.action;
+        const issue = payload.issue;
+        const repo3 = payload.repository?.full_name || "unknown";
 
         if (["opened", "closed", "reopened"].includes(action3)) {
           const emoji = action3 === "opened" ? "📝" : action3 === "closed" ? "✅" : "🔄";
@@ -180,7 +175,7 @@ githubWebhookRouter.post("/", async (c: Context<AppEnv>) => {
     console.error("[GitHubWebhook] Error processing event:", err);
   }
 
-  return c.json({ received: true, event });
+  return c.json({ received: true, event }, 200);
 });
 
 export default githubWebhookRouter;

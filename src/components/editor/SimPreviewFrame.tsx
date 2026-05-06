@@ -125,7 +125,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       // ARES_TELEMETRY and sim-console are logged but not processed further
       // ARES_SCREENSHOT is handled by screenshot request handler
     }
-  }, [allowedOrigins, ALLOWED_MESSAGE_TYPES]);
+  }, [allowedOrigins, ALLOWED_MESSAGE_TYPES, onTestResult]);
 
   useEffect(() => {
     window.addEventListener("message", handleMessage);

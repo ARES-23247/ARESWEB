@@ -1,6 +1,6 @@
 import React from "react";
 import { Plus } from "lucide-react";
-import { Product } from "../../../shared/schemas/contracts/storeContract";
+import { Product } from "@shared/routes/store";
 import { useCartStore } from "../../store/useCartStore";
 
 interface ProductCardProps {

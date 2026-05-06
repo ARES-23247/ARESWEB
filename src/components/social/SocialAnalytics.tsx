@@ -13,7 +13,10 @@ import {
   Eye,
   Filter,
 } from "lucide-react";
-import { api } from "../../api/client";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../../utils/apiClient";
+import { SocialAnalyticsResponse } from "@shared/routes/socialQueue";
+
 
 interface SocialAnalyticsProps {
   dateRange?: { start: string; end: string };
@@ -56,12 +59,18 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
 
   const rangeDates = dateRange || getRangeDates();
 
-  const { data: analyticsData, isLoading } = api.socialQueue.analytics.useQuery(
-    ["social-queue", "analytics", rangeDates.start, rangeDates.end],
-    { query: { start: rangeDates.start, end: rangeDates.end } }
-  );
+  const { data: analytics, isLoading } = useQuery<SocialAnalyticsResponse>({
+    queryKey: ["social-queue", "analytics", rangeDates.start, rangeDates.end],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (rangeDates.start) params.set("start", rangeDates.start);
+      if (rangeDates.end) params.set("end", rangeDates.end);
+      const res = await fetchJson<SocialAnalyticsResponse>("/api/social-queue/analytics?" + params.toString());
+      return res;
+    },
+  });
 
-  const analytics = analyticsData?.body;
+
 
   return (
     <div className="space-y-6">

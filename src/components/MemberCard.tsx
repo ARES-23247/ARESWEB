@@ -9,7 +9,7 @@ export interface TeamMember {
   last_name?: string;
   avatar: string;
   pronouns?: string;
-  subteams?: string;
+  subteams?: string | string[];
   member_type: string;
   bio?: string;
   fun_fact?: string;

@@ -35,8 +35,8 @@ export function useSimulationChat({
   simId,
   files,
   activeFile,
-  compileCode,
-  setFiles,
+  compileCode: _compileCode,
+  setFiles: _setFiles,
   setPendingAiChanges,
   examples,
   consoleLogs,
@@ -282,7 +282,7 @@ USER REQUEST: ${msg}`;
     } finally {
       setIsChatLoading(false);
     }
-  }, [chatMessages, files, attachedImage, activeFile, compileCode, chatInput, isChatLoading, examples, setFiles, setPendingAiChanges]);
+  }, [chatMessages, files, attachedImage, activeFile, chatInput, isChatLoading, examples, setPendingAiChanges]);
 
   const handleFixWithAI = useCallback(() => {
     const errorLogs = consoleLogs.filter(l => l.level === "error");
