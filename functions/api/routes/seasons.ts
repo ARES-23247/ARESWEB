@@ -1,7 +1,7 @@
 import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import {

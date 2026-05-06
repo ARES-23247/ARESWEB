@@ -3,7 +3,7 @@ import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware } from "../midd
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+
 import { 
 
   getNotificationsRoute, 

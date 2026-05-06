@@ -1,6 +1,6 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+
 import type { AppEnv } from "../../../shared/types/api";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";

@@ -2,7 +2,7 @@ import { typedHandler } from "../utils/handler";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+
 import { AppEnv, getSessionUser, originIntegrityMiddleware } from "../middleware";
 import {
   listSocialQueueRoute,

@@ -1,7 +1,7 @@
 import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- Zulip webhook payloads are dynamic and external */
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { siteConfig } from "../../utils/site.config";

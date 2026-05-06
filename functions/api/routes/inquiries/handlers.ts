@@ -1,5 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Kysely, sql } from "kysely";
+import type { RouteHandler } from "@hono/zod-openapi";
 import { DB } from "../../../../shared/schemas/database";
 import { getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
 import { encrypt, decrypt } from "../../../utils/crypto";
@@ -7,7 +8,7 @@ import { safeJSONStringify } from "../../../utils/json";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { notifyByRole, NotifyAudience } from "../../../utils/notifications";
 import { buildGitHubConfig, createProjectItem } from "../../../utils/githubProjects";
-import type { RouteHandler } from "@hono/zod-openapi";
+
 import {
   listInquiriesRoute,
   submitInquiryRoute,

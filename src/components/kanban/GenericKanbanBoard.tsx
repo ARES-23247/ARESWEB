@@ -40,6 +40,13 @@ export interface GenericKanbanBoardProps<T> {
   emptyStateText?: string;
 }
 
+interface LocalItem<T> {
+  id: string;
+  item: T;
+  status: string;
+  sortOrder: number;
+}
+
 export function GenericKanbanBoard<T>({
   items,
   columns,
@@ -62,27 +69,40 @@ export function GenericKanbanBoard<T>({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  // Maintain local state to allow instant drag-and-drop without snap-backs
+  const [localItems, setLocalItems] = useState<LocalItem<T>[]>([]);
+
+  // Sync with external items
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocalItems(items.map(item => ({
+      id: String(getId(item)),
+      item,
+      status: getStatus(item),
+      sortOrder: getSortOrder(item)
+    })));
+  }, [items, getId, getStatus, getSortOrder]);
+
   // Group items by status column
   const grouped = useMemo(() => {
-    const g: Record<string, T[]> = {};
+    const g: Record<string, LocalItem<T>[]> = {};
     for (const col of columns) g[col] = [];
-    for (const item of items) {
-      const s = getStatus(item);
-      const col = columns.includes(s) ? s : columns[0];
-      g[col].push(item);
+    for (const lItem of localItems) {
+      const col = columns.includes(lItem.status) ? lItem.status : columns[0];
+      g[col].push(lItem);
     }
     // Sort within each column
     for (const col of columns) {
-      g[col].sort((a, b) => getSortOrder(a) - getSortOrder(b));
+      g[col].sort((a, b) => a.sortOrder - b.sortOrder);
     }
     return g;
-  }, [items, columns, getStatus, getSortOrder]);
+  }, [localItems, columns]);
 
   const filteredColumns = activeFilter
     ? { [activeFilter]: grouped[activeFilter] || [] }
     : grouped;
 
-  const activeItem = activeId ? items.find(t => getId(t) === activeId) : null;
+  const activeItem = activeId ? localItems.find(t => t.id === activeId)?.item : null;
 
   // ── DnD Handlers ────────────────────────────────────────────────
   const handleDragStart = (event: DragStartEvent) => {
@@ -92,13 +112,33 @@ export function GenericKanbanBoard<T>({
   const findColumn = (id: string): string | null => {
     if (columns.includes(id)) return id;
     for (const col of columns) {
-      if (grouped[col].some(t => String(getId(t)) === id)) return col;
+      if (grouped[col].some(t => t.id === id)) return col;
     }
     return null;
   };
 
-  const handleDragOver = (_event: DragOverEvent) => {
-    // Only used to provide visual feedback if needed
+  // onDragOver handles moving items between columns instantly during the drag
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    const overId = over?.id;
+    
+    if (!overId) return;
+
+    const activeContainer = findColumn(String(active.id));
+    const overContainer = findColumn(String(overId));
+
+    if (!activeContainer || !overContainer || activeContainer === overContainer) {
+      return;
+    }
+
+    setLocalItems((prev) => {
+      return prev.map(item => {
+        if (item.id === String(active.id)) {
+          return { ...item, status: overContainer };
+        }
+        return item;
+      });
+    });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -114,41 +154,57 @@ export function GenericKanbanBoard<T>({
 
     if (!sourceCol || !targetCol) return;
 
-    const item = items.find(t => String(getId(t)) === activeItemId);
-    if (!item) return;
-
     const sourceItems = [...(grouped[sourceCol] || [])];
     const targetItems = sourceCol === targetCol ? sourceItems : [...(grouped[targetCol] || [])];
 
     if (sourceCol === targetCol) {
-      const oldIndex = sourceItems.findIndex(t => String(getId(t)) === activeItemId);
-      const newIndex = sourceItems.findIndex(t => String(getId(t)) === overId);
+      const oldIndex = sourceItems.findIndex(t => t.id === activeItemId);
+      const newIndex = sourceItems.findIndex(t => t.id === overId);
       
       if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1) {
         const [moved] = sourceItems.splice(oldIndex, 1);
         sourceItems.splice(newIndex, 0, moved);
         
-        const reorderUpdates: { id: string; status: string; sort_order: number }[] = sourceItems.map((t, i) => ({
-          id: String(getId(t)),
+        const reorderUpdates = sourceItems.map((t, i) => ({
+          id: t.id,
           status: sourceCol,
           sort_order: i,
         }));
+
+        // Optimitically update local items
+        setLocalItems(prev => prev.map(item => {
+          const update = reorderUpdates.find(u => u.id === item.id);
+          if (update) return { ...item, status: update.status, sortOrder: update.sort_order };
+          return item;
+        }));
+
         onReorder(reorderUpdates);
       }
     } else {
-      const oldIndex = sourceItems.findIndex(t => String(getId(t)) === activeItemId);
-      if (oldIndex !== -1) sourceItems.splice(oldIndex, 1);
+      // With onDragOver handling cross-container moves, active item is already in targetCol
+      const oldIndex = targetItems.findIndex(t => t.id === activeItemId);
+      if (oldIndex !== -1) targetItems.splice(oldIndex, 1);
 
-      const overIndex = targetItems.findIndex(t => String(getId(t)) === overId);
+      const overIndex = targetItems.findIndex(t => t.id === overId);
       const insertAt = overIndex >= 0 ? overIndex : targetItems.length;
       
-      // Calculate order
-      targetItems.splice(insertAt, 0, item);
+      const movedItem = localItems.find(t => t.id === activeItemId);
+      if (!movedItem) return;
 
-      const reorderUpdates: { id: string; status: string; sort_order: number }[] = [
-        ...sourceItems.map((t, i) => ({ id: String(getId(t)), status: sourceCol, sort_order: i })),
-        ...targetItems.map((t, i) => ({ id: String(getId(t)), status: targetCol, sort_order: i }))
-      ];
+      targetItems.splice(insertAt, 0, movedItem);
+
+      const reorderUpdates = targetItems.map((t, i) => ({ 
+        id: t.id, 
+        status: targetCol, 
+        sort_order: i 
+      }));
+
+      // Optimitically update local items
+      setLocalItems(prev => prev.map(item => {
+        const update = reorderUpdates.find(u => u.id === item.id);
+        if (update) return { ...item, status: update.status, sortOrder: update.sort_order };
+        return item;
+      }));
       
       onReorder(reorderUpdates);
     }
@@ -191,7 +247,7 @@ export function GenericKanbanBoard<T>({
         </div>
       )}
 
-      {isLoading && items.length === 0 ? (
+      {isLoading && localItems.length === 0 ? (
         <div className="text-center py-12">
           <div className="flex flex-col items-center gap-3">
             <RefreshCw className="text-ares-gray animate-spin" size={24} />
@@ -226,7 +282,7 @@ export function GenericKanbanBoard<T>({
                     </span>
                   </div>
                   <SortableContext
-                    items={colItems.map(i => String(getId(i)))}
+                    items={colItems.map(i => i.id)}
                     strategy={verticalListSortingStrategy}
                     id={status}
                   >
@@ -234,7 +290,7 @@ export function GenericKanbanBoard<T>({
                       {colItems.length === 0 ? (
                         <p className="text-ares-gray text-xs text-center py-6 italic">{emptyStateText}</p>
                       ) : (
-                        colItems.map((item) => renderItem(item))
+                        colItems.map((lItem) => renderItem(lItem.item))
                       )}
                     </DroppableColumn>
                   </SortableContext>

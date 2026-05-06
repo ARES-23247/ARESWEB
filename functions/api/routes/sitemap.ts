@@ -1,6 +1,6 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+
 import { AppEnv } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
 import { getSitemapRoute } from "../../../shared/routes/sitemap";

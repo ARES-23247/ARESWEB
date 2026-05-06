@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { Kysely } from "kysely";
+import type { RouteHandler } from "@hono/zod-openapi";
 import { DB } from "../../../../shared/schemas/database";
 import { getSessionUser, logAuditAction } from "../../middleware";
-import type { RouteHandler } from "@hono/zod-openapi";
+
 import type {
   listOutreachRoute,
   adminListOutreachRoute,

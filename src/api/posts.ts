@@ -96,7 +96,7 @@ export function useGetAdminPosts(
   return useQuery<PostsResponse>({
     queryKey: ["admin_posts", query],
     queryFn: async () => {
-      const response = await client.posts["admin-list"].$get({ query });
+      const response = await client.posts.admin.list.$get({ query });
       return unwrapResponse<PostsResponse>(response);
     },
     ...options,

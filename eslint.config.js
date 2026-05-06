@@ -19,6 +19,7 @@ export default ts.config(
       "eslint.config.js",
       "**/*.bundle",
       "*.cjs", // Ignore legacy CommonJS utility scripts at root
+      "scripts/*.cjs", // Ignore scripts
       "*.mjs", // Ignore ESM utility scripts at root
       "scratch/**", // Ignore scratch directory
       "public/vendor/**", // Ignore vendored third-party UMD bundles (React, ReactDOM)

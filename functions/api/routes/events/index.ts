@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
-/* eslint-disable @typescript-eslint/no-explicit-any -- Event handlers work with dynamic external data */
+ 
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+
 import { AppEnv, ensureAdmin, ensureAuth } from "../../middleware";
 import { eventHandlers } from "./handlers";
 import { Kysely } from "kysely";
