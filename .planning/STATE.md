@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v6.8
 milestone_name: Hono Zod OpenAPI Migration
-status: Completed
-last_updated: "2026-05-06T11:57:00.000Z"
+status: Planned
+last_updated: "2026-05-06T12:01:00.000Z"
 last_activity: 2026-05-06
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 1
+  total_plans: 4
   completed_plans: 1
   percent: 25
 ---
@@ -16,14 +16,14 @@ progress:
 # System State
 
 **Current Milestone**: v6.8 — Hono Zod OpenAPI Migration
-**Status**: Completed (Phase 34)
+**Status**: Planned
 **Last activity**: 2026-05-06
 
 ## Current Position
 
-Phase: 34-infra-and-poc
-Plan: 34-01-PLAN.md
-Status: Completed
+Phase: 35-simple-routes
+Plan: 35-01-PLAN.md
+Status: Ready for execution
 Last activity: 2026-05-06 — Milestone v6.8 started
 
 ## Project Reference
