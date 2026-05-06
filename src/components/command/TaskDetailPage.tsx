@@ -38,10 +38,17 @@ export default function TaskDetailPage() {
 
   const tasks = tasksData?.tasks ?? [];
   const task = tasks.find((t: TaskItem) => t.id === taskId);
-  if (!task) return <div className="p-8 text-white/50 text-center">Task not found.</div>;
-
   // Local edit state — synced from task on first load
   const [edits, setEdits] = useState<UpdateTaskRequest>({});
+
+  // Fetch team members for assignee picker
+  const { data: usersData } = useGetUsers({ limit: 100 });
+  const teamMembers = usersData?.users ?? [];
+
+  const updateMutation = useUpdateTask();
+  const deleteMutation = useDeleteTask();
+
+  if (!task) return <div className="p-8 text-white/50 text-center">Task not found.</div>;
   
   const getValue = <K extends keyof UpdateTaskRequest>(field: K) => {
     if (field in edits) return edits[field];
@@ -61,13 +68,6 @@ export default function TaskDetailPage() {
   const setAssigneeId = (val: string) => {
     setEdits(prev => ({ ...prev, assignees: val ? [val] : [] }));
   };
-
-  // Fetch team members for assignee picker
-  const { data: usersData } = useGetUsers({ limit: 100 });
-  const teamMembers = usersData?.users ?? [];
-
-  const updateMutation = useUpdateTask();
-  const deleteMutation = useDeleteTask();
   
   const handleSave = async () => {
     if (!taskId || Object.keys(edits).length === 0) return;

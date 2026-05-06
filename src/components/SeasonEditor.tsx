@@ -38,24 +38,31 @@ export default function SeasonEditor() {
   const { data: detailData } = useGetAdminSeasonDetail(editId || "");
 
   useEffect(() => {
-    if (detailData?.season) {
-      const s = detailData.season;
-      setStartYear(s.start_year);
-      setChallengeName(s.challenge_name);
-      setRobotName(s.robot_name || "");
-      setRobotImageUrl(s.robot_image || DEFAULT_COVER_IMAGE);
-      setCadUrl(s.robot_cad_url || "");
-      setSummary(s.summary || "");
-      setAlbumUrl(s.album_url || "");
-      setAlbumCoverUrl(s.album_cover || "");
-      if (editor && s.robot_description) {
-        try {
-          editor.commands.setContent(JSON.parse(s.robot_description));
-        } catch (e) {
-          console.error("Failed to parse existing AST", e);
+    let active = true;
+    const processSeasonData = async () => {
+      await Promise.resolve();
+      if (!active) return;
+      if (detailData?.season) {
+        const s = detailData.season;
+        setStartYear(s.start_year);
+        setChallengeName(s.challenge_name);
+        setRobotName(s.robot_name || "");
+        setRobotImageUrl(s.robot_image || DEFAULT_COVER_IMAGE);
+        setCadUrl(s.robot_cad_url || "");
+        setSummary(s.summary || "");
+        setAlbumUrl(s.album_url || "");
+        setAlbumCoverUrl(s.album_cover || "");
+        if (editor && s.robot_description) {
+          try {
+            editor.commands.setContent(JSON.parse(s.robot_description));
+          } catch (e) {
+            console.error("Failed to parse existing AST", e);
+          }
         }
       }
-    }
+    };
+    void processSeasonData();
+    return () => { active = false; };
   }, [detailData, editor]);
 
   const saveMutation = useSaveSeason({

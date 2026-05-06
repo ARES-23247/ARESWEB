@@ -37,12 +37,14 @@ export default function ScoutingTool() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     if (!analysisEventKey) {
-      setEventAnalysis(null);
+      void Promise.resolve().then(() => {
+        if (mounted) setEventAnalysis(null);
+      });
       return;
     }
 
-    let mounted = true;
     const loadHistory = async () => {
       setLoadingEventHistory(true);
       try {

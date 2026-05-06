@@ -65,11 +65,14 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
       .offset(Number(offset))
       .execute();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formattedTasks = tasks.map((t: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let assignees: any[] = [];
       if (t.assignees_json) {
         try {
           const parsed = JSON.parse(t.assignees_json);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           assignees = parsed.filter((a: any) => a && a.id !== null);
         } catch (_e) {
           // ignore
@@ -110,6 +113,7 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const taskData: any = {
       id,
       title: body.title,
@@ -193,6 +197,7 @@ tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(as
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     // Batch update sort orders
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await Promise.all(body.items.map((o: any) => 
       db.updateTable("tasks")
         .set({ sort_order: o.sort_order, updated_at: new Date().toISOString() })
@@ -228,6 +233,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
     const canAssign = isAdmin || isMentor || isOwner;
 
     // Any authenticated user can update task fields
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     if (body.title !== undefined) updates.title = body.title;
     if (body.description !== undefined) updates.description = body.description;

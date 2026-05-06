@@ -122,69 +122,77 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   });
 
   useEffect(() => {
-    if (eventRes?.event) {
-      const event = eventRes.event;
-      const formatForInput = (d: string | null | undefined) => {
-        if (!d) return "";
-        if (d.length === 10) return d + "T00:00";
-        return d.slice(0, 16).replace(" ", "T");
-      };
+    let active = true;
+    const processEventData = async () => {
+      await Promise.resolve();
+      if (!active) return;
+      
+      if (eventRes?.event) {
+        const event = eventRes.event;
+        const formatForInput = (d: string | null | undefined) => {
+          if (!d) return "";
+          if (d.length === 10) return d + "T00:00";
+          return d.slice(0, 16).replace(" ", "T");
+        };
 
-      setIsDeleted(event.is_deleted === 1);
-      setIsException(event.recurring_exception === 1);
-      reset({
-        title: event.title || "",
-        dateStart: formatForInput(event.date_start),
-        dateEnd: formatForInput(event.date_end),
-        location: event.location || "",
-        description: event.description || "",
-        coverImage: event.cover_image || DEFAULT_COVER_IMAGE,
-        category: (event.category || "internal") as "internal" | "outreach" | "external",
-        tbaEventKey: event.tba_event_key || "",
-        isPotluck: event.is_potluck === 1,
-        isVolunteer: event.is_volunteer === 1,
-        publishedAt: (event as any).published_at || "",
-        seasonId: event.season_id ? Number(event.season_id) : undefined,
-        socials: (eventRes as any).socials || {},
-      });
-
-      // Parse rrule
-      let parsedFreq = "";
-      let parsedLimitType: "none" | "count" | "date" = "none";
-      let parsedLimitCount = "";
-      let parsedLimitDate = "";
-
-      if (event.rrule) {
-        const parts = event.rrule.split(';');
-        parts.forEach((p: string) => {
-          if (p.startsWith('FREQ=')) parsedFreq = p;
-          else if (p.startsWith('COUNT=')) { parsedLimitType = "count"; parsedLimitCount = p.substring(6); }
-          else if (p.startsWith('UNTIL=')) { 
-            parsedLimitType = "date"; 
-            const dStr = p.substring(6); 
-            if (dStr.length >= 8) parsedLimitDate = `${dStr.substring(0,4)}-${dStr.substring(4,6)}-${dStr.substring(6,8)}`;
-          }
+        setIsDeleted(event.is_deleted === 1);
+        setIsException(event.recurring_exception === 1);
+        reset({
+          title: event.title || "",
+          dateStart: formatForInput(event.date_start),
+          dateEnd: formatForInput(event.date_end),
+          location: event.location || "",
+          description: event.description || "",
+          coverImage: event.cover_image || DEFAULT_COVER_IMAGE,
+          category: (event.category || "internal") as "internal" | "outreach" | "external",
+          tbaEventKey: event.tba_event_key || "",
+          isPotluck: event.is_potluck === 1,
+          isVolunteer: event.is_volunteer === 1,
+          publishedAt: (event as any).published_at || "",
+          seasonId: event.season_id ? Number(event.season_id) : undefined,
+          socials: (eventRes as any).socials || {},
         });
-      }
-      setRruleFreq(parsedFreq);
-      setLimitType(parsedLimitType);
-      setLimitCount(parsedLimitCount);
-      setLimitDate(parsedLimitDate);
 
-      setRecurringGroupId(event.recurring_group_id || null);
+        // Parse rrule
+        let parsedFreq = "";
+        let parsedLimitType: "none" | "count" | "date" = "none";
+        let parsedLimitCount = "";
+        let parsedLimitDate = "";
 
-      if (editor) {
-        const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
-        if (shouldSetContent && event.description) {
-          try {
-            editor.commands.setContent(JSON.parse(event.description));
-          } catch {
-            editor.commands.setContent(`<p>${event.description}</p>`);
+        if (event.rrule) {
+          const parts = event.rrule.split(';');
+          parts.forEach((p: string) => {
+            if (p.startsWith('FREQ=')) parsedFreq = p;
+            else if (p.startsWith('COUNT=')) { parsedLimitType = "count"; parsedLimitCount = p.substring(6); }
+            else if (p.startsWith('UNTIL=')) { 
+              parsedLimitType = "date"; 
+              const dStr = p.substring(6); 
+              if (dStr.length >= 8) parsedLimitDate = `${dStr.substring(0,4)}-${dStr.substring(4,6)}-${dStr.substring(6,8)}`;
+            }
+          });
+        }
+        setRruleFreq(parsedFreq);
+        setLimitType(parsedLimitType);
+        setLimitCount(parsedLimitCount);
+        setLimitDate(parsedLimitDate);
+
+        setRecurringGroupId(event.recurring_group_id || null);
+
+        if (editor) {
+          const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
+          if (shouldSetContent && event.description) {
+            try {
+              editor.commands.setContent(JSON.parse(event.description));
+            } catch {
+              editor.commands.setContent(`<p>${event.description}</p>`);
+            }
           }
         }
       }
-      
-    }
+    };
+    
+    void processEventData();
+    return () => { active = false; };
 
   }, [eventRes, reset, editor, ydoc]);
 

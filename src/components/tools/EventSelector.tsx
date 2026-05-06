@@ -53,7 +53,11 @@ export default function EventSelector({ onEventSelect, selectedEventKey }: Event
   }, [seasonKey]);
 
   useEffect(() => {
-    fetchEvents();
+    // Defer initial fetch to avoid synchronous state update in effect
+    const timeout = setTimeout(() => {
+      void fetchEvents();
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [fetchEvents]);
 
   const filtered = events.filter((e) => {

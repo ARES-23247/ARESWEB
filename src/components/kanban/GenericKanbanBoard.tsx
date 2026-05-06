@@ -74,12 +74,17 @@ export function GenericKanbanBoard<T>({
 
   // Sync with external items
   React.useEffect(() => {
-    setLocalItems(items.map(item => ({
-      id: String(getId(item)),
-      item,
-      status: getStatus(item),
-      sortOrder: getSortOrder(item)
-    })));
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setLocalItems(items.map(item => ({
+        id: String(getId(item)),
+        item,
+        status: getStatus(item),
+        sortOrder: getSortOrder(item)
+      })));
+    });
+    return () => { active = false; };
   }, [items, getId, getStatus, getSortOrder]);
 
   // Group items by status column

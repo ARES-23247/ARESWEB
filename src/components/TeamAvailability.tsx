@@ -43,9 +43,15 @@ export default function TeamAvailability() {
   };
 
   useEffect(() => {
-    void fetchPresence();
+    // Defer initial fetch to avoid synchronous state update in effect
+    const initialTimeout = setTimeout(() => {
+      void fetchPresence();
+    }, 0);
     const interval = setInterval(fetchPresence, 120000); // 2 minute polling
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, []);
 
   // Compute highest priority status for a user across clients

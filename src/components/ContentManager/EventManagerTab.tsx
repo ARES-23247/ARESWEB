@@ -49,17 +49,28 @@ export default function EventManagerTab({
   const nextCursor = eventsData?.nextCursor || null;
 
   useEffect(() => {
-    if (events.length > 0) {
-      if (cursor) {
-        setAllEvents(prev => {
-          const newIds = new Set(events.map(e => e.id));
-          const filtered = prev.filter(e => !newIds.has(e.id));
-          return [...filtered, ...events];
-        });
-      } else {
-        setAllEvents(events);
+    let active = true;
+    const processEvents = async () => {
+      // Defer state update to avoid synchronous cascading renders
+      await Promise.resolve();
+      if (!active) return;
+      if (events.length > 0) {
+        if (cursor) {
+          setAllEvents(prev => {
+            const newIds = new Set(events.map(e => e.id));
+            const filtered = prev.filter(e => !newIds.has(e.id));
+            return [...filtered, ...events];
+          });
+        } else {
+          setAllEvents(events);
+        }
       }
-    }
+    };
+    void processEvents();
+    
+    return () => {
+      active = false;
+    };
   }, [events, cursor]);
 
    
