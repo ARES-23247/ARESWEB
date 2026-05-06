@@ -40,12 +40,15 @@ describe('analytics utility', () => {
   it('fires a POST request to the analytics api for external domains', async () => {
     window.location.hostname = 'ares23247.com';
     await trackPageView('/events', 'event');
-    
+
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/analytics/track', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/analytics/track-page-view', expect.objectContaining({
       method: 'POST',
-      headers: expect.any(Headers),
-      body: expect.stringContaining('"category":"event"'),
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path: '/events', category: 'event', referrer: '' }),
     }));
   });
 

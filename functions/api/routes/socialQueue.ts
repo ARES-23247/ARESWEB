@@ -10,12 +10,11 @@ import {
   deleteSocialQueueRoute,
   sendNowSocialQueueRoute,
   analyticsSocialQueueRoute,
-  socialQueueSchema,
+  _socialQueueSchema,
   type SocialQueuePost,
 } from "../../../shared/routes/socialQueue";
 import { nanoid } from "nanoid";
 import { dispatchQueuePost } from "../../utils/socialSync";
-import type { HonoContext } from "@shared/types/api";
 
 export const socialQueueRouter = new OpenAPIHono<AppEnv>();
 
@@ -181,7 +180,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, async (c) => {
     if (!existing) {
       return c.json({ error: "Post not found" }, 500);
     }
-    if (user.role !== "admin" && (existing as any).created_by !== user.id) {
+    if (user.role !== "admin" && existing.created_by !== user.id) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -223,7 +222,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, async (c) => {
     if (!existing) {
       return c.json({ error: "Post not found" }, 500);
     }
-    if (user.role !== "admin" && (existing as any).created_by !== user.id) {
+    if (user.role !== "admin" && existing.created_by !== user.id) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -260,13 +259,13 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c) => {
     const post = toSocialQueuePost(record);
 
     const config: Record<string, boolean> = {
-      twitter: !!(c.env as any).TWITTER_API_KEY,
-      bluesky: !!(c.env as any).BLUESKY_HANDLE,
-      facebook: !!(c.env as any).FACEBOOK_ACCESS_TOKEN,
-      instagram: !!(c.env as any).INSTAGRAM_ACCESS_TOKEN,
-      discord: !!(c.env as any).DISCORD_WEBHOOK_URL,
-      slack: !!(c.env as any).SLACK_WEBHOOK_URL,
-      linkedin: !!(c.env as any).LINKEDIN_ACCESS_TOKEN,
+      twitter: !!c.env.TWITTER_API_KEY,
+      bluesky: !!c.env.BLUESKY_HANDLE,
+      facebook: !!c.env.FACEBOOK_ACCESS_TOKEN,
+      instagram: !!c.env.INSTAGRAM_ACCESS_TOKEN,
+      discord: !!c.env.DISCORD_WEBHOOK_URL,
+      slack: !!c.env.SLACK_WEBHOOK_URL,
+      linkedin: !!c.env.LINKEDIN_ACCESS_TOKEN,
     };
 
     await dispatchQueuePost(db, post, config);

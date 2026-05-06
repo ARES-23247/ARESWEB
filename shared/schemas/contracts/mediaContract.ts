@@ -1,8 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const r2ObjectSchema = z.object({
   key: z.string(),
@@ -22,96 +19,153 @@ export const assetSchema = r2ObjectSchema.extend({
   tags: z.string().nullable().optional(),
 });
 
-export const mediaContract = c.router({
-  // --- PUBLIC ---
-  getMedia: {
-    method: "GET",
-    path: "/",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        media: z.array(assetSchema),
-      }),
-      429: z.string(),
-    },
-    summary: "Get public gallery media",
-  },
+// --- PUBLIC ---
 
-  // --- ADMIN ---
-  adminList: {
-    method: "GET",
-    path: "/admin",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        media: z.array(assetSchema),
-      }),
+export const getMediaRoute = createRoute({
+  method: "get",
+  path: "/",
+  responses: {
+    200: {
+      description: "Get public gallery media",
+      content: {
+        "application/json": {
+          schema: z.object({
+            media: z.array(assetSchema),
+          }),
+        },
+      },
     },
-    summary: "Get all media (admin view)",
-  },
-  upload: {
-    method: "POST",
-    path: "/admin/upload",
-    contentType: "multipart/form-data",
-    body: c.type<FormData>(),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        key: z.string(),
-        url: z.string(),
-        altText: z.string().optional(),
-      }),
+    429: {
+      description: "Too Many Requests",
+      content: { "application/json": { schema: z.string() } },
     },
-    summary: "Upload a media file",
-  },
-  move: {
-    method: "PUT",
-    path: "/admin/move/:key",
-    pathParams: z.object({
-      key: z.string(),
-    }),
-    body: z.object({
-      folder: z.string(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        newKey: z.string().optional(),
-      }),
-    },
-    summary: "Move object to folder",
-  },
-  delete: {
-    method: "DELETE",
-    path: "/admin/:key",
-    pathParams: z.object({
-      key: z.string(),
-    }),
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-      }),
-    },
-    summary: "Delete an asset",
-  },
-  syndicate: {
-    method: "POST",
-    path: "/admin/syndicate",
-    body: z.object({
-      key: z.string(),
-      caption: z.string().optional(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        message: z.string(),
-      }),
-    },
+    ...openApiStandardErrors,
   },
 });
-export type MediaContract = typeof mediaContract;
+
+// --- ADMIN ---
+
+export const adminListMediaRoute = createRoute({
+  method: "get",
+  path: "/admin",
+  responses: {
+    200: {
+      description: "Get all media (admin view)",
+      content: {
+        "application/json": {
+          schema: z.object({
+            media: z.array(assetSchema),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const uploadMediaRoute = createRoute({
+  method: "post",
+  path: "/admin/upload",
+  request: {
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.any(), // FormData
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Upload a media file",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            key: z.string(),
+            url: z.string(),
+            altText: z.string().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const moveMediaRoute = createRoute({
+  method: "put",
+  path: "/admin/move/{key}",
+  request: {
+    params: z.object({ key: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            folder: z.string(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Move object to folder",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            newKey: z.string().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteMediaRoute = createRoute({
+  method: "delete",
+  path: "/admin/{key}",
+  request: {
+    params: z.object({ key: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Delete an asset",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const syndicateMediaRoute = createRoute({
+  method: "post",
+  path: "/admin/syndicate",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            key: z.string(),
+            caption: z.string().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Syndicate media",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            message: z.string(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});

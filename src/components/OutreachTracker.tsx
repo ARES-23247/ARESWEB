@@ -4,16 +4,34 @@ import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
 import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, MapPin, Users, Clock, Target, Calendar, CheckCircle, XCircle, Save, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../api/client";
+import { fetchJson } from "../api";
 import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { outreachSchema } from "@shared/schemas/contracts/outreachContract";
 import { z } from "zod";
+
+// We define the schema locally or use a standard one from shared if available
+// Since the user is moving away from shared/schemas/contracts, we should probably check where outreachSchema is now.
+const outreachSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1, "Title is required"),
+  date: z.string(),
+  location: z.string().nullable().optional(),
+  students_count: z.number().min(0),
+  hours_logged: z.number().min(0),
+  reach_count: z.number().min(0),
+  description: z.string().nullable().optional(),
+  is_mentoring: z.boolean().optional(),
+  mentored_team_number: z.string().nullable().optional(),
+  season_id: z.number().nullable().optional(),
+  event_id: z.string().nullable().optional(),
+  mentor_count: z.number().optional(),
+  mentor_hours: z.number().optional(),
+});
 
 const outreachFormSchema = outreachSchema.omit({ id: true }).extend({
   id: z.string().optional(),
@@ -40,8 +58,9 @@ interface OutreachLog {
   mentor_hours?: number;
 }
 
+import { useGetAdminOutreach, useSaveOutreach, useDeleteOutreach, useGetSeasons } from "../api";
+
 export default function OutreachTracker() {
-  const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<OutreachFormValues>({
@@ -66,17 +85,14 @@ export default function OutreachTracker() {
   const seasonId = useWatch({ control, name: "season_id" });
   const isMentoring = useWatch({ control, name: "is_mentoring" });
   const [activeSeasonTab, setActiveSeasonTab] = useState<string>("all");
+  const { data: rawOutreachData, isLoading } = useGetAdminOutreach();
 
-  const { data: outreachData, isLoading } = api.outreach.adminList.useQuery(["admin-outreach"], {});
-  const { data: seasonsRes } = api.seasons.list.useQuery(["seasons-list"], {});
+  const { data: rawSeasonsData } = useGetSeasons();
 
-  const allLogs: OutreachLog[] = useMemo(() => (outreachData?.body as unknown as { logs: OutreachLog[] })?.logs || [], [outreachData]);
+  const allLogs: OutreachLog[] = useMemo(() => rawOutreachData?.logs || [], [rawOutreachData]);
 
   interface SeasonInfo { start_year: number; end_year: number; challenge_name: string; }
-  const seasons: SeasonInfo[] = useMemo(() => {
-    const raw = seasonsRes?.status === 200 ? (Array.isArray(seasonsRes.body) ? seasonsRes.body : (seasonsRes.body as unknown as { seasons?: SeasonInfo[] })?.seasons) : [];
-    return (raw || []) as SeasonInfo[];
-  }, [seasonsRes]);
+  const seasons: SeasonInfo[] = useMemo(() => rawSeasonsData?.seasons || [], [rawSeasonsData]);
 
   const seasonTabs = useMemo(() => {
     const usedSeasons = new Set(allLogs.map(l => l.season_id).filter(Boolean));
@@ -92,11 +108,23 @@ export default function OutreachTracker() {
 
   const handleTabChange = useCallback((tab: string) => setActiveSeasonTab(tab), []);
 
-  const saveMutation = api.outreach.save.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
+  const saveMutation = useSaveOutreach();
+
+  const deleteMutation = useDeleteOutreach();
+
+  const onFormSubmit = (data: z.infer<typeof outreachFormSchema>) => {
+    const cleanData = {
+      ...data,
+      students_count: data.students_count || 0,
+      hours_logged: data.hours_logged || 0,
+      reach_count: data.reach_count || 0,
+      description: data.description === "" ? null : data.description,
+      location: data.location === "" ? null : data.location,
+      mentored_team_number: data.mentored_team_number === "" ? null : data.mentored_team_number,
+    };
+    saveMutation.mutate(cleanData, {
+      onSuccess: () => {
         toast.success("Impact record synchronized.");
-        queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
         setIsAdding(false);
         reset({
           title: "",
@@ -114,32 +142,18 @@ export default function OutreachTracker() {
           mentor_count: 0,
           mentor_hours: 0
         });
-      } else {
-        toast.error("Failed to save impact record.");
-      }
-    }
-  });
+      },
+      onError: () => toast.error("Failed to save impact record.")
+    });
+  };
 
-  const deleteMutation = api.outreach.delete.useMutation({
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
-        toast.success("Impact record purged.");
-        queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
-      }
+  const handleDelete = (id: string) => {
+    if(confirm("Purge this impact record?")) {
+      deleteMutation.mutate(id, {
+        onSuccess: () => toast.success("Impact record purged."),
+        onError: () => toast.error("Failed to delete impact record.")
+      });
     }
-  });
-
-  const onFormSubmit = (data: z.infer<typeof outreachFormSchema>) => {
-    const cleanData = {
-      ...data,
-      students_count: data.students_count || 0,
-      hours_logged: data.hours_logged || 0,
-      reach_count: data.reach_count || 0,
-      description: data.description === "" ? null : data.description,
-      location: data.location === "" ? null : data.location,
-      mentored_team_number: data.mentored_team_number === "" ? null : data.mentored_team_number,
-    };
-    saveMutation.mutate({ body: cleanData as unknown as never });
   };
 
   const totals = useMemo(() => logs.reduce((acc, l) => ({
@@ -440,7 +454,7 @@ export default function OutreachTracker() {
                 </button>
                 {(!log.is_dynamic || log.event_id) && (
                   <button
-                    onClick={() => { if(confirm("Purge this impact record?")) deleteMutation.mutate({ params: { id: log.id }, body: null }); }}
+                    onClick={() => handleDelete(log.id)}
                     title="Purge this impact record"
                     className="p-3 text-marble/60 hover:text-ares-red transition-colors bg-white/5 ares-cut"
                   >

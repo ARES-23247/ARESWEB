@@ -1,58 +1,17 @@
-import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldAlert, TrendingUp, Users, MousePointerClick, Calendar, ArrowLeft, Trophy } from "lucide-react";
 import SEO from "../components/SEO";
-import { api } from "../api/client";
-
-interface SponsorMetrics {
-  year_month: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface SponsorROI {
-  sponsor?: {
-    id: string;
-    name: string;
-    tier: string;
-    logo_url: string;
-    website_url: string;
-  };
-  metrics: SponsorMetrics[];
-}
+import { useGetSponsorRoi } from "../api";
 
 export default function SponsorROI() {
   const { tokenId } = useParams();
-  const [data, setData] = useState<SponsorROI | null>(null);
+  const { data: roiRes, isLoading, error } = useGetSponsorRoi(tokenId || "");
 
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const data = roiRes || null;
+  const errorData = error ? String(error.message || "Failed to load data") : null;
 
-  useEffect(() => {
-    let cancelled = false;
-
-    api.sponsors.getRoi.query({ params: { tokenId: tokenId || "" } })
-      .then((res: { status: number; body: unknown }) => {
-        if (!cancelled && res.status === 200) {
-          setData(res.body as SponsorROI);
-          setLoading(false);
-        } else if (!cancelled && res.status !== 200) {
-          setError("error" in (res.body as { error?: string }) ? String((res.body as { error?: string }).error) : "Failed to load data");
-          setLoading(false);
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-          setLoading(false);
-        }
-      });
-
-    return () => { cancelled = true; };
-  }, [tokenId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-obsidian flex items-center justify-center">
         <div className="animate-spin w-12 h-12 border-4 border-ares-red border-t-transparent rounded-full" />
@@ -60,7 +19,7 @@ export default function SponsorROI() {
     );
   }
 
-  if (error || !data?.sponsor) {
+  if (errorData || !data?.sponsor) {
     return (
       <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center text-marble gap-4 p-6 text-center">
         <div className="w-24 h-24 ares-cut-lg bg-white/5 border border-white/10 flex items-center justify-center mb-2">
@@ -68,7 +27,7 @@ export default function SponsorROI() {
         </div>
         <h1 className="text-3xl font-black uppercase tracking-tighter">Access Denied</h1>
         <p className="text-marble/60 max-w-md">
-          {error || "The secure link you are trying to access is invalid or has expired."}
+          {errorData || "The secure link you are trying to access is invalid or has expired."}
         </p>
         <Link to="/" className="mt-8 bg-ares-red text-white hover:bg-ares-bronze clipped-button text-xs shadow-lg shadow-ares-red/20 font-bold">
           Return to Portal
@@ -78,9 +37,9 @@ export default function SponsorROI() {
   }
 
   const { sponsor, metrics } = data;
-  
-  const totalImpressions = metrics.reduce((acc, m) => acc + m.impressions, 0);
-  const totalClicks = metrics.reduce((acc, m) => acc + m.clicks, 0);
+
+  const totalImpressions = metrics.reduce((acc: number, m) => acc + (m.impressions || 0), 0);
+  const totalClicks = metrics.reduce((acc: number, m) => acc + (m.clicks || 0), 0);
   return (
     <div className="min-h-screen bg-obsidian text-marble py-24 relative overflow-hidden">
       <SEO title={`${sponsor.name} Impact Report`} description="ARES 23247 Partner Return on Investment Dashboard" />
@@ -177,8 +136,10 @@ export default function SponsorROI() {
                 </thead>
                 <tbody className="text-sm font-medium">
                   {metrics.map((m) => {
-                    const actualImpressions = m.impressions + 1200; // Simulated baseline for design 
-                    const rate = ((m.clicks / actualImpressions) * 100).toFixed(1);
+                    const impressions = m.impressions || 0;
+                    const clicks = m.clicks || 0;
+                    const actualImpressions = impressions + 1200; // Simulated baseline for design 
+                    const rate = ((clicks / actualImpressions) * 100).toFixed(1);
                     return (
                       <tr key={m.year_month} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                         <td className="py-4 text-ares-gray flex items-center gap-2">
@@ -186,7 +147,7 @@ export default function SponsorROI() {
                           {m.year_month}
                         </td>
                         <td className="py-4 text-right text-ares-gray">{actualImpressions.toLocaleString()}</td>
-                        <td className="py-4 text-right text-white font-bold">{m.clicks.toLocaleString()}</td>
+                        <td className="py-4 text-right text-white font-bold">{(m.clicks || 0).toLocaleString()}</td>
                         <td className="py-4 text-right">
                           <span className={`px-2 py-1 ares-cut-sm text-xs bg-white/5 border border-white/10 ${parseFloat(rate) > 2 ? 'text-ares-gold' : 'text-ares-gray'}`}>
                             {rate}%

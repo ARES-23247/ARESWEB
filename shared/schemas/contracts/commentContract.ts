@@ -1,16 +1,6 @@
-import { z } from "zod";
-import { createRoute } from "@hono/zod-openapi";
-import { standardErrors } from "./common";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 import { commentSchema as commentInputSchema } from "../commentSchema";
-
-// Convert standardErrors to OpenAPI responses format
-const openApiErrorResponses = {
-  400: { content: { "application/json": { schema: standardErrors[400] } }, description: "Bad Request" },
-  401: { content: { "application/json": { schema: standardErrors[401] } }, description: "Unauthorized" },
-  403: { content: { "application/json": { schema: standardErrors[403] } }, description: "Forbidden" },
-  404: { content: { "application/json": { schema: standardErrors[404] } }, description: "Not Found" },
-  500: { content: { "application/json": { schema: standardErrors[500] } }, description: "Internal Server Error" },
-};
 
 /**
  * Comment response schema (database record).
@@ -36,8 +26,8 @@ export const listCommentsRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
+      description: "List comments for a target",
       content: {
         "application/json": {
           schema: z.object({
@@ -47,8 +37,8 @@ export const listCommentsRoute = createRoute({
           }),
         },
       },
-      description: "List comments for a target",
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -61,23 +51,15 @@ export const submitCommentRoute = createRoute({
       targetId: z.string(),
     }),
     body: {
-      content: {
-        "application/json": {
-          schema: commentInputSchema,
-        },
-      },
+      content: { "application/json": { schema: commentInputSchema } },
     },
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Submit a new comment",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -89,23 +71,15 @@ export const updateCommentRoute = createRoute({
       id: z.string(),
     }),
     body: {
-      content: {
-        "application/json": {
-          schema: commentInputSchema,
-        },
-      },
+      content: { "application/json": { schema: commentInputSchema } },
     },
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Update an existing comment",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -118,14 +92,10 @@ export const deleteCommentRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Delete a comment",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });

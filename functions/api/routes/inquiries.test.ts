@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { TestEnv } from "../../../src/test/types";
 declare const global: typeof globalThis;
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -21,6 +21,17 @@ vi.mock("../middleware", async (importOriginal) => {
     getSessionUser: vi.fn().mockResolvedValue({ id: "1", role: "admin", email: "admin@test.com" }),
     logAuditAction: vi.fn().mockResolvedValue(true),
     rateLimitMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+    // Just pass through - call next if it's callable
+    turnstileMiddleware: () => async (_c: unknown, next: any) => {
+      if (next && typeof next === 'function') {
+        return await next();
+      }
+    },
+    persistentRateLimitMiddleware: () => async (_c: unknown, next: any) => {
+      if (next && typeof next === 'function') {
+        return await next();
+      }
+    },
   };
 });
 

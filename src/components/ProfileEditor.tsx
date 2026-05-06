@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { api } from "../api/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchJson } from "../api";
 import { Save, RefreshCw, Shield } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { IdentityForm } from "./profile/IdentityForm";
 import { RoleForm } from "./profile/RoleForm";
 import { ContactForm } from "./profile/ContactForm";
@@ -10,6 +10,7 @@ import { LogisticsForm } from "./profile/LogisticsForm";
 import { SecuritySettings } from "./profile/SecuritySettings";
 import { ProfileData } from "./profile/types";
 import { useForm, useWatch } from "react-hook-form";
+import { useGetMe, useUpdateMe, useGetUserProfile, useUpdateUserProfile } from "../api";
 
 
 const DEFAULT_PROFILE: ProfileData = {
@@ -47,23 +48,19 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 
   const profileValues = useWatch({ control });
 
-  const { data: meRes, isLoading: meLoading, isError: meError } = api.profiles.getMe.useQuery(["profile", "me"], undefined, {
-    query: { enabled: !adminEditUserId }
+  const { data: rawMeRes, isLoading: meLoading, isError: meError } = useGetMe({
+    enabled: !adminEditUserId
   });
 
-  const { data: adminRes, isLoading: adminLoading, isError: adminError } = api.users.adminGetProfile.useQuery(
-    ["profile", adminEditUserId || "none"], 
-    { params: { id: adminEditUserId || "" } }, 
-    { query: { enabled: !!adminEditUserId } }
-  );
+  const { data: rawAdminRes, isLoading: adminLoading, isError: adminError } = useGetUserProfile(adminEditUserId || "", {});
 
-  const profileRes = adminEditUserId ? adminRes : meRes;
+  const profileRes = adminEditUserId ? rawAdminRes : rawMeRes;
   const isLoading = adminEditUserId ? adminLoading : meLoading;
   const isError = adminEditUserId ? adminError : meError;
 
   useEffect(() => {
-    if (profileRes?.status === 200) {
-      const data = adminEditUserId ? profileRes.body.profile : profileRes.body;
+    if (profileRes) {
+      const data = (adminEditUserId ? rawAdminRes?.profile : rawMeRes) as any;
       reset({
         ...DEFAULT_PROFILE,
         ...data,
@@ -77,9 +74,10 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
         show_on_about: data.show_on_about !== undefined ? Boolean(data.show_on_about) : true,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminEditUserId, reset, profileRes]);
 
-  const meMutation = api.profiles.updateMe.useMutation({
+  const meMutation = useUpdateMe({
     onSuccess: () => {
       setMessage({ type: "success", text: "Profile saved!" });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -90,7 +88,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
     }
   });
 
-  const adminMutation = api.users.updateUserProfile.useMutation({
+  const adminMutation = useUpdateUserProfile({
     onSuccess: () => {
       setMessage({ type: "success", text: "Profile saved!" });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -116,9 +114,9 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
     };
     
     if (adminEditUserId) {
-      adminMutation.mutate({ params: { id: adminEditUserId }, body: formatted });
+      adminMutation.mutate({ id: adminEditUserId, profile: formatted });
     } else {
-      meMutation.mutate({ body: formatted });
+      meMutation.mutate(formatted);
     }
   };
 

@@ -2,7 +2,7 @@ import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, rateLimitMiddleware } from "../middleware";
-import { getRankingsRoute, getMatchesRoute, getFtcEventsRoute } from "../../../shared/schemas/contracts/tbaContract";
+import { getRankingsRoute, getMatchesRoute, getFtcEventsRoute } from "../../../shared/routes/tba";
 import type { HonoContext } from "@shared/types/api";
 
 export const tbaRouter = new OpenAPIHono<AppEnv>();

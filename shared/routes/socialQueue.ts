@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
-import { openApiStandardErrors } from "../schemas/contracts/common";
+import { openApiStandardErrors } from "./common";
 
 const platformSchema = z.object({
   twitter: z.boolean().optional(),
@@ -287,3 +287,8 @@ export const analyticsSocialQueueRoute = createRoute({
     },
   },
 });
+
+export type SocialAnalyticsResponse = z.infer<
+  (typeof analyticsSocialQueueRoute.responses)[200]["content"]["application/json"]["schema"]
+>;
+

@@ -20,10 +20,15 @@ describe("useDashboardSession", () => {
 
   it("should compute permissions correctly for admin", async () => {
     server.use(
-      http.get("*/profile/me", () => {
+      http.get("*/profiles/me", () => {
         return HttpResponse.json({
-          authenticated: true,
-          auth: { role: "admin" },
+          auth: {
+            id: "admin-123",
+            email: "admin@ares23247.com",
+            name: "Admin User",
+            image: null,
+            role: "admin",
+          },
           member_type: "mentor",
           first_name: "Admin",
           last_name: "User",
@@ -42,10 +47,15 @@ describe("useDashboardSession", () => {
 
   it("should compute permissions correctly for unverified student", async () => {
     server.use(
-      http.get("*/profile/me", () => {
+      http.get("*/profiles/me", () => {
         return HttpResponse.json({
-          authenticated: true,
-          auth: { role: "unverified" },
+          auth: {
+            id: "student-123",
+            email: "new@student.com",
+            name: "New Student",
+            image: null,
+            role: "unverified",
+          },
           member_type: "student",
           first_name: "New",
           last_name: "Student",
@@ -65,7 +75,7 @@ describe("useDashboardSession", () => {
 
   it("should handle session fetch failure", async () => {
     server.use(
-      http.get("*/profile/me", () => {
+      http.get("*/profiles/me", () => {
         return new HttpResponse(null, { status: 401 });
       })
     );
@@ -80,11 +90,19 @@ describe("useDashboardSession", () => {
 
   it("should allow coach to see inquiries", async () => {
     server.use(
-      http.get("*/profile/me", () => {
+      http.get("*/profiles/me", () => {
         return HttpResponse.json({
-          authenticated: true,
-          auth: { role: "coach" },
-          member_type: "mentor",
+          auth: {
+            id: "coach-123",
+            email: "coach@ares23247.com",
+            name: "Coach User",
+            image: null,
+            role: "verified",
+          },
+          member_type: "coach",
+          first_name: "Coach",
+          last_name: "User",
+          nickname: "Coach",
         });
       })
     );
@@ -96,11 +114,19 @@ describe("useDashboardSession", () => {
 
   it("should allow lead to see inquiries", async () => {
     server.use(
-      http.get("*/profile/me", () => {
+      http.get("*/profiles/me", () => {
         return HttpResponse.json({
-          authenticated: true,
-          auth: { role: "lead" },
+          auth: {
+            id: "lead-123",
+            email: "lead@ares23247.com",
+            name: "Lead User",
+            image: null,
+            role: "verified",
+          },
           member_type: "student",
+          first_name: "Lead",
+          last_name: "User",
+            nickname: "Lead",
         });
       })
     );
@@ -112,11 +138,19 @@ describe("useDashboardSession", () => {
 
   it("should allow manager to see inquiries", async () => {
     server.use(
-      http.get("*/profile/me", () => {
+      http.get("*/profiles/me", () => {
         return HttpResponse.json({
-          authenticated: true,
-          auth: { role: "manager" },
+          auth: {
+            id: "manager-123",
+            email: "manager@ares23247.com",
+            name: "Manager User",
+            image: null,
+            role: "verified",
+          },
           member_type: "mentor",
+          first_name: "Manager",
+          last_name: "User",
+          nickname: "Manager",
         });
       })
     );

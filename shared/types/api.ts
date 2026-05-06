@@ -24,9 +24,7 @@ export type HonoContext = Context<AppEnv>;
 /**
  * Standard handler input structure with typed body and params.
  *
- * @deprecated Use AppRouteInput from ts-rest-hono for ts-rest handlers.
- * This type is still useful for non-ts-rest Hono middleware.
- * @see Migration guide in Phase 29 summary.
+ * Useful for non-OpenAPI Hono middleware and custom handlers.
  */
 export type HandlerInput<
   TBody = unknown,
@@ -48,17 +46,17 @@ export type HandlerOutput<TBody = unknown> = {
 import { z } from "zod";
 
 /**
- * Custom Zod type extractor to bypass @ts-rest/core incompatibilities with zod v4 internals.
+ * Custom Zod type extractor for OpenAPI route inference.
  */
-type InferZodOrType<T> = T extends z.ZodTypeAny 
-  ? z.infer<T> 
-  : T extends { _type: infer U } 
-    ? U 
+type InferZodOrType<T> = T extends z.ZodTypeAny
+  ? z.infer<T>
+  : T extends { _type: infer U }
+    ? U
     : T;
 
 /**
- * Custom ServerInferRequest to provide strict typing without hitting ts-rest AppRoute limits.
- * Replaces import { ServerInferRequest } from "@ts-rest/core".
+ * Custom ServerInferRequest for OpenAPI route type inference.
+ * Extracts params, body, query, and headers types from OpenAPI route definitions.
  */
 export type ServerInferRequest<T> = {
   params: T extends { pathParams: infer P } ? InferZodOrType<P> : never;

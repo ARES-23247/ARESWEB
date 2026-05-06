@@ -1,9 +1,13 @@
 import { CalendarPlus, Smartphone } from "lucide-react";
-import { api } from "../../api/client";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../../api";
 
 export const CalendarSubscriptionBanner = () => {
-  const { data } = api.events.getCalendarSettings.useQuery(["calendar-settings"]);
-  const settings = data?.status === 200 ? data.body : null;
+  const { data } = useQuery({
+    queryKey: ["calendar-settings"],
+    queryFn: () => fetchJson<{ calendarIdInternal?: string }>("/api/events/calendar-settings"),
+  });
+  const settings = data;
 
   // We use the Internal calendar for team members (which this portal is for)
   const calendarId = settings?.calendarIdInternal || "c_e1bd19ab921a209fae48dcc25fdb5ec634d0b1d033f7ccb4249a5b6c3da985a7@group.calendar.google.com";

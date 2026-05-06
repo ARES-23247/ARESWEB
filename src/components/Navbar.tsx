@@ -226,14 +226,14 @@ export default function Navbar() {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
 
-                                if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: null });
+                                if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id } });
                                 if (n.link) navigate(n.link);
                                 setShowNotifs(false);
                               }
                             }}
                             onClick={() => {
                               
-                              if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id }, body: null });
+                              if (!n.is_read && !n.is_inquiry) markRead.mutate({ params: { id: n.id } });
                               if (n.link) navigate(n.link);
                               setShowNotifs(false);
                             }}
@@ -248,7 +248,7 @@ export default function Navbar() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deleteNotif.mutate({ params: { id: n.id }, body: {} });
+                                deleteNotif.mutate({ params: { id: n.id } });
                               }}
                               className="absolute top-2 right-2 p-1 text-marble/60 hover:text-ares-red opacity-0 group-hover/notif:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:text-ares-red"
                               aria-label="Delete notification"

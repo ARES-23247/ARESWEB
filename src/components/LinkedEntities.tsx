@@ -1,5 +1,5 @@
 import { Link2, ExternalLink, FileText, CheckCircle, Target, Trophy } from "lucide-react";
-import { fetchJson } from "../api/client";
+import { fetchJson } from "../api";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 

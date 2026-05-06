@@ -4,7 +4,6 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, logSystemError, ensureAdmin } from "../middleware";
 import Stripe from "stripe";
 import { sendZulipMessage } from "../../utils/zulip";
-import type { HonoContext } from "@shared/types/api";
 import {
   getProductsRoute,
   createCheckoutSessionRoute,
@@ -26,7 +25,7 @@ storeRouter.post("/webhook", async (c) => {
         return c.json({ error: "Missing stripe signature" }, 400);
       }
 
-      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
+      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as const });
       let event: Stripe.Event;
 
       try {
@@ -36,8 +35,9 @@ storeRouter.post("/webhook", async (c) => {
           signature,
           endpointSecret
         );
-      } catch (err: any) {
-        console.error(`[Webhook] Signature verification failed: ${err.message}`);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        console.error(`[Webhook] Signature verification failed: ${message}`);
         return c.json({ error: `Invalid signature` }, 400);
       }
 
@@ -49,18 +49,20 @@ storeRouter.post("/webhook", async (c) => {
         const metadata = session.metadata;
         const cartItems = metadata?.cartItems ? JSON.parse(metadata.cartItems) : [];
 
+        const shippingName = (session as { shipping_details?: { name?: string | null } }).shipping_details?.name || null;
+
         await db
           .insertInto("orders")
           .values({
             id: session.id,
             stripe_session_id: session.id,
             customer_email: session.customer_details?.email || "unknown",
-            shipping_name: (session as any).shipping_details?.name || null,
+            shipping_name: shippingName,
             total_cents: session.amount_total || 0,
             status: "paid",
             items_json: JSON.stringify(cartItems),
             created_at: new Date().toISOString(),
-          } as any)
+          })
           .execute();
 
         // Deplete inventory
@@ -81,7 +83,7 @@ storeRouter.post("/webhook", async (c) => {
       }
 
       return c.json({ success: true }, 200);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logSystemError(c.get("db") as Kysely<DB>, "webhook_error", err);
       return c.json({ error: "Webhook fulfillment failed" }, 500);
     }
@@ -114,9 +116,10 @@ storeRouter.openapi(getProductsRoute, async (c) => {
       })),
       200
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[Store] Get products failed:", err);
-    return c.json({ error: err.message }, 500);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return c.json({ error: message }, 500);
   }
 });
 
@@ -129,7 +132,7 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
       throw new Error("STRIPE_SECRET_KEY is not configured.");
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as const });
     const db = c.get("db") as Kysely<DB>;
 
     // Fetch product details
@@ -186,9 +189,10 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
       },
       200
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[Store] Checkout failed:", err);
-    return c.json({ error: err.message }, 500);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return c.json({ error: message }, 500);
   }
 });
 
@@ -197,9 +201,10 @@ storeRouter.openapi(getOrdersRoute, async (c) => {
     const db = c.get("db") as Kysely<DB>;
     const orders = await db.selectFrom("orders").selectAll().orderBy("created_at", "desc").execute();
 
-    return c.json({ orders: orders as any }, 200);
-  } catch (err: any) {
-    return c.json({ error: err.message }, 500);
+    return c.json({ orders }, 200);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return c.json({ error: message }, 500);
   }
 });
 
@@ -210,8 +215,9 @@ storeRouter.openapi(updateOrderStatusRoute, async (c) => {
     const db = c.get("db") as Kysely<DB>;
     await db.updateTable("orders").set({ status: body.fulfillment_status }).where("id", "=", id).execute();
     return c.json({ success: true }, 200);
-  } catch (err: any) {
-    return c.json({ error: err.message }, 500);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return c.json({ error: message }, 500);
   }
 });
 

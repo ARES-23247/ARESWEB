@@ -1,15 +1,5 @@
-import { z } from "zod";
-import { createRoute } from "@hono/zod-openapi";
-import { standardErrors } from "./common";
-
-// Convert standardErrors to OpenAPI responses format
-const openApiErrorResponses = {
-  400: { content: { "application/json": { schema: standardErrors[400] } }, description: "Bad Request" },
-  401: { content: { "application/json": { schema: standardErrors[401] } }, description: "Unauthorized" },
-  403: { content: { "application/json": { schema: standardErrors[403] } }, description: "Forbidden" },
-  404: { content: { "application/json": { schema: standardErrors[404] } }, description: "Not Found" },
-  500: { content: { "application/json": { schema: standardErrors[500] } }, description: "Internal Server Error" },
-};
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const awardSchema = z.object({
   id: z.string(),
@@ -33,17 +23,11 @@ export const getAwardsRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            awards: z.array(awardSchema),
-          }),
-        },
-      },
       description: "Get all awards",
+      content: { "application/json": { schema: z.object({ awards: z.array(awardSchema) }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -68,15 +52,11 @@ export const saveAwardRoute = createRoute({
     },
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean(), id: z.string().optional() }),
-        },
-      },
       description: "Create or update an award",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), id: z.string().optional() }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -87,14 +67,10 @@ export const deleteAwardRoute = createRoute({
     params: z.object({ id: z.string() }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Soft-delete an award",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });

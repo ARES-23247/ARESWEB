@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap, Users, Mail } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
-import { api } from "../api/client";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { fetchJson } from "../api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAwardPoints } from "../api";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
 import {
@@ -43,12 +44,15 @@ export default function AdminUsers() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
-  const { data, isLoading, isError, isFetching } = api.users.getUsers.useQuery(
-    ["admin_users", cursor], 
-    { query: { limit: 100, cursor: cursor || undefined } }
-  );
+  const { data: rawBody, isLoading, isError, isFetching } = useQuery({
+    queryKey: ["admin_users", cursor],
+    queryFn: () => {
+      const qs = new URLSearchParams({ limit: "100" });
+      if (cursor) qs.append("cursor", cursor);
+      return fetchJson<{ users: User[], nextCursor?: string | null }>(`/api/users?${qs.toString()}`);
+    }
+  });
 
-  const rawBody = data?.body as unknown as { users: unknown[], nextCursor?: string | null };
   const nextCursor = rawBody?.nextCursor || null;
   const rawUsers = rawBody?.users as User[] | undefined;
   
@@ -68,7 +72,11 @@ export default function AdminUsers() {
     }
   }, [users, cursor]);
 
-  const patchMutation = api.users.patchUser.useMutation({
+  const patchMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string, body: Partial<User> }) => fetchJson<{ success?: boolean }>(`/api/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body)
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       toast.success("User updated");
@@ -79,14 +87,15 @@ export default function AdminUsers() {
   });
 
   const changeRole = useCallback((userId: string, newRole: string) => {
-    patchMutation.mutate({ params: { id: userId }, body: { role: newRole } });
+    patchMutation.mutate({ id: userId, body: { role: newRole } });
   }, [patchMutation]);
 
   const changeMemberType = useCallback((userId: string, newType: string) => {
-    patchMutation.mutate({ params: { id: userId }, body: { member_type: newType } });
+    patchMutation.mutate({ id: userId, body: { member_type: newType } });
   }, [patchMutation]);
 
-  const deleteMutation = api.users.deleteUser.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/users/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       toast.success("User removed successfully");
@@ -98,74 +107,56 @@ export default function AdminUsers() {
 
   const removeUser = (userId: string, name: string) => {
     if (!confirm(`Remove ${name}? This cannot be undone.`)) return;
-    deleteMutation.mutate({ params: { id: userId } });
+    deleteMutation.mutate(userId);
   };
 
   const columnHelper = useMemo(() => createColumnHelper<User>(), []);
 
-  const pointsMutation = useMutation({
-    mutationFn: async (data: { body: { user_id: string; points_delta: number; reason: string } }) => {
-      const res = await fetch("/api/points/transaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data.body)
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    onSuccess: () => {
-      toast.success("Points transaction successful");
-      setPointsUserId(null);
-      setPointsDelta("");
-      setPointsReason("");
-      queryClient.invalidateQueries({ queryKey: ["points"] });
-      queryClient.invalidateQueries({ queryKey: ["points-history"] });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to update points");
-    }
-  });
+  const pointsMutation = useAwardPoints();
 
   const handleAwardPoints = (e: React.FormEvent) => {
     e.preventDefault();
     if (!pointsUserId || !pointsDelta || !pointsReason) return;
     const delta = parseInt(pointsDelta, 10);
     if (isNaN(delta)) return toast.error("Invalid points amount");
-    pointsMutation.mutate({
-      body: {
-        user_id: pointsUserId,
-        points_delta: delta,
-        reason: pointsReason
+    pointsMutation.mutate({ 
+      user_id: pointsUserId, 
+      points_delta: delta, 
+      reason: pointsReason 
+    }, {
+      onSuccess: () => {
+        toast.success("Points awarded successfully");
+        setPointsUserId(null);
+        setPointsDelta("");
+        setPointsReason("");
+        queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       }
     });
   };
 
-  const auditMutation = api.zulip.auditMissingUsers.useMutation({
-    onSuccess: (data: { status: 200; body: { success: boolean; missingEmails: string[] } } | { status: 500; body: { success: boolean; error: string } }) => {
-      if (data.status === 200) {
-        setAuditResult(data.body.missingEmails);
-        setShowZulipAudit(true);
-      } else if (data.status === 500) {
-        toast.error(`Audit failed: ${data.body.error}`);
-      }
-    },
-    onError: (err: Error) => toast.error(err.message || "Network error during audit")
-  });
-
-  const inviteMutation = api.zulip.inviteUsers.useMutation({
-    onSuccess: (data: { status: 200; body: { success: boolean; invitedCount: number } } | { status: 500; body: { success: boolean; error: string } }) => {
-      if (data.status === 200) {
-        toast.success(`Successfully invited ${data.body.invitedCount} users!`);
-        setShowZulipAudit(false);
-        setAuditResult(null);
-      } else if (data.status === 500) {
-        const errorMsg = data.body.error || "Unknown error";
-        toast.error(`Invite failed: ${errorMsg}`, { duration: 10000 });
-      }
+  const auditMutation = useMutation({
+    mutationFn: () => fetchJson<{ missingEmails: string[] }>("/api/zulip/audit", { method: "POST" }),
+    onSuccess: (data) => {
+      setAuditResult(data.missingEmails);
+      setShowZulipAudit(true);
     },
     onError: (err: Error) => {
-      const errorMsg = err.message || "Unknown network error";
-      toast.error(`Network error: ${errorMsg}`, { duration: 10000 });
+      toast.error(`Audit failed: ${err.message}`);
+    }
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: (emails: string[]) => fetchJson<{ invitedCount: number }>("/api/zulip/invite", {
+      method: "POST",
+      body: JSON.stringify({ emails })
+    }),
+    onSuccess: (data) => {
+      toast.success(`Successfully invited ${data.invitedCount} users!`);
+      setShowZulipAudit(false);
+      setAuditResult(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Invite failed: ${err.message}`, { duration: 10000 });
     }
   });
 
@@ -298,7 +289,7 @@ export default function AdminUsers() {
         </h2>
         <div className="flex items-center gap-4">
            <button
-             onClick={() => auditMutation.mutate({})}
+             onClick={() => auditMutation.mutate()}
              disabled={auditMutation.isPending}
              className="flex items-center gap-2 bg-ares-red hover:bg-ares-red/80 text-white font-bold py-2 px-4 ares-cut-sm transition-colors text-sm disabled:opacity-50"
              title="Audit missing Zulip users"
@@ -497,7 +488,7 @@ export default function AdminUsers() {
               
               {auditResult.length > 0 && (
                 <button
-                  onClick={() => inviteMutation.mutate({ body: { emails: auditResult } })}
+                  onClick={() => inviteMutation.mutate(auditResult)}
                   disabled={inviteMutation.isPending}
                   className="w-full flex items-center justify-center gap-2 py-3 font-bold bg-ares-cyan hover:bg-ares-cyan/80 text-obsidian ares-cut-sm transition-all disabled:opacity-50 mt-4"
                 >

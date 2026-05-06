@@ -31,6 +31,10 @@ export const OrderSchema = z.object({
   updated_at: z.string().nullable(),
 });
 
+export type Product = z.infer<typeof ProductSchema>;
+export type Order = z.infer<typeof OrderSchema>;
+
+
 export const CheckoutItemSchema = z.object({
   productId: z.string(),
   quantity: z.number().int().positive(),

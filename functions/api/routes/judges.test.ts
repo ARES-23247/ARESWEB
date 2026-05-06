@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { TestEnv } from "../../../src/test/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";

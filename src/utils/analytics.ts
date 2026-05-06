@@ -5,20 +5,18 @@
 
 export type AnalyticsCategory = 'blog' | 'doc' | 'event' | 'system';
 
-import { api } from '../api/client';
+import { fetchJson } from '../api';
 
 export async function trackPageView(path: string, category: AnalyticsCategory) {
   try {
     // Analytics are now tracked in all environments (including local) to allow testing.
-    // If you want to disable local tracking, uncomment the following line:
-    // if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
-
-    await api.analytics.trackPageView.mutation({
-      body: {
+    await fetchJson("/api/analytics/track-page-view", {
+      method: "POST",
+      body: JSON.stringify({
         path,
         category,
         referrer: document.referrer,
-      }
+      })
     });
   } catch (err) {
     // Silent fail to avoid disrupting user experience

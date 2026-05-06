@@ -7,10 +7,10 @@ last_updated: "2026-05-06T12:01:00.000Z"
 last_activity: 2026-05-06
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 3
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 3
+  percent: 75
 ---
 
 # System State
@@ -21,10 +21,10 @@ progress:
 
 ## Current Position
 
-Phase: 35-simple-routes
-Plan: 35-01-PLAN.md
-Status: Ready for execution
-Last activity: 2026-05-06 — Milestone v6.8 started
+Phase: 37-cleanup-and-frontend
+Plan: frontend-client-migration-plan.md
+Status: In Progress
+Last activity: 2026-05-06 — Backend migration confirmed 100% complete; frontend shim layer (honoReactQuery.ts) established.
 
 ## Project Reference
 
@@ -39,7 +39,7 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 
 1. **@hono/zod-openapi over oRPC**: Already 100% Hono backend; native integration eliminates impedance mismatch
 2. **@hono/zod-openapi over ts-rest RC**: RC is a band-aid; migration eliminates the entire contract-layer abstraction
-3. **Frontend untouched**: React frontend uses raw `fetch()`, not ts-rest client — no frontend migration needed
+3. **Frontend Migration IN PROGRESS**: React frontend is transitioning from ts-rest to `@tanstack/react-query` using a custom shim (`src/api/honoReactQuery.ts`) backed by Hono `hc()`.
 4. **Identical URLs**: All REST endpoints keep existing paths — zero breaking changes for consumers
 
 ### Anti-Patterns to Avoid

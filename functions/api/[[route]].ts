@@ -43,6 +43,7 @@ import pointsRouter from "./routes/points";
 import aiRouter from "./routes/ai/index";
 import socialQueueRouter from "./routes/socialQueue";
 import scoutingRouter from "./routes/scouting/index";
+import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
 
 import { logger } from "hono/logger";
 import { sentry } from "@hono/sentry";
@@ -61,11 +62,6 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-// ── 2. Isolate-Memory Rate Limiting (Fast reject) ────────────────────
-// Global KV rate limiting has been removed to prevent KV write quota exhaustion.
-// Use persistentRateLimitMiddleware on specific high-risk routes instead.
-
-// ── 3. Env & DB setup ────
 app.use("*", envMiddleware);
 app.use("*", dbMiddleware);
 
@@ -106,7 +102,6 @@ apiRouter.use("*", async (c, next) => {
   await next();
   const latency = Date.now() - start;
 
-  // Skip polling routes, static assets, and OPTIONS to preserve DB quota
   if (!c.req.path.includes("polling") && c.req.method !== "OPTIONS" && !c.req.path.startsWith("/assets")) {
     const user = c.get("sessionUser") as SessionUser | undefined;
     const db = c.get("db") as Kysely<DB>;
@@ -127,9 +122,7 @@ apiRouter.use("*", async (c, next) => {
               })
               .execute();
           } catch (err) {
-            // Silently fail - metrics shouldn't break the app
             const errorMsg = err instanceof Error ? err.message : String(err);
-            // Only log DB errors (not "table does not exist" spam)
             if (!errorMsg.includes("no such table") && !errorMsg.includes("does not exist")) {
               console.error("[UsageMetrics] Log failed:", errorMsg);
             }
@@ -142,7 +135,6 @@ apiRouter.use("*", async (c, next) => {
 
 // ── CSRF Protection ──
 apiRouter.use("*", async (c, next) => {
-  // Webhooks from external services don't have our origin
   if (c.req.path.startsWith("/api/webhooks/")) {
     return await next();
   }
@@ -175,10 +167,9 @@ apiRouter.use("*", cors({
 }));
 
 // ── Distributed Persistent Rate Limiting (D1 Backed) ─────────────────
-// Applied only to high-risk / write-heavy endpoints to preserve D1 quota
-apiRouter.use("/auth/*", persistentRateLimitMiddleware(30, 60)); // 30 req / min
-apiRouter.use("/inquiries/*", persistentRateLimitMiddleware(10, 60)); // 10 req / min 
-apiRouter.use("/comments/*", persistentRateLimitMiddleware(20, 60)); // 20 req / min
+apiRouter.use("/auth/*", persistentRateLimitMiddleware(30, 60));
+apiRouter.use("/inquiries/*", persistentRateLimitMiddleware(10, 60)); 
+apiRouter.use("/comments/*", persistentRateLimitMiddleware(20, 60));
 
 
 // ── Mount Domain Routers ─────────────────────────────────────────────
@@ -220,96 +211,60 @@ import { simulationsRouter } from "./routes/simulations";
 apiRouter.route("/simulations", simulationsRouter);
 
 import { communicationsRouter } from "./routes/communications";
-
-// Webhooks
 apiRouter.route("/webhooks/github", githubWebhookRouter);
 apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
 apiRouter.route("/communications", communicationsRouter);
 
 // ── Global Search ───
-apiRouter.get("/search", rateLimitMiddleware(20, 60), async (c) => {
-  const q = c.req.query("q") || "";
-  if (q.length < 3) return c.json({ results: [] });
-  
-  // SCA-FTS-01: Sanitize FTS5 query
+apiRouter.openapi(searchRoute, async (c) => {
+  const { q } = c.req.valid("query");
   const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
-  if (!qClean || qClean.length > 100) return c.json({ results: [] });
+  if (!qClean || qClean.length > 100) return c.json({ results: [] }, 200);
   const ftsQ = qClean.replace(/\*/g, '') + '*';
-
   const db = c.get("db") as Kysely<DB>;
-  
-  // SCA-FTS-02: Use rich FTS5 features (snippet/highlight) for championship-grade search
   const [postsReq, eventsReq, docsReq] = await Promise.all([
     sql<Record<string, unknown>>`
-      SELECT 
-        'blog' as type, 
-        f.slug as id, 
-        highlight(posts_fts, 1, '<b>', '</b>') as title,
-        snippet(posts_fts, 4, '...', '...', '...', 15) as snippet
-      FROM posts_fts f 
-      JOIN posts p ON f.slug = p.slug 
-      WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} 
-      ORDER BY rank LIMIT 5
-    `.execute(db),
+      SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet
+      FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`.execute(db),
     sql<Record<string, unknown>>`
-      SELECT 
-        'event' as type, 
-        f.id, 
-        highlight(events_fts, 1, '<b>', '</b>') as title,
-        snippet(events_fts, 2, '...', '...', '...', 15) as snippet
-      FROM events_fts f 
-      JOIN events e ON f.id = e.id 
-      WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} 
-      ORDER BY rank LIMIT 5
-    `.execute(db),
+      SELECT 'event' as type, f.id, highlight(events_fts, 1, '<b>', '</b>') as title, snippet(events_fts, 2, '...', '...', '...', 15) as snippet
+      FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`.execute(db),
     sql<Record<string, unknown>>`
-      SELECT 
-        'doc' as type, 
-        f.slug as id, 
-        highlight(docs_fts, 1, '<b>', '</b>') as title,
-        snippet(docs_fts, 4, '...', '...', '...', 15) as snippet
-      FROM docs_fts f 
-      JOIN docs d ON f.slug = d.slug 
-      WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} 
-      ORDER BY rank LIMIT 5
-    `.execute(db)
+      SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet
+      FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`.execute(db)
   ]);
-  
-  const results = [
-    ...(postsReq.rows || []),
-    ...(eventsReq.rows || []),
-    ...(docsReq.rows || [])
-  ];
-
-  return c.json({ results });
+  return c.json({ 
+    results: [
+      ...(postsReq.rows || []).map(r => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
+      ...(eventsReq.rows || []).map(r => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
+      ...(docsReq.rows || []).map(r => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
+    ] 
+  }, 200);
 });
 
 // ── Audit Log ────────────────────────────
-apiRouter.get("/admin/audit-log", ensureAdmin, async (c) => {
-  const { limit, offset } = parsePagination(c, 50, 200);
-  const db = c.get("db");
+apiRouter.openapi(auditLogRoute, async (c) => {
+  const { limit: l, offset: o } = c.req.valid("query");
+  const limit = l ? parseInt(l, 10) : 50;
+  const offset = o ? parseInt(o, 10) : 0;
+  
+  const db = c.get("db") as Kysely<DB>;
   const results = await db.selectFrom("audit_log")
-    .select([
-      "id",
-      "actor",
-      "action",
-      "resource_type",
-      "resource_id",
-      "created_at",
-      sql<string>`substr(details, 1, 500)`.as("details")
-    ])
-    .orderBy("created_at", "desc")
-    .limit(limit)
-    .offset(offset)
-    .execute();
-  return c.json({ logs: results || [] });
+    .select(["id", "actor", "action", "resource_type", "resource_id", "created_at", sql<string>`substr(details, 1, 500)`.as("details")])
+    .orderBy("created_at", "desc").limit(limit).offset(offset).execute();
+  
+  const logs = results.map(r => ({
+    ...r,
+    details: r.details || ""
+  }));
+
+  return c.json({ logs }, 200);
 });
 
 app.onError(async (err, c) => {
   console.error("Global API Error:", err);
   const db = c.get("db") as Kysely<DB>;
   if (c.env?.DB && db) {
-    // SCA-F01: Non-blocking error logging
     c.executionCtx.waitUntil(logSystemError(db, "GlobalErrorHandler", err.message || "Unknown error", err.stack));
   }
   const isProd = c.env?.ENVIRONMENT === "production";
@@ -326,123 +281,39 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   const { Kysely } = await import("kysely");
   const db = new Kysely<DB>({ dialect: new D1Dialect({ database: env.DB }) });
   await purgeOldInquiries(db, 30);
-
-  // Configurable audit log retention (default 90 days)
   const auditRetentionDays = parseInt(env.AUDIT_LOG_RETENTION_DAYS || "90", 10);
-  await db.deleteFrom("audit_log")
-    .where("id", "in", (eb) => eb.selectFrom("audit_log")
-      .select("id")
-      .where("created_at", "<", sql<string>`datetime('now', '-${sql.raw(String(auditRetentionDays))} days')`)
-      .limit(100)
-    )
-    .execute();
-
-  // Process scheduled social media posts
+  await db.deleteFrom("audit_log").where("id", "in", (eb) => eb.selectFrom("audit_log").select("id").where("created_at", "<", sql<string>`datetime('now', '-${sql.raw(String(auditRetentionDays))} days')`).limit(100)).execute();
   const now = new Date().toISOString();
-  const pendingPosts = await db.selectFrom("social_queue")
-    .selectAll()
-    .where("status", "=", "pending")
-    .where("scheduled_for", "<=", now)
-    .execute();
-
+  const pendingPosts = await db.selectFrom("social_queue").selectAll().where("status", "=", "pending").where("scheduled_for", "<=", now).execute();
   if (pendingPosts.length > 0) {
-    console.log(`[Cron] Processing ${pendingPosts.length} scheduled social posts`);
-
-    // Fetch social settings from database
     const settings = await db.selectFrom("settings").selectAll().execute();
-    const settingsMap = settings.reduce((acc, s) => {
-      if (s.key) {
-        acc[s.key] = s.value;
-      }
-      return acc;
-    }, {} as Record<string, string>);
-
-    const socialConfig = {
-      DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"],
-      MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"],
-      BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"],
-      BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"],
-      SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"],
-      TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"],
-      GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"],
-      FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"],
-      FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"],
-      TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"],
-      TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"],
-      TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"],
-      TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"],
-    };
-
+    const settingsMap = settings.reduce((acc, s) => { if (s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+    const socialConfig = { DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"], MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"], BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"], BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"], SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"], TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"], GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"], FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"], FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"], TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"], TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"], TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"], TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"] };
     const { dispatchSocials } = await import("../utils/socialSync");
-
     for (const post of pendingPosts) {
       try {
-        await db.updateTable("social_queue")
-          .set({ status: "processing" })
-          .where("id", "=", post.id)
-          .execute();
-
+        await db.updateTable("social_queue").set({ status: "processing" }).where("id", "=", post.id).execute();
         const platforms = JSON.parse(post.platforms);
-
-        await dispatchSocials(
-          db,
-          {
-            title: post.linked_type ? "ARES Content Update" : "ARES Social Post",
-            url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org",
-            snippet: post.content,
-            thumbnail: post.media_urls ? JSON.parse(post.media_urls)?.[0] : undefined,
-          },
-          socialConfig,
-          platforms
-        );
-
-        await db.updateTable("social_queue")
-          .set({
-            status: "sent",
-            sent_at: now,
-          })
-          .where("id", "=", post.id)
-          .execute();
-
-        console.log(`[Cron] Sent social post ${post.id}`);
+        await dispatchSocials(db, { title: post.linked_type ? "ARES Content Update" : "ARES Social Post", url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", snippet: post.content, thumbnail: post.media_urls ? JSON.parse(post.media_urls)?.[0] : undefined }, socialConfig, platforms);
+        await db.updateTable("social_queue").set({ status: "sent", sent_at: now }).where("id", "=", post.id).execute();
       } catch (error) {
         console.error(`[Cron] Failed to send social post ${post.id}:`, error);
-        await db.updateTable("social_queue")
-          .set({
-            status: "failed",
-            error_message: String(error),
-          })
-          .where("id", "=", post.id)
-          .execute();
+        await db.updateTable("social_queue").set({ status: "failed", error_message: String(error) }).where("id", "=", post.id).execute();
       }
     }
   }
-
-  // Re-index site content for the RAG chatbot knowledge base
-  // CRITICAL: Must use dynamic import() — static import pulls AI bindings into every request
   if (env.AI && env.VECTORIZE_DB) {
     try {
       const { indexSiteContent } = await import("./routes/ai/indexer");
-      const result = await indexSiteContent(db, env.AI, env.VECTORIZE_DB);
-      console.log(`[Cron] Vectorize indexed ${result.indexed} documents. Errors: ${result.errors.length}`);
-      if (result.errors.length > 0) {
-        console.error("[Cron] Indexing errors:", result.errors);
-      }
-    } catch (e) {
-      console.error("[Cron] Vectorize indexing failed:", e);
-    }
+      await indexSiteContent(db, env.AI, env.VECTORIZE_DB);
+    } catch (e) { console.error("[Cron] Vectorize indexing failed:", e); }
   }
-
-  // DB heartbeat for cron validation (TD-05) - migrated from KV to prevent quota exhaustion
   try {
     const nowIso = new Date().toISOString();
-    await db.insertInto("settings")
-      .values({ key: "cron_last_run", value: nowIso, updated_at: nowIso })
-      .onConflict((oc) => oc.column("key").doUpdateSet({ value: nowIso, updated_at: nowIso }))
-      .execute();
-  } catch (err) {
-    console.error("[Cron] Failed to update heartbeat in D1", err);
-  }
+    await db.insertInto("settings").values({ key: "cron_last_run", value: nowIso, updated_at: nowIso }).onConflict((oc) => oc.column("key").doUpdateSet({ value: nowIso, updated_at: nowIso })).execute();
+  } catch (err) { console.error("[Cron] Failed to update heartbeat in D1", err); }
 };
 
+export { apiRouter };
+export type AppType = typeof apiRouter;
 export default app;

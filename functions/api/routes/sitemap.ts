@@ -1,14 +1,14 @@
-import { Hono } from "hono";
-import type { Context } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
+import { getSitemapRoute } from "../../../shared/routes/sitemap";
 
-export const sitemapRouter = new Hono<AppEnv>();
+export const sitemapRouter = new OpenAPIHono<AppEnv>();
 
 // SEC-DoW: Cache sitemap to prevent repeated D1 queries from bots/crawlers
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
 
-sitemapRouter.get(".xml", async (c: Context<AppEnv>) => {
+sitemapRouter.openapi(getSitemapRoute, async (c) => {
   const db = c.get("db");
   try {
     const now = Date.now();
@@ -36,8 +36,6 @@ sitemapRouter.get(".xml", async (c: Context<AppEnv>) => {
       db.selectFrom("events")
         .select("id")
         .where("is_deleted", "=", 0)
-        // Ensure visibility is public if such a field exists, or simply include all non-deleted events
-        // Based on typical schema we assume all non-deleted events are public unless otherwise restricted
         .execute()
     ]);
 
@@ -98,4 +96,3 @@ sitemapRouter.get(".xml", async (c: Context<AppEnv>) => {
 });
 
 export default sitemapRouter;
-

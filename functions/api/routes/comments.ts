@@ -1,13 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware, ensureAuth, originIntegrityMiddleware, logAuditAction } from "../middleware";
 import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
-import { listCommentsRoute, submitCommentRoute, updateCommentRoute, deleteCommentRoute } from "../../../shared/schemas/contracts/commentContract";
-
-import type { HonoContext } from "@shared/types/api";
+import { listCommentsRoute, submitCommentRoute, updateCommentRoute, deleteCommentRoute } from "../../../shared/routes/comments";
 
 export const commentsRouter = new OpenAPIHono<AppEnv>();
 
@@ -37,8 +34,8 @@ commentsRouter.use("/{id}", (c, next) => {
   return next();
 });
 
-commentsRouter.openapi(listCommentsRoute, async (c: HonoContext) => {
-  const { targetType, targetId } = c.req.valid("param" as never) as any;
+commentsRouter.openapi(listCommentsRoute, async (c) => {
+  const { targetType, targetId } = c.req.valid("param");
   const user = await getSessionUser(c);
   const db = c.get("db") as Kysely<DB>;
 
@@ -70,33 +67,33 @@ commentsRouter.openapi(listCommentsRoute, async (c: HonoContext) => {
       comments,
       authenticated: !!user,
       role: user?.role || null
-    }, 200 as any);
+    }, 200);
   } catch (e) {
     console.error("[Comments:List] Error", e);
-    return c.json({ error: "Failed to fetch comments", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: "Failed to fetch comments", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-commentsRouter.openapi(submitCommentRoute, async (c: HonoContext) => {
+commentsRouter.openapi(submitCommentRoute, async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401 as any);
+    return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
   }
   if (user.role === "unverified") {
-    return c.json({ error: "Verify your email to comment", code: "FORBIDDEN" }, 403 as any);
+    return c.json({ error: "Verify your email to comment", code: "FORBIDDEN" }, 403);
   }
 
-  const { targetType, targetId } = c.req.valid("param" as never) as any;
+  const { targetType, targetId } = c.req.valid("param");
   const db = c.get("db") as Kysely<DB>;
-  const body = c.req.valid("json" as never) as any;
+  const body = c.req.valid("json");
   const rawContent = body.content;
   if (!rawContent) {
-    return c.json({ error: "Comment content is required", code: "BAD_REQUEST" }, 400 as any);
+    return c.json({ error: "Comment content is required", code: "BAD_REQUEST" }, 400);
   }
   const content = rawContent.trim();
 
   if (!content) {
-    return c.json({ error: "Comment content is required", code: "BAD_REQUEST" }, 400 as any);
+    return c.json({ error: "Comment content is required", code: "BAD_REQUEST" }, 400);
   }
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
@@ -104,7 +101,7 @@ commentsRouter.openapi(submitCommentRoute, async (c: HonoContext) => {
     return c.json({
       error: `Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`,
       code: "BAD_REQUEST"
-    }, 400 as any);
+    }, 400);
   }
 
   try {
@@ -151,42 +148,42 @@ commentsRouter.openapi(submitCommentRoute, async (c: HonoContext) => {
       }
     }
 
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Comments:Submit] Error", e);
-    return c.json({ error: "Failed to submit comment", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: "Failed to submit comment", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-commentsRouter.openapi(updateCommentRoute, async (c: HonoContext) => {
+commentsRouter.openapi(updateCommentRoute, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401 as any);
-  if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403 as any);
+  if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
+  if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
 
-  const { id } = c.req.valid("param" as never) as any;
+  const { id } = c.req.valid("param");
   const db = c.get("db") as Kysely<DB>;
-  const body = c.req.valid("json" as never) as any;
+  const body = c.req.valid("json");
   const rawContent = body.content;
   const content = rawContent?.trim();
 
-  if (!content) return c.json({ error: "Content is required", code: "BAD_REQUEST" }, 400 as any);
+  if (!content) return c.json({ error: "Content is required", code: "BAD_REQUEST" }, 400);
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
   if (rawContent && rawContent.length > MAX_INPUT_LENGTHS.comment) {
     return c.json({
       error: `Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`,
       code: "BAD_REQUEST"
-    }, 400 as any);
+    }, 400);
   }
 
   try {
     const row = await db.selectFrom("comments").select(["user_id", "zulip_message_id"]).where("id", "=", id).executeTakeFirst();
-    if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404 as any);
+    if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
     
     const isOwner = row.user_id === user.id;
     const isModerator = user.role === "admin" || user.member_type === "mentor" || user.member_type === "coach";
     
-    if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to update this comment", code: "FORBIDDEN" }, 403 as any);
+    if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to update this comment", code: "FORBIDDEN" }, 403);
 
     await db.updateTable("comments")
       .set({ content })
@@ -204,29 +201,29 @@ commentsRouter.openapi(updateCommentRoute, async (c: HonoContext) => {
       })());
     }
 
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Comments:Update] Error", e);
-    return c.json({ error: "Failed to update comment", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: "Failed to update comment", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-commentsRouter.openapi(deleteCommentRoute, async (c: HonoContext) => {
+commentsRouter.openapi(deleteCommentRoute, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401 as any);
-  if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403 as any);
+  if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
+  if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
 
-  const { id } = c.req.valid("param" as never) as any;
+  const { id } = c.req.valid("param");
   const db = c.get("db") as Kysely<DB>;
 
   try {
     const row = await db.selectFrom("comments").select(["user_id", "zulip_message_id"]).where("id", "=", id).executeTakeFirst();
-    if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404 as any);
+    if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
     
     const isOwner = row.user_id === user.id;
     const isModerator = user.role === "admin" || user.member_type === "mentor" || user.member_type === "coach";
     
-    if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to delete this comment", code: "FORBIDDEN" }, 403 as any);
+    if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to delete this comment", code: "FORBIDDEN" }, 403);
 
     await db.updateTable("comments")
       .set({ is_deleted: 1 })
@@ -244,10 +241,10 @@ commentsRouter.openapi(deleteCommentRoute, async (c: HonoContext) => {
       })());
     }
 
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Comments:Delete] Error", e);
-    return c.json({ error: "Failed to delete comment", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: "Failed to delete comment", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 

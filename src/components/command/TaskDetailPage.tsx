@@ -6,8 +6,8 @@ import {
   CheckCircle2, Circle, Clock, AlertTriangle,
   RefreshCw, Layers
 } from "lucide-react";
-import { api } from "../../api/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useGetTasks, useGetUsers, useUpdateTask, useDeleteTask } from "../../api";
 import type { TaskItem } from "./ProjectBoardKanban";
 
 const STATUS_OPTIONS = [
@@ -32,13 +32,9 @@ export default function TaskDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Fetch all tasks and find the one we need
-  const { data: tasksRes, isLoading } = api.tasks.list.useQuery(
-    ["command-tasks"],
-    {},
-    { staleTime: 10000 }
-  );
+  const { data: tasksData, isLoading } = useGetTasks();
 
-  const tasks = tasksRes?.status === 200 ? tasksRes.body.tasks : [];
+  const tasks = tasksData?.tasks ?? [];
   const task = tasks.find((t: TaskItem) => t.id === taskId);
 
   // Local edit state — synced from task on first load
@@ -51,22 +47,17 @@ export default function TaskDetailPage() {
   const setField = (field: string, value: unknown) => setEdits(prev => ({ ...prev, [field]: value }));
 
   // Fetch team members for assignee picker
-  const { data: usersRes } = api.users.getUsers.useQuery(
-    ["team-members-for-tasks"],
-    {},
-    { staleTime: 60000 }
-  );
-  const teamMembers = usersRes?.status === 200 ? usersRes.body.users : [];
+  const { data: usersData } = useGetUsers({ limit: 100 });
+  const teamMembers = usersData?.users ?? [];
 
+  const updateMutation = useUpdateTask();
+  const deleteMutation = useDeleteTask();
+  
   const handleSave = async () => {
     if (!taskId || Object.keys(edits).length === 0) return;
     setIsSaving(true);
     try {
-      await api.tasks.update.mutation({
-        params: { id: taskId },
-        body: edits,
-      });
-      queryClient.invalidateQueries({ queryKey: ["command-tasks"] });
+      await updateMutation.mutateAsync({ id: taskId, updates: edits as any });
       setEdits({});
     } finally {
       setIsSaving(false);
@@ -75,8 +66,7 @@ export default function TaskDetailPage() {
 
   const handleDelete = async () => {
     if (!taskId) return;
-    await api.tasks.delete.mutation({ params: { id: taskId }, body: null });
-    queryClient.invalidateQueries({ queryKey: ["command-tasks"] });
+    await deleteMutation.mutateAsync(taskId);
     navigate("/dashboard/command_center");
   };
 
@@ -228,9 +218,9 @@ export default function TaskDetailPage() {
               className="w-full bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
             >
               <option value="">Unassigned</option>
-              {teamMembers.map((m: { id: string; name: string; nickname?: string }) => (
+              {teamMembers.map((m: { id: string; name: string | null; nickname?: string | null }) => (
                 <option key={m.id} value={m.id}>
-                  {m.nickname || m.name}
+                  {m.nickname || m.name || 'Unknown User'}
                 </option>
               ))}
             </select>

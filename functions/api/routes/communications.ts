@@ -1,6 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, logSystemError } from "../middleware";
-import type { HonoContext } from "@shared/types/api";
+import type { _HonoContext } from "@shared/types/api";
+import { Kysely } from "kysely";
+import { DB } from "../../../shared/schemas/database";
 import {
   sendMassEmailRoute,
   getStatsRoute,
@@ -15,19 +17,20 @@ communicationsRouter.use("/stats", ensureAdmin);
 // Get stats
 communicationsRouter.openapi(getStatsRoute, async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as Kysely<DB> | null;
     if (!db) {
       console.error("[Communications] db context is null/undefined");
-      return c.json({ success: false, error: "Database not initialized" } as any, 500);
+      return c.json({ success: false, error: "Database not initialized" }, 500);
     }
     const users = await db.selectFrom("user").select(["email"]).execute();
 
-    const activeMembers = users.filter((m: any) => m.email);
+    const activeMembers = users.filter((m) => m.email);
     return c.json({ activeUsers: activeMembers.length }, 200);
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[Communications] Error fetching stats:", err);
-    return c.json({ success: false, error: err?.message || "Internal server error" } as any, 500);
+    const errorMessage = err instanceof Error ? err.message : "Internal server error";
+    return c.json({ success: false, error: errorMessage }, 500);
   }
 });
 
@@ -38,19 +41,19 @@ communicationsRouter.openapi(sendMassEmailRoute, async (c) => {
     const socialConfig = await getSocialConfig(c);
 
     if (!socialConfig.RESEND_API_KEY) {
-      return c.json({ success: false, error: "Resend API key is not configured." } as any, 400);
+      return c.json({ success: false, error: "Resend API key is not configured." }, 400);
     }
 
     const fromEmail = socialConfig.RESEND_FROM_EMAIL || "team@aresfirst.org";
 
     // Fetch users from database
-    const db = c.get("db") as any;
+    const db = c.get("db") as Kysely<DB>;
     const users = await db.selectFrom("user").select(["email"]).execute();
 
-    const activeMembers = users.filter((m: any) => m.email);
+    const activeMembers = users.filter((m) => m.email);
 
     if (activeMembers.length === 0) {
-      return c.json({ success: false, error: "No active users found to send emails to." } as any, 400);
+      return c.json({ success: false, error: "No active users found to send emails to." }, 400);
     }
 
     const BATCH_LIMIT = 50;
@@ -85,10 +88,10 @@ communicationsRouter.openapi(sendMassEmailRoute, async (c) => {
         throw new Error(`Resend API Error: ${errText}`);
       }
 
-      const resData = await resendRes.json();
-      // Batch returns an array of data or an error
-      if (resData && (resData as any).error) {
-         throw new Error(`Resend Batch Error: ${(resData as any).error.message}`);
+      const resData = (await resendRes.json()) as Record<string, unknown>;
+      if (resData && typeof resData.error === "object" && resData.error !== null) {
+        const error = resData.error as Record<string, unknown>;
+        throw new Error(`Resend Batch Error: ${error.message || "Unknown error"}`);
       }
 
       sentCount += chunk.length;
@@ -102,7 +105,7 @@ communicationsRouter.openapi(sendMassEmailRoute, async (c) => {
       recipientCount: sentCount
     }, 200);
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     // WR-09: Sanitize error message to avoid logging PII (email addresses)
     const errMsg = err instanceof Error ? err.message : "Unknown error";
     // Only log error type/class, not full details which may contain emails
@@ -114,7 +117,7 @@ communicationsRouter.openapi(sendMassEmailRoute, async (c) => {
       const db = c.get("db");
       await logSystemError(db, "Communications", "Failed to send mass email", errMsg);
     } catch { /* don't let logging failure mask the real error */ }
-    return c.json({ success: false, error: errMsg || "Failed to dispatch emails" } as any, 500);
+    return c.json({ success: false, error: errMsg || "Failed to dispatch emails" }, 500);
   }
 });
 

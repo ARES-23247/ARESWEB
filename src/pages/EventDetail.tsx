@@ -1,29 +1,14 @@
 import { useParams, Link } from "react-router-dom";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery } from "@tanstack/react-query";
 import { format, isBefore } from "date-fns";
 import { motion } from "framer-motion";
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import EventSignups from "../components/EventSignups";
 import ZulipThread from "../components/ZulipThread";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
-import { api } from "../api/client";
+import { useGetEvent, type FullEventItem as _FullEventItem } from "../api";
 import SEO from "../components/SEO";
 import { extractTextFromAst } from "../utils/content";
 import { validateIdParam } from "../utils/security";
-
-interface EventRow {
-  id: string;
-  title: string;
-  date_start: string;
-  date_end: string | null;
-  location: string | null;
-  description: string;
-  cover_image: string | null;
-  is_potluck: number | null;
-  is_volunteer: number | null;
-  meeting_notes?: string | null;
-}
 
 import { Calendar, Edit2 } from "lucide-react";
 import { GreekMeander } from "../components/GreekMeander";
@@ -37,28 +22,27 @@ export default function EventDetail() {
 
   const { data: session } = useSession();
 
-  // Early return if ID is invalid
-  if (!id || !validatedId) {
-    return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white font-mono text-center">Invalid event ID format.</div>;
-  }
+  // Call hooks before any early returns (React Hooks rules)
+  const { data: eventRes, isLoading, isError } = useGetEvent(validatedId ?? "", {
+    retry: false,
+    enabled: !!validatedId,
+  });
 
   const userRole = (session?.user as Record<string, unknown>)?.role || "user";
   const isEditor = userRole === "admin" || userRole === "author";
 
-  const { data: eventRes, isLoading, isError } = api.events.getEvent.useQuery(["event", validatedId], {
-    params: { id: validatedId },
-  }, {
-    enabled: !!validatedId,
-    retry: false,
-  });
+  // Early return if ID is invalid (after hooks are called)
+  if (!id || !validatedId) {
+    return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white font-mono text-center">Invalid event ID format.</div>;
+  }
 
-  const event = eventRes?.status === 200 ? eventRes.body.event : null;
+  const event = eventRes?.event || null;
 
   if (isLoading) return <div className="w-full min-h-[50vh] flex items-center justify-center text-ares-gold animate-pulse font-heading tracking-widest">Consulting the Oracle...</div>;
   if (isError || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white font-mono text-center">Event Record Erased or Unfound.</div>;
 
   const isPast = isBefore(new Date(event.date_start), new Date());
-  const locationAddress = (event as EventRow & { location_address?: string | null }).location_address;
+  const locationAddress = event.location_address;
   
   const handleSaveToCalendar = () => {
     if (event) {
@@ -69,7 +53,7 @@ export default function EventDetail() {
   // Try to parse description as Tiptap AST. If it fails, treat as a legacy plain-text description.
   let parsedAst: ASTNode | null;
   try {
-    parsedAst = JSON.parse(event.description);
+    parsedAst = JSON.parse(event.description || "");
     if (!parsedAst || parsedAst.type !== "doc") parsedAst = null;
   } catch {
     parsedAst = null;
@@ -96,7 +80,7 @@ export default function EventDetail() {
     >
       <SEO 
         title={event.title} 
-        description={parsedAst ? extractTextFromAst(parsedAst).slice(0, 160) + "..." : event.description.slice(0, 160) + "..."} 
+        description={parsedAst ? extractTextFromAst(parsedAst).slice(0, 160) + "..." : (event.description?.slice(0, 160) || "") + "..."} 
         image={event.cover_image || undefined}
         type="event"
         schemaData={{

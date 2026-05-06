@@ -1,8 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const zulipPresenceSchema = z.record(
   z.string(),
@@ -22,76 +19,113 @@ export const zulipPresenceSchema = z.record(
   }),
 );
 
-export const zulipContract = c.router({
-  getPresence: {
-    method: "GET",
-    path: "/presence",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        presence: zulipPresenceSchema,
-        userNames: z.record(z.string(), z.string()).optional(),
-      }),
+export const getPresenceRoute = createRoute({
+  method: "get",
+  path: "/presence",
+  responses: {
+    200: {
+      description: "Get Zulip team presence",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            presence: zulipPresenceSchema,
+            userNames: z.record(z.string(), z.string()).optional(),
+          }),
+        },
+      },
     },
-    summary: "Get Zulip team presence",
+    ...openApiStandardErrors,
   },
-  sendMessage: {
-    method: "POST",
-    path: "/message",
-    body: z.object({
-      stream: z.string(),
-      topic: z.string(),
-      content: z.string(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
+});
+
+export const sendMessageRoute = createRoute({
+  method: "post",
+  path: "/message",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            stream: z.string(),
+            topic: z.string(),
+            content: z.string(),
+          }),
+        },
+      },
     },
-    summary: "Send a Zulip message",
   },
-  getTopicMessages: {
-    method: "GET",
-    path: "/topic",
+  responses: {
+    200: {
+      description: "Send a Zulip message",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getTopicMessagesRoute = createRoute({
+  method: "get",
+  path: "/topic",
+  request: {
     query: z.object({
       stream: z.string(),
       topic: z.string(),
     }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean(), messages: z.array(z.unknown()) }),
-    },
-    summary: "Get messages for a specific Zulip topic",
   },
-  auditMissingUsers: {
-    method: "GET",
-    path: "/invites/audit",
-    responses: {
-      ...standardErrors,
-      200: z.object({ 
-        success: z.boolean(), 
-        missingEmails: z.array(z.string()),
-        debug: z.object({
-          totalZulipUsers: z.number(),
-          totalAresUsers: z.number(),
-          sampleZulipEmails: z.array(z.string()),
-          sampleMissingEmails: z.array(z.string()),
-        })
-      }),
+  responses: {
+    200: {
+      description: "Get messages for a specific Zulip topic",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), messages: z.array(z.unknown()) }) } },
     },
-    summary: "Audit ARESWEB database against Zulip directory to find missing users",
-  },
-  inviteUsers: {
-    method: "POST",
-    path: "/invites/send",
-    body: z.object({
-      emails: z.array(z.string()),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean(), invitedCount: z.number() }),
-    },
-    summary: "Send Zulip invitations to the specified emails",
+    ...openApiStandardErrors,
   },
 });
-export type ZulipContract = typeof zulipContract;
+
+export const auditMissingUsersRoute = createRoute({
+  method: "get",
+  path: "/invites/audit",
+  responses: {
+    200: {
+      description: "Audit ARESWEB database against Zulip directory to find missing users",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            missingEmails: z.array(z.string()),
+            debug: z.object({
+              totalZulipUsers: z.number(),
+              totalAresUsers: z.number(),
+              sampleZulipEmails: z.array(z.string()),
+              sampleMissingEmails: z.array(z.string()),
+            }),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const inviteUsersRoute = createRoute({
+  method: "post",
+  path: "/invites/send",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            emails: z.array(z.string()),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Send Zulip invitations to the specified emails",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), invitedCount: z.number() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

@@ -1,30 +1,173 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
-import { Hono } from "hono";
-import { createHonoEndpoints } from "ts-rest-hono";
-import { eventContract } from "../../../../shared/schemas/contracts/eventContract";
-import { AppEnv, ensureAdmin, ensureAuth, s } from "../../middleware";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { AppEnv, ensureAdmin, ensureAuth } from "../../middleware";
 import { eventHandlers } from "./handlers";
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import type { HonoContext } from "@shared/types/api";
-
-const eventsRouter = new Hono<AppEnv>();
-
-const eventTsRestRouter = s.router(eventContract, eventHandlers as any);
-
+import {
+  getEventsRoute,
+  getAdminEventsRoute,
+  getAdminEventRoute,
+  saveEventRoute,
+  getEventRoute,
+  updateEventRoute,
+  deleteEventRoute,
+  syncEventsRoute,
+  repairCalendarRoute,
+  approveEventRoute,
+  rejectEventRoute,
+  undeleteEventRoute,
+  purgeEventRoute,
+  repushEventRoute,
+  getCalendarSettingsRoute,
+  getSignupsRoute,
+  submitSignupRoute,
+  deleteMySignupRoute,
+  updateMyAttendanceRoute,
+  updateUserAttendanceRoute,
+  getEventHistoryRoute,
+  restoreEventHistoryRoute,
+} from "../../../../shared/routes/events";
 import { edgeCacheMiddleware } from "../../middleware/cache";
 
-// Apply protections
+const eventsRouter = new OpenAPIHono<AppEnv>();
+
+// ─── Middleware ───────────────────────────────────────────────────────────
 eventsRouter.use("/", edgeCacheMiddleware(300, 60)); // Cache list
 eventsRouter.use("/:id", edgeCacheMiddleware(300, 60)); // Cache single
-eventsRouter.use("/admin", ensureAdmin);
 eventsRouter.use("/admin/*", ensureAdmin);
 eventsRouter.use("/:id/signups", ensureAuth);
 
-// ── Event Version History (plain Hono routes) ────────────────────────
-eventsRouter.get("/admin/:id/history", async (c: HonoContext) => {
+
+
+// ─── Public Routes ───────────────────────────────────────────────────────
+eventsRouter.openapi(getEventsRoute, async (c) => {
+  const query = c.req.valid("query");
+  const result = await eventHandlers.getEvents({ query, params: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(getEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(getCalendarSettingsRoute, async (c) => {
+  const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(getSignupsRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.getSignups({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(submitSignupRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+  const result = await eventHandlers.submitSignup({ params, body, query: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(deleteMySignupRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.deleteMySignup({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(updateMyAttendanceRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+  const result = await eventHandlers.updateMyAttendance({ params, body, query: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+// ─── Admin Routes ────────────────────────────────────────────────────────
+eventsRouter.openapi(getAdminEventsRoute, async (c) => {
+  const query = c.req.valid("query");
+  const result = await eventHandlers.getAdminEvents({ query, params: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(getAdminEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.adminDetail({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(saveEventRoute, async (c) => {
+  const body = c.req.valid("json");
+  const result = await eventHandlers.saveEvent({ body, params: {}, query: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(updateEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+  const result = await eventHandlers.updateEvent({ params, body, query: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(deleteEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+  const result = await eventHandlers.deleteEvent({ params, body, query: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(syncEventsRoute, async (c) => {
+  const result = await eventHandlers.syncEvents({ params: {}, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(repairCalendarRoute, async (c) => {
+  const result = await eventHandlers.repairCalendar({ params: {}, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(approveEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.approveEvent({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(rejectEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.rejectEvent({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(undeleteEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.undeleteEvent({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(purgeEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.purgeEvent({ params, query: {}, body: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(repushEventRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+  const result = await eventHandlers.repushEvent({ params, body, query: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+eventsRouter.openapi(updateUserAttendanceRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+  const result = await eventHandlers.updateUserAttendance({ params, body, query: {} }, c);
+  return c.json(result.body, result.status);
+});
+
+// ─── Event Version History ──────────────────────────────────────────────
+eventsRouter.openapi(getEventHistoryRoute, async (c) => {
   try {
-    const id = c.req.param("id");
+    const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("document_history")
       .select(["id", "room_id", "content", "created_by", "created_at"])
@@ -40,22 +183,21 @@ eventsRouter.get("/admin/:id/history", async (c: HonoContext) => {
       created_at: h.created_at,
     }));
 
-    return c.json({ history });
+    return c.json({ history }, 200);
   } catch (e) {
     console.error("[Events:History] Error", e);
     return c.json({ error: "Failed to fetch history" }, 500);
   }
 });
 
-eventsRouter.patch("/admin/:id/history/:historyId/restore", async (c: HonoContext) => {
+eventsRouter.openapi(restoreEventHistoryRoute, async (c) => {
   try {
-    const id = c.req.param("id");
-    const historyId = c.req.param("historyId");
+    const { id, historyId } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
 
     const row = await db.selectFrom("document_history")
       .select(["content"])
-      .where("id", "=", Number(historyId) )
+      .where("id", "=", Number(historyId))
       .where("room_id", "=", `event_${id}`)
       .executeTakeFirst();
 
@@ -66,7 +208,7 @@ eventsRouter.patch("/admin/:id/history/:historyId/restore", async (c: HonoContex
     // Update the event description with the restored content
     await db.updateTable("events")
       .set({ description: row.content })
-      .where("id", "=", id as any)
+      .where("id", "=", id as string)
       .execute();
 
     // Save a new history entry for the restore action
@@ -81,25 +223,11 @@ eventsRouter.patch("/admin/:id/history/:historyId/restore", async (c: HonoContex
       })
       .execute();
 
-    return c.json({ success: true });
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Events:RestoreHistory] Error", e);
     return c.json({ error: "Restore failed" }, 500);
   }
 });
 
-createHonoEndpoints(
-  eventContract,
-  eventTsRestRouter,
-  eventsRouter,
-  {
-    responseValidation: true,
-    responseValidationErrorHandler: (err, _c) => {
-      console.error('[Contract] Response validation failed:', err.cause);
-      return { error: { message: 'Internal server error' }, status: 500 };
-    }
-  }
-);
-
 export default eventsRouter;
-

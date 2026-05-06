@@ -64,7 +64,7 @@ npx wrangler pages deploy dist --project-name aresweb --commit-dirty=true --bran
 This bypasses any edge compilation cache by deploying the full bundle directly.
 
 ### Route Shadowing Prevention
-Dynamic wildcard routes (`/:slug`, `/:id`) in ts-rest contracts **MUST** be defined after all static routes. See the `aresweb-api-reference` skill's "ts-rest Contract Route Ordering (CRITICAL)" rule.
+- **Hono Routing Order**: Ensure dynamic wildcard routes (`/:slug`) are registered correctly relative to static routes in the Hono router to prevent unexpected 404s for offline-first endpoints.
 
 ## 4. Rules
 

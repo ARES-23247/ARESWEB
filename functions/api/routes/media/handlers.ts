@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { Context } from "hono";
+import { AppEnv } from "../../middleware";
 import { getDbSettings, checkPersistentRateLimit, logAuditAction } from "../../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import type { HonoContext } from "@shared/types/api";
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -61,12 +61,12 @@ function normalizeFileNameExtension(fileName: string, mimeType: string): string 
  */
 export function isValidImage(buffer: ArrayBuffer): boolean {
   const arr = new Uint8Array(buffer);
-  
+
   if (arr.length >= 8) {
     const header8 = Array.from(arr.subarray(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (header8 === '89504e470d0a1a0a') return true; // PNG
   }
-  
+
   if (arr.length >= 4) {
     const header4 = Array.from(arr.subarray(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (header4.startsWith('ffd8ff') || header4 === 'ffd8ffe0' || header4 === 'ffd8ffe1') return true; // JPEG
@@ -74,7 +74,7 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
     if (header4 === '52494646') return true; // WEBP
     if (header4 === '3c3f786d' || header4 === '3c737667') return true; // SVG (<?xm or <svg)
   }
-  
+
   // HEIC/HEIF usually have 'ftyp' at offset 4, but let's check first 16 bytes for 'ftypheic' or similar
   const checkLen = Math.min(arr.length, 16);
   if (checkLen >= 8) {
@@ -104,14 +104,8 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
 }
 
 
-type HandlerInput = {
-  params: Record<string, string>;
-  body: unknown;
-  query: Record<string, string | undefined>;
-};
-
 export const mediaHandlers = {
-  getMedia: async (_input: HandlerInput, c: HonoContext) => {
+  getMedia: async (c: Context<AppEnv>) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
     const rl = await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `media_list_${ip}`, ua, 30, 60);
@@ -120,19 +114,19 @@ export const mediaHandlers = {
     }
 
     try {
-      const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
+      const cache = typeof caches !== 'undefined' ? caches.default : null;
       const url = new URL(c.req.url);
       url.search = "";
       const cacheKey = new Request(url.toString(), { method: "GET" });
-      
+
       if (cache) {
         const cached = await cache.match(cacheKey);
-        if (cached) return cached as any;
+        if (cached) return cached;
       }
 
       const db = c.get("db") as Kysely<DB>;
       const [objects, results] = await Promise.all([
-        listAllObjects(c.env.ARES_STORAGE as any),
+        listAllObjects(c.env.ARES_STORAGE),
         db.selectFrom("media_tags").select(["key", "folder", "tags"]).where("folder", "=", "Gallery").execute()
       ]);
 
@@ -169,11 +163,11 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  adminList: async (_input: HandlerInput, c: HonoContext) => {
+  adminList: async (c: Context<AppEnv>) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const [objects, results] = await Promise.all([
-        listAllObjects(c.env.ARES_STORAGE as any),
+        listAllObjects(c.env.ARES_STORAGE),
         db.selectFrom("media_tags").select(["key", "folder", "tags"]).execute()
       ]);
 
@@ -198,27 +192,20 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  upload: async (input: HandlerInput, c: HonoContext) => {
+  upload: async (c: Context<AppEnv>) => {
     try {
-      const { body } = input;
-      const formData = body as FormData;
-      const file = formData.get("file") as File | null;
-      const folder = formData.get("folder") as string | null;
+      const formData = await c.req.parseBody();
+      const file = formData["file"] as File | null;
+      const folder = formData["folder"] as string | null;
 
       if (!file || !(file instanceof File)) {
         return { status: 400, body: { error: "No valid file uploaded" } };
       }
 
-      if (folder && typeof folder !== 'string') {
-        return { status: 400, body: { error: "Invalid folder name" } };
-      }
-
       if (file.size > MAX_FILE_SIZE) {
         return {
           status: 413,
-          body: {
-            error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`
-          }
+          body: { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB` }
         };
       }
 
@@ -245,12 +232,12 @@ export const mediaHandlers = {
       const normalizedName = normalizeFileNameExtension(file.name, file.type);
       const key = folder ? `${folder}/${normalizedName}` : normalizedName;
       const finalFolder = folder || "Library";
-      
+
       if (c.env.ARES_STORAGE) {
         if (isLarge) {
-          await (c.env.ARES_STORAGE as any).put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+          await c.env.ARES_STORAGE.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
         } else {
-          await (c.env.ARES_STORAGE as any).put(key, buffer!, { httpMetadata: { contentType: file.type } });
+          await c.env.ARES_STORAGE.put(key, buffer!, { httpMetadata: { contentType: file.type } });
         }
       }
 
@@ -260,7 +247,10 @@ export const mediaHandlers = {
         try {
           if (!buffer) buffer = await file.arrayBuffer();
           const uint8 = new Uint8Array(buffer);
-          const aiRes = await c.env.AI.run('@cf/llava-1.5-7b-hf', { prompt: 'Describe for screen reader', image: uint8 as any }) as { description?: string };
+          const aiRes = (await c.env.AI.run("@cf/llava-1.5-7b-hf", {
+            prompt: "Describe for screen reader",
+            image: [...uint8],
+          })) as { description?: string };
           if (aiRes?.description) altText = String(aiRes.description).trim();
         } catch (err) {
           console.error("[Media:Upload] AI Error", err);
@@ -275,9 +265,9 @@ export const mediaHandlers = {
 
       if (c.executionCtx) {
         c.executionCtx.waitUntil(logAuditAction(c, "media_upload", "media", key, `Uploaded to ${finalFolder}`));
-        
+
         if (typeof caches !== 'undefined') {
-          c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+          c.executionCtx.waitUntil(caches.default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
         }
       }
 
@@ -288,65 +278,63 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "Upload failed: " + (error.message || String(error)) } };
     }
   },
-  move: async (input: HandlerInput, c: HonoContext) => {
-    const { params, body } = input;
-    const oldKey = params.key;
-    const { folder } = body as { folder: string };
+  move: async (c: Context<AppEnv>) => {
+    const { key } = c.req.valid("param");
+    const { folder } = c.req.valid("json");
     try {
-      const fileName = oldKey.split("/").pop();
+      const fileName = key.split("/").pop();
       const newKey = `${folder}/${fileName}`;
 
       if (c.env.ARES_STORAGE) {
-        const object = await c.env.ARES_STORAGE.get(oldKey);
+        const object = await c.env.ARES_STORAGE.get(key);
         if (!object) return { status: 404, body: { error: "Source not found" } };
 
         await c.env.ARES_STORAGE.put(newKey, object.body, { httpMetadata: { contentType: object.httpMetadata?.contentType } });
-        await c.env.ARES_STORAGE.delete(oldKey);
-        
+        await c.env.ARES_STORAGE.delete(key);
+
         const db = c.get("db") as Kysely<DB>;
         await db.updateTable("media_tags")
           .set({ key: newKey, folder })
-          .where("key", "=", oldKey)
+          .where("key", "=", key)
           .execute();
       } else {
         const db = c.get("db") as Kysely<DB>;
         await db.updateTable("media_tags")
           .set({ key: newKey, folder })
-          .where("key", "=", oldKey)
+          .where("key", "=", key)
           .execute();
       }
-      
-      c.executionCtx.waitUntil(logAuditAction(c, "media_move", "media", newKey, `Moved from ${oldKey} to ${folder}`));
+
+      c.executionCtx.waitUntil(logAuditAction(c, "media_move", "media", newKey, `Moved from ${key} to ${folder}`));
       return { status: 200, body: { success: true, newKey } };
     } catch (e) {
       console.error("[Media:Move] Error", e);
       return { status: 500, body: { error: "Move failed" } };
     }
   },
-  delete: async (input: HandlerInput, c: HonoContext) => {
-    const { params } = input;
+  delete: async (c: Context<AppEnv>) => {
+    const { key } = c.req.valid("param");
     try {
       if (c.env.ARES_STORAGE) {
-        await c.env.ARES_STORAGE.delete(params.key);
+        await c.env.ARES_STORAGE.delete(key);
       }
       const db = c.get("db") as Kysely<DB>;
-      await db.deleteFrom("media_tags").where("key", "=", params.key).execute();
-      c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", params.key));
+      await db.deleteFrom("media_tags").where("key", "=", key).execute();
+      c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
       return { status: 200, body: { success: true } };
     } catch (e) {
       console.error("[Media:Delete] Error", e);
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  syndicate: async (input: HandlerInput, c: HonoContext) => {
+  syndicate: async (c: Context<AppEnv>) => {
     try {
-      const { body } = input;
-      const { key, caption } = body as { key: string; caption?: string };
+      const { key, caption } = c.req.valid("json");
       const config = await getDbSettings(c);
       const baseUrl = new URL(c.req.url).origin;
       const imageUrl = `${baseUrl}/api/media/${key}`;
       const { dispatchPhotoSocials } = await import("../../../utils/socialSync");
-      
+
       c.executionCtx.waitUntil(dispatchPhotoSocials(imageUrl, caption || "", config));
       return { status: 200, body: { success: true, message: "Dispatched" } };
     } catch (e) {
@@ -355,4 +343,3 @@ export const mediaHandlers = {
     }
   },
 };
-

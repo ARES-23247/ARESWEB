@@ -3,7 +3,6 @@ import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
 import { sendZulipAlert } from "../../utils/zulipSync";
-import type { HonoContext } from "@shared/types/api";
 import {
   getSponsorsRoute,
   getRoiRoute,
@@ -210,13 +209,14 @@ sponsorsRouter.openapi(getAdminTokensRoute, async (c) => {
     const results = await db
       .selectFrom("sponsor_tokens as t")
       .innerJoin("sponsors as s", "t.sponsor_id", "s.id")
-      .select(["t.token", "t.sponsor_id", "t.created_at"])
+      .select(["t.token", "t.sponsor_id", "t.created_at", "s.name as sponsor_name"])
       .orderBy("t.created_at", "desc")
       .execute();
 
     const tokens = results.map((t) => ({
       token: t.token ?? "",
       sponsor_id: t.sponsor_id,
+      sponsor_name: t.sponsor_name,
       created_at: t.created_at ?? "",
       last_used: null,
     }));

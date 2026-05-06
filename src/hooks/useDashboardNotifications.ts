@@ -16,7 +16,12 @@ export function useDashboardNotifications(
     staleTime: 1000 * 30,
   });
 
-  const data = actionItemsRes?.status === 200 ? actionItemsRes.body as { inquiries?: unknown[], posts?: unknown[], events?: unknown[], docs?: unknown[] } : { inquiries: [], posts: [], events: [], docs: [] };
+  const data = actionItemsRes?.status === 200 ? actionItemsRes.body as { 
+    inquiries?: { id: string | number; type?: string; name?: string }[], 
+    posts?: { slug: string; title: string; author_nickname?: string }[], 
+    events?: { id: string | number; title: string }[], 
+    docs?: { slug: string; title: string }[] 
+  } : { inquiries: [], posts: [], events: [], docs: [] };
 
   const pendingInquiries = data.inquiries || [];
   const pendingPosts = data.posts || [];

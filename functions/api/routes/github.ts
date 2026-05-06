@@ -5,7 +5,6 @@ import { AppEnv, ensureAdmin, getSocialConfig, checkPersistentRateLimit } from "
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem } from "../../utils/githubProjects";
 import { getBoardRoute, createItemRoute, getActivityRoute } from "../../../shared/routes/github";
 import { siteConfig } from "../../utils/site.config";
-import type { HonoContext } from "@shared/types/api";
 
 export const githubRouter = new OpenAPIHono<AppEnv>();
 

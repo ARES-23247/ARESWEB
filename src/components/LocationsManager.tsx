@@ -6,7 +6,7 @@ import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation, XCircle }
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { locationSchema } from "@shared/schemas/contracts/locationContract";
+import { locationSchema } from "@shared/routes/locations";
 import { z } from "zod";
 
 interface LocationRow {
@@ -199,7 +199,7 @@ export default function LocationsManager() {
                       ) : (
                         <>
                           <button onClick={() => handleEdit(l)} title="Edit venue" className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"><Edit3 size={16} /></button>
-                          <button onClick={() => deleteMutation.mutate({ params: { id: l.id }, body: {} })} title="Delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
+                          <button onClick={() => deleteMutation.mutate({ params: { id: l.id } })} title="Delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
                         </>
                       )}
                     </div>

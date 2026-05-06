@@ -28,7 +28,7 @@ export function SortableTaskCard({
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const assignees = task.assignees || [];
+  const currentAssignees = task.assignees || [];
 
   return (
     <div
@@ -66,7 +66,7 @@ export function SortableTaskCard({
           </button>
           {showMenu && (
             <div className="absolute right-0 top-6 z-50 bg-obsidian border border-white/10 ares-cut-sm py-1 min-w-[120px] shadow-xl">
-              {COLUMNS.filter(s => s !== task.status).map(s => (
+              {COLUMNS.filter((s: string) => s !== task.status).map((s: string) => (
                 <button
                   key={s}
                   onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, s); setShowMenu(false); }}
@@ -99,16 +99,15 @@ export function SortableTaskCard({
               {task.priority}
             </span>
           )}
-          {assignees.length > 0 ? (
+          {task.assignees && task.assignees.length > 0 ? (
             <div className="flex -space-x-1 overflow-hidden">
-              {assignees.map((a, i) => (
+              {task.assignees?.map((a) => (
                 <div 
                   key={a.id} 
-                  title={a.nickname || "Unknown"}
-                  className="inline-block h-4 w-4 rounded-full ring-2 ring-obsidian bg-ares-gray-dark flex items-center justify-center text-[8px] font-black text-white"
-                  style={{ zIndex: assignees.length - i }}
+                  className="w-4 h-4 rounded-full bg-ares-gray-dark border border-white/20 flex items-center justify-center text-[8px] font-black"
+                  title={a.nickname || "Anonymous"}
                 >
-                  {a.nickname ? a.nickname.charAt(0).toUpperCase() : <User size={8} />}
+                  {a.nickname?.charAt(0).toUpperCase() || "?"}
                 </div>
               ))}
             </div>

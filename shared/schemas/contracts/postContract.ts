@@ -1,9 +1,6 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 import { postSchema } from "../postSchema";
-
-const c = initContract();
 
 export const postResponseSchema = z.object({
   slug: z.string(),
@@ -38,186 +35,287 @@ export const postHistorySchema = z.object({
   created_at: z.string(),
 });
 
-export const postContract = c.router({
-  getPosts: {
-    method: "GET",
-    path: "/",
+export const getPostsRoute = createRoute({
+  method: "get",
+  path: "/",
+  request: {
     query: z.object({
       q: z.string().optional(),
       limit: z.coerce.number().optional(),
       offset: z.coerce.number().optional(),
     }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        posts: z.array(postResponseSchema),
-      }),
-    },
-    summary: "Get all public blog posts",
   },
-  getAdminPosts: {
-    method: "GET",
-    path: "/admin/list",
+  responses: {
+    200: {
+      description: "Get all public blog posts",
+      content: { "application/json": { schema: z.object({ posts: z.array(postResponseSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getAdminPostsRoute = createRoute({
+  method: "get",
+  path: "/admin/list",
+  request: {
     query: z.object({
       limit: z.coerce.number().optional(),
       offset: z.coerce.number().optional(),
     }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        posts: z.array(postResponseSchema),
-      }),
-    },
-    summary: "Get all posts (admin view)",
   },
-  getAdminPost: {
-    method: "GET",
-    path: "/admin/:slug",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        post: postDetailSchema,
-      }),
+  responses: {
+    200: {
+      description: "Get all posts (admin view)",
+      content: { "application/json": { schema: z.object({ posts: z.array(postResponseSchema) }) } },
     },
-    summary: "Get a single post for admin editing",
-  },
-  getPost: {
-    method: "GET",
-    path: "/:slug",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        post: postDetailSchema,
-        is_editor: z.boolean(),
-        author: z
-          .object({
-            id: z.string(),
-            name: z.string().nullable(),
-            image: z.string().nullable(),
-            role: z.string(),
-          })
-          .optional(),
-      }),
-    },
-    summary: "Get a single post by slug",
-  },
-  savePost: {
-    method: "POST",
-    path: "/admin/save",
-    body: postSchema,
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        slug: z.string().optional(),
-        warning: z.string().optional(),
-      }),
-      409: z.object({ error: z.string() }),
-    },
-    summary: "Create or update a post",
-  },
-  updatePost: {
-    method: "POST",
-    path: "/admin/:slug",
-      pathParams: z.object({ slug: z.string() }),
-    body: postSchema,
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        slug: z.string().optional(),
-      }),
-    },
-    summary: "Update an existing post",
-  },
-  deletePost: {
-    method: "DELETE",
-    path: "/admin/:slug",
-      pathParams: z.object({ slug: z.string() }),
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Soft-delete a post",
-  },
-  undeletePost: {
-    method: "POST",
-    path: "/admin/:slug/undelete",
-      pathParams: z.object({ slug: z.string() }),
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Restore a soft-deleted post",
-  },
-  purgePost: {
-    method: "DELETE",
-    path: "/admin/:slug/purge",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Permanently delete a post",
-  },
-  approvePost: {
-    method: "POST",
-    path: "/admin/:slug/approve",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        warnings: z.array(z.string()).optional(),
-      }),
-    },
-    summary: "Approve a pending post",
-  },
-  rejectPost: {
-    method: "POST",
-    path: "/admin/:slug/reject",
-    body: z.object({
-      reason: z.string().optional(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Reject a pending post",
-  },
-  getPostHistory: {
-    method: "GET",
-    path: "/admin/:slug/history",
-    responses: {
-      ...standardErrors,
-      200: z.object({ history: z.array(postHistorySchema) }),
-    },
-    summary: "Get revision history for a post",
-  },
-  restorePostHistory: {
-    method: "POST",
-    path: "/admin/:slug/history/:id/restore",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-    summary: "Restore a post to a specific revision",
-  },
-  repushSocials: {
-    method: "POST",
-    path: "/admin/:slug/repush",
-    body: z.object({
-      socials: z.array(z.string()).optional(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      502: z.object({ error: z.string() }),
-    },
-    summary: "Re-broadcast post to social media",
+    ...openApiStandardErrors,
   },
 });
-export type PostContract = typeof postContract;
+
+export const getAdminPostRoute = createRoute({
+  method: "get",
+  path: "/admin/{slug}",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get a single post for admin editing",
+      content: { "application/json": { schema: z.object({ post: postDetailSchema }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getPostRoute = createRoute({
+  method: "get",
+  path: "/{slug}",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get a single post by slug",
+      content: {
+        "application/json": {
+          schema: z.object({
+            post: postDetailSchema,
+            is_editor: z.boolean(),
+            author: z
+              .object({
+                id: z.string(),
+                name: z.string().nullable(),
+                image: z.string().nullable(),
+                role: z.string(),
+              })
+              .optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const savePostRoute = createRoute({
+  method: "post",
+  path: "/admin/save",
+  request: {
+    body: {
+      content: { "application/json": { schema: postSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create or update a post",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            slug: z.string().optional(),
+            warning: z.string().optional(),
+          }),
+        },
+      },
+    },
+    409: {
+      description: "Conflict",
+      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updatePostRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: { "application/json": { schema: postSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update an existing post",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            slug: z.string().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deletePostRoute = createRoute({
+  method: "delete",
+  path: "/admin/{slug}",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Soft-delete a post",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const undeletePostRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/undelete",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Restore a soft-deleted post",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const purgePostRoute = createRoute({
+  method: "delete",
+  path: "/admin/{slug}/purge",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Permanently delete a post",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const approvePostRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/approve",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Approve a pending post",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            warnings: z.array(z.string()).optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const rejectPostRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/reject",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            reason: z.string().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Reject a pending post",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getPostHistoryRoute = createRoute({
+  method: "get",
+  path: "/admin/{slug}/history",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get revision history for a post",
+      content: { "application/json": { schema: z.object({ history: z.array(postHistorySchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const restorePostHistoryRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/history/{id}/restore",
+  request: {
+    params: z.object({ slug: z.string(), id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Restore a post to a specific revision",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const repushSocialsRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/repush",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            socials: z.array(z.string()).optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Re-broadcast post to social media",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    502: {
+      description: "Bad Gateway",
+      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

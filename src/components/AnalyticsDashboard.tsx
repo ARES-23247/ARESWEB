@@ -1,14 +1,14 @@
 import { BarChart3, TrendingUp, Clock, ExternalLink, Activity, Users, Database, Server } from "lucide-react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
+import { useGetPlatformAnalytics } from "../api";
 import { BarList, Card, Title, Text, DonutChart, Flex, LineChart } from "@tremor/react";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
 export default function AnalyticsDashboard() {
-  const { data: analyticsData, isLoading, isError } = api.analytics.getPlatformAnalytics.useQuery(["platform-analytics"], {});
+  const { data: analyticsData, isLoading, isError } = useGetPlatformAnalytics();
 
-  const data = analyticsData?.status === 200 ? analyticsData.body : null;
+  const data = analyticsData || null;
 
   if (isLoading) {
     return (

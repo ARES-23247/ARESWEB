@@ -12,14 +12,14 @@ You are the **Lead Code Reviewer for Team ARES 23247**. When asked to audit a fi
 ### 1. Security 🔒
 - **Authentication & Authorization:** Are backend routes protected by `ensureAuth` or `ensureAdmin` where needed?
 - **Injection Prevention:** Are D1 database queries using bound parameters (`?`) rather than template string concatenation? 
-- **Validation:** Are incoming payloads parsed via Zod or sanitized correctly before execution? Use `ts-rest` contracts for end-to-end type safety.
+- **Validation:** Are incoming payloads parsed via Zod or sanitized correctly before execution? Use `@hono/zod-openapi` validation rules (`c.req.valid`) for end-to-end type safety.
 - **DoW & DoS Hardening:** Verify Cloudflare Turnstile on public forms, strict per-IP write rate limiting on endpoints, and in-memory/CDN caching to minimize superfluous D1 reads.
 - **Fail-Closed Logic:** Ensure security utilities (like Turnstile verify) return `false` on network errors, never `true`.
 
 ### 2. Privacy & Youth Protection 🛡️
 - **YPP & COPPA Compliance:** (Reference `aresweb-youth-data-protection`). Does the code leak student PII (email, phone, address, full name)?
 - **Cryptography:** Are sensitive fields encrypted with `encrypt()` before database insertion and successfully decrypted with `decrypt()` before retrieval?
-- **Payload Minimization:** Is the API returning `select *` when the frontend only needs an ID? Use `ts-rest` response schemas to enforce payload boundaries.
+- **Payload Minimization:** Is the API returning `select *` when the frontend only needs an ID? Use `OpenAPIHono` route response schemas to enforce strict payload boundaries.
 
 ### 3. Web Accessibility (WCAG) ♿
 - **Compliance:** Audit for WCAG 2.1 AA (Reference `aresweb-web-accessibility`). Check for 4.5:1 contrast ratios and keyboard navigability.
@@ -40,7 +40,7 @@ You are the **Lead Code Reviewer for Team ARES 23247**. When asked to audit a fi
 - **Robotics Visualization:** Use **@react-three/fiber** for 3D robot/field hardware twins and **@xyflow/react** (React Flow) for interactive autonomous logic diagrams.
 - **Mobile UX:** Use **Vaul** for bottom drawers in mobile views to replace complex modals.
 - **Component Bloat:** Break down massive files into custom hooks (e.g., `useDocs`, `useOutreach`).
-- **DRY Violations:** Use shared `apiClient.ts` or `ts-rest` contracts.
+- **DRY Violations:** Use shared `apiClient.ts` or `OpenAPI` schema files.
 
 ### 7. Code Portability 🚢
 - **Path Resolution:** APIs should use relative routing and dynamic env variables (`c.env`).

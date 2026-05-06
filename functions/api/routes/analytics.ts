@@ -2,8 +2,8 @@ import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit } from "../middleware";
-import { sql, Kysely as KyselyType } from "kysely";
-import type { HonoContext } from "@shared/types/api";
+import { sql, Kysely as _KyselyType } from "kysely";
+import type { _HonoContext } from "@shared/types/api";
 import {
   trackPageViewRoute,
   trackSponsorClickRoute,
@@ -33,7 +33,7 @@ analyticsRouter.openapi(trackPageViewRoute, async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `track:${ip}`, ua, 20, 600))) {
-    return c.json({ error: "Rate limit exceeded" } as any, 429);
+    return c.json({ error: "Rate limit exceeded" }, 429);
   }
 
   const db = c.get("db") as Kysely<DB>;
@@ -53,7 +53,7 @@ analyticsRouter.openapi(trackPageViewRoute, async (c) => {
 
     return c.json({ success: true }, 200);
   } catch {
-    return c.json({ success: false } as any, 500);
+    return c.json({ success: false }, 500);
   }
 });
 
@@ -62,7 +62,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `click:${ip}`, ua, 10, 600))) {
-    return c.json({ error: "Rate limit exceeded" } as any, 429);
+    return c.json({ error: "Rate limit exceeded" }, 429);
   }
 
   const db = c.get("db") as Kysely<DB>;
@@ -71,7 +71,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, async (c) => {
 
     // WR-04: Validate sponsor exists to prevent database pollution
     if (!sponsor_id || typeof sponsor_id !== 'string') {
-      return c.json({ error: "Invalid sponsor ID" } as any, 400);
+      return c.json({ error: "Invalid sponsor ID" }, 400);
     }
 
     const sponsor = await db.selectFrom("sponsors")
@@ -81,7 +81,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, async (c) => {
       .executeTakeFirst();
 
     if (!sponsor) {
-      return c.json({ error: "Invalid sponsor" } as any, 400);
+      return c.json({ error: "Invalid sponsor" }, 400);
     }
 
     const yearMonth = new Date().toISOString().slice(0, 7);
@@ -101,7 +101,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, async (c) => {
 
     return c.json({ success: true }, 200);
   } catch {
-    return c.json({ success: false } as any, 500);
+    return c.json({ success: false }, 500);
   }
 });
 
@@ -198,7 +198,7 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, async (c) => {
     }, 200);
   } catch (err) {
     console.error("[Analytics] Platform metrics error:", err);
-    return c.json({ error: "Failed to fetch platform metrics" } as any, 500);
+    return c.json({ error: "Failed to fetch platform metrics" }, 500);
   }
 });
 
@@ -246,7 +246,7 @@ analyticsRouter.openapi(getRosterStatsRoute, async (c) => {
 
     return c.json({ roster }, 200);
   } catch {
-    return c.json({ error: "Failed to fetch roster stats" } as any, 500);
+    return c.json({ error: "Failed to fetch roster stats" }, 500);
   }
 });
 
@@ -287,7 +287,7 @@ analyticsRouter.openapi(getLeaderboardRoute, async (c) => {
 
     return c.json({ leaderboard }, 200);
   } catch {
-    return c.json({ error: "Failed to fetch leaderboard" } as any, 500);
+    return c.json({ error: "Failed to fetch leaderboard" }, 500);
   }
 });
 
@@ -319,7 +319,7 @@ analyticsRouter.openapi(getStatsRoute, async (c) => {
       securityBlocks: Number(securityBlocksRow?.total || 0)
     }, 200);
   } catch {
-    return c.json({ error: "Failed to fetch stats" } as any, 500);
+    return c.json({ error: "Failed to fetch stats" }, 500);
   }
 });
 
@@ -347,7 +347,7 @@ analyticsRouter.openapi(searchRoute, async (c) => {
 
     return c.json({ results }, 200);
   } catch {
-    return c.json({ error: "Search failed" } as any, 500);
+    return c.json({ error: "Search failed" }, 500);
   }
 });
 

@@ -11,7 +11,6 @@ import {
   logAuditAction,
   getSocialConfig,
 } from "../middleware";
-import type { HonoContext } from "@shared/types/api";
 import { getStandardDate } from "../../utils/content";
 import { dispatchSocials } from "../../utils/socialSync";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -40,10 +39,9 @@ import {
   getPostHistoryRoute,
   restorePostHistoryRoute,
   repushSocialsRoute,
-  postSchema,
+  postSchema as _postSchema,
 } from "../../../shared/routes/posts";
 import { siteConfig } from "../../utils/site.config";
-import { z } from "zod";
 import { edgeCacheMiddleware } from "../middleware/cache";
 
 const postsRouter = new OpenAPIHono<AppEnv>();
@@ -428,7 +426,7 @@ postsRouter.openapi(savePostRoute, async (c) => {
     c.executionCtx.waitUntil(
       logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`)
     );
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
 
     const warnings: string[] = [];
 
@@ -565,7 +563,7 @@ postsRouter.openapi(updatePostRoute, async (c) => {
     c.executionCtx.waitUntil(
       logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`)
     );
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug }, 200);
   } catch (e) {
     console.error("[Posts:Update] Error", e);
@@ -584,7 +582,7 @@ postsRouter.openapi(deletePostRoute, async (c) => {
       .execute();
     c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Posts:Delete] Error", e);
@@ -654,7 +652,7 @@ postsRouter.openapi(approvePostRoute, async (c) => {
 postsRouter.openapi(rejectPostRoute, async (c) => {
   const { slug } = c.req.valid("param");
   const body = c.req.valid("json");
-  const reason = (body as { reason?: string }).reason;
+  const { reason } = c.req.valid("json");
   try {
     const db = c.get("db") as Kysely<DB>;
     const row = await db
@@ -721,7 +719,7 @@ postsRouter.openapi(restorePostHistoryRoute, async (c) => {
 postsRouter.openapi(repushSocialsRoute, async (c) => {
   const { slug } = c.req.valid("param");
   const body = c.req.valid("json");
-  const socials = (body as { socials?: string[] }).socials;
+  const { socials } = c.req.valid("json");
   try {
     const db = c.get("db") as Kysely<DB>;
     const post = await db
@@ -755,7 +753,8 @@ postsRouter.openapi(repushSocialsRoute, async (c) => {
     );
     return c.json({ success: true }, 200);
   } catch (err) {
-    return c.json({ error: (err as Error).message }, 502);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return c.json({ error: message }, 502);
   }
 });
 

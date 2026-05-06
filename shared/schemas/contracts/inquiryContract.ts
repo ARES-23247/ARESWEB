@@ -1,8 +1,5 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
-
-const c = initContract();
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const inquirySchema = z.object({
   id: z.string(),
@@ -24,92 +21,127 @@ export const inquiryInputSchema = z.object({
   turnstileToken: z.string().optional(),
 });
 
-export const inquiryContract = c.router({
-  list: {
-    method: "GET",
-    path: "/admin/list",
+export const listInquiriesRoute = createRoute({
+  method: "get",
+  path: "/admin/list",
+  request: {
     query: z.object({
       limit: z.coerce.number().optional(),
       offset: z.coerce.number().optional(),
     }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        inquiries: z.array(inquirySchema),
-      }),
-    },
-    summary: "List all inquiries",
   },
-  submit: {
-    method: "POST",
-    path: "/",
-    body: inquiryInputSchema,
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        id: z.string(),
-        warning: z.string().optional(),
-      }),
-      207: z.object({
-        success: z.boolean(),
-        id: z.string(),
-        warning: z.string().optional(),
-      }),
+  responses: {
+    200: {
+      description: "List all inquiries",
+      content: { "application/json": { schema: z.object({ inquiries: z.array(inquirySchema) }) } },
     },
-    summary: "Submit a new inquiry",
-  },
-  updateStatus: {
-    method: "PATCH",
-    path: "/admin/:id/status",
-    pathParams: z.object({
-      id: z.string(),
-    }),
-    body: z.object({
-      status: z.enum(["pending", "approved", "resolved", "rejected"]),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-        status: z
-          .enum(["pending", "approved", "resolved", "rejected"])
-          .optional(),
-      }),
-    },
-    summary: "Update inquiry status",
-  },
-  updateNotes: {
-    method: "PATCH",
-    path: "/admin/:id/notes",
-    pathParams: z.object({
-      id: z.string(),
-    }),
-    body: z.object({
-      notes: z.string().nullable(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-      }),
-    },
-    summary: "Update inquiry notes",
-  },
-  delete: {
-    method: "DELETE",
-    path: "/admin/:id",
-    pathParams: z.object({
-      id: z.string(),
-    }),
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        success: z.boolean(),
-      }),
-    },
-    summary: "Delete an inquiry",
+    ...openApiStandardErrors,
   },
 });
-export type InquiryContract = typeof inquiryContract;
+
+export const submitInquiryRoute = createRoute({
+  method: "post",
+  path: "/",
+  request: {
+    body: {
+      content: { "application/json": { schema: inquiryInputSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Submit a new inquiry (success)",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            id: z.string(),
+            warning: z.string().optional(),
+          }),
+        },
+      },
+    },
+    207: {
+      description: "Submit a new inquiry (multi-status)",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            id: z.string(),
+            warning: z.string().optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateInquiryStatusRoute = createRoute({
+  method: "patch",
+  path: "/admin/{id}/status",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            status: z.enum(["pending", "approved", "resolved", "rejected"]),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update inquiry status",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            status: z.enum(["pending", "approved", "resolved", "rejected"]).optional(),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateInquiryNotesRoute = createRoute({
+  method: "patch",
+  path: "/admin/{id}/notes",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            notes: z.string().nullable(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update inquiry notes",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteInquiryRoute = createRoute({
+  method: "delete",
+  path: "/admin/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Delete an inquiry",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

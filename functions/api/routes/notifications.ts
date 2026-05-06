@@ -1,7 +1,6 @@
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { 
   getNotificationsRoute, 
@@ -10,7 +9,7 @@ import {
   deleteNotificationRoute, 
   getPendingCountsRoute, 
   getDashboardActionItemsRoute 
-} from "../../../shared/schemas/contracts/notificationContract";
+} from "../../../shared/routes/notifications";
 
 export const notificationsRouter = new OpenAPIHono<AppEnv>();
 
@@ -22,7 +21,7 @@ notificationsRouter.openapi(getNotificationsRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     const results = await db.selectFrom("notifications")
       .select(["id", "title", "message", "link", "priority", "is_read", "created_at"])
@@ -45,7 +44,7 @@ notificationsRouter.openapi(getNotificationsRoute, async (c) => {
     return c.json({ notifications }, 200);
   } catch (e) {
     console.error("GET_NOTIFICATIONS ERROR", e);
-    return c.json({ error: "Fetch failed", notifications: [] } as any, 500);
+    return c.json({ error: "Fetch failed", notifications: [] }, 500);
   }
 });
 
@@ -53,7 +52,7 @@ notificationsRouter.openapi(markNotificationReadRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     const { id } = c.req.valid("param");
     await db.updateTable("notifications")
@@ -64,7 +63,7 @@ notificationsRouter.openapi(markNotificationReadRoute, async (c) => {
 
     return c.json({ success: true }, 200);
   } catch {
-    return c.json({ error: "Update failed" } as any, 500);
+    return c.json({ error: "Update failed" }, 500);
   }
 });
 
@@ -72,7 +71,7 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     await db.updateTable("notifications")
       .set({ is_read: 1 })
@@ -81,7 +80,7 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, async (c) => {
 
     return c.json({ success: true }, 200);
   } catch {
-    return c.json({ error: "Update failed" } as any, 500);
+    return c.json({ error: "Update failed" }, 500);
   }
 });
 
@@ -89,7 +88,7 @@ notificationsRouter.openapi(deleteNotificationRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     const { id } = c.req.valid("param");
     await db.deleteFrom("notifications")
@@ -99,7 +98,7 @@ notificationsRouter.openapi(deleteNotificationRoute, async (c) => {
 
     return c.json({ success: true }, 200);
   } catch {
-    return c.json({ error: "Delete failed" } as any, 500);
+    return c.json({ error: "Delete failed" }, 500);
   }
 });
 
@@ -107,7 +106,7 @@ notificationsRouter.openapi(getPendingCountsRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {
@@ -136,7 +135,7 @@ notificationsRouter.openapi(getPendingCountsRoute, async (c) => {
       docs: Number(docs?.count || 0),
     }, 200);
   } catch {
-    return c.json({ error: "Count failed" } as any, 500);
+    return c.json({ error: "Count failed" }, 500);
   }
 });
 
@@ -144,7 +143,7 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {
@@ -187,7 +186,7 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, async (c) => {
       docs,
     }, 200);
   } catch {
-    return c.json({ error: "Action items fetch failed" } as any, 500);
+    return c.json({ error: "Action items fetch failed" }, 500);
   }
 });
 

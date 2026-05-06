@@ -4,7 +4,7 @@ import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { getLucideIcon } from "../types/components";
-import { fetchJson } from "../api/client";
+import { fetchJson } from "../api";
 import { ClickToDeleteButton } from "./ContentManager/shared";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";

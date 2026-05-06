@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { sanitizeHtml, signTutorialProgress, verifyTutorialProgress } from '../utils/security';
-import { api } from '../api/client';
+import { fetchJson } from '../utils/apiClient';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import './InteractiveTutorial.css';
 
@@ -66,12 +66,13 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
 
       // Sync to Cloudflare conditionally
       if (syncId) {
-        api.analytics.trackPageView.mutation({
-          body: { 
+        fetchJson("/api/analytics/track", {
+          method: "POST",
+          body: JSON.stringify({
             path: `/tutorial/${title}/checkpoint/${currentStepData.id}`,
             category: 'tutorial-checkpoint',
             metadata: { syncId, progress: progressArray }
-          }
+          })
         }).catch((e: unknown) => console.error("Failed to sync progress to cloud", e));
       }
     }
@@ -88,8 +89,9 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
     setSyncStatus('syncing');
     try {
       // Temporary: Use analytics track as a way to "log" sync attempts until progress contract exists
-      await api.analytics.trackPageView.mutation({
-        body: { path: `/tutorial/${title}/sync`, category: 'tutorial-sync', metadata: { syncId } }
+      await fetchJson("/api/analytics/track", {
+        method: "POST",
+        body: JSON.stringify({ path: `/tutorial/${title}/sync`, category: 'tutorial-sync', metadata: { syncId } })
       });
       setSyncStatus('success');
       setTimeout(() => setSyncStatus('idle'), 3000);

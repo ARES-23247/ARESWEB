@@ -39,10 +39,10 @@
 
 **Goal**: Replace ts-rest with @hono/zod-openapi to achieve full compile-time type safety and auto-generated OpenAPI docs.
 
-- [ ] **Phase 34: Infrastructure and Proof of Concept** - Install deps, validate middleware compat, migrate tba.ts as reference
-- [ ] **Phase 35: Simple Route Migration** - Migrate 12 routes with 5 or fewer endpoints
-- [ ] **Phase 36: Complex Route Migration** - Migrate 14 routes with auth guards, uploads, many endpoints
-- [ ] **Phase 37: Cleanup and OpenAPI Spec** - Remove ts-rest deps, serve OpenAPI docs, final validation
+- [x] **Phase 34: Infrastructure and Proof of Concept** - Install deps, validate middleware compat, migrate tba.ts as reference
+- [x] **Phase 35: Simple Route Migration** - Migrate 12 routes with 5 or fewer endpoints
+- [x] **Phase 36: Complex Route Migration** - Migrate 14 routes with auth guards, uploads, many endpoints
+- [/] **Phase 37: Cleanup and OpenAPI Spec** - Remove ts-rest deps, serve OpenAPI docs, migrate frontend hooks
 
 ## Phase Details
 

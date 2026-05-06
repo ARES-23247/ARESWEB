@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MessageSquare, Send, AlertCircle } from "lucide-react";
-import { api } from "../../api/client";
+import { fetchJson } from "../../utils/apiClient";
 
 export default function BroadcastWidget() {
   const [stream, setStream] = useState("general");
@@ -11,21 +11,21 @@ export default function BroadcastWidget() {
 
   const handleSend = async () => {
     if (!content.trim() || !stream.trim() || !topic.trim()) return;
-    
+
     setIsSending(true);
     setStatus(null);
     try {
-      const res = await api.zulip.sendMessage.mutation({
-        body: { stream: stream.trim(), topic: topic.trim(), content: content.trim() }
+      const res = await fetchJson<{ success: boolean; error?: string }>("/api/zulip/message", {
+        method: "POST",
+        body: JSON.stringify({ stream: stream.trim(), topic: topic.trim(), content: content.trim() })
       });
-      
-      if (res.status === 200 && res.body.success) {
+
+      if (res.success) {
         setContent("");
         setStatus({ type: "success", message: "Broadcast sent successfully!" });
         setTimeout(() => setStatus(null), 3000);
       } else {
-
-        setStatus({ type: "error", message: (res.body as { error?: string })?.error || "Failed to send broadcast" });
+        setStatus({ type: "error", message: res.error || "Failed to send broadcast" });
       }
     } catch (err) {
       setStatus({ type: "error", message: (err as Error).message });

@@ -14,7 +14,6 @@ import {
   UserRoleEnum,
   MemberTypeEnum,
 } from "../../../shared/routes/users";
-import type { HonoContext } from "@shared/types/api";
 
 export const usersRouter = new OpenAPIHono<AppEnv>();
 
@@ -132,9 +131,9 @@ usersRouter.openapi(adminDetailRoute, async (c) => {
             typeof row.updatedAt === "number"
               ? row.updatedAt
               : new Date(row.updatedAt as string).getTime(),
-          nickname: row.nickname || null,
-          member_type: row.member_type,
-        },
+          nickname: (row.nickname as string | null) || null,
+          member_type: row.member_type as any,
+        } as z.infer<typeof userResponseSchema>,
       },
       200
     );

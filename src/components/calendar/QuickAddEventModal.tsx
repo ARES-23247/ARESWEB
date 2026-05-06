@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
-import { api } from "../../api/client";
+import { fetchJson } from "../../api";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
@@ -57,23 +57,11 @@ export function QuickAddEventModal({
   // Fetch locations from registry (only when modal is open)
   const { data: locations = [] } = useQuery<LocationRow[]>({
     queryKey: ["locations"],
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/locations");
-        if (res.ok) {
-          const data = (await res.json()) as { locations?: LocationRow[] };
-          return data.locations || [];
-        }
-        return [];
-      } catch {
-        return [];
-      }
-    },
+    queryFn: () => fetchJson<{ locations?: LocationRow[] }>("/api/locations")
+      .then(data => data.locations || []),
     enabled: isOpen,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
-
-  const saveMutation = api.events.saveEvent.useMutation();
 
   // Initialize form with selected date when modal opens or date changes
   useEffect(() => {
@@ -126,8 +114,9 @@ export function QuickAddEventModal({
     try {
       const locationValue = formData.location === "CUSTOM" ? undefined : formData.location;
 
-      const result = await saveMutation.mutateAsync({
-        body: {
+      const result = await fetchJson<{ success?: boolean; error?: string }>("/api/events/create", {
+        method: "POST",
+        body: JSON.stringify({
           title: formData.title,
           dateStart: formData.dateStart,
           dateEnd: formData.dateEnd || undefined,
@@ -135,16 +124,16 @@ export function QuickAddEventModal({
           category: formData.category,
           description: "",
           isDraft: false,
-        },
+        }),
       });
 
-      if (result.status === 200) {
+      if (result.success) {
         toast.success("Event created successfully!");
         setFormData(DEFAULT_FORM_DATA);
         onClose();
         onSuccess?.();
       } else {
-        setError(result.body.error || "Failed to create event");
+        setError(result.error || "Failed to create event");
       }
     } catch (_err) {
       setError("Network error. Please try again.");

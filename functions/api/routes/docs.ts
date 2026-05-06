@@ -567,7 +567,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, async (c) => {
       }));
     }
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), (c.env.AI as { run: (model: string, input: unknown) => Promise<unknown> }), c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug }, 200);
   } catch (e) {
     console.error("[Docs:Save] Error", e);

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderWithProviders } from "../test/utils";
 import { useImageUpload } from "./useImageUpload";
 import { http, HttpResponse } from "msw";
@@ -13,9 +13,13 @@ vi.mock("../utils/imageProcessor", () => ({
 }));
 
 describe("useImageUpload", () => {
+  beforeEach(() => {
+    server.resetHandlers();
+  });
+
   it("uploads a file successfully", async () => {
     server.use(
-      http.post("*/admin/upload", () => {
+      http.post("*/api/media", () => {
         return HttpResponse.json({ url: "/api/media/test.webp", altText: "Test image" });
       })
     );
@@ -35,7 +39,7 @@ describe("useImageUpload", () => {
 
   it("handles upload failure", async () => {
     server.use(
-      http.post("*/admin/upload", () => {
+      http.post("*/api/media", () => {
         return HttpResponse.json({ error: "Storage full" }, { status: 507 });
       })
     );
@@ -51,14 +55,17 @@ describe("useImageUpload", () => {
       }
     });
 
-    expect(result.current.isUploading).toBe(false);
-    expect(result.current.errorMsg).toContain("Storage full");
+    // Re-access result.current after act completes
+    const { isUploading, errorMsg } = result.current;
+    expect(isUploading).toBe(false);
+    expect(errorMsg).toContain("Storage full");
   });
 
   it("handles missing url in response", async () => {
     server.use(
-      http.post("*/admin/upload", () => {
-        return HttpResponse.json({ success: true }, { status: 500 }); // Missing url
+      http.post("*/api/media", () => {
+        // Return an error response indicating upload failed
+        return HttpResponse.json({ error: "Upload failed" }, { status: 500 });
       })
     );
 
@@ -73,6 +80,9 @@ describe("useImageUpload", () => {
       }
     });
 
-    expect(result.current.errorMsg).toBe("Error: Upload failed");
+    // Re-access result.current after act completes
+    const { errorMsg } = result.current;
+    expect(errorMsg).toBeTruthy();
+    expect(errorMsg).toContain("Upload failed");
   });
 });

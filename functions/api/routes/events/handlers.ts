@@ -1,20 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
-import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, AppEnv } from "../../middleware";
+import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import { initServer } from "ts-rest-hono";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 
 import type { SocialConfig } from "../../middleware";
-
-
-const _s = initServer<AppEnv>();
 
 /**
  * Sanitize FTS query to prevent SQL injection via SQLite FTS syntax.
@@ -35,7 +30,7 @@ type EventSaveBody = {
   description?: string;
   coverImage?: string;
   tbaEventKey?: string;
-  socials?: string[];
+  socials?: Record<string, boolean>;
   isPotluck?: boolean;
   isVolunteer?: boolean;
   isDraft?: boolean;
@@ -60,7 +55,7 @@ type SignupBody = {
 };
 
 type SocialsBody = {
-  socials?: string[];
+  socials?: string[];  // repush uses array format
 };
 
 // Type for partial event results from fallback queries (older schema compatibility)
@@ -81,8 +76,8 @@ export const eventHandlers = {
       if (q) {
         // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
         const cleanQ = sanitizeFtsQuery(String(q || ''));
-        const results = await sql<{ id: string, title: string, category: string, date_start: string, date_end: string | null, location: string | null, description: string | null, cover_image: string | null, status: string, is_deleted: number, season_id: number | null, meeting_notes: string | null }>`
-          SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.status, e.is_deleted, e.season_id, e.meeting_notes
+        const results = await sql<{ id: string, title: string, category: string, date_start: string, date_end: string | null, location: string | null, description: string | null, cover_image: string | null, status: string, is_deleted: number, season_id: number | null, meeting_notes: string | null, tba_event_key: string | null, recurring_exception: number, is_potluck: number, is_volunteer: number }>`
+          SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.status, e.is_deleted, e.season_id, e.meeting_notes, e.tba_event_key, e.recurring_exception, e.is_potluck, e.is_volunteer
            FROM events_fts f
            JOIN events e ON f.id = e.id
            WHERE e.is_deleted = 0 AND e.status = 'published' AND (e.published_at IS NULL OR datetime(e.published_at) <= datetime('now'))
@@ -102,7 +97,7 @@ export const eventHandlers = {
       let results;
       try {
         results = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes"])
+          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
           .where("is_deleted", "=", 0)
           .where("status", "=", "published")
           .where((eb) => eb.or([
@@ -178,7 +173,7 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
 
       const row = await db.selectFrom("events")
-        .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic"])
+        .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
         .where("id", "=", id)
         .where("is_deleted", "=", 0)
         .where("status", "=", "published")
@@ -228,7 +223,7 @@ export const eventHandlers = {
       let results;
       try {
         results = await baseQuery
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic"])
+          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
           .execute();
       } catch {
         results = await baseQuery
@@ -263,7 +258,7 @@ export const eventHandlers = {
       let row;
       try {
         row = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes"])
+          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
           .where("id", "=", id)
           .executeTakeFirst();
       } catch {
@@ -448,8 +443,7 @@ export const eventHandlers = {
         if (status === "published") {
           const baseUrl = new URL(c.req.url).origin;
           if (socials) {
-            const socialsFilter: any = socials;
-            await dispatchSocials(db, { title: title || "", url: `${baseUrl}/events`, snippet: "New event scheduled!", thumbnail: coverImage || "/gallery_1.png", baseUrl }, socialConfig, socialsFilter).catch(() => {});
+          await dispatchSocials(db, { title: title || "", url: `${baseUrl}/events`, snippet: "New event scheduled!", thumbnail: coverImage || "/gallery_1.png", baseUrl }, socialConfig, socials).catch(() => {});
           }
           const eventTopic = `Event: ${title}`;
           const eventContent = `📅 **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
@@ -458,7 +452,7 @@ export const eventHandlers = {
       })());
 
       c.executionCtx.waitUntil(logAuditAction(c, "CREATE_EVENT", "events", genId, `Created event: ${title} (${status})`));
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), (c.env.AI as any), c.env.VECTORIZE_DB);
+      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
 
       return { status: 200 as const, body: { success: true, id: genId } };
     } catch (e) {
@@ -611,7 +605,7 @@ export const eventHandlers = {
         }
       })());
 
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), (c.env.AI as any), c.env.VECTORIZE_DB);
+      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
       return { status: 200 as const, body: { success: true, id } };
     } catch (e) {
       console.error("[Events:Update] Error", e);
@@ -677,7 +671,7 @@ export const eventHandlers = {
         }
       })());
 
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), (c.env.AI as any), c.env.VECTORIZE_DB);
+      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:Delete] Error", e);

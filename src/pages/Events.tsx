@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { addMonths, subMonths, format, addHours, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from "lucide-react";
 import SEO from "../components/SEO";
-import { api } from "../api/client";
+import { useGetEvents, type EventItem as _ApiEventItem } from "../api";
+import { EventItem } from "../components/events/EventCard";
 
-import { EventCard, EventItem } from "../components/events/EventCard";
+import { EventCard } from "../components/events/EventCard";
 import CompetitionBanner from "../components/CompetitionBanner";
 import { useEventFilters } from "../hooks/useEventFilters";
 import { MonthViewGrid } from "../components/calendar/MonthViewGrid";
@@ -20,24 +19,30 @@ export default function Events() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showAllPast, setShowAllPast] = useState(false);
 
-  const { data: eventsRes, isLoading } = api.events.getEvents.useQuery(["events"], {});
+  const { data: rawEvents, isLoading } = useGetEvents();
 
-  const events = useMemo(() => {
-    const body = eventsRes?.status === 200 ? eventsRes.body : null;
-    if (!body) return [];
-    if (Array.isArray(body)) return body as unknown as EventItem[];
-    if (typeof body === 'object' && body !== null && 'events' in body) {
-      const e = (body as { events: unknown }).events;
-      if (Array.isArray(e)) return e as unknown as EventItem[];
-    }
-    return [];
-  }, [eventsRes]);
+  // Transform FullEventItem to EventItem for EventCard compatibility
+  const events: EventItem[] = useMemo(() => {
+    const fullEvents = rawEvents?.events || [];
+    return fullEvents.map((e: any): EventItem => ({
+      id: e.id,
+      title: e.title,
+      date_start: e.date_start,
+      date_end: e.date_end || null,
+      location: e.location || null,
+      location_address: e.location_address,
+      description: e.description || "",
+      cover_image: e.cover_image || null,
+      tba_event_key: e.tba_event_key || null,
+      category: (e.category as "internal" | "outreach" | "external") || "internal",
+      recurring_exception: e.recurring_exception ?? undefined,
+    }));
+  }, [rawEvents]);
 
-
-  
   // Transform backend events to CalendarEvent format
   const mappedEvents: CalendarEvent[] = useMemo(() => {
-    return events.map((e) => {
+    const fullEvents = rawEvents?.events || [];
+    return fullEvents.map((e: any) => {
       const start = new Date(e.date_start);
       // If no end date is provided, default to 1 hour after start
       const end = e.date_end ? new Date(e.date_end) : addHours(start, 1);
@@ -76,7 +81,7 @@ export default function Events() {
         isException: e.recurring_exception === 1
       };
     });
-  }, [events]);
+  }, [rawEvents?.events]);
 
   // REF-F01: Extracted event filtering into custom hook
   const { 

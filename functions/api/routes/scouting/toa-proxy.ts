@@ -1,16 +1,12 @@
-// ── The Orange Alliance API Proxy ─────────────────────────────────────
-// Proxies requests to TOA, injecting the API key server-side so it
-// never reaches the client. Protects against key leakage and CORS issues.
-
-import { Hono } from "hono";
-import type { Context } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
+import { toaProxyRoute } from "../../../../shared/routes/scouting";
 
-const toaProxy = new Hono<AppEnv>();
+const toaProxy = new OpenAPIHono<AppEnv>();
 
-toaProxy.get("/:path{.+}", async (c: Context<AppEnv>) => {
-  const path = c.req.param("path");
-  const toaKey = (c.env as Record<string, unknown>).TOA_API_KEY as string | undefined;
+toaProxy.openapi(toaProxyRoute, async (c) => {
+  const { path } = c.req.valid("param");
+  const toaKey = c.env.TOA_API_KEY;
 
   if (!toaKey) {
     return c.json(
@@ -39,7 +35,7 @@ toaProxy.get("/:path{.+}", async (c: Context<AppEnv>) => {
     }
 
     const data = await upstream.json();
-    return c.json(data);
+    return c.json(data, 200);
   } catch (err) {
     console.error("[TOA Proxy] Fetch error:", err);
     return c.json(

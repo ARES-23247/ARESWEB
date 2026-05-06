@@ -14,8 +14,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { format, addHours } from "date-fns";
-import { api } from "../../api/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchJson } from "../../utils/apiClient";
 import { toast } from "sonner";
 
 // Social platform config with colors and icons
@@ -104,19 +104,28 @@ export default function SocialComposer({
     setCharacterCount(content?.length || 0);
   }, [content]);
 
-  const createMutation = api.socialQueue.create.useMutation({
-    onSuccess: (res: { status: number; body?: { success?: boolean } | null }) => {
-      if (res.status === 200) {
-        toast.success("Social post scheduled successfully!");
-        queryClient.invalidateQueries({ queryKey: ["social-queue"] });
-        queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-        reset();
-        setMediaUrls([]);
-        setIsScheduling(false);
-        onClose?.();
-      } else {
-        toast.error("Failed to schedule post");
-      }
+  const createMutation = useMutation({
+    mutationFn: async (data: {
+      content: string;
+      scheduled_for: string;
+      platforms: Record<string, boolean>;
+      media_urls?: string[];
+      linked_type?: string | null;
+      linked_id?: string;
+    }) => {
+      return fetchJson("/api/social-queue", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast.success("Social post scheduled successfully!");
+      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
+      reset();
+      setMediaUrls([]);
+      setIsScheduling(false);
+      onClose?.();
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to schedule post");
@@ -160,11 +169,12 @@ export default function SocialComposer({
       : new Date().toISOString();
 
     createMutation.mutate({
-      body: {
-        ...data,
-        scheduled_for: scheduledFor,
-        media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
-      },
+      content: data.content,
+      scheduled_for: scheduledFor,
+      platforms: platforms || {},
+      media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+      linked_type: data.linked_type,
+      linked_id: data.linked_id,
     });
   };
 

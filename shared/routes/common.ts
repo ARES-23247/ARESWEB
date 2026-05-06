@@ -6,9 +6,15 @@ import { z } from "zod";
 
 export const ErrorSchema = z.object({
   error: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  success: z.boolean().optional(),
+  message: z.string().optional(),
+  recipientCount: z.number().optional(),
+  user_id: z.string().optional(),
+  balance: z.number().optional(),
 });
 
-export const standardErrors = {
+export const openApiStandardErrors = {
   400: {
     content: {
       "application/json": {
@@ -58,6 +64,9 @@ export const standardErrors = {
     description: "Internal Server Error",
   },
 };
+
+export const standardErrors = openApiStandardErrors;
+
 
 export const BearerAuthSecurityScheme = {
   BearerAuth: {

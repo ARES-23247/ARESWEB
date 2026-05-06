@@ -8,7 +8,7 @@ import {
   adminListLocationsRoute,
   saveLocationRoute,
   deleteLocationRoute
-} from "../../../shared/schemas/contracts/locationContract";
+} from "../../../shared/routes/locations";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 
 type LocationInput = z.infer<typeof locationSchema>;

@@ -9,7 +9,6 @@ import {
   zulipPresenceSchema,
 } from "../../../shared/routes/zulip";
 import { z } from "zod";
-import type { HonoContext } from "@shared/types/api";
 
 export const zulipRouter = new OpenAPIHono<AppEnv>();
 

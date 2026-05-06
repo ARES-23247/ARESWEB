@@ -1,20 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-
 import { getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
 import { encrypt, decrypt } from "../../../utils/crypto";
 import { safeJSONStringify } from "../../../utils/json";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { notifyByRole, NotifyAudience } from "../../../utils/notifications";
 import { buildGitHubConfig, createProjectItem } from "../../../utils/githubProjects";
-import type { HonoContext } from "@shared/types/api";
+import type { RouteHandler } from "@hono/zod-openapi";
+import type { 
+  listInquiriesRoute, 
+  submitInquiryRoute, 
+  updateInquiryStatusRoute, 
+  updateInquiryNotesRoute, 
+  deleteInquiryRoute 
+} from "../../../../shared/routes/inquiries";
 
 /**
  * Deletes old inquiries that have been resolved or rejected.
- * @param db - Database instance
- * @param days - Delete inquiries older than this many days
- * @returns Number of inquiries deleted
  */
 export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   if (days <= 0) return { deleted: 0 };
@@ -29,249 +31,242 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   return { deleted: res.length };
 }
 
-type HandlerInput = {
-  params: Record<string, string>;
-  body: any; // We'll cast to any internally but it's not a top-level implicit any
-  query: Record<string, any>;
+export const handleListInquiries: RouteHandler<typeof listInquiriesRoute> = async (c) => {
+  try {
+    const { limit = 50, offset = 0 } = c.req.valid("query");
+    const db = c.get("db") as Kysely<DB>;
+    const user = c.get("sessionUser");
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const secret = c.env.ENCRYPTION_SECRET;
+    let maskPII = false;
+    let filterOutreach = false;
+
+    if (user.role !== "admin") {
+      const memberType = user.member_type || "student";
+      if (memberType === "student") {
+        maskPII = true;
+        filterOutreach = true;
+      }
+    }
+
+    let dbQuery = db.selectFrom("inquiries")
+      .select(["id", "type", "name", "email", "metadata", "status", "created_at", "zulip_message_id", "notes"])
+      .orderBy("created_at", "desc")
+      .limit(limit)
+      .offset(offset);
+    
+    if (filterOutreach) {
+      dbQuery = dbQuery.where("type", "in", ["outreach", "support"]);
+    }
+
+    const results = await dbQuery.execute();
+    const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
+
+    const inquiries = await Promise.all(results.map(async (r) => {
+      let name = String(r.name);
+      let email = String(r.email);
+      
+      try { 
+        if (name.includes(":")) name = await decrypt(name, secret); 
+      } catch { 
+        name = "[ENCRYPTED NAME]";
+      }
+      
+      try { 
+        if (email.includes(":")) email = await decrypt(email, secret); 
+      } catch { 
+        email = "[ENCRYPTED EMAIL]";
+      }
+      
+      let metadata = r.metadata;
+
+      if (maskPII) {
+        name = name.substring(0, 1) + "*".repeat(name.length - 1);
+        email = email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + "*".repeat(b.length));
+        if (metadata) {
+          try {
+            const meta = JSON.parse(metadata) as Record<string, unknown>;
+            const clean: Record<string, unknown> = {};
+            for (const key of METADATA_WHITELIST) if (key in meta) clean[key] = meta[key];
+            metadata = JSON.stringify(clean);
+          } catch { /* ignore */ }
+        }
+      }
+      
+      return {
+        id: String(r.id),
+        type: r.type,
+        name,
+        email,
+        metadata: metadata || null,
+        status: r.status,
+        created_at: String(r.created_at),
+        zulip_message_id: r.zulip_message_id,
+        notes: r.notes
+      };
+    }));
+
+    return c.json({ inquiries }, 200);
+  } catch (e) {
+    console.error("[Inquiry:List] Error", e);
+    return c.json({ error: "Failed to fetch inquiries" }, 500);
+  }
 };
 
-export const inquiryHandlers = {
-  list: async (input: HandlerInput, c: HonoContext) => {
-    try {
-      const { query } = input;
-      const db = c.get("db") as Kysely<DB>;
-      const user = c.get("sessionUser");
-      if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
+export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute> = async (c) => {
+  try {
+    const { type, name, email, metadata } = c.req.valid("json");
+    const db = c.get("db") as Kysely<DB>;
+    const secret = c.env.ENCRYPTION_SECRET;
 
-      const limit = Number(query.limit) || 50;
-      const offset = Number(query.offset) || 0;
-      const secret = c.env.ENCRYPTION_SECRET;
+    // Prevents double submissions
+    const recent = await db.selectFrom("inquiries")
+      .select(["id", "email", "metadata"])
+      .where("type", "=", type)
+      .where("created_at", ">", sql<string>`datetime('now', '-60 seconds')`)
+      .execute();
 
-      let maskPII = false;
-      let filterOutreach = false;
-
-      if (user.role !== "admin") {
-        const memberType = user.member_type || "student";
-        if (memberType === "student") {
-          maskPII = true;
-          filterOutreach = true;
-        }
-      }
-
-      let dbQuery = db.selectFrom("inquiries")
-        .select(["id", "type", "name", "email", "metadata", "status", "created_at", "zulip_message_id", "notes"])
-        .orderBy("created_at", "desc")
-        .limit(limit)
-        .offset(offset);
-      
-      if (filterOutreach) {
-        dbQuery = dbQuery.where("type", "in", ["outreach", "support"]);
-      }
-
-      const results = await dbQuery.execute();
-
-      const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
-
-      const inquiries = await Promise.all(results.map(async (r) => {
-        let name = String(r.name);
-        let email = String(r.email);
-        
-        try { 
-          if (name.includes(":")) name = await decrypt(name, secret); 
-        } catch { 
-          name = "[ENCRYPTED NAME]";
-        }
-        
-        try { 
-          if (email.includes(":")) email = await decrypt(email, secret); 
-        } catch { 
-          email = "[ENCRYPTED EMAIL]";
-        }
-        
-        let metadata = r.metadata;
-
-        if (maskPII) {
-          name = name.substring(0, 1) + "*".repeat(name.length - 1);
-          email = email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + "*".repeat(b.length));
-          if (metadata) {
-            try {
-              const meta = JSON.parse(metadata) as Record<string, unknown>;
-              const clean: Record<string, unknown> = {};
-              for (const key of METADATA_WHITELIST) if (key in meta) clean[key] = meta[key];
-              metadata = JSON.stringify(clean);
-            } catch { /* ignore */ }
+    for (const r of recent) {
+      try {
+        const decryptedEmail = await decrypt(r.email, secret);
+        if (decryptedEmail === email) {
+          const currentMeta = safeJSONStringify(metadata, undefined);
+          if (r.metadata === currentMeta) {
+            return c.json({ success: true, id: r.id }, 200);
           }
         }
-        
-        return {
-          id: String(r.id),
-          type: r.type,
-          name,
-          email,
-          metadata: metadata || null,
-          status: r.status,
-          created_at: String(r.created_at),
-          zulip_message_id: r.zulip_message_id,
-          notes: r.notes
-        };
-      }));
-
-      return { status: 200 as const, body: { inquiries } };
-    } catch (e) {
-      console.error("[Inquiry:List] Error", e);
-      return { status: 500 as const, body: { error: "Failed to fetch inquiries" } };
+      } catch { /* ignore */ }
     }
-  },
-  submit: async (input: HandlerInput, c: HonoContext) => {
-    try {
-      const { body } = input;
-      const db = c.get("db") as Kysely<DB>;
-      const { type, name, email, metadata } = body;
-      const secret = c.env.ENCRYPTION_SECRET;
 
-      // Prevents double submissions
-      const recent = await db.selectFrom("inquiries")
-        .select(["id", "email", "metadata"])
-        .where("type", "=", type)
-        .where("created_at", ">", sql<string>`datetime('now', '-60 seconds')`)
-        .execute();
+    const id = crypto.randomUUID();
+    const encryptedName = await encrypt(name, secret);
+    const encryptedEmail = await encrypt(email, secret);
+    
+    let metadataStr = safeJSONStringify(metadata, undefined);
+    if (metadataStr && metadataStr.length > 5000) {
+      metadataStr = metadataStr.substring(0, 5000);
+    }
 
-      for (const r of recent) {
-        try {
-          const decryptedEmail = await decrypt(r.email, secret);
-          if (decryptedEmail === email) {
-            const currentMeta = safeJSONStringify(metadata, undefined);
-            if (r.metadata === currentMeta) {
-              return { status: 200 as const, body: { success: true, id: r.id } };
-            }
-          }
-        } catch { /* ignore */ }
+    await db.insertInto("inquiries")
+      .values({
+        id,
+        type,
+        name: encryptedName,
+        email: encryptedEmail,
+        metadata: metadataStr,
+      })
+      .execute();
+
+    if (type === "sponsor") {
+      let tierStr = "Pending";
+      const meta = metadata as Record<string, unknown> | undefined;
+      if (meta && typeof meta.level === "string") {
+        tierStr = meta.level;
+        tierStr = tierStr.replace(" Tier Sponsor", "");
       }
-
-      const id = crypto.randomUUID();
-      const encryptedName = await encrypt(name, secret);
-      const encryptedEmail = await encrypt(email, secret);
-      
-      let metadataStr = safeJSONStringify(metadata, undefined);
-      if (metadataStr && metadataStr.length > 5000) {
-        metadataStr = metadataStr.substring(0, 5000);
-      }
-
-      await db.insertInto("inquiries")
+      const encryptedSponsorName = await encrypt(name, secret);
+      await db.insertInto("sponsors")
         .values({
           id,
-          type,
-          name: encryptedName,
-          email: encryptedEmail,
-          metadata: metadataStr,
+          name: encryptedSponsorName,
+          tier: tierStr,
+          is_active: 0,
         })
         .execute();
+    }
 
-      if (type === "sponsor") {
-        let tierStr = "Pending";
-        if (metadata && typeof metadata.level === "string") {
-          tierStr = metadata.level;
-          tierStr = tierStr.replace(" Tier Sponsor", "");
-        }
-        const encryptedSponsorName = await encrypt(name, secret);
-        await db.insertInto("sponsors")
-          .values({
-            id,
-            name: encryptedSponsorName,
-            tier: tierStr,
-            is_active: 0,
-          })
-          .execute();
+    const baseUrl = new URL(c.req.url).origin;
+
+    c.executionCtx.waitUntil((async () => {
+      const social = await getSocialConfig(c);
+      const msg = `\ud83d\udd14 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${baseUrl}/dashboard/inquiries`;
+      
+      if (social.DISCORD_WEBHOOK_URL) {
+        await fetch(social.DISCORD_WEBHOOK_URL, { 
+          method: "POST", 
+          headers: { "Content-Type": "application/json" }, 
+          body: JSON.stringify({ content: msg }) 
+        }).catch(() => {});
+      }
+      
+      const topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
+      const zulipContent = `**New ${type} inquiry received**\n\n**Name:** ${name}\n**Email:** ${email}\n**ID:** ${id.slice(0, 8)}\n\n[Review Inquiry](${baseUrl}/dashboard/inquiries)`;
+      const messageId = await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => null);
+
+      if (messageId) {
+        await db.updateTable("inquiries").set({ zulip_message_id: messageId }).where("id", "=", id).execute();
       }
 
-      const baseUrl = new URL(c.req.url).origin;
+      const audiences: NotifyAudience[] = (type === "outreach" || type === "support") ? ["admin", "coach", "mentor", "student"] : ["admin", "coach", "mentor"];
+      await notifyByRole(c, audiences, { 
+        title: `New ${type.toUpperCase()} Inquiry`, 
+        message: `${name} submitted a new inquiry.`, 
+        link: "/dashboard/inquiries", 
+        priority: type === "sponsor" ? "high" : "medium" 
+      }).catch(() => {});
 
-      c.executionCtx.waitUntil((async () => {
-        const social = await getSocialConfig(c);
-        const msg = `🔔 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${baseUrl}/dashboard/inquiries`;
-        
-        if (social.DISCORD_WEBHOOK_URL) {
-          await fetch(social.DISCORD_WEBHOOK_URL, { 
-            method: "POST", 
-            headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify({ content: msg }) 
-          }).catch(() => {});
+      if (type === "sponsor" || type === "student") {
+        const ghConfig = buildGitHubConfig(social as SocialConfig);
+        if (ghConfig) {
+          await createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry (ID: ${id.slice(0, 8)})`, `Review: ${baseUrl}/dashboard/inquiries`).catch(() => {});
         }
-        
-        const topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
-        const zulipContent = `**New ${type} inquiry received**\n\n**Name:** ${name}\n**Email:** ${email}\n**ID:** ${id.slice(0, 8)}\n\n[Review Inquiry](${baseUrl}/dashboard/inquiries)`;
-        const messageId = await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => null);
+      }
+    })());
 
-        if (messageId) {
-          await db.updateTable("inquiries").set({ zulip_message_id: messageId }).where("id", "=", id).execute();
-        }
-
-        const audiences: NotifyAudience[] = (type === "outreach" || type === "support") ? ["admin", "coach", "mentor", "student"] : ["admin", "coach", "mentor"];
-        await notifyByRole(c, audiences, { 
-          title: `New ${type.toUpperCase()} Inquiry`, 
-          message: `${name} submitted a new inquiry.`, 
-          link: "/dashboard/inquiries", 
-          priority: type === "sponsor" ? "high" : "medium" 
-        }).catch(() => {});
-
-        if (type === "sponsor" || type === "student") {
-          const ghConfig = buildGitHubConfig(social as SocialConfig);
-          if (ghConfig) {
-            await createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry (ID: ${id.slice(0, 8)})`, `Review: ${baseUrl}/dashboard/inquiries`).catch(() => {});
-          }
-        }
-      })());
-
-      return { status: 200 as const, body: { success: true, id } };
-    } catch (e) {
-      console.error("[Inquiry:Submit] Error", e);
-      return { status: 500 as const, body: { error: "Submission failed" } };
-    }
-  },
-  updateStatus: async (input: HandlerInput, c: HonoContext) => {
-    try {
-      const { params, body } = input;
-      const db = c.get("db") as Kysely<DB>;
-      await db.updateTable("inquiries")
-        .set({ status: body.status })
-        .where("id", "=", params.id)
-        .execute();
-
-      c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", params.id, `Status changed to ${body.status}`));
-      return { status: 200 as const, body: { success: true, status: body.status } };
-    } catch (err) {
-      console.error("[Inquiry:UpdateStatus] Error", err);
-      return { status: 500 as const, body: { error: "Update failed" } };
-    }
-  },
-  updateNotes: async (input: HandlerInput, c: HonoContext) => {
-    try {
-      const { params, body } = input;
-      const db = c.get("db") as Kysely<DB>;
-      await db.updateTable("inquiries")
-        .set({ notes: body.notes })
-        .where("id", "=", params.id)
-        .execute();
-
-      c.executionCtx.waitUntil(logAuditAction(c, "inquiry_notes_change", "inquiries", params.id, `Notes updated`));
-      return { status: 200 as const, body: { success: true } };
-    } catch (err) {
-      console.error("[Inquiry:UpdateNotes] Error", err);
-      return { status: 500 as const, body: { error: "Notes update failed" } };
-    }
-  },
-  delete: async (input: HandlerInput, c: HonoContext) => {
-    try {
-      const { params } = input;
-      const db = c.get("db") as Kysely<DB>;
-      await db.deleteFrom("inquiries").where("id", "=", params.id).execute();
-      c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", params.id, "Inquiry deleted"));
-      return { status: 200, body: { success: true } };
-    } catch (e: unknown) {
-      const error = e as Error;
-      console.error("[Inquiry:Delete] Error", error);
-      return { status: 500, body: { error: error.message || "Delete failed" } };
-    }
-  },
+    return c.json({ success: true, id }, 200);
+  } catch (e) {
+    console.error("[Inquiry:Submit] Error", e);
+    return c.json({ error: "Submission failed" }, 500);
+  }
 };
 
+export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute> = async (c) => {
+  try {
+    const { id } = c.req.valid("param");
+    const { status } = c.req.valid("json");
+    const db = c.get("db") as Kysely<DB>;
+    await db.updateTable("inquiries")
+      .set({ status })
+      .where("id", "=", id)
+      .execute();
+
+    c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", id, `Status changed to ${status}`));
+    return c.json({ success: true, status }, 200);
+  } catch (err) {
+    console.error("[Inquiry:UpdateStatus] Error", err);
+    return c.json({ error: "Update failed" }, 500);
+  }
+};
+
+export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute> = async (c) => {
+  try {
+    const { id } = c.req.valid("param");
+    const { notes } = c.req.valid("json");
+    const db = c.get("db") as Kysely<DB>;
+    await db.updateTable("inquiries")
+      .set({ notes })
+      .where("id", "=", id)
+      .execute();
+
+    c.executionCtx.waitUntil(logAuditAction(c, "inquiry_notes_change", "inquiries", id, `Notes updated`));
+    return c.json({ success: true }, 200);
+  } catch (err) {
+    console.error("[Inquiry:UpdateNotes] Error", err);
+    return c.json({ error: "Notes update failed" }, 500);
+  }
+};
+
+export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute> = async (c) => {
+  try {
+    const { id } = c.req.valid("param");
+    const db = c.get("db") as Kysely<DB>;
+    await db.deleteFrom("inquiries").where("id", "=", id).execute();
+    c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry deleted"));
+    return c.json({ success: true }, 200);
+  } catch (e: unknown) {
+    const error = e as Error;
+    console.error("[Inquiry:Delete] Error", error);
+    return c.json({ error: error.message || "Delete failed" }, 500);
+  }
+};

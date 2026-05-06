@@ -2,7 +2,6 @@ import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, getSessionUser, rateLimitMiddleware, getSocialConfig, originIntegrityMiddleware } from "../middleware";
-import type { HonoContext } from "@shared/types/api";
 import {
   listTasksRoute,
   createTaskRoute,

@@ -1,15 +1,5 @@
-import { z } from "zod";
-import { createRoute } from "@hono/zod-openapi";
-import { standardErrors } from "./common";
-
-// Convert standardErrors to OpenAPI responses format
-const openApiErrorResponses = {
-  400: { content: { "application/json": { schema: standardErrors[400] } }, description: "Bad Request" },
-  401: { content: { "application/json": { schema: standardErrors[401] } }, description: "Unauthorized" },
-  403: { content: { "application/json": { schema: standardErrors[403] } }, description: "Forbidden" },
-  404: { content: { "application/json": { schema: standardErrors[404] } }, description: "Not Found" },
-  500: { content: { "application/json": { schema: standardErrors[500] } }, description: "Internal Server Error" },
-};
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const getEntityLinksRoute = createRoute({
   method: "get",
@@ -21,7 +11,6 @@ export const getEntityLinksRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
       content: {
         "application/json": {
@@ -38,6 +27,7 @@ export const getEntityLinksRoute = createRoute({
       },
       description: "Get knowledge graph links for an entity",
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -60,7 +50,6 @@ export const saveEntityLinkRoute = createRoute({
     },
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
       content: {
         "application/json": {
@@ -69,6 +58,7 @@ export const saveEntityLinkRoute = createRoute({
       },
       description: "Create a bi-directional link in the knowledge graph",
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -79,7 +69,6 @@ export const deleteEntityLinkRoute = createRoute({
     params: z.object({ id: z.string() }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
       content: {
         "application/json": {
@@ -88,5 +77,6 @@ export const deleteEntityLinkRoute = createRoute({
       },
       description: "Remove a link from the knowledge graph",
     },
+    ...openApiStandardErrors,
   },
 });

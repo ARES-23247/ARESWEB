@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
-import { openApiStandardErrors } from "../schemas/contracts/common";
+import { openApiStandardErrors } from "./common";
 
 // Schemas
 const topPageSchema = z.object({

@@ -1,43 +1,46 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
-import { Hono } from "hono";
-import { createHonoEndpoints } from "ts-rest-hono";
-import { inquiryContract } from "../../../../shared/schemas/contracts/inquiryContract";
-import { AppEnv, ensureAdmin, turnstileMiddleware, persistentRateLimitMiddleware, s } from "../../middleware";
-import { inquiryHandlers } from "./handlers";
-import type { HonoContext } from "@shared/types/api";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { AppEnv, ensureAdmin, turnstileMiddleware, persistentRateLimitMiddleware } from "../../middleware";
+import { 
+  listInquiriesRoute, 
+  submitInquiryRoute, 
+  updateInquiryStatusRoute, 
+  updateInquiryNotesRoute, 
+  deleteInquiryRoute 
+} from "../../../../shared/routes/inquiries";
+import { 
+  handleListInquiries, 
+  handleSubmitInquiry, 
+  handleUpdateStatus, 
+  handleUpdateNotes, 
+  handleDeleteInquiry 
+} from "./handlers";
 
-const inquiriesRouter = new Hono<AppEnv>();
+const inquiriesRouter = new OpenAPIHono<AppEnv>();
 
-const inquiriesTsRestRouter = s.router(inquiryContract, inquiryHandlers as any);
-
-// Apply protections
+// Apply protections for admin routes
 inquiriesRouter.use("/admin", ensureAdmin);
 inquiriesRouter.use("/admin/*", ensureAdmin);
 
-// Rate limiting for public submissions
-inquiriesRouter.post("/", persistentRateLimitMiddleware(5, 300));
+// List inquiries (Admin)
+inquiriesRouter.openapi(listInquiriesRoute, handleListInquiries);
 
-// Turnstile for public submissions
-inquiriesRouter.use("/", async (c, next) => {
-  if (c.req.method === "POST" && !c.req.path.includes("/admin")) {
-    return turnstileMiddleware()(c, next);
-  }
-  return next();
-});
-
-createHonoEndpoints(
-  inquiryContract,
-  inquiriesTsRestRouter,
-  inquiriesRouter,
-  {
-    responseValidation: true,
-    responseValidationErrorHandler: (err, _c: HonoContext) => {
-      console.error('[Contract] Response validation failed:', err.cause);
-      return { error: { message: 'Internal server error' }, status: 500 };
-    }
-  }
+// Submit a new inquiry (Public)
+// Apply middlewares using .use() on the specific route path
+inquiriesRouter.use(
+  "/",
+  persistentRateLimitMiddleware(5, 300),
+  turnstileMiddleware()
 );
+inquiriesRouter.openapi(submitInquiryRoute, handleSubmitInquiry);
+
+// Update inquiry status (Admin)
+inquiriesRouter.openapi(updateInquiryStatusRoute, handleUpdateStatus);
+
+// Update inquiry notes (Admin)
+inquiriesRouter.openapi(updateInquiryNotesRoute, handleUpdateNotes);
+
+// Delete inquiry (Admin)
+inquiriesRouter.openapi(deleteInquiryRoute, handleDeleteInquiry);
 
 export default inquiriesRouter;
 export { purgeOldInquiries } from "./handlers";
-

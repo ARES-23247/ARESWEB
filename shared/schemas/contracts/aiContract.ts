@@ -1,48 +1,50 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
-const errorSchema = z.object({ error: z.string() });
-const c = initContract();
+export const liveblocksCopilotRequestBodySchema = z.object({
+  documentContext: z.string(),
+  prompt: z.string(),
+  action: z.enum(["summarize", "expand", "question", "ghost-text"]),
+});
 
-export const aiContract = c.router({
-  liveblocksCopilot: {
-    method: "POST",
-    path: "/liveblocks-copilot",
-    responses: {
-      ...standardErrors,
-      // Server-Sent Events (SSE) don't have a standard ts-rest response type,
-      // but we define the expected success response for completeness.
-      200: z.unknown(),
-      400: errorSchema,
-      401: errorSchema,
-      429: errorSchema,
-      500: errorSchema,
+export const ragChatbotRequestBodySchema = z.object({
+  query: z.string(),
+  turnstileToken: z.string(),
+  sessionId: z.string().optional(),
+});
+
+export const liveblocksCopilotRoute = createRoute({
+  method: "post",
+  path: "/liveblocks-copilot",
+  request: {
+    body: {
+      content: { "application/json": { schema: liveblocksCopilotRequestBodySchema } },
     },
-    body: z.object({
-      documentContext: z.string(),
-      prompt: z.string(),
-      action: z.enum(["summarize", "expand", "question", "ghost-text"]),
-    }),
-    summary: "Interact with the Liveblocks AI Copilot via SSE",
   },
-  ragChatbot: {
-    method: "POST",
-    path: "/rag-chatbot",
-    responses: {
-      ...standardErrors,
-      200: z.unknown(),
-      400: errorSchema,
-      401: errorSchema,
-      429: errorSchema,
-      500: errorSchema,
+  responses: {
+    // Server-Sent Events (SSE) don't have a standard OpenAPI response type,
+    // but we define the expected success response for completeness.
+    200: {
+      description: "Interact with the Liveblocks AI Copilot via SSE",
+      content: { "text/event-stream": { schema: z.unknown() } },
     },
-    body: z.object({
-      query: z.string(),
-      turnstileToken: z.string(),
-      sessionId: z.string().optional(),
-    }),
-    summary: "Query the Global RAG Chatbot via SSE",
+    ...openApiStandardErrors,
   },
 });
-export type AiContract = typeof aiContract;
+
+export const ragChatbotRoute = createRoute({
+  method: "post",
+  path: "/rag-chatbot",
+  request: {
+    body: {
+      content: { "application/json": { schema: ragChatbotRequestBodySchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Query the Global RAG Chatbot via SSE",
+      content: { "text/event-stream": { schema: z.unknown() } },
+    },
+    ...openApiStandardErrors,
+  },
+});

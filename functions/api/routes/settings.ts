@@ -15,7 +15,7 @@ import {
   updateSettingsRoute,
   getStatsRoute,
   getPublicSettingsRoute,
-  getBackupRoute,
+  getBackupRoute as _getBackupRoute,
 } from "../../../shared/routes/settings";
 import { z } from "zod";
 import type { HonoContext } from "@shared/types/api";
@@ -221,7 +221,9 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: HonoC
     const backupPromises = SAFE_TABLES.map(async (tableName) => {
       try {
         const cols = TABLE_COLUMNS[tableName];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely dynamic query builder
         let q: any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely dynamic query builder
         const anyDb = db as any;
         if (cols) {
           q = anyDb.selectFrom(tableName).select(cols);

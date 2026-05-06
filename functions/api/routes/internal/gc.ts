@@ -1,13 +1,11 @@
-import { Hono } from "hono";
-import type { Context } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
-import { Kysely } from "kysely";
-import { DB } from "../../../../shared/schemas/database";
+import { gcRoute } from "../../../../shared/routes/internal";
 
-export const gcRouter = new Hono<AppEnv>();
+export const gcRouter = new OpenAPIHono<AppEnv>();
 
 // This is an internal cron trigger endpoint
-gcRouter.post("/", async (c: Context<AppEnv>) => {
+gcRouter.openapi(gcRoute, async (c) => {
   try {
     const cronSecret = c.env.CRON_SECRET;
     const providedSecret = c.req.header("x-cron-secret");
@@ -16,7 +14,7 @@ gcRouter.post("/", async (c: Context<AppEnv>) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
 
     // Delete rows soft-deleted more than 30 days ago
     const thirtyDaysAgo = new Date();
@@ -35,7 +33,7 @@ gcRouter.post("/", async (c: Context<AppEnv>) => {
       seasons: Number(results[2][0]?.numDeletedRows ?? 0)
     };
 
-    return c.json({ success: true, deleted: deletedCounts });
+    return c.json({ success: true, deleted: deletedCounts }, 200);
   } catch (e) {
     console.error("[GC Cron] Error", e);
     return c.json({ error: "Internal Server Error" }, 500);
@@ -43,4 +41,3 @@ gcRouter.post("/", async (c: Context<AppEnv>) => {
 });
 
 export default gcRouter;
-

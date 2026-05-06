@@ -2,11 +2,15 @@
 
 **Goal:** Eliminate type inference issues by migrating from ts-rest-hono to native Hono with Zod validation and OpenAPI schema generation.
 
-**Current State:**
-- ✅ 9 routes migrated (awards, badges, comments, entities, locations, logistics, notifications, points, tba)
-- ⏳ 16 routes remaining (analytics, communications, docs, finance, github, judges, posts, profiles, seasons, settings, socialQueue, sponsors, store, tasks, users, zulip)
-- 33 contract files to replace
-- 51 route files total
+**Status (2026-05-06): ✅ BACKEND COMPLETE**
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Backend routes | ✅ 25/25 migrated | All handlers use `@hono/zod-openapi` |
+| Route definitions | ✅ 16 files | Created in `shared/routes/` |
+| Unit tests | ✅ 926/926 | All passing |
+| E2E tests | ✅ 54/55 | 1 unrelated failure (logistics) |
+| Frontend client | ⏸️ Deferred | ts-rest retained (286 usages) |
 
 ---
 

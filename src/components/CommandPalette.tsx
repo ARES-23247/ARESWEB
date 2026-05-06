@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Search, FileText, Calendar, ShieldCheck, HelpCircle, Terminal, Home, ArrowRight, Bot } from "lucide-react";
 import { authClient } from "../utils/auth-client";
 import { sanitizeHtml } from "../utils/security";
-import { api } from "../api/client";
+import { useSearch } from "../api/analytics";
 import { Command } from "cmdk";
 import { useUIStore } from "../store/uiStore";
 
@@ -25,12 +25,14 @@ export default function CommandPalette() {
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  
+
   const { data: session } = authClient.useSession();
   const navigate = useNavigate();
   const lastActiveElement = useRef<HTMLElement | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Search query using React Query
+  const { data: searchData, isLoading: isSearching } = useSearch(query);
 
   // Toggle Command Palette with Ctrl+K or Cmd+K
   useEffect(() => {
@@ -131,30 +133,14 @@ export default function CommandPalette() {
 
   // Handle Search Input & D1 API Call
   useEffect(() => {
-    if (query.trim().length < 2) {
-      const timer = setTimeout(() => {
-        const filtered = staticLinks.filter((link) => 
-          link.title.toLowerCase().includes(query.toLowerCase()) || 
-          link.category.toLowerCase().includes(query.toLowerCase())
-        );
-        startTransition(() => {
-          setResults(filtered);
-        });
-      }, 0);
-      return () => clearTimeout(timer);
-    }
+    const filtered = staticLinks.filter((link) =>
+      link.title.toLowerCase().includes(query.toLowerCase()) ||
+      link.category.toLowerCase().includes(query.toLowerCase())
+    );
 
-    const fetchSearch = async () => {
-      setIsSearching(true);
-      try {
-        const res = await (api.analytics.search as unknown as { query: (args: { query: { q: string } }) => Promise<{ status: number, body: { results?: Array<{ id: string; type: string; title: string; matched_text?: string }> } }> }).query({
-          query: { q: query }
-        });
-
-        if (res.status !== 200) throw new Error("Search failed");
-        const data = res.body;
-
-        const searchResults: SearchResult[] = (data.results || []).map((r: { id: string; type: string; title: string; matched_text?: string }) => {
+    startTransition(() => {
+      if (searchData?.results) {
+        const searchResults: SearchResult[] = searchData.results.map((r: { id: string; type: string; title: string; matched_text?: string }) => {
           let icon = <FileText size={16} />;
           let url = "";
           if (r.type === "blog") {
@@ -181,25 +167,12 @@ export default function CommandPalette() {
           };
         });
 
-        // Combine matched static links with dynamic D1 search
-        const matchedStaticLinks = staticLinks.filter((link) => 
-          link.title.toLowerCase().includes(query.toLowerCase()) || 
-          link.category.toLowerCase().includes(query.toLowerCase())
-        );
-
-        startTransition(() => {
-          setResults([...matchedStaticLinks, ...searchResults]);
-        });
-      } catch (err) {
-        console.error("Search failed:", err);
-      } finally {
-        setIsSearching(false);
+        setResults([...filtered, ...searchResults]);
+      } else {
+        setResults(filtered);
       }
-    };
-
-    const timer = setTimeout(fetchSearch, 300); // 300ms debounce
-    return () => clearTimeout(timer);
-  }, [query, userRole, staticLinks]);
+    });
+  }, [query, staticLinks, searchData]);
 
   const handleSelect = (item: SearchResult) => {
     setIsOpen(false);

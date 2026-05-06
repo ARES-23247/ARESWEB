@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { api } from "../api/client";
+import { useMutation } from "@tanstack/react-query";
+import { fetchJson } from "../api";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 
 interface BroadcastModalProps {
@@ -36,9 +37,14 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
     return () => clearTimeout(timer);
   }, [isOpen]);
 
-  const postRepushMutation = api.posts.repushSocials.useMutation({
-    onSuccess: (res: { status: number; body?: { success?: boolean } | null }) => {
-      if (res.status === 200 && res.body?.success) {
+  const postRepushMutation = useMutation({
+    mutationFn: ({ slug, socials }: { slug: string, socials: Record<string, boolean> }) => 
+      fetchJson<{ success: boolean }>(`/api/posts/admin/repush/${slug}`, {
+        method: "POST",
+        body: JSON.stringify({ socials })
+      }),
+    onSuccess: (res) => {
+      if (res.success) {
         setStatus("success");
         setTimeout(onClose, 2000);
       } else {
@@ -52,9 +58,14 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
     }
   });
 
-  const eventRepushMutation = api.events.repushEvent.useMutation({
-    onSuccess: (res: { status: number; body?: { success?: boolean } | null }) => {
-      if (res.status === 200 && res.body?.success) {
+  const eventRepushMutation = useMutation({
+    mutationFn: ({ id, socials }: { id: string, socials: Record<string, boolean> }) => 
+      fetchJson<{ success: boolean }>(`/api/events/admin/repush/${id}`, {
+        method: "POST",
+        body: JSON.stringify({ socials })
+      }),
+    onSuccess: (res) => {
+      if (res.success) {
         setStatus("success");
         setTimeout(onClose, 2000);
       } else {
@@ -73,9 +84,9 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
   const handleBroadcast = async () => {
     setErrorMsg("");
     if (type === "blog") {
-      postRepushMutation.mutate({ params: { slug: id }, body: { socials: selectedsocials } });
+      postRepushMutation.mutate({ slug: id, socials: selectedsocials });
     } else {
-      eventRepushMutation.mutate({ params: { id }, body: { socials: selectedsocials } });
+      eventRepushMutation.mutate({ id, socials: selectedsocials });
     }
   };
 

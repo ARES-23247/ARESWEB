@@ -1,19 +1,17 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { AppEnv, ensureAuth, logAuditAction } from "../middleware";
-import type { HonoContext } from "@shared/types/api";
-import { getEntityLinksRoute, saveEntityLinkRoute, deleteEntityLinkRoute } from "../../../shared/schemas/contracts/entityContract";
+import { getEntityLinksRoute, saveEntityLinkRoute, deleteEntityLinkRoute } from "../../../shared/routes/entities";
 
 export const entitiesRouter = new OpenAPIHono<AppEnv>();
 
 entitiesRouter.use("*", ensureAuth);
 
-entitiesRouter.openapi(getEntityLinksRoute, async (c: HonoContext) => {
+entitiesRouter.openapi(getEntityLinksRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
-    const { type, id } = c.req.valid("query" as never) as any;
+    const { type, id } = c.req.valid("query");
 
     const rawLinks = await db.selectFrom("entity_links")
       .select(["id", "source_type", "source_id", "target_type", "target_id", "link_type"])
@@ -67,17 +65,17 @@ entitiesRouter.openapi(getEntityLinksRoute, async (c: HonoContext) => {
       link_type: link.link_type || 'reference'
     }));
 
-    return c.json({ links: enrichedLinks }, 200 as any);
+    return c.json({ links: enrichedLinks }, 200);
   } catch (e) {
     console.error("GET_LINKS ERROR", e);
-    return c.json({ error: "Failed to fetch links", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: "Failed to fetch links", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-entitiesRouter.openapi(saveEntityLinkRoute, async (c: HonoContext) => {
+entitiesRouter.openapi(saveEntityLinkRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
-    const body = c.req.valid("json" as never) as any;
+    const body = c.req.valid("json");
     const id = crypto.randomUUID();
 
     await db.insertInto("entity_links")
@@ -92,23 +90,24 @@ entitiesRouter.openapi(saveEntityLinkRoute, async (c: HonoContext) => {
       .execute();
 
     c.executionCtx.waitUntil(logAuditAction(c, "create_link", "entity_links", id, `Linked ${body.source_type}:${body.source_id} to ${body.target_type}:${body.target_id}`));
-    return c.json({ success: true, id }, 200 as any);
+    return c.json({ success: true, id }, 200);
   } catch (e) {
     console.error("SAVE_LINK ERROR", e);
-    return c.json({ error: "Failed to create link", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: "Failed to create link", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-entitiesRouter.openapi(deleteEntityLinkRoute, async (c: HonoContext) => {
+entitiesRouter.openapi(deleteEntityLinkRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
-    const { id } = c.req.valid("param" as never) as any;
+    const { id } = c.req.valid("param");
     await db.deleteFrom("entity_links").where("id", "=", id).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_link", "entity_links", id));
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (_e) {
-    return c.json({ error: "Failed to delete link", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: "Failed to delete link", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
 export default entitiesRouter;
+

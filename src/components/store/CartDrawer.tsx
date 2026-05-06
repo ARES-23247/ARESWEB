@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import { X, ShoppingCart, Plus, Minus, Loader2 } from "lucide-react";
 import { useCartStore } from "../../store/useCartStore";
-import { api } from "../../api/client";
+import { useMutation } from "@tanstack/react-query";
+import { fetchJson } from "../../api";
 
 export const CartDrawer: React.FC = () => {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, getCartTotal } = useCartStore();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const checkoutMutation = api.store.createCheckoutSession.useMutation();
+  const checkoutMutation = useMutation({
+    mutationFn: (body: { items: Array<{ productId: string; quantity: number }>; successUrl: string; cancelUrl: string }) => fetchJson<{ url: string }>("/api/store/checkout", {
+      method: "POST",
+      body: JSON.stringify(body)
+    })
+  });
 
   if (!isOpen) return null;
 
@@ -14,18 +20,16 @@ export const CartDrawer: React.FC = () => {
     if (items.length === 0) return;
     setIsCheckingOut(true);
     try {
-      const response = await checkoutMutation.mutateAsync({
-        body: {
-          items: items.map(item => ({
-            productId: item.product.id,
-            quantity: item.quantity
-          })),
-          successUrl: `${window.location.origin}/store?success=true`,
-          cancelUrl: `${window.location.origin}/store?cancel=true`
-        }
+      const data = await checkoutMutation.mutateAsync({
+        items: items.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity
+        })),
+        successUrl: `${window.location.origin}/store?success=true`,
+        cancelUrl: `${window.location.origin}/store?cancel=true`
       });
-      if (response.status === 200 && response.body.url) {
-        window.location.href = response.body.url;
+      if (data.url) {
+        window.location.href = data.url;
       } else {
         alert("Checkout failed. Please try again.");
       }

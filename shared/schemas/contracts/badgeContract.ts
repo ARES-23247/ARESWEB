@@ -1,15 +1,5 @@
-import { z } from "zod";
-import { createRoute } from "@hono/zod-openapi";
-import { standardErrors } from "./common";
-
-// Convert standardErrors to OpenAPI responses format
-const openApiErrorResponses = {
-  400: { content: { "application/json": { schema: standardErrors[400] } }, description: "Bad Request" },
-  401: { content: { "application/json": { schema: standardErrors[401] } }, description: "Unauthorized" },
-  403: { content: { "application/json": { schema: standardErrors[403] } }, description: "Forbidden" },
-  404: { content: { "application/json": { schema: standardErrors[404] } }, description: "Not Found" },
-  500: { content: { "application/json": { schema: standardErrors[500] } }, description: "Internal Server Error" },
-};
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 
 export const badgeSchema = z.object({
   id: z.string(),
@@ -30,17 +20,11 @@ export const listBadgesRoute = createRoute({
   method: "get",
   path: "/",
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            badges: z.array(badgeSchema),
-          }),
-        },
-      },
       description: "List all badge definitions",
+      content: { "application/json": { schema: z.object({ badges: z.array(badgeSchema) }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -49,23 +33,15 @@ export const createBadgeRoute = createRoute({
   path: "/admin",
   request: {
     body: {
-      content: {
-        "application/json": {
-          schema: badgeSchema.omit({ created_at: true }),
-        },
-      },
+      content: { "application/json": { schema: badgeSchema.omit({ created_at: true }) } },
     },
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Create a new badge definition",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -85,15 +61,11 @@ export const grantBadgeRoute = createRoute({
     },
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Grant a badge to a user",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -107,15 +79,11 @@ export const revokeBadgeRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Revoke a badge from a user",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -128,15 +96,11 @@ export const deleteBadgeRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
     200: {
-      content: {
-        "application/json": {
-          schema: z.object({ success: z.boolean() }),
-        },
-      },
       description: "Delete a badge definition",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
     },
+    ...openApiStandardErrors,
   },
 });
 
@@ -144,21 +108,23 @@ export const leaderboardBadgeRoute = createRoute({
   method: "get",
   path: "/leaderboard",
   responses: {
-    ...openApiErrorResponses,
     200: {
+      description: "Get public badge leaderboard",
       content: {
         "application/json": {
           schema: z.object({
-            leaderboard: z.array(z.object({
-              user_id: z.string(),
-              nickname: z.string().nullable(),
-              member_type: z.string().nullable(),
-              badge_count: z.number(),
-            })),
+            leaderboard: z.array(
+              z.object({
+                user_id: z.string(),
+                nickname: z.string().nullable(),
+                member_type: z.string().nullable(),
+                badge_count: z.number(),
+              }),
+            ),
           }),
         },
       },
-      description: "Get public badge leaderboard",
     },
+    ...openApiStandardErrors,
   },
 });

@@ -8,7 +8,7 @@ interface MediaAsset {
 import { useState } from "react";
 import { X, ImagePlus, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { api } from "../api/client";
+import { useGetAdminMedia } from "../api";
 
 export type R2Asset = {
   key: string;
@@ -31,12 +31,12 @@ export default function AssetPickerModal({
 }) {
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
 
-  const { data: mediaResponse, isLoading } = api.media.adminList.useQuery(["assets"], {}, {
+  const { data: mediaResponse, isLoading } = useGetAdminMedia({
     enabled: isOpen,
   });
 
    
-  const assets = (mediaResponse?.body as unknown as { media: MediaAsset[] })?.media ?? [];
+  const assets = (mediaResponse as unknown as { media: MediaAsset[] })?.media ?? [];
   const uniqueFolders = Array.from(new Set(assets.map((a: MediaAsset) => a.folder))).filter(Boolean);
   const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter((a: MediaAsset) => a.folder === selectedFolderFilter);
 

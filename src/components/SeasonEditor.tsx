@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useRichEditor } from "./editor/useRichEditor";
@@ -9,13 +8,13 @@ import { CopilotMenu } from "./editor/CopilotMenu";
 import AssetPickerModal from "./AssetPickerModal";
 import { DEFAULT_COVER_IMAGE } from "../utils/constants";
 import { useImageUpload } from "../hooks/useImageUpload";
-import { api } from "../api/client";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import EditorFooter from "./editor/EditorFooter";
 
+import { useGetAdminSeasonDetail, useSaveSeason } from "../api";
+
 export default function SeasonEditor() {
   const { editId } = useParams<{ editId?: string }>();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   
   const { uploadFile, isUploading: isUploadingCover } = useImageUpload();
@@ -37,15 +36,11 @@ export default function SeasonEditor() {
 
   const editor = useRichEditor({ placeholder: "<p>Describe the robot's design, mechanisms, and season highlights...</p>" });
 
-  const { data: detailData } = api.seasons.adminDetail.useQuery(["admin-season-detail", editId], {
-    params: { id: editId || "" },
-  }, {
-    enabled: !!editId
-  });
+  const { data: detailData } = useGetAdminSeasonDetail(editId || "");
 
   useEffect(() => {
-    if (detailData?.status === 200 && detailData.body.season) {
-      const s = detailData.body.season;
+    if (detailData?.season) {
+      const s = detailData.season;
       setStartYear(s.start_year);
       setChallengeName(s.challenge_name);
       setRobotName(s.robot_name || "");
@@ -64,12 +59,10 @@ export default function SeasonEditor() {
     }
   }, [detailData, editor]);
 
-  const saveMutation = api.seasons.save.useMutation({
-    onSuccess: (res: { status: number; body: { success?: boolean } }) => {
-      if (res.status === 200 && res.body.success) {
+  const saveMutation = useSaveSeason({
+    onSuccess: (res) => {
+      if (res.success) {
         toast.success(`Season ${startYear} saved successfully.`);
-        queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-        queryClient.invalidateQueries({ queryKey: ["seasons"] });
         navigate("/dashboard/manage_seasons");
       } else {
         setErrorMsg("Save failed");
@@ -91,7 +84,7 @@ export default function SeasonEditor() {
     setErrorMsg("");
 
     const robot_description = editor ? JSON.stringify(editor.getJSON()) : null;
-    
+
     const payload = {
       original_year: editId ? Number(editId) : undefined,
       start_year: Number(startYear),
@@ -107,7 +100,7 @@ export default function SeasonEditor() {
       status: (isDraft ? "draft" : "published") as "draft" | "published"
     };
 
-    saveMutation.mutate({ body: payload });
+    saveMutation.mutate(payload);
   };
 
   if (!editor) return <div className="text-marble animate-pulse font-mono tracking-widest text-sm">Booting Legacy Systems...</div>;

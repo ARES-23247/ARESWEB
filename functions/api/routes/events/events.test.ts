@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
@@ -6,6 +6,7 @@ import { mockExecutionContext, createMockExpressionBuilder } from "../../../../s
 import { TestEnv } from "../../../../src/test/types";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
+import { eventHandlers } from "./handlers";
 
 vi.mock("kysely", async (importOriginal) => {
   const actual = await importOriginal<typeof import("kysely")>();
@@ -74,8 +75,12 @@ describe("Hono Backend - Events Router", () => {
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Reset socialSync mock to default behavior
+    const { dispatchSocials } = await import("../../../utils/socialSync");
+    vi.mocked(dispatchSocials).mockResolvedValue(true);
 
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
@@ -175,9 +180,10 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /calendar-settings - handles database error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
-    const res = await testApp.request("/calendar-settings", {}, env, mockExecutionContext);
-    expect(res.status).toBe(500);
+    const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("Fail"); }) };
+    const mockC = { get: vi.fn((key: string) => key === "db" ? mockDbFail : undefined), env, req: { url: "http://localhost/calendar-settings" } };
+    const result = await eventHandlers.getCalendarSettings({}, mockC as any);
+    expect(result.status).toBe(500);
   });
 
   it("GET /:id - handles location lookup error", async () => {
@@ -369,7 +375,19 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/repush - repush event", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "1", title: "Test", status: "published" });
+    mockDb.executeTakeFirst.mockResolvedValueOnce({
+      id: "1",
+      title: "Test",
+      status: "published",
+      category: "internal",
+      date_start: "2026-01-01T10:00:00Z",
+      date_end: "2026-01-01T12:00:00Z",
+      location: "Lab",
+      description: "Test description",
+      cover_image: null,
+      gcal_event_id: null,
+      meeting_notes: null
+    });
     const res = await testApp.request("http://localhost/admin/1/repush", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

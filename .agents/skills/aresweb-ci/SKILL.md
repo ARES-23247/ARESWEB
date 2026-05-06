@@ -57,18 +57,6 @@ If you modify files, you **MUST** run `npm run lint` and `npm run build`, then `
 Playwright smoke tests now include `AxeBuilder`. If a test fails with `accessibilityScanResults.violations`, you must inspect the failing route, identify the WCAG violation (e.g., contrast, missing alt, nested buttons), and fix it. Never suppress Axe violations in code.
 
 ### Rule G: Handler Extraction Pattern (Backend Routes)
-All `ts-rest-hono` backend route handlers **MUST** use the **handler extraction pattern** to avoid TypeScript recursive type instantiation failures. This means:
-
-1. Extract all handler implementations into a standalone object typed as `any`:
-```ts
-const myHandlers: any = {
-  list: async ({ query }: any, c: any) => { /* ... */ },
-  create: async ({ body }: any, c: any) => { /* ... */ },
-};
-```
-
-2. Pass the extracted object to `s.router()` and `createHonoEndpoints()`:
-```ts
 const router = s.router(myContract, myHandlers);
 createHonoEndpoints(myContract, router, myHonoRouter);
 ```

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 // TODO: users.ts implementation uses getProfile/updateProfile/listUsers/updateRole
 // but userContract exports getUsers/adminDetail/patchUser/updateUserProfile/adminGetProfile/deleteUser
 // The contract and implementation are misaligned - need to rewrite users.ts to match userContract

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { compressImage } from "../utils/imageProcessor";
-import { api } from "../api/client";
+import { uploadFile as apiClientUploadFile } from "../api";
 
 export function useImageUpload() {
   const [isUploading, setIsUploading] = useState(false);
@@ -15,15 +15,8 @@ export function useImageUpload() {
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ext));
       
-      const res = await api.media.upload.mutation({
-        body: formData
-      });
-      
-      if (res.status === 200) {
-        return { url: res.body.url, altText: res.body.altText };
-      } else {
-        throw new Error((res.body as unknown as { error?: string })?.error || "Upload failed");
-      }
+      const res = await apiClientUploadFile<{ url: string, altText?: string }>("/api/media", formData);
+      return { url: res.url, altText: res.altText };
     } catch (err) {
       const msg = String(err);
       setErrorMsg(msg);

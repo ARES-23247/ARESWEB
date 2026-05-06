@@ -14,7 +14,6 @@ import {
   purgeSeasonRoute,
 } from "../../../shared/routes/seasons";
 import { edgeCacheMiddleware } from "../middleware/cache";
-import type { HonoContext } from "@shared/types/api";
 
 export const seasonsRouter = new OpenAPIHono<AppEnv>();
 
@@ -28,7 +27,7 @@ seasonsRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
 seasonsRouter.openapi(listSeasonsRoute, async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const results = await db
       .selectFrom("seasons")
       .select([
@@ -67,7 +66,7 @@ seasonsRouter.openapi(listSeasonsRoute, async (c) => {
 
 seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const results = await db
       .selectFrom("seasons")
       .select([
@@ -105,7 +104,7 @@ seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
 seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const year = parseInt(id);
     const row = await db
       .selectFrom("seasons")
@@ -149,7 +148,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
 seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
   try {
     const { year } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const yearNum = parseInt(year);
     if (isNaN(yearNum)) return c.json({ error: "Invalid year" }, 404);
 
@@ -258,23 +257,10 @@ seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
 seasonsRouter.openapi(saveSeasonRoute, async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
 
     // Type assertion for the body
-    const seasonData = body as {
-      original_year?: number;
-      start_year: number;
-      end_year: number;
-      challenge_name: string;
-      robot_name?: string | null;
-      robot_image?: string | null;
-      robot_description?: string | null;
-      robot_cad_url?: string | null;
-      summary?: string | null;
-      album_url?: string | null;
-      album_cover?: string | null;
-      status?: string | null;
-    };
+    const seasonData = body;
 
     const targetYear = seasonData.original_year || seasonData.start_year;
 
@@ -345,7 +331,7 @@ seasonsRouter.openapi(saveSeasonRoute, async (c) => {
         logAuditAction(c, "season_created", "seasons", seasonData.start_year.toString(), `Season "${seasonData.start_year}" created`)
       );
     }
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Save] Error", e);
@@ -356,7 +342,7 @@ seasonsRouter.openapi(saveSeasonRoute, async (c) => {
 seasonsRouter.openapi(deleteSeasonRoute, async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const year = parseInt(id);
     await db
       .updateTable("seasons")
@@ -365,7 +351,7 @@ seasonsRouter.openapi(deleteSeasonRoute, async (c) => {
       .execute();
     c.executionCtx.waitUntil(logAuditAction(c, "season_deleted", "seasons", id, `Season "${id}" soft-deleted`));
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Delete] Error", e);
@@ -376,7 +362,7 @@ seasonsRouter.openapi(deleteSeasonRoute, async (c) => {
 seasonsRouter.openapi(undeleteSeasonRoute, async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const year = parseInt(id);
     await db
       .updateTable("seasons")
@@ -394,7 +380,7 @@ seasonsRouter.openapi(undeleteSeasonRoute, async (c) => {
 seasonsRouter.openapi(purgeSeasonRoute, async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const year = parseInt(id);
     await db
       .deleteFrom("seasons")

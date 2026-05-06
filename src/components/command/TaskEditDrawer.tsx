@@ -4,7 +4,8 @@ import {
   X, Save, Trash2, Calendar, User, AlertTriangle, Flag,
   CheckCircle2, Circle, Clock, ArrowUpRight, Plus
 } from "lucide-react";
-import { api } from "../../api/client";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../../utils/apiClient";
 import type { TaskItem } from "./ProjectBoardKanban";
 import { KANBAN_SUBTEAMS } from "./ProjectBoardKanban";
 import ZulipThread from "../ZulipThread";
@@ -12,7 +13,7 @@ import ZulipThread from "../ZulipThread";
 interface TaskEditDrawerProps {
   task: TaskItem;
   onClose: () => void;
-  onSave: (id: string, updates: Partial<TaskItem>) => Promise<void>;
+  onSave: (id: string, updates: import("../../api").UpdateTaskRequest) => Promise<void>;
   onDelete: (id: string) => void;
 }
 
@@ -36,7 +37,7 @@ export default function TaskEditDrawer({ task, onClose, onSave, onDelete }: Task
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState(task.priority);
   const [subteam, setSubteam] = useState(task.subteam || "");
-  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map(a => a.id) || []);
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map((a: { id: string }) => a.id) || []);
   const [dueDate, setDueDate] = useState(task.due_date || "");
   const [isSaving, setIsSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -44,12 +45,12 @@ export default function TaskEditDrawer({ task, onClose, onSave, onDelete }: Task
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch team members for assignee picker
-  const { data: usersRes } = api.users.getUsers.useQuery(
-    ["team-members-for-tasks"],
-    {},
-    { staleTime: 60000 }
-  );
-  const teamMembers = usersRes?.status === 200 ? usersRes.body.users : [];
+  const { data: usersData } = useQuery({
+    queryKey: ["users", "list"],
+    queryFn: () => fetchJson<{ users: Array<{ id: string; name: string; nickname?: string | null }> }>("/api/users/admin/list?limit=100"),
+    staleTime: 60000,
+  });
+  const teamMembers = usersData?.users ?? [];
 
   // Close on Escape
   useEffect(() => {
@@ -74,11 +75,11 @@ export default function TaskEditDrawer({ task, onClose, onSave, onDelete }: Task
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const updates: Partial<TaskItem> = {};
+      const updates: import("../../api").UpdateTaskRequest = {};
       if (title !== task.title) updates.title = title;
       if (description !== (task.description || "")) updates.description = description || null;
-      if (status !== task.status) updates.status = status;
-      if (priority !== task.priority) updates.priority = priority;
+      if (status !== task.status) updates.status = status as "todo" | "in_progress" | "done" | "blocked";
+      if (priority !== task.priority) updates.priority = priority as "low" | "normal" | "high" | "urgent";
       if (subteam !== (task.subteam || "")) updates.subteam = subteam || null;
       if (dueDate !== (task.due_date || "")) updates.due_date = dueDate || null;
       
@@ -88,7 +89,7 @@ export default function TaskEditDrawer({ task, onClose, onSave, onDelete }: Task
         !assigneeIds.every(id => currentIds.includes(id));
       
       if (hasAssigneeChange) {
-        updates.assignees = assigneeIds as unknown as { id: string }[];
+        updates.assignees = assigneeIds;
       }
 
       if (Object.keys(updates).length > 0) {

@@ -3,21 +3,8 @@ import { Link } from "react-router-dom";
 import SEO from "../components/SEO";
 import { GreekMeander } from "../components/GreekMeander";
 import { MemberSection } from "../components/MemberSection";
-import { api } from "../api/client";
-
-interface TeamMember {
-  user_id: string;
-  nickname: string;
-  avatar: string;
-  pronouns?: string;
-  subteams?: string;
-  member_type: string;
-  bio?: string;
-  fun_fact?: string;
-  favorite_first_thing?: string;
-  colleges?: string;
-  employers?: string;
-}
+import { useGetTeamRoster } from "../api";
+import { type TeamMember } from "../components/MemberCard";
 
 const SECTION_ORDER = [
   { type: "student", title: "Our Students", icon: "📚", desc: "The innovators, builders, and dreamers who bring ARES to life." },
@@ -28,17 +15,26 @@ const SECTION_ORDER = [
 
 
 export default function About() {
-  const { data: rosterRes, isLoading } = api.profiles.getTeamRoster.useQuery(["team-roster"], {});
+  const { data: rosterRes, isLoading } = useGetTeamRoster();
 
-  const members = useMemo(() => {
-    const body = rosterRes?.status === 200 ? rosterRes.body : null;
-    if (!body) return [];
-    if (Array.isArray(body)) return body as TeamMember[];
-    if (typeof body === 'object' && body !== null && 'members' in body) {
-      const m = (body as { members: unknown }).members;
-      if (Array.isArray(m)) return m as TeamMember[];
-    }
-    return [];
+  const members: TeamMember[] = useMemo(() => {
+    const rawMembers = rosterRes?.members || [];
+    
+    return rawMembers.map((m: any): TeamMember => ({
+      user_id: m.user_id,
+      nickname: m.nickname || m.first_name || "ARES Member",
+      first_name: m.first_name,
+      last_name: m.last_name,
+      avatar: m.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${m.user_id}`,
+      pronouns: m.pronouns,
+      subteams: m.subteams,
+      member_type: m.member_type || "student",
+      bio: m.bio,
+      fun_fact: m.fun_fact,
+      favorite_first_thing: m.favorite_first_thing,
+      colleges: m.colleges,
+      employers: m.employers
+    }));
   }, [rosterRes]);
 
   const grouped = useMemo(() => SECTION_ORDER.map(section => ({

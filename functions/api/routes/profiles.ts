@@ -12,7 +12,6 @@ import {
 import { getAuth } from "../../utils/auth";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";
-import type { HonoContext } from "@shared/types/api";
 import { z } from "zod";
 import {
   getMeRoute,
@@ -20,6 +19,8 @@ import {
   getTeamRosterRoute,
   getPublicProfileRoute,
   updateAvatarRoute,
+  profileMeSchema,
+  rosterMemberSchema,
 } from "../../../shared/routes/profiles";
 
 const profilesRouter = new OpenAPIHono<AppEnv>();
@@ -106,7 +107,7 @@ profilesRouter.openapi(getMeRoute, async (c) => {
       .where("p.user_id", "=", user.id)
       .executeTakeFirst();
 
-    const p = {
+    const p: Record<string, unknown> = {
       ...(profileRow || {
         user_id: user.id,
         nickname: user.name || "",
@@ -115,7 +116,7 @@ profilesRouter.openapi(getMeRoute, async (c) => {
         avatar: null,
         member_type: "student",
       }),
-    } as Record<string, unknown>;
+    };
 
     if (profileRow) {
       const secret = c.env.ENCRYPTION_SECRET;
@@ -159,7 +160,7 @@ profilesRouter.openapi(getMeRoute, async (c) => {
         last_name: String(p.last_name || ""),
         nickname: String(p.nickname || ""),
         auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role },
-      },
+      } as z.infer<typeof profileMeSchema>,
       200
     );
   } catch (err) {
@@ -275,7 +276,7 @@ profilesRouter.openapi(getTeamRosterRoute, async (c) => {
       console.warn("[Roster] Results found but all members were filtered out or failed processing.");
     }
 
-    return c.json({ members }, 200);
+    return c.json({ members: members as z.infer<typeof rosterMemberSchema>[] }, 200);
   } catch (err) {
     console.error("[Profile:Roster] Error", err);
     return c.json({ error: "Failed to fetch team roster" }, 500);
@@ -320,7 +321,7 @@ profilesRouter.openapi(getPublicProfileRoute, async (c) => {
     if (Number(profileRow.show_on_about || 0) !== 1) return c.json({ error: "This profile is private." }, 403);
 
     const memberType = String(profileRow.member_type || "student");
-    const sanitized = sanitizeProfileForPublic(profileRow, memberType) as Record<string, unknown>;
+    const sanitized: Record<string, unknown> = sanitizeProfileForPublic(profileRow, memberType);
 
     const requester = await getSessionUser(c);
     const isAdmin = requester?.role === "admin" || requester?.member_type === "coach" || requester?.member_type === "mentor";
@@ -367,7 +368,7 @@ profilesRouter.openapi(getPublicProfileRoute, async (c) => {
       .orderBy("ub.awarded_at", "desc")
       .execute();
 
-    return c.json({ profile: sanitized as any, badges: rawBadges as any[] }, 200);
+    return c.json({ profile: sanitized, badges: rawBadges }, 200);
   } catch {
     return c.json({ error: "Profile fetch failed" }, 500);
   }

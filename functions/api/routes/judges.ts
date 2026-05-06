@@ -9,7 +9,7 @@ import {
   createJudgeCodeRoute,
   deleteJudgeCodeRoute,
 } from "../../../shared/routes/judges";
-import type { HonoContext } from "@shared/types/api";
+import type { HonoContext as _HonoContext } from "@shared/types/api";
 
 export const judgesRouter = new OpenAPIHono<AppEnv>();
 

@@ -1,39 +1,13 @@
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
 import SEO from "../components/SEO";
-import { fetchJson } from "../api/client";
-import { useQuery } from "@tanstack/react-query";
-
-interface Season {
-  start_year: number;
-  end_year: number;
-  challenge_name: string;
-  robot_name: string | null;
-  robot_image: string | null;
-  summary: string | null;
-  robot_cad_url: string | null;
-}
-
-interface Award {
-  id: string;
-  title: string;
-  year: number;
-  event_name: string | null;
-  image_url: string | null;
-  description: string | null;
-}
+import { useGetSeasons, useGetAwards, type Season, type Award } from "../api";
 
 export default function Seasons() {
-  const { data: seasonsRes, isLoading: isLoadingSeasons } = useQuery({
-    queryKey: ["public-seasons"],
-    queryFn: () => fetchJson<{ seasons: Season[] }>("/api/seasons")
-  });
+  const { data: seasonsRes, isLoading: isLoadingSeasons } = useGetSeasons();
   const seasons: Season[] = seasonsRes?.seasons || [];
 
-  const { data: awardsRes, isLoading: isLoadingAwards } = useQuery({
-    queryKey: ["public-awards"],
-    queryFn: () => fetchJson<{ awards: Award[] }>("/api/awards")
-  });
+  const { data: awardsRes, isLoading: isLoadingAwards } = useGetAwards();
   const awards: Award[] = awardsRes?.awards || [];
 
   return (

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Plus, FileKey2, ExternalLink, RefreshCw } from "lucide-react";
-import { api } from "../api/client";
+import { useGetAdminSponsors, useGetAdminTokens, useGenerateSponsorToken } from "../api";
 import { useQueryClient } from "@tanstack/react-query";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { toast } from "sonner";
@@ -10,14 +10,16 @@ export default function SponsorTokensManager() {
   const queryClient = useQueryClient();
   const [selectedSponsor, setSelectedSponsor] = useState("");
 
-  const { data: sponsorsData, isLoading: loadingSponsors, isError: isSponsorsError } = api.sponsors.adminList.useQuery(["admin_sponsors"], {});
+  const { data: sponsorsRes, isLoading: loadingSponsors, isError: isSponsorsError } = useGetAdminSponsors();
+  const sponsors = sponsorsRes?.sponsors || [];
 
-  const { data: tokensData, isLoading: loadingTokens, isError: isTokensError } = api.sponsors.getAdminTokens.useQuery(["admin_sponsor_tokens"], {});
+  const { data: tokensRes, isLoading: loadingTokens, isError: isTokensError } = useGetAdminTokens();
+  const tokens = (tokensRes?.tokens || []) as Array<{ token: string; sponsor_name: string; created_at: string }>;
 
-  const generateMutation = api.sponsors.generateToken.useMutation({
-    onSuccess: (res: { status: number; body: { success?: boolean } }) => {
-      if (res.status === 200 && res.body.success) {
-        queryClient.invalidateQueries({ queryKey: ["admin_sponsor_tokens"] });
+  const generateMutation = useGenerateSponsorToken({
+    onSuccess: (res) => {
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: ["sponsor_tokens"] });
         setSelectedSponsor("");
         toast.success("Magic link generated");
       } else {
@@ -29,10 +31,6 @@ export default function SponsorTokensManager() {
     }
   });
 
-  const rawSponsorsBody = (sponsorsData as unknown as { body?: { sponsors?: unknown[] } | unknown[] })?.body;
-  const sponsors = sponsorsData?.status === 200 ? (Array.isArray(rawSponsorsBody) ? rawSponsorsBody : (Array.isArray(rawSponsorsBody?.sponsors) ? rawSponsorsBody.sponsors : [])) as { id: string; name: string }[] : [];
-  const rawTokensBody = (tokensData as unknown as { body?: { tokens?: unknown[] } | unknown[] })?.body;
-  const tokens = tokensData?.status === 200 ? (Array.isArray(rawTokensBody) ? rawTokensBody : (Array.isArray(rawTokensBody?.tokens) ? rawTokensBody.tokens : [])) as { token: string; sponsor_name: string; created_at: string }[] : [];
   const isLoading = loadingSponsors || loadingTokens;
   const isError = isSponsorsError || isTokensError;
 
@@ -78,7 +76,7 @@ export default function SponsorTokensManager() {
           </select>
           <button
             disabled={!selectedSponsor || generateMutation.isPending}
-            onClick={() => generateMutation.mutate({ body: { sponsor_id: selectedSponsor } })}
+            onClick={() => generateMutation.mutate({ sponsor_id: selectedSponsor })}
             className="px-6 py-2.5 bg-ares-gold hover:opacity-90 text-black font-black uppercase tracking-widest ares-cut-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {generateMutation.isPending ? <RefreshCw className="animate-spin" size={16} /> : <Plus size={16} />} 

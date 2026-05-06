@@ -1,18 +1,13 @@
-// ── FTC Events API Proxy ─────────────────────────────────────────────
-// Proxies requests to the FIRST FTC Events API v2.0, injecting Basic
-// Auth credentials server-side. Protects API keys from client exposure.
-
-import { Hono } from "hono";
-import type { Context } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
+import { ftcEventsProxyRoute } from "../../../../shared/routes/scouting";
 
-const ftcEventsProxy = new Hono<AppEnv>();
+const ftcEventsProxy = new OpenAPIHono<AppEnv>();
 
-ftcEventsProxy.get("/:path{.+}", async (c: Context<AppEnv>) => {
-  const path = c.req.param("path");
-  const env = c.env as Record<string, unknown>;
-  const username = env.FTC_EVENTS_USERNAME as string | undefined;
-  const apiKey = env.FTC_EVENTS_API_KEY as string | undefined;
+ftcEventsProxy.openapi(ftcEventsProxyRoute, async (c) => {
+  const { path } = c.req.valid("param");
+  const username = c.env.FTC_EVENTS_USERNAME;
+  const apiKey = c.env.FTC_EVENTS_API_KEY;
 
   if (!username || !apiKey) {
     return c.json(
@@ -41,7 +36,7 @@ ftcEventsProxy.get("/:path{.+}", async (c: Context<AppEnv>) => {
     }
 
     const data = await upstream.json();
-    return c.json(data);
+    return c.json(data, 200);
   } catch (err) {
     console.error("[FTC Events Proxy] Fetch error:", err);
     return c.json(

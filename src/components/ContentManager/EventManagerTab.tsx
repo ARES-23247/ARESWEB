@@ -3,8 +3,16 @@ import { format } from "date-fns";
 import { Radio, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { EventItem, ViewType } from "./shared";
-import { api } from "../../api/client";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetAdminEvents,
+  useDeleteEvent,
+  useSyncEvents,
+  useRepairCalendar,
+  useApproveEvent,
+  useRejectEvent,
+  useUndeleteEvent,
+  usePurgeEvent,
+} from "../../api/events";
 import GenericManagerList from "./GenericManagerList";
 
 interface EventManagerTabProps {
@@ -24,22 +32,21 @@ export default function EventManagerTab({
   broadcastData,
   setBroadcastData,
 }: EventManagerTabProps) {
-  const queryClient = useQueryClient();
-
   const [cursor, setCursor] = useState<string | null>(null);
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
 
-  const { data: eventsData, isLoading, isError, isFetching } = api.events.getAdminEvents.useQuery(
-    ["admin_events", cursor],
-    { query: { limit: 100, cursor: cursor || undefined } }
+  const { data: eventsData, isLoading, isError, isFetching } = useGetAdminEvents(
+    { limit: 100, cursor: cursor || undefined }
   );
 
-  const rawBody = (eventsData as unknown as { body: { events: unknown[], nextCursor?: string | null } })?.body;
+  // Memoize the entire eventsData reference for stable memoization
+  const memoizedEventsData = useMemo(() => eventsData, [eventsData]);
+
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- We use memoizedEventsData for stability; inferred dependency would be less specific
   const events = useMemo(() => {
-    const raw = eventsData?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.events) ? rawBody.events : [])) as unknown as EventItem[] : undefined;
-    return raw || [];
-  }, [eventsData?.status, rawBody]);
-  const nextCursor = rawBody?.nextCursor || null;
+    return (memoizedEventsData?.events || []) as unknown as EventItem[];
+  }, [memoizedEventsData]);
+  const nextCursor = eventsData?.nextCursor || null;
 
   useEffect(() => {
     if (events.length > 0) {
@@ -56,12 +63,10 @@ export default function EventManagerTab({
     }
   }, [events, cursor]);
 
-  const lastSyncedAt = eventsData?.status === 200 ? eventsData.body.lastSyncedAt : null;
+  const lastSyncedAt = (eventsData as any)?.lastSyncedAt;
 
-  const deleteMutation = api.events.deleteEvent.useMutation({
+  const deleteMutation = useDeleteEvent({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       setConfirmId(null);
       toast.success("Event deleted");
     },
@@ -70,11 +75,10 @@ export default function EventManagerTab({
     }
   });
 
-  const syncGcalMutation = api.events.syncEvents.useMutation({
-    onSuccess: (res: { status: number; body: { success?: boolean, count?: number } }) => {
-      if (res.status === 200 && res.body.success) {
-        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-        toast.success(`Sync Complete! Fetched ${res.body.count || 0} events.`);
+  const syncGcalMutation = useSyncEvents({
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success(`Sync Complete! Fetched ${(res as any).count || 0} events.`);
       } else {
         toast.error("Sync failed");
       }
@@ -84,14 +88,13 @@ export default function EventManagerTab({
     }
   });
 
-  const repairGcalMutation = api.events.repairCalendar.useMutation({
-    onSuccess: (res: { status: number; body: { success?: boolean; pushed?: number; failed?: number; errors?: string[] } }) => {
-      if (res.status === 200 && res.body.success) {
-        queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-        const msg = `Repair Complete! Pushed ${res.body.pushed || 0} events to GCal.`;
-        if (res.body.failed) {
-          toast.warning(`${msg} (${res.body.failed} failed)`);
-          console.warn("[RepairCalendar] Errors:", res.body.errors);
+  const repairGcalMutation = useRepairCalendar({
+    onSuccess: (res: any) => {
+      if (res.success) {
+        const msg = `Repair Complete! Pushed ${res.pushed || 0} events to GCal.`;
+        if (res.failed) {
+          toast.warning(`${msg} (${res.failed} failed)`);
+          console.warn("[RepairCalendar] Errors:", res.errors);
         } else {
           toast.success(msg);
         }
@@ -104,34 +107,26 @@ export default function EventManagerTab({
     }
   });
 
-  const localApproveMutation = api.events.approveEvent.useMutation({
+  const localApproveMutation = useApproveEvent({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event approved");
     }
   });
 
-  const localRejectMutation = api.events.rejectEvent.useMutation({
+  const localRejectMutation = useRejectEvent({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event rejected");
     }
   });
 
-  const localRestoreMutation = api.events.undeleteEvent.useMutation({
+  const localRestoreMutation = useUndeleteEvent({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event restored");
     }
   });
 
-  const localPurgeMutation = api.events.purgeEvent.useMutation({
+  const localPurgeMutation = usePurgeEvent({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Event purged");
     }
   });
@@ -172,15 +167,15 @@ export default function EventManagerTab({
       headerActions={
         view !== 'trash' && view !== 'pending' ? (
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => syncGcalMutation.mutate({ body: {} })}
+            <button
+              onClick={() => syncGcalMutation.mutate()}
               disabled={syncGcalMutation.isPending}
               className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               {syncGcalMutation.isPending ? "SYNCING..." : "SYNC GCAL"}
             </button>
-            <button 
-              onClick={() => repairGcalMutation.mutate({ body: {} })}
+            <button
+              onClick={() => repairGcalMutation.mutate()}
               disabled={repairGcalMutation.isPending}
               className="text-xs font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
             >
@@ -212,16 +207,16 @@ export default function EventManagerTab({
         </button>
       )}
       onEdit={onEditEvent ? (e) => onEditEvent(e.id) : undefined}
-      onApprove={(e) => localApproveMutation.mutate({ params: { id: e.id }, body: {} })}
+      onApprove={(e) => localApproveMutation.mutate(e.id)}
       isApprovePending={() => localApproveMutation.isPending}
-      onReject={(e) => localRejectMutation.mutate({ params: { id: e.id }, body: {} })}
+      onReject={(e) => localRejectMutation.mutate({ id: e.id })}
       isRejectPending={() => localRejectMutation.isPending}
-      onDelete={(e) => deleteMutation.mutate({ params: { id: e.id }, body: {} })}
-      isDeletePending={(e) => deleteMutation.isPending && (deleteMutation.variables as unknown as { params?: { id: string } })?.params?.id === e.id}
-      onRestore={(e) => localRestoreMutation.mutate({ params: { id: e.id }, body: {} })}
-      isRestorePending={(e) => localRestoreMutation.isPending && (localRestoreMutation.variables as unknown as { params?: { id: string } })?.params?.id === e.id}
-      onPurge={(e) => localPurgeMutation.mutate({ params: { id: e.id }, body: {} })}
-      isPurgePending={(e) => localPurgeMutation.isPending && (localPurgeMutation.variables as unknown as { params?: { id: string } })?.params?.id === e.id}
+      onDelete={(e) => deleteMutation.mutate({ id: e.id })}
+      isDeletePending={(e) => deleteMutation.isPending && deleteMutation.variables?.id === e.id}
+      onRestore={(e) => localRestoreMutation.mutate(e.id)}
+      isRestorePending={(e) => localRestoreMutation.isPending && localRestoreMutation.variables === e.id}
+      onPurge={(e) => localPurgeMutation.mutate(e.id)}
+      isPurgePending={(e) => localPurgeMutation.isPending && localPurgeMutation.variables === e.id}
       confirmId={confirmId}
       setConfirmId={setConfirmId}
     />

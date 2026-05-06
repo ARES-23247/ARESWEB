@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { siteConfig } from "../site.config";
-import { api } from "../api/client";
+import { fetchJson } from "../api";
 
 interface DayCell {
   date: string;
@@ -30,15 +30,13 @@ export default function GitHubHeatmap() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await api.github.getActivity.query();
-        if (res.status === 200) {
+        const res = await fetchJson<{ grid?: DayCell[][]; totalCommits?: number; repoCount?: number }>("/api/github/activity");
 
-          const rawGridBody = (res.body as unknown as { grid?: DayCell[][] })?.grid;
+        const rawGridBody = res?.grid;
 
-          setGrid((Array.isArray(rawGridBody) ? rawGridBody : (Array.isArray((res.body as unknown as { body?: { grid?: DayCell[][] } })?.body?.grid) ? (res.body as unknown as { body?: { grid?: DayCell[][] } })?.body?.grid : [])) as DayCell[][]);
-          setTotalCommits(res.body.totalCommits || 0);
-          setRepoCount(res.body.repoCount || 0);
-        }
+        setGrid((Array.isArray(rawGridBody) ? rawGridBody : []) as DayCell[][]);
+        setTotalCommits(res?.totalCommits || 0);
+        setRepoCount(res?.repoCount || 0);
         setLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load activity");

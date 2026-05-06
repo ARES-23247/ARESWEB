@@ -1,9 +1,6 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
-import { standardErrors } from "./common";
+import { createRoute, z } from "@hono/zod-openapi";
+import { openApiStandardErrors } from "./common";
 import { docSchema } from "../docSchema";
-
-const c = initContract();
 
 export const docResponseSchema = z.object({
   slug: z.string(),
@@ -41,170 +38,268 @@ export const docHistorySchema = z.object({
   created_at: z.string(),
 });
 
-export const docContract = c.router({
-  getDocs: {
-    method: "GET",
-    path: "/",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        docs: z.array(docResponseSchema),
-      }),
+export const getDocsRoute = createRoute({
+  method: "get",
+  path: "/",
+  responses: {
+    200: {
+      description: "List all public docs",
+      content: { "application/json": { schema: z.object({ docs: z.array(docResponseSchema) }) } },
     },
-    summary: "List all public docs",
+    ...openApiStandardErrors,
   },
-  searchDocs: {
-    method: "GET",
-    path: "/search",
+});
+
+export const searchDocsRoute = createRoute({
+  method: "get",
+  path: "/search",
+  request: {
     query: z.object({
       q: z.string(),
     }),
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        results: z.array(
-          z.object({
-            slug: z.string(),
-            title: z.string(),
-            category: z.string(),
-            description: z.string().nullable(),
-            snippet: z.string(),
+  },
+  responses: {
+    200: {
+      description: "Search docs",
+      content: {
+        "application/json": {
+          schema: z.object({
+            results: z.array(
+              z.object({
+                slug: z.string(),
+                title: z.string(),
+                category: z.string(),
+                description: z.string().nullable(),
+                snippet: z.string(),
+              }),
+            ),
           }),
-        ),
-      }),
+        },
+      },
     },
-  },
-  adminList: {
-    method: "GET",
-    path: "/admin/list",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        docs: z.array(docResponseSchema),
-      }),
-    },
-  },
-  adminDetail: {
-    method: "GET",
-    path: "/admin/:slug/detail",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        doc: docDetailResponseSchema,
-      }),
-    },
-  },
-  getDoc: {
-    method: "GET",
-    path: "/:slug",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        doc: docDetailResponseSchema,
-        contributors: z.array(
-          z.object({
-            nickname: z.string().nullable(),
-            avatar: z.string().nullable(),
-          }),
-        ),
-      }),
-    },
-    summary: "Get single doc with contributors",
-  },
-  deleteDoc: {
-    method: "DELETE",
-    path: "/admin/:slug",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-  },
-  saveDoc: {
-    method: "POST",
-    path: "/admin/save",
-    body: docSchema,
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean(), slug: z.string() }),
-    },
-  },
-  updateSort: {
-    method: "PATCH",
-    path: "/admin/:slug/sort",
-    body: z.object({ sortOrder: z.number() }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-  },
-  submitFeedback: {
-    method: "POST",
-    path: "/:slug/feedback",
-    body: z.object({
-      isHelpful: z.boolean(),
-      comment: z.string().optional(),
-      turnstileToken: z.string(),
-    }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-  },
-  getHistory: {
-    method: "GET",
-    path: "/admin/:slug/history",
-    responses: {
-      ...standardErrors,
-      200: z.object({
-        history: z.array(docHistorySchema),
-      }),
-    },
-  },
-  restoreHistory: {
-    method: "PATCH",
-    path: "/admin/:slug/history/:id/restore",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-  },
-  approveDoc: {
-    method: "POST",
-    path: "/admin/:slug/approve",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-  },
-  rejectDoc: {
-    method: "POST",
-    path: "/admin/:slug/reject",
-    body: z.object({ reason: z.string().optional() }),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-  },
-  undeleteDoc: {
-    method: "POST",
-    path: "/admin/:slug/undelete",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
-  },
-  purgeDoc: {
-    method: "POST",
-    path: "/admin/:slug/purge",
-    body: c.noBody(),
-    responses: {
-      ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-    },
+    ...openApiStandardErrors,
   },
 });
-export type DocContract = typeof docContract;
+
+export const adminListDocsRoute = createRoute({
+  method: "get",
+  path: "/admin/list",
+  responses: {
+    200: {
+      description: "List all docs (admin)",
+      content: { "application/json": { schema: z.object({ docs: z.array(docResponseSchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const adminDetailDocRoute = createRoute({
+  method: "get",
+  path: "/admin/{slug}/detail",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get single doc detail (admin)",
+      content: { "application/json": { schema: z.object({ doc: docDetailResponseSchema }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getDocRoute = createRoute({
+  method: "get",
+  path: "/{slug}",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get single doc with contributors",
+      content: {
+        "application/json": {
+          schema: z.object({
+            doc: docDetailResponseSchema,
+            contributors: z.array(
+              z.object({
+                nickname: z.string().nullable(),
+                avatar: z.string().nullable(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const deleteDocRoute = createRoute({
+  method: "delete",
+  path: "/admin/{slug}",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Delete a doc",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const saveDocRoute = createRoute({
+  method: "post",
+  path: "/admin/save",
+  request: {
+    body: {
+      content: { "application/json": { schema: docSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Create or update a doc",
+      content: { "application/json": { schema: z.object({ success: z.boolean(), slug: z.string() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const updateSortRoute = createRoute({
+  method: "patch",
+  path: "/admin/{slug}/sort",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: { "application/json": { schema: z.object({ sortOrder: z.number() }) } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update doc sort order",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const submitFeedbackRoute = createRoute({
+  method: "post",
+  path: "/{slug}/feedback",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            isHelpful: z.boolean(),
+            comment: z.string().optional(),
+            turnstileToken: z.string(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Submit doc feedback",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const getHistoryRoute = createRoute({
+  method: "get",
+  path: "/admin/{slug}/history",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Get doc history",
+      content: { "application/json": { schema: z.object({ history: z.array(docHistorySchema) }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const restoreHistoryRoute = createRoute({
+  method: "patch",
+  path: "/admin/{slug}/history/{id}/restore",
+  request: {
+    params: z.object({ slug: z.string(), id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Restore doc from history",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const approveDocRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/approve",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Approve a doc",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const rejectDocRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/reject",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: { "application/json": { schema: z.object({ reason: z.string().optional() }) } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Reject a doc",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const undeleteDocRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/undelete",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Undelete a doc",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});
+
+export const purgeDocRoute = createRoute({
+  method: "post",
+  path: "/admin/{slug}/purge",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      description: "Purge a doc",
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+    },
+    ...openApiStandardErrors,
+  },
+});

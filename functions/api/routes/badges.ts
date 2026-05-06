@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- handler input validated by contract library */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
-import type { HonoContext } from "@shared/types/api";
 import { 
   listBadgesRoute, 
   createBadgeRoute, 
@@ -12,7 +10,7 @@ import {
   revokeBadgeRoute, 
   deleteBadgeRoute, 
   leaderboardBadgeRoute 
-} from "../../../shared/schemas/contracts/badgeContract";
+} from "../../../shared/routes/badges";
 
 export const badgesRouter = new OpenAPIHono<AppEnv>();
 
@@ -22,7 +20,7 @@ badgesRouter.use("/", ensureAuth);
 badgesRouter.use("/admin/*", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-badgesRouter.openapi(listBadgesRoute, async (c: HonoContext) => {
+badgesRouter.openapi(listBadgesRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -40,16 +38,16 @@ badgesRouter.openapi(listBadgesRoute, async (c: HonoContext) => {
       created_at: String(b.created_at),
     }));
 
-    return c.json({ badges }, 200 as any);
+    return c.json({ badges }, 200);
   } catch (e: unknown) {
     const err = e as Error;
-    return c.json({ error: err.message || "Failed to fetch badges", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: err.message || "Failed to fetch badges", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-badgesRouter.openapi(createBadgeRoute, async (c: HonoContext) => {
+badgesRouter.openapi(createBadgeRoute, async (c) => {
   try {
-    const { id, name, description, icon, color_theme } = c.req.valid("json" as never) as any;
+    const { id, name, description, icon, color_theme } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
     await db
       .insertInto("badges")
@@ -61,16 +59,16 @@ badgesRouter.openapi(createBadgeRoute, async (c: HonoContext) => {
         color_theme,
       })
       .execute();
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e: unknown) {
     const err = e as Error;
-    return c.json({ error: err.message || "Failed to create badge", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: err.message || "Failed to create badge", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-badgesRouter.openapi(grantBadgeRoute, async (c: HonoContext) => {
+badgesRouter.openapi(grantBadgeRoute, async (c) => {
   try {
-    const { userId, badgeId } = c.req.valid("json" as never) as any;
+    const { userId, badgeId } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
     const sessionId = user?.id || "system";
@@ -125,42 +123,42 @@ badgesRouter.openapi(grantBadgeRoute, async (c: HonoContext) => {
       })()
     );
 
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e: unknown) {
     const err = e as Error;
-    return c.json({ error: err.message || "Failed to award badge", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: err.message || "Failed to award badge", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-badgesRouter.openapi(revokeBadgeRoute, async (c: HonoContext) => {
+badgesRouter.openapi(revokeBadgeRoute, async (c) => {
   try {
-    const { userId, badgeId } = c.req.valid("param" as never) as any;
+    const { userId, badgeId } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
     await db
       .deleteFrom("user_badges")
       .where("user_id", "=", userId)
       .where("badge_id", "=", badgeId)
       .execute();
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e: unknown) {
     const err = e as Error;
-    return c.json({ error: err.message || "Failed to revoke badge", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: err.message || "Failed to revoke badge", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-badgesRouter.openapi(deleteBadgeRoute, async (c: HonoContext) => {
+badgesRouter.openapi(deleteBadgeRoute, async (c) => {
   try {
-    const { id } = c.req.valid("param" as never) as any;
+    const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
     await db.deleteFrom("badges").where("id", "=", id).execute();
-    return c.json({ success: true }, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e: unknown) {
     const err = e as Error;
-    return c.json({ error: err.message || "Failed to delete badge definition", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: err.message || "Failed to delete badge definition", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 
-badgesRouter.openapi(leaderboardBadgeRoute, async (c: HonoContext) => {
+badgesRouter.openapi(leaderboardBadgeRoute, async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -181,10 +179,10 @@ badgesRouter.openapi(leaderboardBadgeRoute, async (c: HonoContext) => {
       badge_count: Number(r.badge_count),
     }));
 
-    return c.json({ leaderboard }, 200 as any);
+    return c.json({ leaderboard }, 200);
   } catch (e: unknown) {
     const err = e as Error;
-    return c.json({ error: err.message || "Failed to fetch leaderboard", code: "INTERNAL_SERVER_ERROR" }, 500 as any);
+    return c.json({ error: err.message || "Failed to fetch leaderboard", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 });
 

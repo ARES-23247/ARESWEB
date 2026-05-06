@@ -3,10 +3,9 @@ import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
 import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { useGetAwards, useSaveAward, useDeleteAward } from "../api";
 import { Plus, Trash2, Trophy, Star, Calendar, MapPin, XCircle, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchJson } from "../api/client";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,7 +22,6 @@ const awardFormSchema = z.object({
   season_id: z.string().optional().nullable(),
 });
 type AwardFormPayload = z.infer<typeof awardFormSchema>;
-type AwardPayload = AwardFormPayload & { id: string };
 interface Award {
   id: string;
   title: string;
@@ -31,11 +29,11 @@ interface Award {
   event_name: string | null;
   image_url: string | null;
   description: string | null;
-  season_id?: string;
+  season_id?: number | null;
 }
 
 export default function AwardEditor() {
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Reserved for future query invalidation
   const [isAdding, setIsAdding] = useState(false);
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<AwardFormPayload>({
@@ -52,30 +50,23 @@ export default function AwardEditor() {
 
   const seasonId = useWatch({ control, name: "season_id" });
 
-  const { data: awardsData, isLoading, isError } = useQuery({
-    queryKey: ["admin-awards"],
-    queryFn: () => fetchJson<{ awards: Award[] }>("/api/awards")
-  });
-  const awards = (awardsData?.awards || []) as Award[];
+  const { data: awardsRes, isLoading, isError } = useGetAwards();
+  
+  const awards = (awardsRes?.awards || []) as Award[];
+  const saveMutation = useSaveAward();
+  const deleteMutation = useDeleteAward();
 
-  const saveMutation = useMutation({
-    mutationFn: (body: AwardPayload) => fetchJson("/api/awards", { method: "POST", body: JSON.stringify(body) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-awards"] });
-      setIsAdding(false);
-      reset();
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => fetchJson(`/api/awards/${id}`, { method: "DELETE" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-awards"] })
-  });
-
-  const onFormSubmit = (data: z.infer<typeof awardFormSchema>) => {
-    const finalId = data.id || `${data.year}-${data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-     
-    saveMutation.mutate({ ...data, id: finalId } as AwardPayload);
+  const onFormSubmit = (data: AwardFormPayload) => {
+    const payload: import("../api").AwardPayload = {
+      ...data,
+      season_id: data.season_id ? parseInt(data.season_id) : null
+    };
+    saveMutation.mutate(payload, {
+      onSuccess: () => {
+        setIsAdding(false);
+        reset();
+      }
+    });
   };
 
   return (

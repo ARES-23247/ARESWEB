@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import githubWebhookRouter from "./githubWebhook";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";

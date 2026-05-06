@@ -5,8 +5,14 @@ import { Radio, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { PostItem, ViewType, contentFilter } from "./shared";
 import RevisionManager from "../RevisionManager";
-import { api } from "../../api/client";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetAdminPosts,
+  useDeletePost,
+  useApprovePost,
+  useRejectPost,
+  useUndeletePost,
+  usePurgePost,
+} from "../../api/posts";
 import GenericManagerList from "./GenericManagerList";
 
 interface PostManagerTabProps {
@@ -26,19 +32,14 @@ export default function PostManagerTab({
   broadcastData,
   setBroadcastData,
 }: PostManagerTabProps) {
-  const queryClient = useQueryClient();
   const [historyTarget, setHistoryTarget] = useState<{ slug: string, title: string } | null>(null);
-  
-  const { data, isLoading, isError } = api.posts.getAdminPosts.useQuery(["admin_posts"], {});
 
-  const rawBody = (data as unknown as { body: { posts: PostItem[] } })?.body;
-  const posts = data?.status === 200 ? (Array.isArray(rawBody) ? rawBody : (Array.isArray(rawBody?.posts) ? rawBody.posts : [])) as unknown as PostItem[] : [];
+  const { data, isLoading, isError } = useGetAdminPosts();
 
-  const deleteMutation = api.posts.deletePost.useMutation({
+  const posts = (data?.posts || []) as unknown as PostItem[];
+
+  const deleteMutation = useDeletePost({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       setConfirmId(null);
       toast.success("Post deleted");
     },
@@ -47,38 +48,26 @@ export default function PostManagerTab({
     }
   });
 
-  const localApproveMutation = api.posts.approvePost.useMutation({
+  const localApproveMutation = useApprovePost({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post approved");
     }
   });
 
-  const localRejectMutation = api.posts.rejectPost.useMutation({
+  const localRejectMutation = useRejectPost({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post rejected");
     }
   });
 
-  const localRestoreMutation = api.posts.undeletePost.useMutation({
+  const localRestoreMutation = useUndeletePost({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post restored");
     }
   });
 
-  const localPurgeMutation = api.posts.purgePost.useMutation({
+  const localPurgeMutation = usePurgePost({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Post purged");
     }
   });
@@ -127,16 +116,16 @@ export default function PostManagerTab({
         )}
         onEdit={onEditPost ? (p) => onEditPost(p.slug) : undefined}
         onHistory={(p) => setHistoryTarget({ slug: p.slug, title: p.title })}
-        onApprove={(p) => localApproveMutation.mutate({ params: { slug: p.slug }, body: {} })}
+        onApprove={(p) => localApproveMutation.mutate(p.slug)}
         isApprovePending={() => localApproveMutation.isPending}
-        onReject={(p) => localRejectMutation.mutate({ params: { slug: p.slug }, body: {} })}
+        onReject={(p) => localRejectMutation.mutate({ slug: p.slug })}
         isRejectPending={() => localRejectMutation.isPending}
-        onDelete={(p) => deleteMutation.mutate({ params: { slug: p.slug }, body: {} })}
-        isDeletePending={(p) => deleteMutation.isPending && (deleteMutation.variables as { params?: { slug: string } })?.params?.slug === p.slug}
-        onRestore={(p) => localRestoreMutation.mutate({ params: { slug: p.slug }, body: {} })}
-        isRestorePending={(p) => localRestoreMutation.isPending && (localRestoreMutation.variables as { params?: { slug: string } })?.params?.slug === p.slug}
-        onPurge={(p) => localPurgeMutation.mutate({ params: { slug: p.slug }, body: {} })}
-        isPurgePending={(p) => localPurgeMutation.isPending && (localPurgeMutation.variables as { params?: { slug: string } })?.params?.slug === p.slug}
+        onDelete={(p) => deleteMutation.mutate(p.slug)}
+        isDeletePending={(p) => deleteMutation.isPending && deleteMutation.variables === p.slug}
+        onRestore={(p) => localRestoreMutation.mutate(p.slug)}
+        isRestorePending={(p) => localRestoreMutation.isPending && localRestoreMutation.variables === p.slug}
+        onPurge={(p) => localPurgeMutation.mutate(p.slug)}
+        isPurgePending={(p) => localPurgeMutation.isPending && localPurgeMutation.variables === p.slug}
         confirmId={confirmId}
         setConfirmId={setConfirmId}
       />

@@ -93,6 +93,7 @@ export const judgePortfolioRoute = createRoute({
               category: z.string(),
               description: z.string(),
               content: z.string(),
+              is_executive_summary: z.number().optional(),
             })).openapi({
               description: "Portfolio documents including executive summary and category docs",
             }),

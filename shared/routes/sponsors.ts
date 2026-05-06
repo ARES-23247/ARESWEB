@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
-import { openApiStandardErrors } from "../schemas/contracts/common";
+import { openApiStandardErrors } from "./common";
 import { sponsorSchema } from "../schemas/sponsorSchema";
 
 // Response schema - id is always present in responses
-const sponsorResponseSchema = z.object({
+export const sponsorResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
   tier: z.enum(["Titanium", "Gold", "Silver", "Bronze", "In-Kind"]),
@@ -25,6 +25,7 @@ export const sponsorRoiMetricSchema = z.object({
 export const sponsorTokenSchema = z.object({
   sponsor_id: z.string(),
   token: z.string(),
+  sponsor_name: z.string().optional(),
   created_at: z.string().nullable(),
   last_used: z.string().nullable(),
 });

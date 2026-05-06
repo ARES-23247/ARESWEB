@@ -1,11 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { docSchema } from "@shared/schemas/docSchema";
-import { api } from "../api/client";
+import { useGetAdminDocDetail, useSaveDoc, useDeleteDoc } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import EditorFooter from "./editor/EditorFooter";
 import { useForm, useWatch } from "react-hook-form";
@@ -27,6 +26,8 @@ interface DocData {
   display_in_math_corner?: number;
   display_in_science_corner?: number;
   content: string;
+  zulip_stream?: string;
+  zulip_topic?: string;
 }
 
 import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
@@ -35,14 +36,13 @@ import { CopilotMenu } from "./editor/CopilotMenu";
 import ZulipThread from "./ZulipThread";
 
 function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();
   const [errorMsg, setErrorMsg] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { ydoc, provider } = useCollaborativeEditor();
-  const editor = useRichEditor({ 
+  const editor = useRichEditor({
     placeholder: "<p>Start writing documentation here...</p>",
     ydoc,
     provider
@@ -68,20 +68,11 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
   const formValues = useWatch({ control });
 
-  // Use standard API query instead of useEntityFetch
-  const { data: docRes, isLoading, isError } = api.docs.adminDetail.useQuery(
-    ["admin_doc_detail", editSlug || ""],
-    {
-      params: { slug: editSlug || "" }
-    },
-    {
-      enabled: !!editSlug
-    }
-  );
+  const { data: docRes, isLoading, isError } = useGetAdminDocDetail(editSlug || "");
 
   useEffect(() => {
-    if (docRes?.status === 200 && docRes.body.doc) {
-      const doc = docRes.body.doc as unknown as DocData;
+    if (docRes?.doc) {
+      const doc = docRes.doc as unknown as DocData;
       reset({
         slug: doc.slug || "",
         title: doc.title || "",
@@ -95,12 +86,12 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         displayInScienceCorner: !!doc.display_in_science_corner,
         content: doc.content || "{}"
       });
-      
+
       if (editor && doc.content) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
         // We only inject the DB snapshot if the YDoc is currently empty (e.g. first user joining a new session).
         const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
-        
+
         if (shouldSetContent) {
           try {
             editor.commands.setContent(JSON.parse(doc.content));
@@ -112,37 +103,26 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   }, [docRes, reset, editor, ydoc]);
 
-  const saveMutation = api.docs.saveDoc.useMutation({
-     
-    onSuccess: (res: { status: number; body: { slug?: string; error?: string } }) => {
-      if (res.status === 200) {
-        queryClient.invalidateQueries({ queryKey: ["docs"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
-        if (editSlug) queryClient.invalidateQueries({ queryKey: ["doc", editSlug] });
+  const saveMutation = useSaveDoc({
+    onSuccess: (res) => {
+      if (res.slug) {
         if (formValues.isDraft || userRole === "author") {
           navigate("/dashboard");
         } else {
-          navigate(`/docs/${res.body.slug}`);
+          navigate(`/docs/${res.slug}`);
         }
       } else {
-        setErrorMsg(res.body.error || "Failed to publish");
+        setErrorMsg("Failed to publish");
       }
     },
-     
     onError: (err: Error) => {
       setErrorMsg(err.message || "Network error");
     }
   });
 
-  const deleteMutation = api.docs.deleteDoc.useMutation({
-    onSuccess: (data: { status: number }) => {
-      if (data.status === 200) {
-        queryClient.invalidateQueries({ queryKey: ["docs"] });
-        queryClient.invalidateQueries({ queryKey: ["admin_docs"] });
-        navigate("/dashboard");
-      } else {
-        setErrorMsg("Failed to delete the document.");
-      }
+  const deleteMutation = useDeleteDoc({
+    onSuccess: () => {
+      navigate("/dashboard");
     },
     onError: () => {
       setErrorMsg("Failed to delete the document.");
@@ -152,7 +132,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   const onFormSubmit = (data: DocFormValues, isDraft = false) => {
     if (!editor) return;
     const content = JSON.stringify(editor.getJSON());
-    saveMutation.mutate({ body: { ...data, content, isDraft } });
+    saveMutation.mutate({ ...data, content, isDraft });
   };
 
   const handleDelete = async () => {
@@ -165,7 +145,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     });
     if (!confirmed) return;
 
-    deleteMutation.mutate({ params: { slug: editSlug }, body: {} });
+    deleteMutation.mutate(editSlug);
   };
 
   if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
@@ -200,7 +180,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           />
           {errors.title && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.title.message as string}</p>}
         </div>
-        
+
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-slug" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Slug</label>
           <input
@@ -222,7 +202,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
             placeholder="e.g. Tutorials"
           />
         </div>
-        
+
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-sort" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Sort Order</label>
           <input
@@ -245,9 +225,9 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 ares-cut-sm bg-obsidian/50 border border-white/5">
         <div className="flex items-center gap-3 cursor-pointer group">
-          <input 
-            id="isPortfolioToggle" type="checkbox" 
-            {...register("isPortfolio")} 
+          <input
+            id="isPortfolioToggle" type="checkbox"
+            {...register("isPortfolio")}
             className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
           />
           <div>
@@ -255,11 +235,11 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
             <span className="block text-xs text-white/60">Feature this in the Rapid Review dashboard for judges.</span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3 cursor-pointer group">
-          <input 
-            id="isExecSummaryToggle" type="checkbox" 
-            {...register("isExecutiveSummary")} 
+          <input
+            id="isExecSummaryToggle" type="checkbox"
+            {...register("isExecutiveSummary")}
             className="w-5 h-5 rounded border-white/10 bg-black text-ares-gold focus:ring-ares-gold"
           />
           <div>
@@ -273,20 +253,20 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         <h3 className="text-sm font-bold text-ares-gold uppercase tracking-wider border-b border-white/10 pb-2 mb-4">Hub Visibility Controls</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 ares-cut-sm bg-obsidian/50 border border-white/5">
           <div className="flex items-center gap-3 cursor-pointer group">
-            <input 
-              id="displayAreslibToggle" type="checkbox" 
-              {...register("displayInAreslib")} 
+            <input
+              id="displayAreslibToggle" type="checkbox"
+              {...register("displayInAreslib")}
               className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
             />
             <div>
               <label htmlFor="displayAreslibToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Main Library (ARESLib)</label>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 cursor-pointer group">
-            <input 
-              id="displayMathToggle" type="checkbox" 
-              {...register("displayInMathCorner")} 
+            <input
+              id="displayMathToggle" type="checkbox"
+              {...register("displayInMathCorner")}
               className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
             />
             <div>
@@ -295,9 +275,9 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           </div>
 
           <div className="flex items-center gap-3 cursor-pointer group">
-            <input 
-              id="displayScienceToggle" type="checkbox" 
-              {...register("displayInScienceCorner")} 
+            <input
+              id="displayScienceToggle" type="checkbox"
+              {...register("displayInScienceCorner")}
               className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
             />
             <div>
@@ -330,7 +310,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
             </button>
           </div>
         )}
-        <EditorFooter 
+        <EditorFooter
           errorMsg={errorMsg}
           isPending={saveMutation.isPending}
           isEditing={!!editSlug}
@@ -347,7 +327,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       </div>
 
       {isHistoryOpen && roomId && editor && (
-        <VersionHistorySidebar 
+        <VersionHistorySidebar
           roomId={roomId}
           editor={editor}
           onClose={() => setIsHistoryOpen(false)}
@@ -356,11 +336,11 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       )}
       </div>
 
-      {editSlug && docRes?.body?.doc && (
+      {editSlug && docRes?.doc && (
         <div className="w-full flex flex-col gap-6 mt-6">
-          <ZulipThread 
-            stream={(docRes.body.doc as Record<string, unknown>).zulip_stream as string || "documents"} 
-            topic={(docRes.body.doc as Record<string, unknown>).zulip_topic as string || `Doc: ${(docRes.body.doc as Record<string, unknown>).title as string}`} 
+          <ZulipThread
+            stream={(docRes.doc as any).zulip_stream as string || "documents"}
+            topic={(docRes.doc as any).zulip_topic as string || `Doc: ${(docRes.doc as any).title as string}`}
           />
         </div>
       )}
@@ -380,4 +360,3 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
     </CollaborativeEditorRoom>
   );
 }
-

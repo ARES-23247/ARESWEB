@@ -4,9 +4,10 @@ import { X, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { locationSchema } from "@shared/schemas/contracts/locationContract";
+import { useQueryClient } from "@tanstack/react-query";
+import { locationSchema } from "@shared/routes/locations";
 import { z } from "zod";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useCreateLocation } from "../api";
 
 interface CreateLocationModalProps {
   isOpen: boolean;
@@ -39,21 +40,10 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
     setErrorMsg("");
   }, [reset]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (data: { body: unknown }) => {
-      const res = await fetch("/api/locations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data.body)
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return { status: res.status, body: await res.json() };
-    },
-    onSuccess: (res: { status: number }) => {
-      if (res.status === 200) {
+  const saveMutation = useCreateLocation({
+    onSuccess: (res) => {
+      if (res.success) {
         toast.success("Venue record synchronized.");
-        queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-        queryClient.invalidateQueries({ queryKey: ["locations"] });
         
         // Pass the new name back
         const formValues = control._formValues;
@@ -97,7 +87,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
 
   const onFormSubmit = (data: z.infer<typeof locationSchema>) => {
     setErrorMsg("");
-    saveMutation.mutate({ body: { ...data, id: undefined } });
+    saveMutation.mutate({ ...data, id: undefined });
   };
 
   // Keyboard handling

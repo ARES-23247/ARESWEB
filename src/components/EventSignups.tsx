@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, Plus, Save, RefreshCw, Trash2, CheckCircle2, Circle, AlertCircle, Users } from "lucide-react";
-import { api } from "../api/client";
+import { fetchJson } from "../api";
 
 interface SignupEntry {
   id: number;
@@ -33,20 +33,29 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchSignups = useCallback(() => {
-    api.events.getSignups.query({ params: { id: eventId } })
-      .then((res: { status: number; body: { signups?: SignupEntry[]; authenticated: boolean; role: string; can_manage: boolean; dietary_summary?: Record<string, number>; team_dietary_summary?: Record<string, number> } | unknown }) => {
-        if (res.status === 200) {
-          const typed = res.body as { signups?: SignupEntry[]; authenticated: boolean; role: string; can_manage: boolean; dietary_summary?: Record<string, number>; team_dietary_summary?: Record<string, number> };
-          setSignups(typed.signups || []);
-          setIsAuthenticated(typed.authenticated);
-          setUserRole(typed.role);
-          setCanManage(typed.can_manage);
-          setDietarySummary(typed.dietary_summary || null);
-          setTeamDietarySummary(typed.team_dietary_summary || null);
-          
-          const own = (typed.signups || []).find((s: SignupEntry) => s.is_own);
-          if (own) setMySignup({ bringing: own.bringing, notes: own.notes, prep_hours: own.prep_hours || 0 });
-        }
+    fetchJson<{
+      signups?: SignupEntry[];
+      authenticated: boolean;
+      role: string;
+      can_manage: boolean;
+      dietary_summary?: Record<string, number>;
+      team_dietary_summary?: Record<string, number>;
+    }>(`/api/events/signups/${eventId}`)
+      .then((data) => {
+        setSignups(data.signups || []);
+        setIsAuthenticated(data.authenticated);
+        setUserRole(data.role);
+        setCanManage(data.can_manage);
+        setDietarySummary(data.dietary_summary || null);
+        setTeamDietarySummary(data.team_dietary_summary || null);
+
+        const own = (data.signups || []).find((s: SignupEntry) => s.is_own);
+        if (own)
+          setMySignup({
+            bringing: own.bringing,
+            notes: own.notes,
+            prep_hours: own.prep_hours || 0,
+          });
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -57,9 +66,9 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   const handleSignUp = async () => {
     setIsSaving(true);
     try {
-      await api.events.submitSignup.mutation({ 
-        params: { id: eventId },
-        body: mySignup || { bringing: "", notes: "", prep_hours: 0 }
+      await fetchJson(`/api/events/signups/${eventId}`, {
+        method: "POST",
+        body: JSON.stringify(mySignup || { bringing: "", notes: "", prep_hours: 0 })
       });
     } catch (e) {
       console.error(e);
@@ -69,24 +78,26 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   };
 
   const handleRemove = async () => {
-    await api.events.deleteMySignup.mutation({ params: { id: eventId } });
+    await fetchJson(`/api/events/signups/${eventId}`, {
+      method: "DELETE"
+    });
     setMySignup(null);
     fetchSignups();
   };
 
   const toggleAttendance = async (userId: string, currentStatus: boolean) => {
-    await api.events.updateUserAttendance.mutation({ 
-      params: { id: eventId, userId },
-      body: { attended: !currentStatus }
+    await fetchJson(`/api/events/signups/${eventId}/attendance/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ attended: !currentStatus })
     });
     fetchSignups();
   };
 
   const selfCheckIn = async () => {
     const isCurrentlyAttended = myEntry?.attended || false;
-    await api.events.updateMyAttendance.mutation({ 
-      params: { id: eventId },
-      body: { attended: !isCurrentlyAttended }
+    await fetchJson(`/api/events/signups/${eventId}/attendance`, {
+      method: "PATCH",
+      body: JSON.stringify({ attended: !isCurrentlyAttended })
     });
     fetchSignups();
   };

@@ -2,7 +2,7 @@ import { AppEnv, ensureAdmin } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { getLogisticsSummaryRoute, exportLogisticsEmailsRoute } from "../../../shared/schemas/contracts/logisticsContract";
+import { getLogisticsSummaryRoute, exportLogisticsEmailsRoute } from "../../../shared/routes/logistics";
 import { decrypt } from "../../utils/crypto";
 
 export const logisticsRouter = new OpenAPIHono<AppEnv>();

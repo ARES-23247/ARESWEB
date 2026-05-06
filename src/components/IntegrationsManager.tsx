@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Settings, Save } from "lucide-react";
 import { ZulipCard } from "./integrations/ZulipCard";
 import { GithubCard } from "./integrations/GithubCard";
 import { SocialCard } from "./integrations/SocialCard";
 import { DataBackupCard } from "./integrations/DataBackupCard";
 import { ResendCard } from "./integrations/ResendCard";
-import { api } from "../api/client";
+import { fetchJson } from "../api";
 import { useForm, useWatch } from "react-hook-form";
 
 type SettingsData = Record<string, string>;
@@ -19,19 +19,26 @@ export default function IntegrationsManager() {
   const { handleSubmit, reset, setValue, control, formState: { isDirty } } = useForm<SettingsData>();
   const localSettings = useWatch({ control });
 
-  const { data, isLoading, isError } = api.settings.getSettings.useQuery(["admin_settings"], {});
+  const { data: rawData, isLoading, isError } = useQuery({
+    queryKey: ["admin_settings"],
+    queryFn: () => fetchJson<{ settings: Record<string, string> }>("/api/settings")
+  });
 
   useEffect(() => {
-    if (data?.body?.settings) {
-      const merged: SettingsData = { ...data.body.settings };
+    if (rawData?.settings) {
+      const merged: SettingsData = { ...rawData.settings };
       if (merged["CALENDAR_ID"] && !merged["CALENDAR_ID_INTERNAL"]) {
         merged["CALENDAR_ID_INTERNAL"] = merged["CALENDAR_ID"];
       }
       reset(merged);
     }
-  }, [data?.body?.settings, reset]);
+  }, [rawData?.settings, reset]);
 
-  const saveMutation = api.settings.updateSettings.useMutation({
+  const saveMutation = useMutation({
+    mutationFn: (body: SettingsData) => fetchJson<{ success?: boolean }>("/api/settings", {
+      method: "PUT",
+      body: JSON.stringify(body)
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_settings"] });
       setSuccessMsg("Integrations synchronized securely.");
@@ -40,7 +47,7 @@ export default function IntegrationsManager() {
   });
 
   const onFormSubmit = (data: SettingsData) => {
-    saveMutation.mutate({ body: data });
+    saveMutation.mutate(data);
   };
 
   const handleChange = (key: string, value: string) => {
