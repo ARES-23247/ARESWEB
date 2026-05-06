@@ -4,7 +4,8 @@
 
 - v6.6 TypeScript Strictness - Phases 21-26 (shipped 2026-05-05)
 - v6.7 TypeScript Any Elimination - Phases 27-33 (shipped 2026-05-06)
-- **v6.8 Hono Zod OpenAPI Migration** - Phases 34-37 (active)
+- v6.8 Hono Zod OpenAPI Migration - Phases 34-37 (shipped 2026-05-06)
+- **v6.9 Type Safety Debt Elimination** - Phases 38-42 (active)
 
 ## Phases
 
@@ -35,105 +36,142 @@
 
 </details>
 
-### v6.8 Hono Zod OpenAPI Migration (Phases 34-37)
+<details>
+<summary>v6.8 Hono Zod OpenAPI Migration (Phases 34-37) - SHIPPED 2026-05-06</summary>
 
-**Goal**: Replace ts-rest with @hono/zod-openapi to achieve full compile-time type safety and auto-generated OpenAPI docs.
+- [x] Phase 34: Infrastructure and Proof of Concept
+- [x] Phase 35: Simple Route Migration
+- [x] Phase 36: Complex Route Migration
+- [x] Phase 37: Cleanup and OpenAPI Spec
 
-- [x] **Phase 34: Infrastructure and Proof of Concept** - Install deps, validate middleware compat, migrate tba.ts as reference
-- [x] **Phase 35: Simple Route Migration** - Migrate 12 routes with 5 or fewer endpoints
-- [x] **Phase 36: Complex Route Migration** - Migrate 14 routes with auth guards, uploads, many endpoints
-- [/] **Phase 37: Cleanup and OpenAPI Spec** - Remove ts-rest deps, serve OpenAPI docs, migrate frontend hooks
+</details>
+
+### v6.9 Type Safety Debt Elimination (Phases 38-42)
+
+**Goal**: Eliminate all `as any` casts, `eslint-disable` directives, and `@ts-expect-error` suppressions from production code to achieve true compile-time type safety.
+
+**Baseline metrics** (2026-05-06):
+- `as any` casts (non-test): 91
+- File-level `eslint-disable`: 70
+- Inline `eslint-disable-next-line`: 58
+- `@ts-expect-error`: 17
+
+- [ ] **Phase 38: Typed Hono Handler Wrapper** - Create generic `typedHandler<R>()` that infers `c.req.valid()` types from route schema
+  - **Plans**: 0
+- [ ] **Phase 39: Frontend API Type Unification** - Re-export `z.infer<>` types from shared/routes/ into frontend hooks and components
+  - **Plans**: 0
+  - **Depends on**: Phase 38
+- [ ] **Phase 40: D1 Kysely Type Wrappers** - Replace `@ts-expect-error` with typed query helper functions
+  - **Plans**: 0
+- [ ] **Phase 41: React Hooks Dependency Audit** - Refactor suppressed `exhaustive-deps` in SimulationPlayground, ProfileEditor
+  - **Plans**: 0
+- [ ] **Phase 42: Final Sweep and CI Hardening** - Remove all remaining `eslint-disable` directives, verify zero bypasses
+  - **Plans**: 0
+  - **Depends on**: Phase 38, 39, 40, 41
 
 ## Phase Details
 
-### Phase 34: Infrastructure and Proof of Concept
+### Phase 38: Typed Hono Handler Wrapper
 
-**Goal**: Install @hono/zod-openapi, validate middleware compatibility, and migrate tba.ts as the reference implementation proving the pattern works end-to-end.
+**Goal**: Create a generic `typedHandler<R>()` utility that extracts request parameter types from `createRoute()` definitions, eliminating the need for `as any` casts across all 50+ backend route files.
 
 **Depends on**: Nothing (foundation phase)
 
-**Requirements**: INFRA-01, INFRA-02, INFRA-03, ROUTE-01, VAL-01, VAL-02
+**Requirements**: WRAP-01, WRAP-02, WRAP-03, VAL-01, VAL-02
 
 **Success Criteria**:
-1. @hono/zod-openapi installed and compiling with existing Zod v4 schemas
-2. ensureAuth/ensureAdmin/rateLimitMiddleware verified working with OpenAPIHono
-3. tba.ts fully migrated: 3 endpoints using createRoute() + app.openapi()
-4. tba.test.ts passes without changes (or minimal mock adjustments)
-5. tsc --noEmit passes
-6. Migration pattern documented for Phase 35-36 execution
+1. `typedHandler<typeof myRoute>()` correctly infers `json`, `params`, `query` from route schema
+2. At least 25 route files converted — `as any` count drops by 50%+
+3. File-level `eslint-disable @typescript-eslint/no-explicit-any` removed from converted files
+4. All existing tests pass without changes
+5. `tsc --noEmit` and `eslint --max-warnings 0` pass
 
-**Plans**: 0 (run /gsd-plan-phase 34 to create)
+**Plans**: 0 (run /gsd-plan-phase 38 to create)
 
 ---
 
-### Phase 35: Simple Route Migration
+### Phase 39: Frontend API Type Unification
 
-**Goal**: Migrate 12 route files with 5 or fewer endpoints each, using the pattern established in Phase 34.
+**Goal**: Re-export `z.infer<>` types from backend route schemas into frontend hooks and components, eliminating inline `any` casts for API response data.
 
-**Depends on**: Phase 34 (reference implementation and validated pattern)
+**Depends on**: Phase 38 (typed handler pattern established)
 
-**Requirements**: ROUTE-02, ROUTE-04, VAL-01, VAL-02
+**Requirements**: FRONT-01, FRONT-02, FRONT-03, VAL-01, VAL-02
 
-**Target files** (12):
-- awards.ts, badges.ts, comments.ts, entities.ts, locations.ts
-- logistics.ts, notifications.ts, points.ts, seasons.ts
-- settings.ts, socialQueue.ts, store.ts
+**Target files**:
+- JudgesHub.tsx (6 inline disables), Events.tsx, About.tsx, Leaderboard.tsx
+- Academy.tsx, PrintPortfolio.tsx, MemberImpactOverview.tsx
+- ProfileEditor.tsx, TaskBoardPage.tsx, RevisionManager.tsx
+- useDashboardSession.ts, SEO.tsx, TiptapRenderer.tsx
 
 **Success Criteria**:
-1. All 12 files use createRoute() + app.openapi() pattern
-2. Zero createHonoEndpoints() or s.router() calls in migrated files
-3. All existing tests pass for migrated routes
-4. URL paths and response shapes unchanged
-5. tsc --noEmit passes after each wave
+1. All frontend `no-explicit-any` disables removed from listed components
+2. Shared type definitions exported from `shared/routes/` or `shared/types/`
+3. JudgesHub.tsx has zero inline `eslint-disable` comments
+4. All existing tests pass
+5. `tsc --noEmit` passes
 
-**Plans**: 0 (run /gsd-plan-phase 35 to create)
+**Plans**: 0 (run /gsd-plan-phase 39 to create)
 
 ---
 
-### Phase 36: Complex Route Migration
+### Phase 40: D1 Kysely Type Wrappers
 
-**Goal**: Migrate 14 route files with auth guards, file uploads, or many endpoints.
+**Goal**: Replace all 17 `@ts-expect-error` directives with typed Kysely query helper functions that properly handle D1's untyped responses.
 
-**Depends on**: Phase 35 (simple routes validated, pattern battle-tested)
+**Depends on**: Nothing (independent workstream)
 
-**Requirements**: ROUTE-03, ROUTE-04, VAL-01, VAL-02
-
-**Target files** (14):
-- analytics.ts, communications.ts, docs.ts, finance.ts, github.ts
-- judges.ts, posts.ts, profiles.ts, sponsors.ts, tasks.ts
-- users.ts, zulip.ts
-- events/ (handlers.ts + index.ts)
-- inquiries/ (handlers.ts + index.ts)
-- media/ (handlers.ts + index.ts)
-- outreach/ (handlers.ts + index.ts)
+**Requirements**: DB-01, DB-02, VAL-01, VAL-02
 
 **Success Criteria**:
-1. All 14 route modules use createRoute() + app.openapi()
-2. File upload routes (media/) work with OpenAPIHono multipart handling
-3. Auth middleware chains (ensureAuth, ensureAdmin) properly applied
-4. Handler module pattern (separate handlers.ts + index.ts) migrated cleanly
-5. All existing tests pass
+1. Zero `@ts-expect-error` directives in production code
+2. Typed helper functions (e.g., `typedQuery<T>()`) encapsulate D1 edge cases
+3. All database queries return properly typed results
+4. All existing tests pass
+5. `tsc --noEmit` passes
 
-**Plans**: 0 (run /gsd-plan-phase 36 to create)
+**Plans**: 0 (run /gsd-plan-phase 40 to create)
 
 ---
 
-### Phase 37: Cleanup and OpenAPI Spec
+### Phase 41: React Hooks Dependency Audit
 
-**Goal**: Remove all ts-rest dependencies, serve auto-generated OpenAPI spec, and validate the final build.
+**Goal**: Refactor components with suppressed `react-hooks/exhaustive-deps` warnings to use stable dependency patterns (refs, extracted callbacks, or `useCallback`).
 
-**Depends on**: Phase 36 (all routes migrated)
+**Depends on**: Nothing (independent workstream)
 
-**Requirements**: CLEAN-01 through CLEAN-04, DOCS-01, DOCS-02, VAL-01 through VAL-05
+**Requirements**: HOOKS-01, HOOKS-02, VAL-01, VAL-03
+
+**Target files**:
+- SimulationPlayground.tsx (3 suppressions — animation frame lifecycle)
+- ProfileEditor.tsx (1 suppression)
+- SeasonEditor.tsx (file-level `set-state-in-effect` disable)
+- TeamAvailability.tsx, EventSelector.tsx, ScoutingTool.tsx
 
 **Success Criteria**:
-1. @ts-rest/core, @ts-rest/open-api, ts-rest-hono removed from package.json
-2. All 27 contract files in shared/schemas/contracts/ removed or converted
-3. shared/types/contracts.ts updated (remove ts-rest re-exports)
-4. /api/docs endpoint serves valid OpenAPI 3.1 JSON spec
-5. All 926+ tests pass
-6. tsc --noEmit and eslint pass clean
-7. Zero as-any casts from router mounting
-8. Bundle size equal or smaller
+1. All `react-hooks/exhaustive-deps` suppressions removed or justified with comment
+2. All `react-hooks/set-state-in-effect` suppressions refactored
+3. No new rendering bugs introduced (manual + automated verification)
+4. `eslint --max-warnings 0` passes
 
-**Plans**: 0 (run /gsd-plan-phase 37 to create)
+**Plans**: 0 (run /gsd-plan-phase 41 to create)
+
+---
+
+### Phase 42: Final Sweep and CI Hardening
+
+**Goal**: Remove every remaining `eslint-disable` directive from production code and lock down CI to prevent regressions.
+
+**Depends on**: Phase 38, 39, 40, 41
+
+**Requirements**: SWEEP-01, SWEEP-02, SWEEP-03, VAL-01, VAL-02, VAL-03
+
+**Success Criteria**:
+1. `as any` casts in non-test code: **0**
+2. File-level `eslint-disable` in non-test code: **0**
+3. `@ts-expect-error` in production code: **0**
+4. All CI gates pass: `tsc`, `eslint --max-warnings 0`, `npm run build`
+5. CI config updated with explicit `no-explicit-any: error` (no longer just `warn`)
+6. All 926+ tests pass
+
+**Plans**: 0 (run /gsd-plan-phase 42 to create)

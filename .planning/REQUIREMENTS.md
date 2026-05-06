@@ -1,64 +1,60 @@
-# Requirements - v6.8 Hono Zod OpenAPI Migration
+# Requirements - v6.9 Type Safety Debt Elimination
 
-## Infrastructure
+## Handler Type Safety
 
-- [ ] **INFRA-01**: Install @hono/zod-openapi and verify it compiles with existing Zod v4 schemas
-- [ ] **INFRA-02**: Create a reusable migration pattern that standardizes how routes are defined
-- [ ] **INFRA-03**: Verify ensureAuth, ensureAdmin, and rateLimitMiddleware work with OpenAPIHono instances
+- [ ] **WRAP-01**: Create a `typedHandler<R>()` generic utility that infers request body, params, and query types from a `createRoute()` schema definition
+- [ ] **WRAP-02**: Apply `typedHandler` across all 50+ backend route files, removing `as any` casts from handler signatures
+- [ ] **WRAP-03**: Remove all file-level `/* eslint-disable @typescript-eslint/no-explicit-any */` from converted backend route files
 
-## Route Migration
+## Frontend Type Unification
 
-- [ ] **ROUTE-01**: Migrate tba.ts (3 endpoints) as proof-of-concept reference
-- [ ] **ROUTE-02**: Migrate 12 simple route files (5 or fewer endpoints each)
-- [ ] **ROUTE-03**: Migrate 14 complex route files (auth guards, file uploads, many endpoints)
-- [ ] **ROUTE-04**: All migrated routes preserve identical URL paths, methods, and response shapes
+- [ ] **FRONT-01**: Export `z.infer<>` types from shared route schemas for all API response shapes used by frontend components
+- [ ] **FRONT-02**: Replace all inline `any` casts in frontend pages (JudgesHub, Events, About, Leaderboard, Academy, PrintPortfolio) with imported types
+- [ ] **FRONT-03**: Remove all `eslint-disable @typescript-eslint/no-explicit-any` from frontend component files
 
-## Contract Removal
+## Database Type Safety
 
-- [ ] **CLEAN-01**: Remove all 27 initContract().router() definitions from shared/schemas/contracts/
-- [ ] **CLEAN-02**: Remove @ts-rest/core, @ts-rest/open-api, ts-rest-hono from package.json
-- [ ] **CLEAN-03**: Remove initServer, createHonoEndpoints, and s.router() from all route files
-- [ ] **CLEAN-04**: Remove or update shared/types/contracts.ts
+- [ ] **DB-01**: Create typed Kysely query helper functions that properly handle D1's untyped result sets
+- [ ] **DB-02**: Replace all 17 `@ts-expect-error` directives with calls to typed helpers
 
-## OpenAPI Documentation
+## React Hooks Compliance
 
-- [ ] **DOCS-01**: Auto-generate OpenAPI 3.1 spec from route definitions
-- [ ] **DOCS-02**: Serve spec at /api/docs or /api/openapi.json endpoint
+- [ ] **HOOKS-01**: Refactor all `react-hooks/exhaustive-deps` suppressions to use stable dependency patterns (refs, useCallback, extracted functions)
+- [ ] **HOOKS-02**: Refactor all `react-hooks/set-state-in-effect` suppressions to use proper effect patterns
 
-## Validation
+## Final Validation
 
+- [ ] **SWEEP-01**: Zero `as any` casts in non-test production code
+- [ ] **SWEEP-02**: Zero file-level `eslint-disable` directives in non-test production code
+- [ ] **SWEEP-03**: Promote `@typescript-eslint/no-explicit-any` from `warn` to `error` in ESLint config
 - [ ] **VAL-01**: All 926+ existing tests pass
-- [ ] **VAL-02**: tsc --noEmit passes with zero errors
-- [ ] **VAL-03**: eslint passes with zero errors
-- [ ] **VAL-04**: Zero as-any casts related to router/contract mounting remain
-- [ ] **VAL-05**: Bundle size is equal or smaller than before migration
+- [ ] **VAL-02**: `tsc --noEmit` passes with zero errors
+- [ ] **VAL-03**: `eslint --max-warnings 0` passes with zero warnings
 
 ## Traceability
 
 | Requirement | Phase |
 |-------------|-------|
-| INFRA-01 | 34 |
-| INFRA-02 | 34 |
-| INFRA-03 | 34 |
-| ROUTE-01 | 34 |
-| ROUTE-02 | 35 |
-| ROUTE-03 | 36 |
-| ROUTE-04 | 35, 36 |
-| CLEAN-01 | 37 |
-| CLEAN-02 | 37 |
-| CLEAN-03 | 37 |
-| CLEAN-04 | 37 |
-| DOCS-01 | 37 |
-| DOCS-02 | 37 |
-| VAL-01 | 34-37 |
-| VAL-02 | 34-37 |
-| VAL-03 | 37 |
-| VAL-04 | 37 |
-| VAL-05 | 37 |
+| WRAP-01 | 38 |
+| WRAP-02 | 38 |
+| WRAP-03 | 38 |
+| FRONT-01 | 39 |
+| FRONT-02 | 39 |
+| FRONT-03 | 39 |
+| DB-01 | 40 |
+| DB-02 | 40 |
+| HOOKS-01 | 41 |
+| HOOKS-02 | 41 |
+| SWEEP-01 | 42 |
+| SWEEP-02 | 42 |
+| SWEEP-03 | 42 |
+| VAL-01 | 38-42 |
+| VAL-02 | 38-42 |
+| VAL-03 | 42 |
 
 ## Out of Scope
 
-- Frontend API client changes (stays as raw fetch)
-- Database schema modifications
-- New API endpoints or features
-- oRPC migration (rejected, paradigm mismatch)
+- Test files: `*.test.ts` / `*.test.tsx` may retain `any` casts for mock flexibility
+- `node_modules/` and `tools/` directories
+- New features or API changes
+- Schema restructuring beyond type re-exports

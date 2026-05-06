@@ -1,63 +1,64 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.8
-milestone_name: Hono Zod OpenAPI Migration
+milestone: v6.9
+milestone_name: Type Safety Debt Elimination
 status: Planned
-last_updated: "2026-05-06T12:01:00.000Z"
+last_updated: "2026-05-06T20:09:00.000Z"
 last_activity: 2026-05-06
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 3
-  percent: 75
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # System State
 
-**Current Milestone**: v6.8 — Hono Zod OpenAPI Migration
+**Current Milestone**: v6.9 — Type Safety Debt Elimination
 **Status**: Planned
 **Last activity**: 2026-05-06
 
 ## Current Position
 
-Phase: 37-cleanup-and-frontend
-Plan: frontend-client-migration-plan.md
-Status: In Progress
-Last activity: 2026-05-06 — Backend migration confirmed 100% complete; frontend shim layer (honoReactQuery.ts) established.
+Phase: 38-typed-hono-handler-wrapper
+Plan: (none — run /gsd-plan-phase 38 to create)
+Status: Not Started
+Last activity: 2026-05-06 — Milestone created from technical debt audit
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** Championship-grade FIRST Robotics team management platform
-**Current focus:** Replace ts-rest with @hono/zod-openapi for native Zod v4 type inference
+**Current focus:** Eliminate all type safety bypasses (as any, eslint-disable, ts-expect-error) from production code
 
 ## Accumulated Context
 
-### Key Decisions (v6.8)
+### Key Decisions (v6.9)
 
-1. **@hono/zod-openapi over oRPC**: Already 100% Hono backend; native integration eliminates impedance mismatch
-2. **@hono/zod-openapi over ts-rest RC**: RC is a band-aid; migration eliminates the entire contract-layer abstraction
-3. **Frontend Migration IN PROGRESS**: React frontend is transitioning from ts-rest to `@tanstack/react-query` using a custom shim (`src/api/honoReactQuery.ts`) backed by Hono `hc()`.
-4. **Identical URLs**: All REST endpoints keep existing paths — zero breaking changes for consumers
+1. **Phase 38 is the highest-leverage work**: A single `typedHandler<R>()` wrapper eliminates ~50 `as any` casts and ~40 file-level eslint-disables across all backend routes
+2. **Test files are out of scope**: `*.test.ts` may retain `any` casts for mock flexibility — only production code is targeted
+3. **Phases 38-39 are sequential** (frontend types depend on backend handler types), but **40-41 are independent** and can run in parallel
+4. **Phase 42 is the gatekeeper**: Only runs after all other phases complete, promotes `no-explicit-any` from warn to error
+
+### Baseline Metrics (2026-05-06)
+
+- `as any` casts (non-test): 91
+- File-level `eslint-disable`: 70
+- Inline `eslint-disable-next-line`: 58
+- `@ts-expect-error`: 17
+- Backend route files: 51
+- Frontend source files: 318
 
 ### Anti-Patterns to Avoid
 
-1. Migrating frontend to Hono RPC client (unnecessary complexity, raw fetch is fine)
-2. Changing URL structures during migration (breaks existing integrations)
-3. Migrating all routes simultaneously (risk too high — wave-based approach required)
-4. Removing old contracts before new routes are validated (keep both temporarily)
-
-### Research Insights
-
-- `@hono/zod-openapi` is Hono-native, uses `createRoute()` + `app.openapi()` pattern
-- Zod schemas transfer directly — only the wrapper/mount layer changes
-- Middleware (`ensureAuth`, `ensureAdmin`, `rateLimitMiddleware`) works with OpenAPIHono
-- Free OpenAPI spec generation at `/api/docs`
-- Net dependency reduction: remove 3 packages (`@ts-rest/core`, `@ts-rest/open-api`, `ts-rest-hono`)
+1. Replacing `as any` with `as unknown as T` — that's just hiding the problem
+2. Creating overly broad generic types that lose specificity
+3. Breaking runtime behavior to satisfy the type checker
+4. Removing eslint-disable without actually fixing the underlying type issue
 
 ## Session Continuity
 
-**Last session**: Started v6.8 milestone — Hono Zod OpenAPI Migration
-**Next step**: Define requirements and create roadmap
+**Last session**: Created v6.9 milestone from technical debt audit
+**Next step**: Run /gsd-plan-phase 38 to create the typed handler wrapper plan
