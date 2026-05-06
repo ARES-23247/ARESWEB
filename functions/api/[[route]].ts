@@ -169,7 +169,7 @@ apiRouter.use("*", cors({
 
 // ── Distributed Persistent Rate Limiting (D1 Backed) ─────────────────
 apiRouter.use("/auth/*", persistentRateLimitMiddleware(30, 60));
-apiRouter.use("/inquiries/*", persistentRateLimitMiddleware(10, 60)); 
+apiRouter.use("/inquiries/*", persistentRateLimitMiddleware(30, 60)); 
 apiRouter.use("/comments/*", persistentRateLimitMiddleware(20, 60));
 
 
