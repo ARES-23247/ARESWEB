@@ -417,8 +417,7 @@ export default function SimulationPlayground() {
       const timer = setTimeout(() => compileCode(files), 0);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simId, files, isChatLoading]);
+  }, [simId, files, isChatLoading, compileCode]);
 
   // Listen for Telemetry from Iframe
   useEffect(() => {
@@ -505,8 +504,7 @@ export default function SimulationPlayground() {
         });
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [getSnapshots, restoreSnapshot]);
 
 
 
@@ -736,7 +734,7 @@ export default function SimulationPlayground() {
   }, []);
 
   // ── Save ──
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!simName.trim()) return;
     setIsSaving(true);
     try {
@@ -768,9 +766,9 @@ export default function SimulationPlayground() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [simName, files, simId]);
 
-  const handleShareGist = async () => {
+  const handleShareGist = useCallback(async () => {
     setIsSharingGist(true);
     try {
       const res = await fetch("/api/simulations/gist", {
@@ -799,7 +797,7 @@ export default function SimulationPlayground() {
     } finally {
       setIsSharingGist(false);
     }
-  };
+  }, [simName, files]);
 
   // ── Keyboard Shortcuts ──
   useEffect(() => {
@@ -826,8 +824,7 @@ export default function SimulationPlayground() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFullscreen, handleRun, handleFormatCode]);
+  }, [isFullscreen, handleRun, handleFormatCode, handleSave]);
   const content = (
     <div
       className={isFullscreen ? "fixed inset-0 z-[100] bg-obsidian flex flex-col w-full h-full overflow-hidden" : "w-full h-full"}

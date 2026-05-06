@@ -53,7 +53,6 @@ export default function EventSelector({ onEventSelect, selectedEventKey }: Event
   }, [seasonKey]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchEvents();
   }, [fetchEvents]);
 

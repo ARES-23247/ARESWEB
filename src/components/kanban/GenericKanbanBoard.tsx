@@ -74,7 +74,6 @@ export function GenericKanbanBoard<T>({
 
   // Sync with external items
   React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalItems(items.map(item => ({
       id: String(getId(item)),
       item,

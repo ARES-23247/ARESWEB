@@ -10,9 +10,9 @@ import { DB } from "../../../shared/schemas/database";
 /**
  * Enhanced Persistent Rate Limit Check
  */
-export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userAgent: string, limit: number, windowSeconds: number): Promise<boolean> {
+export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userAgent: string, limit: number, windowSeconds: number, path?: string): Promise<boolean> {
   if (!db) return true; // Fall open if middleware wasn't attached
-  
+
   const now = Math.floor(Date.now() / 1000);
   // Composite key for D1 storage
   const compositeKey = `${ip}:${userAgent.substring(0, 64)}`;
@@ -29,10 +29,17 @@ export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userA
         count: sql`CASE WHEN expires_at < ${now} THEN 1 ELSE count + 1 END`,
         expires_at: sql`CASE WHEN expires_at < ${now} THEN ${now + windowSeconds} ELSE expires_at END`
       }))
-      .returning("count")
+      .returning(["count", "expires_at"])
       .executeTakeFirst();
 
-    return (result?.count ?? 0) <= limit;
+    const count = result?.count ?? 0;
+    const expires = result?.expires_at ?? 0;
+    const allowed = count <= limit;
+
+    // Log rate limit checks for debugging
+    console.log(`[RateLimit] ${path || "unknown"} IP=${ip} count=${count}/${limit} allowed=${allowed} expires_at=${expires} now=${now}`);
+
+    return allowed;
   } catch (err) {
     console.error("[RateLimit] Persistent check failed:", err);
     // Fall open on DB error or missing table so we don't bring down the API
@@ -113,7 +120,7 @@ export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) =>
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const db = c.get("db");
-    const allowed = await checkPersistentRateLimit(db, ip, ua, limit, windowSeconds);
+    const allowed = await checkPersistentRateLimit(db, ip, ua, limit, windowSeconds, c.req.path);
     if (!allowed) {
       if (db) {
         c.executionCtx.waitUntil(
@@ -122,7 +129,7 @@ export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) =>
             action: "SECURITY_BLOCK",
             actor: ip,
             resource_type: "persistent_rate_limit",
-            details: JSON.stringify({ reason: "D1 rate limit exceeded", path: c.req.path, ua })
+            details: JSON.stringify({ reason: "D1 rate limit exceeded", path: c.req.path, ua, limit, windowSeconds })
           }).execute().catch(console.error)
         );
       }

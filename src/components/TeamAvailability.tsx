@@ -43,7 +43,6 @@ export default function TeamAvailability() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchPresence();
     const interval = setInterval(fetchPresence, 120000); // 2 minute polling
     return () => clearInterval(interval);

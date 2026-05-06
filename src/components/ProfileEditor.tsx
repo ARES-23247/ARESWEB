@@ -75,8 +75,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
         show_on_about: data.show_on_about !== undefined ? Boolean(data.show_on_about) : true,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminEditUserId, reset, profileRes]);
+  }, [adminEditUserId, reset, profileRes, rawAdminRes, rawMeRes]);
 
   const meMutation = useUpdateMe({
     onSuccess: () => {

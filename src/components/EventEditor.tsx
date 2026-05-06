@@ -130,7 +130,6 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         return d.slice(0, 16).replace(" ", "T");
       };
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsDeleted(event.is_deleted === 1);
       setIsException(event.recurring_exception === 1);
       reset({

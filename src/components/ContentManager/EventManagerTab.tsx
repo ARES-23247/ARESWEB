@@ -51,7 +51,6 @@ export default function EventManagerTab({
   useEffect(() => {
     if (events.length > 0) {
       if (cursor) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setAllEvents(prev => {
           const newIds = new Set(events.map(e => e.id));
           const filtered = prev.filter(e => !newIds.has(e.id));
