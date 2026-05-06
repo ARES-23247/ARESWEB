@@ -19,7 +19,6 @@ import { githubContract } from "./githubContract";
 import { zulipContract } from "./zulipContract";
 import { commentContract } from "./commentContract";
 import { judgeContract } from "./judgeContract";
-import { tbaContract } from "./tbaContract";
 import { communicationsContract } from "./communicationsContract";
 import { taskContract } from "./taskContract";
 import { financeContract } from "./financeContract";
@@ -56,7 +55,6 @@ export const apiContract = c.router({
   zulip: c.router(zulipContract, { pathPrefix: "/zulip" }),
   comments: c.router(commentContract, { pathPrefix: "/comments" }),
   judges: c.router(judgeContract, { pathPrefix: "/judges" }),
-  tba: c.router(tbaContract, { pathPrefix: "/tba" }),
   communications: c.router(communicationsContract, {
     pathPrefix: "/communications",
   }),
@@ -93,7 +91,6 @@ export type { SocialQueueContract } from './socialQueueContract';
 export type { SponsorContract } from './sponsorContract';
 export type { StoreContract } from './storeContract';
 export type { TaskContract } from './taskContract';
-export type { TbaContract } from './tbaContract';
 export type { UserContract } from './userContract';
 export type { ZulipContract } from './zulipContract';
 
