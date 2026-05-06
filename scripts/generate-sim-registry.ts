@@ -120,6 +120,7 @@ ${imports}
 // ── Sim Component Registry ───────────────────────────────────────────────
 // Maps sim component IDs to their lazy-loaded components
 // Tag names are lowercased versions of the component IDs
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SIM_COMPONENTS: Record<string, React.ComponentType<any>> = {
 ${mappings}
 };

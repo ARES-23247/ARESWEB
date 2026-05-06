@@ -34,8 +34,7 @@ import * as Y from 'yjs';
 /**
  * Returns the full list of Tiptap extensions used by the ARES editor.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Library type gap: PartyKit provider types are incomplete for window globals
-export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: any, yfield: string = 'default') => [
+export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: unknown, yfield: string = 'default') => [
   GlobalDragHandle.configure({
     dragHandleWidth: 20,
     scrollTreshold: 100,
@@ -74,8 +73,7 @@ export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: 
   SlashCommands.configure({
     suggestion: {
       render: () => suggestionRenderer(CommandsList),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tiptap Suggestion type doesn't match our renderer
-    } as any,
+    } as Parameters<typeof SlashCommands.configure>[0]['suggestion'],
   }),
   Mention.configure({
     HTMLAttributes: { class: 'bg-ares-red/10 text-ares-red font-bold py-0.5 px-2 ares-cut-sm border border-ares-red/20' },
