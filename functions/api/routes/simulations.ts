@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { AppEnv, ensureAuth } from "../middleware";
@@ -8,11 +7,10 @@ import { logger } from "../../../src/utils/logger";
 // GitHub repository configuration
 // Centralized to avoid hardcoded references throughout the codebase
 function getGitHubConfig(c: Context<AppEnv>) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- System Boundary Type: Cloudflare env extensions
-  const env = c.env as any;
-  const owner = env.GITHUB_REPO_OWNER || 'ARES-23247';
-  const repo = env.GITHUB_REPO_NAME || 'ARESWEB';
-  const branch = env.GITHUB_BRANCH || 'main';
+  const env = c.env as Record<string, unknown>;
+  const owner = (env.GITHUB_REPO_OWNER as string) || 'ARES-23247';
+  const repo = (env.GITHUB_REPO_NAME as string) || 'ARESWEB';
+  const branch = (env.GITHUB_BRANCH as string) || 'main';
   return {
     owner,
     repo,
@@ -72,7 +70,7 @@ async function canModifySimulation(c: Context<AppEnv>, simId: string): Promise<b
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
 
-    const patSetting = config.find((s: any) => s.key === "GITHUB_PAT");
+    const patSetting = config.find((s) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
     if (!pat) return false;
@@ -91,7 +89,11 @@ async function canModifySimulation(c: Context<AppEnv>, simId: string): Promise<b
     if (!res.ok) return false;
 
 
-    const commits = await res.json() as any[];
+    const commits = await res.json() as { 
+      author?: { email: string };
+      committer?: { login: string };
+      commit?: { verification?: { verified: boolean } };
+    }[];
     if (!commits || commits.length === 0) return false;
 
     // Multi-factor ownership verification to prevent spoofing
@@ -108,10 +110,8 @@ async function canModifySimulation(c: Context<AppEnv>, simId: string): Promise<b
 
     // Tertiary: for unverified commits, verify committer identity via GitHub API
     // This prevents users from setting git config to use someone else's email
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- github_login is a planned extension to SessionUser
-    if (committerLogin && (sessionUser as any).github_login) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- github_login is a planned extension to SessionUser
-      if (committerLogin === (sessionUser as any).github_login) {
+    if (committerLogin && (sessionUser as { github_login?: string }).github_login) {
+      if (committerLogin === (sessionUser as { github_login?: string }).github_login) {
         return true;
       }
     }
@@ -318,7 +318,7 @@ simulationsRouter.post("/", ensureAuth, async (c: Context<AppEnv>) => {
     const getRes = await fetch(url, { headers });
     if (getRes.ok) {
 
-      const getJson = (await getRes.json()) as any;
+      const getJson = (await getRes.json()) as { sha: string };
       sha = getJson.sha;
       // File exists - check ownership before allowing update
       if (!(await canModifySimulation(c, simIdStr))) {
@@ -357,7 +357,7 @@ simulationsRouter.post("/", ensureAuth, async (c: Context<AppEnv>) => {
         }
 
 
-        const regJson = (await regGetRes.json()) as any;
+        const regJson = (await regGetRes.json()) as { sha: string; content: string };
         const regSha = regJson.sha;
         const regContentStr = decodeURIComponent(escape(atob(regJson.content)));
 
@@ -366,7 +366,7 @@ simulationsRouter.post("/", ensureAuth, async (c: Context<AppEnv>) => {
 
           // Check if already registered (could be added by another concurrent request)
 
-          if (!registry.simulators.some((s: any) => s.id === simIdStr)) {
+          if (!registry.simulators.some((s: { id: string }) => s.id === simIdStr)) {
             registry.simulators.push({
               id: simIdStr,
               name: name || simIdStr,
@@ -472,7 +472,7 @@ simulationsRouter.delete("/:id", async (c: Context<AppEnv>) => {
     const getRes = await fetch(url, { headers });
     if (getRes.ok) {
 
-      const getJson = (await getRes.json()) as any;
+      const getJson = (await getRes.json()) as { sha: string };
       sha = getJson.sha;
     }
 
@@ -501,13 +501,13 @@ simulationsRouter.delete("/:id", async (c: Context<AppEnv>) => {
     const regGetRes = await fetch(regUrl, { headers });
     if (regGetRes.ok) {
 
-      const regJson = (await regGetRes.json()) as any;
+      const regJson = (await regGetRes.json()) as { sha: string; content: string };
       const regSha = regJson.sha;
       const regContentStr = decodeURIComponent(escape(atob(regJson.content)));
       try {
         const registry = JSON.parse(regContentStr);
 
-        const filtered = registry.simulators.filter((s: any) => s.id !== simIdStr);
+        const filtered = registry.simulators.filter((s: { id: string }) => s.id !== simIdStr);
         
         if (filtered.length !== registry.simulators.length) {
           registry.simulators = filtered;
@@ -589,8 +589,7 @@ simulationsRouter.post("/gist", async (c: Context<AppEnv>) => {
       return c.json({ error: "Failed to create GitHub Gist" }, 500);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const gistResponse = await res.json() as any;
+    const gistResponse = await res.json() as { id: string; html_url: string };
     return c.json({ success: true, gistId: gistResponse.id, url: gistResponse.html_url });
   } catch (e) {
     console.error("[Simulations] Gist POST error:", e);
@@ -629,14 +628,12 @@ simulationsRouter.get("/gist/:id", async (c: Context<AppEnv>) => {
       return c.json({ error: "Failed to fetch from GitHub API" }, 500);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const gist = await res.json() as any;
+    const gist = await res.json() as { description: string; files: Record<string, { content: string }>; owner: { login: string }; public: boolean; created_at: string; updated_at: string };
     
     // Convert gist files object to simple Record<string, string>
     const files: Record<string, string> = {};
     for (const [filename, fileObj] of Object.entries(gist.files)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      files[filename] = (fileObj as any).content || "";
+      files[filename] = fileObj.content || "";
     }
 
     return c.json({
