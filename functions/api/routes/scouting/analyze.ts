@@ -1,9 +1,10 @@
+import { typedHandler } from "../../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
 import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   team_analysis: `You are an expert FTC (FIRST Tech Challenge) scouting analyst for Team ARES 23247. Analyze the provided team data thoroughly. Structure your response with clear markdown headings:
@@ -63,16 +64,16 @@ Be specific and use the data provided. Reference team numbers and stats.`,
 
 const analyzeRouter = new OpenAPIHono<AppEnv>();
 
-analyzeRouter.openapi(analyzeScoutingRoute, (async (c) => {
+analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingRoute>(async (c) => {
   const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
   if (!SYSTEM_PROMPTS[mode]) {
-    return c.json({ error: `Invalid analysis mode: ${mode}.` }, 400);
+    return c.json({ error: `Invalid analysis mode: ${mode}.` } as any, 400 as any);
   }
 
   const zaiKey = c.env.Z_AI_API_KEY;
   if (!zaiKey) {
-    return c.json({ error: "AI service (Z_AI_API_KEY) not configured." }, 500);
+    return c.json({ error: "AI service (Z_AI_API_KEY) not configured." } as any, 500 as any);
   }
 
   const systemPrompt = SYSTEM_PROMPTS[mode];
@@ -98,12 +99,12 @@ analyzeRouter.openapi(analyzeScoutingRoute, (async (c) => {
     if (!zaiRes.ok) {
       const errText = await zaiRes.text();
       console.error(`[Scouting Analyze] Z.ai error ${zaiRes.status}:`, errText);
-      return c.json({ error: `AI analysis failed (${zaiRes.status})` }, 502);
+      return c.json({ error: `AI analysis failed (${zaiRes.status})` } as any, 502 as any);
     }
 
     const data = (await zaiRes.json()) as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string }; usage?: { total_tokens?: number } };
     if (data.error) {
-      return c.json({ error: data.error.message || "AI returned an error" }, 502);
+      return c.json({ error: data.error.message || "AI returned an error" } as any, 502 as any);
     }
 
     const markdown = data.choices?.[0]?.message?.content || "";
@@ -134,12 +135,12 @@ analyzeRouter.openapi(analyzeScoutingRoute, (async (c) => {
       markdown,
       model: "GLM-5.1",
       tokensUsed,
-    }, 200);
+    } as any, 200 as any);
   } catch (err) {
     console.error("[Scouting Analyze] Error:", err);
-    return c.json({ error: "AI analysis request failed" }, 500);
+    return c.json({ error: "AI analysis request failed" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof analyzeScoutingRoute>);
+}));
 
 export default analyzeRouter;
 

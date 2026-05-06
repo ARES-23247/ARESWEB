@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -14,7 +15,7 @@ import {
   generateTokenRoute,
 } from "../../../shared/routes/sponsors";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
 
@@ -35,7 +36,7 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
 // Get all public sponsors
-sponsorsRouter.openapi(getSponsorsRoute, (async (c) => {
+sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -60,10 +61,10 @@ sponsorsRouter.openapi(getSponsorsRoute, (async (c) => {
     console.error("[Sponsors:List] Error", e);
     return c.json({ error: "Failed to fetch sponsors" }, 500);
   }
-}) as AppRouteHandler<typeof getSponsorsRoute>);
+}));
 
 // Get ROI dashboard by token
-sponsorsRouter.openapi(getRoiRoute, (async (c) => {
+sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) => {
   try {
     const { token } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -118,10 +119,10 @@ sponsorsRouter.openapi(getRoiRoute, (async (c) => {
     console.error("[Sponsors:Roi] Error", e);
     return c.json({ error: "Failed to fetch ROI" }, 500);
   }
-}) as AppRouteHandler<typeof getRoiRoute>);
+}));
 
 // Admin list all sponsors
-sponsorsRouter.openapi(adminListSponsorsRoute, (async (c) => {
+sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSponsorsRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const sponsors = await db.selectFrom("sponsors").selectAll().execute();
@@ -144,10 +145,10 @@ sponsorsRouter.openapi(adminListSponsorsRoute, (async (c) => {
     console.error("[Sponsors:AdminList] Error", e);
     return c.json({ error: "Admin access required" }, 500);
   }
-}) as AppRouteHandler<typeof adminListSponsorsRoute>);
+}));
 
 // Save/create sponsor
-sponsorsRouter.openapi(saveSponsorRoute, (async (c) => {
+sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -188,10 +189,10 @@ sponsorsRouter.openapi(saveSponsorRoute, (async (c) => {
     console.error("[Sponsors:Save] Error", e);
     return c.json({ error: "Failed to save sponsor" }, 500);
   }
-}) as AppRouteHandler<typeof saveSponsorRoute>);
+}));
 
 // Delete sponsor
-sponsorsRouter.openapi(deleteSponsorRoute, (async (c) => {
+sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -203,10 +204,10 @@ sponsorsRouter.openapi(deleteSponsorRoute, (async (c) => {
     console.error("[Sponsors:Delete] Error", e);
     return c.json({ error: "Failed to delete sponsor" }, 500);
   }
-}) as AppRouteHandler<typeof deleteSponsorRoute>);
+}));
 
 // Get admin tokens
-sponsorsRouter.openapi(getAdminTokensRoute, (async (c) => {
+sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -229,10 +230,10 @@ sponsorsRouter.openapi(getAdminTokensRoute, (async (c) => {
     console.error("[Sponsors:Tokens] Error", e);
     return c.json({ error: "Failed to fetch tokens" }, 500);
   }
-}) as AppRouteHandler<typeof getAdminTokensRoute>);
+}));
 
 // Generate token
-sponsorsRouter.openapi(generateTokenRoute, (async (c) => {
+sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRoute>(async (c) => {
   try {
     const { sponsor_id } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -254,6 +255,6 @@ sponsorsRouter.openapi(generateTokenRoute, (async (c) => {
     console.error("[Sponsors:GenerateToken] Error:", error);
     return c.json({ error: "Failed to generate token" }, 500);
   }
-}) as AppRouteHandler<typeof generateTokenRoute>);
+}));
 
 export default sponsorsRouter;

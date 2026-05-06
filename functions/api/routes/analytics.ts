@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -14,7 +15,7 @@ import {
   getPlatformAnalyticsRoute,
   searchRoute,
 } from "../../../shared/routes/analytics";
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const analyticsRouter = new OpenAPIHono<AppEnv>();
 
@@ -31,11 +32,11 @@ analyticsRouter.use("/sponsor-click", turnstileMiddleware());
 analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 
 // Track page view
-analyticsRouter.openapi(trackPageViewRoute, (async (c) => {
+analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `track:${ip}`, ua, 20, 600))) {
-    return c.json({ error: "Rate limit exceeded" }, 429);
+    return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
 
   const db = c.get("db") as Kysely<DB>;
@@ -53,18 +54,18 @@ analyticsRouter.openapi(trackPageViewRoute, (async (c) => {
       })
       .execute();
 
-    return c.json({ success: true }, 200);
+    return c.json({ success: true } as any, 200 as any);
   } catch {
-    return c.json({ success: false }, 500);
+    return c.json({ error: "Internal Server Error" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof trackPageViewRoute>);
+}));
 
 // Track sponsor click
-analyticsRouter.openapi(trackSponsorClickRoute, (async (c) => {
+analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsorClickRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `click:${ip}`, ua, 10, 600))) {
-    return c.json({ error: "Rate limit exceeded" }, 429);
+    return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
 
   const db = c.get("db") as Kysely<DB>;
@@ -73,7 +74,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, (async (c) => {
 
     // WR-04: Validate sponsor exists to prevent database pollution
     if (!sponsor_id || typeof sponsor_id !== 'string') {
-      return c.json({ error: "Invalid sponsor ID" }, 400);
+      return c.json({ error: "Invalid sponsor ID" } as any, 400 as any);
     }
 
     const sponsor = await db.selectFrom("sponsors")
@@ -83,7 +84,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, (async (c) => {
       .executeTakeFirst();
 
     if (!sponsor) {
-      return c.json({ error: "Invalid sponsor" }, 400);
+      return c.json({ error: "Invalid sponsor" } as any, 400 as any);
     }
 
     const yearMonth = new Date().toISOString().slice(0, 7);
@@ -101,14 +102,14 @@ analyticsRouter.openapi(trackSponsorClickRoute, (async (c) => {
       }))
       .execute();
 
-    return c.json({ success: true }, 200);
+    return c.json({ success: true } as any, 200 as any);
   } catch {
-    return c.json({ success: false }, 500);
+    return c.json({ error: "Internal Server Error" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof trackSponsorClickRoute>);
+}));
 
 // Get platform analytics (admin)
-analyticsRouter.openapi(getPlatformAnalyticsRoute, (async (c) => {
+analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [
@@ -197,15 +198,15 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, (async (c) => {
         totalStorage: 0,
         apiCalls: Number(apiCount?.total || 0),
       }
-    }, 200);
+    } as any, 200 as any);
   } catch (err) {
     console.error("[Analytics] Platform metrics error:", err);
-    return c.json({ error: "Failed to fetch platform metrics" }, 500);
+    return c.json({ error: "Failed to fetch platform metrics" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof getPlatformAnalyticsRoute>);
+}));
 
 // Get roster stats (admin)
-analyticsRouter.openapi(getRosterStatsRoute, (async (c) => {
+analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("user_profiles as u")
@@ -246,14 +247,14 @@ analyticsRouter.openapi(getRosterStatsRoute, (async (c) => {
       avatar: r.avatar ? String(r.avatar) : null
     }));
 
-    return c.json({ roster }, 200);
+    return c.json({ roster } as any, 200 as any);
   } catch {
-    return c.json({ error: "Failed to fetch roster stats" }, 500);
+    return c.json({ error: "Failed to fetch roster stats" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof getRosterStatsRoute>);
+}));
 
 // Get leaderboard
-analyticsRouter.openapi(getLeaderboardRoute, (async (c) => {
+analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("user as u")
@@ -287,14 +288,14 @@ analyticsRouter.openapi(getLeaderboardRoute, (async (c) => {
       };
     });
 
-    return c.json({ leaderboard }, 200);
+    return c.json({ leaderboard } as any, 200 as any);
   } catch {
-    return c.json({ error: "Failed to fetch leaderboard" }, 500);
+    return c.json({ error: "Failed to fetch leaderboard" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof getLeaderboardRoute>);
+}));
 
 // Get stats (admin)
-analyticsRouter.openapi(getStatsRoute, (async (c) => {
+analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
@@ -319,20 +320,20 @@ analyticsRouter.openapi(getStatsRoute, (async (c) => {
         gcal: !!dbSettings["GCAL_PRIVATE_KEY"]
       },
       securityBlocks: Number(securityBlocksRow?.total || 0)
-    }, 200);
+    } as any, 200 as any);
   } catch {
-    return c.json({ error: "Failed to fetch stats" }, 500);
+    return c.json({ error: "Failed to fetch stats" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof getStatsRoute>);
+}));
 
 // Search
-analyticsRouter.openapi(searchRoute, (async (c) => {
+analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   const { q } = c.req.valid("query");
   try {
     // SCA-FTS-01: Sanitize FTS5 query
     const qClean = (q || "").replace(/[^a-zA-Z0-9\s]/g, "").trim();
-    if (!qClean) return c.json({ results: [] }, 200);
+    if (!qClean) return c.json({ results: [] } as any, 200 as any);
     const ftsQ = `"${qClean}"*`;
 
     const [postsReq, eventsReq, docsReq] = await Promise.all([
@@ -347,10 +348,10 @@ analyticsRouter.openapi(searchRoute, (async (c) => {
       ...(docsReq.rows || []).map(r => ({ type: "doc" as const, id: r.id, title: r.title }))
     ];
 
-    return c.json({ results }, 200);
+    return c.json({ results } as any, 200 as any);
   } catch {
-    return c.json({ error: "Search failed" }, 500);
+    return c.json({ error: "Search failed" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof searchRoute>);
+}));
 
 export default analyticsRouter;

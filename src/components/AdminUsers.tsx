@@ -49,7 +49,7 @@ export default function AdminUsers() {
     queryFn: () => {
       const qs = new URLSearchParams({ limit: "100" });
       if (cursor) qs.append("cursor", cursor);
-      return fetchJson<{ users: User[], nextCursor?: string | null }>(`/api/users?${qs.toString()}`);
+      return fetchJson<{ users: User[], nextCursor?: string | null }>(`/api/users/admin/list?${qs.toString()}`);
     }
   });
 
@@ -73,7 +73,7 @@ export default function AdminUsers() {
   }, [users, cursor]);
 
   const patchMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string, body: Partial<User> }) => fetchJson<{ success?: boolean }>(`/api/users/${id}`, {
+    mutationFn: ({ id, body }: { id: string, body: Partial<User> }) => fetchJson<{ success?: boolean }>(`/api/users/admin/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body)
     }),
@@ -95,7 +95,7 @@ export default function AdminUsers() {
   }, [patchMutation]);
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/users/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/users/admin/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       toast.success("User removed successfully");

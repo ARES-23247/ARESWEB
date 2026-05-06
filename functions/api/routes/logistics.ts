@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { AppEnv, ensureAdmin } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -6,13 +7,13 @@ import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { getLogisticsSummaryRoute, exportLogisticsEmailsRoute } from "../../../shared/routes/logistics";
 import { decrypt } from "../../utils/crypto";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const logisticsRouter = new OpenAPIHono<AppEnv>();
 
 logisticsRouter.use("/admin/*", ensureAdmin);
 
-logisticsRouter.openapi(getLogisticsSummaryRoute, (async (c) => {
+logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisticsSummaryRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
 
   try {
@@ -52,9 +53,9 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, (async (c) => {
   } catch {
     return c.json({ error: "Logistics fetch failed" }, 500);
   }
-}) as AppRouteHandler<typeof getLogisticsSummaryRoute>);
+}));
 
-logisticsRouter.openapi(exportLogisticsEmailsRoute, (async (c) => {
+logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLogisticsEmailsRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   const secret = c.env.ENCRYPTION_SECRET;
 
@@ -99,7 +100,7 @@ logisticsRouter.openapi(exportLogisticsEmailsRoute, (async (c) => {
   } catch {
     return c.json({ error: "Failed to export roster" }, 500);
   }
-}) as AppRouteHandler<typeof exportLogisticsEmailsRoute>);
+}));
 
 export default logisticsRouter;
 

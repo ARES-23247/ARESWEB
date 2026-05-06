@@ -1,22 +1,21 @@
+import { typedHandler } from "../../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
 import { ftcEventsProxyRoute } from "../../../../shared/routes/scouting";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 const ftcEventsProxy = new OpenAPIHono<AppEnv>();
 
-ftcEventsProxy.openapi(ftcEventsProxyRoute, (async (c) => {
+ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRoute>(async (c) => {
   const { path } = c.req.valid("param");
   const username = c.env.FTC_EVENTS_USERNAME;
   const apiKey = c.env.FTC_EVENTS_API_KEY;
 
   if (!username || !apiKey) {
     return c.json(
-      { error: "FTC Events API credentials not configured. Contact an administrator.", status: 500 },
-      500
-    );
+      { error: "FTC Events API credentials not configured. Contact an administrator.", status: 500 } as any, 500 as any);
   }
 
   const authHeader = "Basic " + btoa(`${username}:${apiKey}`);
@@ -33,21 +32,17 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, (async (c) => {
     if (!upstream.ok) {
       console.error(`[FTC Events Proxy] Upstream ${upstream.status} for ${path}`);
       return c.json(
-        { error: `FTC Events upstream error: ${upstream.status}`, status: upstream.status },
-        502
-      );
+        { error: `FTC Events upstream error: ${upstream.status}`, status: upstream.status } as any, 502 as any);
     }
 
     const data = await upstream.json();
-    return c.json(data, 200);
+    return c.json(data as any, 200 as any);
   } catch (err) {
     console.error("[FTC Events Proxy] Fetch error:", err);
     return c.json(
-      { error: "Failed to reach FTC Events API", status: 502 },
-      502
-    );
+      { error: "Failed to reach FTC Events API", status: 502 } as any, 502 as any);
   }
-}) as AppRouteHandler<typeof ftcEventsProxyRoute>);
+}));
 
 export default ftcEventsProxy;
 

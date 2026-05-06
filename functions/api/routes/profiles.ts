@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -24,7 +25,7 @@ import {
   profileMeSchema,
   rosterMemberSchema,
 } from "../../../shared/routes/profiles";
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 const profilesRouter = new OpenAPIHono<AppEnv>();
 
@@ -65,7 +66,7 @@ profilesRouter.use("/me", ensureAuth);
 profilesRouter.use("/update-me", ensureAuth);
 profilesRouter.use("/avatar", ensureAuth);
 
-profilesRouter.openapi(getMeRoute, (async (c) => {
+profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => {
   const user = (await getSessionUser(c))!;
   const db = c.get("db") as Kysely<DB>;
 
@@ -170,9 +171,9 @@ profilesRouter.openapi(getMeRoute, (async (c) => {
     console.error("[Profile:Me] Error", err);
     return c.json({ error: "Failed to fetch your profile" }, 500);
   }
-}) as AppRouteHandler<typeof getMeRoute>);
+}));
 
-profilesRouter.openapi(updateMeRoute, (async (c) => {
+profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (c) => {
   const user = (await getSessionUser(c))!;
   try {
     const body = c.req.valid("json");
@@ -190,9 +191,9 @@ profilesRouter.openapi(updateMeRoute, (async (c) => {
     console.error("[Profile:UpdateMe] Error", e);
     return c.json({ error: "Failed to update profile" }, 500);
   }
-}) as AppRouteHandler<typeof updateMeRoute>);
+}));
 
-profilesRouter.openapi(updateAvatarRoute, (async (c) => {
+profilesRouter.openapi(updateAvatarRoute, typedHandler<typeof updateAvatarRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const image = (body as { image?: string | null }).image;
@@ -202,11 +203,11 @@ profilesRouter.openapi(updateAvatarRoute, (async (c) => {
   } catch {
     return c.json({ error: "Avatar update failed" }, 500);
   }
-}) as AppRouteHandler<typeof updateAvatarRoute>);
+}));
 
 // ─── Public Routes ────────────────────────────────────────────────────────
 
-profilesRouter.openapi(getTeamRosterRoute, (async (c) => {
+profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db
@@ -284,9 +285,9 @@ profilesRouter.openapi(getTeamRosterRoute, (async (c) => {
     console.error("[Profile:Roster] Error", err);
     return c.json({ error: "Failed to fetch team roster" }, 500);
   }
-}) as AppRouteHandler<typeof getTeamRosterRoute>);
+}));
 
-profilesRouter.openapi(getPublicProfileRoute, (async (c) => {
+profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfileRoute>(async (c) => {
   const { userId } = c.req.valid("param");
   const db = c.get("db") as Kysely<DB>;
   try {
@@ -375,6 +376,6 @@ profilesRouter.openapi(getPublicProfileRoute, (async (c) => {
   } catch {
     return c.json({ error: "Profile fetch failed" }, 500);
   }
-}) as AppRouteHandler<typeof getPublicProfileRoute>);
+}));
 
 export default profilesRouter;

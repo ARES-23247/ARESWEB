@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -13,7 +14,7 @@ import {
   updateOrderStatusRoute,
 } from "../../../shared/routes/store";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const storeRouter = new OpenAPIHono<AppEnv>();
 
@@ -97,7 +98,7 @@ storeRouter.post("/webhook", async (c) => {
 storeRouter.use("/orders/*", ensureAdmin);
 storeRouter.use("/orders", ensureAdmin);
 
-storeRouter.openapi(getProductsRoute, (async (c) => {
+storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const products = await db
@@ -124,9 +125,9 @@ storeRouter.openapi(getProductsRoute, (async (c) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-}) as AppRouteHandler<typeof getProductsRoute>);
+}));
 
-storeRouter.openapi(createCheckoutSessionRoute, (async (c) => {
+storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createCheckoutSessionRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const { items, successUrl, cancelUrl } = body;
@@ -197,21 +198,21 @@ storeRouter.openapi(createCheckoutSessionRoute, (async (c) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-}) as AppRouteHandler<typeof createCheckoutSessionRoute>);
+}));
 
-storeRouter.openapi(getOrdersRoute, (async (c) => {
+storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const orders = await db.selectFrom("orders").selectAll().orderBy("created_at", "desc").execute();
 
-    return c.json({ orders }, 200);
+    return c.json({ orders: orders as any }, 200);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-}) as AppRouteHandler<typeof getOrdersRoute>);
+}));
 
-storeRouter.openapi(updateOrderStatusRoute, (async (c) => {
+storeRouter.openapi(updateOrderStatusRoute, typedHandler<typeof updateOrderStatusRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -222,6 +223,6 @@ storeRouter.openapi(updateOrderStatusRoute, (async (c) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-}) as AppRouteHandler<typeof updateOrderStatusRoute>);
+}));
 
 export default storeRouter;

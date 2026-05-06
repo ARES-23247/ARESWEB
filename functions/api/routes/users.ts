@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* User management route handlers */
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -17,14 +18,14 @@ import {
   MemberTypeEnum,
 } from "../../../shared/routes/users";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const usersRouter = new OpenAPIHono<AppEnv>();
 
 // CR-07 FIX: Apply authentication to all admin routes
 usersRouter.use("/admin/*", ensureAdmin);
 
-usersRouter.openapi(getUsersRoute, (async (c) => {
+usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit, cursor } = parsePagination(c, 50, 100);
@@ -92,9 +93,9 @@ usersRouter.openapi(getUsersRoute, (async (c) => {
   } catch {
     return c.json({ error: "Database error" }, 500);
   }
-}) as AppRouteHandler<typeof getUsersRoute>);
+}));
 
-usersRouter.openapi(adminDetailRoute, (async (c) => {
+usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -136,7 +137,7 @@ usersRouter.openapi(adminDetailRoute, (async (c) => {
               ? row.updatedAt
               : new Date(row.updatedAt as string).getTime(),
           nickname: (row.nickname as string | null) || null,
-          member_type: row.member_type as string | null,
+          member_type: row.member_type as any,
         },
       },
       200
@@ -144,9 +145,9 @@ usersRouter.openapi(adminDetailRoute, (async (c) => {
   } catch {
     return c.json({ error: "Database error" }, 500);
   }
-}) as AppRouteHandler<typeof adminDetailRoute>);
+}));
 
-usersRouter.openapi(patchUserRoute, (async (c) => {
+usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c) => {
   try {
     // Defense-in-depth: Re-validate admin authorization for sensitive role changes
     const sessionUser = c.get("sessionUser") as
@@ -231,9 +232,9 @@ usersRouter.openapi(patchUserRoute, (async (c) => {
       500
     );
   }
-}) as AppRouteHandler<typeof patchUserRoute>);
+}));
 
-usersRouter.openapi(updateUserProfileRoute, (async (c) => {
+usersRouter.openapi(updateUserProfileRoute, typedHandler<typeof updateUserProfileRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -242,9 +243,9 @@ usersRouter.openapi(updateUserProfileRoute, (async (c) => {
   } catch {
     return c.json({ error: "Profile update failed" }, 500);
   }
-}) as AppRouteHandler<typeof updateUserProfileRoute>);
+}));
 
-usersRouter.openapi(adminGetProfileRoute, (async (c) => {
+usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -368,9 +369,9 @@ usersRouter.openapi(adminGetProfileRoute, (async (c) => {
     console.error("[Admin:GetProfile] Error", err);
     return c.json({ error: "Failed to fetch user profile" }, 500);
   }
-}) as AppRouteHandler<typeof adminGetProfileRoute>);
+}));
 
-usersRouter.openapi(deleteUserRoute, (async (c) => {
+usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -396,6 +397,6 @@ usersRouter.openapi(deleteUserRoute, (async (c) => {
     console.error("Delete user failed:", e);
     return c.json({ error: "Delete failed" }, 500);
   }
-}) as AppRouteHandler<typeof deleteUserRoute>);
+}));
 
 export default usersRouter;

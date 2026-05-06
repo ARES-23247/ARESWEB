@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- GitHub webhook payloads are dynamic and external */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
@@ -46,7 +47,7 @@ async function verifyGitHubSignature(
 }
 
 // ── POST /webhooks/github — Receive GitHub webhook events ────────────
-githubWebhookRouter.openapi(githubWebhookRoute, async (c) => {
+githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhookRoute>(async (c) => {
   const secret = c.env.GITHUB_WEBHOOK_SECRET;
   const rawBody = await c.req.text();
 
@@ -176,6 +177,6 @@ githubWebhookRouter.openapi(githubWebhookRoute, async (c) => {
   }
 
   return c.json({ received: true, event }, 200);
-});
+}));
 
 export default githubWebhookRouter;

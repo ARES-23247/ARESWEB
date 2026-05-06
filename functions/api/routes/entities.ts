@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
@@ -5,13 +6,13 @@ import { DB } from "../../../shared/schemas/database";
 import { AppEnv, ensureAuth, logAuditAction } from "../middleware";
 import { getEntityLinksRoute, saveEntityLinkRoute, deleteEntityLinkRoute } from "../../../shared/routes/entities";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const entitiesRouter = new OpenAPIHono<AppEnv>();
 
 entitiesRouter.use("*", ensureAuth);
 
-entitiesRouter.openapi(getEntityLinksRoute, (async (c) => {
+entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { type, id } = c.req.valid("query");
@@ -73,9 +74,9 @@ entitiesRouter.openapi(getEntityLinksRoute, (async (c) => {
     console.error("GET_LINKS ERROR", e);
     return c.json({ error: "Failed to fetch links", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-}) as AppRouteHandler<typeof getEntityLinksRoute>);
+}));
 
-entitiesRouter.openapi(saveEntityLinkRoute, (async (c) => {
+entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const body = c.req.valid("json");
@@ -98,9 +99,9 @@ entitiesRouter.openapi(saveEntityLinkRoute, (async (c) => {
     console.error("SAVE_LINK ERROR", e);
     return c.json({ error: "Failed to create link", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-}) as AppRouteHandler<typeof saveEntityLinkRoute>);
+}));
 
-entitiesRouter.openapi(deleteEntityLinkRoute, (async (c) => {
+entitiesRouter.openapi(deleteEntityLinkRoute, typedHandler<typeof deleteEntityLinkRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { id } = c.req.valid("param");
@@ -110,7 +111,7 @@ entitiesRouter.openapi(deleteEntityLinkRoute, (async (c) => {
   } catch (_e) {
     return c.json({ error: "Failed to delete link", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-}) as AppRouteHandler<typeof deleteEntityLinkRoute>);
+}));
 
 export default entitiesRouter;
 

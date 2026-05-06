@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -20,11 +21,11 @@ interface WeekData {
  * Ensures the printed portfolio is championship-ready.
  */
 // WR-01: Apply rate limiting to prevent abuse of GitHub API calls
-githubRouter.openapi(getActivityRoute, (async (c: any) => {
+githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `github-activity:${ip}`, ua, 10, 60))) {
-    return c.json({ error: "Rate limit exceeded" }, 429);
+    return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
 
   const org = siteConfig.urls.githubOrg;
@@ -35,7 +36,7 @@ githubRouter.openapi(getActivityRoute, (async (c: any) => {
   const cachedResponse = await cache.match(cacheKey);
   if (cachedResponse) {
     const data = await cachedResponse.json();
-    return c.json(data, 200);
+    return c.json(data as any, 200 as any);
   }
 
   try {
@@ -122,23 +123,23 @@ githubRouter.openapi(getActivityRoute, (async (c: any) => {
       c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
     }
 
-    return c.json(payload, 200);
+    return c.json(payload as any, 200 as any);
   } catch (e) {
     console.error("[GitHub:Activity] Error", e);
-    return c.json({ error: "Failed to fetch GitHub activity" }, 500);
+    return c.json({ error: "Failed to fetch GitHub activity" } as any, 500 as any);
   }
 }) as any);
 
 githubRouter.use("/projects/*", ensureAdmin);
 
-githubRouter.openapi(getBoardRoute, async (c) => {
+githubRouter.openapi(getBoardRoute, typedHandler<typeof getBoardRoute>(async (c) => {
   try {
     const config = await getSocialConfig(c);
     const ghConfig = buildGitHubConfig(config);
     if (!ghConfig) {
       console.error("[GitHub:Board] Configuration missing — GITHUB_PAT or GITHUB_PROJECT_ID not set");
       // Return empty board instead of 500 so the frontend can distinguish "not configured"
-      return c.json({ success: false, board: [] }, 200);
+      return c.json({ success: false, board: [] } as any, 200 as any);
     }
 
     const boardResults = await fetchProjectBoard(ghConfig);
@@ -155,30 +156,30 @@ githubRouter.openapi(getBoardRoute, async (c) => {
       };
     });
 
-    return c.json({ success: true, board }, 200);
+    return c.json({ success: true, board } as any, 200 as any);
   } catch (e) {
     console.error("[GitHub:Board] Error fetching board:", (e as Error).message, (e as Error).stack);
     // Return empty board with success:false so the frontend shows a meaningful error
-    return c.json({ success: false, board: [] }, 200);
+    return c.json({ success: false, board: [] } as any, 200 as any);
   }
-});
+}));
 
-githubRouter.openapi(createItemRoute, async (c) => {
+githubRouter.openapi(createItemRoute, typedHandler<typeof createItemRoute>(async (c) => {
   try {
     const { title } = c.req.valid("json");
     const config = await getSocialConfig(c);
     const ghConfig = buildGitHubConfig(config);
     if (!ghConfig) {
       console.error("[GitHub:Create] Configuration missing");
-      return c.json({ error: "GitHub configuration missing" }, 500);
+      return c.json({ error: "GitHub configuration missing" } as any, 500 as any);
     }
 
     await createProjectItem(ghConfig, title);
-    return c.json({ success: true }, 200);
+    return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[GitHub:Create] Error", e);
-    return c.json({ error: "Failed to create project item" }, 500);
+    return c.json({ error: "Failed to create project item" } as any, 500 as any);
   }
-});
+}));
 
 export default githubRouter;

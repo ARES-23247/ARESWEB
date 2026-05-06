@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import type { AppEnv } from "../../../shared/types/api";
@@ -10,11 +11,11 @@ import {
   awardPointsRoute, 
   getPointsLeaderboardRoute 
 } from "../../../shared/routes/points";
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const pointsRouter = new OpenAPIHono<AppEnv>();
 
-pointsRouter.openapi(getPointsBalanceRoute, (async (c) => {
+pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalanceRoute>(async (c) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -40,9 +41,9 @@ pointsRouter.openapi(getPointsBalanceRoute, (async (c) => {
     console.error("[Points] Get balance failed:", err);
     return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
-}) as AppRouteHandler<typeof getPointsBalanceRoute>);
+}));
 
-pointsRouter.openapi(getPointsHistoryRoute, (async (c) => {
+pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -71,9 +72,9 @@ pointsRouter.openapi(getPointsHistoryRoute, (async (c) => {
     console.error("[Points] Get history failed:", err);
     return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
-}) as AppRouteHandler<typeof getPointsHistoryRoute>);
+}));
 
-pointsRouter.openapi(awardPointsRoute, (async (c) => {
+pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(async (c) => {
   const { user_id, points_delta, reason } = c.req.valid("json");
   try {
     const sessionUser = c.get("sessionUser");
@@ -104,9 +105,9 @@ pointsRouter.openapi(awardPointsRoute, (async (c) => {
     console.error("[Points] Award points failed:", err);
     return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
-}) as AppRouteHandler<typeof awardPointsRoute>);
+}));
 
-pointsRouter.openapi(getPointsLeaderboardRoute, (async (c) => {
+pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLeaderboardRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
 
@@ -140,7 +141,7 @@ pointsRouter.openapi(getPointsLeaderboardRoute, (async (c) => {
     console.error("[Points] Get leaderboard failed:", err);
     return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
-}) as AppRouteHandler<typeof getPointsLeaderboardRoute>);
+}));
 
 export default pointsRouter;
 

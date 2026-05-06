@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth } from "../middleware";
@@ -11,7 +12,7 @@ import {
   getGistRoute
 } from "../../../shared/routes/simulations";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 /** Row shape returned by settings table queries */
 interface SettingsRow { key: string | null; value: string }
@@ -98,7 +99,7 @@ async function canModifySimulation(
 }
 
 // List all simulations from GitHub
-simulationsRouter.openapi(listSimulationsRoute, (async (c) => {
+simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulationsRoute>(async (c) => {
   try {
     const ghConfig = getGitHubConfig(c);
     let pat = c.env.GITHUB_PAT;
@@ -141,10 +142,10 @@ simulationsRouter.openapi(listSimulationsRoute, (async (c) => {
     console.error("[Simulations] List error:", e);
     return c.json({ error: "Failed to list simulations from GitHub" }, 500);
   }
-}) as AppRouteHandler<typeof listSimulationsRoute>);
+}));
 
 // Get a single simulation file by id from GitHub
-simulationsRouter.openapi(getSimulationRoute, (async (c) => {
+simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationRoute>(async (c) => {
   const { id } = c.req.valid("param");
 
   if (!id || !id.startsWith("github:")) {
@@ -209,10 +210,10 @@ simulationsRouter.openapi(getSimulationRoute, (async (c) => {
     console.error("[Simulations] GitHub get error:", ghErr);
     return c.json({ error: "Failed to get simulation from GitHub" }, 500);
   }
-}) as AppRouteHandler<typeof getSimulationRoute>);
+}));
 
 // Save simulation to GitHub
-simulationsRouter.openapi(saveSimulationRoute, (async (c) => {
+simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulationRoute>(async (c) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -335,10 +336,10 @@ simulationsRouter.openapi(saveSimulationRoute, (async (c) => {
     console.error("[Simulations] Save error:", e);
     return c.json({ error: "Failed to save simulation" }, 500);
   }
-}) as AppRouteHandler<typeof saveSimulationRoute>);
+}));
 
 // Delete simulation from GitHub
-simulationsRouter.openapi(deleteSimulationRoute, (async (c) => {
+simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimulationRoute>(async (c) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -429,10 +430,10 @@ simulationsRouter.openapi(deleteSimulationRoute, (async (c) => {
     console.error("[Simulations] Delete error:", e);
     return c.json({ error: "Failed to delete simulation" }, 500);
   }
-}) as AppRouteHandler<typeof deleteSimulationRoute>);
+}));
 
 // Create a new GitHub Gist for a simulation
-simulationsRouter.openapi(createGistRoute, (async (c) => {
+simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(async (c) => {
   try {
     const { name, files } = c.req.valid("json");
     if (Object.keys(files).length === 0) {
@@ -482,10 +483,10 @@ simulationsRouter.openapi(createGistRoute, (async (c) => {
     console.error("[Simulations] Gist POST error:", e);
     return c.json({ error: "Failed to create Gist" }, 500);
   }
-}) as AppRouteHandler<typeof createGistRoute>);
+}));
 
 // Fetch a GitHub Gist by ID
-simulationsRouter.openapi(getGistRoute, (async (c) => {
+simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async (c) => {
   const { id } = c.req.valid("param");
 
   try {
@@ -542,6 +543,6 @@ simulationsRouter.openapi(getGistRoute, (async (c) => {
     console.error("[Simulations] Gist GET error:", e);
     return c.json({ error: "Failed to fetch Gist" }, 500);
   }
-}) as AppRouteHandler<typeof getGistRoute>);
+}));
 
 export default simulationsRouter;

@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
@@ -15,7 +16,7 @@ import {
 } from "../../../shared/routes/seasons";
 import { edgeCacheMiddleware } from "../middleware/cache";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const seasonsRouter = new OpenAPIHono<AppEnv>();
 
@@ -27,7 +28,7 @@ seasonsRouter.use("/:year", edgeCacheMiddleware(300, 60));
 seasonsRouter.use("/admin/*", ensureAdmin);
 seasonsRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-seasonsRouter.openapi(listSeasonsRoute, (async (c) => {
+seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(async (c) => {
   try {
     const db = c.get("db");
     const results = await db
@@ -64,9 +65,9 @@ seasonsRouter.openapi(listSeasonsRoute, (async (c) => {
     console.error("[Seasons:List] Error", e);
     return c.json({ error: "Failed to fetch seasons" }, 500);
   }
-}) as AppRouteHandler<typeof listSeasonsRoute>);
+}));
 
-seasonsRouter.openapi(adminListSeasonsRoute, (async (c) => {
+seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeasonsRoute>(async (c) => {
   try {
     const db = c.get("db");
     const results = await db
@@ -101,9 +102,9 @@ seasonsRouter.openapi(adminListSeasonsRoute, (async (c) => {
     console.error("[Seasons:AdminList] Error", e);
     return c.json({ error: "Failed to list seasons" }, 500);
   }
-}) as AppRouteHandler<typeof adminListSeasonsRoute>);
+}));
 
-seasonsRouter.openapi(adminDetailSeasonRoute, (async (c) => {
+seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -145,9 +146,9 @@ seasonsRouter.openapi(adminDetailSeasonRoute, (async (c) => {
     console.error("[Seasons:AdminDetail] Error", e);
     return c.json({ error: "Failed to fetch season" }, 500);
   }
-}) as AppRouteHandler<typeof adminDetailSeasonRoute>);
+}));
 
-seasonsRouter.openapi(getSeasonDetailRoute, (async (c) => {
+seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailRoute>(async (c) => {
   try {
     const { year } = c.req.valid("param");
     const db = c.get("db");
@@ -254,9 +255,9 @@ seasonsRouter.openapi(getSeasonDetailRoute, (async (c) => {
     console.error("[Seasons:Detail] Error", e);
     return c.json({ error: "Failed to fetch season details" }, 500);
   }
-}) as AppRouteHandler<typeof getSeasonDetailRoute>);
+}));
 
-seasonsRouter.openapi(saveSeasonRoute, (async (c) => {
+seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db");
@@ -339,9 +340,9 @@ seasonsRouter.openapi(saveSeasonRoute, (async (c) => {
     console.error("[Seasons:Save] Error", e);
     return c.json({ error: "Save failed" }, 500);
   }
-}) as AppRouteHandler<typeof saveSeasonRoute>);
+}));
 
-seasonsRouter.openapi(deleteSeasonRoute, (async (c) => {
+seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -359,9 +360,9 @@ seasonsRouter.openapi(deleteSeasonRoute, (async (c) => {
     console.error("[Seasons:Delete] Error", e);
     return c.json({ error: "Delete failed" }, 500);
   }
-}) as AppRouteHandler<typeof deleteSeasonRoute>);
+}));
 
-seasonsRouter.openapi(undeleteSeasonRoute, (async (c) => {
+seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -377,9 +378,9 @@ seasonsRouter.openapi(undeleteSeasonRoute, (async (c) => {
     console.error("[Seasons:Undelete] Error", e);
     return c.json({ error: "Restore failed" }, 500);
   }
-}) as AppRouteHandler<typeof undeleteSeasonRoute>);
+}));
 
-seasonsRouter.openapi(purgeSeasonRoute, (async (c) => {
+seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -394,6 +395,6 @@ seasonsRouter.openapi(purgeSeasonRoute, (async (c) => {
     console.error("[Seasons:Purge] Error", e);
     return c.json({ error: "Purge failed" }, 500);
   }
-}) as AppRouteHandler<typeof purgeSeasonRoute>);
+}));
 
 export default seasonsRouter;

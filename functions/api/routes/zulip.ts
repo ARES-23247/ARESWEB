@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
@@ -12,7 +13,7 @@ import {
 } from "../../../shared/routes/zulip";
 import { z } from "zod";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const zulipRouter = new OpenAPIHono<AppEnv>();
 
@@ -38,7 +39,7 @@ zulipRouter.use("*", ensureAuth);
 zulipRouter.use("/presence", ensureAdmin);
 zulipRouter.use("/invites/*", ensureAdmin);
 
-zulipRouter.openapi(getPresenceRoute, (async (c) => {
+zulipRouter.openapi(getPresenceRoute, typedHandler<typeof getPresenceRoute>(async (c) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -90,9 +91,9 @@ zulipRouter.openapi(getPresenceRoute, (async (c) => {
       500
     );
   }
-}) as AppRouteHandler<typeof getPresenceRoute>);
+}));
 
-zulipRouter.openapi(sendMessageRoute, (async (c) => {
+zulipRouter.openapi(sendMessageRoute, typedHandler<typeof sendMessageRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const { sendZulipMessage } = await import("../../utils/zulipSync");
@@ -128,9 +129,9 @@ zulipRouter.openapi(sendMessageRoute, (async (c) => {
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-}) as AppRouteHandler<typeof sendMessageRoute>);
+}));
 
-zulipRouter.openapi(getTopicMessagesRoute, (async (c) => {
+zulipRouter.openapi(getTopicMessagesRoute, typedHandler<typeof getTopicMessagesRoute>(async (c) => {
   try {
     const query = c.req.valid("query");
     const config = await getSocialConfig(c);
@@ -180,9 +181,9 @@ zulipRouter.openapi(getTopicMessagesRoute, (async (c) => {
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-}) as AppRouteHandler<typeof getTopicMessagesRoute>);
+}));
 
-zulipRouter.openapi(auditMissingUsersRoute, (async (c) => {
+zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUsersRoute>(async (c) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -293,9 +294,9 @@ zulipRouter.openapi(auditMissingUsersRoute, (async (c) => {
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-}) as AppRouteHandler<typeof auditMissingUsersRoute>);
+}));
 
-zulipRouter.openapi(inviteUsersRoute, (async (c) => {
+zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const config = await getSocialConfig(c);
@@ -382,6 +383,6 @@ zulipRouter.openapi(inviteUsersRoute, (async (c) => {
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-}) as AppRouteHandler<typeof inviteUsersRoute>);
+}));
 
 export default zulipRouter;

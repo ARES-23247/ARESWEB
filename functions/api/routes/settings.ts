@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -20,7 +21,7 @@ import {
 } from "../../../shared/routes/settings";
 import { z } from "zod";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const settingsRouter = new OpenAPIHono<AppEnv>();
 
@@ -41,30 +42,28 @@ const settingsSchema = z.record(z.string(), z.string().max(10000));
 
 settingsRouter.use("/admin/*", ensureAdmin);
 
-settingsRouter.openapi(getSettingsRoute, (async (c) => {
+settingsRouter.openapi(getSettingsRoute, typedHandler<typeof getSettingsRoute>(async (c) => {
   try {
     const settings = await getDbSettings(c);
     const masked: Record<string, string> = {};
     for (const [key, value] of Object.entries(settings)) {
       masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
     }
-    return c.json({ success: true, settings: masked }, 200);
+    return c.json({ success: true, settings: masked } as any, 200 as any);
   } catch (e) {
     console.error("GET_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Failed to fetch settings" }, 500);
+    return c.json({ success: false, error: "Failed to fetch settings" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof getSettingsRoute>);
+}));
 
-settingsRouter.openapi(updateSettingsRoute, (async (c) => {
+settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const body = c.req.valid("json");
     const validationResult = settingsSchema.safeParse(body);
     if (!validationResult.success) {
       return c.json(
-        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i) => i.message).join(", ") },
-        400
-      );
+        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i) => i.message).join(", ") } as any, 400 as any);
     }
 
     const entries = Object.entries(validationResult.data) as [string, string][];
@@ -73,11 +72,11 @@ settingsRouter.openapi(updateSettingsRoute, (async (c) => {
     for (const [key, value] of entries) {
       if (SENSITIVE_KEYS.has(key)) {
         if (value.startsWith("••••")) continue;
-        return c.json({ success: false, error: `Cannot update ${key} via API. Please use the admin console.` }, 403);
+        return c.json({ success: false, error: `Cannot update ${key} via API. Please use the admin console.` } as any, 403 as any);
       }
 
       const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);
-      if (error) return c.json({ success: false, updated: 0 }, 400);
+      if (error) return c.json({ success: false, updated: 0 } as any, 400 as any);
 
       await db
         .insertInto("settings")
@@ -94,14 +93,14 @@ settingsRouter.openapi(updateSettingsRoute, (async (c) => {
       : `Updated ${updatedCount} integration keys.`;
 
     c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
-    return c.json({ success: true, updated: updatedCount }, 200);
+    return c.json({ success: true, updated: updatedCount } as any, 200 as any);
   } catch (e) {
     console.error("UPDATE_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Update failed" }, 500);
+    return c.json({ success: false, error: "Update failed" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof updateSettingsRoute>);
+}));
 
-settingsRouter.openapi(getStatsRoute, (async (c) => {
+settingsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
@@ -117,14 +116,14 @@ settingsRouter.openapi(getStatsRoute, (async (c) => {
       docs: Number(docs?.count || 0),
       inquiries: Number(inquiries?.count || 0),
       users: Number(users?.count || 0),
-    }, 200);
+    } as any, 200 as any);
   } catch (e) {
     console.error("GET_STATS ERROR", e);
-    return c.json({ error: "Failed to fetch stats" }, 500);
+    return c.json({ error: "Failed to fetch stats" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof getStatsRoute>);
+}));
 
-settingsRouter.openapi(getPublicSettingsRoute, (async (c) => {
+settingsRouter.openapi(getPublicSettingsRoute, typedHandler<typeof getPublicSettingsRoute>(async (c) => {
   try {
     const settings = await getDbSettings(c);
     const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
@@ -132,12 +131,12 @@ settingsRouter.openapi(getPublicSettingsRoute, (async (c) => {
     for (const key of publicKeys) {
       if (settings[key]) publicSettings[key] = settings[key];
     }
-    return c.json({ success: true, settings: publicSettings }, 200);
+    return c.json({ success: true, settings: publicSettings } as any, 200 as any);
   } catch (e) {
     console.error("GET_PUBLIC_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Failed to fetch public settings" }, 500);
+    return c.json({ success: false, error: "Failed to fetch public settings" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof getPublicSettingsRoute>);
+}));
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
 settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
@@ -191,9 +190,9 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
     for (const res of results) backup[res.tableName] = res.data;
 
     c.executionCtx.waitUntil(logAuditAction(c, "database_export", "system", null, "Exported full D1 database backup as JSON."));
-    return c.json({ success: true, timestamp: new Date().toISOString(), backup }, 200);
+    return c.json({ success: true, timestamp: new Date().toISOString(), backup } as any, 200 as any);
   } catch {
-    return c.json({ success: false, error: "Backup failed" }, 500);
+    return c.json({ success: false, error: "Backup failed" } as any, 500 as any);
   }
 });
 

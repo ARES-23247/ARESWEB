@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
@@ -15,14 +16,14 @@ import {
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const tasksRouter = new OpenAPIHono<AppEnv>();
 
 // WR-11: Add origin integrity to prevent CSRF attacks on task operations
 tasksRouter.use("*", originIntegrityMiddleware());
 
-tasksRouter.openapi(listTasksRoute, (async (c) => {
+tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c) => {
   try {
     const query = c.req.valid("query") || {};
     const db = c.get("db") as Kysely<DB>;
@@ -98,9 +99,9 @@ tasksRouter.openapi(listTasksRoute, (async (c) => {
     console.error("[Tasks] List error:", err);
     return c.json({ error: "Failed to fetch tasks" }, 500);
   }
-}) as AppRouteHandler<typeof listTasksRoute>);
+}));
 
-tasksRouter.openapi(createTaskRoute, (async (c) => {
+tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -183,9 +184,9 @@ tasksRouter.openapi(createTaskRoute, (async (c) => {
     console.error("[Tasks] Create error:", err);
     return c.json({ error: "Failed to create task" }, 500);
   }
-}) as AppRouteHandler<typeof createTaskRoute>);
+}));
 
-tasksRouter.openapi(reorderTasksRoute, (async (c) => {
+tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -205,9 +206,9 @@ tasksRouter.openapi(reorderTasksRoute, (async (c) => {
     console.error("[Tasks] Reorder error:", err);
     return c.json({ error: "Failed to reorder tasks" }, 500);
   }
-}) as AppRouteHandler<typeof reorderTasksRoute>);
+}));
 
-tasksRouter.openapi(updateTaskRoute, (async (c) => {
+tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -308,9 +309,9 @@ tasksRouter.openapi(updateTaskRoute, (async (c) => {
     console.error("[Tasks] Update error:", err);
     return c.json({ error: "Failed to update task" }, 500);
   }
-}) as AppRouteHandler<typeof updateTaskRoute>);
+}));
 
-tasksRouter.openapi(deleteTaskRoute, (async (c) => {
+tasksRouter.openapi(deleteTaskRoute, typedHandler<typeof deleteTaskRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -350,6 +351,6 @@ tasksRouter.openapi(deleteTaskRoute, (async (c) => {
     console.error("[Tasks] Delete error:", err);
     return c.json({ error: "Failed to delete task" }, 500);
   }
-}) as AppRouteHandler<typeof deleteTaskRoute>);
+}));
 
 export default tasksRouter;

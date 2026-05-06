@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- Zulip webhook payloads are dynamic and external */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
@@ -9,7 +10,7 @@ import { sendZulipMessage } from "../../utils/zulipSync";
 import { calculateIRV } from "../../utils/irvCalculator";
 import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const zulipWebhookRouter = new OpenAPIHono<AppEnv>();
 
@@ -31,7 +32,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 // ── POST /webhooks/zulip — Handle outgoing webhook from Zulip ────────
-zulipWebhookRouter.openapi(zulipWebhookRoute, (async (c) => {
+zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRoute>(async (c) => {
   const body = c.req.valid("json");
 
   const config = await getSocialConfig(c);
@@ -459,6 +460,6 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, (async (c) => {
       content: `❌ Command failed: ${(err as Error)?.message || "Unknown error"}`,
     }, 200);
   }
-}) as AppRouteHandler<typeof zulipWebhookRoute>);
+}));
 
 export default zulipWebhookRouter;

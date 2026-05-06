@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 /* TBA API route handlers */
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -7,7 +8,7 @@ import { AppEnv, ensureAuth, rateLimitMiddleware } from "../middleware";
 import { getRankingsRoute, getMatchesRoute, getFtcEventsRoute } from "../../../shared/routes/tba";
 import type { HonoContext } from "@shared/types/api";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const tbaRouter = new OpenAPIHono<AppEnv>();
 
@@ -52,7 +53,7 @@ async function getTBA(path: string, c: HonoContext) {
   return data;
 }
 
-tbaRouter.openapi(getRankingsRoute, (async (c) => {
+tbaRouter.openapi(getRankingsRoute, typedHandler<typeof getRankingsRoute>(async (c) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -64,9 +65,9 @@ tbaRouter.openapi(getRankingsRoute, (async (c) => {
     console.error("GET_TBA_RANKINGS ERROR", e);
     return c.json({ error: "Failed to fetch rankings" }, 500);
   }
-}) as AppRouteHandler<typeof getRankingsRoute>);
+}));
 
-tbaRouter.openapi(getMatchesRoute, (async (c) => {
+tbaRouter.openapi(getMatchesRoute, typedHandler<typeof getMatchesRoute>(async (c) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -79,9 +80,9 @@ tbaRouter.openapi(getMatchesRoute, (async (c) => {
     console.error("GET_TBA_MATCHES ERROR", e);
     return c.json({ error: "Failed to fetch matches" }, 500);
   }
-}) as AppRouteHandler<typeof getMatchesRoute>);
+}));
 
-tbaRouter.openapi(getFtcEventsRoute, (async (c) => {
+tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(async (c) => {
   try {
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;
@@ -111,7 +112,7 @@ tbaRouter.openapi(getFtcEventsRoute, (async (c) => {
   } catch (_e) {
     return c.json({ error: "Failed to fetch official event data" }, 500);
   }
-}) as AppRouteHandler<typeof getFtcEventsRoute>);
+}));
 
 export default tbaRouter;
 

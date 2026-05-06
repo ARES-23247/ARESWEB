@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
@@ -7,7 +8,7 @@ import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../
 import { emitNotification } from "../../utils/notifications";
 import { listCommentsRoute, submitCommentRoute, updateCommentRoute, deleteCommentRoute } from "../../../shared/routes/comments";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const commentsRouter = new OpenAPIHono<AppEnv>();
 
@@ -37,7 +38,7 @@ commentsRouter.use("/{id}", (c, next) => {
   return next();
 });
 
-commentsRouter.openapi(listCommentsRoute, (async (c) => {
+commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>(async (c) => {
   const { targetType, targetId } = c.req.valid("param");
   const user = await getSessionUser(c);
   const db = c.get("db") as Kysely<DB>;
@@ -75,9 +76,9 @@ commentsRouter.openapi(listCommentsRoute, (async (c) => {
     console.error("[Comments:List] Error", e);
     return c.json({ error: "Failed to fetch comments", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-}) as AppRouteHandler<typeof listCommentsRoute>);
+}));
 
-commentsRouter.openapi(submitCommentRoute, (async (c) => {
+commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRoute>(async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
     return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
@@ -156,9 +157,9 @@ commentsRouter.openapi(submitCommentRoute, (async (c) => {
     console.error("[Comments:Submit] Error", e);
     return c.json({ error: "Failed to submit comment", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-}) as AppRouteHandler<typeof submitCommentRoute>);
+}));
 
-commentsRouter.openapi(updateCommentRoute, (async (c) => {
+commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRoute>(async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
@@ -209,9 +210,9 @@ commentsRouter.openapi(updateCommentRoute, (async (c) => {
     console.error("[Comments:Update] Error", e);
     return c.json({ error: "Failed to update comment", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-}) as AppRouteHandler<typeof updateCommentRoute>);
+}));
 
-commentsRouter.openapi(deleteCommentRoute, (async (c) => {
+commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRoute>(async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
@@ -249,6 +250,6 @@ commentsRouter.openapi(deleteCommentRoute, (async (c) => {
     console.error("[Comments:Delete] Error", e);
     return c.json({ error: "Failed to delete comment", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-}) as AppRouteHandler<typeof deleteCommentRoute>);
+}));
 
 export default commentsRouter;

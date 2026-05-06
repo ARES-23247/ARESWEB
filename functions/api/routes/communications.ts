@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, logSystemError } from "../middleware";
@@ -9,7 +10,7 @@ import {
   sendMassEmailRoute,
   getStatsRoute,
 } from "../../../shared/routes/communications";
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const communicationsRouter = new OpenAPIHono<AppEnv>();
 
@@ -18,7 +19,7 @@ communicationsRouter.use("/mass-email", ensureAdmin);
 communicationsRouter.use("/stats", ensureAdmin);
 
 // Get stats
-communicationsRouter.openapi(getStatsRoute, (async (c) => {
+communicationsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   try {
     const db = c.get("db") as Kysely<DB> | null;
     if (!db) {
@@ -35,10 +36,10 @@ communicationsRouter.openapi(getStatsRoute, (async (c) => {
     const errorMessage = err instanceof Error ? err.message : "Internal server error";
     return c.json({ success: false, error: errorMessage }, 500);
   }
-}) as AppRouteHandler<typeof getStatsRoute>);
+}));
 
 // Send mass email
-communicationsRouter.openapi(sendMassEmailRoute, (async (c) => {
+communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEmailRoute>(async (c) => {
   try {
     const { subject, htmlContent } = c.req.valid("json");
     const socialConfig = await getSocialConfig(c);
@@ -122,6 +123,6 @@ communicationsRouter.openapi(sendMassEmailRoute, (async (c) => {
     } catch { /* don't let logging failure mask the real error */ }
     return c.json({ success: false, error: errMsg || "Failed to dispatch emails" }, 500);
   }
-}) as AppRouteHandler<typeof sendMassEmailRoute>);
+}));
 
 export default communicationsRouter;

@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -12,7 +13,7 @@ import {
 } from "../../../shared/routes/judges";
 import type { HonoContext as _HonoContext } from "@shared/types/api";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const judgesRouter = new OpenAPIHono<AppEnv>();
 
@@ -37,25 +38,25 @@ const portfolioCache = new Map<string, { data: unknown; expiresAt: number; versi
 // Helper to get the current portfolio cache key with version
 const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
-judgesRouter.openapi(judgeLoginRoute, (async (c) => {
+judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const db = c.get("db") as Kysely<DB>;
 
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
   if (!allowed) {
-    return c.json({ error: "Too many attempts. Please try again later." }, 429);
+    return c.json({ error: "Too many attempts. Please try again later." } as any, 429 as any);
   }
 
   try {
     const { code, turnstileToken } = c.req.valid("json");
     if (!code) {
-      return c.json({ error: "Code required" }, 400);
+      return c.json({ error: "Code required" } as any, 400 as any);
     }
 
     const validToken = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
     if (!validToken) {
-      return c.json({ error: "Security verification failed." }, 403);
+      return c.json({ error: "Security verification failed." } as any, 403 as any);
     }
 
     const row = await db.selectFrom("judge_access_codes")
@@ -68,28 +69,28 @@ judgesRouter.openapi(judgeLoginRoute, (async (c) => {
       .executeTakeFirst();
 
     if (!row) {
-      return c.json({ error: "Invalid or expired access code" }, 403);
+      return c.json({ error: "Invalid or expired access code" } as any, 403 as any);
     }
 
-    return c.json({ success: true, label: row.label }, 200);
+    return c.json({ success: true, label: row.label } as any, 200 as any);
   } catch {
-    return c.json({ error: "Login failed" }, 500);
+    return c.json({ error: "Login failed" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof judgeLoginRoute>);
+}));
 
-judgesRouter.openapi(judgePortfolioRoute, (async (c) => {
+judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { "x-judge-code": code } = c.req.valid("header");
     if (!code) {
-      return c.json({ error: "Access code required" }, 401);
+      return c.json({ error: "Access code required" } as any, 401 as any);
     }
 
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const allowed = await checkPersistentRateLimit(db, `judge-portfolio:${ip}`, ua, 20, 60);
     if (!allowed) {
-      return c.json({ error: "Too many requests" }, 429);
+      return c.json({ error: "Too many requests" } as any, 429 as any);
     }
 
     const valid = await db.selectFrom("judge_access_codes")
@@ -101,7 +102,7 @@ judgesRouter.openapi(judgePortfolioRoute, (async (c) => {
       ]))
       .executeTakeFirst();
     if (!valid) {
-      return c.json({ error: "Invalid or expired access code" }, 403);
+      return c.json({ error: "Invalid or expired access code" } as any, 403 as any);
     }
 
     // WR-10: Audit log judge portfolio access for security monitoring
@@ -162,17 +163,17 @@ judgesRouter.openapi(judgePortfolioRoute, (async (c) => {
 
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 
-    return c.json(payload, 200);
+    return c.json(payload as any, 200 as any);
   } catch (err) {
     console.error("[Judges] Portfolio failed:", err);
-    return c.json({ error: "Portfolio fetch failed" }, 500);
+    return c.json({ error: "Portfolio fetch failed" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof judgePortfolioRoute>);
+}));
 
 // Admin routes require ensureAdmin middleware
 judgesRouter.use("/admin/*", ensureAdmin);
 
-judgesRouter.openapi(listJudgeCodesRoute, (async (c) => {
+judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("judge_access_codes")
@@ -186,13 +187,13 @@ judgesRouter.openapi(listJudgeCodesRoute, (async (c) => {
       expires_at: r.expires_at || null
     }));
 
-    return c.json({ codes }, 200);
+    return c.json({ codes } as any, 200 as any);
   } catch {
-    return c.json({ error: "Failed to fetch codes" }, 500);
+    return c.json({ error: "Failed to fetch codes" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof listJudgeCodesRoute>);
+}));
 
-judgesRouter.openapi(createJudgeCodeRoute, (async (c) => {
+judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { label, expiresAt } = c.req.valid("json");
@@ -213,13 +214,13 @@ judgesRouter.openapi(createJudgeCodeRoute, (async (c) => {
     portfolioCache.clear();
 
     c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
-    return c.json({ success: true, code, id }, 200);
+    return c.json({ success: true, code, id } as any, 200 as any);
   } catch {
-    return c.json({ error: "Create failed" }, 500);
+    return c.json({ error: "Create failed" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof createJudgeCodeRoute>);
+}));
 
-judgesRouter.openapi(deleteJudgeCodeRoute, (async (c) => {
+judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRoute>(async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { id } = c.req.valid("param");
@@ -229,10 +230,10 @@ judgesRouter.openapi(deleteJudgeCodeRoute, (async (c) => {
     portfolioCacheVersion++;
     portfolioCache.clear();
 
-    return c.json({ success: true }, 200);
+    return c.json({ success: true } as any, 200 as any);
   } catch {
-    return c.json({ error: "Delete failed" }, 500);
+    return c.json({ error: "Delete failed" } as any, 500 as any);
   }
-}) as AppRouteHandler<typeof deleteJudgeCodeRoute>);
+}));
 
 export default judgesRouter;

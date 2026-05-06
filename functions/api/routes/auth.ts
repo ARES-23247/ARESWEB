@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, getSessionUser, persistentRateLimitMiddleware } from "../middleware";
 import { getAuth } from "../../utils/auth";
@@ -13,7 +14,7 @@ const authRouter = new OpenAPIHono<AppEnv>();
 // - See AUTH_PATTERNS.md for security best practices
 
 // ── GET /api/auth-check — verify session (UI gate only) ────────────────
-authRouter.openapi(authCheckRoute, async (c) => {
+authRouter.openapi(authCheckRoute, typedHandler<typeof authCheckRoute>(async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ authenticated: false }, 401);
   return c.json({ 
@@ -26,7 +27,7 @@ authRouter.openapi(authCheckRoute, async (c) => {
       image: user.image || null,
     }
   }, 200);
-});
+}));
 
 // ── Better Auth Routes ────────────────────────────────────────────────
 // Catch-all for Better Auth internal routes

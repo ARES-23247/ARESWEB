@@ -1,3 +1,4 @@
+import { typedHandler } from "../../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
@@ -15,7 +16,7 @@ import {
   aiSuggestRoute, 
   ragChatbotRoute 
 } from "../../../../shared/routes/ai";
-type _AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const aiRouter = new OpenAPIHono<AppEnv>();
 
@@ -35,7 +36,7 @@ const truncateForFallback = (text: string, maxChars = 18000): string => {
 };
 
 // ── AI Status Diagnostic (admin only) ──────────────────────────────────────
-aiRouter.openapi(aiStatusRoute, async (c) => {
+aiRouter.openapi(aiStatusRoute, typedHandler<typeof aiStatusRoute>(async (c) => {
   let indexErrors = null;
   const db = c.get("db") as Kysely<DB>;
   
@@ -59,13 +60,13 @@ aiRouter.openapi(aiStatusRoute, async (c) => {
     primaryModel: c.env.Z_AI_API_KEY ? "zai-5.1" : c.env.AI ? "llama-3.1-8b" : "none",
     indexErrors,
   }, 200);
-});
+}));
 
 // ── Liveblocks AI Copilot Endpoint ────────────────────────────────────────
 // Premium: uses z.ai (Claude) if Z_AI_API_KEY is set, otherwise falls back to Workers AI (Llama 3.1)
 
 // WR-07: Add rate limiting to prevent abuse of AI endpoints
-aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
+aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRoute>(async (c) => {
   const { documentContext, action, imageUrl } = c.req.valid("json");
 
   const hasZai = !!c.env.Z_AI_API_KEY;
@@ -227,10 +228,10 @@ aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
-});
+}));
 
 // ── Simulation Playground IDE Endpoint ──────────────────────────────────
-aiRouter.openapi(simPlaygroundRoute, async (c) => {
+aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(async (c) => {
   const { systemPrompt, messages, imageUrl } = c.req.valid("json");
 
   const hasZai = !!c.env.Z_AI_API_KEY;
@@ -396,10 +397,10 @@ aiRouter.openapi(simPlaygroundRoute, async (c) => {
       await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Workers AI processing error: ${errMsg}]${details}` }) });
     }
   });
-});
+}));
 
 // ── Editor AI Chat Endpoint ──────────────────────────────────────────────
-aiRouter.openapi(editorChatRoute, async (c) => {
+aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c) => {
   const { systemPrompt, messages, editorContent } = c.req.valid("json");
 
   const hasZai = !!c.env.Z_AI_API_KEY;
@@ -535,11 +536,11 @@ aiRouter.openapi(editorChatRoute, async (c) => {
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
-});
+}));
 
 // ── AI Inline Suggestions Endpoint ────────────────────────────────────────
 // Returns a short completion suggestion for ghost text in the editor
-aiRouter.openapi(aiSuggestRoute, async (c) => {
+aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) => {
   const { context } = c.req.valid("json");
 
   if (!context || typeof context !== "string" || context.trim().length < 10) {
@@ -606,10 +607,10 @@ aiRouter.openapi(aiSuggestRoute, async (c) => {
     console.error("[AI Suggest] Error:", e);
     return c.json({ suggestion: "" }, 200);
   }
-});
+}));
 
 // ── RAG Chatbot Endpoint ──────────────────────────────────────────────────
-aiRouter.openapi(ragChatbotRoute, async (c) => {
+aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c) => {
   const { query, turnstileToken, sessionId } = c.req.valid("json");
 
   if (!query || !turnstileToken) {
@@ -918,7 +919,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
-});
+}));
 
 // Helper to persist chat session history
 async function saveHistory(db: Kysely<DB>, sessionId: string | undefined, historyMessages: ChatMessage[], query: string, response: string) {

@@ -1,3 +1,4 @@
+import { typedHandler } from "../utils/handler";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -16,7 +17,7 @@ import {
 import { nanoid } from "nanoid";
 import { dispatchQueuePost } from "../../utils/socialSync";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 
 export const socialQueueRouter = new OpenAPIHono<AppEnv>();
 
@@ -40,7 +41,7 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
 });
 
 // List posts
-socialQueueRouter.openapi(listSocialQueueRoute, (async (c) => {
+socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQueueRoute>(async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -79,10 +80,10 @@ socialQueueRouter.openapi(listSocialQueueRoute, (async (c) => {
     console.error("Social queue list error:", error);
     return c.json({ error: "Failed to fetch scheduled posts" }, 500);
   }
-}) as AppRouteHandler<typeof listSocialQueueRoute>);
+}));
 
 // Calendar view
-socialQueueRouter.openapi(calendarSocialQueueRoute, (async (c) => {
+socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendarSocialQueueRoute>(async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -111,10 +112,10 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, (async (c) => {
     console.error("Social queue calendar error:", error);
     return c.json({ error: "Failed to fetch calendar posts" }, 500);
   }
-}) as AppRouteHandler<typeof calendarSocialQueueRoute>);
+}));
 
 // Create post
-socialQueueRouter.openapi(createSocialQueueRoute, (async (c) => {
+socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSocialQueueRoute>(async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -160,10 +161,10 @@ socialQueueRouter.openapi(createSocialQueueRoute, (async (c) => {
     console.error("Social queue create error:", error);
     return c.json({ error: "Failed to schedule post" }, 500);
   }
-}) as AppRouteHandler<typeof createSocialQueueRoute>);
+}));
 
 // Update post
-socialQueueRouter.openapi(updateSocialQueueRoute, (async (c) => {
+socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSocialQueueRoute>(async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -204,10 +205,10 @@ socialQueueRouter.openapi(updateSocialQueueRoute, (async (c) => {
     console.error("Social queue update error:", error);
     return c.json({ error: "Failed to update post" }, 500);
   }
-}) as AppRouteHandler<typeof updateSocialQueueRoute>);
+}));
 
 // Delete post
-socialQueueRouter.openapi(deleteSocialQueueRoute, (async (c) => {
+socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSocialQueueRoute>(async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -237,10 +238,10 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, (async (c) => {
     console.error("Social queue delete error:", error);
     return c.json({ error: "Failed to delete post" }, 500);
   }
-}) as AppRouteHandler<typeof deleteSocialQueueRoute>);
+}));
 
 // Send post now
-socialQueueRouter.openapi(sendNowSocialQueueRoute, (async (c) => {
+socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSocialQueueRoute>(async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
@@ -279,10 +280,10 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, (async (c) => {
     console.error("Social queue sendNow error:", error);
     return c.json({ error: "Failed to send post" }, 500);
   }
-}) as AppRouteHandler<typeof sendNowSocialQueueRoute>);
+}));
 
 // Analytics
-socialQueueRouter.openapi(analyticsSocialQueueRoute, (async (c) => {
+socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyticsSocialQueueRoute>(async (c) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
@@ -346,6 +347,6 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, (async (c) => {
     console.error("Social queue analytics error:", error);
     return c.json({ error: "Failed to fetch analytics" }, 500);
   }
-}) as AppRouteHandler<typeof analyticsSocialQueueRoute>);
+}));
 
 export default socialQueueRouter;
