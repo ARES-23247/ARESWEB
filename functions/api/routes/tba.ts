@@ -48,7 +48,7 @@ async function getTBA(path: string, c: HonoContext) {
   return data;
 }
 
-tbaRouter.openapi(getRankingsRoute, async (c) => {
+tbaRouter.openapi(getRankingsRoute, async (c: any) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -62,7 +62,7 @@ tbaRouter.openapi(getRankingsRoute, async (c) => {
   }
 });
 
-tbaRouter.openapi(getMatchesRoute, async (c) => {
+tbaRouter.openapi(getMatchesRoute, async (c: any) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -77,7 +77,7 @@ tbaRouter.openapi(getMatchesRoute, async (c) => {
   }
 });
 
-tbaRouter.openapi(getFtcEventsRoute, async (c) => {
+tbaRouter.openapi(getFtcEventsRoute, async (c: any) => {
   try {
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;

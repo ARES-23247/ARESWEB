@@ -32,7 +32,7 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
 // Get all public sponsors
-sponsorsRouter.openapi(getSponsorsRoute, async (c) => {
+sponsorsRouter.openapi(getSponsorsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -60,7 +60,7 @@ sponsorsRouter.openapi(getSponsorsRoute, async (c) => {
 });
 
 // Get ROI dashboard by token
-sponsorsRouter.openapi(getRoiRoute, async (c) => {
+sponsorsRouter.openapi(getRoiRoute, async (c: any) => {
   try {
     const { token } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -118,7 +118,7 @@ sponsorsRouter.openapi(getRoiRoute, async (c) => {
 });
 
 // Admin list all sponsors
-sponsorsRouter.openapi(adminListSponsorsRoute, async (c) => {
+sponsorsRouter.openapi(adminListSponsorsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const sponsors = await db.selectFrom("sponsors").selectAll().execute();
@@ -144,7 +144,7 @@ sponsorsRouter.openapi(adminListSponsorsRoute, async (c) => {
 });
 
 // Save/create sponsor
-sponsorsRouter.openapi(saveSponsorRoute, async (c) => {
+sponsorsRouter.openapi(saveSponsorRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -188,7 +188,7 @@ sponsorsRouter.openapi(saveSponsorRoute, async (c) => {
 });
 
 // Delete sponsor
-sponsorsRouter.openapi(deleteSponsorRoute, async (c) => {
+sponsorsRouter.openapi(deleteSponsorRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -203,7 +203,7 @@ sponsorsRouter.openapi(deleteSponsorRoute, async (c) => {
 });
 
 // Get admin tokens
-sponsorsRouter.openapi(getAdminTokensRoute, async (c) => {
+sponsorsRouter.openapi(getAdminTokensRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -229,7 +229,7 @@ sponsorsRouter.openapi(getAdminTokensRoute, async (c) => {
 });
 
 // Generate token
-sponsorsRouter.openapi(generateTokenRoute, async (c) => {
+sponsorsRouter.openapi(generateTokenRoute, async (c: any) => {
   try {
     const { sponsor_id } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;

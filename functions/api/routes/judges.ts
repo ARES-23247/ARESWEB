@@ -34,7 +34,7 @@ const portfolioCache = new Map<string, { data: unknown; expiresAt: number; versi
 // Helper to get the current portfolio cache key with version
 const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
-judgesRouter.openapi(judgeLoginRoute, async (c) => {
+judgesRouter.openapi(judgeLoginRoute, async (c: any) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const db = c.get("db") as Kysely<DB>;
 
@@ -74,7 +74,7 @@ judgesRouter.openapi(judgeLoginRoute, async (c) => {
   }
 });
 
-judgesRouter.openapi(judgePortfolioRoute, async (c) => {
+judgesRouter.openapi(judgePortfolioRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { "x-judge-code": code } = c.req.valid("header");
@@ -169,7 +169,7 @@ judgesRouter.openapi(judgePortfolioRoute, async (c) => {
 // Admin routes require ensureAdmin middleware
 judgesRouter.use("/admin/*", ensureAdmin);
 
-judgesRouter.openapi(listJudgeCodesRoute, async (c) => {
+judgesRouter.openapi(listJudgeCodesRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("judge_access_codes")
@@ -189,7 +189,7 @@ judgesRouter.openapi(listJudgeCodesRoute, async (c) => {
   }
 });
 
-judgesRouter.openapi(createJudgeCodeRoute, async (c) => {
+judgesRouter.openapi(createJudgeCodeRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { label, expiresAt } = c.req.valid("json");
@@ -216,7 +216,7 @@ judgesRouter.openapi(createJudgeCodeRoute, async (c) => {
   }
 });
 
-judgesRouter.openapi(deleteJudgeCodeRoute, async (c) => {
+judgesRouter.openapi(deleteJudgeCodeRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { id } = c.req.valid("param");

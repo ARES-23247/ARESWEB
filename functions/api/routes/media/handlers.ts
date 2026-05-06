@@ -105,7 +105,7 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
 
 
 export const mediaHandlers = {
-  getMedia: async (c: Context<AppEnv>) => {
+  getMedia: async (c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
     const rl = await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `media_list_${ip}`, ua, 30, 60);
@@ -163,7 +163,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  adminList: async (c: Context<AppEnv>) => {
+  adminList: async (c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const [objects, results] = await Promise.all([
@@ -192,7 +192,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  upload: async (c: Context<AppEnv>) => {
+  upload: async (c: any) => {
     try {
       const formData = await c.req.parseBody();
       const file = formData["file"] as File | null;
@@ -278,7 +278,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "Upload failed: " + (error.message || String(error)) } };
     }
   },
-  move: async (c: Context<AppEnv>) => {
+  move: async (c: any) => {
     const { key } = c.req.valid("param");
     const { folder } = c.req.valid("json");
     try {
@@ -312,7 +312,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "Move failed" } };
     }
   },
-  delete: async (c: Context<AppEnv>) => {
+  delete: async (c: any) => {
     const { key } = c.req.valid("param");
     try {
       if (c.env.ARES_STORAGE) {
@@ -327,7 +327,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  syndicate: async (c: Context<AppEnv>) => {
+  syndicate: async (c: any) => {
     try {
       const { key, caption } = c.req.valid("json");
       const config = await getDbSettings(c);

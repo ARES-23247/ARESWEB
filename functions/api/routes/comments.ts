@@ -34,7 +34,7 @@ commentsRouter.use("/{id}", (c, next) => {
   return next();
 });
 
-commentsRouter.openapi(listCommentsRoute, async (c) => {
+commentsRouter.openapi(listCommentsRoute, async (c: any) => {
   const { targetType, targetId } = c.req.valid("param");
   const user = await getSessionUser(c);
   const db = c.get("db") as Kysely<DB>;
@@ -74,7 +74,7 @@ commentsRouter.openapi(listCommentsRoute, async (c) => {
   }
 });
 
-commentsRouter.openapi(submitCommentRoute, async (c) => {
+commentsRouter.openapi(submitCommentRoute, async (c: any) => {
   const user = await getSessionUser(c);
   if (!user) {
     return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
@@ -155,7 +155,7 @@ commentsRouter.openapi(submitCommentRoute, async (c) => {
   }
 });
 
-commentsRouter.openapi(updateCommentRoute, async (c) => {
+commentsRouter.openapi(updateCommentRoute, async (c: any) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
@@ -208,7 +208,7 @@ commentsRouter.openapi(updateCommentRoute, async (c) => {
   }
 });
 
-commentsRouter.openapi(deleteCommentRoute, async (c) => {
+commentsRouter.openapi(deleteCommentRoute, async (c: any) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);

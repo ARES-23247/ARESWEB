@@ -115,7 +115,7 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 }
 
 // GET /docs - List all public docs
-docsRouter.openapi(docsRoutes.getDocsRoute, async (c) => {
+docsRouter.openapi(docsRoutes.getDocsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     let results;
@@ -181,21 +181,21 @@ docsRouter.openapi(docsRoutes.getDocsRoute, async (c) => {
       original_author_avatar: d.original_author_avatar || undefined
     }));
 
-    return c.json({ docs }, 200);
+    return c.json({ docs }, 200 as any);
   } catch (e) {
     console.error("[Docs:List] Error", e);
-    return c.json({ error: "Failed to fetch documents" }, 500);
+    return c.json({ error: "Failed to fetch documents" }, 500 as any);
   }
 });
 
 // GET /docs/search - Search docs
-docsRouter.openapi(docsRoutes.searchDocsRoute, async (c) => {
+docsRouter.openapi(docsRoutes.searchDocsRoute, async (c: any) => {
   const { q } = c.req.valid("query");
-  if (!q || q.length < 3) return c.json({ results: [] }, 200);
+  if (!q || q.length < 3) return c.json({ results: [] }, 200 as any);
 
   // WR-18: Limit query length to prevent ReDoS via complex regex patterns
   if (q.length > 50) {
-    return c.json({ error: "Query too long (max 50 characters)" }, 400);
+    return c.json({ error: "Query too long (max 50 characters)" }, 400 as any);
   }
 
   try {
@@ -205,7 +205,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, async (c) => {
 
     // Sanitize FTS query to prevent SQL injection
     const cleanQ = sanitizeFtsQuery(String(q));
-    if (!cleanQ) return c.json({ results: [] }, 200);
+    if (!cleanQ) return c.json({ results: [] }, 200 as any);
 
     const db = c.get("db") as Kysely<DB>;
     const results = await sql<{ slug: string, title: string, category: string, description: string | null }>`
@@ -231,12 +231,12 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, async (c) => {
     return c.json(payload, 200);
   } catch (e) {
     console.error("[Docs:Search] Error", e);
-    return c.json({ error: "Search failed" }, 500);
+    return c.json({ error: "Search failed" }, 500 as any);
   }
 });
 
 // GET /docs/admin/list - List all docs (admin view)
-docsRouter.openapi(docsRoutes.adminListRoute, async (c) => {
+docsRouter.openapi(docsRoutes.adminListRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     let results;
@@ -267,15 +267,15 @@ docsRouter.openapi(docsRoutes.adminListRoute, async (c) => {
       display_in_science_corner: Number(d.display_in_science_corner || 0)
     }));
 
-    return c.json({ docs }, 200);
+    return c.json({ docs }, 200 as any);
   } catch (e) {
     console.error("[Docs:AdminList] Error", e);
-    return c.json({ error: "Failed to fetch docs" }, 500);
+    return c.json({ error: "Failed to fetch docs" }, 500 as any);
   }
 });
 
 // GET /docs/admin/{slug}/detail - Get doc detail (admin view)
-docsRouter.openapi(docsRoutes.adminDetailRoute, async (c) => {
+docsRouter.openapi(docsRoutes.adminDetailRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -292,7 +292,7 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, async (c) => {
         .executeTakeFirst() as PartialDoc | undefined;
     }
 
-    if (!row) return c.json({ error: "Doc not found" }, 404);
+    if (!row) return c.json({ error: "Doc not found" }, 404 as any);
 
     return c.json({
       doc: {
@@ -305,15 +305,15 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, async (c) => {
         display_in_math_corner: Number(row.display_in_math_corner || 0),
         display_in_science_corner: Number(row.display_in_science_corner || 0)
       }
-    }, 200);
+    }, 200 as any);
   } catch (e) {
     console.error("[Docs:AdminDetail] Error", e);
-    return c.json({ error: "Database error" }, 500);
+    return c.json({ error: "Database error" }, 500 as any);
   }
 });
 
 // GET /docs/{slug} - Get single doc with contributors
-docsRouter.openapi(docsRoutes.getDocRoute, async (c) => {
+docsRouter.openapi(docsRoutes.getDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -369,7 +369,7 @@ docsRouter.openapi(docsRoutes.getDocRoute, async (c) => {
         .executeTakeFirst() as DocWithAuthor | undefined;
     }
 
-    if (!row) return c.json({ error: "Doc not found" }, 404);
+    if (!row) return c.json({ error: "Doc not found" }, 404 as any);
 
     const contributorRows = await db.selectFrom("docs_history as h")
       .leftJoin("user as u", "h.author_email", "u.email")
@@ -402,33 +402,33 @@ docsRouter.openapi(docsRoutes.getDocRoute, async (c) => {
         original_author_avatar: row.original_author_avatar || undefined
       },
       contributors
-    }, 200);
+    }, 200 as any);
   } catch (e) {
     console.error("[Docs:Detail] Error", e);
-    return c.json({ error: "Failed to fetch document detail" }, 500);
+    return c.json({ error: "Failed to fetch document detail" }, 500 as any);
   }
 });
 
 // DELETE /docs/admin/{slug} - Delete doc (soft delete)
-docsRouter.openapi(docsRoutes.deleteDocRoute, async (c) => {
+docsRouter.openapi(docsRoutes.deleteDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
     const existing = await db.selectFrom("docs").selectAll().where("slug", "=", slug).executeTakeFirst();
-    if (!existing) return c.json({ error: "Doc not found" }, 404);
+    if (!existing) return c.json({ error: "Doc not found" }, 404 as any);
 
     await db.updateTable("docs").set({ is_deleted: 1 }).where("slug", "=", slug).execute();
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
     triggerBackgroundReindex(c.executionCtx, c.get("db"), (c.env.AI as { run: (model: string, input: unknown) => Promise<unknown> }), c.env.VECTORIZE_DB);
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Docs:Delete] Error", e);
-    return c.json({ error: "Delete failed" }, 500);
+    return c.json({ error: "Delete failed" }, 500 as any);
   }
 });
 
 // POST /docs/admin/save - Save or update doc
-docsRouter.openapi(docsRoutes.saveDocRoute, async (c) => {
+docsRouter.openapi(docsRoutes.saveDocRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = c.req.valid("json");
@@ -436,7 +436,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, async (c) => {
     const email = user?.email || "anonymous_admin";
 
     if (!slug) {
-      return c.json({ error: "slug is required" }, 400);
+      return c.json({ error: "slug is required" }, 400 as any);
     }
 
     const existing = await db.selectFrom("docs")
@@ -490,7 +490,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, async (c) => {
         priority: "medium"
       }));
 
-      return c.json({ success: true, slug: revSlug }, 200);
+      return c.json({ success: true, slug: revSlug }, 200 as any);
     }
 
     const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
@@ -568,29 +568,29 @@ docsRouter.openapi(docsRoutes.saveDocRoute, async (c) => {
     }
 
     triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
-    return c.json({ success: true, slug }, 200);
+    return c.json({ success: true, slug }, 200 as any);
   } catch (e) {
     console.error("[Docs:Save] Error", e);
-    return c.json({ error: "Write failed" }, 500);
+    return c.json({ error: "Write failed" }, 500 as any);
   }
 });
 
 // PATCH /docs/admin/{slug}/sort - Update doc sort order
-docsRouter.openapi(docsRoutes.updateSortRoute, async (c) => {
+docsRouter.openapi(docsRoutes.updateSortRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   const { sortOrder } = c.req.valid("json");
   try {
     const db = c.get("db") as Kysely<DB>;
     await db.updateTable("docs").set({ sort_order: sortOrder }).where("slug", "=", slug).execute();
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Docs:Sort] Error", e);
-    return c.json({ error: "Sort update failed" }, 500);
+    return c.json({ error: "Sort update failed" }, 500 as any);
   }
 });
 
 // POST /docs/{slug}/feedback - Submit doc feedback
-docsRouter.openapi(docsRoutes.submitFeedbackRoute, async (c) => {
+docsRouter.openapi(docsRoutes.submitFeedbackRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   const { isHelpful, comment, turnstileToken } = c.req.valid("json");
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
@@ -600,20 +600,20 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, async (c) => {
   const valid = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
   if (!valid) return c.json({ error: "Security verification failed" }, 403);
 
-  if (comment && comment.length > 2000) return c.json({ error: "Comment too long" }, 400);
+  if (comment && comment.length > 2000) return c.json({ error: "Comment too long" }, 400 as any);
 
   try {
     const db = c.get("db") as Kysely<DB>;
     await db.insertInto("docs_feedback").values({ slug, is_helpful: isHelpful ? 1 : 0, comment: comment || null }).execute();
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Docs:Feedback] Error", e);
-    return c.json({ error: "Feedback failed" }, 500);
+    return c.json({ error: "Feedback failed" }, 500 as any);
   }
 });
 
 // GET /docs/admin/{slug}/history - Get doc history
-docsRouter.openapi(docsRoutes.getHistoryRoute, async (c) => {
+docsRouter.openapi(docsRoutes.getHistoryRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -629,15 +629,15 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, async (c) => {
       id: Number(h.id)
     }));
 
-    return c.json({ history }, 200);
+    return c.json({ history }, 200 as any);
   } catch (e) {
     console.error("[Docs:History] Error", e);
-    return c.json({ error: "Failed to fetch history" }, 500);
+    return c.json({ error: "Failed to fetch history" }, 500 as any);
   }
 });
 
 // PATCH /docs/admin/{slug}/history/{id}/restore - Restore doc from history
-docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c) => {
+docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c: any) => {
   const { slug, id } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -647,7 +647,7 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c) => {
       .where("slug", "=", slug)
       .executeTakeFirst();
 
-    if (!row) return c.json({ error: "Version not found" }, 404);
+    if (!row) return c.json({ error: "Version not found" }, 404 as any);
 
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
@@ -683,20 +683,20 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c) => {
       .where("slug", "=", slug)
       .execute();
 
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Docs:Restore] Error", e);
-    return c.json({ error: "Restore failed" }, 500);
+    return c.json({ error: "Restore failed" }, 500 as any);
   }
 });
 
 // POST /docs/admin/{slug}/approve - Approve doc
-docsRouter.openapi(docsRoutes.approveDocRoute, async (c) => {
+docsRouter.openapi(docsRoutes.approveDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
     const row = await db.selectFrom("docs").select(["revision_of", "title", "category", "sort_order", "description", "content", "is_portfolio", "is_executive_summary", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
-    if (!row) return c.json({ error: "Doc not found" }, 404);
+    if (!row) return c.json({ error: "Doc not found" }, 404 as any);
 
     if (row.revision_of) {
       await db.updateTable("docs")
@@ -727,15 +727,15 @@ docsRouter.openapi(docsRoutes.approveDocRoute, async (c) => {
         if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Approved", message: `Your document "${row.title}" has been published.`, link: `/docs/${slug}`, priority: "medium" });
       }
     }
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Docs:Approve] Error", e);
-    return c.json({ error: "Approve failed" }, 500);
+    return c.json({ error: "Approve failed" }, 500 as any);
   }
 });
 
 // POST /docs/admin/{slug}/reject - Reject doc
-docsRouter.openapi(docsRoutes.rejectDocRoute, async (c) => {
+docsRouter.openapi(docsRoutes.rejectDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   const { reason } = c.req.valid("json");
   try {
@@ -746,28 +746,28 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, async (c) => {
       const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
       if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Rejected", message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`, link: "/dashboard/manage_docs", priority: "high" });
     }
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Docs:Reject] Error", e);
-    return c.json({ error: "Reject failed" }, 500);
+    return c.json({ error: "Reject failed" }, 500 as any);
   }
 });
 
 // POST /docs/admin/{slug}/undelete - Undelete doc
-docsRouter.openapi(docsRoutes.undeleteDocRoute, async (c) => {
+docsRouter.openapi(docsRoutes.undeleteDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
     await db.updateTable("docs").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Docs:Undelete] Error", e);
-    return c.json({ error: "Undelete failed" }, 500);
+    return c.json({ error: "Undelete failed" }, 500 as any);
   }
 });
 
 // POST /docs/admin/{slug}/purge - Permanently delete doc
-docsRouter.openapi(docsRoutes.purgeDocRoute, async (c) => {
+docsRouter.openapi(docsRoutes.purgeDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -792,9 +792,9 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, async (c) => {
     c.executionCtx?.waitUntil?.(db.deleteFrom("docs_history").where("slug", "=", slug).execute());
     c.executionCtx?.waitUntil?.(logAuditAction(c, "PURGE_DOC", "docs", slug, JSON.stringify(doc)));
 
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (_e) {
-    return c.json({ error: "Purge failed" }, 500);
+    return c.json({ error: "Purge failed" }, 500 as any);
   }
 });
 

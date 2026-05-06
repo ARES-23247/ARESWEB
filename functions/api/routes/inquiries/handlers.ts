@@ -7,13 +7,14 @@ import { sendZulipMessage } from "../../../utils/zulipSync";
 import { notifyByRole, NotifyAudience } from "../../../utils/notifications";
 import { buildGitHubConfig, createProjectItem } from "../../../utils/githubProjects";
 import type { RouteHandler } from "@hono/zod-openapi";
-import type { 
-  listInquiriesRoute, 
-  submitInquiryRoute, 
-  updateInquiryStatusRoute, 
-  updateInquiryNotesRoute, 
-  deleteInquiryRoute 
+import {
+  listInquiriesRoute,
+  submitInquiryRoute,
+  updateInquiryStatusRoute,
+  updateInquiryNotesRoute,
+  deleteInquiryRoute
 } from "../../../../shared/routes/inquiries";
+import { AppEnv } from "../../middleware";
 
 /**
  * Deletes old inquiries that have been resolved or rejected.
@@ -31,7 +32,7 @@ export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
   return { deleted: res.length };
 }
 
-export const handleListInquiries: RouteHandler<typeof listInquiriesRoute> = async (c) => {
+export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv> = async (c: any) => {
   try {
     const { limit = 50, offset = 0 } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -114,7 +115,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute> = asyn
   }
 };
 
-export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute> = async (c) => {
+export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv> = async (c: any) => {
   try {
     const { type, name, email, metadata } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -221,7 +222,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute> = asyn
   }
 };
 
-export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute> = async (c) => {
+export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, AppEnv> = async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const { status } = c.req.valid("json");
@@ -239,7 +240,7 @@ export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute> =
   }
 };
 
-export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute> = async (c) => {
+export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, AppEnv> = async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const { notes } = c.req.valid("json");
@@ -257,7 +258,7 @@ export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute> = a
   }
 };
 
-export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute> = async (c) => {
+export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv> = async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

@@ -20,7 +20,7 @@ export const usersRouter = new OpenAPIHono<AppEnv>();
 // CR-07 FIX: Apply authentication to all admin routes
 usersRouter.use("/admin/*", ensureAdmin);
 
-usersRouter.openapi(getUsersRoute, async (c) => {
+usersRouter.openapi(getUsersRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit, cursor } = parsePagination(c, 50, 100);
@@ -90,7 +90,7 @@ usersRouter.openapi(getUsersRoute, async (c) => {
   }
 });
 
-usersRouter.openapi(adminDetailRoute, async (c) => {
+usersRouter.openapi(adminDetailRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -142,7 +142,7 @@ usersRouter.openapi(adminDetailRoute, async (c) => {
   }
 });
 
-usersRouter.openapi(patchUserRoute, async (c) => {
+usersRouter.openapi(patchUserRoute, async (c: any) => {
   try {
     // Defense-in-depth: Re-validate admin authorization for sensitive role changes
     const sessionUser = c.get("sessionUser") as
@@ -229,7 +229,7 @@ usersRouter.openapi(patchUserRoute, async (c) => {
   }
 });
 
-usersRouter.openapi(updateUserProfileRoute, async (c) => {
+usersRouter.openapi(updateUserProfileRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -240,7 +240,7 @@ usersRouter.openapi(updateUserProfileRoute, async (c) => {
   }
 });
 
-usersRouter.openapi(adminGetProfileRoute, async (c) => {
+usersRouter.openapi(adminGetProfileRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -366,7 +366,7 @@ usersRouter.openapi(adminGetProfileRoute, async (c) => {
   }
 });
 
-usersRouter.openapi(deleteUserRoute, async (c) => {
+usersRouter.openapi(deleteUserRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

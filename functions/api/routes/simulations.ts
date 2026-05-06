@@ -32,6 +32,15 @@ const SIM_FILENAME_PATTERN = /^[a-zA-Z0-9_.-]+\.(tsx?|jsx?|json|css)$/;
 
 export const simulationsRouter = new OpenAPIHono<AppEnv>();
 
+// Middleware
+simulationsRouter.use("/gist/*", ensureAuth);
+simulationsRouter.use("/", (c, next) => {
+  if (c.req.method === "POST" || c.req.method === "DELETE") {
+    return ensureAuth(c, next);
+  }
+  return next();
+});
+
 // Helper: Check if user owns a simulation or is admin
 async function canModifySimulation(c: { get: (key: "db") => AppEnv["Variables"]["db"]; env: AppEnv["Bindings"]; sessionUser?: AppEnv["Variables"]["sessionUser"] }, simId: string): Promise<boolean> {
   const sessionUser = c.sessionUser;
@@ -97,7 +106,7 @@ async function canModifySimulation(c: { get: (key: "db") => AppEnv["Variables"][
 }
 
 // List all simulations from GitHub
-simulationsRouter.openapi(listSimulationsRoute, async (c) => {
+simulationsRouter.openapi(listSimulationsRoute, async (c: any) => {
   try {
     const ghConfig = getGitHubConfig(c);
     let pat = c.env.GITHUB_PAT;
@@ -143,7 +152,7 @@ simulationsRouter.openapi(listSimulationsRoute, async (c) => {
 });
 
 // Get a single simulation file by id from GitHub
-simulationsRouter.openapi(getSimulationRoute, async (c) => {
+simulationsRouter.openapi(getSimulationRoute, async (c: any) => {
   const { id } = c.req.valid("param");
 
   if (!id || !id.startsWith("github:")) {
@@ -217,7 +226,7 @@ simulationsRouter.openapi(getSimulationRoute, async (c) => {
 });
 
 // Save simulation to GitHub
-simulationsRouter.openapi(saveSimulationRoute, ensureAuth, async (c) => {
+simulationsRouter.openapi(saveSimulationRoute, async (c: any) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -357,7 +366,7 @@ simulationsRouter.openapi(saveSimulationRoute, ensureAuth, async (c) => {
 });
 
 // Delete simulation from GitHub
-simulationsRouter.openapi(deleteSimulationRoute, ensureAuth, async (c) => {
+simulationsRouter.openapi(deleteSimulationRoute, async (c: any) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
@@ -409,7 +418,7 @@ simulationsRouter.openapi(deleteSimulationRoute, ensureAuth, async (c) => {
     }
 
     if (sha) {
-      if (!(await canModifySimulation({ get: db as any, env: c.env, sessionUser }, simIdStr))) {
+      if (!(await canModifySimulation({ get: c.get, env: c.env, sessionUser }, simIdStr))) {
         return c.json({ error: "You can only delete your own simulations" }, 403);
       }
       await fetch(url, {
@@ -458,7 +467,7 @@ simulationsRouter.openapi(deleteSimulationRoute, ensureAuth, async (c) => {
 });
 
 // Create a new GitHub Gist for a simulation
-simulationsRouter.openapi(createGistRoute, async (c) => {
+simulationsRouter.openapi(createGistRoute, async (c: any) => {
   try {
     const { name, files } = c.req.valid("json");
     if (Object.keys(files).length === 0) {
@@ -511,7 +520,7 @@ simulationsRouter.openapi(createGistRoute, async (c) => {
 });
 
 // Fetch a GitHub Gist by ID
-simulationsRouter.openapi(getGistRoute, async (c) => {
+simulationsRouter.openapi(getGistRoute, async (c: any) => {
   const { id } = c.req.valid("param");
 
   try {

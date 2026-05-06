@@ -11,7 +11,7 @@ financeRouter.use("*", ensureAdmin);
 financeRouter.use("*", rateLimitMiddleware(30, 60));
 
 // GET /finance/summary - Get financial summary for a season
-financeRouter.openapi(financeRoutes.getSummaryRoute, async (c) => {
+financeRouter.openapi(financeRoutes.getSummaryRoute, async (c: any) => {
   try {
     const { season_id } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -28,7 +28,7 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, async (c) => {
         total_expenses: 0,
         balance: 0,
         season_id: null
-      }, 200);
+      }, 200 as any);
     }
 
     const summary = await db
@@ -51,15 +51,15 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, async (c) => {
       total_expenses: totals.expense,
       balance: totals.income - totals.expense,
       season_id: Number(latestSeasonId),
-    }, 200);
+    }, 200 as any);
   } catch (e) {
     console.error("[Finance:Summary] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch summary" }, 500);
+    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch summary" }, 500 as any);
   }
 });
 
 // GET /finance/sponsorship - List sponsorship pipeline items
-financeRouter.openapi(financeRoutes.listPipelineRoute, async (c) => {
+financeRouter.openapi(financeRoutes.listPipelineRoute, async (c: any) => {
   try {
     const { season_id } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -83,15 +83,15 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, async (c) => {
       assignees: assignments.filter(a => a.sponsorship_id === p.id).map(a => a.user_id)
     }));
 
-    return c.json({ pipeline: result }, 200);
+    return c.json({ pipeline: result }, 200 as any);
   } catch (e) {
     console.error("[Finance:ListPipeline] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch pipeline" }, 500);
+    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch pipeline" }, 500 as any);
   }
 });
 
 // POST /finance/sponsorship - Create or update a sponsorship pipeline item
-financeRouter.openapi(financeRoutes.savePipelineRoute, async (c) => {
+financeRouter.openapi(financeRoutes.savePipelineRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -185,29 +185,29 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, async (c) => {
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "sponsorship_pipeline", id);
-    return c.json({ success: true, id }, 200);
+    return c.json({ success: true, id }, 200 as any);
   } catch (e) {
     console.error("[Finance:SavePipeline] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to save pipeline" }, 500);
+    return c.json({ error: e instanceof Error ? e.message : "Failed to save pipeline" }, 500 as any);
   }
 });
 
 // DELETE /finance/sponsorship/{id} - Delete a sponsorship pipeline item
-financeRouter.openapi(financeRoutes.deletePipelineRoute, async (c) => {
+financeRouter.openapi(financeRoutes.deletePipelineRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
     await db.deleteFrom("sponsorship_pipeline").where("id", "=", id).execute();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Finance:DeletePipeline] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to delete pipeline" }, 500);
+    return c.json({ error: e instanceof Error ? e.message : "Failed to delete pipeline" }, 500 as any);
   }
 });
 
 // GET /finance/transactions - List financial transactions
-financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c) => {
+financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c: any) => {
   try {
     const { season_id, type } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -226,15 +226,15 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c) => {
         season_id: t.season_id ? Number(t.season_id) : null,
         amount: Number(t.amount)
       }))
-    }, 200);
+    }, 200 as any);
   } catch (e) {
     console.error("[Finance:ListTransactions] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch transactions" }, 500);
+    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch transactions" }, 500 as any);
   }
 });
 
 // POST /finance/transactions - Create or update a financial transaction
-financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c) => {
+financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -279,15 +279,15 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c) => {
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
-    return c.json({ success: true, id }, 200);
+    return c.json({ success: true, id }, 200 as any);
   } catch (e) {
     console.error("[Finance:SaveTransaction] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to save transaction" }, 500);
+    return c.json({ error: e instanceof Error ? e.message : "Failed to save transaction" }, 500 as any);
   }
 });
 
 // DELETE /finance/transactions/{id} - Delete a financial transaction
-financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c) => {
+financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -313,10 +313,10 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c) => {
     }
 
     await logAuditAction(c, "delete", "finance_transactions", id);
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200 as any);
   } catch (e) {
     console.error("[Finance:DeleteTransaction] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to delete transaction" }, 500);
+    return c.json({ error: e instanceof Error ? e.message : "Failed to delete transaction" }, 500 as any);
   }
 });
 

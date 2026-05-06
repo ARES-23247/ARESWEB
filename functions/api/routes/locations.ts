@@ -17,7 +17,7 @@ export const locationsRouter = new OpenAPIHono<AppEnv>();
 
 locationsRouter.use("/admin/*", ensureAdmin);
 
-locationsRouter.openapi(listLocationsRoute, async (c) => {
+locationsRouter.openapi(listLocationsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("locations")
@@ -39,7 +39,7 @@ locationsRouter.openapi(listLocationsRoute, async (c) => {
   }
 });
 
-locationsRouter.openapi(adminListLocationsRoute, async (c) => {
+locationsRouter.openapi(adminListLocationsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("locations")
@@ -60,7 +60,7 @@ locationsRouter.openapi(adminListLocationsRoute, async (c) => {
   }
 });
 
-locationsRouter.openapi(saveLocationRoute, async (c) => {
+locationsRouter.openapi(saveLocationRoute, async (c: any) => {
   try {
     const validatedData = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -90,7 +90,7 @@ locationsRouter.openapi(saveLocationRoute, async (c) => {
   }
 });
 
-locationsRouter.openapi(deleteLocationRoute, async (c) => {
+locationsRouter.openapi(deleteLocationRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

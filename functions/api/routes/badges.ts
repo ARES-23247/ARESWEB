@@ -20,7 +20,7 @@ badgesRouter.use("/", ensureAuth);
 badgesRouter.use("/admin/*", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-badgesRouter.openapi(listBadgesRoute, async (c) => {
+badgesRouter.openapi(listBadgesRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -45,7 +45,7 @@ badgesRouter.openapi(listBadgesRoute, async (c) => {
   }
 });
 
-badgesRouter.openapi(createBadgeRoute, async (c) => {
+badgesRouter.openapi(createBadgeRoute, async (c: any) => {
   try {
     const { id, name, description, icon, color_theme } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -66,7 +66,7 @@ badgesRouter.openapi(createBadgeRoute, async (c) => {
   }
 });
 
-badgesRouter.openapi(grantBadgeRoute, async (c) => {
+badgesRouter.openapi(grantBadgeRoute, async (c: any) => {
   try {
     const { userId, badgeId } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -130,7 +130,7 @@ badgesRouter.openapi(grantBadgeRoute, async (c) => {
   }
 });
 
-badgesRouter.openapi(revokeBadgeRoute, async (c) => {
+badgesRouter.openapi(revokeBadgeRoute, async (c: any) => {
   try {
     const { userId, badgeId } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -146,7 +146,7 @@ badgesRouter.openapi(revokeBadgeRoute, async (c) => {
   }
 });
 
-badgesRouter.openapi(deleteBadgeRoute, async (c) => {
+badgesRouter.openapi(deleteBadgeRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -158,7 +158,7 @@ badgesRouter.openapi(deleteBadgeRoute, async (c) => {
   }
 });
 
-badgesRouter.openapi(leaderboardBadgeRoute, async (c) => {
+badgesRouter.openapi(leaderboardBadgeRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db

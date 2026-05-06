@@ -94,7 +94,7 @@ storeRouter.post("/webhook", async (c) => {
 storeRouter.use("/orders/*", ensureAdmin);
 storeRouter.use("/orders", ensureAdmin);
 
-storeRouter.openapi(getProductsRoute, async (c) => {
+storeRouter.openapi(getProductsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const products = await db
@@ -123,7 +123,7 @@ storeRouter.openapi(getProductsRoute, async (c) => {
   }
 });
 
-storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
+storeRouter.openapi(createCheckoutSessionRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const { items, successUrl, cancelUrl } = body;
@@ -196,7 +196,7 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
   }
 });
 
-storeRouter.openapi(getOrdersRoute, async (c) => {
+storeRouter.openapi(getOrdersRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const orders = await db.selectFrom("orders").selectAll().orderBy("created_at", "desc").execute();
@@ -208,7 +208,7 @@ storeRouter.openapi(getOrdersRoute, async (c) => {
   }
 });
 
-storeRouter.openapi(updateOrderStatusRoute, async (c) => {
+storeRouter.openapi(updateOrderStatusRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");

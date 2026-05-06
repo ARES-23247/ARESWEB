@@ -38,7 +38,7 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
 });
 
 // List posts
-socialQueueRouter.openapi(listSocialQueueRoute, async (c) => {
+socialQueueRouter.openapi(listSocialQueueRoute, async (c: any) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -80,7 +80,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, async (c) => {
 });
 
 // Calendar view
-socialQueueRouter.openapi(calendarSocialQueueRoute, async (c) => {
+socialQueueRouter.openapi(calendarSocialQueueRoute, async (c: any) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -112,7 +112,7 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, async (c) => {
 });
 
 // Create post
-socialQueueRouter.openapi(createSocialQueueRoute, async (c) => {
+socialQueueRouter.openapi(createSocialQueueRoute, async (c: any) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -161,7 +161,7 @@ socialQueueRouter.openapi(createSocialQueueRoute, async (c) => {
 });
 
 // Update post
-socialQueueRouter.openapi(updateSocialQueueRoute, async (c) => {
+socialQueueRouter.openapi(updateSocialQueueRoute, async (c: any) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -204,7 +204,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, async (c) => {
 });
 
 // Delete post
-socialQueueRouter.openapi(deleteSocialQueueRoute, async (c) => {
+socialQueueRouter.openapi(deleteSocialQueueRoute, async (c: any) => {
   try {
     const user = await getSessionUser(c);
     if (!user) {
@@ -236,7 +236,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, async (c) => {
 });
 
 // Send post now
-socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c) => {
+socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c: any) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
@@ -278,7 +278,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c) => {
 });
 
 // Analytics
-socialQueueRouter.openapi(analyticsSocialQueueRoute, async (c) => {
+socialQueueRouter.openapi(analyticsSocialQueueRoute, async (c: any) => {
   try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {

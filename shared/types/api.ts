@@ -28,10 +28,11 @@ export type HonoContext = Context<AppEnv>;
  */
 export type HandlerInput<
   TBody = unknown,
-  TParams extends Record<string, string> = Record<string, string>,
+  TParams extends Record<string, any> = Record<string, any>,
+  TQuery extends Record<string, any> = Record<string, any>
 > = {
   body: TBody;
-  query: Record<string, string>;
+  query: TQuery;
   params: TParams;
 };
 

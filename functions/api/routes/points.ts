@@ -11,7 +11,7 @@ import {
 
 export const pointsRouter = new OpenAPIHono<AppEnv>();
 
-pointsRouter.openapi(getPointsBalanceRoute, async (c) => {
+pointsRouter.openapi(getPointsBalanceRoute, async (c: any) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -39,7 +39,7 @@ pointsRouter.openapi(getPointsBalanceRoute, async (c) => {
   }
 });
 
-pointsRouter.openapi(getPointsHistoryRoute, async (c) => {
+pointsRouter.openapi(getPointsHistoryRoute, async (c: any) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -70,7 +70,7 @@ pointsRouter.openapi(getPointsHistoryRoute, async (c) => {
   }
 });
 
-pointsRouter.openapi(awardPointsRoute, async (c) => {
+pointsRouter.openapi(awardPointsRoute, async (c: any) => {
   const { user_id, points_delta, reason } = c.req.valid("json");
   try {
     const sessionUser = c.get("sessionUser");
@@ -103,7 +103,7 @@ pointsRouter.openapi(awardPointsRoute, async (c) => {
   }
 });
 
-pointsRouter.openapi(getPointsLeaderboardRoute, async (c) => {
+pointsRouter.openapi(getPointsLeaderboardRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
 

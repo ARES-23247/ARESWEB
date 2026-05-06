@@ -4,7 +4,7 @@ import { ftcEventsProxyRoute } from "../../../../shared/routes/scouting";
 
 const ftcEventsProxy = new OpenAPIHono<AppEnv>();
 
-ftcEventsProxy.openapi(ftcEventsProxyRoute, async (c) => {
+ftcEventsProxy.openapi(ftcEventsProxyRoute, async (c: any) => {
   const { path } = c.req.valid("param");
   const username = c.env.FTC_EVENTS_USERNAME;
   const apiKey = c.env.FTC_EVENTS_API_KEY;

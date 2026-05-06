@@ -15,7 +15,7 @@ communicationsRouter.use("/mass-email", ensureAdmin);
 communicationsRouter.use("/stats", ensureAdmin);
 
 // Get stats
-communicationsRouter.openapi(getStatsRoute, async (c) => {
+communicationsRouter.openapi(getStatsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB> | null;
     if (!db) {
@@ -35,7 +35,7 @@ communicationsRouter.openapi(getStatsRoute, async (c) => {
 });
 
 // Send mass email
-communicationsRouter.openapi(sendMassEmailRoute, async (c) => {
+communicationsRouter.openapi(sendMassEmailRoute, async (c: any) => {
   try {
     const { subject, htmlContent } = c.req.valid("json");
     const socialConfig = await getSocialConfig(c);

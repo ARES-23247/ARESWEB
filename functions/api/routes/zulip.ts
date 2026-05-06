@@ -34,7 +34,7 @@ zulipRouter.use("*", ensureAuth);
 zulipRouter.use("/presence", ensureAdmin);
 zulipRouter.use("/invites/*", ensureAdmin);
 
-zulipRouter.openapi(getPresenceRoute, async (c) => {
+zulipRouter.openapi(getPresenceRoute, async (c: any) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -88,7 +88,7 @@ zulipRouter.openapi(getPresenceRoute, async (c) => {
   }
 });
 
-zulipRouter.openapi(sendMessageRoute, async (c) => {
+zulipRouter.openapi(sendMessageRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const { sendZulipMessage } = await import("../../utils/zulipSync");
@@ -126,7 +126,7 @@ zulipRouter.openapi(sendMessageRoute, async (c) => {
   }
 });
 
-zulipRouter.openapi(getTopicMessagesRoute, async (c) => {
+zulipRouter.openapi(getTopicMessagesRoute, async (c: any) => {
   try {
     const query = c.req.valid("query");
     const config = await getSocialConfig(c);
@@ -178,7 +178,7 @@ zulipRouter.openapi(getTopicMessagesRoute, async (c) => {
   }
 });
 
-zulipRouter.openapi(auditMissingUsersRoute, async (c) => {
+zulipRouter.openapi(auditMissingUsersRoute, async (c: any) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -291,7 +291,7 @@ zulipRouter.openapi(auditMissingUsersRoute, async (c) => {
   }
 });
 
-zulipRouter.openapi(inviteUsersRoute, async (c) => {
+zulipRouter.openapi(inviteUsersRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const config = await getSocialConfig(c);

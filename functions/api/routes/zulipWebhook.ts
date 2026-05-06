@@ -27,17 +27,15 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 // ── POST /webhooks/zulip — Handle outgoing webhook from Zulip ────────
-zulipWebhookRouter.openapi(zulipWebhookRoute, async (c) => {
+zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: any) => {
   const body = c.req.valid("json");
 
   const config = await getSocialConfig(c);
   const expectedToken = config.ZULIP_WEBHOOK_TOKEN;
   if (!expectedToken) {
-    console.error("[ZulipWebhook] ZULIP_WEBHOOK_TOKEN is not configured.");
     return c.json({ content: "❌ Webhook token not configured on server." }, 401);
   }
   if (!timingSafeEqual(body.token, expectedToken)) {
-    console.warn("[ZulipWebhook] Invalid token");
     return c.json({ content: "❌ Unauthorized: Invalid webhook token." }, 401);
   }
 

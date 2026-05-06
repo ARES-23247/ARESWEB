@@ -52,7 +52,7 @@ const settingsSchema = z.record(z.string(), z.string().max(10000));
 // Admin protection - Apply only to admin routes
 settingsRouter.use("/admin/*", ensureAdmin);
 
-settingsRouter.openapi(getSettingsRoute, async (c) => {
+settingsRouter.openapi(getSettingsRoute, async (c: any) => {
   try {
     const settings = await getDbSettings(c);
     const masked: Record<string, string> = {};
@@ -66,7 +66,7 @@ settingsRouter.openapi(getSettingsRoute, async (c) => {
   }
 });
 
-settingsRouter.openapi(updateSettingsRoute, async (c) => {
+settingsRouter.openapi(updateSettingsRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const body = c.req.valid("json");
@@ -126,7 +126,7 @@ settingsRouter.openapi(updateSettingsRoute, async (c) => {
   }
 });
 
-settingsRouter.openapi(getStatsRoute, async (c) => {
+settingsRouter.openapi(getStatsRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
@@ -152,7 +152,7 @@ settingsRouter.openapi(getStatsRoute, async (c) => {
   }
 });
 
-settingsRouter.openapi(getPublicSettingsRoute, async (c) => {
+settingsRouter.openapi(getPublicSettingsRoute, async (c: any) => {
   try {
     const settings = await getDbSettings(c);
     const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
@@ -170,7 +170,7 @@ settingsRouter.openapi(getPublicSettingsRoute, async (c) => {
 });
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
-settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: HonoContext) => {
+settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const SAFE_TABLES = [

@@ -25,7 +25,7 @@ seasonsRouter.use("/:year", edgeCacheMiddleware(300, 60));
 seasonsRouter.use("/admin/*", ensureAdmin);
 seasonsRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-seasonsRouter.openapi(listSeasonsRoute, async (c) => {
+seasonsRouter.openapi(listSeasonsRoute, async (c: any) => {
   try {
     const db = c.get("db");
     const results = await db
@@ -64,7 +64,7 @@ seasonsRouter.openapi(listSeasonsRoute, async (c) => {
   }
 });
 
-seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
+seasonsRouter.openapi(adminListSeasonsRoute, async (c: any) => {
   try {
     const db = c.get("db");
     const results = await db
@@ -101,7 +101,7 @@ seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
   }
 });
 
-seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
+seasonsRouter.openapi(adminDetailSeasonRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -145,7 +145,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
   }
 });
 
-seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
+seasonsRouter.openapi(getSeasonDetailRoute, async (c: any) => {
   try {
     const { year } = c.req.valid("param");
     const db = c.get("db");
@@ -254,7 +254,7 @@ seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
   }
 });
 
-seasonsRouter.openapi(saveSeasonRoute, async (c) => {
+seasonsRouter.openapi(saveSeasonRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db");
@@ -339,7 +339,7 @@ seasonsRouter.openapi(saveSeasonRoute, async (c) => {
   }
 });
 
-seasonsRouter.openapi(deleteSeasonRoute, async (c) => {
+seasonsRouter.openapi(deleteSeasonRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -359,7 +359,7 @@ seasonsRouter.openapi(deleteSeasonRoute, async (c) => {
   }
 });
 
-seasonsRouter.openapi(undeleteSeasonRoute, async (c) => {
+seasonsRouter.openapi(undeleteSeasonRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");
@@ -377,7 +377,7 @@ seasonsRouter.openapi(undeleteSeasonRoute, async (c) => {
   }
 });
 
-seasonsRouter.openapi(purgeSeasonRoute, async (c) => {
+seasonsRouter.openapi(purgeSeasonRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db");

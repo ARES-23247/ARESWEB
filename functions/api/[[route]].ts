@@ -216,7 +216,7 @@ apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
 apiRouter.route("/communications", communicationsRouter);
 
 // ── Global Search ───
-apiRouter.openapi(searchRoute, async (c) => {
+apiRouter.openapi(searchRoute, async (c: any) => {
   const { q } = c.req.valid("query");
   const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
   if (!qClean || qClean.length > 100) return c.json({ results: [] }, 200);
@@ -243,7 +243,7 @@ apiRouter.openapi(searchRoute, async (c) => {
 });
 
 // ── Audit Log ────────────────────────────
-apiRouter.openapi(auditLogRoute, async (c) => {
+apiRouter.openapi(auditLogRoute, async (c: any) => {
   const { limit: l, offset: o } = c.req.valid("query");
   const limit = l ? parseInt(l, 10) : 50;
   const offset = o ? parseInt(o, 10) : 0;

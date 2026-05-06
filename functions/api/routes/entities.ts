@@ -8,7 +8,7 @@ export const entitiesRouter = new OpenAPIHono<AppEnv>();
 
 entitiesRouter.use("*", ensureAuth);
 
-entitiesRouter.openapi(getEntityLinksRoute, async (c) => {
+entitiesRouter.openapi(getEntityLinksRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { type, id } = c.req.valid("query");
@@ -72,7 +72,7 @@ entitiesRouter.openapi(getEntityLinksRoute, async (c) => {
   }
 });
 
-entitiesRouter.openapi(saveEntityLinkRoute, async (c) => {
+entitiesRouter.openapi(saveEntityLinkRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const body = c.req.valid("json");
@@ -97,7 +97,7 @@ entitiesRouter.openapi(saveEntityLinkRoute, async (c) => {
   }
 });
 
-entitiesRouter.openapi(deleteEntityLinkRoute, async (c) => {
+entitiesRouter.openapi(deleteEntityLinkRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { id } = c.req.valid("param");

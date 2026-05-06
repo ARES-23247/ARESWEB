@@ -62,7 +62,7 @@ profilesRouter.use("/me", ensureAuth);
 profilesRouter.use("/update-me", ensureAuth);
 profilesRouter.use("/avatar", ensureAuth);
 
-profilesRouter.openapi(getMeRoute, async (c) => {
+profilesRouter.openapi(getMeRoute, async (c: any) => {
   const user = (await getSessionUser(c))!;
   const db = c.get("db") as Kysely<DB>;
 
@@ -169,7 +169,7 @@ profilesRouter.openapi(getMeRoute, async (c) => {
   }
 });
 
-profilesRouter.openapi(updateMeRoute, async (c) => {
+profilesRouter.openapi(updateMeRoute, async (c: any) => {
   const user = (await getSessionUser(c))!;
   try {
     const body = c.req.valid("json");
@@ -189,7 +189,7 @@ profilesRouter.openapi(updateMeRoute, async (c) => {
   }
 });
 
-profilesRouter.openapi(updateAvatarRoute, async (c) => {
+profilesRouter.openapi(updateAvatarRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const image = (body as { image?: string | null }).image;
@@ -203,7 +203,7 @@ profilesRouter.openapi(updateAvatarRoute, async (c) => {
 
 // ─── Public Routes ────────────────────────────────────────────────────────
 
-profilesRouter.openapi(getTeamRosterRoute, async (c) => {
+profilesRouter.openapi(getTeamRosterRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db
@@ -283,7 +283,7 @@ profilesRouter.openapi(getTeamRosterRoute, async (c) => {
   }
 });
 
-profilesRouter.openapi(getPublicProfileRoute, async (c) => {
+profilesRouter.openapi(getPublicProfileRoute, async (c: any) => {
   const { userId } = c.req.valid("param");
   const db = c.get("db") as Kysely<DB>;
   try {

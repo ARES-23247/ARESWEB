@@ -9,7 +9,7 @@ export const logisticsRouter = new OpenAPIHono<AppEnv>();
 
 logisticsRouter.use("/admin/*", ensureAdmin);
 
-logisticsRouter.openapi(getLogisticsSummaryRoute, async (c) => {
+logisticsRouter.openapi(getLogisticsSummaryRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
 
   try {
@@ -51,7 +51,7 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, async (c) => {
   }
 });
 
-logisticsRouter.openapi(exportLogisticsEmailsRoute, async (c) => {
+logisticsRouter.openapi(exportLogisticsEmailsRoute, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const secret = c.env.ENCRYPTION_SECRET;
 

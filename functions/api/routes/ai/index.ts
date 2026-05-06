@@ -1,7 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { Context } from "hono";
 import { AppEnv, ensureAdmin, persistentRateLimitMiddleware, verifyTurnstile } from "../../middleware";
 import { streamSSE } from "hono/streaming";
-import { Kysely } from "kysely";
+import { Kysely, sql } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { MessageContent, ZaiChatResponse, ChatMessage, isTextContentPart } from "./types";
 import { 
@@ -190,7 +191,7 @@ aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -237,7 +238,9 @@ aiRouter.openapi(simPlaygroundRoute, async (c) => {
     if (lastMsg && lastMsg.role === "user") {
       const [header, base64] = imageUrl.split(',');
       const mediaType = header.split(';')[0].split(':')[1];
-      const textContent = lastMsg.content;
+      const textContent = typeof lastMsg.content === 'string' 
+        ? lastMsg.content 
+        : (Array.isArray(lastMsg.content) ? lastMsg.content.find(p => p.type === 'text')?.text || "" : "");
       
       lastMsg.content = [
         {
@@ -354,7 +357,7 @@ aiRouter.openapi(simPlaygroundRoute, async (c) => {
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -495,7 +498,7 @@ aiRouter.openapi(editorChatRoute, async (c) => {
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -874,7 +877,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
         ],
         max_tokens: 1536,
         stream: true
-      }) as ReadableStream;
+      }) as unknown as ReadableStream;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();

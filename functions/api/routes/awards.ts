@@ -6,7 +6,7 @@ import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../share
 
 export const awardsRouter = new OpenAPIHono<AppEnv>();
 
-awardsRouter.openapi(getAwardsRoute, async (c) => {
+awardsRouter.openapi(getAwardsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit = 50, offset = 0 } = c.req.valid('query');
@@ -40,7 +40,7 @@ awardsRouter.openapi(getAwardsRoute, async (c) => {
 
 awardsRouter.use("/admin/*", ensureAdmin);
 
-awardsRouter.openapi(saveAwardRoute, async (c) => {
+awardsRouter.openapi(saveAwardRoute, async (c: any) => {
   try {
     const validatedData = c.req.valid('json');
     const db = c.get("db") as Kysely<DB>;
@@ -126,7 +126,7 @@ awardsRouter.openapi(saveAwardRoute, async (c) => {
   }
 });
 
-awardsRouter.openapi(deleteAwardRoute, async (c) => {
+awardsRouter.openapi(deleteAwardRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const params = c.req.valid('param');

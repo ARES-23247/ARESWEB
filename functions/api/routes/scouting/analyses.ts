@@ -4,7 +4,7 @@ import { listScoutingAnalysesRoute } from "../../../../shared/routes/scouting";
 
 const analysesRouter = new OpenAPIHono<AppEnv>();
 
-analysesRouter.openapi(listScoutingAnalysesRoute, async (c) => {
+analysesRouter.openapi(listScoutingAnalysesRoute, async (c: any) => {
   const { teamNumber: teamNumberStr, eventKey } = c.req.valid("query");
   const db = c.get("db");
 

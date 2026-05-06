@@ -60,7 +60,7 @@ Be specific and use the data provided. Reference team numbers and stats.`,
 
 const analyzeRouter = new OpenAPIHono<AppEnv>();
 
-analyzeRouter.openapi(analyzeScoutingRoute, async (c) => {
+analyzeRouter.openapi(analyzeScoutingRoute, async (c: any) => {
   const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
   if (!SYSTEM_PROMPTS[mode]) {

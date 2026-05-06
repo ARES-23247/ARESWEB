@@ -21,7 +21,7 @@ tasksRouter.use("*", rateLimitMiddleware(30, 60));
 // WR-11: Add origin integrity to prevent CSRF attacks on task operations
 tasksRouter.use("*", originIntegrityMiddleware());
 
-tasksRouter.openapi(listTasksRoute, async (c) => {
+tasksRouter.openapi(listTasksRoute, async (c: any) => {
   try {
     const query = c.req.valid("query") || {};
     const db = c.get("db") as Kysely<DB>;
@@ -99,7 +99,7 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
   }
 });
 
-tasksRouter.openapi(createTaskRoute, async (c) => {
+tasksRouter.openapi(createTaskRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -221,7 +221,7 @@ tasksRouter.openapi(createTaskRoute, async (c) => {
   }
 });
 
-tasksRouter.openapi(reorderTasksRoute, async (c) => {
+tasksRouter.openapi(reorderTasksRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -255,7 +255,7 @@ tasksRouter.openapi(reorderTasksRoute, async (c) => {
   }
 });
 
-tasksRouter.openapi(updateTaskRoute, async (c) => {
+tasksRouter.openapi(updateTaskRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -362,7 +362,7 @@ tasksRouter.openapi(updateTaskRoute, async (c) => {
   }
 });
 
-tasksRouter.openapi(deleteTaskRoute, async (c) => {
+tasksRouter.openapi(deleteTaskRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

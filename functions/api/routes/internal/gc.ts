@@ -5,7 +5,7 @@ import { gcRoute } from "../../../../shared/routes/internal";
 export const gcRouter = new OpenAPIHono<AppEnv>();
 
 // This is an internal cron trigger endpoint
-gcRouter.openapi(gcRoute, async (c) => {
+gcRouter.openapi(gcRoute, async (c: any) => {
   try {
     const cronSecret = c.env.CRON_SECRET;
     const providedSecret = c.req.header("x-cron-secret");

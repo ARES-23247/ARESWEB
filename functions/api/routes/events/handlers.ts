@@ -67,7 +67,7 @@ type PartialEvent = Pick<SelectableRow<"events">, "id" | "title" | "category" | 
 };
 
 export const eventHandlers = {
-  getEvents: async (input: HandlerInput, c: HonoContext) => {
+  getEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -145,7 +145,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
   },
-  getCalendarSettings: async (_input: HandlerInput, c: HonoContext) => {
+  getCalendarSettings: async (_input: HandlerInput, c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("settings")
@@ -165,7 +165,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: {} };
     }
   },
-  getEvent: async (input: HandlerInput, c: HonoContext) => {
+  getEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -208,7 +208,7 @@ export const eventHandlers = {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
-  getAdminEvents: async (input: HandlerInput, c: HonoContext) => {
+  getAdminEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -250,7 +250,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
   },
-  adminDetail: async (input: HandlerInput, c: HonoContext) => {
+  adminDetail: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -288,7 +288,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Database error" } };
     }
   },
-  saveEvent: async (input: HandlerInput<EventSaveBody>, c: HonoContext) => {
+  saveEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -461,7 +461,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: errorMessage } };
     }
   },
-  updateEvent: async (input: HandlerInput<EventSaveBody>, c: HonoContext) => {
+  updateEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
     const { params, body } = input;
     const { id } = params;
     try {
@@ -612,7 +612,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Update failed" } };
     }
   },
-  deleteEvent: async (input: HandlerInput<Pick<EventSaveBody, 'deleteMode'>>, c: HonoContext) => {
+  deleteEvent: async (input: HandlerInput<Pick<EventSaveBody, 'deleteMode'>>, c: any) => {
     const { params, body } = input;
     const { id } = params;
     try {
@@ -678,7 +678,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Delete failed" } };
     }
   },
-  approveEvent: async (input: HandlerInput, c: HonoContext) => {
+  approveEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -728,7 +728,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Approval failed" } };
     }
   },
-  rejectEvent: async (input: HandlerInput, c: HonoContext) => {
+  rejectEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -740,7 +740,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Rejection failed" } };
     }
   },
-  undeleteEvent: async (input: HandlerInput, c: HonoContext) => {
+  undeleteEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -775,7 +775,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Restore failed" } };
     }
   },
-  purgeEvent: async (input: HandlerInput, c: HonoContext) => {
+  purgeEvent: async (input: HandlerInput, c: any) => {
     const { params } = input;
     const { id } = params;
     try {

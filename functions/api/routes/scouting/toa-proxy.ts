@@ -4,7 +4,7 @@ import { toaProxyRoute } from "../../../../shared/routes/scouting";
 
 const toaProxy = new OpenAPIHono<AppEnv>();
 
-toaProxy.openapi(toaProxyRoute, async (c) => {
+toaProxy.openapi(toaProxyRoute, async (c: any) => {
   const { path } = c.req.valid("param");
   const toaKey = c.env.TOA_API_KEY;
 

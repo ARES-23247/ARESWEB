@@ -17,7 +17,7 @@ notificationsRouter.use("*", ensureAuth);
 notificationsRouter.use("/:id/read", rateLimitMiddleware(20, 60));
 notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 
-notificationsRouter.openapi(getNotificationsRoute, async (c) => {
+notificationsRouter.openapi(getNotificationsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -48,7 +48,7 @@ notificationsRouter.openapi(getNotificationsRoute, async (c) => {
   }
 });
 
-notificationsRouter.openapi(markNotificationReadRoute, async (c) => {
+notificationsRouter.openapi(markNotificationReadRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -67,7 +67,7 @@ notificationsRouter.openapi(markNotificationReadRoute, async (c) => {
   }
 });
 
-notificationsRouter.openapi(markAllNotificationsReadRoute, async (c) => {
+notificationsRouter.openapi(markAllNotificationsReadRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -84,7 +84,7 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, async (c) => {
   }
 });
 
-notificationsRouter.openapi(deleteNotificationRoute, async (c) => {
+notificationsRouter.openapi(deleteNotificationRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -102,7 +102,7 @@ notificationsRouter.openapi(deleteNotificationRoute, async (c) => {
   }
 });
 
-notificationsRouter.openapi(getPendingCountsRoute, async (c) => {
+notificationsRouter.openapi(getPendingCountsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -139,7 +139,7 @@ notificationsRouter.openapi(getPendingCountsRoute, async (c) => {
   }
 });
 
-notificationsRouter.openapi(getDashboardActionItemsRoute, async (c) => {
+notificationsRouter.openapi(getDashboardActionItemsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
