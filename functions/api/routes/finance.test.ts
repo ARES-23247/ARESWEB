@@ -91,7 +91,7 @@ describe("Hono Backend - /finance Router", () => {
       const body = await res.json() as any;
       expect(body.total_income).toBe(1000);
       expect(body.total_expenses).toBe(400);
-      expect(mockDb.where).toHaveBeenCalledWith("season_id", "=", "2024");
+      expect(mockDb.where).toHaveBeenCalledWith("season_id", "=", 2024);
     });
 
     it("returns correct totals for latest season if not specified", async () => {
