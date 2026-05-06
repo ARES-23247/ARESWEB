@@ -2,16 +2,11 @@ import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "../routes/common";
 
-// Allowed role values for security
 export const UserRoleEnum = z.enum([
-  "admin",
-  "member",
-  "coach",
-  "mentor",
-  "parent",
-  "alumnus",
-  "sponsor",
-  "guest"
+  "unverified",
+  "user",
+  "author",
+  "admin"
 ]);
 
 // Allowed member_type values
