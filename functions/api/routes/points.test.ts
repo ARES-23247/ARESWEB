@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { TestEnv } from "../../../src/test/types";
+import { TestEnv, MockKysely } from "../../../src/test/types";
 import pointsRouter from "./points";
 
 describe("Hono Backend - /points Router", () => {

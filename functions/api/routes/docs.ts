@@ -1,7 +1,7 @@
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, checkPersistentRateLimit, verifyTurnstile, emitNotification, notifyByRole, getSocialConfig, logAuditAction } from "../middleware";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -9,6 +9,8 @@ import { siteConfig } from "../../utils/site.config";
 import type { HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 import * as docsRoutes from "../../../shared/routes/docs";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const docsRouter = new OpenAPIHono<AppEnv>();
 
@@ -116,7 +118,7 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 }
 
 // GET /docs - List all public docs
-docsRouter.openapi(docsRoutes.getDocsRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.getDocsRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     let results;
@@ -190,7 +192,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, async (c: Context<AppEnv>) => {
 });
 
 // GET /docs/search - Search docs
-docsRouter.openapi(docsRoutes.searchDocsRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.searchDocsRoute, async (c: any) => {
   const { q } = c.req.valid("query");
   if (!q || q.length < 3) return c.json({ results: [] }, 200);
 
@@ -237,7 +239,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, async (c: Context<AppEnv>) => {
 });
 
 // GET /docs/admin/list - List all docs (admin view)
-docsRouter.openapi(docsRoutes.adminListRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.adminListRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     let results;
@@ -276,7 +278,7 @@ docsRouter.openapi(docsRoutes.adminListRoute, async (c: Context<AppEnv>) => {
 });
 
 // GET /docs/admin/{slug}/detail - Get doc detail (admin view)
-docsRouter.openapi(docsRoutes.adminDetailRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.adminDetailRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -314,7 +316,7 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, async (c: Context<AppEnv>) => {
 });
 
 // GET /docs/{slug} - Get single doc with contributors
-docsRouter.openapi(docsRoutes.getDocRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.getDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -411,7 +413,7 @@ docsRouter.openapi(docsRoutes.getDocRoute, async (c: Context<AppEnv>) => {
 });
 
 // DELETE /docs/admin/{slug} - Delete doc (soft delete)
-docsRouter.openapi(docsRoutes.deleteDocRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.deleteDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -420,7 +422,7 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, async (c: Context<AppEnv>) => {
 
     await db.updateTable("docs").set({ is_deleted: 1 }).where("slug", "=", slug).execute();
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), (c.env.AI as { run: (model: string, input: unknown) => Promise<unknown> }), c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Delete] Error", e);
@@ -429,7 +431,7 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, async (c: Context<AppEnv>) => {
 });
 
 // POST /docs/admin/save - Save or update doc
-docsRouter.openapi(docsRoutes.saveDocRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.saveDocRoute, async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = c.req.valid("json");
@@ -577,7 +579,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, async (c: Context<AppEnv>) => {
 });
 
 // PATCH /docs/admin/{slug}/sort - Update doc sort order
-docsRouter.openapi(docsRoutes.updateSortRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.updateSortRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   const { sortOrder } = c.req.valid("json");
   try {
@@ -591,7 +593,7 @@ docsRouter.openapi(docsRoutes.updateSortRoute, async (c: Context<AppEnv>) => {
 });
 
 // POST /docs/{slug}/feedback - Submit doc feedback
-docsRouter.openapi(docsRoutes.submitFeedbackRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.submitFeedbackRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   const { isHelpful, comment, turnstileToken } = c.req.valid("json");
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
@@ -614,7 +616,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, async (c: Context<AppEnv>) =>
 });
 
 // GET /docs/admin/{slug}/history - Get doc history
-docsRouter.openapi(docsRoutes.getHistoryRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.getHistoryRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -638,7 +640,7 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, async (c: Context<AppEnv>) => {
 });
 
 // PATCH /docs/admin/{slug}/history/{id}/restore - Restore doc from history
-docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c: any) => {
   const { slug, id } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -692,7 +694,7 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c: Context<AppEnv>) =>
 });
 
 // POST /docs/admin/{slug}/approve - Approve doc
-docsRouter.openapi(docsRoutes.approveDocRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.approveDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -736,7 +738,7 @@ docsRouter.openapi(docsRoutes.approveDocRoute, async (c: Context<AppEnv>) => {
 });
 
 // POST /docs/admin/{slug}/reject - Reject doc
-docsRouter.openapi(docsRoutes.rejectDocRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.rejectDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   const { reason } = c.req.valid("json");
   try {
@@ -755,7 +757,7 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, async (c: Context<AppEnv>) => {
 });
 
 // POST /docs/admin/{slug}/undelete - Undelete doc
-docsRouter.openapi(docsRoutes.undeleteDocRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.undeleteDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -768,7 +770,7 @@ docsRouter.openapi(docsRoutes.undeleteDocRoute, async (c: Context<AppEnv>) => {
 });
 
 // POST /docs/admin/{slug}/purge - Permanently delete doc
-docsRouter.openapi(docsRoutes.purgeDocRoute, async (c: Context<AppEnv>) => {
+docsRouter.openapi(docsRoutes.purgeDocRoute, async (c: any) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;

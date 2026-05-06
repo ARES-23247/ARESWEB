@@ -5,6 +5,8 @@ import { mockExecutionContext } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 import zulipRouter from "./zulip";
 
+type MockKysely = any;
+
 interface ZulipConfig {
   ZULIP_BOT_EMAIL?: string;
   ZULIP_API_KEY?: string;

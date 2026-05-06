@@ -101,7 +101,7 @@ export default function Academy() {
       <div className="flex flex-1">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         <DocsSidebar
-          groupedDocs={groupedDocs}
+          groupedDocs={groupedDocs as any}
           currentSlug={slug}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}

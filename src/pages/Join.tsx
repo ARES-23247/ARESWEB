@@ -53,6 +53,7 @@ export default function Join() {
         throw new Error(payloadResult.error.issues[0].message);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API mutation data compatibility
       submitMutation.mutate(payloadResult.data as any);
     } catch (err) {
       setSubmitStatus("error");

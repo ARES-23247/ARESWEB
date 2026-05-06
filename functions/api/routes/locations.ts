@@ -1,5 +1,5 @@
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { z } from "zod";
 import { DB } from "../../../shared/schemas/database";
@@ -12,13 +12,15 @@ import {
 } from "../../../shared/routes/locations";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 type LocationInput = z.infer<typeof locationSchema>;
 
 export const locationsRouter = new OpenAPIHono<AppEnv>();
 
 locationsRouter.use("/admin/*", ensureAdmin);
 
-locationsRouter.openapi(listLocationsRoute, async (c: Context<AppEnv>) => {
+locationsRouter.openapi(listLocationsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("locations")
@@ -38,9 +40,9 @@ locationsRouter.openapi(listLocationsRoute, async (c: Context<AppEnv>) => {
     console.error("LIST_LOCATIONS ERROR", e);
     return c.json({ error: "Failed to fetch locations" }, 500);
   }
-});
+}) as AppRouteHandler<typeof listLocationsRoute>);
 
-locationsRouter.openapi(adminListLocationsRoute, async (c: Context<AppEnv>) => {
+locationsRouter.openapi(adminListLocationsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("locations")
@@ -59,9 +61,9 @@ locationsRouter.openapi(adminListLocationsRoute, async (c: Context<AppEnv>) => {
     console.error("ADMIN_LIST_LOCATIONS ERROR", e);
     return c.json({ error: "Failed to fetch locations" }, 500);
   }
-});
+}) as AppRouteHandler<typeof adminListLocationsRoute>);
 
-locationsRouter.openapi(saveLocationRoute, async (c: Context<AppEnv>) => {
+locationsRouter.openapi(saveLocationRoute, (async (c) => {
   try {
     const validatedData = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -89,9 +91,9 @@ locationsRouter.openapi(saveLocationRoute, async (c: Context<AppEnv>) => {
     console.error("SAVE_LOCATION ERROR", e);
     return c.json({ error: "Failed to save location", success: false }, 500);
   }
-});
+}) as AppRouteHandler<typeof saveLocationRoute>);
 
-locationsRouter.openapi(deleteLocationRoute, async (c: Context<AppEnv>) => {
+locationsRouter.openapi(deleteLocationRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -105,6 +107,6 @@ locationsRouter.openapi(deleteLocationRoute, async (c: Context<AppEnv>) => {
     console.error("DELETE_LOCATION ERROR", e);
     return c.json({ error: "Failed to delete location", success: false }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteLocationRoute>);
 
 export default locationsRouter;

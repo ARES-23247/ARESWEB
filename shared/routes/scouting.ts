@@ -25,7 +25,7 @@ export const analyzeScoutingRoute = createRoute({
             teamNumber: z.number().optional(),
             eventKey: z.string().optional(),
             seasonKey: z.string(),
-            context: z.record(z.any()),
+            context: z.record(z.string(), z.any()),
           }),
         },
       },

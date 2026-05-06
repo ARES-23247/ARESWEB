@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- User data is dynamic */
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, logAuditAction, parsePagination } from "../middleware";
 import { upsertProfile } from "./_profileUtils";
 import { decrypt } from "../../utils/crypto";
@@ -16,12 +17,14 @@ import {
   MemberTypeEnum,
 } from "../../../shared/routes/users";
 
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 export const usersRouter = new OpenAPIHono<AppEnv>();
 
 // CR-07 FIX: Apply authentication to all admin routes
 usersRouter.use("/admin/*", ensureAdmin);
 
-usersRouter.openapi(getUsersRoute, async (c: Context<AppEnv>) => {
+usersRouter.openapi(getUsersRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit, cursor } = parsePagination(c, 50, 100);
@@ -89,9 +92,9 @@ usersRouter.openapi(getUsersRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Database error" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getUsersRoute>);
 
-usersRouter.openapi(adminDetailRoute, async (c: Context<AppEnv>) => {
+usersRouter.openapi(adminDetailRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -133,17 +136,17 @@ usersRouter.openapi(adminDetailRoute, async (c: Context<AppEnv>) => {
               ? row.updatedAt
               : new Date(row.updatedAt as string).getTime(),
           nickname: (row.nickname as string | null) || null,
-          member_type: row.member_type as any,
-        } as z.infer<typeof userResponseSchema>,
+          member_type: row.member_type as string | null,
+        },
       },
       200
     );
   } catch {
     return c.json({ error: "Database error" }, 500);
   }
-});
+}) as AppRouteHandler<typeof adminDetailRoute>);
 
-usersRouter.openapi(patchUserRoute, async (c: Context<AppEnv>) => {
+usersRouter.openapi(patchUserRoute, (async (c) => {
   try {
     // Defense-in-depth: Re-validate admin authorization for sensitive role changes
     const sessionUser = c.get("sessionUser") as
@@ -228,9 +231,9 @@ usersRouter.openapi(patchUserRoute, async (c: Context<AppEnv>) => {
       500
     );
   }
-});
+}) as AppRouteHandler<typeof patchUserRoute>);
 
-usersRouter.openapi(updateUserProfileRoute, async (c: Context<AppEnv>) => {
+usersRouter.openapi(updateUserProfileRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -239,9 +242,9 @@ usersRouter.openapi(updateUserProfileRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Profile update failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof updateUserProfileRoute>);
 
-usersRouter.openapi(adminGetProfileRoute, async (c: Context<AppEnv>) => {
+usersRouter.openapi(adminGetProfileRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -365,9 +368,9 @@ usersRouter.openapi(adminGetProfileRoute, async (c: Context<AppEnv>) => {
     console.error("[Admin:GetProfile] Error", err);
     return c.json({ error: "Failed to fetch user profile" }, 500);
   }
-});
+}) as AppRouteHandler<typeof adminGetProfileRoute>);
 
-usersRouter.openapi(deleteUserRoute, async (c: Context<AppEnv>) => {
+usersRouter.openapi(deleteUserRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -393,6 +396,6 @@ usersRouter.openapi(deleteUserRoute, async (c: Context<AppEnv>) => {
     console.error("Delete user failed:", e);
     return c.json({ error: "Delete failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteUserRoute>);
 
 export default usersRouter;

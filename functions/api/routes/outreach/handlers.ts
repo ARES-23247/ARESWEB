@@ -1,12 +1,12 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import { getSessionUser, logAuditAction } from "../../middleware";
+import { AppEnv, getSessionUser, logAuditAction } from "../../middleware";
 import type { RouteHandler } from "@hono/zod-openapi";
-import type { 
-  listOutreachRoute, 
-  adminListOutreachRoute, 
-  saveOutreachRoute, 
-  deleteOutreachRoute 
+import type {
+  listOutreachRoute,
+  adminListOutreachRoute,
+  saveOutreachRoute,
+  deleteOutreachRoute
 } from "../../../../shared/routes/outreach";
 
 const SNIPPET_LENGTH = 200;
@@ -43,7 +43,7 @@ async function fetchVolunteerEvents(db: Kysely<DB>, existingEventIds: string[]) 
   }
 }
 
-export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async (c: Context<AppEnv>) => {
+export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("outreach_logs")
@@ -91,7 +91,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async 
   }
 };
 
-export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute> = async (c: Context<AppEnv>) => {
+export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute> = async (c: any) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db.selectFrom("outreach_logs")
@@ -139,7 +139,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
   }
 };
 
-export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async (c: Context<AppEnv>) => {
+export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -202,7 +202,7 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async 
   }
 };
 
-export const handleDeleteOutreach: RouteHandler<typeof deleteOutreachRoute> = async (c: Context<AppEnv>) => {
+export const handleDeleteOutreach: RouteHandler<typeof deleteOutreachRoute> = async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

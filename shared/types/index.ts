@@ -8,5 +8,5 @@
 
 export * from "./database";
 export * from "./api";
-export * from "./contracts";
+
 export * from "./utility";

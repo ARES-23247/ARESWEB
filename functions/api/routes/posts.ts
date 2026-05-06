@@ -1,7 +1,7 @@
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import {
   AppEnv,
   getSessionUser,
@@ -45,6 +45,8 @@ import {
 import { siteConfig } from "../../utils/site.config";
 import { edgeCacheMiddleware } from "../middleware/cache";
 
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 const postsRouter = new OpenAPIHono<AppEnv>();
 
 // ─── Middleware Configuration ─────────────────────────────────────────────
@@ -68,7 +70,7 @@ const sanitizeFtsQuery = (query: string): string => {
 
 // ─── Public Routes ───────────────────────────────────────────────────────
 
-postsRouter.openapi(getPostsRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(getPostsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit = 10, offset = 0, q } = c.req.valid("query");
@@ -154,9 +156,9 @@ postsRouter.openapi(getPostsRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:List] Error", e);
     return c.json({ error: "Failed to fetch posts" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getPostsRoute>);
 
-postsRouter.openapi(getPostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(getPostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -217,11 +219,11 @@ postsRouter.openapi(getPostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Detail] Error", e);
     return c.json({ error: "Failed to fetch post" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getPostRoute>);
 
 // ─── Admin Routes ────────────────────────────────────────────────────────
 
-postsRouter.openapi(getAdminPostsRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(getAdminPostsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit = 50, offset = 0 } = c.req.valid("query");
@@ -273,9 +275,9 @@ postsRouter.openapi(getAdminPostsRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:AdminList] Error", e);
     return c.json({ error: "Failed to fetch posts" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getAdminPostsRoute>);
 
-postsRouter.openapi(getAdminPostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(getAdminPostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -318,9 +320,9 @@ postsRouter.openapi(getAdminPostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:AdminDetail] Error", e);
     return c.json({ error: "Failed to fetch post" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getAdminPostRoute>);
 
-postsRouter.openapi(savePostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(savePostRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const body = c.req.valid("json");
@@ -328,7 +330,7 @@ postsRouter.openapi(savePostRoute, async (c: Context<AppEnv>) => {
     // If slug is provided, update existing post
     if (body.slug) {
       const existing = await db.selectFrom("posts")
-        .select(["slug", "title", "ast", "content", "category", "is_portfolio"])
+        .select(["slug", "title", "ast"] as any)
         .where("slug", "=", body.slug)
         .executeTakeFirst();
 
@@ -340,7 +342,7 @@ postsRouter.openapi(savePostRoute, async (c: Context<AppEnv>) => {
       const email = user?.email || "anonymous_dashboard_user";
 
       // Create shadow revision for history
-      await captureHistory(db, body.slug, existing as typeof existing & { content?: string; cf_email?: string }, email);
+      await captureHistory(c, body.slug, existing as any);
 
       await db.updateTable("posts")
         .set({
@@ -348,9 +350,9 @@ postsRouter.openapi(savePostRoute, async (c: Context<AppEnv>) => {
           ast: body.ast as string,
           content: typeof body.content === "string" ? body.content : null,
           category: body.category,
-          is_portfolio: body.isPortfolio ?? false,
+          is_portfolio: body.isPortfolio ? 1 : 0,
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .where("slug", "=", body.slug)
         .execute();
 
@@ -496,9 +498,9 @@ postsRouter.openapi(savePostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Save] Error", e);
     return c.json({ error: "Database write failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof savePostRoute>);
 
-postsRouter.openapi(updatePostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(updatePostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -570,9 +572,9 @@ postsRouter.openapi(updatePostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Update] Error", e);
     return c.json({ error: "Database write failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof updatePostRoute>);
 
-postsRouter.openapi(deletePostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(deletePostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -589,9 +591,9 @@ postsRouter.openapi(deletePostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Delete] Error", e);
     return c.json({ error: "Delete failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deletePostRoute>);
 
-postsRouter.openapi(undeletePostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(undeletePostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -606,9 +608,9 @@ postsRouter.openapi(undeletePostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Undelete] Error", e);
     return c.json({ error: "Undelete failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof undeletePostRoute>);
 
-postsRouter.openapi(purgePostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(purgePostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -636,9 +638,9 @@ postsRouter.openapi(purgePostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Purge] Error", e);
     return c.json({ error: "Purge failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof purgePostRoute>);
 
-postsRouter.openapi(approvePostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(approvePostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const result = await approvePost(c, slug);
@@ -648,9 +650,9 @@ postsRouter.openapi(approvePostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Approve] Error", e);
     return c.json({ error: "Approval failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof approvePostRoute>);
 
-postsRouter.openapi(rejectPostRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(rejectPostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   const body = c.req.valid("json");
   const { reason } = c.req.valid("json");
@@ -692,9 +694,9 @@ postsRouter.openapi(rejectPostRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:Reject] Error", e);
     return c.json({ error: "Reject failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof rejectPostRoute>);
 
-postsRouter.openapi(getPostHistoryRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(getPostHistoryRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   try {
     const historyRows = await getPostHistory(c, slug);
@@ -707,17 +709,17 @@ postsRouter.openapi(getPostHistoryRoute, async (c: Context<AppEnv>) => {
     console.error("[Posts:History] Error", e);
     return c.json({ error: "Failed to fetch history" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getPostHistoryRoute>);
 
-postsRouter.openapi(restorePostHistoryRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(restorePostHistoryRoute, (async (c) => {
   const { slug, id } = c.req.valid("param");
   const user = await getSessionUser(c);
   const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
   if (!result.success) return c.json({ error: result.error || "Restore failed" }, 404);
   return c.json({ success: true }, 200);
-});
+}) as AppRouteHandler<typeof restorePostHistoryRoute>);
 
-postsRouter.openapi(repushSocialsRoute, async (c: Context<AppEnv>) => {
+postsRouter.openapi(repushSocialsRoute, (async (c) => {
   const { slug } = c.req.valid("param");
   const body = c.req.valid("json");
   const { socials } = c.req.valid("json");
@@ -757,6 +759,6 @@ postsRouter.openapi(repushSocialsRoute, async (c: Context<AppEnv>) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 502);
   }
-});
+}) as AppRouteHandler<typeof repushSocialsRoute>);
 
 export default postsRouter;

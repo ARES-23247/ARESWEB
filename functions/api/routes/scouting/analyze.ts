@@ -1,7 +1,9 @@
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth } from "../../middleware";
 import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   team_analysis: `You are an expert FTC (FIRST Tech Challenge) scouting analyst for Team ARES 23247. Analyze the provided team data thoroughly. Structure your response with clear markdown headings:
@@ -61,7 +63,7 @@ Be specific and use the data provided. Reference team numbers and stats.`,
 
 const analyzeRouter = new OpenAPIHono<AppEnv>();
 
-analyzeRouter.openapi(analyzeScoutingRoute, async (c: Context<AppEnv>) => {
+analyzeRouter.openapi(analyzeScoutingRoute, (async (c) => {
   const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
   if (!SYSTEM_PROMPTS[mode]) {
@@ -137,7 +139,7 @@ analyzeRouter.openapi(analyzeScoutingRoute, async (c: Context<AppEnv>) => {
     console.error("[Scouting Analyze] Error:", err);
     return c.json({ error: "AI analysis request failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof analyzeScoutingRoute>);
 
 export default analyzeRouter;
 

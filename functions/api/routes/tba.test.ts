@@ -12,6 +12,8 @@ interface TBAResponse {
   [key: string]: unknown;
 }
 
+type MockKysely = any;
+
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {

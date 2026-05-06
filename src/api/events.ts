@@ -141,9 +141,8 @@ export function useSubmitEventSignup(
       const response = await client.events[":id"].signups.$post({ param: { id: eventId }, json: body });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    onSuccess: (res, variables, context) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-      options?.onSuccess?.(res, variables, context);
     },
     ...options,
   });

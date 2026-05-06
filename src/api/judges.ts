@@ -71,7 +71,6 @@ export function useJudgeLogin(
       return unwrapResponse<JudgeLoginResponse>(response);
     },
     onSuccess: (...args) => {
-      // @ts-ignore - Pass through to options.onSuccess
       options?.onSuccess?.(...args);
     },
   });

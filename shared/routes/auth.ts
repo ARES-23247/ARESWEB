@@ -5,7 +5,7 @@ export const AuthCheckResponseSchema = z.object({
   user: z.object({
     id: z.string(),
     email: z.string(),
-    name: z.string(),
+    name: z.string().nullable(),
     role: z.string(),
     image: z.string().optional().nullable(),
   }).optional(),

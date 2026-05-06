@@ -1,9 +1,10 @@
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { 
+
   getNotificationsRoute, 
   markNotificationReadRoute, 
   markAllNotificationsReadRoute, 
@@ -11,6 +12,7 @@ import {
   getPendingCountsRoute, 
   getDashboardActionItemsRoute 
 } from "../../../shared/routes/notifications";
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const notificationsRouter = new OpenAPIHono<AppEnv>();
 
@@ -18,7 +20,7 @@ notificationsRouter.use("*", ensureAuth);
 notificationsRouter.use("/:id/read", rateLimitMiddleware(20, 60));
 notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 
-notificationsRouter.openapi(getNotificationsRoute, async (c: Context<AppEnv>) => {
+notificationsRouter.openapi(getNotificationsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -47,9 +49,9 @@ notificationsRouter.openapi(getNotificationsRoute, async (c: Context<AppEnv>) =>
     console.error("GET_NOTIFICATIONS ERROR", e);
     return c.json({ error: "Fetch failed", notifications: [] }, 500);
   }
-});
+}) as AppRouteHandler<typeof getNotificationsRoute>);
 
-notificationsRouter.openapi(markNotificationReadRoute, async (c: Context<AppEnv>) => {
+notificationsRouter.openapi(markNotificationReadRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -66,9 +68,9 @@ notificationsRouter.openapi(markNotificationReadRoute, async (c: Context<AppEnv>
   } catch {
     return c.json({ error: "Update failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof markNotificationReadRoute>);
 
-notificationsRouter.openapi(markAllNotificationsReadRoute, async (c: Context<AppEnv>) => {
+notificationsRouter.openapi(markAllNotificationsReadRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -83,9 +85,9 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, async (c: Context<App
   } catch {
     return c.json({ error: "Update failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof markAllNotificationsReadRoute>);
 
-notificationsRouter.openapi(deleteNotificationRoute, async (c: Context<AppEnv>) => {
+notificationsRouter.openapi(deleteNotificationRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -101,9 +103,9 @@ notificationsRouter.openapi(deleteNotificationRoute, async (c: Context<AppEnv>) 
   } catch {
     return c.json({ error: "Delete failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteNotificationRoute>);
 
-notificationsRouter.openapi(getPendingCountsRoute, async (c: Context<AppEnv>) => {
+notificationsRouter.openapi(getPendingCountsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -138,9 +140,9 @@ notificationsRouter.openapi(getPendingCountsRoute, async (c: Context<AppEnv>) =>
   } catch {
     return c.json({ error: "Count failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getPendingCountsRoute>);
 
-notificationsRouter.openapi(getDashboardActionItemsRoute, async (c: Context<AppEnv>) => {
+notificationsRouter.openapi(getDashboardActionItemsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const user = await getSessionUser(c);
@@ -189,7 +191,7 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, async (c: Context<AppE
   } catch {
     return c.json({ error: "Action items fetch failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getDashboardActionItemsRoute>);
 
 export default notificationsRouter;
 

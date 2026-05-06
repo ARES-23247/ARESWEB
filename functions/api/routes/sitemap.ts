@@ -1,15 +1,17 @@
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
 import { getSitemapRoute } from "../../../shared/routes/sitemap";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const sitemapRouter = new OpenAPIHono<AppEnv>();
 
 // SEC-DoW: Cache sitemap to prevent repeated D1 queries from bots/crawlers
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
 
-sitemapRouter.openapi(getSitemapRoute, async (c: Context<AppEnv>) => {
+sitemapRouter.openapi(getSitemapRoute, (async (c) => {
   const db = c.get("db");
   try {
     const now = Date.now();
@@ -94,6 +96,6 @@ sitemapRouter.openapi(getSitemapRoute, async (c: Context<AppEnv>) => {
     console.error("Sitemap generation error:", err);
     return c.text("Error generating sitemap", 500);
   }
-});
+}) as AppRouteHandler<typeof getSitemapRoute>);
 
 export default sitemapRouter;

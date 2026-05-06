@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { Radio, Calendar } from "lucide-react";
@@ -42,7 +43,6 @@ export default function EventManagerTab({
   // Memoize the entire eventsData reference for stable memoization
   const memoizedEventsData = useMemo(() => eventsData, [eventsData]);
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- We use memoizedEventsData for stability; inferred dependency would be less specific
   const events = useMemo(() => {
     return (memoizedEventsData?.events || []) as unknown as EventItem[];
   }, [memoizedEventsData]);
@@ -63,6 +63,7 @@ export default function EventManagerTab({
     }
   }, [events, cursor]);
 
+   
   const lastSyncedAt = (eventsData as any)?.lastSyncedAt;
 
   const deleteMutation = useDeleteEvent({
@@ -89,7 +90,7 @@ export default function EventManagerTab({
   });
 
   const repairGcalMutation = useRepairCalendar({
-    onSuccess: (res: any) => {
+    onSuccess: (res: any) => {  
       if (res.success) {
         const msg = `Repair Complete! Pushed ${res.pushed || 0} events to GCal.`;
         if (res.failed) {

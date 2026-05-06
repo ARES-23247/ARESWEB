@@ -19,7 +19,7 @@ interface WeekData {
  * Ensures the printed portfolio is championship-ready.
  */
 // WR-01: Apply rate limiting to prevent abuse of GitHub API calls
-githubRouter.openapi(getActivityRoute, async (c) => {
+githubRouter.openapi(getActivityRoute, (async (c: any) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `github-activity:${ip}`, ua, 10, 60))) {
@@ -126,7 +126,7 @@ githubRouter.openapi(getActivityRoute, async (c) => {
     console.error("[GitHub:Activity] Error", e);
     return c.json({ error: "Failed to fetch GitHub activity" }, 500);
   }
-});
+}) as any);
 
 githubRouter.use("/projects/*", ensureAdmin);
 

@@ -28,7 +28,9 @@ export type HonoContext = Context<AppEnv>;
  */
 export type HandlerInput<
   TBody = unknown,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic type parameters for dynamic records
   TParams extends Record<string, any> = Record<string, any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic type parameters for dynamic records
   TQuery extends Record<string, any> = Record<string, any>
 > = {
   body: TBody;

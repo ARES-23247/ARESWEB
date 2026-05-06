@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- TBA API responses are dynamic */
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, rateLimitMiddleware } from "../middleware";
 import { getRankingsRoute, getMatchesRoute, getFtcEventsRoute } from "../../../shared/routes/tba";
 import type { HonoContext } from "@shared/types/api";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const tbaRouter = new OpenAPIHono<AppEnv>();
 
@@ -49,7 +52,7 @@ async function getTBA(path: string, c: HonoContext) {
   return data;
 }
 
-tbaRouter.openapi(getRankingsRoute, async (c: Context<AppEnv>) => {
+tbaRouter.openapi(getRankingsRoute, (async (c) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -61,9 +64,9 @@ tbaRouter.openapi(getRankingsRoute, async (c: Context<AppEnv>) => {
     console.error("GET_TBA_RANKINGS ERROR", e);
     return c.json({ error: "Failed to fetch rankings" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getRankingsRoute>);
 
-tbaRouter.openapi(getMatchesRoute, async (c: Context<AppEnv>) => {
+tbaRouter.openapi(getMatchesRoute, (async (c) => {
   try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
@@ -76,9 +79,9 @@ tbaRouter.openapi(getMatchesRoute, async (c: Context<AppEnv>) => {
     console.error("GET_TBA_MATCHES ERROR", e);
     return c.json({ error: "Failed to fetch matches" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getMatchesRoute>);
 
-tbaRouter.openapi(getFtcEventsRoute, async (c: Context<AppEnv>) => {
+tbaRouter.openapi(getFtcEventsRoute, (async (c) => {
   try {
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;
@@ -108,7 +111,7 @@ tbaRouter.openapi(getFtcEventsRoute, async (c: Context<AppEnv>) => {
   } catch (_e) {
     return c.json({ error: "Failed to fetch official event data" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getFtcEventsRoute>);
 
 export default tbaRouter;
 

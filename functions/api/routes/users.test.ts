@@ -5,8 +5,7 @@
 // or create a separate usersContract that matches the existing implementation
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Hono } from "hono";
-import type { Context } from "hono";
+import { Hono, Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import type { MockKysely, TestEnv } from "../../../src/test/types";
 

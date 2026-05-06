@@ -61,7 +61,6 @@ export function useSubmitInquiry(
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
-      // @ts-ignore - Pass through to options.onSuccess
       options?.onSuccess?.(...args);
     },
   });

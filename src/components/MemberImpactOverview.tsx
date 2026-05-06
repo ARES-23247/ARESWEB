@@ -41,7 +41,7 @@ export default function MemberImpactOverview() {
   }
 
   // Calculate full roster stats
-  const enrichedRoster: EnrichedRosterMember[] = roster.map((m: RosterMember) => ({
+  const enrichedRoster: EnrichedRosterMember[] = roster.map((m: any) => ({
     ...m,
     total_hours: m.manual_prep_hours + m.event_volunteer_hours,
     display_name: m.nickname || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "ARES Member"

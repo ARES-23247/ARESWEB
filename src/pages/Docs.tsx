@@ -313,7 +313,7 @@ export default function Docs() {
         </main>
 
         {currentDoc && (
-          <DocsTableOfContents content={currentDoc.content} />
+          <DocsTableOfContents content={currentDoc.content ?? undefined} />
         )}
       </div>
       </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import { useState, useEffect } from "react";
 import { ShieldCheck, Calendar } from "lucide-react";
 import { format } from "date-fns";
@@ -61,7 +62,9 @@ export default function PrintPortfolio() {
     );
   }
 
+   
   const execDocs = portfolio.portfolioDocs?.filter((d: any) => d.is_executive_summary === 1) || [];
+   
   const techDocs = portfolio.portfolioDocs?.filter((d: any) => d.is_executive_summary !== 1) || [];
 
   return (

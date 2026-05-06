@@ -17,12 +17,12 @@ mediaRouter.use("/admin/*", ensureAdmin);
 mediaRouter.use("/admin", ensureAdmin);
 
 // Register OpenAPI routes
-mediaRouter.openapi(getMediaRoute, mediaHandlers.getMedia);
-mediaRouter.openapi(getAdminMediaRoute, mediaHandlers.adminList);
-mediaRouter.openapi(uploadMediaRoute, mediaHandlers.upload);
-mediaRouter.openapi(moveMediaRoute, mediaHandlers.move);
-mediaRouter.openapi(deleteMediaRoute, mediaHandlers.delete);
-mediaRouter.openapi(syndicateMediaRoute, mediaHandlers.syndicate);
+mediaRouter.openapi(getMediaRoute, mediaHandlers.getMedia as any);
+mediaRouter.openapi(getAdminMediaRoute, mediaHandlers.adminList as any);
+mediaRouter.openapi(uploadMediaRoute, mediaHandlers.upload as any);
+mediaRouter.openapi(moveMediaRoute, mediaHandlers.move as any);
+mediaRouter.openapi(deleteMediaRoute, mediaHandlers.delete as any);
+mediaRouter.openapi(syndicateMediaRoute, mediaHandlers.syndicate as any);
 
 // GET /media/:key — Serve raw object from R2 (This is NOT an OpenAPI route because it returns binary/raw data)
 mediaRouter.get("/:key{.+$}", async (c) => {

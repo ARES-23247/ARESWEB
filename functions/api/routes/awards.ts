@@ -1,13 +1,15 @@
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../shared/routes/awards";
 
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 export const awardsRouter = new OpenAPIHono<AppEnv>();
 
-awardsRouter.openapi(getAwardsRoute, async (c: Context<AppEnv>) => {
+awardsRouter.openapi(getAwardsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const { limit = 50, offset = 0 } = c.req.valid('query');
@@ -37,11 +39,11 @@ awardsRouter.openapi(getAwardsRoute, async (c: Context<AppEnv>) => {
     console.error("GET_AWARDS ERROR", e);
     return c.json({ error: "Failed to fetch awards", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getAwardsRoute>);
 
 awardsRouter.use("/admin/*", ensureAdmin);
 
-awardsRouter.openapi(saveAwardRoute, async (c: Context<AppEnv>) => {
+awardsRouter.openapi(saveAwardRoute, (async (c) => {
   try {
     const validatedData = c.req.valid('json');
     const db = c.get("db") as Kysely<DB>;
@@ -125,9 +127,9 @@ awardsRouter.openapi(saveAwardRoute, async (c: Context<AppEnv>) => {
     console.error("SAVE_AWARD ERROR", e);
     return c.json({ error: "Failed to save award", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof saveAwardRoute>);
 
-awardsRouter.openapi(deleteAwardRoute, async (c: Context<AppEnv>) => {
+awardsRouter.openapi(deleteAwardRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const params = c.req.valid('param');
@@ -142,6 +144,6 @@ awardsRouter.openapi(deleteAwardRoute, async (c: Context<AppEnv>) => {
     console.error("DELETE_AWARD ERROR", e);
     return c.json({ error: "Failed to delete award", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteAwardRoute>);
 
 export default awardsRouter;

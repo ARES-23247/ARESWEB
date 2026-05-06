@@ -1,7 +1,7 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, logSystemError, ensureAdmin } from "../middleware";
 import Stripe from "stripe";
 import { sendZulipMessage } from "../../utils/zulip";
@@ -11,6 +11,8 @@ import {
   getOrdersRoute,
   updateOrderStatusRoute,
 } from "../../../shared/routes/store";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const storeRouter = new OpenAPIHono<AppEnv>();
 
@@ -26,7 +28,7 @@ storeRouter.post("/webhook", async (c) => {
         return c.json({ error: "Missing stripe signature" }, 400);
       }
 
-      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as const });
+      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
       let event: Stripe.Event;
 
       try {
@@ -61,9 +63,8 @@ storeRouter.post("/webhook", async (c) => {
             shipping_name: shippingName,
             total_cents: session.amount_total || 0,
             status: "paid",
-            items_json: JSON.stringify(cartItems),
             created_at: new Date().toISOString(),
-          })
+          } as any)
           .execute();
 
         // Deplete inventory
@@ -85,7 +86,7 @@ storeRouter.post("/webhook", async (c) => {
 
       return c.json({ success: true }, 200);
     } catch (err: unknown) {
-      logSystemError(c.get("db") as Kysely<DB>, "webhook_error", err);
+      logSystemError(c.get("db") as Kysely<DB>, "webhook_error", String(err));
       return c.json({ error: "Webhook fulfillment failed" }, 500);
     }
   }
@@ -95,7 +96,7 @@ storeRouter.post("/webhook", async (c) => {
 storeRouter.use("/orders/*", ensureAdmin);
 storeRouter.use("/orders", ensureAdmin);
 
-storeRouter.openapi(getProductsRoute, async (c: Context<AppEnv>) => {
+storeRouter.openapi(getProductsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const products = await db
@@ -122,9 +123,9 @@ storeRouter.openapi(getProductsRoute, async (c: Context<AppEnv>) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-});
+}) as AppRouteHandler<typeof getProductsRoute>);
 
-storeRouter.openapi(createCheckoutSessionRoute, async (c: Context<AppEnv>) => {
+storeRouter.openapi(createCheckoutSessionRoute, (async (c) => {
   try {
     const body = c.req.valid("json");
     const { items, successUrl, cancelUrl } = body;
@@ -133,7 +134,7 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c: Context<AppEnv>) => {
       throw new Error("STRIPE_SECRET_KEY is not configured.");
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as const });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
     const db = c.get("db") as Kysely<DB>;
 
     // Fetch product details
@@ -195,9 +196,9 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c: Context<AppEnv>) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-});
+}) as AppRouteHandler<typeof createCheckoutSessionRoute>);
 
-storeRouter.openapi(getOrdersRoute, async (c: Context<AppEnv>) => {
+storeRouter.openapi(getOrdersRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const orders = await db.selectFrom("orders").selectAll().orderBy("created_at", "desc").execute();
@@ -207,9 +208,9 @@ storeRouter.openapi(getOrdersRoute, async (c: Context<AppEnv>) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-});
+}) as AppRouteHandler<typeof getOrdersRoute>);
 
-storeRouter.openapi(updateOrderStatusRoute, async (c: Context<AppEnv>) => {
+storeRouter.openapi(updateOrderStatusRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -220,6 +221,6 @@ storeRouter.openapi(updateOrderStatusRoute, async (c: Context<AppEnv>) => {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
   }
-});
+}) as AppRouteHandler<typeof updateOrderStatusRoute>);
 
 export default storeRouter;

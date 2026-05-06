@@ -11,11 +11,13 @@
 
 // Re-export Zod schemas for frontend form validation and type inference
 export * from './aiContract';
+// analyticsContract exports 'getStatsRoute' which collides with communicationsContract and settingsContract
 export * from './analyticsContract';
 export * from './awardContract';
 export * from './badgeContract';
 export * from './commentContract';
-export * from './communicationsContract';
+// communicationsContract exports 'getStatsRoute' — alias to avoid collision
+export { sendMassEmailRequestBodySchema, sendMassEmailRoute as commsSendMassEmailRoute, getStatsRoute as commsContractGetStatsRoute } from './communicationsContract';
 export * from './docContract';
 export * from './entityContract';
 export * from './eventContract';
@@ -31,7 +33,8 @@ export * from './outreachContract';
 export * from './pointsContract';
 export * from './postContract';
 export * from './seasonContract';
-export * from './settingsContract';
+// settingsContract exports 'getStatsRoute' — alias to avoid collision
+export { getSettingsRoute as settingsContractGetSettingsRoute, updateSettingsRoute as settingsContractUpdateSettingsRoute, getPublicSettingsRoute as settingsContractPublicSettingsRoute, getStatsRoute as settingsContractGetStatsRoute } from './settingsContract';
 export * from './socialQueueContract';
 export * from './sponsorContract';
 export * from './storeContract';

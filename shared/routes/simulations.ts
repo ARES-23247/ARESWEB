@@ -10,7 +10,7 @@ export const SimulationSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   type: z.string(),
-  files: z.record(z.string()).optional(),
+  files: z.record(z.string(), z.string()).optional(),
 });
 
 export const listSimulationsRoute = createRoute({
@@ -69,7 +69,7 @@ export const saveSimulationRoute = createRoute({
         "application/json": {
           schema: z.object({
             name: z.string().max(100).optional(),
-            files: z.record(z.string()),
+            files: z.record(z.string(), z.string()),
           }),
         },
       },
@@ -126,7 +126,7 @@ export const createGistRoute = createRoute({
         "application/json": {
           schema: z.object({
             name: z.string().max(100).optional(),
-            files: z.record(z.string()),
+            files: z.record(z.string(), z.string()),
           }),
         },
       },

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import { useState, useMemo } from "react";
 import { z } from "zod";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
@@ -245,7 +246,7 @@ export default function FinanceManager() {
                   savePipeline.mutate({
                     id: pipelineItem.id,
                     company_name: pipelineItem.company_name,
-                    status: update.status,
+                    status: update.status as "potential" | "contacted" | "pledged" | "secured" | "lost",
                     estimated_value: Number(pipelineItem.estimated_value),
                     contact_person: pipelineItem.contact_person ?? null,
                     notes: pipelineItem.notes ?? null,

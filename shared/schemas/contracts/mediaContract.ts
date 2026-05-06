@@ -35,10 +35,6 @@ export const getMediaRoute = createRoute({
         },
       },
     },
-    429: {
-      description: "Too Many Requests",
-      content: { "application/json": { schema: z.string() } },
-    },
     ...openApiStandardErrors,
   },
 });

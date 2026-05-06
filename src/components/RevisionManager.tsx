@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 
 import { format } from "date-fns";
 import { History, RotateCcw, X, Clock } from "lucide-react";

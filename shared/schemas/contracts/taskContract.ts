@@ -34,7 +34,7 @@ export const listTasksRoute = createRoute({
     query: z.object({
       status: z.string().optional(),
       parent_id: z.string().optional(),
-    }).optional(),
+    }),
   },
   responses: {
     200: {

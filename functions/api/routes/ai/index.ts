@@ -1,11 +1,12 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { Context } from "hono";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, persistentRateLimitMiddleware, verifyTurnstile } from "../../middleware";
 import { streamSSE } from "hono/streaming";
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { MessageContent, ZaiChatResponse, ChatMessage, isTextContentPart } from "./types";
 import { 
+
   aiStatusRoute, 
   liveblocksCopilotRoute, 
   simPlaygroundRoute, 
@@ -13,6 +14,7 @@ import {
   aiSuggestRoute, 
   ragChatbotRoute 
 } from "../../../../shared/routes/ai";
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const aiRouter = new OpenAPIHono<AppEnv>();
 
@@ -941,7 +943,7 @@ async function saveHistory(db: Kysely<DB>, sessionId: string | undefined, histor
 
 // ── Manual Re-Index Endpoint (admin-only) ─────────────────────────────
 
-aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), async (c: Context<AppEnv>) => {
+aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), async (c: any) => {
   if (!c.env.AI || !c.env.VECTORIZE_DB) {
     return c.json({ error: "AI or Vectorize bindings not configured" }, 500);
   }
@@ -959,7 +961,7 @@ aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), as
   });
 });
 
-aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50, 600), async (c: Context<AppEnv>) => {
+aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50, 600), async (c: any) => {
   if (!c.env.VECTORIZE_DB) {
     return c.json({ error: "Vectorize DB binding not configured" }, 500);
   }
@@ -980,13 +982,13 @@ aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50
   });
 });
 
-aiRouter.get("/external-sources", ensureAdmin, async (c: Context<AppEnv>) => {
+aiRouter.get("/external-sources", ensureAdmin, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const sources = await db.selectFrom("external_knowledge_sources").selectAll().execute();
   return c.json(sources);
 });
 
-aiRouter.post("/external-sources", ensureAdmin, async (c: Context<AppEnv>) => {
+aiRouter.post("/external-sources", ensureAdmin, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const body = await c.req.json();
   const id = crypto.randomUUID();
@@ -1000,14 +1002,14 @@ aiRouter.post("/external-sources", ensureAdmin, async (c: Context<AppEnv>) => {
   return c.json({ success: true, id });
 });
 
-aiRouter.delete("/external-sources/:id", ensureAdmin, async (c: Context<AppEnv>) => {
+aiRouter.delete("/external-sources/:id", ensureAdmin, async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const id = c.req.param("id") as string;
   await db.deleteFrom("external_knowledge_sources").where("id", "=", id).execute();
   return c.json({ success: true });
 });
 
-aiRouter.get("/chat-session/:id", async (c: Context<AppEnv>) => {
+aiRouter.get("/chat-session/:id", async (c: any) => {
   const db = c.get("db") as Kysely<DB>;
   const id = c.req.param("id") as string;
   try {

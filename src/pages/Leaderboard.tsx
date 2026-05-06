@@ -65,7 +65,7 @@ export default function Leaderboard() {
         {/* Top 3 Podium */}
         {podium.length > 0 && (
           <div className="flex flex-col md:flex-row items-end justify-center gap-4 md:gap-8 mb-24 h-auto md:h-80">
-            {podium.map((user: LeaderboardUser, idx: number) => {
+            {podium.map((user: any, idx: number) => {
               // Determine actual rank. For [2nd, 1st, 3rd] array, idx 0 is Rank 2, idx 1 is Rank 1, idx 2 is Rank 3.
               let rank = 1;
               let height = "h-64";
@@ -133,7 +133,7 @@ export default function Leaderboard() {
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {rest.map((user: LeaderboardUser, idx: number) => (
+                  {rest.map((user: any, idx: number) => (
                     <tr key={user.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                       <td className="py-4 text-center font-bold text-ares-gray">{(idx + 4).toString().padStart(2, '0')}</td>
                       <td className="py-4">

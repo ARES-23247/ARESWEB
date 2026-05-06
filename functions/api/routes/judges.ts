@@ -1,7 +1,7 @@
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit } from "../middleware";
 import {
   judgeLoginRoute,
@@ -11,6 +11,8 @@ import {
   deleteJudgeCodeRoute,
 } from "../../../shared/routes/judges";
 import type { HonoContext as _HonoContext } from "@shared/types/api";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const judgesRouter = new OpenAPIHono<AppEnv>();
 
@@ -35,7 +37,7 @@ const portfolioCache = new Map<string, { data: unknown; expiresAt: number; versi
 // Helper to get the current portfolio cache key with version
 const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
-judgesRouter.openapi(judgeLoginRoute, async (c: Context<AppEnv>) => {
+judgesRouter.openapi(judgeLoginRoute, (async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const db = c.get("db") as Kysely<DB>;
 
@@ -73,9 +75,9 @@ judgesRouter.openapi(judgeLoginRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Login failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof judgeLoginRoute>);
 
-judgesRouter.openapi(judgePortfolioRoute, async (c: Context<AppEnv>) => {
+judgesRouter.openapi(judgePortfolioRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { "x-judge-code": code } = c.req.valid("header");
@@ -165,12 +167,12 @@ judgesRouter.openapi(judgePortfolioRoute, async (c: Context<AppEnv>) => {
     console.error("[Judges] Portfolio failed:", err);
     return c.json({ error: "Portfolio fetch failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof judgePortfolioRoute>);
 
 // Admin routes require ensureAdmin middleware
 judgesRouter.use("/admin/*", ensureAdmin);
 
-judgesRouter.openapi(listJudgeCodesRoute, async (c: Context<AppEnv>) => {
+judgesRouter.openapi(listJudgeCodesRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("judge_access_codes")
@@ -188,9 +190,9 @@ judgesRouter.openapi(listJudgeCodesRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Failed to fetch codes" }, 500);
   }
-});
+}) as AppRouteHandler<typeof listJudgeCodesRoute>);
 
-judgesRouter.openapi(createJudgeCodeRoute, async (c: Context<AppEnv>) => {
+judgesRouter.openapi(createJudgeCodeRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { label, expiresAt } = c.req.valid("json");
@@ -215,9 +217,9 @@ judgesRouter.openapi(createJudgeCodeRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Create failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof createJudgeCodeRoute>);
 
-judgesRouter.openapi(deleteJudgeCodeRoute, async (c: Context<AppEnv>) => {
+judgesRouter.openapi(deleteJudgeCodeRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const { id } = c.req.valid("param");
@@ -231,6 +233,6 @@ judgesRouter.openapi(deleteJudgeCodeRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Delete failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteJudgeCodeRoute>);
 
 export default judgesRouter;

@@ -3,13 +3,13 @@ import { createRoute } from "@hono/zod-openapi";
 import { openApiStandardErrors } from "./common";
 
 // Schemas
-const topPageSchema = z.object({
+export const topPageSchema = z.object({
   path: z.string(),
   category: z.string(),
   views: z.number(),
 });
 
-const recentViewSchema = z.object({
+export const recentViewSchema = z.object({
   path: z.string(),
   category: z.string(),
   user_agent: z.string(),
@@ -17,12 +17,12 @@ const recentViewSchema = z.object({
   timestamp: z.string(),
 });
 
-const totalSchema = z.object({
+export const totalSchema = z.object({
   category: z.string(),
   total: z.number(),
 });
 
-const rosterStatSchema = z.object({
+export const rosterStatSchema = z.object({
   user_id: z.string(),
   nickname: z.string().nullable().optional(),
   member_type: z.string().nullable().optional(),
@@ -32,7 +32,7 @@ const rosterStatSchema = z.object({
   avatar: z.string().nullable().optional(),
 });
 
-const leaderboardEntrySchema = z.object({
+export const leaderboardEntrySchema = z.object({
   user_id: z.string(),
   first_name: z.string(),
   last_name: z.string().nullable(),
@@ -42,7 +42,7 @@ const leaderboardEntrySchema = z.object({
   avatar: z.string().nullable().optional(),
 });
 
-const integrationsSchema = z.object({
+export const integrationsSchema = z.object({
   zulip: z.boolean(),
   github: z.boolean(),
   discord: z.boolean(),
@@ -51,23 +51,23 @@ const integrationsSchema = z.object({
   gcal: z.boolean(),
 });
 
-const resourceUsageSchema = z.object({
+export const resourceUsageSchema = z.object({
   totalAssets: z.number(),
   totalStorage: z.number(),
   apiCalls: z.number(),
 });
 
-const userActivitySchema = z.object({
+export const userActivitySchema = z.object({
   date: z.string(),
   pageViews: z.number(),
 });
 
-const latencySchema = z.object({
+export const latencySchema = z.object({
   date: z.string(),
   avg_latency: z.number(),
 });
 
-const searchResultSchema = z.object({
+export const searchResultSchema = z.object({
   type: z.string(),
   id: z.string(),
   title: z.string(),

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Event handlers work with dynamic external data (Gcal, rrule, Zulip, etc.) */
 import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";

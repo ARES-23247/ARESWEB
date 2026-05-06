@@ -85,13 +85,13 @@ export function useAwardPoints(
  * GET /api/points/leaderboard - Get global points leaderboard
  */
 export function useGetPointsLeaderboard(
-  options?: Omit<UseQueryOptions<LeaderboardResponse>, "queryKey" | "queryFn">
+  options?: Omit<UseQueryOptions<PointsLeaderboardResponse>, "queryKey" | "queryFn">
 ) {
-  return useQuery<LeaderboardResponse>({
+  return useQuery<PointsLeaderboardResponse>({
     queryKey: ["leaderboard"],
     queryFn: async () => {
       const response = await client.points.leaderboard.$get();
-      return unwrapResponse<LeaderboardResponse>(response);
+      return unwrapResponse<PointsLeaderboardResponse>(response);
     },
     ...options,
   });

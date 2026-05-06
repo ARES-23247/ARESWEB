@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {

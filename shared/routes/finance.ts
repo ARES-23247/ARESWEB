@@ -12,16 +12,16 @@ const openApiErrorResponses = {
 };
 
 // Schemas
-const FinanceSummarySchema = z.object({
+export const FinanceSummarySchema = z.object({
   total_income: z.number(),
   total_expenses: z.number(),
   balance: z.number(),
   season_id: z.number().nullable(),
 });
 
-const SponsorshipStatusSchema = z.enum(["potential", "contacted", "pledged", "secured", "lost"]);
+export const SponsorshipStatusSchema = z.enum(["potential", "contacted", "pledged", "secured", "lost"]);
 
-const SponsorshipPipelineSchema = z.object({
+export const SponsorshipPipelineSchema = z.object({
   id: z.string(),
   company_name: z.string(),
   sponsor_id: z.string().nullable().optional(),
@@ -34,9 +34,9 @@ const SponsorshipPipelineSchema = z.object({
   assignees: z.array(z.string()).default([]),
 });
 
-const TransactionTypeSchema = z.enum(["income", "expense"]);
+export const TransactionTypeSchema = z.enum(["income", "expense"]);
 
-const FinanceTransactionSchema = z.object({
+export const FinanceTransactionSchema = z.object({
   id: z.string(),
   type: TransactionTypeSchema,
   amount: z.number(),
@@ -48,7 +48,7 @@ const FinanceTransactionSchema = z.object({
   logged_by: z.string().nullable().optional(),
 });
 
-const SavePipelineSchema = z.object({
+export const SavePipelineSchema = z.object({
   id: z.string().optional(),
   company_name: z.string().min(1),
   sponsor_id: z.string().nullable().optional(),
@@ -61,7 +61,7 @@ const SavePipelineSchema = z.object({
   assignees: z.array(z.string()).default([]),
 });
 
-const SaveTransactionSchema = z.object({
+export const SaveTransactionSchema = z.object({
   id: z.string().optional(),
   type: TransactionTypeSchema,
   amount: z.number(),

@@ -80,7 +80,7 @@ describe("Hono Backend - Events Router", () => {
 
     // Reset socialSync mock to default behavior
     const { dispatchSocials } = await import("../../../utils/socialSync");
-    vi.mocked(dispatchSocials).mockResolvedValue(true);
+    vi.mocked(dispatchSocials).mockResolvedValue(undefined as any);
 
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
@@ -182,7 +182,7 @@ describe("Hono Backend - Events Router", () => {
   it("GET /calendar-settings - handles database error", async () => {
     const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("Fail"); }) };
     const mockC = { get: vi.fn((key: string) => key === "db" ? mockDbFail : undefined), env, req: { url: "http://localhost/calendar-settings" } };
-    const result = await eventHandlers.getCalendarSettings({}, mockC as any);
+    const result = await eventHandlers.getCalendarSettings({} as any, mockC as any);
     expect(result.status).toBe(500);
   });
 

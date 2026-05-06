@@ -11,7 +11,7 @@ export const githubWebhookRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.record(z.any()), // Webhook payloads are dynamic
+          schema: z.record(z.string(), z.any()), // Webhook payloads are dynamic
         },
       },
     },

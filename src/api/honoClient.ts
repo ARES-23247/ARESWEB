@@ -1,13 +1,14 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
-import { type AppType } from "../../functions/api/[[route]].ts";
+import { type AppType } from "../../functions/api/[[route]]";
 
 /**
  * Type-safe Hono client for API calls.
  * 
  * NOTE: We use hc<AppType> to get full RPC type safety.
  */
-export const client = hc<AppType>("/api", {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenAPIHono route types are not inferrable by hc; individual API wrappers handle their own type safety
+export const client: any = hc<AppType>("/api", {
   init: {
     credentials: "include",
   },
@@ -40,7 +41,7 @@ export class ApiError extends Error {
  * Helper to unwrap Hono RPC responses and handle errors.
  * Returns the data directly or throws an ApiError.
  */
-export async function unwrapResponse<T>(response: ClientResponse<any>): Promise<T> {
+export async function unwrapResponse<T>(response: ClientResponse<unknown>): Promise<T> {
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({}))) as { error?: string };
     throw new ApiError(response.status, errorData.error || `API Error: ${response.status}`);

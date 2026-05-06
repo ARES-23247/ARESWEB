@@ -1,7 +1,7 @@
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import {
@@ -13,6 +13,8 @@ import {
   getAdminTokensRoute,
   generateTokenRoute,
 } from "../../../shared/routes/sponsors";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
 
@@ -33,7 +35,7 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
 // Get all public sponsors
-sponsorsRouter.openapi(getSponsorsRoute, async (c: Context<AppEnv>) => {
+sponsorsRouter.openapi(getSponsorsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -58,10 +60,10 @@ sponsorsRouter.openapi(getSponsorsRoute, async (c: Context<AppEnv>) => {
     console.error("[Sponsors:List] Error", e);
     return c.json({ error: "Failed to fetch sponsors" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getSponsorsRoute>);
 
 // Get ROI dashboard by token
-sponsorsRouter.openapi(getRoiRoute, async (c: Context<AppEnv>) => {
+sponsorsRouter.openapi(getRoiRoute, (async (c) => {
   try {
     const { token } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -116,10 +118,10 @@ sponsorsRouter.openapi(getRoiRoute, async (c: Context<AppEnv>) => {
     console.error("[Sponsors:Roi] Error", e);
     return c.json({ error: "Failed to fetch ROI" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getRoiRoute>);
 
 // Admin list all sponsors
-sponsorsRouter.openapi(adminListSponsorsRoute, async (c: Context<AppEnv>) => {
+sponsorsRouter.openapi(adminListSponsorsRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const sponsors = await db.selectFrom("sponsors").selectAll().execute();
@@ -142,10 +144,10 @@ sponsorsRouter.openapi(adminListSponsorsRoute, async (c: Context<AppEnv>) => {
     console.error("[Sponsors:AdminList] Error", e);
     return c.json({ error: "Admin access required" }, 500);
   }
-});
+}) as AppRouteHandler<typeof adminListSponsorsRoute>);
 
 // Save/create sponsor
-sponsorsRouter.openapi(saveSponsorRoute, async (c: Context<AppEnv>) => {
+sponsorsRouter.openapi(saveSponsorRoute, (async (c) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -186,10 +188,10 @@ sponsorsRouter.openapi(saveSponsorRoute, async (c: Context<AppEnv>) => {
     console.error("[Sponsors:Save] Error", e);
     return c.json({ error: "Failed to save sponsor" }, 500);
   }
-});
+}) as AppRouteHandler<typeof saveSponsorRoute>);
 
 // Delete sponsor
-sponsorsRouter.openapi(deleteSponsorRoute, async (c: Context<AppEnv>) => {
+sponsorsRouter.openapi(deleteSponsorRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -201,10 +203,10 @@ sponsorsRouter.openapi(deleteSponsorRoute, async (c: Context<AppEnv>) => {
     console.error("[Sponsors:Delete] Error", e);
     return c.json({ error: "Failed to delete sponsor" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteSponsorRoute>);
 
 // Get admin tokens
-sponsorsRouter.openapi(getAdminTokensRoute, async (c: Context<AppEnv>) => {
+sponsorsRouter.openapi(getAdminTokensRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -227,10 +229,10 @@ sponsorsRouter.openapi(getAdminTokensRoute, async (c: Context<AppEnv>) => {
     console.error("[Sponsors:Tokens] Error", e);
     return c.json({ error: "Failed to fetch tokens" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getAdminTokensRoute>);
 
 // Generate token
-sponsorsRouter.openapi(generateTokenRoute, async (c: Context<AppEnv>) => {
+sponsorsRouter.openapi(generateTokenRoute, (async (c) => {
   try {
     const { sponsor_id } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -252,6 +254,6 @@ sponsorsRouter.openapi(generateTokenRoute, async (c: Context<AppEnv>) => {
     console.error("[Sponsors:GenerateToken] Error:", error);
     return c.json({ error: "Failed to generate token" }, 500);
   }
-});
+}) as AppRouteHandler<typeof generateTokenRoute>);
 
 export default sponsorsRouter;

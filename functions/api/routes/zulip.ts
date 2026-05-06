@@ -1,5 +1,5 @@
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, ensureAuth, getSocialConfig } from "../middleware";
 import {
   getPresenceRoute,
@@ -10,6 +10,8 @@ import {
   zulipPresenceSchema,
 } from "../../../shared/routes/zulip";
 import { z } from "zod";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const zulipRouter = new OpenAPIHono<AppEnv>();
 
@@ -35,7 +37,7 @@ zulipRouter.use("*", ensureAuth);
 zulipRouter.use("/presence", ensureAdmin);
 zulipRouter.use("/invites/*", ensureAdmin);
 
-zulipRouter.openapi(getPresenceRoute, async (c: Context<AppEnv>) => {
+zulipRouter.openapi(getPresenceRoute, (async (c) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -87,9 +89,9 @@ zulipRouter.openapi(getPresenceRoute, async (c: Context<AppEnv>) => {
       500
     );
   }
-});
+}) as AppRouteHandler<typeof getPresenceRoute>);
 
-zulipRouter.openapi(sendMessageRoute, async (c: Context<AppEnv>) => {
+zulipRouter.openapi(sendMessageRoute, (async (c) => {
   try {
     const body = c.req.valid("json");
     const { sendZulipMessage } = await import("../../utils/zulipSync");
@@ -125,9 +127,9 @@ zulipRouter.openapi(sendMessageRoute, async (c: Context<AppEnv>) => {
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-});
+}) as AppRouteHandler<typeof sendMessageRoute>);
 
-zulipRouter.openapi(getTopicMessagesRoute, async (c: Context<AppEnv>) => {
+zulipRouter.openapi(getTopicMessagesRoute, (async (c) => {
   try {
     const query = c.req.valid("query");
     const config = await getSocialConfig(c);
@@ -177,9 +179,9 @@ zulipRouter.openapi(getTopicMessagesRoute, async (c: Context<AppEnv>) => {
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-});
+}) as AppRouteHandler<typeof getTopicMessagesRoute>);
 
-zulipRouter.openapi(auditMissingUsersRoute, async (c: Context<AppEnv>) => {
+zulipRouter.openapi(auditMissingUsersRoute, (async (c) => {
   try {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -290,9 +292,9 @@ zulipRouter.openapi(auditMissingUsersRoute, async (c: Context<AppEnv>) => {
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-});
+}) as AppRouteHandler<typeof auditMissingUsersRoute>);
 
-zulipRouter.openapi(inviteUsersRoute, async (c: Context<AppEnv>) => {
+zulipRouter.openapi(inviteUsersRoute, (async (c) => {
   try {
     const body = c.req.valid("json");
     const config = await getSocialConfig(c);
@@ -302,7 +304,7 @@ zulipRouter.openapi(inviteUsersRoute, async (c: Context<AppEnv>) => {
 
     const { emails } = body;
     if (!emails || emails.length === 0) {
-      return c.json({ success: true, invitedCount: 0 }, 200);
+      return c.json({ success: true, invitedCount: 0 } as any, 200);
     }
 
     const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
@@ -375,10 +377,10 @@ zulipRouter.openapi(inviteUsersRoute, async (c: Context<AppEnv>) => {
       return c.json({ success: false, error: allErrors.join("; ") }, 500);
     }
 
-    return c.json({ success: true, invitedCount: totalInvited }, 200);
+    return c.json({ success: true, invitedCount: totalInvited } as any, 200);
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }
-});
+}) as AppRouteHandler<typeof inviteUsersRoute>);
 
 export default zulipRouter;

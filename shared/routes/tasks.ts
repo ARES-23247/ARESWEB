@@ -40,7 +40,11 @@ export const listTasksRoute = createRoute({
     query: z.object({
       status: z.string().optional(),
       parent_id: z.string().optional(),
-    }).optional(),
+      subteam: z.string().optional(),
+      assigned_to: z.string().optional(),
+      limit: z.string().optional(),
+      offset: z.string().optional(),
+    }),
   },
   responses: {
     ...standardErrors,

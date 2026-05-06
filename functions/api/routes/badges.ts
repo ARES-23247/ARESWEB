@@ -1,10 +1,11 @@
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { 
+
   listBadgesRoute, 
   createBadgeRoute, 
   grantBadgeRoute, 
@@ -12,6 +13,7 @@ import {
   deleteBadgeRoute, 
   leaderboardBadgeRoute 
 } from "../../../shared/routes/badges";
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const badgesRouter = new OpenAPIHono<AppEnv>();
 
@@ -21,7 +23,7 @@ badgesRouter.use("/", ensureAuth);
 badgesRouter.use("/admin/*", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-badgesRouter.openapi(listBadgesRoute, async (c: Context<AppEnv>) => {
+badgesRouter.openapi(listBadgesRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -44,9 +46,9 @@ badgesRouter.openapi(listBadgesRoute, async (c: Context<AppEnv>) => {
     const err = e as Error;
     return c.json({ error: err.message || "Failed to fetch badges", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof listBadgesRoute>);
 
-badgesRouter.openapi(createBadgeRoute, async (c: Context<AppEnv>) => {
+badgesRouter.openapi(createBadgeRoute, (async (c) => {
   try {
     const { id, name, description, icon, color_theme } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -65,9 +67,9 @@ badgesRouter.openapi(createBadgeRoute, async (c: Context<AppEnv>) => {
     const err = e as Error;
     return c.json({ error: err.message || "Failed to create badge", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof createBadgeRoute>);
 
-badgesRouter.openapi(grantBadgeRoute, async (c: Context<AppEnv>) => {
+badgesRouter.openapi(grantBadgeRoute, (async (c) => {
   try {
     const { userId, badgeId } = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -129,9 +131,9 @@ badgesRouter.openapi(grantBadgeRoute, async (c: Context<AppEnv>) => {
     const err = e as Error;
     return c.json({ error: err.message || "Failed to award badge", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof grantBadgeRoute>);
 
-badgesRouter.openapi(revokeBadgeRoute, async (c: Context<AppEnv>) => {
+badgesRouter.openapi(revokeBadgeRoute, (async (c) => {
   try {
     const { userId, badgeId } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -145,9 +147,9 @@ badgesRouter.openapi(revokeBadgeRoute, async (c: Context<AppEnv>) => {
     const err = e as Error;
     return c.json({ error: err.message || "Failed to revoke badge", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof revokeBadgeRoute>);
 
-badgesRouter.openapi(deleteBadgeRoute, async (c: Context<AppEnv>) => {
+badgesRouter.openapi(deleteBadgeRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -157,9 +159,9 @@ badgesRouter.openapi(deleteBadgeRoute, async (c: Context<AppEnv>) => {
     const err = e as Error;
     return c.json({ error: err.message || "Failed to delete badge definition", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof deleteBadgeRoute>);
 
-badgesRouter.openapi(leaderboardBadgeRoute, async (c: Context<AppEnv>) => {
+badgesRouter.openapi(leaderboardBadgeRoute, (async (c) => {
   try {
     const db = c.get("db") as Kysely<DB>;
     const results = await db
@@ -185,6 +187,6 @@ badgesRouter.openapi(leaderboardBadgeRoute, async (c: Context<AppEnv>) => {
     const err = e as Error;
     return c.json({ error: err.message || "Failed to fetch leaderboard", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
-});
+}) as AppRouteHandler<typeof leaderboardBadgeRoute>);
 
 export default badgesRouter;

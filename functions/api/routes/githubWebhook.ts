@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- GitHub webhook payloads are dynamic and external */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";

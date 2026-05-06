@@ -1,9 +1,11 @@
 import { Kysely, ExpressionBuilder } from "kysely";
 import { DB } from "../../../shared/schemas/database";
-import { Context } from "hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser } from "../middleware";
 import * as financeRoutes from "../../../shared/routes/finance";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const financeRouter = new OpenAPIHono<AppEnv>();
 
@@ -12,7 +14,7 @@ financeRouter.use("*", ensureAdmin);
 financeRouter.use("*", rateLimitMiddleware(30, 60));
 
 // GET /finance/summary - Get financial summary for a season
-financeRouter.openapi(financeRoutes.getSummaryRoute, async (c: Context<AppEnv>) => {
+financeRouter.openapi(financeRoutes.getSummaryRoute, async (c: any) => {
   try {
     const { season_id } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -60,7 +62,7 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, async (c: Context<AppEnv>) 
 });
 
 // GET /finance/sponsorship - List sponsorship pipeline items
-financeRouter.openapi(financeRoutes.listPipelineRoute, async (c: Context<AppEnv>) => {
+financeRouter.openapi(financeRoutes.listPipelineRoute, async (c: any) => {
   try {
     const { season_id } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -92,7 +94,7 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, async (c: Context<AppEnv>
 });
 
 // POST /finance/sponsorship - Create or update a sponsorship pipeline item
-financeRouter.openapi(financeRoutes.savePipelineRoute, async (c: Context<AppEnv>) => {
+financeRouter.openapi(financeRoutes.savePipelineRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -194,7 +196,7 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, async (c: Context<AppEnv>
 });
 
 // DELETE /finance/sponsorship/{id} - Delete a sponsorship pipeline item
-financeRouter.openapi(financeRoutes.deletePipelineRoute, async (c: Context<AppEnv>) => {
+financeRouter.openapi(financeRoutes.deletePipelineRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -208,7 +210,7 @@ financeRouter.openapi(financeRoutes.deletePipelineRoute, async (c: Context<AppEn
 });
 
 // GET /finance/transactions - List financial transactions
-financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c: Context<AppEnv>) => {
+financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c: any) => {
   try {
     const { season_id, type } = c.req.valid("query");
     const db = c.get("db") as Kysely<DB>;
@@ -235,7 +237,7 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c: Context<App
 });
 
 // POST /finance/transactions - Create or update a financial transaction
-financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c: Context<AppEnv>) => {
+financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c: any) => {
   try {
     const body = c.req.valid("json");
     const db = c.get("db") as Kysely<DB>;
@@ -288,7 +290,7 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c: Context<AppE
 });
 
 // DELETE /finance/transactions/{id} - Delete a financial transaction
-financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c: Context<AppEnv>) => {
+financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c: any) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;

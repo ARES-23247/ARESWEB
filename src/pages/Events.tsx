@@ -24,6 +24,7 @@ export default function Events() {
   // Transform FullEventItem to EventItem for EventCard compatibility
   const events: EventItem[] = useMemo(() => {
     const fullEvents = rawEvents?.events || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response type compatibility
     return fullEvents.map((e: any): EventItem => ({
       id: e.id,
       title: e.title,
@@ -42,6 +43,7 @@ export default function Events() {
   // Transform backend events to CalendarEvent format
   const mappedEvents: CalendarEvent[] = useMemo(() => {
     const fullEvents = rawEvents?.events || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response type compatibility
     return fullEvents.map((e: any) => {
       const start = new Date(e.date_start);
       // If no end date is provided, default to 1 hour after start

@@ -1,5 +1,6 @@
-import { Context } from "hono";
+/* eslint-disable @typescript-eslint/no-explicit-any -- Event handlers work with dynamic external data */
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, ensureAuth } from "../../middleware";
 import { eventHandlers } from "./handlers";
 import { Kysely } from "kysely";
@@ -30,6 +31,8 @@ import {
 } from "../../../../shared/routes/events";
 import { edgeCacheMiddleware } from "../../middleware/cache";
 
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+
 const eventsRouter = new OpenAPIHono<AppEnv>();
 
 // ─── Middleware ───────────────────────────────────────────────────────────
@@ -41,132 +44,131 @@ eventsRouter.use("/:id/signups", ensureAuth);
 
 
 // ─── Public Routes ───────────────────────────────────────────────────────
-eventsRouter.openapi(getEventsRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(getEventsRoute, (async (c) => {
   const query = c.req.valid("query");
   const result = await eventHandlers.getEvents({ query, params: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof getEventsRoute>);
 
-eventsRouter.openapi(getEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(getEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof getEventRoute>);
 
-eventsRouter.openapi(getCalendarSettingsRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(getCalendarSettingsRoute, (async (c) => {
   const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof getCalendarSettingsRoute>);
 
-eventsRouter.openapi(getSignupsRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(getSignupsRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.getSignups({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof getSignupsRoute>);
 
-eventsRouter.openapi(submitSignupRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(submitSignupRoute, (async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.submitSignup({ params, body, query: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof submitSignupRoute>);
 
-eventsRouter.openapi(deleteMySignupRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(deleteMySignupRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.deleteMySignup({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof deleteMySignupRoute>);
 
-eventsRouter.openapi(updateMyAttendanceRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(updateMyAttendanceRoute, (async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.updateMyAttendance({ params, body, query: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof updateMyAttendanceRoute>);
 
 // ─── Admin Routes ────────────────────────────────────────────────────────
-eventsRouter.openapi(getAdminEventsRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(getAdminEventsRoute, (async (c) => {
   const query = c.req.valid("query");
   const result = await eventHandlers.getAdminEvents({ query, params: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof getAdminEventsRoute>);
 
-eventsRouter.openapi(getAdminEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(getAdminEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.adminDetail({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof getAdminEventRoute>);
 
-eventsRouter.openapi(saveEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(saveEventRoute, (async (c) => {
   const body = c.req.valid("json");
   const result = await eventHandlers.saveEvent({ body, params: {}, query: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof saveEventRoute>);
 
-eventsRouter.openapi(updateEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(updateEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.updateEvent({ params, body, query: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof updateEventRoute>);
 
-eventsRouter.openapi(deleteEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(deleteEventRoute, (async (c) => {
   const params = c.req.valid("param");
-  const body = c.req.valid("json");
-  const result = await eventHandlers.deleteEvent({ params, body, query: {} }, c);
+  const result = await eventHandlers.deleteEvent({ params, body: {} as any, query: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof deleteEventRoute>);
 
-eventsRouter.openapi(syncEventsRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(syncEventsRoute, (async (c) => {
   const result = await eventHandlers.syncEvents({ params: {}, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof syncEventsRoute>);
 
-eventsRouter.openapi(repairCalendarRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(repairCalendarRoute, (async (c) => {
   const result = await eventHandlers.repairCalendar({ params: {}, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof repairCalendarRoute>);
 
-eventsRouter.openapi(approveEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(approveEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.approveEvent({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof approveEventRoute>);
 
-eventsRouter.openapi(rejectEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(rejectEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.rejectEvent({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof rejectEventRoute>);
 
-eventsRouter.openapi(undeleteEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(undeleteEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.undeleteEvent({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof undeleteEventRoute>);
 
-eventsRouter.openapi(purgeEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(purgeEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.purgeEvent({ params, query: {}, body: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof purgeEventRoute>);
 
-eventsRouter.openapi(repushEventRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(repushEventRoute, (async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.repushEvent({ params, body, query: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof repushEventRoute>);
 
-eventsRouter.openapi(updateUserAttendanceRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(updateUserAttendanceRoute, (async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.updateUserAttendance({ params, body, query: {} }, c);
   return c.json(result.body, result.status as any);
-});
+}) as AppRouteHandler<typeof updateUserAttendanceRoute>);
 
 // ─── Event Version History ──────────────────────────────────────────────
-eventsRouter.openapi(getEventHistoryRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(getEventHistoryRoute, (async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -189,9 +191,9 @@ eventsRouter.openapi(getEventHistoryRoute, async (c: Context<AppEnv>) => {
     console.error("[Events:History] Error", e);
     return c.json({ error: "Failed to fetch history" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getEventHistoryRoute>);
 
-eventsRouter.openapi(restoreEventHistoryRoute, async (c: Context<AppEnv>) => {
+eventsRouter.openapi(restoreEventHistoryRoute, (async (c) => {
   try {
     const { id, historyId } = c.req.valid("param");
     const db = c.get("db") as Kysely<DB>;
@@ -229,6 +231,6 @@ eventsRouter.openapi(restoreEventHistoryRoute, async (c: Context<AppEnv>) => {
     console.error("[Events:RestoreHistory] Error", e);
     return c.json({ error: "Restore failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof restoreEventHistoryRoute>);
 
 export default eventsRouter;

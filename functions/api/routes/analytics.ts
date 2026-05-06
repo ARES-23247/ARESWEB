@@ -1,11 +1,11 @@
-import { Context } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit } from "../middleware";
-import { sql, Kysely as _KyselyType } from "kysely";
-import type { _HonoContext } from "@shared/types/api";
+import { sql } from "kysely";
 import {
+
   trackPageViewRoute,
   trackSponsorClickRoute,
   getRosterStatsRoute,
@@ -14,6 +14,7 @@ import {
   getPlatformAnalyticsRoute,
   searchRoute,
 } from "../../../shared/routes/analytics";
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const analyticsRouter = new OpenAPIHono<AppEnv>();
 
@@ -30,7 +31,7 @@ analyticsRouter.use("/sponsor-click", turnstileMiddleware());
 analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 
 // Track page view
-analyticsRouter.openapi(trackPageViewRoute, async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(trackPageViewRoute, (async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `track:${ip}`, ua, 20, 600))) {
@@ -56,10 +57,10 @@ analyticsRouter.openapi(trackPageViewRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ success: false }, 500);
   }
-});
+}) as AppRouteHandler<typeof trackPageViewRoute>);
 
 // Track sponsor click
-analyticsRouter.openapi(trackSponsorClickRoute, async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(trackSponsorClickRoute, (async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `click:${ip}`, ua, 10, 600))) {
@@ -104,10 +105,10 @@ analyticsRouter.openapi(trackSponsorClickRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ success: false }, 500);
   }
-});
+}) as AppRouteHandler<typeof trackSponsorClickRoute>);
 
 // Get platform analytics (admin)
-analyticsRouter.openapi(getPlatformAnalyticsRoute, async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getPlatformAnalyticsRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [
@@ -201,10 +202,10 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, async (c: Context<AppEnv>) =>
     console.error("[Analytics] Platform metrics error:", err);
     return c.json({ error: "Failed to fetch platform metrics" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getPlatformAnalyticsRoute>);
 
 // Get roster stats (admin)
-analyticsRouter.openapi(getRosterStatsRoute, async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getRosterStatsRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("user_profiles as u")
@@ -249,10 +250,10 @@ analyticsRouter.openapi(getRosterStatsRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Failed to fetch roster stats" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getRosterStatsRoute>);
 
 // Get leaderboard
-analyticsRouter.openapi(getLeaderboardRoute, async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getLeaderboardRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const results = await db.selectFrom("user as u")
@@ -290,10 +291,10 @@ analyticsRouter.openapi(getLeaderboardRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Failed to fetch leaderboard" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getLeaderboardRoute>);
 
 // Get stats (admin)
-analyticsRouter.openapi(getStatsRoute, async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getStatsRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   try {
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
@@ -322,10 +323,10 @@ analyticsRouter.openapi(getStatsRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Failed to fetch stats" }, 500);
   }
-});
+}) as AppRouteHandler<typeof getStatsRoute>);
 
 // Search
-analyticsRouter.openapi(searchRoute, async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(searchRoute, (async (c) => {
   const db = c.get("db") as Kysely<DB>;
   const { q } = c.req.valid("query");
   try {
@@ -350,6 +351,6 @@ analyticsRouter.openapi(searchRoute, async (c: Context<AppEnv>) => {
   } catch {
     return c.json({ error: "Search failed" }, 500);
   }
-});
+}) as AppRouteHandler<typeof searchRoute>);
 
 export default analyticsRouter;

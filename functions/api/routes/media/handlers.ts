@@ -1,8 +1,9 @@
-import { Context } from "hono";
 import { AppEnv } from "../../middleware";
 import { getDbSettings, checkPersistentRateLimit, logAuditAction } from "../../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
+
+
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -105,7 +106,7 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
 
 
 export const mediaHandlers = {
-  getMedia: async (c: Context<AppEnv>) => {
+  getMedia: async (c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
     const rl = await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `media_list_${ip}`, ua, 30, 60);
@@ -114,7 +115,7 @@ export const mediaHandlers = {
     }
 
     try {
-      const cache = typeof caches !== 'undefined' ? caches.default : null;
+      const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
       const url = new URL(c.req.url);
       url.search = "";
       const cacheKey = new Request(url.toString(), { method: "GET" });
@@ -163,7 +164,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  adminList: async (c: Context<AppEnv>) => {
+  adminList: async (c: any) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const [objects, results] = await Promise.all([
@@ -192,7 +193,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "List failed", media: [] } };
     }
   },
-  upload: async (c: Context<AppEnv>) => {
+  upload: async (c: any) => {
     try {
       const formData = await c.req.parseBody();
       const file = formData["file"] as File | null;
@@ -267,7 +268,7 @@ export const mediaHandlers = {
         c.executionCtx.waitUntil(logAuditAction(c, "media_upload", "media", key, `Uploaded to ${finalFolder}`));
 
         if (typeof caches !== 'undefined') {
-          c.executionCtx.waitUntil(caches.default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+          c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
         }
       }
 
@@ -278,7 +279,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "Upload failed: " + (error.message || String(error)) } };
     }
   },
-  move: async (c: Context<AppEnv>) => {
+  move: async (c: any) => {
     const { key } = c.req.valid("param");
     const { folder } = c.req.valid("json");
     try {
@@ -312,7 +313,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "Move failed" } };
     }
   },
-  delete: async (c: Context<AppEnv>) => {
+  delete: async (c: any) => {
     const { key } = c.req.valid("param");
     try {
       if (c.env.ARES_STORAGE) {
@@ -327,7 +328,7 @@ export const mediaHandlers = {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  syndicate: async (c: Context<AppEnv>) => {
+  syndicate: async (c: any) => {
     try {
       const { key, caption } = c.req.valid("json");
       const config = await getDbSettings(c);

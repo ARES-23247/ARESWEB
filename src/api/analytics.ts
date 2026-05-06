@@ -63,7 +63,7 @@ export interface PlatformAnalyticsResponse {
 }
 
 export interface SearchResponse {
-  results: SearchResult[];
+  results: AnalyticsSearchResult[];
 }
 
 
@@ -109,13 +109,13 @@ export function useTrackSponsorClick(
  * GET /api/analytics/leaderboard - Get badge leaderboard
  */
 export function useGetLeaderboard(
-  options?: Omit<UseQueryOptions<LeaderboardResponse>, "queryKey" | "queryFn">
+  options?: Omit<UseQueryOptions<AnalyticsLeaderboardResponse>, "queryKey" | "queryFn">
 ) {
-  return useQuery<LeaderboardResponse>({
+  return useQuery<AnalyticsLeaderboardResponse>({
     queryKey: ["leaderboard"],
     queryFn: async () => {
       const response = await client.analytics.leaderboard.$get();
-      return unwrapResponse<LeaderboardResponse>(response);
+      return unwrapResponse<AnalyticsLeaderboardResponse>(response);
     },
     ...options,
   });

@@ -48,6 +48,12 @@ export type Bindings = {
   STRIPE_WEBHOOK_SECRET?: string;
   SENTRY_DSN?: string;
   TOA_API_KEY?: string;
+  TWITTER_API_KEY?: string;
+  BLUESKY_HANDLE?: string;
+  FACEBOOK_ACCESS_TOKEN?: string;
+  INSTAGRAM_ACCESS_TOKEN?: string;
+  SLACK_WEBHOOK_URL?: string;
+  LINKEDIN_ACCESS_TOKEN?: string;
   FTC_EVENTS_USERNAME?: string;
   FTC_EVENTS_API_KEY?: string;
   AUDIT_LOG_RETENTION_DAYS?: string;
@@ -85,6 +91,7 @@ export interface SessionUser {
   email: string;
   name: string | null;
   nickname: string | null;
+  github_login?: string | null;
   image: string | undefined | null;
   role: string | "admin" | "author" | "unverified";
   member_type: string;

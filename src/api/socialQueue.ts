@@ -1,4 +1,4 @@
-/**
+/* eslint-disable @typescript-eslint/no-explicit-any -- Social queue data is dynamic *//**
  * Social Media Queue API
  *
  * Types inferred from backend route definitions in @shared/routes/socialQueue.ts
@@ -79,7 +79,7 @@ export function useGetSocialQueue(
   return useQuery<SocialQueueListResponse>({
     queryKey: ["social-queue", query],
     queryFn: async () => {
-      const response = await client["social-queue"].$get({ query: query as any });
+      const response = await client["social-queue"].$get({ query: query as any });  
       return unwrapResponse<SocialQueueListResponse>(response);
     },
     ...options,
@@ -113,7 +113,7 @@ export function useCreateSocialPost(
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean; post: SocialQueuePost }, Error, CreateSocialPostRequest>({
     mutationFn: async (data) => {
-      const response = await client["social-queue"].$post({ json: data as any });
+      const response = await client["social-queue"].$post({ json: data as any });  
       return unwrapResponse<{ success: boolean; post: SocialQueuePost }>(response);
     },
     onSuccess: () => {
@@ -194,7 +194,7 @@ export function useGetSocialAnalytics(
   return useQuery<SocialAnalyticsResponse>({
     queryKey: ["social-queue", "analytics", query.start, query.end],
     queryFn: async () => {
-      const response = await client["social-queue"].analytics.$get({ query: query as any });
+      const response = await client["social-queue"].analytics.$get({ query: query as any });  
       return unwrapResponse<SocialAnalyticsResponse>(response);
     },
     ...options,

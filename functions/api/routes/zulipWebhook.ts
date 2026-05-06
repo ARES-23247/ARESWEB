@@ -1,12 +1,15 @@
-import { Context } from "hono";
+/* eslint-disable @typescript-eslint/no-explicit-any -- Zulip webhook payloads are dynamic and external */
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { Kysely } from "kysely";
+import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
+import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { siteConfig } from "../../utils/site.config";
 import { AppEnv, getSocialConfig } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { calculateIRV } from "../../utils/irvCalculator";
 import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
+
+type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const zulipWebhookRouter = new OpenAPIHono<AppEnv>();
 
@@ -28,7 +31,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 // ── POST /webhooks/zulip — Handle outgoing webhook from Zulip ────────
-zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
+zulipWebhookRouter.openapi(zulipWebhookRoute, (async (c) => {
   const body = c.req.valid("json");
 
   const config = await getSocialConfig(c);
@@ -40,24 +43,24 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
     return c.json({ content: "❌ Unauthorized: Invalid webhook token." }, 401);
   }
 
-  const rawContent = body.message?.content || "";
+  const rawContent = (body as any).message?.content || "";
   const cleaned = rawContent.replace(/@\*\*[^*]+\*\*/g, "").trim();
   
   if (!cleaned) {
     return c.json({ content: "🤖 Hello! I am the ARES Bot. Type `!help` to see what I can do." }, 200);
   }
 
-  const args = cleaned.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)?.map(arg => 
+  const args = cleaned.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)?.map((arg: string) => 
     arg.replace(/^["']|["']$/g, "")
   ) || [];
   
   const command = args[0]?.toLowerCase();
 
   const PRIVILEGED_COMMANDS = ["!task", "!broadcast"];
-  const db = c.get("db");
+  const db = c.get("db") as Kysely<DB>;
 
   if (PRIVILEGED_COMMANDS.includes(command || "")) {
-    const senderEmail = body.message?.sender_email;
+    const senderEmail = (body as any).message?.sender_email;
     if (senderEmail) {
       const user = await db.selectFrom("user as u")
         .select("u.role")
@@ -111,8 +114,8 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
         });
 
         const totalRes = await db.selectFrom("tasks")
-          .select(eb => eb.fn.count("id").as("count"))
-          .executeTakeFirst();
+          .select((eb: any) => eb.fn.count("id").as("count"))
+          .executeTakeFirst() as any;
         const total = Number(totalRes?.count || taskResults.length);
 
         return c.json({
@@ -147,7 +150,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
         }
 
         const title = taskArgs.join(" ");
-        const senderEmail = body.message?.sender_email;
+        const senderEmail = (body as any).message?.sender_email;
         let creatorId = "system";
         if (senderEmail) {
           const senderUser = await db.selectFrom("user")
@@ -163,7 +166,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
           .values({
             id: taskId,
             title,
-            description: `Created via Zulip by ${body.message.sender_full_name}`,
+            description: `Created via Zulip by ${(body as any).message.sender_full_name}`,
             status: "todo",
             priority: "normal",
             sort_order: 0,
@@ -178,10 +181,10 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
 
       case "!stats": {
         const [postsRes, eventsRes, usersRes, inquiriesRes] = await Promise.all([
-          db.selectFrom("posts").select(eb => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst(),
-          db.selectFrom("events").select(eb => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst(),
-          db.selectFrom("user_profiles").select(eb => eb.fn.count("user_id").as("count")).executeTakeFirst(),
-          db.selectFrom("inquiries").select(eb => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst(),
+          db.selectFrom("posts").select((eb: any) => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() as Promise<any>,
+          db.selectFrom("events").select((eb: any) => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() as Promise<any>,
+          db.selectFrom("user_profiles").select((eb: any) => eb.fn.count("user_id").as("count")).executeTakeFirst() as Promise<any>,
+          db.selectFrom("inquiries").select((eb: any) => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst() as Promise<any>,
         ]);
 
         return c.json({
@@ -200,9 +203,9 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
 
       case "!inquiries": {
         const result = await db.selectFrom("inquiries")
-          .select(eb => eb.fn.count("id").as("count"))
+          .select((eb: any) => eb.fn.count("id").as("count"))
           .where("status", "=", "pending")
-          .executeTakeFirst();
+          .executeTakeFirst() as any;
         const count = Number(result?.count || 0);
         return c.json({
           content: count > 0
@@ -225,7 +228,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
           return c.json({ content: "📅 No upcoming events scheduled." }, 200);
         }
 
-        const lines = results.map((e) => {
+        const lines = results.map((e: any) => {
           const dtStart = new Date(String(e.date_start)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
           const dtEnd = e.date_end ? ` - ${new Date(String(e.date_end)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "";
           return `• **${e.title}** — ${dtStart}${dtEnd}${e.location ? ` @ ${e.location}` : ""}`;
@@ -243,7 +246,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
            return c.json({ content: "⚠️ Usage: `!broadcast <stream> <message...>` (use quotes for stream names with spaces)" }, 200);
         }
         
-        const broadcastContent = `${msgCore}\n\n*— Broadcasted by ${body.message.sender_full_name} via ARES Bot*`;
+        const broadcastContent = `${msgCore}\n\n*— Broadcasted by ${(body as any).message.sender_full_name} via ARES Bot*`;
 
         c.executionCtx.waitUntil((async () => {
           const socialConfig = await getSocialConfig(c);
@@ -271,7 +274,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
           }, 200);
         }
 
-        const senderEmail = body.message?.sender_email;
+        const senderEmail = (body as any).message?.sender_email;
 
         // Helper to check admin
         const ensureAdmin = async () => {
@@ -306,7 +309,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
             .values({ key: `rcv_poll_${pollId}`, value: JSON.stringify(pollData) })
             .execute();
 
-          const optionsList = options.map((opt, i) => `${i + 1}️⃣ **${opt}**`).join("\n");
+          const optionsList = options.map((opt: any, i: any) => `${i + 1}️⃣ **${opt}**`).join("\n");
           return c.json({
             content: `📊 **Poll Created: ${title}** (ID: \`${pollId}\`)\n\n**Options:**\n${optionsList}\n\nTo vote, reply with: \`!rcv vote ${pollId} <1st_choice> <2nd_choice>...\`\nExample ranking option 2 first, then 1: \`!rcv vote ${pollId} 2 1\``
           }, 200);
@@ -338,9 +341,9 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
           }
           if (!senderEmail) return c.json({ content: "❌ Could not identify voter." }, 200);
           
-          const rankings = args.slice(3).map(n => parseInt(n) - 1); // 0-indexed
+          const rankings = args.slice(3).map((n: string) => parseInt(n) - 1); // 0-indexed
           
-          if (rankings.length === 0 || rankings.some(r => isNaN(r) || r < 0 || r >= poll.options.length)) {
+          if (rankings.length === 0 || rankings.some((r: number) => isNaN(r) || r < 0 || r >= poll.options.length)) {
             return c.json({ content: `⚠️ Invalid ranking. Use numbers 1 to ${poll.options.length} separated by spaces.` }, 200);
           }
 
@@ -387,7 +390,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
                 resultMsg += `- ${poll.options[parseInt(cIdx)]}: ${votes} votes\n`;
              }
              if (round.eliminatedCandidates.length > 0) {
-                const elimNames = round.eliminatedCandidates.map(idx => poll.options[idx]).join(", ");
+                const elimNames = round.eliminatedCandidates.map((idx: number) => poll.options[idx]).join(", ");
                 resultMsg += `❌ *Eliminated: ${elimNames}*\n`;
              }
              resultMsg += "\n";
@@ -396,7 +399,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
           if (result.winner !== undefined) {
              resultMsg += `🏆 **WINNER: ${poll.options[result.winner]}**!`;
           } else if (result.tied !== undefined) {
-             const tiedNames = result.tied.map(idx => poll.options[idx]).join(" and ");
+             const tiedNames = result.tied.map((idx: number) => poll.options[idx]).join(" and ");
              resultMsg += `🤝 **TIE between: ${tiedNames}**!`;
           }
 
@@ -407,8 +410,8 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
       }
 
       default:
-        if (body.message?.type === "stream" && (body.message.topic || body.message.subject)) {
-          const topicStr = body.message.topic || body.message.subject;
+        if ((body as any).message?.type === "stream" && ((body as any).message.topic || (body as any).message.subject)) {
+          const topicStr = (body as any).message.topic || (body as any).message.subject;
           const topicParts = topicStr.split("/");
           if (topicParts.length >= 2 && ["post", "event", "doc"].includes(topicParts[0])) {
             const targetType = topicParts[0];
@@ -416,10 +419,10 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
 
             const existingUser = await db.selectFrom("user")
               .select(["id", "role"])
-              .where("email", "=", body.message.sender_email)
+              .where("email", "=", (body as any).message.sender_email || "")
               .executeTakeFirst();
 
-            if (!existingUser || existingUser.role === "unverified") {
+            if (!existingUser || existingUser.role === "unverified" || !existingUser.id) {
               return c.json({ content: "" }, 200);
             }
 
@@ -428,11 +431,11 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
             try {
               await db.insertInto("comments")
                 .values({
-                  target_type: targetType as any,
+                  target_type: targetType,
                   target_id: targetId,
-                  user_id: userId,
+                  user_id: userId as any,
                   content: rawContent,
-                  zulip_message_id: String(body.trigger === "message" ? body.message.id : 0),
+                  zulip_message_id: String((body as any).trigger === "message" ? (body as any).message.id : 0),
                   created_at: new Date().toISOString()
                 })
                 .execute();
@@ -456,6 +459,6 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, async (c: Context<AppEnv>) => {
       content: `❌ Command failed: ${(err as Error)?.message || "Unknown error"}`,
     }, 200);
   }
-});
+}) as AppRouteHandler<typeof zulipWebhookRoute>);
 
 export default zulipWebhookRouter;

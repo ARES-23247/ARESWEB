@@ -22,15 +22,15 @@ outreachRouter.use("/admin/*", ensureAdmin);
 outreachRouter.use("/admin", rateLimitMiddleware(15, 60));
 
 // Public list (requires auth in this specific app logic it seems)
-outreachRouter.openapi(listOutreachRoute, handleListOutreach);
+outreachRouter.openapi(listOutreachRoute, handleListOutreach as any);
 
 // Admin list
-outreachRouter.openapi(adminListOutreachRoute, handleAdminListOutreach);
+outreachRouter.openapi(adminListOutreachRoute, handleAdminListOutreach as any);
 
 // Save/Update (Admin)
-outreachRouter.openapi(saveOutreachRoute, handleSaveOutreach);
+outreachRouter.openapi(saveOutreachRoute, handleSaveOutreach as any);
 
 // Delete (Admin)
-outreachRouter.openapi(deleteOutreachRoute, handleDeleteOutreach);
+outreachRouter.openapi(deleteOutreachRoute, handleDeleteOutreach as any);
 
 export default outreachRouter;

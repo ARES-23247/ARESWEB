@@ -65,6 +65,7 @@ export function useUploadMedia(
   return useMutation<{ success: boolean; key: string; url: string; altText?: string }, Error, FormData>({
     mutationFn: async (formData) => {
       const response = await client.media.admin.upload.$post({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Hono client FormData compatibility
         body: formData as any
       });
       return unwrapResponse<{ success: boolean; key: string; url: string; altText?: string }>(response);
