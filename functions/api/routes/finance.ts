@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { Kysely, ExpressionBuilder } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -5,7 +6,7 @@ import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser } from "../middleware";
 import * as financeRoutes from "../../../shared/routes/finance";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+type _AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const financeRouter = new OpenAPIHono<AppEnv>();
 

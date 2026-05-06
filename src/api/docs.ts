@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- Zod schemas used only for type inference */
 /**
  * Docs API - Documentation, Knowledge Base
  *

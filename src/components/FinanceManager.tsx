@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";

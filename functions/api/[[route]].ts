@@ -3,7 +3,7 @@ import { Kysely } from "kysely";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
-import { Bindings, AppEnv, rateLimitMiddleware, persistentRateLimitMiddleware, logSystemError, ensureAdmin, dbMiddleware, envMiddleware, parsePagination, originIntegrityMiddleware } from "./middleware";
+import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMiddleware, envMiddleware, originIntegrityMiddleware } from "./middleware";
 import { sql } from "kysely";
 import { DB } from "../../shared/schemas/database";
 

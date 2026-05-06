@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipWebhookRouter from "./zulipWebhook";
 import { mockExecutionContext, flushWaitUntil, createMockExpressionBuilder } from "../../../src/test/utils";
 import { TestEnv, MockKysely } from "../../../src/test/types";
-import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
-import { z } from "zod";
+
 
 vi.mock("../../utils/zulipSync", () => ({
   sendZulipMessage: vi.fn().mockResolvedValue(1),

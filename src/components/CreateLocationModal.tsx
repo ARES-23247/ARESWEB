@@ -17,7 +17,7 @@ interface CreateLocationModalProps {
 
 export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocationModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const [errorMsg, setErrorMsg] = useState("");
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
   const [suggestions, setSuggestions] = useState<{ display_name: string }[]>([]);

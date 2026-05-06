@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Component works with dynamic external data */
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchJson } from "../api";
+import { useQueryClient } from "@tanstack/react-query";
 import { Save, RefreshCw, Shield } from "lucide-react";
 import { IdentityForm } from "./profile/IdentityForm";
 import { RoleForm } from "./profile/RoleForm";

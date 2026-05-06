@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";

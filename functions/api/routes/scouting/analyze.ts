@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
-import { AppEnv, ensureAuth } from "../../middleware";
+import { AppEnv } from "../../middleware";
 import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
 
 type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;

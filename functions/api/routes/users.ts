@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- User data is dynamic */
+/* User management route handlers */
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";

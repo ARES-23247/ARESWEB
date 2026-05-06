@@ -4,7 +4,7 @@ import {
   X, Save, Trash2, Calendar, User, AlertTriangle, Flag,
   CheckCircle2, Circle, Clock, Plus, Layout, Layers
 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useGetUsers, useCreateTask, useGetTasks } from "../../api";
 import { type Task as TaskItem } from "../../api";
 import { KANBAN_SUBTEAMS } from "../command/ProjectBoardKanban";

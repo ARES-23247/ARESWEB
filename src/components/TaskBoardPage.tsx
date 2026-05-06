@@ -6,7 +6,6 @@ import { TaskTableView } from "./kanban/TaskTableView";
 import { KANBAN_SUBTEAMS } from "./command/ProjectBoardKanban";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetTasks, useUpdateTask, useDeleteTask, useReorderTasks, useCreateTask, type Task as TaskItem } from "../api";
-import { fetchJson } from "../utils/apiClient";
 import usePartySocket from "partysocket/react";
 import { useSession } from "../utils/auth-client";
 

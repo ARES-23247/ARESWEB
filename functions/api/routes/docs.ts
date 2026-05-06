@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -10,7 +11,7 @@ import type { HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 import * as docsRoutes from "../../../shared/routes/docs";
 
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+type _AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const docsRouter = new OpenAPIHono<AppEnv>();
 

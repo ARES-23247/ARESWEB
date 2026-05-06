@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { 
   getMediaRoute, 
@@ -34,7 +35,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
       const user = await getSessionUser(c);
       if (!user) return c.text("Unauthorized", 401);
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Workers Cache API type
+     
     const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
     const url = new URL(c.req.url);
     url.search = "";
@@ -51,13 +52,13 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     if (!object || !object.body) return c.text("Not Found", 404);
 
     const headers = new Headers();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- R2Object writeHttpMetadata requires Headers type
+     
     object.writeHttpMetadata(headers as any);
     headers.set("etag", object.httpEtag);
     if (publicFolders.includes(folder)) headers.set("Cache-Control", "public, max-age=2592000, stale-while-revalidate=86400");
     else headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- R2Object body is ReadableStream but types don't match
+     
     const response = new Response(object.body as any, { headers });
     if (cache && publicFolders.includes(folder) && c.executionCtx) {
       c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));

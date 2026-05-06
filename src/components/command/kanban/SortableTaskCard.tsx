@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  ChevronDown, User, Edit3, GripVertical, Trash2
+  ChevronDown, Edit3, GripVertical, Trash2
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -28,7 +28,7 @@ export function SortableTaskCard({
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const currentAssignees = task.assignees || [];
+  const _currentAssignees = task.assignees || [];
 
   return (
     <div

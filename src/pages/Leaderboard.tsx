@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Leaderboard data shape is dynamic */
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy, Award, Medal, Crown, Star, ArrowLeft } from "lucide-react";
 import SEO from "../components/SEO";
-import { useGetLeaderboard, type LeaderboardUser } from "../api";
+import { useGetLeaderboard } from "../api";
 
 export default function Leaderboard() {
   const { data: leaderboardRes, isLoading } = useGetLeaderboard();

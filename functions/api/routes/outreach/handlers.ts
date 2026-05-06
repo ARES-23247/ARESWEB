@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-import { AppEnv, getSessionUser, logAuditAction } from "../../middleware";
+import { getSessionUser, logAuditAction } from "../../middleware";
 import type { RouteHandler } from "@hono/zod-openapi";
 import type {
   listOutreachRoute,
@@ -83,7 +84,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async 
       (a, b) => b.date.localeCompare(a.date)
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Output matches combined log structure
+     
     return c.json({ logs: combined as any[] }, 200);
   } catch (err) {
     console.error("[Outreach:List] Error", err);
@@ -131,7 +132,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
       (a, b) => b.date.localeCompare(a.date)
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Output matches combined log structure
+     
     return c.json({ logs: combined as any[] }, 200);
   } catch (err) {
     console.error("[Outreach:AdminList] Error", err);

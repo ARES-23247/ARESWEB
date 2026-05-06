@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -339,7 +340,7 @@ postsRouter.openapi(savePostRoute, (async (c) => {
       }
 
       const user = await getSessionUser(c);
-      const email = user?.email || "anonymous_dashboard_user";
+      const _email = user?.email || "anonymous_dashboard_user";
 
       // Create shadow revision for history
       await captureHistory(c, body.slug, existing as any);
@@ -654,7 +655,7 @@ postsRouter.openapi(approvePostRoute, (async (c) => {
 
 postsRouter.openapi(rejectPostRoute, (async (c) => {
   const { slug } = c.req.valid("param");
-  const body = c.req.valid("json");
+  const _body = c.req.valid("json");
   const { reason } = c.req.valid("json");
   try {
     const db = c.get("db") as Kysely<DB>;
@@ -721,7 +722,7 @@ postsRouter.openapi(restorePostHistoryRoute, (async (c) => {
 
 postsRouter.openapi(repushSocialsRoute, (async (c) => {
   const { slug } = c.req.valid("param");
-  const body = c.req.valid("json");
+  const _body = c.req.valid("json");
   const { socials } = c.req.valid("json");
   try {
     const db = c.get("db") as Kysely<DB>;

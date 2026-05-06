@@ -166,7 +166,6 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
     const backupPromises = SAFE_TABLES.map(async (tableName) => {
       try {
         const cols = TABLE_COLUMNS[tableName];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Kysely dynamic query builder requires dynamic table names
         const anyDb = db as unknown as Kysely<Record<string, Record<string, unknown>>>;
         const q = cols
           ? anyDb.selectFrom(tableName).select(cols)

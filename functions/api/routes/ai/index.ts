@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, persistentRateLimitMiddleware, verifyTurnstile } from "../../middleware";
 import { streamSSE } from "hono/streaming";
-import { Kysely, sql } from "kysely";
+import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { MessageContent, ZaiChatResponse, ChatMessage, isTextContentPart } from "./types";
 import { 
@@ -14,7 +15,7 @@ import {
   aiSuggestRoute, 
   ragChatbotRoute 
 } from "../../../../shared/routes/ai";
-type AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
+type _AppRouteHandler<T extends RouteConfig> = RouteHandler<T, AppEnv>;
 
 export const aiRouter = new OpenAPIHono<AppEnv>();
 

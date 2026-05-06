@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { trackPageView } from "../utils/analytics";
-import { useGetAllDocs, useGetDocWithContributors, useSearchDocs, type DocRecord, type Contributor } from "../api/docs";
+import { useGetAllDocs, useGetDocWithContributors, useSearchDocs, type DocRecord } from "../api/docs";
 
 export type { Doc, DocRecord, Contributor, DocSearchResult as SearchResult } from "../api/docs";
 
