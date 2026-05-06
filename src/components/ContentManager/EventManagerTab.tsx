@@ -106,7 +106,7 @@ export default function EventManagerTab({
         const msg = `Repair Complete! Pushed ${result.pushed || 0} events to GCal.`;
         if (result.failed) {
           toast.warning(`${msg} (${result.failed} failed)`);
-          console.warn("[RepairCalendar] Errors:", (res as any).errors);
+          console.warn("[RepairCalendar] Errors:", result.errors);
         } else {
           toast.success(msg);
         }

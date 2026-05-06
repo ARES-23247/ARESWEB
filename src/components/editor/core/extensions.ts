@@ -73,7 +73,7 @@ export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: 
   SlashCommands.configure({
     suggestion: {
       render: () => suggestionRenderer(CommandsList),
-    } as Parameters<typeof SlashCommands.configure>[0]['suggestion'],
+    } as unknown as NonNullable<Parameters<typeof SlashCommands.configure>[0]>['suggestion'],
   }),
   Mention.configure({
     HTMLAttributes: { class: 'bg-ares-red/10 text-ares-red font-bold py-0.5 px-2 ares-cut-sm border border-ares-red/20' },
@@ -91,7 +91,7 @@ export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: 
     CollaborationCursor.configure({
       provider: provider,
       user: {
-        name: provider.room?.getSelf()?.info?.name || 'Anonymous',
+        name: (provider as { room?: { getSelf?: () => { info?: { name?: string } } } })?.room?.getSelf?.()?.info?.name || 'Anonymous',
         color: '#58a6ff', // Default, but you can assign random colors
       },
     })
