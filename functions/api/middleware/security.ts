@@ -10,7 +10,7 @@ import { DB } from "../../../shared/schemas/database";
 /**
  * Enhanced Persistent Rate Limit Check
  */
-export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userAgent: string, limit: number, windowSeconds: number, path?: string): Promise<boolean> {
+export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userAgent: string, limit: number, windowSeconds: number, path: string = ""): Promise<boolean> {
   if (!db) return true; // Fall open if middleware wasn't attached
 
   const now = Math.floor(Date.now() / 1000);
