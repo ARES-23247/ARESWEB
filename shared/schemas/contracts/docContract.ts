@@ -71,8 +71,7 @@ export const docContract = c.router({
             snippet: z.string(),
           }),
         ),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
   },
   adminList: {
@@ -92,8 +91,7 @@ export const docContract = c.router({
       ...standardErrors,
       200: z.object({
         doc: docDetailResponseSchema,
-      }),
-      404: z.object({ error: z.string() }),
+      }),
     },
   },
   getDoc: {
@@ -109,8 +107,7 @@ export const docContract = c.router({
             avatar: z.string().nullable(),
           }),
         ),
-      }),
-      404: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get single doc with contributors",
   },
@@ -129,9 +126,7 @@ export const docContract = c.router({
     body: docSchema,
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), slug: z.string() }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean(), slug: z.string() }),
     },
   },
   updateSort: {
@@ -153,9 +148,7 @@ export const docContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      403: z.object({ error: z.string() }),
-      429: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
   },
   getHistory: {
@@ -174,8 +167,7 @@ export const docContract = c.router({
     body: c.noBody(),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      404: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
   },
   approveDoc: {

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { seasonContract } from "../../../shared/schemas/contracts/seasonContract";
@@ -13,7 +14,7 @@ import type { HonoContext } from "@shared/types/api";
  
 
 const seasonsTsRestRouterObj: any = {
-  list: async (_input: any, c: HonoContext) => {
+  list: async (_input: ServerInferRequest<typeof seasonContract["list"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("seasons")
@@ -37,7 +38,7 @@ const seasonsTsRestRouterObj: any = {
       return { status: 500 as const, body: { error: "Failed to fetch seasons" } };
     }
   },
-  adminList: async (_input: any, c: HonoContext) => {
+  adminList: async (_input: ServerInferRequest<typeof seasonContract["adminList"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("seasons")
@@ -59,7 +60,7 @@ const seasonsTsRestRouterObj: any = {
       return { status: 500 as const, body: { error: "Failed to list seasons" } };
     }
   },
-  adminDetail: async (input: any, c: HonoContext) => {
+  adminDetail: async (input: ServerInferRequest<typeof seasonContract["adminDetail"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const year = parseInt(input.params.id);
@@ -87,7 +88,7 @@ const seasonsTsRestRouterObj: any = {
       return { status: 500 as const, body: { error: "Failed to fetch season" } };
     }
   },
-  getDetail: async (input: any, c: HonoContext) => {
+  getDetail: async (input: ServerInferRequest<typeof seasonContract["getDetail"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const year = parseInt(input.params.year);
@@ -127,7 +128,7 @@ const seasonsTsRestRouterObj: any = {
       return { status: 500 as const, body: { error: "Failed to fetch season details" } };
     }
   },
-  save: async (input: any, c: HonoContext) => {
+  save: async (input: ServerInferRequest<typeof seasonContract["save"]>, c: HonoContext) => {
     try {
       const body = input.body;
       const db = c.get("db") as Kysely<DB>;
@@ -191,7 +192,7 @@ const seasonsTsRestRouterObj: any = {
       return { status: 500 as const, body: { error: "Save failed" } };
     }
   },
-  delete: async (input: any, c: HonoContext) => {
+  delete: async (input: ServerInferRequest<typeof seasonContract["delete"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { id } = input.params;
@@ -209,7 +210,7 @@ const seasonsTsRestRouterObj: any = {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-  undelete: async (input: any, c: HonoContext) => {
+  undelete: async (input: ServerInferRequest<typeof seasonContract["undelete"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { id } = input.params;
@@ -225,7 +226,7 @@ const seasonsTsRestRouterObj: any = {
       return { status: 500 as const, body: { error: "Restore failed" } };
     }
   },
-  purge: async (input: any, c: HonoContext) => {
+  purge: async (input: ServerInferRequest<typeof seasonContract["purge"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { id } = input.params;

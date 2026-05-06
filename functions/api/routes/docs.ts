@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { docContract } from "../../../shared/schemas/contracts/docContract";
@@ -100,7 +101,7 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 
 
 const docHandlers: any = {
-  getDocs: async (_input: any, c: HonoContext) => {
+  getDocs: async (_input: ServerInferRequest<typeof docContract["getDocs"]>, c: HonoContext) => {
     try {
                   const db = c.get("db") as Kysely<DB>;
       let results;
@@ -172,7 +173,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch documents" } };
     }
   },
-  searchDocs: async (input: any, c: HonoContext) => {
+  searchDocs: async (input: ServerInferRequest<typeof docContract["searchDocs"]>, c: HonoContext) => {
     const { q } = input.query;
     if (!q || q.length < 3) return { status: 200 as const, body: { results: [] } };
 
@@ -217,7 +218,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Search failed" } };
     }
   },
-    getDoc: async (input: any, c: HonoContext) => {
+    getDoc: async (input: ServerInferRequest<typeof docContract["getDoc"]>, c: HonoContext) => {
     const { slug } = input.params;
             try {
       const db = c.get("db") as Kysely<DB>;
@@ -316,7 +317,7 @@ const docHandlers: any = {
     }
   },
 
-    adminList: async (_input: any, c: HonoContext) => {
+    adminList: async (_input: ServerInferRequest<typeof docContract["adminList"]>, c: HonoContext) => {
     try {
                   const db = c.get("db") as Kysely<DB>;
       let results;
@@ -353,7 +354,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch docs" } };
     }
   },
-    adminDetail: async (input: any, c: HonoContext) => {
+    adminDetail: async (input: ServerInferRequest<typeof docContract["adminDetail"]>, c: HonoContext) => {
     const { slug } = input.params;
             try {
       const db = c.get("db") as Kysely<DB>;
@@ -392,7 +393,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Database error" } };
     }
   },
-    deleteDoc: async (input: any, c: HonoContext) => {
+    deleteDoc: async (input: ServerInferRequest<typeof docContract["deleteDoc"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -408,7 +409,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-    saveDoc: async (input: any, c: HonoContext) => {
+    saveDoc: async (input: ServerInferRequest<typeof docContract["saveDoc"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = input.body;
@@ -555,7 +556,7 @@ const docHandlers: any = {
     }
 
   },
-    updateSort: async (input: any, c: HonoContext) => {
+    updateSort: async (input: ServerInferRequest<typeof docContract["updateSort"]>, c: HonoContext) => {
     const { slug } = input.params;
             const { sortOrder } = input.body;
     try {
@@ -567,7 +568,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Sort update failed" } };
     }
   },
-    submitFeedback: async (input: any, c: HonoContext) => {
+    submitFeedback: async (input: ServerInferRequest<typeof docContract["submitFeedback"]>, c: HonoContext) => {
     const { slug } = input.params;
             const { isHelpful, comment, turnstileToken } = input.body;
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
@@ -588,7 +589,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Feedback failed" } };
     }
   },
-    getHistory: async (input: any, c: HonoContext) => {
+    getHistory: async (input: ServerInferRequest<typeof docContract["getHistory"]>, c: HonoContext) => {
     const { slug } = input.params;
             try {
       const db = c.get("db") as Kysely<DB>;
@@ -610,7 +611,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch history" } };
     }
   },
-    restoreHistory: async (input: any, c: HonoContext) => {
+    restoreHistory: async (input: ServerInferRequest<typeof docContract["restoreHistory"]>, c: HonoContext) => {
     const { slug } = input.params;
     const { id } = input.query;
     try {
@@ -663,7 +664,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Restore failed" } };
     }
   },
-    approveDoc: async (input: any, c: HonoContext) => {
+    approveDoc: async (input: ServerInferRequest<typeof docContract["approveDoc"]>, c: HonoContext) => {
     const { slug } = input.params;
             try {
       const db = c.get("db") as Kysely<DB>;
@@ -705,7 +706,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Approve failed" } };
     }
   },
-    rejectDoc: async (input: any, c: HonoContext) => {
+    rejectDoc: async (input: ServerInferRequest<typeof docContract["rejectDoc"]>, c: HonoContext) => {
     const { slug } = input.params;
             const { reason } = input.body;
     try {
@@ -722,7 +723,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Reject failed" } };
     }
   },
-    undeleteDoc: async (input: any, c: HonoContext) => {
+    undeleteDoc: async (input: ServerInferRequest<typeof docContract["undeleteDoc"]>, c: HonoContext) => {
     const { slug } = input.params;
             try {
       const db = c.get("db") as Kysely<DB>;
@@ -733,7 +734,7 @@ const docHandlers: any = {
       return { status: 500 as const, body: { error: "Undelete failed" } };
     }
   },
-    purgeDoc: async (input: any, c: HonoContext) => {
+    purgeDoc: async (input: ServerInferRequest<typeof docContract["purgeDoc"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;

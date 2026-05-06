@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { Kysely, sql } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -13,7 +14,7 @@ export const tasksRouter = new Hono<AppEnv>();
 
 
 const tasksHandlers: any = {
-  list: async (input: any, c: HonoContext) => {
+  list: async (input: ServerInferRequest<typeof taskContract["list"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       let q = db.selectFrom("tasks as t")
@@ -90,7 +91,7 @@ const tasksHandlers: any = {
     }
   },
 
-  create: async (input: any, c: HonoContext) => {
+  create: async (input: ServerInferRequest<typeof taskContract["create"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -211,7 +212,7 @@ const tasksHandlers: any = {
     }
   },
 
-  reorder: async (input: any, c: HonoContext) => {
+  reorder: async (input: ServerInferRequest<typeof taskContract["reorder"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -245,7 +246,7 @@ const tasksHandlers: any = {
     }
   },
 
-  update: async (input: any, c: HonoContext) => {
+  update: async (input: ServerInferRequest<typeof taskContract["update"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -350,7 +351,7 @@ const tasksHandlers: any = {
     }
   },
 
-  delete: async (input: any, c: HonoContext) => {
+  delete: async (input: ServerInferRequest<typeof taskContract["delete"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);

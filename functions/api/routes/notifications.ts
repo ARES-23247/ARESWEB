@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware, s } from "../middleware";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -13,7 +14,7 @@ export const notificationsRouter = new Hono<AppEnv>();
 
 
 const notificationHandlers: any = {
-  getNotifications: async (_input: any, c: HonoContext) => {
+  getNotifications: async (_input: ServerInferRequest<typeof notificationContract["getNotifications"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -43,7 +44,7 @@ const notificationHandlers: any = {
       return { status: 500 as const, body: { error: "Fetch failed", notifications: [] } };
     }
   },
-  markAsRead: async (input: any, c: HonoContext) => {
+  markAsRead: async (input: ServerInferRequest<typeof notificationContract["markAsRead"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -61,7 +62,7 @@ const notificationHandlers: any = {
       return { status: 500 as const, body: { error: "Update failed" } };
     }
   },
-  markAllAsRead: async (_input: any, c: HonoContext) => {
+  markAllAsRead: async (_input: ServerInferRequest<typeof notificationContract["markAllAsRead"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -77,7 +78,7 @@ const notificationHandlers: any = {
       return { status: 500 as const, body: { error: "Update failed" } };
     }
   },
-  deleteNotification: async (input: any, c: HonoContext) => {
+  deleteNotification: async (input: ServerInferRequest<typeof notificationContract["deleteNotification"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -94,7 +95,7 @@ const notificationHandlers: any = {
       return { status: 500 as const, body: { error: "Delete failed" } };
     }
   },
-  getPendingCounts: async (_input: any, c: HonoContext) => {
+  getPendingCounts: async (_input: ServerInferRequest<typeof notificationContract["getPendingCounts"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);
@@ -133,7 +134,7 @@ const notificationHandlers: any = {
       return { status: 500 as const, body: { error: "Count failed" } };
     }
   },
-  getDashboardActionItems: async (_input: any, c: HonoContext) => {
+  getDashboardActionItems: async (_input: ServerInferRequest<typeof notificationContract["getDashboardActionItems"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await getSessionUser(c);

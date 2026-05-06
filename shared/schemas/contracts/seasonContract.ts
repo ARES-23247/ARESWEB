@@ -30,8 +30,7 @@ export const seasonContract = c.router({
       ...standardErrors,
       200: z.object({
         seasons: z.array(seasonSchema),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all published seasons",
   },
@@ -42,9 +41,7 @@ export const seasonContract = c.router({
       ...standardErrors,
       200: z.object({
         seasons: z.array(seasonSchema),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all seasons (admin)",
   },
@@ -58,10 +55,7 @@ export const seasonContract = c.router({
       ...standardErrors,
       200: z.object({
         season: seasonSchema,
-      }),
-      404: z.object({ error: z.string() }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get season details (admin)",
   },
@@ -79,9 +73,7 @@ export const seasonContract = c.router({
         events: z.array(z.unknown()),
         posts: z.array(z.unknown()),
         outreach: z.array(z.unknown()),
-      }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get public season details",
   },
@@ -93,9 +85,7 @@ export const seasonContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Save/Update a season",
   },
@@ -109,9 +99,7 @@ export const seasonContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Soft delete a season",
   },
@@ -126,9 +114,7 @@ export const seasonContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Restore a deleted season",
   },
@@ -142,9 +128,7 @@ export const seasonContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Permanently delete a season",
   },

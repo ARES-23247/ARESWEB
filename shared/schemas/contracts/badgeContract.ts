@@ -27,8 +27,7 @@ export const badgeContract = c.router({
       ...standardErrors,
       200: z.object({
         badges: z.array(badgeSchema),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all badge definitions",
   },
@@ -40,9 +39,7 @@ export const badgeContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Create a new badge definition",
   },
@@ -57,9 +54,7 @@ export const badgeContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Grant a badge to a user",
   },
@@ -75,9 +70,7 @@ export const badgeContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Revoke a badge from a user",
   },
@@ -92,9 +85,7 @@ export const badgeContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Delete a badge definition",
   },
@@ -110,8 +101,7 @@ export const badgeContract = c.router({
           member_type: z.string().nullable(),
           badge_count: z.number(), // Always return number for consistency
         })),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get public badge leaderboard",
   },

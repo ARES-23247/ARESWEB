@@ -30,8 +30,7 @@ export const outreachContract = c.router({
       ...standardErrors,
       200: z.object({
         logs: z.array(outreachSchema),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all outreach logs",
   },
@@ -42,9 +41,7 @@ export const outreachContract = c.router({
       ...standardErrors,
       200: z.object({
         logs: z.array(outreachSchema),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all outreach logs (admin)",
   },
@@ -59,9 +56,7 @@ export const outreachContract = c.router({
       200: z.object({
         success: z.boolean(),
         id: z.string().optional(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Create or Update an outreach log",
   },
@@ -76,9 +71,7 @@ export const outreachContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Delete an outreach log",
   },

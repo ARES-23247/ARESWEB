@@ -32,11 +32,7 @@ export const mediaContract = c.router({
       200: z.object({
         media: z.array(assetSchema),
       }),
-      429: z.string(),
-      500: z.object({
-        error: z.string(),
-        media: z.array(assetSchema).optional(),
-      }),
+      429: z.string(),
     },
     summary: "Get public gallery media",
   },
@@ -49,11 +45,7 @@ export const mediaContract = c.router({
       ...standardErrors,
       200: z.object({
         media: z.array(assetSchema),
-      }),
-      500: z.object({
-        error: z.string(),
-        media: z.array(assetSchema).optional(),
-      }),
+      }),
     },
     summary: "Get all media (admin view)",
   },
@@ -69,9 +61,7 @@ export const mediaContract = c.router({
         key: z.string(),
         url: z.string(),
         altText: z.string().optional(),
-      }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Upload a media file",
   },
@@ -89,10 +79,7 @@ export const mediaContract = c.router({
       200: z.object({
         success: z.boolean(),
         newKey: z.string().optional(),
-      }),
-      400: z.object({ error: z.string() }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Move object to folder",
   },
@@ -107,10 +94,7 @@ export const mediaContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      500: z.object({
-        error: z.string(),
-      }),
+      }),
     },
     summary: "Delete an asset",
   },
@@ -126,9 +110,7 @@ export const mediaContract = c.router({
       200: z.object({
         success: z.boolean(),
         message: z.string(),
-      }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
   },
 });

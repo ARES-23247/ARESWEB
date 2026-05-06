@@ -18,18 +18,7 @@ export const communicationsContract = c.router({
         success: z.boolean(),
         message: z.string(),
         recipientCount: z.number().optional(),
-      }),
-      400: z.object({
-        success: z.literal(false),
-        error: z.string(),
-      }),
-      401: z.object({
-        error: z.string(),
-      }),
-      500: z.object({
-        success: z.literal(false),
-        error: z.string(),
-      }),
+      }),
     },
     summary: "Send mass email to active Zulip members via Resend",
   },
@@ -40,14 +29,7 @@ export const communicationsContract = c.router({
       ...standardErrors,
       200: z.object({
         activeUsers: z.number(),
-      }),
-      401: z.object({
-        error: z.string(),
-      }),
-      500: z.object({
-        success: z.literal(false),
-        error: z.string(),
-      }),
+      }),
     },
     summary: "Get count of active users for mass email preview",
   },

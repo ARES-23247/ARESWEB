@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -14,7 +15,7 @@ import type { HonoContext } from "@shared/types/api";
 
 
 const badgesTsRestRouterObj = {
-  list: async (_input: any, c: HonoContext) => {
+  list: async (_input: ServerInferRequest<typeof badgeContract["list"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db
@@ -38,7 +39,7 @@ const badgesTsRestRouterObj = {
       return { status: 500 as const, body: { error: err.message || "Failed to fetch badges" } };
     }
   },
-  create: async (input: any, c: HonoContext) => {
+  create: async (input: ServerInferRequest<typeof badgeContract["create"]>, c: HonoContext) => {
     try {
       const { id, name, description, icon, color_theme } = input.body;
       const db = c.get("db") as Kysely<DB>;
@@ -58,7 +59,7 @@ const badgesTsRestRouterObj = {
       return { status: 500 as const, body: { error: err.message || "Failed to create badge" } };
     }
   },
-  grant: async (input: any, c: HonoContext) => {
+  grant: async (input: ServerInferRequest<typeof badgeContract["grant"]>, c: HonoContext) => {
     try {
       const { userId, badgeId } = input.body;
       const db = c.get("db") as Kysely<DB>;
@@ -121,7 +122,7 @@ const badgesTsRestRouterObj = {
       return { status: 500 as const, body: { error: err.message || "Failed to award badge" } };
     }
   },
-  revoke: async (input: any, c: HonoContext) => {
+  revoke: async (input: ServerInferRequest<typeof badgeContract["revoke"]>, c: HonoContext) => {
     try {
       const { userId, badgeId } = input.params;
       const db = c.get("db") as Kysely<DB>;
@@ -136,7 +137,7 @@ const badgesTsRestRouterObj = {
       return { status: 500 as const, body: { error: err.message || "Failed to revoke badge" } };
     }
   },
-  delete: async (input: any, c: HonoContext) => {
+  delete: async (input: ServerInferRequest<typeof badgeContract["delete"]>, c: HonoContext) => {
     try {
       const { id } = input.params;
       const db = c.get("db") as Kysely<DB>;
@@ -147,7 +148,7 @@ const badgesTsRestRouterObj = {
       return { status: 500 as const, body: { error: err.message || "Failed to delete badge definition" } };
     }
   },
-  leaderboard: async (_input: any, c: HonoContext) => {
+  leaderboard: async (_input: ServerInferRequest<typeof badgeContract["leaderboard"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db

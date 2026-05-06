@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { sql, Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -35,7 +36,7 @@ const sanitizeFtsQuery = (query: string): string => {
 
 
 const postTsRestRouterObj = {
-  getPosts: async (input: any, c: HonoContext) => {
+  getPosts: async (input: ServerInferRequest<typeof postContract["getPosts"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 10, offset = 0, q } = input.query;
@@ -122,7 +123,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Failed to fetch posts" } };
     }
   },
-  getPost: async (input: any, c: HonoContext) => {
+  getPost: async (input: ServerInferRequest<typeof postContract["getPost"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -181,7 +182,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Failed to fetch post" } };
     }
   },
-  getAdminPosts: async (input: any, c: HonoContext) => {
+  getAdminPosts: async (input: ServerInferRequest<typeof postContract["getAdminPosts"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 50, offset = 0 } = input.query;
@@ -220,7 +221,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Failed to fetch posts" } };
     }
   },
-  getAdminPost: async (input: any, c: HonoContext) => {
+  getAdminPost: async (input: ServerInferRequest<typeof postContract["getAdminPost"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -248,13 +249,13 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Failed to fetch post" } };
     }
   },
-  savePost: async (input: any, c: HonoContext) => {
+  savePost: async (input: ServerInferRequest<typeof postContract["savePost"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
 
       if (input.body.slug) {
         // Redirect to updatePost
-        return postTsRestRouterObj.updatePost({ params: { slug: input.body.slug }, body: input.body }, c);
+        return postTsRestRouterObj.updatePost({ params: { slug: input.body.slug as string }, body: input.body } as any, c);
       }
 
       const titleError = validateLength(input.body.title, MAX_INPUT_LENGTHS.title, "Title");
@@ -392,7 +393,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Database write failed" } };
     }
   },
-  updatePost: async (input: any, c: HonoContext) => {
+  updatePost: async (input: ServerInferRequest<typeof postContract["updatePost"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -460,7 +461,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Database write failed" } };
     }
   },
-  deletePost: async (input: any, c: HonoContext) => {
+  deletePost: async (input: ServerInferRequest<typeof postContract["deletePost"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -474,7 +475,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Delete failed" } };
     }
   },
-  undeletePost: async (input: any, c: HonoContext) => {
+  undeletePost: async (input: ServerInferRequest<typeof postContract["undeletePost"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -486,7 +487,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Undelete failed" } };
     }
   },
-  purgePost: async (input: any, c: HonoContext) => {
+  purgePost: async (input: ServerInferRequest<typeof postContract["purgePost"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -514,7 +515,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Purge failed" } };
     }
   },
-  approvePost: async (input: any, c: HonoContext) => {
+  approvePost: async (input: ServerInferRequest<typeof postContract["approvePost"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const result = await approvePost(c, slug);
@@ -525,7 +526,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Approval failed" } };
     }
   },
-  rejectPost: async (input: any, c: HonoContext) => {
+  rejectPost: async (input: ServerInferRequest<typeof postContract["rejectPost"]>, c: HonoContext) => {
     const { slug } = input.params;
     const { reason } = input.body;
     try {
@@ -553,7 +554,7 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Reject failed" } };
     }
   },
-  getPostHistory: async (input: any, c: HonoContext) => {
+  getPostHistory: async (input: ServerInferRequest<typeof postContract["getPostHistory"]>, c: HonoContext) => {
     const { slug } = input.params;
     try {
       const historyRows = await getPostHistory(c, slug);
@@ -567,14 +568,14 @@ const postTsRestRouterObj = {
       return { status: 500, body: { error: "Failed to fetch history" } };
     }
   },
-  restorePostHistory: async (input: any, c: HonoContext) => {
+  restorePostHistory: async (input: ServerInferRequest<typeof postContract["restorePostHistory"]>, c: HonoContext) => {
     const { slug, id } = input.params;
     const user = await getSessionUser(c);
     const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
     if (!result.success) return { status: 404, body: { error: result.error || "Restore failed" } };
     return { status: 200, body: { success: true } };
   },
-  repushSocials: async (input: any, c: HonoContext) => {
+  repushSocials: async (input: ServerInferRequest<typeof postContract["repushSocials"]>, c: HonoContext) => {
     const { slug } = input.params;
     const { socials } = input.body;
     try {

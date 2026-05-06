@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { analyticsContract } from "../../../shared/schemas/contracts/analyticsContract";
@@ -11,7 +12,7 @@ export const analyticsRouter = new Hono<AppEnv>();
 
 
 const analyticsHandlers = {
-  trackPageView: async (input: any, c: HonoContext) => {
+  trackPageView: async (input: ServerInferRequest<typeof analyticsContract["trackPageView"]>, c: HonoContext) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `track:${ip}`, ua, 20, 600))) {
@@ -38,7 +39,7 @@ const analyticsHandlers = {
       return { status: 500 as const, body: { success: false } };
     }
   },
-  trackSponsorClick: async (input: any, c: HonoContext) => {
+  trackSponsorClick: async (input: ServerInferRequest<typeof analyticsContract["trackSponsorClick"]>, c: HonoContext) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `click:${ip}`, ua, 10, 600))) {
@@ -84,7 +85,7 @@ const analyticsHandlers = {
       return { status: 500 as const, body: { success: false } };
     }
   },
-  getPlatformAnalytics: async (_input: any, c: HonoContext) => {
+  getPlatformAnalytics: async (_input: ServerInferRequest<typeof analyticsContract["getPlatformAnalytics"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const [
@@ -182,7 +183,7 @@ const analyticsHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch platform metrics" } };
     }
   },
-  getRosterStats: async (_input: any, c: HonoContext) => {
+  getRosterStats: async (_input: ServerInferRequest<typeof analyticsContract["getRosterStats"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("user_profiles as u")
@@ -228,7 +229,7 @@ const analyticsHandlers = {
       return { status: 500 as const, body: { roster: [] } };
     }
   },
-  getLeaderboard: async (_input: any, c: HonoContext) => {
+  getLeaderboard: async (_input: ServerInferRequest<typeof analyticsContract["getLeaderboard"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("user as u")
@@ -267,7 +268,7 @@ const analyticsHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch leaderboard" } };
     }
   },
-  getStats: async (_input: any, c: HonoContext) => {
+  getStats: async (_input: ServerInferRequest<typeof analyticsContract["getStats"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
@@ -301,7 +302,7 @@ const analyticsHandlers = {
     }
   },
 
-  search: async (input: any, c: HonoContext) => {
+  search: async (input: ServerInferRequest<typeof analyticsContract["search"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     const { q } = input.query;
     try {

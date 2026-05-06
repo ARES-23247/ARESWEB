@@ -55,9 +55,7 @@ export const analyticsContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      429: z.object({ success: z.boolean(), error: z.string() }),
-      500: z.object({ success: z.boolean() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Log a page view",
   },
@@ -70,9 +68,7 @@ export const analyticsContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      429: z.object({ success: z.boolean(), error: z.string() }),
-      500: z.object({ success: z.boolean() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Log a sponsor link click",
   },
@@ -83,10 +79,7 @@ export const analyticsContract = c.router({
       ...standardErrors,
       200: z.object({
         roster: z.array(rosterStatSchema),
-      }),
-      500: z.object({
-        roster: z.array(rosterStatSchema),
-      }),
+      }),
     },
     summary: "Get member impact roster stats",
   },
@@ -97,8 +90,7 @@ export const analyticsContract = c.router({
       ...standardErrors,
       200: z.object({
         leaderboard: z.array(leaderboardEntrySchema),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
   },
   getStats: {
@@ -119,8 +111,7 @@ export const analyticsContract = c.router({
           gcal: z.boolean(),
         }),
         securityBlocks: z.number().optional(),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
   },
   getPlatformAnalytics: {
@@ -164,8 +155,7 @@ export const analyticsContract = c.router({
           totalStorage: z.number(),
           apiCalls: z.number(),
         }),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get comprehensive platform analytics",
   },
@@ -186,8 +176,7 @@ export const analyticsContract = c.router({
             matched_text: z.string().optional(),
           }),
         ),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
   },
 });

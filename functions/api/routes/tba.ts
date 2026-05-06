@@ -50,7 +50,7 @@ async function getTBA(path: string, c: HonoContext) {
   return data;
 }
 
-import { ServerInferRequest } from "@ts-rest/core";
+import { ServerInferRequest } from "../../../shared/types/api";
 
 const tbaHandlers = {
   getRankings: async (input: ServerInferRequest<typeof tbaContract["getRankings"]>, c: HonoContext) => {
@@ -107,7 +107,7 @@ const tbaHandlers = {
       const data = await r.json();
       setTbaCache(cacheKey, { data, expiresAt: now + 300000 });
       return { status: 200 as const, body: data as never };
-    } catch (e) {
+    } catch (_e) {
       return { status: 500 as const, body: { error: "Failed to fetch official event data" } };
     }
   },

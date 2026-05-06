@@ -36,10 +36,7 @@ export const inquiryContract = c.router({
       ...standardErrors,
       200: z.object({
         inquiries: z.array(inquirySchema),
-      }),
-      401: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all inquiries",
   },
@@ -58,9 +55,7 @@ export const inquiryContract = c.router({
         success: z.boolean(),
         id: z.string(),
         warning: z.string().optional(),
-      }),
-      429: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Submit a new inquiry",
   },
@@ -80,10 +75,7 @@ export const inquiryContract = c.router({
         status: z
           .enum(["pending", "approved", "resolved", "rejected"])
           .optional(),
-      }),
-      401: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Update inquiry status",
   },
@@ -100,10 +92,7 @@ export const inquiryContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Update inquiry notes",
   },
@@ -118,10 +107,7 @@ export const inquiryContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Delete an inquiry",
   },

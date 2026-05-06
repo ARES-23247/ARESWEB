@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { siteConfig } from "../../utils/site.config";
 import { AppEnv, ensureAdmin, getSocialConfig, checkPersistentRateLimit, s } from "../middleware";
@@ -21,7 +22,7 @@ interface WeekData {
 
 
 const githubHandlers = {
-  getBoard: async (_input: any, c: HonoContext) => {
+  getBoard: async (_input: ServerInferRequest<typeof githubContract["getBoard"]>, c: HonoContext) => {
     try {
       const config = await getSocialConfig(c);
       const ghConfig = buildGitHubConfig(config);
@@ -52,7 +53,7 @@ const githubHandlers = {
       return { status: 200 as const, body: { success: false, board: [] as any[] } };
     }
   },
-  createItem: async (input: any, c: HonoContext) => {
+  createItem: async (input: ServerInferRequest<typeof githubContract["createItem"]>, c: HonoContext) => {
     try {
       const config = await getSocialConfig(c);
       const ghConfig = buildGitHubConfig(config);
@@ -70,7 +71,7 @@ const githubHandlers = {
       return { status: 500 as const, body: { error: "Failed to create project item" } as any };
     }
   },
-  getActivity: async (_input: any, c: HonoContext) => {
+  getActivity: async (_input: ServerInferRequest<typeof githubContract["getActivity"]>, c: HonoContext) => {
     // WR-01: Add rate limiting to prevent abuse of GitHub API calls
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";

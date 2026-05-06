@@ -11,7 +11,7 @@ import type { HonoContext } from "@shared/types/api";
 
 const logisticsRouter = new Hono<AppEnv>();
 
-import { ServerInferRequest } from "@ts-rest/core";
+import { ServerInferRequest } from "../../../shared/types/api";
 
 const logisticsHandlers = {
   getSummary: async (_input: ServerInferRequest<typeof logisticsContract["getSummary"]>, c: HonoContext) => {

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { z } from "zod";
@@ -17,7 +18,7 @@ export const locationsRouter = new Hono<AppEnv>();
 
 
 const locationsHandlers: any = {
-  list: async (input: any, c: HonoContext) => {
+  list: async (input: ServerInferRequest<typeof locationContract["list"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("locations")
@@ -39,7 +40,7 @@ const locationsHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch locations" } };
     }
   },
-    adminList: async (input: any, c: HonoContext) => {
+    adminList: async (input: ServerInferRequest<typeof locationContract["adminList"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("locations")
@@ -60,7 +61,7 @@ const locationsHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch locations" } };
     }
   },
-    save: async (input: any, c: HonoContext) => {
+    save: async (input: ServerInferRequest<typeof locationContract["save"]>, c: HonoContext) => {
     try {
       // Validate input against schema before database insertion
       const validationResult = locationSchema.safeParse(input.body);
@@ -100,7 +101,7 @@ const locationsHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to save location", success: false } };
     }
   },
-    delete: async (input: any, c: HonoContext) => {
+    delete: async (input: ServerInferRequest<typeof locationContract["delete"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.updateTable("locations")

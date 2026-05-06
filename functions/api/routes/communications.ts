@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { communicationsContract } from "../../../shared/schemas/contracts/communicationsContract";
@@ -14,7 +15,7 @@ communicationsRouter.use("/admin/*", ensureAdmin);
 
 
 const handlers = {
-  getStats: async (_input: any, c: HonoContext) => {
+  getStats: async (_input: ServerInferRequest<typeof communicationsContract["getStats"]>, c: HonoContext) => {
     try {
  
       const db = c.get("db") as any;
@@ -33,7 +34,7 @@ const handlers = {
     }
   },
 
-  sendMassEmail: async (input: any, c: HonoContext) => {
+  sendMassEmail: async (input: ServerInferRequest<typeof communicationsContract["sendMassEmail"]>, c: HonoContext) => {
     try {
       const { subject, htmlContent } = input.body;
       const socialConfig = await getSocialConfig(c);

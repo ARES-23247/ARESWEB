@@ -32,8 +32,7 @@ export const zulipContract = c.router({
         success: z.boolean(),
         presence: zulipPresenceSchema,
         userNames: z.record(z.string(), z.string()).optional(),
-      }),
-      500: z.object({ success: z.boolean(), error: z.string() }),
+      }),
     },
     summary: "Get Zulip team presence",
   },
@@ -47,8 +46,7 @@ export const zulipContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      500: z.object({ success: z.boolean(), error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Send a Zulip message",
   },
@@ -61,9 +59,7 @@ export const zulipContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), messages: z.array(z.unknown()) }),
-      403: z.object({ success: z.boolean(), error: z.string() }),
-      500: z.object({ success: z.boolean(), error: z.string() }),
+      200: z.object({ success: z.boolean(), messages: z.array(z.unknown()) }),
     },
     summary: "Get messages for a specific Zulip topic",
   },
@@ -81,8 +77,7 @@ export const zulipContract = c.router({
           sampleZulipEmails: z.array(z.string()),
           sampleMissingEmails: z.array(z.string()),
         })
-      }),
-      500: z.object({ success: z.boolean(), error: z.string() }),
+      }),
     },
     summary: "Audit ARESWEB database against Zulip directory to find missing users",
   },
@@ -94,8 +89,7 @@ export const zulipContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), invitedCount: z.number() }),
-      500: z.object({ success: z.boolean(), error: z.string() }),
+      200: z.object({ success: z.boolean(), invitedCount: z.number() }),
     },
     summary: "Send Zulip invitations to the specified emails",
   },

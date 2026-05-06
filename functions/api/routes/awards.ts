@@ -12,8 +12,10 @@ const saveAwardSchema = awardContract.saveAward.body;
 
 export const awardsRouter = new Hono<AppEnv>();
 
-const awardsTsRestRouter = s.router(awardContract, {
-  getAwards: async (input: any, c: any) => {
+import { ServerInferRequest } from "../../../shared/types/api";
+
+const awardsHandlers = {
+  getAwards: async (input: ServerInferRequest<typeof awardContract["getAwards"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit = 50, offset = 0 } = input.query;
@@ -44,7 +46,7 @@ const awardsTsRestRouter = s.router(awardContract, {
       return { status: 500 as const, body: { error: "Failed to fetch awards" } };
     }
   },
-  saveAward: async (input: any, c: any) => {
+  saveAward: async (input: ServerInferRequest<typeof awardContract["saveAward"]>, c: HonoContext) => {
     try {
       // Validate input against schema
       const validationResult = saveAwardSchema.safeParse(input.body);
@@ -140,7 +142,7 @@ const awardsTsRestRouter = s.router(awardContract, {
       return { status: 500 as const, body: { error: "Failed to save award", success: false } };
     }
   },
-  deleteAward: async (input: any, c: any) => {
+  deleteAward: async (input: ServerInferRequest<typeof awardContract["deleteAward"]>, c: HonoContext) => {
 
     try {
       const db = c.get("db") as Kysely<DB>;
@@ -156,7 +158,9 @@ const awardsTsRestRouter = s.router(awardContract, {
       return { status: 500 as const, body: { error: "Failed to delete award", success: false } };
     }
   },
-} as any);
+};
+
+const awardsTsRestRouter = s.router(awardContract, awardsHandlers as any);
 
 awardsRouter.use("/admin/*", ensureAdmin);
 createHonoEndpoints(

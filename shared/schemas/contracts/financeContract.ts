@@ -21,8 +21,7 @@ export const financeContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: financeSummarySchema,
-      500: z.object({ error: z.string() }),
+      200: financeSummarySchema,
     },
     summary: "Get financial summary for a season",
   },
@@ -38,8 +37,7 @@ export const financeContract = c.router({
       ...standardErrors,
       200: z.object({
         pipeline: z.array(sponsorshipPipelineSchema.extend({ id: z.string() })),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List sponsorship pipeline items",
   },
@@ -49,8 +47,7 @@ export const financeContract = c.router({
     body: sponsorshipPipelineSchema,
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), id: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean(), id: z.string() }),
     },
     summary: "Create or update a sponsorship pipeline item",
   },
@@ -61,9 +58,7 @@ export const financeContract = c.router({
     body: c.noBody(),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Delete a sponsorship pipeline item",
   },
@@ -80,8 +75,7 @@ export const financeContract = c.router({
       ...standardErrors,
       200: z.object({
         transactions: z.array(financeTransactionSchema.extend({ id: z.string() })),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List financial transactions",
   },
@@ -91,8 +85,7 @@ export const financeContract = c.router({
     body: financeTransactionSchema,
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), id: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean(), id: z.string() }),
     },
     summary: "Create or update a financial transaction",
   },
@@ -103,9 +96,7 @@ export const financeContract = c.router({
     body: c.noBody(),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.literal(true) }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.literal(true) }),
     },
     summary: "Delete a financial transaction",
   },

@@ -26,11 +26,7 @@ export const judgeContract = c.router({
         success: z.boolean(),
         label: z.string().optional(),
         error: z.string().optional(),
-      }),
-      400: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      429: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Verify judge access code",
   },
@@ -43,11 +39,7 @@ export const judgeContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.any(), // Complex payload
-      401: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      429: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.any(), // Complex payload
     },
     summary: "Get all portfolio content",
   },
@@ -58,9 +50,7 @@ export const judgeContract = c.router({
       ...standardErrors,
       200: z.object({
         codes: z.array(judgeAccessCodeSchema),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all access codes (admin)",
   },
@@ -77,9 +67,7 @@ export const judgeContract = c.router({
         success: z.boolean(),
         code: z.string(),
         id: z.string(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Create a new access code (admin)",
   },
@@ -94,9 +82,7 @@ export const judgeContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Delete an access code (admin)",
   },

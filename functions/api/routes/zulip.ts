@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { AppEnv, ensureAdmin, ensureAuth, getSocialConfig, s } from "../middleware";
 import { createHonoEndpoints } from "ts-rest-hono";
@@ -26,7 +27,7 @@ function normalizeEmail(email: string): string {
 
 
 const zulipHandlers: any = {
-  getPresence: async (input: any, c: HonoContext) => {
+  getPresence: async (input: ServerInferRequest<typeof zulipContract["getPresence"]>, c: HonoContext) => {
     try {
       const config = await getSocialConfig(c);
       if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -68,7 +69,7 @@ const zulipHandlers: any = {
       return { status: 500 as const, body: { success: false, error: (err as Error).message } };
     }
   },
-  sendMessage: async (input: any, c: HonoContext) => {
+  sendMessage: async (input: ServerInferRequest<typeof zulipContract["sendMessage"]>, c: HonoContext) => {
     try {
       const { body } = input;
       const { sendZulipMessage } = await import("../../utils/zulipSync");
@@ -99,7 +100,7 @@ const zulipHandlers: any = {
       return { status: 500 as const, body: { success: false, error: (err as Error).message } };
     }
   },
-  getTopicMessages: async (input: any, c: HonoContext) => {
+  getTopicMessages: async (input: ServerInferRequest<typeof zulipContract["getTopicMessages"]>, c: HonoContext) => {
     try {
       const { query } = input;
       const config = await getSocialConfig(c);
@@ -139,7 +140,7 @@ const zulipHandlers: any = {
       return { status: 500 as const, body: { success: false, error: (err as Error).message } };
     }
   },
-  auditMissingUsers: async (input: any, c: HonoContext) => {
+  auditMissingUsers: async (input: ServerInferRequest<typeof zulipContract["auditMissingUsers"]>, c: HonoContext) => {
     try {
       const config = await getSocialConfig(c);
       if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
@@ -217,7 +218,7 @@ const zulipHandlers: any = {
       return { status: 500 as const, body: { success: false, error: (err as Error).message } };
     }
   },
-  inviteUsers: async (input: any, c: HonoContext) => {
+  inviteUsers: async (input: ServerInferRequest<typeof zulipContract["inviteUsers"]>, c: HonoContext) => {
     try {
       const { body } = input;
       const config = await getSocialConfig(c);

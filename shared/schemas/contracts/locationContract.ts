@@ -18,8 +18,7 @@ export const locationContract = c.router({
     path: "/",
     responses: {
       ...standardErrors,
-      200: z.object({ locations: z.array(locationSchema) }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ locations: z.array(locationSchema) }),
     },
     summary: "Get all public locations",
   },
@@ -28,8 +27,7 @@ export const locationContract = c.router({
     path: "/admin/list",
     responses: {
       ...standardErrors,
-      200: z.object({ locations: z.array(locationSchema) }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ locations: z.array(locationSchema) }),
     },
     summary: "Get all locations (admin)",
   },
@@ -39,9 +37,7 @@ export const locationContract = c.router({
     body: locationSchema,
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), id: z.string().optional() }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string(), success: z.boolean() }),
+      200: z.object({ success: z.boolean(), id: z.string().optional() }),
     },
     summary: "Create or update a location",
   },
@@ -52,8 +48,7 @@ export const locationContract = c.router({
     body: c.noBody(),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      500: z.object({ error: z.string(), success: z.boolean() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Delete a location",
   },

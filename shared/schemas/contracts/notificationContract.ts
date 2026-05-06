@@ -22,14 +22,7 @@ export const notificationContract = c.router({
       ...standardErrors,
       200: z.object({
         notifications: z.array(notificationSchema),
-      }),
-      401: z.object({
-        error: z.string(),
-      }),
-      500: z.object({
-        error: z.string(),
-        notifications: z.array(notificationSchema).optional(),
-      }),
+      }),
     },
     summary: "Get user notifications",
   },
@@ -44,13 +37,7 @@ export const notificationContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({
-        error: z.string(),
-      }),
-      500: z.object({
-        error: z.string(),
-      }),
+      }),
     },
     summary: "Mark a notification as read",
   },
@@ -62,13 +49,7 @@ export const notificationContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({
-        error: z.string(),
-      }),
-      500: z.object({
-        error: z.string(),
-      }),
+      }),
     },
     summary: "Mark all notifications as read",
   },
@@ -83,13 +64,7 @@ export const notificationContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({
-        error: z.string(),
-      }),
-      500: z.object({
-        error: z.string(),
-      }),
+      }),
     },
     summary: "Delete a notification",
   },
@@ -103,9 +78,7 @@ export const notificationContract = c.router({
         posts: z.number(),
         events: z.number(),
         docs: z.number(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get counts of pending items for dashboard badges",
   },
@@ -119,9 +92,7 @@ export const notificationContract = c.router({
         posts: z.array(z.any()),
         events: z.array(z.any()),
         docs: z.array(z.any()),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get detailed action items (pending requests) in a single batch",
   },

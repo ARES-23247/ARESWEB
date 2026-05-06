@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { userContract } from "../../../shared/schemas/contracts/userContract";
@@ -14,7 +15,7 @@ export const usersRouter = new Hono<AppEnv>();
 
 
 const userHandlers: any = {
-  getUsers: async (input: any, c: HonoContext) => {
+  getUsers: async (input: ServerInferRequest<typeof userContract["getUsers"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { limit, cursor } = parsePagination(c, 50, 100);
@@ -57,7 +58,7 @@ const userHandlers: any = {
       return { status: 500 as const, body: { error: "Database error" } };
     }
   },
-  adminDetail: async (input: any, c: HonoContext) => {
+  adminDetail: async (input: ServerInferRequest<typeof userContract["adminDetail"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const row = await db.selectFrom("user as u")
@@ -94,7 +95,7 @@ const userHandlers: any = {
       return { status: 500 as const, body: { error: "Database error" } };
     }
   },
-  patchUser: async (input: any, c: HonoContext) => {
+  patchUser: async (input: ServerInferRequest<typeof userContract["patchUser"]>, c: HonoContext) => {
     try {
       // Defense-in-depth: Re-validate admin authorization for sensitive role changes
       const sessionUser = c.get("sessionUser") as { id: string; role: string } | undefined;
@@ -148,7 +149,7 @@ const userHandlers: any = {
       return { status: 500 as const, body: { error: "Update failed: " + (e instanceof Error ? e.message : "Unknown error") } };
     }
   },
-  updateUserProfile: async (input: any, c: HonoContext) => {
+  updateUserProfile: async (input: ServerInferRequest<typeof userContract["updateUserProfile"]>, c: HonoContext) => {
     try {
       await upsertProfile(c, input.params.id, input.body as Record<string, unknown>);
       return { status: 200 as const, body: { success: true } };
@@ -156,7 +157,7 @@ const userHandlers: any = {
       return { status: 500 as const, body: { error: "Profile update failed" } };
     }
   },
-  adminGetProfile: async (input: any, c: HonoContext) => {
+  adminGetProfile: async (input: ServerInferRequest<typeof userContract["adminGetProfile"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const user = await db.selectFrom("user").select(["id", "name", "email", "image", "role"]).where("id", "=", input.params.id).executeTakeFirst();
@@ -235,7 +236,7 @@ const userHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch user profile" } };
     }
   },
-  deleteUser: async (input: any, c: HonoContext) => {
+  deleteUser: async (input: ServerInferRequest<typeof userContract["deleteUser"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const id = input.params.id;

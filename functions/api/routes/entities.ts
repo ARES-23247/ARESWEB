@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -11,7 +12,7 @@ export const entitiesRouter = new Hono<AppEnv>();
 
 
 const entityHandlers: any = {
-  getLinks: async (input: any, c: HonoContext) => {
+  getLinks: async (input: ServerInferRequest<typeof entityContract["getLinks"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const { type, id } = input.query;
@@ -75,7 +76,7 @@ const entityHandlers: any = {
     }
   },
 
-  saveLink: async (input: any, c: HonoContext) => {
+  saveLink: async (input: ServerInferRequest<typeof entityContract["saveLink"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const id = crypto.randomUUID();
@@ -99,7 +100,7 @@ const entityHandlers: any = {
     }
   },
 
-  deleteLink: async (input: any, c: HonoContext) => {
+  deleteLink: async (input: ServerInferRequest<typeof entityContract["deleteLink"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       await db.deleteFrom("entity_links").where("id", "=", input.params.id).execute();

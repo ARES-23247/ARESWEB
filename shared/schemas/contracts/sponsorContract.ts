@@ -41,9 +41,7 @@ export const sponsorContract = c.router({
       200: z.object({
         sponsor: sponsorSchema,
         metrics: z.array(sponsorRoiMetricSchema),
-      }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get public (hidden) ROI dashboard",
   },
@@ -92,8 +90,7 @@ export const sponsorContract = c.router({
       ...standardErrors,
       200: z.object({
         tokens: z.array(sponsorTokenSchema),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
   },
   generateToken: {
@@ -102,9 +99,7 @@ export const sponsorContract = c.router({
     body: z.object({ sponsor_id: z.string() }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), token: z.string().optional() }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean(), token: z.string().optional() }),
     },
   },
 });

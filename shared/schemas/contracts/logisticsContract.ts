@@ -17,10 +17,7 @@ export const logisticsContract = c.router({
     path: "/admin/summary",
     responses: {
       ...standardErrors,
-      200: logisticsSummarySchema,
-      401: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: logisticsSummarySchema,
     },
     summary: "Get aggregated logistics for event planning",
   },
@@ -37,10 +34,7 @@ export const logisticsContract = c.router({
           emergencyName: z.string().nullable().optional(),
           emergencyPhone: z.string().nullable().optional(),
         }))
-      }),
-      401: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get all active member emails for mass communication",
   },

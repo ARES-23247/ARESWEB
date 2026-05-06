@@ -40,8 +40,7 @@ export const taskContract = c.router({
     }).optional(),
     responses: {
       ...standardErrors,
-      200: z.object({ tasks: z.array(taskSchema) }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ tasks: z.array(taskSchema) }),
     },
     summary: "List all tasks",
   },
@@ -61,9 +60,7 @@ export const taskContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean(), task: taskSchema }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean(), task: taskSchema }),
     },
     summary: "Create a new task",
   },
@@ -79,9 +76,7 @@ export const taskContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Batch reorder tasks (for drag-and-drop)",
   },
@@ -103,10 +98,7 @@ export const taskContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Update a task",
   },
@@ -117,9 +109,7 @@ export const taskContract = c.router({
     body: c.type<null>(),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Delete a task",
   },

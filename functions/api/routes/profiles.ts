@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { AppEnv, getSessionUser, sanitizeProfileForPublic, persistentRateLimitMiddleware, rateLimitMiddleware, ensureAuth, s } from "../middleware";
 import { getAuth } from "../../utils/auth";
@@ -16,7 +17,7 @@ export const profilesRouter = new Hono<AppEnv>();
 
  
 const profileHandlers: any = {
-  getMe: async (_input: any, c: HonoContext) => {
+  getMe: async (_input: ServerInferRequest<typeof profileContract["getMe"]>, c: HonoContext) => {
     const user = (await getSessionUser(c))!;
     const db = c.get("db") as Kysely<DB>;
 
@@ -105,7 +106,7 @@ const profileHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch your profile" } };
     }
   },
-  updateMe: async (input: any, c: HonoContext) => {
+  updateMe: async (input: ServerInferRequest<typeof profileContract["updateMe"]>, c: HonoContext) => {
     const user = (await getSessionUser(c))!;
     try {
       // Validate input against schema before updating profile
@@ -126,7 +127,7 @@ const profileHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to update profile" } };
     }
   },
-  getTeamRoster: async (_input: any, c: HonoContext) => {
+  getTeamRoster: async (_input: ServerInferRequest<typeof profileContract["getTeamRoster"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       // SEC-F04: Only show verified users or those who have explicitly opted in via profile.
@@ -189,7 +190,7 @@ const profileHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch team roster" } };
     }
   },
-  getPublicProfile: async (input: any, c: HonoContext) => {
+  getPublicProfile: async (input: ServerInferRequest<typeof profileContract["getPublicProfile"]>, c: HonoContext) => {
     const { userId } = input.params;
     const db = c.get("db") as Kysely<DB>;
     try {

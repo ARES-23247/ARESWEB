@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -17,7 +18,7 @@ export const commentsRouter = new Hono<AppEnv>();
 
 const commentHandlers = {
 
-  list: async (input: any, c: HonoContext) => {
+  list: async (input: ServerInferRequest<typeof commentContract["list"]>, c: HonoContext) => {
     const { targetType, targetId } = input.params;
     const user = await getSessionUser(c);
     const db = c.get("db") as Kysely<DB>;
@@ -59,7 +60,7 @@ const commentHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch comments" } };
     }
   },
-  submit: async (input: any, c: HonoContext) => {
+  submit: async (input: ServerInferRequest<typeof commentContract["submit"]>, c: HonoContext) => {
     const user = await getSessionUser(c);
     if (!user) {
       return { status: 401 as const, body: { error: "Unauthorized" } };
@@ -140,7 +141,7 @@ const commentHandlers = {
       return { status: 500 as const, body: { error: "Failed to submit comment" } };
     }
   },
-  update: async (input: any, c: HonoContext) => {
+  update: async (input: ServerInferRequest<typeof commentContract["update"]>, c: HonoContext) => {
     const user = await getSessionUser(c);
     if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
     if (user.role === "unverified") return { status: 403 as const, body: { error: "Unverified" } };
@@ -193,7 +194,7 @@ const commentHandlers = {
       return { status: 500 as const, body: { error: "Failed to update comment" } };
     }
   },
-  delete: async (input: any, c: HonoContext) => {
+  delete: async (input: ServerInferRequest<typeof commentContract["delete"]>, c: HonoContext) => {
     const user = await getSessionUser(c);
     if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
     if (user.role === "unverified") return { status: 403 as const, body: { error: "Unverified" } };

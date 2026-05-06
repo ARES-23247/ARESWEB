@@ -3,6 +3,8 @@ import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { getSessionUser, logAuditAction } from "../../middleware";
 import { outreachSchema, OutreachPayload } from "../../../../shared/schemas/outreachSchema";
+import { outreachContract } from "../../../../shared/schemas/contracts/outreachContract";
+import { ServerInferRequest, HonoContext } from "../../../../shared/types/api";
 
 // Description snippet length for list views (IN-07: use named constant instead of magic number)
 const SNIPPET_LENGTH = 200;
@@ -42,7 +44,7 @@ async function fetchVolunteerEvents(db: Kysely<DB>, existingEventIds: string[]) 
 }
 
 export const outreachHandlers = {
-  list: async (_input: any, c: any) => {
+  list: async (_input: ServerInferRequest<typeof outreachContract["list"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -88,7 +90,7 @@ export const outreachHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  adminList: async (_input: any, c: any) => {
+  adminList: async (_input: ServerInferRequest<typeof outreachContract["adminList"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const results = await db.selectFrom("outreach_logs")
@@ -134,7 +136,7 @@ export const outreachHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch outreach logs" } };
     }
   },
-  save: async (input: any, c: any) => {
+  save: async (input: ServerInferRequest<typeof outreachContract["save"]>, c: HonoContext) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;
@@ -207,7 +209,7 @@ export const outreachHandlers = {
       return { status: 500 as const, body: { error: "Save failed" } };
     }
   },
-  delete: async (input: any, c: any) => {
+  delete: async (input: ServerInferRequest<typeof outreachContract["delete"]>, c: HonoContext) => {
     try {
       const { params } = input;
       const db = c.get("db") as Kysely<DB>;

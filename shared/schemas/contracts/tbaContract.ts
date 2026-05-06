@@ -13,9 +13,7 @@ export const tbaContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ rankings: z.array(z.unknown()) }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ rankings: z.array(z.unknown()) }),
     },
     summary: "Get TBA rankings for an event",
   },
@@ -27,9 +25,7 @@ export const tbaContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ matches: z.array(z.unknown()) }),
-      400: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ matches: z.array(z.unknown()) }),
     },
     summary: "Get TBA matches for an event",
   },
@@ -43,8 +39,7 @@ export const tbaContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.unknown(),
-      500: z.object({ error: z.string() }),
+      200: z.unknown(),
     },
     summary: "Fetch official data from FTC Events API",
   },

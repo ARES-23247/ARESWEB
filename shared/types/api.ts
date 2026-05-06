@@ -44,3 +44,25 @@ export type HandlerOutput<TBody = unknown> = {
   status: number;
   body: TBody;
 };
+
+import { z } from "zod";
+
+/**
+ * Custom Zod type extractor to bypass @ts-rest/core incompatibilities with zod v4 internals.
+ */
+type InferZodOrType<T> = T extends z.ZodTypeAny 
+  ? z.infer<T> 
+  : T extends { _type: infer U } 
+    ? U 
+    : T;
+
+/**
+ * Custom ServerInferRequest to provide strict typing without hitting ts-rest AppRoute limits.
+ * Replaces import { ServerInferRequest } from "@ts-rest/core".
+ */
+export type ServerInferRequest<T> = {
+  params: T extends { pathParams: infer P } ? InferZodOrType<P> : never;
+  body: T extends { body: infer B } ? InferZodOrType<B> : never;
+  query: T extends { query: infer Q } ? InferZodOrType<Q> : never;
+  headers: T extends { headers: infer H } ? InferZodOrType<H> : never;
+};

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -33,7 +34,7 @@ const portfolioCache = new Map<string, { data: any; expiresAt: number; version: 
 const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
 const judgesHandlers: any = {
-  login: async (input: any, c: HonoContext) => {
+  login: async (input: ServerInferRequest<typeof judgeContract["login"]>, c: HonoContext) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const { checkPersistentRateLimit } = await import("../middleware/security");
     const db = c.get("db") as Kysely<DB>;
@@ -66,7 +67,7 @@ const judgesHandlers: any = {
       return { status: 500 as const, body: { error: "Login failed" } };
     }
   },
-    portfolio: async (input: any, c: HonoContext) => {
+    portfolio: async (input: ServerInferRequest<typeof judgeContract["portfolio"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const code = input.headers["x-judge-code"];
@@ -153,7 +154,7 @@ const judgesHandlers: any = {
       return { status: 500 as const, body: { error: "Portfolio fetch failed" } };
     }
   },
-    listCodes: async (_input: any, c: HonoContext) => {
+    listCodes: async (_input: ServerInferRequest<typeof judgeContract["listCodes"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const results = await db.selectFrom("judge_access_codes")
@@ -174,7 +175,7 @@ const judgesHandlers: any = {
       return { status: 500 as const, body: { error: "Failed to fetch codes" } };
     }
   },
-    createCode: async (input: any, c: HonoContext) => {
+    createCode: async (input: ServerInferRequest<typeof judgeContract["createCode"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       const { label, expiresAt } = input.body;
@@ -200,7 +201,7 @@ const judgesHandlers: any = {
       return { status: 500 as const, body: { error: "Create failed" } };
     }
   },
-    deleteCode: async (input: any, c: HonoContext) => {
+    deleteCode: async (input: ServerInferRequest<typeof judgeContract["deleteCode"]>, c: HonoContext) => {
     const db = c.get("db") as Kysely<DB>;
     try {
       await db.deleteFrom("judge_access_codes").where("id", "=", input.params.id).execute();

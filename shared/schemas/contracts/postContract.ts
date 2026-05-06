@@ -77,8 +77,7 @@ export const postContract = c.router({
       ...standardErrors,
       200: z.object({
         post: postDetailSchema,
-      }),
-      404: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get a single post for admin editing",
   },
@@ -98,8 +97,7 @@ export const postContract = c.router({
             role: z.string(),
           })
           .optional(),
-      }),
-      404: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get a single post by slug",
   },
@@ -113,8 +111,7 @@ export const postContract = c.router({
         success: z.boolean(),
         slug: z.string().optional(),
         warning: z.string().optional(),
-      }),
-      400: z.object({ error: z.string() }),
+      }),
       409: z.object({ error: z.string() }),
     },
     summary: "Create or update a post",
@@ -122,20 +119,21 @@ export const postContract = c.router({
   updatePost: {
     method: "POST",
     path: "/admin/:slug",
+      pathParams: z.object({ slug: z.string() }),
     body: postSchema,
     responses: {
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
         slug: z.string().optional(),
-      }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Update an existing post",
   },
   deletePost: {
     method: "DELETE",
     path: "/admin/:slug",
+      pathParams: z.object({ slug: z.string() }),
     body: c.noBody(),
     responses: {
       ...standardErrors,
@@ -146,6 +144,7 @@ export const postContract = c.router({
   undeletePost: {
     method: "POST",
     path: "/admin/:slug/undelete",
+      pathParams: z.object({ slug: z.string() }),
     body: c.noBody(),
     responses: {
       ...standardErrors,
@@ -172,8 +171,7 @@ export const postContract = c.router({
       200: z.object({
         success: z.boolean(),
         warnings: z.array(z.string()).optional(),
-      }),
-      404: z.object({ error: z.string() }),
+      }),
     },
     summary: "Approve a pending post",
   },
@@ -185,8 +183,7 @@ export const postContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      404: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Reject a pending post",
   },
@@ -205,8 +202,7 @@ export const postContract = c.router({
     body: c.noBody(),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      404: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Restore a post to a specific revision",
   },
@@ -218,8 +214,7 @@ export const postContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      404: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
       502: z.object({ error: z.string() }),
     },
     summary: "Re-broadcast post to social media",

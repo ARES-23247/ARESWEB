@@ -96,8 +96,7 @@ export const userContract = c.router({
       ...standardErrors,
       200: z.object({
         user: userResponseSchema,
-      }),
-      404: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get single user detail",
   },
@@ -111,10 +110,7 @@ export const userContract = c.router({
     }),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      400: z.object({ error: z.string() }),
-      403: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Update user role or type",
   },
@@ -125,8 +121,7 @@ export const userContract = c.router({
     body: z.record(z.string(), z.unknown()),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Update user profile",
   },
@@ -138,9 +133,7 @@ export const userContract = c.router({
       ...standardErrors,
       200: z.object({
         profile: z.record(z.string(), z.unknown()),
-      }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get full user profile for admin editing",
   },
@@ -151,8 +144,7 @@ export const userContract = c.router({
     body: c.noBody(),
     responses: {
       ...standardErrors,
-      200: z.object({ success: z.boolean() }),
-      500: z.object({ error: z.string() }),
+      200: z.object({ success: z.boolean() }),
     },
     summary: "Delete a user",
   },
@@ -268,10 +260,7 @@ export const profileContract = c.router({
       200: z.object({
         profile: z.record(z.string(), z.unknown()),
         badges: z.array(z.record(z.string(), z.unknown())),
-      }),
-      403: z.object({ error: z.string() }),
-      404: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get public user profile",
   },

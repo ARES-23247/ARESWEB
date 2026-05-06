@@ -85,9 +85,7 @@ export const socialQueueContract = c.router({
       200: z.object({
         posts: z.array(socialQueueSchema),
         total: z.number(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "List all scheduled social posts",
   },
@@ -102,9 +100,7 @@ export const socialQueueContract = c.router({
       ...standardErrors,
       200: z.object({
         posts: z.array(socialQueueSchema),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get posts within a date range for calendar view",
   },
@@ -124,9 +120,7 @@ export const socialQueueContract = c.router({
       200: z.object({
         success: z.boolean(),
         post: socialQueueSchema,
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Create a new scheduled social post",
   },
@@ -146,9 +140,7 @@ export const socialQueueContract = c.router({
       200: z.object({
         success: z.boolean(),
         post: socialQueueSchema,
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Update a scheduled social post",
   },
@@ -163,9 +155,7 @@ export const socialQueueContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Cancel/delete a scheduled social post",
   },
@@ -180,9 +170,7 @@ export const socialQueueContract = c.router({
       ...standardErrors,
       200: z.object({
         success: z.boolean(),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Immediately send a scheduled post",
   },
@@ -219,9 +207,7 @@ export const socialQueueContract = c.router({
           total_shares: z.number(),
           total_comments: z.number(),
         }),
-      }),
-      401: z.object({ error: z.string() }),
-      500: z.object({ error: z.string() }),
+      }),
     },
     summary: "Get analytics for social media posts",
   },

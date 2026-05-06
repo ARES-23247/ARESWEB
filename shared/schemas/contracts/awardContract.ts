@@ -53,6 +53,7 @@ export const awardContract = c.router({
   deleteAward: {
     method: "DELETE",
     path: "/admin/:id",
+    pathParams: z.object({ id: z.string() }),
     body: c.noBody(),
     responses: {
       ...standardErrors,

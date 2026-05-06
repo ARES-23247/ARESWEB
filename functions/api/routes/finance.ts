@@ -1,4 +1,6 @@
+import type { HonoContext } from "../../../shared/types/api";
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono, Context } from "hono";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
@@ -13,13 +15,13 @@ const financeRouter = new Hono<AppEnv>();
 
 
 const financeTsRestRouterObj = {
-  getSummary: async (input: any, c: any) => {
+  getSummary: async (input: ServerInferRequest<typeof financeContract["getSummary"]>, c: HonoContext) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
       const seasonId = query.season_id;
 
-      let latestSeasonId = seasonId;
+      let latestSeasonId: number | undefined | null = seasonId;
       if (!latestSeasonId) {
         const latest = await db.selectFrom("seasons").selectAll().orderBy("start_year", "desc").executeTakeFirst();
         latestSeasonId = latest?.start_year;
@@ -39,7 +41,7 @@ const financeTsRestRouterObj = {
  
           (eb: any) => eb.fn.sum("amount").as("total")
         ])
-        .where("season_id", "=", latestSeasonId.toString())
+        .where("season_id", "=", Number(latestSeasonId))
         .groupBy("type")
         .execute();
 
@@ -63,13 +65,13 @@ const financeTsRestRouterObj = {
     }
   },
 
-  listPipeline: async (input: any, c: any) => {
+  listPipeline: async (input: ServerInferRequest<typeof financeContract["listPipeline"]>, c: HonoContext) => {
     try {
       const { query } = input;
       const db = c.get("db") as Kysely<DB>;
       let queryBuilder = db.selectFrom("sponsorship_pipeline").selectAll();
       if (query.season_id) {
-        queryBuilder = queryBuilder.where("season_id", "=", query.season_id.toString());
+        queryBuilder = queryBuilder.where("season_id", "=", Number(query.season_id));
       }
       const pipeline = await queryBuilder.orderBy("created_at", "desc").execute();
       const pipelineIds = pipeline.map(p => p.id).filter(Boolean);
@@ -100,7 +102,7 @@ const financeTsRestRouterObj = {
     }
   },
 
-  savePipeline: async (input: any, c: any) => {
+  savePipeline: async (input: ServerInferRequest<typeof financeContract["savePipeline"]>, c: HonoContext) => {
     try {
       const { body } = input;
       const db = c.get("db") as Kysely<DB>;

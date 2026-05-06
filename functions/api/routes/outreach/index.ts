@@ -8,7 +8,7 @@ import { outreachHandlers } from "./handlers";
 const outreachRouter = new Hono<AppEnv>();
 
 
-const outreachTsRestRouter = s.router(outreachContract, outreachHandlers as any);
+const outreachTsRestRouter = s.router(outreachContract, outreachHandlers);
 
 
 // Apply protections

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
+import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { storeContract } from "../../../shared/schemas/contracts/storeContract";
@@ -18,7 +19,7 @@ app.use("/orders/*", ensureAdmin);
 
  
 const storeHandlers: any = {
-  getProducts: async (_input: any, c: HonoContext) => {
+  getProducts: async (_input: ServerInferRequest<typeof storeContract["getProducts"]>, c: HonoContext) => {
     try {
       const db = c.get("db") as Kysely<DB>;
       const products = await db
@@ -123,7 +124,7 @@ const storeHandlers: any = {
     }
   },
   // Extracted webhook handler below
-  getOrders: async (_input: any, c: HonoContext) => {
+  getOrders: async (_input: ServerInferRequest<typeof storeContract["getOrders"]>, c: HonoContext) => {
     try {
       await ensureAdmin(c, async () => {});
       const db = c.get("db") as Kysely<DB>;
