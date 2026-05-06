@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 // ── The Orange Alliance API Proxy ─────────────────────────────────────
 // Proxies requests to TOA, injecting the API key server-side so it
 // never reaches the client. Protects against key leakage and CORS issues.

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 export type MessageContent = string | Array<{
   type: "text" | "image";
   text?: string;

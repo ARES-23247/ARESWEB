@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 // ── FTC Events API Proxy ─────────────────────────────────────────────
 // Proxies requests to the FIRST FTC Events API v2.0, injecting Basic
 // Auth credentials server-side. Protects API keys from client exposure.

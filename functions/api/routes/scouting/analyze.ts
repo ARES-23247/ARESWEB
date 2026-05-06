@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 // ── AI Scouting Analysis Endpoint ────────────────────────────────────
 // POST endpoint that accepts team/event data and sends it to Z.ai GLM 5.1
 // for analysis. Supports three modes: team_analysis, match_prediction,

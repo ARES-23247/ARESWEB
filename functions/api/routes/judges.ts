@@ -52,7 +52,7 @@ const judgesHandlers: any = {
 
       const row = await db.selectFrom("judge_access_codes")
  
-                .select(["code", "label" as any, "expires_at" as any])
+                .select(["code", "label", "expires_at"])
         .where("code", "=", code)
         .where((eb) => eb.or([
           eb("expires_at", "is", null),
@@ -159,7 +159,7 @@ const judgesHandlers: any = {
     try {
       const results = await db.selectFrom("judge_access_codes")
  
-                .select(["id", "code", "label" as any, "created_at", "expires_at" as any])
+                .select(["id", "code", "label", "created_at", "expires_at"])
         .orderBy("created_at", "desc")
         .execute();
       

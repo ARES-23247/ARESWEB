@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 // ── Scouting Routes Index ────────────────────────────────────────────
 // Aggregates all scouting sub-routes (TOA proxy, FTC Events proxy,
 // AI analysis) under a single router for mounting in the main API.

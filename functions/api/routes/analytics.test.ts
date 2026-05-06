@@ -1,13 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
-import { TestEnv, MockKysely, MockExecutionContext } from "../../../src/test/types";
+import { TestEnv, MockExecutionContext } from "../../../src/test/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import analyticsRouter from "./analytics";
 
-interface MockFetchResponse {
-  ok: boolean;
-  json: () => Promise<{ success: boolean }>;
-}
+
 
 const mockExecutionContext: MockExecutionContext = {
   waitUntil: vi.fn((promise: Promise<unknown>) => promise),

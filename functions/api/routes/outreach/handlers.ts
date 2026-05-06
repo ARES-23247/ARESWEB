@@ -217,7 +217,7 @@ export const outreachHandlers = {
 
       await db.updateTable("outreach_logs")
         .set({ is_deleted: 1 })
-        .where("id", "=", params.id )
+        .where("id", "=", Number(params.id))
         .execute();
       c.executionCtx.waitUntil(logAuditAction(c, "delete_outreach", "outreach_logs", params.id, "Outreach log soft-deleted"));
       return { status: 200 as const, body: { success: true } };

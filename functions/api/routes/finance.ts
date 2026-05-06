@@ -2,7 +2,7 @@ import type { HonoContext } from "../../../shared/types/api";
 /* eslint-disable @typescript-eslint/no-explicit-any -- ts-rest handler input validated by contract library */
 import { ServerInferRequest } from "../../../shared/types/api";
 import { Hono, Context } from "hono";
-import { Kysely } from "kysely";
+import { Kysely, ExpressionBuilder } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { financeContract } from "../../../shared/schemas/contracts/financeContract";
@@ -39,7 +39,7 @@ const financeTsRestRouterObj = {
         .select([
           "type",
  
-          (eb: any) => eb.fn.sum("amount").as("total")
+          (eb: ExpressionBuilder<DB, "finance_transactions">) => eb.fn.sum("amount").as("total")
         ])
         .where("season_id", "=", Number(latestSeasonId))
         .groupBy("type")
