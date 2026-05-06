@@ -55,7 +55,10 @@ export default function AssetSyndicateModal({
             Cancel
           </button>
           <button
-            onClick={() => syndicateMutation.mutate({ key: syndicateKey, caption: syndicateCaption })}
+            onClick={() => syndicateMutation.mutate(
+              { key: syndicateKey, caption: syndicateCaption },
+              { onSuccess: () => { setSyndicateKey(null); setSyndicateCaption(""); } }
+            )}
             disabled={syndicateMutation.isPending || syndicateCaption.trim() === ""}
             className={`px-6 py-2 ares-cut-sm font-bold transition-all shadow-lg ${
               syndicateMutation.isPending || syndicateCaption.trim() === ""

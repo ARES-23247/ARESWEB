@@ -38,7 +38,7 @@ export function useDashboardSession() {
   const { data: res, isLoading: isPending } = useQuery({
     queryKey: ["dashboard", "session"],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response shape varies based on auth state
-    queryFn: () => fetchJson<any>("/api/profiles/me"),
+    queryFn: () => fetchJson<any>("/api/profile/me"),
     staleTime: 1000 * 60 * 5, // 5 minutes cache
     retry: false,
   });

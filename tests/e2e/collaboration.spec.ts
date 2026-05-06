@@ -13,6 +13,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Collaboration', () => {
   test.beforeEach(async ({ page }) => {
+    page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
+    page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
     // Mock authentication session exactly like kanban.spec.ts
     await page.route('**/api/auth/get-session', async route => {
       await route.fulfill({
@@ -121,6 +123,9 @@ test.describe('Collaboration', () => {
 
     // Mock Tasks API to return sample content
     await page.route('**/api/tasks*', async route => {
+      if (route.request().resourceType() !== 'fetch' && route.request().resourceType() !== 'xhr') {
+        return route.fallback();
+      }
       await route.fulfill({
         status: 200,
         json: {

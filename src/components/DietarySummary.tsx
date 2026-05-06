@@ -25,7 +25,7 @@ export default function DietarySummary() {
   const handleExportEmails = async () => {
     setExporting(true);
     try {
-      const res = await fetch("/api/logistics/export");
+      const res = await fetch("/api/logistics/admin/export-emails");
       if (res.ok) {
         const body = await res.json() as { users: { name: string; email: string; role: string; emergencyName?: string; emergencyPhone?: string }[] };
         const users = body.users as { name: string; email: string; role: string; emergencyName?: string; emergencyPhone?: string }[];
@@ -59,7 +59,7 @@ export default function DietarySummary() {
   };
 
   useEffect(() => {
-    fetch("/api/logistics/summary")
+    fetch("/api/logistics/admin/summary")
       .then(async (res) => {
         if (res.ok) {
           const body = await res.json();

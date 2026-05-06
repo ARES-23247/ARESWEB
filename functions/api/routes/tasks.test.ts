@@ -40,6 +40,8 @@ describe("Hono Backend - /tasks Router", () => {
         return mockDb;
       }),
       orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      offset: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       whereRef: vi.fn().mockReturnThis(),
       insertInto: vi.fn().mockReturnThis(),
@@ -120,7 +122,7 @@ describe("Hono Backend - /tasks Router", () => {
     mockDb.execute.mockResolvedValueOnce([]);
     const res = await testApp.request("/?status=todo", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.where).toHaveBeenCalledWith("t.status", "=", "todo");
+    expect(mockDb.where).toHaveBeenCalledWith("tasks.status", "=", "todo");
   });
 
   it("GET / - handles malformed assignees_json gracefully", async () => {

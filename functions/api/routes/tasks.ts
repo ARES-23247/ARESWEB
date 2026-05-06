@@ -65,9 +65,29 @@ tasksRouter.openapi(listTasksRoute, (async (c) => {
       .offset(offset as any)
       .execute();
 
+    const formattedTasks = tasks.map((t: any) => {
+      let assignees = [];
+      if (t.assignees_json) {
+        try {
+          const parsed = JSON.parse(t.assignees_json);
+          assignees = parsed.filter((a: any) => a && a.id !== null);
+        } catch (_e) {
+          // ignore
+        }
+      }
+      return {
+        ...t,
+        status: t.status || "todo",
+        priority: t.priority || "normal",
+        assigned_to: t.assigned_to ?? null,
+        assignee_name: t.assignee_name ?? null,
+        assignees
+      };
+    });
+
     return c.json({
       success: true,
-      tasks: tasks as any[],
+      tasks: formattedTasks as any[],
       pagination: {
         total: tasks.length, // Simplified
         limit,
@@ -148,7 +168,17 @@ tasksRouter.openapi(createTaskRoute, (async (c) => {
       created_at: now,
     }).execute();
 
-    return c.json({ success: true, id }, 201);
+    const createdTask = {
+      ...taskData,
+      assignees: body.assignees ? body.assignees.map((userId: string) => ({ id: userId, nickname: null })) : [],
+      creator_name: user.nickname || null,
+      zulip_stream: null,
+      zulip_topic: null,
+      assigned_to: taskData.assigned_to || null,
+      assignee_name: null,
+    };
+
+    return c.json({ success: true, task: createdTask as any }, 200);
   } catch (err) {
     console.error("[Tasks] Create error:", err);
     return c.json({ error: "Failed to create task" }, 500);
@@ -273,12 +303,7 @@ tasksRouter.openapi(updateTaskRoute, (async (c) => {
       created_at: new Date().toISOString(),
     }).execute();
 
-    const updated = await db.selectFrom("tasks")
-      .selectAll()
-      .where("id", "=", id)
-      .executeTakeFirst();
-    
-    return c.json({ success: true, task: updated as any }, 200);
+    return c.json({ success: true }, 200);
   } catch (err) {
     console.error("[Tasks] Update error:", err);
     return c.json({ error: "Failed to update task" }, 500);

@@ -18,16 +18,16 @@ export default function Dashboard() {
 
   const { data: statsRes } = useQuery({
     queryKey: ["dashboard-stats"],
-    queryFn: () => fetchJson<{ body: { posts?: number; events?: number; docs?: number; securityBlocks?: number; integrations?: Record<string, boolean> } }>("/api/stats"),
+    queryFn: () => fetchJson<{ posts?: number; events?: number; docs?: number; securityBlocks?: number; integrations?: Record<string, boolean> }>("/api/analytics/admin/stats"),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const stats = {
-    posts: statsRes?.body.posts || 0,
-    events: statsRes?.body.events || 0,
-    docs: statsRes?.body.docs || 0,
-    securityBlocks: statsRes?.body.securityBlocks || 0,
-    integrations: statsRes?.body.integrations || {
+    posts: statsRes?.posts || 0,
+    events: statsRes?.events || 0,
+    docs: statsRes?.docs || 0,
+    securityBlocks: statsRes?.securityBlocks || 0,
+    integrations: statsRes?.integrations || {
       zulip: false,
       github: false,
       discord: false,
