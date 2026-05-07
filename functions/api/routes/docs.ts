@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 import { sql } from "drizzle-orm";
-import { DrizzleD1Database } from "drizzle-orm/d1";
+// import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, desc, asc, and, ne, isNotNull, lt } from "drizzle-orm";
+import { eq, desc, asc, and, isNotNull, lt } from "drizzle-orm";
 
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, checkPersistentRateLimit, verifyTurnstile, emitNotification, notifyByRole, getSocialConfig, logAuditAction } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, checkPersistentRateLimit, verifyTurnstile, emitNotification, notifyByRole, getSocialConfig, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -16,7 +16,7 @@ import type { HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 import * as docsRoutes from "../../../shared/routes/docs";
 
-type DrizzleDb = DrizzleD1Database<typeof schema>;
+// type DrizzleDb = DrizzleD1Database<typeof schema>;
 
 
 
@@ -115,7 +115,7 @@ const sanitizeFtsQuery = (query: string): string => {
 
 async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c as any);
     const results = await db.select({ id: schema.docsHistory.id })
       .from(schema.docsHistory)
       .where(eq(schema.docsHistory.slug, slug))
@@ -139,7 +139,7 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 // GET /docs - List all public docs
 docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDocsRoute>(async (c) => {
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     let results;
     try {
       results = await db.select({
@@ -229,7 +229,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
     const cleanQ = sanitizeFtsQuery(String(q));
     if (!cleanQ) return c.json({ results: [] } as any, 200 as any);
 
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     const results = await db.run(sql<{ slug: string, title: string, category: string, description: string | null }>`
       SELECT f.slug, f.title, f.category, f.description
       FROM docs_fts f
@@ -260,7 +260,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
 // GET /docs/admin/list - List all docs (admin view)
 docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adminListRoute>(async (c) => {
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     let results;
     try {
       results = await db.select({
@@ -323,7 +323,7 @@ docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adm
 docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.adminDetailRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     let row;
     try {
       row = await db.select({
@@ -390,7 +390,7 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.a
 docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     let row;
     try {
       row = await db.select({
@@ -490,13 +490,13 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
 docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.deleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
     if (!existing) return c.json({ error: "Doc not found" } as any, 404 as any);
 
     await db.update(schema.docs).set({ isDeleted: 1 }).where(eq(schema.docs.slug, slug)).run();
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as DrizzleDb, c.env.AI as any, c.env.VECTORIZE_DB as any);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI as any, c.env.VECTORIZE_DB as any);
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Delete] Error", e);
@@ -507,7 +507,7 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.del
 // POST /docs/admin/save - Save or update doc
 docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveDocRoute>(async (c) => {
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = c.req.valid("json");
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
@@ -656,7 +656,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
       }));
     }
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as DrizzleDb, c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Save] Error", e);
@@ -669,7 +669,7 @@ docsRouter.openapi(docsRoutes.updateSortRoute, typedHandler<typeof docsRoutes.up
   const { slug } = c.req.valid("param");
   const { sortOrder } = c.req.valid("json");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     await db.update(schema.docs).set({ sortOrder: sortOrder }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -684,7 +684,8 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   const { isHelpful, comment, turnstileToken } = c.req.valid("json");
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as DrizzleDb, `feedback:${ip}`, ua, 10, 60))) return c.json({ error: "Too many submissions" } as any, 429 as any);
+  const db = getDb(c);
+  if (!(await checkPersistentRateLimit(db, `feedback:${ip}`, ua, 10, 60))) return c.json({ error: "Too many submissions" } as any, 429 as any);
 
   const valid = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
   if (!valid) return c.json({ error: "Security verification failed" } as any, 403 as any);
@@ -692,7 +693,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   if (comment && comment.length > 2000) return c.json({ error: "Comment too long" } as any, 400 as any);
 
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment || null }).run();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -705,7 +706,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
 docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.getHistoryRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     const results = await db.select({
       id: schema.docsHistory.id,
       slug: schema.docsHistory.slug,
@@ -737,7 +738,7 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
 docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoutes.restoreHistoryRoute>(async (c) => {
   const { slug, id } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     const row = await db.select({
       title: schema.docsHistory.title,
       category: schema.docsHistory.category,
@@ -805,7 +806,7 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoute
 docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.approveDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     const row = await db.select({
       revision_of: schema.docs.revisionOf,
       title: schema.docs.title,
@@ -879,7 +880,7 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
   const { slug } = c.req.valid("param");
   const { reason } = c.req.valid("json");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     const row = await db.select({
       title: schema.docs.title,
       cf_email: schema.docs.cfEmail
@@ -906,7 +907,7 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
 docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.undeleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
     await db.update(schema.docs).set({ isDeleted: 0, status: "draft" }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -919,7 +920,7 @@ docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.u
 docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purgeDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as DrizzleDb;
+    const db = getDb(c);
 
     // 1. Fetch content to find embedded assets
     const doc = await db.select({ content: schema.docs.content })
