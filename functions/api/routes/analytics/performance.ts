@@ -1,6 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { AppEnv, ensureAdmin } from "../../middleware";
-import { eq, sql } from "drizzle-orm";
+import { AppEnv, getDb } from "../../middleware";
+import { sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
 const perfRouter = new OpenAPIHono<AppEnv>();
@@ -26,7 +26,7 @@ perfRouter.openapi(createRoute({
   }
 }), async (c) => {
   const { metrics } = c.req.valid("json");
-  const db = c.get('db') as any;
+  const db = getDb(c);
 
   for (const metric of metrics) {
     await db.insert(schema.performanceMetrics).values({
@@ -53,7 +53,7 @@ perfRouter.openapi(createRoute({
     }
   }
 }), async (c) => {
-  const db = c.get('db') as any;
+  const db = getDb(c);
 
   // A simple summary by taking the average of the last 100 entries for each metric.
   const results = await db.select({
@@ -69,7 +69,7 @@ perfRouter.openapi(createRoute({
     summary[row.metric_name.toLowerCase()] = row.avg_value as number;
   }
 
-  return c.json(summary as any, 200);
+  return c.json(summary, 200);
 });
 
 export default perfRouter;
