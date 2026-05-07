@@ -1,6 +1,6 @@
 import { typedHandler } from "../utils/handler";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, and, desc, sql } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import {
@@ -74,53 +74,53 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
 
   try {
     const profileRow = await db
-      .selectFrom("user_profiles as p")
-      .innerJoin("user as u", "p.user_id", "u.id")
-      .select([
-        "p.user_id",
-        "p.nickname",
-        "p.first_name",
-        "p.last_name",
-        "p.bio",
-        "p.pronouns",
-        "p.subteams",
-        "p.member_type",
-        "p.grade_year",
-        "p.favorite_food",
-        "p.dietary_restrictions",
-        "p.favorite_first_thing",
-        "p.fun_fact",
-        "p.show_email",
-        "p.contact_email",
-        "p.show_phone",
-        "p.phone",
-        "p.show_on_about",
-        "p.favorite_robot_mechanism",
-        "p.pre_match_superstition",
-        "p.leadership_role",
-        "p.rookie_year",
-        "p.colleges",
-        "p.employers",
-        "p.tshirt_size",
-        "p.emergency_contact_name",
-        "p.emergency_contact_phone",
-        "p.parents_name",
-        "p.parents_email",
-        "p.students_name",
-        "p.students_email",
-        "u.image as avatar",
-      ])
-      .where("p.user_id", "=", user.id)
-      .executeTakeFirst();
+      .select({
+        userId: schema.userProfiles.userId,
+        nickname: schema.userProfiles.nickname,
+        firstName: schema.userProfiles.firstName,
+        lastName: schema.userProfiles.lastName,
+        bio: schema.userProfiles.bio,
+        pronouns: schema.userProfiles.pronouns,
+        subteams: schema.userProfiles.subteams,
+        memberType: schema.userProfiles.memberType,
+        gradeYear: schema.userProfiles.gradeYear,
+        favoriteFood: schema.userProfiles.favoriteFood,
+        dietaryRestrictions: schema.userProfiles.dietaryRestrictions,
+        favoriteFirstThing: schema.userProfiles.favoriteFirstThing,
+        funFact: schema.userProfiles.funFact,
+        showEmail: schema.userProfiles.showEmail,
+        contactEmail: schema.userProfiles.contactEmail,
+        showPhone: schema.userProfiles.showPhone,
+        phone: schema.userProfiles.phone,
+        showOnAbout: schema.userProfiles.showOnAbout,
+        favoriteRobotMechanism: schema.userProfiles.favoriteRobotMechanism,
+        preMatchSuperstition: schema.userProfiles.preMatchSuperstition,
+        leadershipRole: schema.userProfiles.leadershipRole,
+        rookieYear: schema.userProfiles.rookieYear,
+        colleges: schema.userProfiles.colleges,
+        employers: schema.userProfiles.employers,
+        tshirtSize: schema.userProfiles.tshirtSize,
+        emergencyContactName: schema.userProfiles.emergencyContactName,
+        emergencyContactPhone: schema.userProfiles.emergencyContactPhone,
+        parentsName: schema.userProfiles.parentsName,
+        parentsEmail: schema.userProfiles.parentsEmail,
+        studentsName: schema.userProfiles.studentsName,
+        studentsEmail: schema.userProfiles.studentsEmail,
+        avatar: schema.user.image
+      })
+      .from(schema.userProfiles)
+      .innerJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
+      .where(eq(schema.userProfiles.userId, user.id))
+      .get();
 
     const p: Record<string, unknown> = {
       ...(profileRow || {
-        user_id: user.id,
+        userId: user.id,
         nickname: user.name || "",
-        first_name: "",
-        last_name: "",
+        firstName: "",
+        lastName: "",
         avatar: null,
-        member_type: "student",
+        memberType: "student",
       }),
     };
 
@@ -136,34 +136,34 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
         }
       };
 
-      const [emergency_contact_name, emergency_contact_phone, phone, contact_email, parents_name, parents_email, students_name, students_email] =
+      const [emergencyContactName, emergencyContactPhone, phone, contactEmail, parentsName, parentsEmail, studentsName, studentsEmail] =
         await Promise.all([
-          safeDecrypt(p.emergency_contact_name as string | null),
-          safeDecrypt(p.emergency_contact_phone as string | null),
+          safeDecrypt(p.emergencyContactName as string | null),
+          safeDecrypt(p.emergencyContactPhone as string | null),
           safeDecrypt(p.phone as string | null),
-          safeDecrypt(p.contact_email as string | null),
-          safeDecrypt(p.parents_name as string | null),
-          safeDecrypt(p.parents_email as string | null),
-          safeDecrypt(p.students_name as string | null),
-          safeDecrypt(p.students_email as string | null),
+          safeDecrypt(p.contactEmail as string | null),
+          safeDecrypt(p.parentsName as string | null),
+          safeDecrypt(p.parentsEmail as string | null),
+          safeDecrypt(p.studentsName as string | null),
+          safeDecrypt(p.studentsEmail as string | null),
         ]);
 
-      p.emergency_contact_name = emergency_contact_name;
-      p.emergency_contact_phone = emergency_contact_phone;
+      p.emergencyContactName = emergencyContactName;
+      p.emergencyContactPhone = emergencyContactPhone;
       p.phone = phone;
-      p.contact_email = contact_email;
-      p.parents_name = parents_name;
-      p.parents_email = parents_email;
-      p.students_name = students_name;
-      p.students_email = students_email;
+      p.contactEmail = contactEmail;
+      p.parentsName = parentsName;
+      p.parentsEmail = parentsEmail;
+      p.studentsName = studentsName;
+      p.studentsEmail = studentsEmail;
     }
 
     return c.json(
       {
         ...p,
-        member_type: String(p.member_type || "student"),
-        first_name: String(p.first_name || ""),
-        last_name: String(p.last_name || ""),
+        member_type: String(p.memberType || "student"),
+        first_name: String(p.firstName || ""),
+        last_name: String(p.lastName || ""),
         nickname: String(p.nickname || ""),
         auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role },
       } as z.infer<typeof profileMeSchema>,
@@ -213,32 +213,32 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
   const db = c.get("db") as any;
   try {
     const results = await db
-      .selectFrom("user_profiles as p")
-      .innerJoin("user as u", "p.user_id", "u.id")
-      .where("p.show_on_about", "=", 1)
-      .where("u.role", "!=", "unverified")
-      .select([
-        "p.user_id",
-        "p.nickname",
-        "p.bio",
-        "p.pronouns",
-        "p.subteams",
-        "p.member_type",
-        "p.favorite_first_thing",
-        "p.fun_fact",
-        "p.show_email",
-        "p.contact_email",
-        "p.favorite_robot_mechanism",
-        "p.pre_match_superstition",
-        "p.leadership_role",
-        "p.rookie_year",
-        "p.colleges",
-        "p.employers",
-        "u.image as avatar",
-        "u.name",
-        "u.role",
-      ])
-      .execute();
+      .select({
+        userId: schema.userProfiles.userId,
+        nickname: schema.userProfiles.nickname,
+        bio: schema.userProfiles.bio,
+        pronouns: schema.userProfiles.pronouns,
+        subteams: schema.userProfiles.subteams,
+        memberType: schema.userProfiles.memberType,
+        favoriteFirstThing: schema.userProfiles.favoriteFirstThing,
+        funFact: schema.userProfiles.funFact,
+        showEmail: schema.userProfiles.showEmail,
+        contactEmail: schema.userProfiles.contactEmail,
+        favoriteRobotMechanism: schema.userProfiles.favoriteRobotMechanism,
+        preMatchSuperstition: schema.userProfiles.preMatchSuperstition,
+        leadershipRole: schema.userProfiles.leadershipRole,
+        rookieYear: schema.userProfiles.rookieYear,
+        colleges: schema.userProfiles.colleges,
+        employers: schema.userProfiles.employers,
+        avatar: schema.user.image,
+        name: schema.user.name,
+        role: schema.user.role
+      })
+      .from(schema.userProfiles)
+      .innerJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
+      .where(eq(schema.userProfiles.showOnAbout, 1))
+      .where(sql`${schema.user.role} != 'unverified'`)
+      .all();
 
     const secret = c.env.ENCRYPTION_SECRET;
     const safeDecrypt = async (val: string | null) => {
@@ -255,13 +255,34 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
       await Promise.all(
         (results || []).map(async (r: any) => {
           const row = r as Record<string, unknown>;
-          const memberType = String(row.member_type || "student").toLowerCase();
+          const memberType = String(row.memberType || "student").toLowerCase();
 
-          if (row.contact_email && (memberType === "mentor" || memberType === "coach")) {
-            row.contact_email = await safeDecrypt(row.contact_email as string | null);
+          if (row.contactEmail && (memberType === "mentor" || memberType === "coach")) {
+            row.contactEmail = await safeDecrypt(row.contactEmail as string | null);
           }
 
-          const sanitized = sanitizeProfileForPublic(row, memberType);
+          // Convert back to snake_case for the sanitizer function
+          const sanitized = sanitizeProfileForPublic({
+            user_id: row.userId,
+            nickname: row.nickname,
+            bio: row.bio,
+            pronouns: row.pronouns,
+            subteams: row.subteams,
+            member_type: row.memberType,
+            favorite_first_thing: row.favoriteFirstThing,
+            fun_fact: row.funFact,
+            show_email: row.showEmail,
+            contact_email: row.contactEmail,
+            favorite_robot_mechanism: row.favoriteRobotMechanism,
+            pre_match_superstition: row.preMatchSuperstition,
+            leadership_role: row.leadershipRole,
+            rookie_year: row.rookieYear,
+            colleges: row.colleges,
+            employers: row.employers,
+            avatar: row.avatar,
+            name: row.name,
+            role: row.role
+          }, memberType);
           if (!sanitized) return null;
 
           return {
@@ -294,40 +315,64 @@ profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfi
   const db = c.get("db") as any;
   try {
     const profileRow = await db
-      .selectFrom("user_profiles as p")
-      .leftJoin("user as u", "p.user_id", "u.id")
-      .select([
-        "p.user_id",
-        "p.nickname",
-        "p.bio",
-        "p.pronouns",
-        "p.subteams",
-        "p.member_type",
-        "p.favorite_first_thing",
-        "p.fun_fact",
-        "p.show_email",
-        "p.contact_email",
-        "p.show_phone",
-        "p.phone",
-        "p.show_on_about",
-        "p.favorite_robot_mechanism",
-        "p.pre_match_superstition",
-        "p.leadership_role",
-        "p.rookie_year",
-        "p.colleges",
-        "p.employers",
-        "p.grade_year",
-        "u.image as avatar",
-        "u.name",
-      ])
-      .where("p.user_id", "=", userId)
-      .executeTakeFirst();
+      .select({
+        userId: schema.userProfiles.userId,
+        nickname: schema.userProfiles.nickname,
+        bio: schema.userProfiles.bio,
+        pronouns: schema.userProfiles.pronouns,
+        subteams: schema.userProfiles.subteams,
+        memberType: schema.userProfiles.memberType,
+        favoriteFirstThing: schema.userProfiles.favoriteFirstThing,
+        funFact: schema.userProfiles.funFact,
+        showEmail: schema.userProfiles.showEmail,
+        contactEmail: schema.userProfiles.contactEmail,
+        showPhone: schema.userProfiles.showPhone,
+        phone: schema.userProfiles.phone,
+        showOnAbout: schema.userProfiles.showOnAbout,
+        favoriteRobotMechanism: schema.userProfiles.favoriteRobotMechanism,
+        preMatchSuperstition: schema.userProfiles.preMatchSuperstition,
+        leadershipRole: schema.userProfiles.leadershipRole,
+        rookieYear: schema.userProfiles.rookieYear,
+        colleges: schema.userProfiles.colleges,
+        employers: schema.userProfiles.employers,
+        gradeYear: schema.userProfiles.gradeYear,
+        avatar: schema.user.image,
+        name: schema.user.name
+      })
+      .from(schema.userProfiles)
+      .leftJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
+      .where(eq(schema.userProfiles.userId, userId))
+      .get();
 
     if (!profileRow) return c.json({ error: "Profile not found" }, 404);
-    if (Number(profileRow.show_on_about || 0) !== 1) return c.json({ error: "This profile is private." }, 403);
+    if (Number(profileRow.showOnAbout || 0) !== 1) return c.json({ error: "This profile is private." }, 403);
 
-    const memberType = String(profileRow.member_type || "student");
-    const sanitized: Record<string, unknown> = sanitizeProfileForPublic(profileRow, memberType);
+    const memberType = String(profileRow.memberType || "student");
+    // Convert camelCase to snake_case for the sanitizer function
+    const sanitized: Record<string, unknown> = sanitizeProfileForPublic({
+      user_id: profileRow.userId,
+      nickname: profileRow.nickname,
+      bio: profileRow.bio,
+      pronouns: profileRow.pronouns,
+      subteams: profileRow.subteams,
+      member_type: profileRow.memberType,
+      favorite_first_thing: profileRow.favoriteFirstThing,
+      fun_fact: profileRow.funFact,
+      show_email: profileRow.showEmail,
+      contact_email: profileRow.contactEmail,
+      show_phone: profileRow.showPhone,
+      phone: profileRow.phone,
+      show_on_about: profileRow.showOnAbout,
+      favorite_robot_mechanism: profileRow.favoriteRobotMechanism,
+      pre_match_superstition: profileRow.preMatchSuperstition,
+      leadership_role: profileRow.leadershipRole,
+      rookie_year: profileRow.rookieYear,
+      colleges: profileRow.colleges,
+      employers: profileRow.employers,
+      grade_year: profileRow.gradeYear,
+      avatar: profileRow.avatar,
+      name: profileRow.name
+    }, memberType);
 
     const requester = await getSessionUser(c);
     const isAdmin = requester?.role === "admin" || requester?.member_type === "coach" || requester?.member_type === "mentor";
@@ -335,44 +380,51 @@ profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfi
 
     if (isAdmin || isSelf) {
       const sensitive = await db
-        .selectFrom("user_profiles")
-        .select([
-          "emergency_contact_name",
-          "emergency_contact_phone",
-          "dietary_restrictions",
-          "tshirt_size",
-          "phone",
-          "contact_email",
-          "parents_name",
-          "parents_email",
-          "students_name",
-          "students_email",
-        ])
-        .where("user_id", "=", userId)
-        .executeTakeFirst();
+        .select({
+          emergencyContactName: schema.userProfiles.emergencyContactName,
+          emergencyContactPhone: schema.userProfiles.emergencyContactPhone,
+          dietaryRestrictions: schema.userProfiles.dietaryRestrictions,
+          tshirtSize: schema.userProfiles.tshirtSize,
+          phone: schema.userProfiles.phone,
+          contactEmail: schema.userProfiles.contactEmail,
+          parentsName: schema.userProfiles.parentsName,
+          parentsEmail: schema.userProfiles.parentsEmail,
+          studentsName: schema.userProfiles.studentsName,
+          studentsEmail: schema.userProfiles.studentsEmail
+        })
+        .from(schema.userProfiles)
+        .where(eq(schema.userProfiles.userId, userId))
+        .get();
 
       if (sensitive) {
         const secret = c.env.ENCRYPTION_SECRET;
-        sanitized.emergency_contact_name = await decrypt(sensitive.emergency_contact_name as string, secret);
-        sanitized.emergency_contact_phone = await decrypt(sensitive.emergency_contact_phone as string, secret);
-        sanitized.dietary_restrictions = sensitive.dietary_restrictions;
-        sanitized.tshirt_size = sensitive.tshirt_size;
+        sanitized.emergency_contact_name = await decrypt(sensitive.emergencyContactName as string, secret);
+        sanitized.emergency_contact_phone = await decrypt(sensitive.emergencyContactPhone as string, secret);
+        sanitized.dietary_restrictions = sensitive.dietaryRestrictions;
+        sanitized.tshirt_size = sensitive.tshirtSize;
         sanitized.phone = await decrypt(sensitive.phone as string, secret);
-        sanitized.contact_email = await decrypt(sensitive.contact_email as string, secret);
-        sanitized.parents_name = await decrypt(sensitive.parents_name as string, secret);
-        sanitized.parents_email = await decrypt(sensitive.parents_email as string, secret);
-        sanitized.students_name = await decrypt(sensitive.students_name as string, secret);
-        sanitized.students_email = await decrypt(sensitive.students_email as string, secret);
+        sanitized.contact_email = await decrypt(sensitive.contactEmail as string, secret);
+        sanitized.parents_name = await decrypt(sensitive.parentsName as string, secret);
+        sanitized.parents_email = await decrypt(sensitive.parentsEmail as string, secret);
+        sanitized.students_name = await decrypt(sensitive.studentsName as string, secret);
+        sanitized.students_email = await decrypt(sensitive.studentsEmail as string, secret);
       }
     }
 
     const rawBadges = await db
-      .selectFrom("badges as b")
-      .innerJoin("user_badges as ub", "b.id", "ub.badge_id")
-      .selectAll("b")
-      .where("ub.user_id", "=", userId)
-      .orderBy("ub.awarded_at", "desc")
-      .execute();
+      .select({
+        id: schema.badges.id,
+        name: schema.badges.name,
+        description: schema.badges.description,
+        icon: schema.badges.icon,
+        colorTheme: schema.badges.colorTheme,
+        createdAt: schema.badges.createdAt
+      })
+      .from(schema.badges)
+      .innerJoin(schema.userBadges, eq(schema.badges.id, schema.userBadges.badgeId))
+      .where(eq(schema.userBadges.userId, userId))
+      .orderBy(desc(schema.userBadges.awardedAt))
+      .all();
 
     return c.json({ profile: sanitized, badges: rawBadges }, 200);
   } catch {
