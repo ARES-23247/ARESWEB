@@ -8,6 +8,8 @@ import { safeJSONStringify } from "../../../utils/json";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { notifyByRole, NotifyAudience } from "../../../utils/notifications";
 import { buildGitHubConfig, createProjectItem } from "../../../utils/githubProjects";
+import { sendEmail } from "../../../utils/email";
+import { InquiryReceipt } from "../../templates/InquiryTemplates";
 
 import {
   listInquiriesRoute,
@@ -215,6 +217,26 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
         const ghConfig = buildGitHubConfig(social as SocialConfig);
         if (ghConfig) {
           await createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry (ID: ${id.slice(0, 8)})`, `Review: ${baseUrl}/dashboard/inquiries`).catch(() => {});
+        }
+      }
+
+      // Send automated email receipt for join (student/mentor) and support inquiries
+      if (type === "student" || type === "mentor" || type === "support") {
+        try {
+          const subject = `Inquiry Received: ${type.charAt(0).toUpperCase() + type.slice(1)} - ARES 23247`;
+          // We render the component to HTML using Hono's html utility
+          // Note: InquiryReceipt is a JSX component, so we wrap it in c.html or just use renderToString if available.
+          // Since we are in a handler, we can use c.html(Component) or component.toString()
+          // Actually, Hono components return a string-like object.
+          const html = (await (InquiryReceipt({ name, type, id }) as any)).toString();
+          
+          await sendEmail(c, {
+            to: email,
+            subject,
+            html,
+          });
+        } catch (emailErr) {
+          console.error("[Inquiry:Email] Failed to send receipt:", emailErr);
         }
       }
     })());

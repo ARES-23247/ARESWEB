@@ -14,13 +14,23 @@ const scrollTo = () => {};
 window.scrollTo = scrollTo;
 
 // Mock Cloudflare-specific globals
+// Full Cache API mock for Hono cache middleware
 (globalThis as unknown as { caches: unknown }).caches = {
+  // caches.match() - direct matching across all caches
+  match: () => Promise.resolve(undefined),
+  // caches.open() - returns a Cache object
+  open: () => Promise.resolve({
+    match: () => Promise.resolve(undefined),
+    put: () => Promise.resolve(undefined),
+    delete: () => Promise.resolve(undefined),
+    keys: () => Promise.resolve([]),
+  }),
+  // caches.default - Cloudflare-style default cache
   default: {
     match: () => Promise.resolve(undefined),
     put: () => Promise.resolve(undefined),
     delete: () => Promise.resolve(undefined),
   },
-  open: () => Promise.resolve(undefined),
 };
 
 // Mock ExecutionContext for Hono request testing
