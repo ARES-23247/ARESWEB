@@ -265,7 +265,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("GET / - search error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/?q=fail", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });

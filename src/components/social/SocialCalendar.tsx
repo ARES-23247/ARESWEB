@@ -2,9 +2,7 @@ import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, Trash2, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchJson } from "../../utils/apiClient";
-import type { SocialQueuePost } from "@shared/routes/socialQueue";
+import { useGetSocialCalendar, useDeleteSocialPost, type SocialQueuePost } from "../../../api/socialQueue";
 
 interface SocialCalendarProps {
   onEditPost?: (post: SocialQueuePost) => void;
@@ -34,13 +32,9 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
   const monthStart = format(startOfCurrentMonth, "yyyy-MM-dd");
   const monthEnd = format(endOfCurrentMonth, "yyyy-MM-dd");
 
-  const { data: calendarData, isLoading } = useQuery({
-    queryKey: ["social-queue", "calendar", monthStart, monthEnd],
-    queryFn: async () => {
-      return fetchJson<{ posts: SocialQueuePost[] }>(`/api/social-queue/calendar?start=${monthStart}&end=${monthEnd}`);
-    },
-    enabled: !!(monthStart && monthEnd),
-  });
+  const { data: calendarData, isLoading } = useGetSocialCalendar(
+    { start: monthStart, end: monthEnd }
+  );
 
   const posts = useMemo(() => calendarData?.posts || [], [calendarData?.posts]);
 
@@ -58,15 +52,9 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
   const handlePreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
 
-  const queryClient = useQueryClient();
-
-  const deleteMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      return fetchJson(`/api/social-queue/${postId}`, { method: "DELETE" });
-    },
+  const deleteMutation = useDeleteSocialPost({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
-      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
+      // Query invalidation is handled by the hook
     },
   });
 

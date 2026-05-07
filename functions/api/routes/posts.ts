@@ -95,7 +95,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       const cleanQ = sanitizeFtsQuery(String(q || ""));
       if (!cleanQ) return c.json({ posts: [] } as any, 200 as any);
 
-      const results = await (db as any).execute(sql<{
+      const results = await db.run(sql<{
         slug: string;
         title: string;
         date: string | null;
@@ -119,7 +119,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
          ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
       `);
 
-      const rows = (results as any).results || (results as any).rows || (Array.isArray(results) ? results : []);
+      const rows = (results as any).rows || [];
       const posts = rows.map((p: any) => ({
         ...p,
         season_id: p.season_id ? Number(p.season_id) : null,

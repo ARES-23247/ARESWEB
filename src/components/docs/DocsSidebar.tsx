@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchJson } from "../../api";
+import { useGetPublicSettings } from "../../api/settings";
 
 import { type DocRecord } from "../../hooks/useDocs";
 
@@ -27,10 +27,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
     setExpandedCats(new Set(groupedDocs.map(([cat]) => cat)));
   }
 
-  const { data: settingsRes } = useQuery({
-    queryKey: ["public_settings"],
-    queryFn: () => fetchJson<{ settings: Record<string, string> }>("/api/settings/public")
-  });
+  const { data: settingsRes } = useGetPublicSettings();
   const docsDriveUrl = settingsRes?.settings?.["COMMUNITY_DOCS_URL"] || null;
 
   const [prevCurrentSlug, setPrevCurrentSlug] = useState(currentSlug);

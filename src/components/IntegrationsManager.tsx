@@ -7,7 +7,7 @@ import { GithubCard } from "./integrations/GithubCard";
 import { SocialCard } from "./integrations/SocialCard";
 import { DataBackupCard } from "./integrations/DataBackupCard";
 import { ResendCard } from "./integrations/ResendCard";
-import { fetchJson } from "../api";
+import { useGetSettings, useUpdateSettings } from "../api/settings";
 import { useForm, useWatch } from "react-hook-form";
 
 type SettingsData = Record<string, string>;
@@ -19,10 +19,7 @@ export default function IntegrationsManager() {
   const { handleSubmit, reset, setValue, control, formState: { isDirty } } = useForm<SettingsData>();
   const localSettings = useWatch({ control });
 
-  const { data: rawData, isLoading, isError } = useQuery({
-    queryKey: ["admin_settings"],
-    queryFn: () => fetchJson<{ settings: Record<string, string> }>("/api/settings")
-  });
+  const { data: rawData, isLoading, isError } = useGetSettings();
 
   useEffect(() => {
     if (rawData?.settings) {
@@ -34,13 +31,10 @@ export default function IntegrationsManager() {
     }
   }, [rawData?.settings, reset]);
 
-  const saveMutation = useMutation({
-    mutationFn: (body: SettingsData) => fetchJson<{ success?: boolean }>("/api/settings", {
-      method: "PUT",
-      body: JSON.stringify(body)
-    }),
+  const saveMutation = useUpdateSettings({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_settings"] });
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      queryClient.invalidateQueries({ queryKey: ["public-settings"] });
       setSuccessMsg("Integrations synchronized securely.");
       setTimeout(() => setSuccessMsg(""), 3000);
     }

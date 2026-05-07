@@ -70,6 +70,9 @@ export * from "./zulip";
 // Locations
 export * from "./locations";
 
+// Badges
+export * from "./badges";
+
 // Re-export utilities and legacy client for backward compatibility
 export { uploadFile, fetchBlob, fetchJson } from "../utils/apiClient";
 

@@ -4,7 +4,7 @@ import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { getLucideIcon } from "../types/components";
-import { fetchJson } from "../api";
+import { useGetBadges, useCreateBadge, useDeleteBadge, useGrantBadge, useRevokeBadge, useGetUsersForBadges } from "../api/badges";
 import { ClickToDeleteButton } from "./ContentManager/shared";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
@@ -25,21 +25,13 @@ export default function BadgeManager() {
   const [selectedBadge, setSelectedBadge] = useState<string>("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const { data: badgesData, isLoading: badgesLoading, isError: isBadgesError } = useQuery({
-    queryKey: ["admin_badges"],
-    queryFn: () => fetchJson<{ badges: BadgeRecord[] }>("/api/badges")
-  });
+  const { data: badgesData, isLoading: badgesLoading, isError: isBadgesError } = useGetBadges();
 
-  const { data: usersData, isError: isUsersError } = useQuery({
-    queryKey: ["admin_users_list"],
-    queryFn: () => fetchJson<{ users: UserRecord[] }>("/api/users")
-  });
+  const { data: usersData, isError: isUsersError } = useGetUsersForBadges();
 
-  const createBadgeMutation = useMutation({
-    mutationFn: (body: unknown) => fetchJson("/api/badges", { method: "POST", body: JSON.stringify(body) }),
+  const createBadgeMutation = useCreateBadge({
     onSuccess: () => {
       toast.success("Badge definition created.");
-      queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
       setShowCreate(false);
       setNewBadgeId("");
       setNewBadgeName("");
@@ -48,8 +40,7 @@ export default function BadgeManager() {
     onError: () => toast.error("Failed to create badge.")
   });
 
-  const awardBadgeMutation = useMutation({
-    mutationFn: (body: unknown) => fetchJson("/api/badges/grant", { method: "POST", body: JSON.stringify(body) }),
+  const awardBadgeMutation = useGrantBadge({
     onSuccess: () => {
       toast.success("Badge awarded successfully!");
       setSelectedUser("");
@@ -60,11 +51,9 @@ export default function BadgeManager() {
     }
   });
 
-  const deleteBadgeMutation = useMutation({
-    mutationFn: (id: string) => fetchJson(`/api/badges/${id}`, { method: "DELETE" }),
+  const deleteBadgeMutation = useDeleteBadge({
     onSuccess: () => {
       toast.success("Badge definition deleted.");
-      queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
       setConfirmId(null);
     },
     onError: (err: Error) => {
@@ -73,11 +62,9 @@ export default function BadgeManager() {
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const revokeBadgeMutation = useMutation({
-    mutationFn: ({ userId, badgeId }: { userId: string, badgeId: string }) => fetchJson(`/api/badges/${userId}/${badgeId}`, { method: "DELETE" }),
+  const revokeBadgeMutation = useRevokeBadge({
     onSuccess: () => {
       toast.success("Badge revoked successfully.");
-      queryClient.invalidateQueries({ queryKey: ["admin_badges"] });
     },
     onError: (err: Error) => {
       toast.error(`Error revoking badge: ${err.message}`);

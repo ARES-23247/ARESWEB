@@ -13,8 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { format, addHours } from "date-fns";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchJson } from "../../utils/apiClient";
+import { useCreateSocialPost, type CreateSocialPostRequest } from "../../../api/socialQueue";
 import { toast } from "sonner";
 
 // Social platform config with colors and icons
@@ -57,7 +56,6 @@ export default function SocialComposer({
   defaultLinkedId,
   defaultLinkedTitle,
 }: SocialComposerProps) {
-  const queryClient = useQueryClient();
   const [characterCount, setCharacterCount] = useState(0);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaInput, setMediaInput] = useState("");
@@ -99,28 +97,9 @@ export default function SocialComposer({
   const content = watch("content");
   const platforms = watch("platforms");
 
-  useEffect(() => {
-    setCharacterCount(content?.length || 0);
-  }, [content]);
-
-  const createMutation = useMutation({
-    mutationFn: async (data: {
-      content: string;
-      scheduled_for: string;
-      platforms: Record<string, boolean>;
-      media_urls?: string[];
-      linked_type?: string | null;
-      linked_id?: string;
-    }) => {
-      return fetchJson("/api/social-queue", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    },
+  const createMutation = useCreateSocialPost({
     onSuccess: () => {
       toast.success("Social post scheduled successfully!");
-      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
-      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
       reset();
       setMediaUrls([]);
       setIsScheduling(false);
@@ -130,6 +109,10 @@ export default function SocialComposer({
       toast.error(err.message || "Failed to schedule post");
     },
   });
+
+  useEffect(() => {
+    setCharacterCount(content?.length || 0);
+  }, [content]);
 
   const selectedPlatforms = Object.entries(platforms || {}).filter(([_, enabled]) => enabled);
   const hasSelectedPlatforms = selectedPlatforms.length > 0;
@@ -167,14 +150,15 @@ export default function SocialComposer({
       ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
       : new Date().toISOString();
 
-    createMutation.mutate({
+    const payload: CreateSocialPostRequest = {
       content: data.content,
       scheduled_for: scheduledFor,
       platforms: platforms || {},
       media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
-      linked_type: data.linked_type,
+      linked_type: data.linked_type || undefined,
       linked_id: data.linked_id,
-    });
+    };
+    createMutation.mutate(payload);
   };
 
   const characterLimitWarning = characterCount > 280;
@@ -361,7 +345,7 @@ export default function SocialComposer({
               onChange={(e) => {
                 setScheduledTime(e.target.value);
                 if (scheduledDate) {
-                  setValue("scheduled_for", new Date(`${scheduledDate}T${e.target.value}`).toISOString());
+                  setValue("scheduled_for", new Date(`${scheduledDate}${e.target.value}`).toISOString());
                 }
               }}
               className="bg-white/5 border border-white/10 ares-cut-sm px-3 py-2 text-white text-sm"

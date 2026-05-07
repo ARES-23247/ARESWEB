@@ -69,7 +69,7 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
   }
 
   if (arr.length >= 4) {
-    const header4 = Array.from(arr.subarray(0, 4)).map((b: any) => b.toString(16).padStart(2, '0')).toLowerCase();
+    const header4 = Array.from(arr.subarray(0, 4)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (header4.startsWith('ffd8ff') || header4 === 'ffd8ffe0' || header4 === 'ffd8ffe1') return true; // JPEG
     if (header4.startsWith('47494638')) return true; // GIF
     if (header4 === '52494646') return true; // WEBP

@@ -89,7 +89,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
 
     const yearMonth = new Date().toISOString().slice(0, 7);
 
-    await (db as any).execute(sql`
+    await db.run(sql`
       INSERT INTO sponsor_metrics (id, sponsor_id, year_month, clicks, impressions)
       VALUES (${crypto.randomUUID()}, ${sponsor_id}, ${yearMonth}, 1, 0)
       ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = sponsor_metrics.clicks + 1
@@ -104,6 +104,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
 // Get platform analytics (admin)
 analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c) => {
   const db = getDb(c);
+  console.log("[Analytics] Fetching platform analytics...");
   try {
     const [
       totalViewsData,
@@ -115,12 +116,12 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       activityData,
     ] = await Promise.all([
       db.select({ total: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).get().catch(() => ({ total: 0 })),
-      (db as any).execute(sql`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ unique_count: 0 })),
+      db.run(sql<{ unique_count: number }>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: any) => (r as any).rows?.[0] || { unique_count: 0 }).catch(() => ({ unique_count: 0 })),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all().catch(() => []),
       db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` }).from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all().catch(() => []),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, user_agent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp }).from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all().catch(() => []),
       db.select({ category: schema.pageAnalytics.category, total: sql<number>`count(${schema.pageAnalytics.category})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.category).all().catch(() => []),
-      (db as any).execute(sql`
+      db.run(sql<{ date: string; pageViews: number }>`
         SELECT
           date(timestamp, 'localtime') as date,
           COUNT(*) as pageViews
@@ -128,17 +129,19 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         WHERE timestamp >= datetime('now', '-30 days')
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
-      `).catch(() => ({ results: [], rows: [] }))
+      `).catch(() => ({ rows: [] }))
     ]);
 
     const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get().catch(() => ({ total: 0 }));
 
     // usage_metrics table may not exist in all environments (needs migration)
     let apiCount = { total: 0 };
-    let latencyData: { results?: Array<{ date: string; avg_latency: number }>; rows?: Array<{ date: string; avg_latency: number }> } = { results: [] };
+    let latencyData: { rows: Array<{ date: string; avg_latency: number }> } = { rows: [] };
     try {
-      apiCount = await (db as any).execute(sql`SELECT COUNT(id) as total FROM usage_metrics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ total: 0 }));
-      latencyData = await (db as any).execute(sql`
+      apiCount = await db.run(sql<{ total: number }>`SELECT COUNT(id) as total FROM usage_metrics`)
+        .then((r: any) => (r as any).rows?.[0] || { total: 0 })
+        .catch(() => ({ total: 0 }));
+      latencyData = await db.run(sql<{ date: string; avg_latency: number }>`
         SELECT
           date(timestamp, 'localtime') as date,
           AVG(latency_ms) as avg_latency
@@ -150,7 +153,7 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
     } catch {
       // Table doesn't exist or other error - use defaults
       apiCount = { total: 0 };
-      latencyData = { results: [] };
+      latencyData = { rows: [] };
     }
 
     const topPages = topPagesDataRow.map((p: any) => ({
@@ -177,21 +180,15 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       total: Number(t.total)
     }));
 
-    const userActivity = (activityData as any).results?.map((a: any) => ({
+    const userActivity = ((activityData as any).rows || []).map((a: any) => ({
       date: String(a.date),
       pageViews: Number(a.pageViews),
-    })) || (activityData as any).rows?.map((a: any) => ({
-      date: String(a.date),
-      pageViews: Number(a.pageViews),
-    })) || [];
+    }));
 
-    const latency = latencyData.results?.map((l: any) => ({
+    const latency = (latencyData.rows || []).map((l: any) => ({
       date: String(l.date),
       avg_latency: Number(l.avg_latency)
-    })) || latencyData.rows?.map((l: any) => ({
-      date: String(l.date),
-      avg_latency: Number(l.avg_latency)
-    })) || [];
+    }));
 
     return c.json({
       totalPageViews: Number(totalViewsData?.total || 0),
@@ -210,7 +207,11 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
     } as any, 200 as any);
   } catch (err) {
     console.error("[Analytics] Platform metrics error:", err);
-    return c.json({ error: "Failed to fetch platform metrics" } as any, 500 as any);
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return c.json({
+      error: "Failed to fetch platform metrics",
+      details: errorMsg.includes("no such table") ? "Required database table missing. Run migrations." : errorMsg
+    } as any, 500 as any);
   }
 }));
 
@@ -218,8 +219,16 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
 analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
   const db = getDb(c);
   try {
-    const results: any = await (db as any).execute(sql`
-      SELECT 
+    const results = await db.run(sql<{
+      user_id: string;
+      nickname: string | null;
+      member_type: string | null;
+      avatar: string | null;
+      attended_events: number;
+      manual_prep_hours: number;
+      event_volunteer_hours: number;
+    }>`
+      SELECT
         u.user_id,
         u.nickname,
         u.member_type,
@@ -234,8 +243,8 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
       GROUP BY u.user_id, u.nickname, u.member_type, auth_user.image
       ORDER BY u.nickname ASC
     `);
-    
-    const rows = results.results || results.rows || results;
+
+    const rows = (results as any).rows || [];
     const roster = rows.map((r: any) => ({
       user_id: String(r.user_id),
       nickname: r.nickname || null,
@@ -256,8 +265,16 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
 analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
   const db = getDb(c);
   try {
-    const results: any = await (db as any).execute(sql`
-      SELECT 
+    const results = await db.run(sql<{
+      user_id: string;
+      first_name: string;
+      last_name: string | null;
+      nickname: string | null;
+      member_type: string;
+      avatar: string | null;
+      badge_count: number;
+    }>`
+      SELECT
         u.id as user_id,
         u.name as first_name,
         p.last_name,
@@ -274,7 +291,7 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
       LIMIT 50
     `);
 
-    const rows = results.results || results.rows || results;
+    const rows = (results as any).rows || [];
     const leaderboard = rows.map((r: any) => {
       const isMinor = r.member_type === "student";
       return {
@@ -336,15 +353,15 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
     if (!qClean) return c.json({ results: [] } as any, 200 as any);
     const ftsQ = `"${qClean}"*`;
 
-    const [postsReq, eventsReq, docsReq]: any[] = await Promise.all([
-      (db as any).execute(sql`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
-      (db as any).execute(sql`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
-      (db as any).execute(sql`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
+    const [postsReq, eventsReq, docsReq] = await Promise.all([
+      db.run(sql<{ id: string; title: string }>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
+      db.run(sql<{ id: string; title: string }>`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
+      db.run(sql<{ id: string; title: string }>`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
     ]);
 
-    const postsRows = postsReq.results || postsReq.rows || (Array.isArray(postsReq) ? postsReq : []);
-    const eventsRows = eventsReq.results || eventsReq.rows || (Array.isArray(eventsReq) ? eventsReq : []);
-    const docsRows = docsReq.results || docsReq.rows || (Array.isArray(docsReq) ? docsReq : []);
+    const postsRows = (postsReq as any).rows || [];
+    const eventsRows = (eventsReq as any).rows || [];
+    const docsRows = (docsReq as any).rows || [];
 
     const results = [
       ...(postsRows || []).map((r: any) => ({ type: "blog" as const, id: r.id, title: r.title })),

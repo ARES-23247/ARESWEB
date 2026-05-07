@@ -740,6 +740,22 @@ export const rateLimits = sqliteTable("rate_limits", {
 	expiresAt: integer("expires_at").notNull(),
 });
 
+export const usageMetrics = sqliteTable("usage_metrics", {
+	id: text().primaryKey(),
+	timestamp: text().default(sql`CURRENT_TIMESTAMP`),
+	endpoint: text().notNull(),
+	method: text().notNull(),
+	statusCode: integer("status_code").notNull(),
+	latencyMs: integer("latency_ms").notNull(),
+	userId: text("user_id"),
+	cfRay: text("cf_ray"),
+	cfIp: text("cf_ip"),
+},
+(table) => [
+	index("idx_usage_metrics_timestamp").on(table.timestamp),
+	index("idx_usage_metrics_endpoint").on(table.endpoint),
+]);
+
 export const socialQueue = sqliteTable("social_queue", {
 	id: text().primaryKey(),
 	content: text().notNull(),

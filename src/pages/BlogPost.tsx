@@ -10,7 +10,7 @@ import { ContributorStack } from "../components/ui/ContributorStack";
 
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import ZulipThread from "../components/ZulipThread";
-import { fetchJson } from "../api";
+import { useGetPost } from "../api/posts";
 import SEO from "../components/SEO";
 import { extractTextFromAst } from "../utils/content";
 import { validateUrlParam } from "../utils/security";
@@ -33,11 +33,8 @@ export default function BlogPost() {
   const validatedSlug = validateUrlParam(slug);
   const { data: session } = useSession();
 
-  const { data: postRes, isLoading, isError } = useQuery({
-    queryKey: ["post", validatedSlug],
-    queryFn: () => fetchJson<{ post: PostDetail }>(`/api/posts/${validatedSlug}`),
-    enabled: !!validatedSlug,
-    retry: false,
+  const { data: postRes, isLoading, isError } = useGetPost(validatedSlug || "", {
+    retry: false
   });
 
   const post = postRes?.post;

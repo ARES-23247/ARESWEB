@@ -1,23 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchJson } from "../api";
 import { useQuery } from "@tanstack/react-query";
 import { trackPageView } from "../utils/analytics";
-
-import { type DocRecord, type DocDetail } from "../api";
-
-export interface Contributor {
-  author_email: string;
-  nickname?: string;
-  avatar?: string;
-}
-
-export interface SearchResult {
-  slug: string;
-  title: string;
-  category: string;
-  snippet: string;
-}
+import { useGetAllDocs, useGetDocWithContributors, useSearchDocs, type DocRecord, type DocDetail, type Contributor } from "../api/docs";
 
 const ACADEMY_SIDEBAR_ORDER = [
   "AI 101",
@@ -29,38 +14,34 @@ const ACADEMY_SIDEBAR_ORDER = [
   "Mathematics"
 ];
 
+export interface SearchResult {
+  slug: string;
+  title: string;
+  category: string;
+  snippet: string;
+}
+
 export function useAcademy(slug: string | undefined) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [feedbackToken, setFeedbackToken] = useState("");
 
-  const { data: rawAllDocs } = useQuery({
-    queryKey: ["docs-list"],
-    queryFn: () => fetchJson<{ docs: DocRecord[] }>("/api/docs")
-  });
-  
+  const { data: rawAllDocs } = useGetAllDocs();
+
   const allDocs = useMemo(() => {
     if (!rawAllDocs?.docs) return [];
     return rawAllDocs.docs.filter((doc: DocRecord) => doc.display_in_math_corner === 1 || doc.display_in_science_corner === 1);
   }, [rawAllDocs]);
 
-  const ObjectQuery = useQuery({
-    queryKey: ["doc", slug],
-    queryFn: () => fetchJson<{ doc: DocDetail, contributors: Contributor[] }>(`/api/docs/${slug}`),
-    enabled: !!slug
-  });
+  const ObjectQuery = useGetDocWithContributors(slug || "");
 
   const currentDoc = ObjectQuery.data?.doc;
   const contributors = ObjectQuery.data?.contributors || [];
   const docLoading = ObjectQuery.isLoading;
 
-  const { data: rawSearch } = useQuery({
-    queryKey: ["docs-search", searchQuery],
-    queryFn: () => fetchJson<{ results: SearchResult[] }>(`/api/docs/search?q=${encodeURIComponent(searchQuery)}`),
-    enabled: searchQuery.length >= 2
-  });
-  const searchResults = rawSearch?.results || [];
+  const { data: searchResponse } = useSearchDocs(searchQuery);
+  const searchResults = searchResponse?.results || [];
 
   const groupedDocs = useMemo(() => {
     const groups: Record<string, DocRecord[]> = {};

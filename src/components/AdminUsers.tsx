@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap, Users, Mail } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
-import { fetchJson } from "../api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAwardPoints } from "../api";
+import { useAwardPoints } from "../api/points";
+import { useGetUsers, usePatchUser, useDeleteUser } from "../api/users";
+import { useAuditMissingUsers, useInviteUsers } from "../api/zulip";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
 import {
@@ -44,20 +45,15 @@ export default function AdminUsers() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
-  const { data: rawBody, isLoading, isError, isFetching } = useQuery({
-    queryKey: ["admin_users", cursor],
-    queryFn: () => {
-      const qs = new URLSearchParams({ limit: "100" });
-      if (cursor) qs.append("cursor", cursor);
-      return fetchJson<{ users: User[], nextCursor?: string | null }>(`/api/users/admin/list?${qs.toString()}`);
-    }
-  });
+  const { data: rawBody, isLoading, isError, isFetching } = useGetUsers(
+    { limit: 100, cursor: cursor || undefined }
+  );
 
   const nextCursor = rawBody?.nextCursor || null;
-  const rawUsers = rawBody?.users as User[] | undefined;
-  
+  const rawUsers = rawBody?.users;
+
   const users = useMemo(() => rawUsers || [], [rawUsers]);
-  
+
   useEffect(() => {
     if (users.length > 0) {
       if (cursor) {
@@ -72,17 +68,21 @@ export default function AdminUsers() {
     }
   }, [users, cursor]);
 
-  const patchMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string, body: Partial<User> }) => fetchJson<{ success?: boolean }>(`/api/users/admin/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body)
-    }),
+  const patchMutation = usePatchUser({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_users"] });
       toast.success("User updated");
     },
     onError: (err: Error) => {
       toast.error(err.message || "Update failed");
+    }
+  });
+
+  const deleteMutation = useDeleteUser({
+    onSuccess: () => {
+      toast.success("User removed successfully");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to remove user");
     }
   });
 
@@ -93,17 +93,6 @@ export default function AdminUsers() {
   const changeMemberType = useCallback((userId: string, newType: string) => {
     patchMutation.mutate({ id: userId, body: { member_type: newType } });
   }, [patchMutation]);
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/users/admin/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_users"] });
-      toast.success("User removed successfully");
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to remove user");
-    }
-  });
 
   const removeUser = (userId: string, name: string) => {
     if (!confirm(`Remove ${name}? This cannot be undone.`)) return;
@@ -119,25 +108,30 @@ export default function AdminUsers() {
     if (!pointsUserId || !pointsDelta || !pointsReason) return;
     const delta = parseInt(pointsDelta, 10);
     if (isNaN(delta)) return toast.error("Invalid points amount");
-    pointsMutation.mutate({ 
-      user_id: pointsUserId, 
-      points_delta: delta, 
-      reason: pointsReason 
+    pointsMutation.mutate({
+      user_id: pointsUserId,
+      points_delta: delta,
+      reason: pointsReason
     }, {
       onSuccess: () => {
         toast.success("Points awarded successfully");
         setPointsUserId(null);
         setPointsDelta("");
         setPointsReason("");
-        queryClient.invalidateQueries({ queryKey: ["admin_users"] });
+        queryClient.invalidateQueries({ queryKey: ["users"] });
       }
     });
   };
 
+  const { data: auditData, refetch: auditZulip } = useAuditMissingUsers({ enabled: false });
+
   const auditMutation = useMutation({
-    mutationFn: () => fetchJson<{ missingEmails: string[] }>("/api/zulip/audit", { method: "POST" }),
+    mutationFn: async () => {
+      const result = await auditZulip();
+      return result;
+    },
     onSuccess: (data) => {
-      setAuditResult(data.missingEmails);
+      setAuditResult(data?.missingEmails || []);
       setShowZulipAudit(true);
     },
     onError: (err: Error) => {
@@ -145,11 +139,7 @@ export default function AdminUsers() {
     }
   });
 
-  const inviteMutation = useMutation({
-    mutationFn: (emails: string[]) => fetchJson<{ invitedCount: number }>("/api/zulip/invite", {
-      method: "POST",
-      body: JSON.stringify({ emails })
-    }),
+  const inviteMutation = useInviteUsers({
     onSuccess: (data) => {
       toast.success(`Successfully invited ${data.invitedCount} users!`);
       setShowZulipAudit(false);

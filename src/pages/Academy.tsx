@@ -9,7 +9,7 @@ import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
 import DocsSidebar from "../components/docs/DocsSidebar";
 import DocsTableOfContents from "../components/docs/DocsTableOfContents";
 import AutonomousLogicDiagram from "../components/docs/AutonomousLogicDiagram";
-import { fetchJson } from "../api";
+import { useSubmitDocFeedback } from "../api/docs";
 import { useModal } from "../contexts/ModalContext";
 import ZulipThread from "../components/ZulipThread";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -25,6 +25,12 @@ export default function Academy() {
 
   const userRole = (session?.user as Record<string, unknown>)?.role || "user";
   const isEditor = userRole === "admin" || userRole === "author";
+
+  const feedbackMutation = useSubmitDocFeedback({
+    onSuccess: () => {
+      // Success toast shown inline
+    }
+  });
 
   const {
     allDocs,
@@ -146,9 +152,9 @@ export default function Academy() {
                   <ChevronRight size={12} />
                   <span className="text-white/60">{currentDoc.title}</span>
                 </div>
-                
+
                 {isEditor && (
-                <Link 
+                <Link
                   to={`/dashboard/docs/${currentDoc.slug}`}
                   className="flex items-center gap-2 text-xs font-bold text-ares-cyan/70 hover:text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1.5 ares-cut-sm transition-colors"
                 >
@@ -175,9 +181,9 @@ export default function Academy() {
                   } catch {
                     // Not JSON, fallback to Markdown
                   }
-                  
-                  return parsedAst 
-                    ? <TiptapRenderer node={parsedAst} /> 
+
+                  return parsedAst
+                    ? <TiptapRenderer node={parsedAst} />
                     : <DocsMarkdownRenderer content={content} />;
                 })()}
 
@@ -201,7 +207,7 @@ export default function Academy() {
                     const currentIndex = allDocs.findIndex((d: { slug: string }) => d.slug === (slug || (allDocs.length > 0 ? allDocs[0].slug : "")));
                     const prevDoc = currentIndex > 0 ? allDocs[currentIndex - 1] : null;
                     const nextDoc = currentIndex !== -1 && currentIndex < allDocs.length - 1 ? allDocs[currentIndex + 1] : null;
-                    
+
                     return (
                       <>
                         {prevDoc ? (
@@ -230,13 +236,13 @@ export default function Academy() {
                       {currentDoc.updated_at ? `Last updated: ${new Date(currentDoc.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : 'Not yet updated'}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 bg-obsidian/50 p-2 pr-4 rounded-full border border-white/5">
                     <div className="flex items-center">
                       <div className="relative z-10 w-8 h-8 rounded-full border-2 border-ares-gray-deep overflow-hidden bg-ares-gray-dark">
-                        <img 
+                        <img
                           src={currentDoc.original_author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentDoc.cf_email}`}
-                          alt={`${currentDoc.original_author_nickname || "Author"}'s avatar`} 
+                          alt={`${currentDoc.original_author_nickname || "Author"}'s avatar`}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -245,7 +251,7 @@ export default function Academy() {
                         <span className="text-white font-medium">{currentDoc.original_author_nickname || currentDoc.cf_email?.split('@')[0] || "Author"}</span>
                       </div>
                     </div>
-                    
+
                     <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
                     <div className="flex flex-col">
                       <span className="text-xs uppercase font-bold text-ares-cyan/80 tracking-wider mb-1">Contributors</span>
@@ -265,34 +271,37 @@ export default function Academy() {
                   <p className="text-white/50 text-sm mb-6 max-w-md">Your feedback helps our engineering team improve the documentation for the entire community.</p>
                   <Turnstile onVerify={setFeedbackToken} theme="dark" size="compact" className="mb-4" />
                   <div className="flex flex-wrap gap-4">
-                    <button 
-                      onClick={async () => {
-                        await fetchJson(`/api/docs/${slug}/feedback`, {
-                          method: "POST",
-                          body: JSON.stringify({ isHelpful: true, turnstileToken: feedbackToken })
+                    <button
+                      onClick={() => {
+                        if (!slug) return;
+                        feedbackMutation.mutate({
+                          slug,
+                          data: { isHelpful: true, turnstileToken: feedbackToken }
                         });
                         toast.success('Thanks for your feedback!');
                       }}
-                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all"
+                      disabled={feedbackMutation.isPending}
+                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all disabled:opacity-50"
                     >
                       <span className="text-lg">👍</span> Yes, it was
                     </button>
-                    <button 
+                    <button
                       onClick={async () => {
                         const comment = await modal.prompt({
                           title: "Feedback",
                           description: "How can we improve this page?",
                           submitText: "Submit",
                         });
-                        if (comment !== null) {
-                          await fetchJson(`/api/docs/${slug}/feedback`, {
-                            method: "POST",
-                            body: JSON.stringify({ isHelpful: false, turnstileToken: feedbackToken, comment: comment || "" })
+                        if (comment !== null && slug) {
+                          feedbackMutation.mutate({
+                            slug,
+                            data: { isHelpful: false, turnstileToken: feedbackToken, comment: comment || "" }
                           });
                           toast.success('Thank you! We will use your feedback to improve this page.');
                         }
                       }}
-                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all"
+                      disabled={feedbackMutation.isPending}
+                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all disabled:opacity-50"
                     >
                       <span className="text-lg">👎</span> No, it wasn&apos;t
                     </button>
@@ -305,7 +314,7 @@ export default function Academy() {
             </motion.article>
           )}
         </main>
-        
+
         {currentDoc && (
           <DocsTableOfContents content={currentDoc.content ?? undefined} />
         )}

@@ -139,15 +139,39 @@ CREATE INDEX IF NOT EXISTS idx_events_status ON events(status, is_deleted);
 
 ## 5. Schema Guard & Type Safety
 
-### Rule: Generate Types After Every Schema Change
-The ARES backend uses **Kysely** for type-safe database queries. Whenever you modify `schema.sql` or run a migration, you **MUST** run the type generator to synchronize the TypeScript interfaces.
+### Rule: Use Drizzle ORM for Type-Safe Queries
+The ARES backend uses **Drizzle ORM** for type-safe database queries. The schema is defined in `src/db/schema.ts` and synchronized with the database via migrations.
 
 ```bash
-npm run db:generate-types
+# Generate a migration after modifying schema.ts
+npx drizzle-kit generate
+
+# Apply migration to local D1
+npx wrangler d1 execute ares-db --file=drizzle/XXXX_migration.sql --local
+
+# Apply migration to production
+npx wrangler d1 execute ares-db --file=drizzle/XXXX_migration.sql --remote
 ```
 
 ### Rule: Preferred Query Builder
-Never use raw `c.env.DB.prepare` strings for complex logic. Always use the `db` instance from Kysely. If you find a route using raw SQL, refactor it to Kysely during your next edit to ensure long-term "Championship" stability.
+Never use raw `c.env.DB.prepare` strings for complex logic. Always use the `db` instance from Drizzle ORM. If you find a route using raw SQL, refactor it to Drizzle during your next edit to ensure long-term "Championship" stability.
+
+```typescript
+// ✅ Drizzle ORM Example
+await db.select().from(schema.posts).where(eq(schema.posts.slug, slug)).get();
+```
+
+**Raw SQL (for complex queries):** For complex aggregations, FTS search, or multi-table JOINs, use `db.run(sql...)`:
+
+```typescript
+// ✅ Correct (Raw SQL for FTS)
+await db.run(sql<{ slug: string; title: string }>`
+  SELECT f.slug, f.title FROM docs_fts f
+  JOIN docs d ON f.slug = d.slug
+  WHERE d.is_deleted = 0 AND f.docs_fts MATCH ${searchQuery}
+  LIMIT 20
+`);
+```
 
 ---
 
@@ -215,22 +239,19 @@ const SENSITIVE_KEYS = [
 ### Query Parameterization
 **Always use parameterized queries.** Never interpolate user input into SQL strings.
 
-**Kysely (PREFERRED):** Use **Kysely** for all complex queries and mutations. It provides full TypeScript autocomplete for the `schema.sql` structure and prevents SQL injection by design.
+**Drizzle ORM (PREFERRED):** Use **Drizzle ORM** for all standard queries and mutations. It provides full TypeScript autocomplete and prevents SQL injection by design.
 
 ```typescript
-// ✅ Kysely Example
-await db.selectFrom("posts")
-  .selectAll()
-  .where("slug", "=", slug)
-  .executeTakeFirst();
+// ✅ Drizzle ORM Example
+await db.select().from(schema.posts).where(eq(schema.posts.slug, slug)).get();
 ```
 
-**D1 Raw (Fallback):** Only use `c.env.DB.prepare()` for simple, low-logic queries or where Kysely overhead is not justified.
+**Raw SQL (for complex queries):** For complex aggregations, FTS search, or multi-table JOINs, use `db.run(sql...)` with proper parameterization:
 
 ```typescript
-// ✅ Correct (Raw Fallback)
-c.env.DB.prepare("SELECT * FROM posts WHERE slug = ?").bind(slug)
+// ✅ Correct (Raw SQL for FTS)
+await db.run(sql`SELECT * FROM posts_fts WHERE posts_fts MATCH ${searchQuery}`);
 
 // ❌ SQL Injection vulnerability
-c.env.DB.prepare(`SELECT * FROM posts WHERE slug = '${slug}'`)
+await db.run(sql`SELECT * FROM posts WHERE slug = '${slug}'` // NEVER DO THIS
 ```

@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchJson } from "../api";
+import { useGetSettings } from "../api/settings";
 
 export function useAdminSettings() {
   const [availableSocials, setAvailableSocials] = useState<string[]>([]);
   const [isPending, setIsPending] = useState(true);
 
-  const { data: rawData, isLoading } = useQuery({
-    queryKey: ["admin_settings_hook"],
-    queryFn: () => fetchJson<{ settings: Record<string, string | undefined> }>("/api/settings")
-  });
+  const { data: rawData, isLoading } = useGetSettings();
 
   useEffect(() => {
     if (rawData?.settings) {

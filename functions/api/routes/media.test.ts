@@ -337,7 +337,7 @@ describe("Hono Backend - /media Router", () => {
       parseBody: vi.fn().mockResolvedValue(formData),
     };
 
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: mockReq, executionCtx: mockExecutionContext };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDb), env, req: mockReq, executionCtx: mockExecutionContext };
 
     const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await uploadFn(mockC as any);
@@ -367,7 +367,7 @@ describe("Hono Backend - /media Router", () => {
       parseBody: vi.fn().mockResolvedValue(formData),
     };
 
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: mockReq, executionCtx: mockExecutionContext };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDb), env, req: mockReq, executionCtx: mockExecutionContext };
 
     const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await uploadFn(mockC as any);
@@ -387,7 +387,7 @@ describe("Hono Backend - /media Router", () => {
         return {};
       }),
     };
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
 
     const moveFn = mediaHandlers.move as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await moveFn(mockC as any);
@@ -406,7 +406,7 @@ describe("Hono Backend - /media Router", () => {
         return {};
       }),
     };
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
 
     const deleteFn = mediaHandlers.delete as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await deleteFn(mockC as any);
@@ -499,7 +499,7 @@ describe("Hono Backend - /media Router", () => {
         return undefined;
       }),
     };
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), env, req: mockReq };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDb), env, req: mockReq };
     const { mediaHandlers } = await import("./media/handlers");
     const getMediaFn = mediaHandlers.getMedia as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await getMediaFn(mockC as any);
@@ -508,7 +508,8 @@ describe("Hono Backend - /media Router", () => {
 
   it("GET /admin - database failure", async () => {
     const mockDbFail = { select: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
-    const mockC = { get: vi.fn().mockReturnValue(mockDbFail), env, req: { url: "http://localhost/api/media/admin", header: vi.fn().mockReturnValue("admin") } };
+    const mockReq = { url: "http://localhost/api/media/admin", header: vi.fn().mockReturnValue("admin") };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDbFail), env, req: mockReq };
     const { mediaHandlers } = await import("./media/handlers");
     const adminListFn = mediaHandlers.adminList as unknown as (_h: { params: any, query: any }, c: MockContext) => Promise<HandlerResponse>;
     const res = await adminListFn({ params: {}, query: {} }, mockC as any);
@@ -558,7 +559,7 @@ describe("Hono Backend - /media Router", () => {
       }),
     };
 
-    const res = await (mediaHandlers.getMedia as unknown as (c: any) => Promise<any>)({ get: vi.fn().mockReturnValue(localMockDb), env, req: mockReq } as any);
+    const res = await (mediaHandlers.getMedia as unknown as (c: any) => Promise<any>)({ json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(localMockDb), env, req: mockReq } as any);
     expect(res.body.media).toHaveLength(1);
   });
 
@@ -583,7 +584,7 @@ describe("Hono Backend - /media Router", () => {
         return undefined;
       }),
     };
-    const res = await (mediaHandlers.getMedia as unknown as (c: any) => Promise<any>)({ get: vi.fn().mockReturnValue(mockDbFail), env, req: mockReq } as any);
+    const res = await (mediaHandlers.getMedia as unknown as (c: any) => Promise<any>)({ json: vi.fn((body: any, status: number = 200) => ({ status, body })), get: vi.fn().mockReturnValue(mockDbFail), env, req: mockReq } as any);
     expect(res.status).toBe(500);
   });
 

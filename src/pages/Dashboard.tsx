@@ -5,22 +5,16 @@ import { useDashboardSession } from "../hooks/useDashboardSession";
 import { useDashboardNotifications } from "../hooks/useDashboardNotifications";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import DashboardRoutes from "../components/dashboard/DashboardRoutes";
-import { useQuery } from "@tanstack/react-query";
-import { fetchJson } from "../api";
+import { useGetStats } from "../api/analytics";
 import SEO from "../components/SEO";
 
 export default function Dashboard() {
   const { session, isPending, permissions } = useDashboardSession();
-  
+
   // Lift common dashboard queries to the top level to prevent waterfalls
   // We use parallel queries here so they all start at the same time
   const notifications = useDashboardNotifications(session, permissions);
-
-  const { data: statsRes } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: () => fetchJson<{ posts?: number; events?: number; docs?: number; securityBlocks?: number; integrations?: Record<string, boolean> }>("/api/analytics/admin/stats"),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const { data: statsRes } = useGetStats({ staleTime: 1000 * 60 * 5 }); // 5 minutes
 
   const stats = {
     posts: statsRes?.posts || 0,
