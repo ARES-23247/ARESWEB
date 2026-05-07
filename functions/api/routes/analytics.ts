@@ -141,7 +141,7 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       apiCount = await db.run(sql<{ total: number }>`SELECT COUNT(id) as total FROM usage_metrics`)
         .then((r: any) => (r as any).rows?.[0] || { total: 0 })
         .catch(() => ({ total: 0 }));
-      latencyData = await db.run(sql<{ date: string; avg_latency: number }>`
+      const res = await db.run(sql<{ date: string; avg_latency: number }>`
         SELECT
           date(timestamp, 'localtime') as date,
           AVG(latency_ms) as avg_latency
@@ -150,6 +150,7 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
       `);
+      latencyData = { rows: (res as any).rows || [] };
     } catch {
       // Table doesn't exist or other error - use defaults
       apiCount = { total: 0 };

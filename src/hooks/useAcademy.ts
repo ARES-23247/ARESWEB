@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { trackPageView } from "../utils/analytics";
-import { useGetAllDocs, useGetDocWithContributors, useSearchDocs, type DocRecord, type DocDetail, type Contributor } from "../api/docs";
+import { useGetAllDocs, useGetDocWithContributors, useSearchDocs, type DocRecord } from "../api/docs";
 
 const ACADEMY_SIDEBAR_ORDER = [
   "AI 101",

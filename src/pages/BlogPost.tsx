@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { trackPageView } from "../utils/analytics";
@@ -14,19 +13,6 @@ import { useGetPost } from "../api/posts";
 import SEO from "../components/SEO";
 import { extractTextFromAst } from "../utils/content";
 import { validateUrlParam } from "../utils/security";
-import { type PostDetail } from "../api";
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface PostRow {
-  slug: string;
-  title: string;
-  date: string;
-  ast: string;
-  thumbnail?: string;
-  author_nickname?: string;
-  author_avatar?: string;
-  cf_email?: string;
-}
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();

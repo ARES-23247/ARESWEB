@@ -50,7 +50,7 @@ describe("useMedia hook", () => {
 
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
-      json: async () => mockAssets,
+      json: async () => ({ media: mockAssets }),
     } as unknown as Response);
 
     const { result } = renderHook(() => useMedia(), { wrapper });
@@ -237,15 +237,16 @@ describe("useMedia hook", () => {
       { key: "img2.png", folder: "Library" }
     ];
 
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+    vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
-      json: async () => mockAssets,
+      json: async () => ({ media: mockAssets }),
     } as unknown as Response);
 
     const { result } = renderHook(() => useMedia(), { wrapper });
 
+    // Wait longer for the query to complete
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
     expect(result.current.filteredAssets).toHaveLength(2); // "All" is default

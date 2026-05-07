@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap, Users, Mail } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAwardPoints } from "../api/points";
 import { useGetUsers, usePatchUser, useDeleteUser } from "../api/users";
 import { useAuditMissingUsers, useInviteUsers } from "../api/zulip";
@@ -22,7 +22,7 @@ const MEMBER_TYPES = ["student", "alumni", "parent", "coach", "mentor", "sponsor
 
 type User = {
   id: string;
-  name: string;
+  name: string | null;
   image: string | null;
   role: string;
   createdAt: number;
@@ -87,11 +87,11 @@ export default function AdminUsers() {
   });
 
   const changeRole = useCallback((userId: string, newRole: string) => {
-    patchMutation.mutate({ id: userId, body: { role: newRole } });
+    patchMutation.mutate({ id: userId, role: newRole as any });
   }, [patchMutation]);
 
   const changeMemberType = useCallback((userId: string, newType: string) => {
-    patchMutation.mutate({ id: userId, body: { member_type: newType } });
+    patchMutation.mutate({ id: userId, member_type: newType as any });
   }, [patchMutation]);
 
   const removeUser = (userId: string, name: string) => {
@@ -123,7 +123,7 @@ export default function AdminUsers() {
     });
   };
 
-  const { data: auditData, refetch: auditZulip } = useAuditMissingUsers({ enabled: false });
+  const { data: _auditData, refetch: auditZulip } = useAuditMissingUsers({ enabled: false });
 
   const auditMutation = useMutation({
     mutationFn: async () => {
@@ -131,7 +131,7 @@ export default function AdminUsers() {
       return result;
     },
     onSuccess: (data) => {
-      setAuditResult(data?.missingEmails || []);
+      setAuditResult(data?.data?.missingEmails || []);
       setShowZulipAudit(true);
     },
     onError: (err: Error) => {
@@ -478,7 +478,7 @@ export default function AdminUsers() {
               
               {auditResult.length > 0 && (
                 <button
-                  onClick={() => inviteMutation.mutate(auditResult)}
+                  onClick={() => inviteMutation.mutate({ emails: auditResult })}
                   disabled={inviteMutation.isPending}
                   className="w-full flex items-center justify-center gap-2 py-3 font-bold bg-ares-cyan hover:bg-ares-cyan/80 text-obsidian ares-cut-sm transition-all disabled:opacity-50 mt-4"
                 >

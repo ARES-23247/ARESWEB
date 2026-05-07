@@ -12,7 +12,7 @@ import {
   Eye,
   Filter,
 } from "lucide-react";
-import { useGetSocialAnalytics, type SocialAnalyticsResponse } from "../../../api/socialQueue";
+import { useGetSocialAnalytics } from "../../api/socialQueue";
 
 interface SocialAnalyticsProps {
   dateRange?: { start: string; end: string };

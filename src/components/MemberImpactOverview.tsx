@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useQuery } from "@tanstack/react-query";
 import { Search, Clock, Users, Activity } from "lucide-react";
 import { useState } from "react";
 

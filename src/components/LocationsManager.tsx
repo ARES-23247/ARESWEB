@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation, XCircle } from "lucide-react";
+import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";

@@ -1,11 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
 import { useGetSeasons } from "../api/seasons";
-
-interface Season {
-  start_year: number;
-  end_year: number;
-  challenge_name: string;
-}
 
 interface SeasonPickerProps {
   value?: string | number;

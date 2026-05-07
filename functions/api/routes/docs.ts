@@ -15,12 +15,6 @@ import { siteConfig } from "../../utils/site.config";
 import type { HonoContext } from "@shared/types/api";
 import * as docsRoutes from "../../../shared/routes/docs";
 
-// Drizzle ORM type inference
-type DocRow = typeof schema.docs.$inferSelect;
-type UserRow = typeof schema.user.$inferSelect;
-
-
-
 export const docsRouter = new OpenAPIHono<AppEnv>();
 
 // Apply edge caching to public documentation routes (GET only, non-admin)
@@ -972,5 +966,97 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
     return c.json({ error: "Purge failed" } as any, 500 as any);
   }
 }));
+
+// Export all docs as JSON
+docsRouter.openapi(docsRoutes.exportAllDocsRoute, typedHandler<typeof docsRoutes.exportAllDocsRoute>(async (c) => {
+  try {
+    const db = getDb(c);
+    const docs = await db.select().from(schema.docs).orderBy(desc(schema.docs.updated_at)).all();
+    return c.json({ docs } as any, 200 as any);
+  } catch (_e) {
+    return c.json({ error: "Export failed" } as any, 500 as any);
+  }
+}));
+
+// Export single doc as Markdown
+docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRoutes.exportSingleDocRoute>(async (c) => {
+  try {
+    const { slug } = c.req.valid("param");
+    const db = getDb(c);
+    const doc = await db.select({
+      title: schema.docs.title,
+      content: schema.docs.content,
+      category: schema.docs.category,
+    }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
+
+    if (!doc) {
+      return c.json({ error: "Doc not found" } as any, 404 as any);
+    }
+
+    // Convert Tiptap JSON to Markdown if needed
+    let markdownContent = doc.content || "";
+    try {
+      const parsed = JSON.parse(doc.content);
+      if (parsed.type === "doc") {
+        // Simple Tiptap to Markdown conversion
+        markdownContent = tiptapToMarkdown(parsed);
+      }
+    } catch {
+      // Content is already plain text or Markdown
+    }
+
+    const markdown = `# ${doc.title || slug}\n\n**Category:** ${doc.category || "General"}\n\n${markdownContent}`;
+    return c.text(markdown, 200, { "Content-Type": "text/plain; charset=utf-8" });
+  } catch (_e) {
+    return c.json({ error: "Export failed" } as any, 500 as any);
+  }
+}));
+
+// Simple Tiptap JSON to Markdown converter
+function tiptapToMarkdown(node: any): string {
+  if (!node) return "";
+
+  if (node.type === "text") {
+    return node.text || "";
+  }
+
+  const content = node.content || [];
+  let result = "";
+
+  for (const child of content) {
+    const childText = tiptapToMarkdown(child);
+    switch (child.type) {
+      case "paragraph":
+        result += childText + "\n\n";
+        break;
+      case "heading":
+        const level = "#".repeat(child.attrs?.level || 1);
+        result += `${level} ${childText}\n\n`;
+        break;
+      case "bulletList":
+        result += childText.split("\n").map((line: string) => line ? `- ${line}` : "").join("\n") + "\n\n";
+        break;
+      case "orderedList":
+        result += childText.split("\n").map((line: string, i: number) => line ? `${i + 1}. ${line}` : "").join("\n") + "\n\n";
+        break;
+      case "listItem":
+        result += childText + "\n";
+        break;
+      case "bold":
+        result += `**${childText}**`;
+        break;
+      case "italic":
+        result += `*${childText}*`;
+        break;
+      case "codeBlock":
+        result += `\`\`\`\n${childText}\n\`\`\`\n\n`;
+        break;
+      default:
+        result += childText;
+    }
+  }
+
+  return result;
+}
 
 export default docsRouter;

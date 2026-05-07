@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Clock, Zap, Circle, UserMinus } from "lucide-react";
 import { useGetPresence } from "../api/zulip";
@@ -8,30 +8,29 @@ interface PresenceData {
   timestamp: number;
 }
 
-interface ZulipPresences {
-  [email: string]: {
-    website?: PresenceData;
-    ZulipMobile?: PresenceData;
-    ZulipDesktop?: PresenceData;
-    aggregated?: PresenceData;
-  };
-}
-
 export default function TeamAvailability() {
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [_isPending, startTransition] = useTransition();
 
-  const { data, isLoading, isError } = useGetPresence({
+  const { data, isLoading, isError, error: queryError } = useGetPresence({
     refetchInterval: 120000, // 2 minute polling
-    onError: (err) => setError(err.message)
   });
+
+  useEffect(() => {
+    startTransition(() => {
+      if (isError && queryError) setError(queryError.message);
+    });
+  }, [isError, queryError]);
 
   const presences = data?.presence || null;
 
   useEffect(() => {
-    if (data?.userNames) {
-      setUserNames(data.userNames);
-    }
+    startTransition(() => {
+      if (data?.userNames) {
+        setUserNames(data.userNames);
+      }
+    });
   }, [data]);
 
   // Compute highest priority status for a user across clients

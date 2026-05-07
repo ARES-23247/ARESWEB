@@ -12,7 +12,7 @@ import { profileMeSchema, rosterMemberSchema, badgeSchema, MemberTypeEnum } from
 // Infer TypeScript types from Zod schemas
 export type ProfileMe = z.infer<typeof profileMeSchema>;
 export type RosterMember = z.infer<typeof rosterMemberSchema>;
-export type Badge = z.infer<typeof badgeSchema>;
+export type ProfileBadge = z.infer<typeof badgeSchema>;
 export type ProfileMemberType = z.infer<typeof MemberTypeEnum>;
 
 export interface TeamRosterResponse {
@@ -21,7 +21,7 @@ export interface TeamRosterResponse {
 
 export interface PublicProfileResponse {
   profile: Record<string, unknown>;
-  badges: Badge[];
+  badges: ProfileBadge[];
 }
 
 

@@ -418,3 +418,40 @@ export const purgeDocRoute = createRoute({
     },
   },
 });
+
+export const exportAllDocsRoute = createRoute({
+  method: "get",
+  path: "/admin/export",
+  responses: {
+    ...openApiErrorResponses,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({ docs: z.array(DocDetailResponseSchema) }),
+        },
+      },
+      description: "Export all docs as JSON",
+    },
+  },
+});
+
+export const exportSingleDocRoute = createRoute({
+  method: "get",
+  path: "/admin/{slug}/export",
+  request: {
+    params: z.object({
+      slug: z.string(),
+    }),
+  },
+  responses: {
+    ...openApiErrorResponses,
+    200: {
+      content: {
+        "text/plain": {
+          schema: z.string(),
+        },
+      },
+      description: "Export single doc as Markdown",
+    },
+  },
+});

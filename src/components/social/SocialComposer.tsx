@@ -13,7 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { format, addHours } from "date-fns";
-import { useCreateSocialPost, type CreateSocialPostRequest } from "../../../api/socialQueue";
+import { useCreateSocialPost, type CreateSocialPostRequest } from "../../api/socialQueue";
 import { toast } from "sonner";
 
 // Social platform config with colors and icons

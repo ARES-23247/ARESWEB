@@ -3,7 +3,6 @@ import { siteConfig } from "../../site.config";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { useGetPublicSettings } from "../../api/settings";
 
 import { type DocRecord } from "../../hooks/useDocs";

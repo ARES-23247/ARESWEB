@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import { ClipboardList, Plus, Save, RefreshCw, Trash2, CheckCircle2, Circle, AlertCircle, Users } from "lucide-react";
 import { useGetEventSignups, useSubmitEventSignup, useDeleteMyEventSignup, useUpdateMyEventAttendance, useUpdateUserEventAttendance, type EventSignup } from "../api/events";
 
@@ -11,6 +11,7 @@ interface EventSignupsProps {
 
 export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventSignupsProps) {
   const [mySignup, setMySignup] = useState<{ bringing: string; notes: string; prep_hours?: number } | null>(null);
+  const [_isPending, startTransition] = useTransition();
 
   const { data: signupsData, isLoading } = useGetEventSignups(eventId);
   const submitSignup = useSubmitEventSignup();
@@ -18,7 +19,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   const updateMyAttendance = useUpdateMyEventAttendance();
   const updateUserAttendance = useUpdateUserEventAttendance();
 
-  const signups = signupsData?.signups || [];
+  const signups = useMemo(() => signupsData?.signups || [], [signupsData?.signups]);
   const isAuthenticated = signupsData?.authenticated || false;
   const userRole = signupsData?.role || "unverified";
   const canManage = signupsData?.can_manage || false;
@@ -26,14 +27,16 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   const teamDietarySummary = signupsData?.team_dietary_summary || null;
 
   useEffect(() => {
-    const own = signups.find((s: SignupEntry) => s.is_own);
-    if (own) {
-      setMySignup({
-        bringing: own.bringing,
-        notes: own.notes,
-        prep_hours: own.prep_hours || 0,
-      });
-    }
+    startTransition(() => {
+      const own = signups.find((s: EventSignup) => s.is_own);
+      if (own) {
+        setMySignup({
+          bringing: own.bringing || "",
+          notes: own.notes || "",
+          prep_hours: own.prep_hours || 0,
+        });
+      }
+    });
   }, [signups]);
 
   const handleSignUp = async () => {
@@ -52,7 +55,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
     setMySignup(null);
   };
 
-  const toggleAttendance = async (userId: string, currentStatus: boolean) => {
+  const toggleAttendance = async (userId: string, currentStatus: number | undefined) => {
     await updateUserAttendance.mutateAsync({
       eventId,
       userId,
@@ -62,7 +65,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 
   const selfCheckIn = async () => {
     const myEntry = signups.find(s => s.is_own);
-    const isCurrentlyAttended = myEntry?.attended || false;
+    const isCurrentlyAttended = !!myEntry?.attended;
     await updateMyAttendance.mutateAsync({
       eventId,
       attended: !isCurrentlyAttended
@@ -72,7 +75,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   if (isLoading) return null;
 
   const myEntry = signups.find(s => s.is_own);
-  const totalAttending = signups.filter(s => s.attended).length;
+  const totalAttending = signups.filter(s => !!s.attended).length;
   const totalPrep = signups.reduce((sum, s) => sum + (s.prep_hours || 0), 0);
 
   return (
@@ -170,7 +173,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                 </thead>
                 <tbody>
                   {signups.map(entry => (
-                    <tr key={entry.id} className={`border-b border-white/10 transition-colors ${entry.attended ? "bg-ares-gold/5" : ""}`}>
+                    <tr key={entry.user_id} className={`border-b border-white/10 transition-colors ${entry.attended ? "bg-ares-gold/5" : ""}`}>
                       <td className="py-3 px-4">
                         {canManage ? (
                           <button 
@@ -187,7 +190,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <img src={entry.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${entry.user_id}`}
+                          <img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${entry.user_id}`}
                             alt={`${entry.nickname || "ARES Member"}'s avatar`} className="w-6 h-6 ares-cut-sm bg-white/10" />
                           <span className={`text-sm font-bold ${entry.attended ? "text-white" : "text-marble/60"}`}>{entry.nickname || "ARES Member"}</span>
                         </div>

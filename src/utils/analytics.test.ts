@@ -8,7 +8,7 @@ describe('analytics utility', () => {
   beforeEach(() => {
     // Mock fetch
     globalThis.fetch = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response));
-    
+
     // Mock window.location generically (jsdom allows some edits, but we overwrite properties)
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -42,22 +42,24 @@ describe('analytics utility', () => {
     await trackPageView('/events', 'event');
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/analytics/track', expect.objectContaining({
+    const callArgs = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(callArgs[0]).toBe('/api/analytics/track');
+    expect(callArgs[1]).toMatchObject({
       method: 'POST',
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path: '/events', category: 'event', referrer: '' }),
-    }));
+    });
+    // Headers is a Headers object - just check it has the right content type
+    expect(callArgs[1]?.headers).toBeInstanceOf(Headers);
+    expect((callArgs[1]?.headers as Headers).get('content-type')).toBe('application/json');
+    expect(callArgs[1]?.body).toBe(JSON.stringify({ path: '/events', category: 'event', referrer: '' }));
   });
 
   it('fails silently without crashing if the fetch terminates', async () => {
     window.location.hostname = 'ares23247.com';
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    
+
     globalThis.fetch = vi.fn(() => Promise.reject(new Error('Network error')));
-    
+
     // Should not throw
     await expect(trackPageView('/crash', 'system')).resolves.not.toThrow();
     expect(consoleSpy).toHaveBeenCalledWith('[Analytics] Failed to log interaction:', expect.any(Error));

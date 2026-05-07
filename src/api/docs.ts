@@ -393,22 +393,23 @@ export function usePurgeDoc(
 }
 
 // ============================================
-// Export Docs (Legacy - using fetchJson until backend routes are added)
+// Export Docs
 // ============================================
+
+export interface ExportAllDocsResponse {
+  docs: DocDetail[];
+}
 
 /**
  * GET /api/docs/admin/export - Export all docs as JSON
- * @deprecated Using legacy fetch until export route is added to OpenAPI spec
  */
 export function useExportAllDocs(
-  options?: Omit<UseMutationOptions<unknown, Error, void>, "mutationFn">
+  options?: Omit<UseMutationOptions<ExportAllDocsResponse, Error, void>, "mutationFn">
 ) {
-  return useMutation<unknown, Error, void>({
+  return useMutation<ExportAllDocsResponse, Error, void>({
     mutationFn: async () => {
-      // Temporary fallback using fetch until backend route is migrated
-      const res = await fetch("/api/docs/admin/export");
-      if (!res.ok) throw new Error("Failed to export docs");
-      return res.json();
+      const response = await client.docs.admin.export.$get();
+      return unwrapResponse<ExportAllDocsResponse>(response);
     },
     ...options,
   });
@@ -416,17 +417,17 @@ export function useExportAllDocs(
 
 /**
  * GET /api/docs/admin/:slug/export - Export single doc as Markdown
- * @deprecated Using legacy fetch until export route is added to OpenAPI spec
  */
 export function useExportSingleDoc(
   options?: Omit<UseMutationOptions<string, Error, string>, "mutationFn">
 ) {
   return useMutation<string, Error, string>({
     mutationFn: async (slug) => {
-      // Temporary fallback using fetch until backend route is migrated
-      const res = await fetch(`/api/docs/admin/${slug}/export`);
-      if (!res.ok) throw new Error("Failed to export doc");
-      return res.text();
+      const response = await client.docs.admin[":slug"].export.$get({ param: { slug } });
+      if (!response.ok) {
+        throw new Error(`Failed to export doc: ${response.status}`);
+      }
+      return await response.text();
     },
     ...options,
   });

@@ -1,10 +1,10 @@
 
 import { useState, useMemo } from "react";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { getLucideIcon } from "../types/components";
-import { useGetBadges, useCreateBadge, useDeleteBadge, useGrantBadge, useRevokeBadge, useGetUsersForBadges } from "../api/badges";
+import { useGetBadges, useCreateBadge, useDeleteBadge, useGrantBadge, useGetUsersForBadges } from "../api/badges";
 import { ClickToDeleteButton } from "./ContentManager/shared";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
@@ -13,7 +13,7 @@ interface BadgeRecord { id: string; name: string; description?: string | null; i
 interface UserRecord { id: string; name?: string | null; nickname?: string | null; email: string; }
 
 export default function BadgeManager() {
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newBadgeId, setNewBadgeId] = useState("");
   const [newBadgeName, setNewBadgeName] = useState("");
@@ -58,16 +58,6 @@ export default function BadgeManager() {
     },
     onError: (err: Error) => {
       toast.error(`Error deleting badge: ${err.message}`);
-    }
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const revokeBadgeMutation = useRevokeBadge({
-    onSuccess: () => {
-      toast.success("Badge revoked successfully.");
-    },
-    onError: (err: Error) => {
-      toast.error(`Error revoking badge: ${err.message}`);
     }
   });
 

@@ -73,6 +73,15 @@ export * from "./locations";
 // Badges
 export * from "./badges";
 
+// TBA
+export * from "./tba";
+
+// GitHub
+export * from "./github";
+
+// Communications
+export * from "./communications";
+
 // Re-export utilities and legacy client for backward compatibility
 export { uploadFile, fetchBlob, fetchJson } from "../utils/apiClient";
 

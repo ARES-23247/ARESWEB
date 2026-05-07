@@ -26,7 +26,7 @@ export interface BadgeLeaderboardResponse {
   }>;
 }
 
-export interface UsersListResponse {
+export interface BadgeUsersListResponse {
   users: Array<{
     id: string;
     name: string | null;
@@ -160,13 +160,13 @@ export function useDeleteBadge(
  * GET /api/users - Get users list for badge assignment
  */
 export function useGetUsersForBadges(
-  options?: Omit<UseQueryOptions<UsersListResponse>, "queryKey" | "queryFn">
+  options?: Omit<UseQueryOptions<BadgeUsersListResponse>, "queryKey" | "queryFn">
 ) {
-  return useQuery<UsersListResponse>({
+  return useQuery<BadgeUsersListResponse>({
     queryKey: ["users", "list"],
     queryFn: async () => {
       const response = await client.users.$get();
-      return unwrapResponse<UsersListResponse>(response);
+      return unwrapResponse<BadgeUsersListResponse>(response);
     },
     ...options,
   });

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { compressImage } from "../utils/imageProcessor";
-import { useGetAdminMedia, useUploadMedia, useDeleteMedia, useMoveMedia, type Asset, type MediaResponse } from "../api/media";
+import { useGetAdminMedia, useUploadMedia, useMoveMedia, type Asset, type MediaResponse } from "../api/media";
 
 export { type Asset, type MediaResponse };
 

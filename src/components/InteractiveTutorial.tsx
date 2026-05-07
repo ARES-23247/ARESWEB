@@ -73,7 +73,9 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
         trackCheckpoint.mutate({
           path: `/tutorial/${title}/checkpoint/${currentStepData.id}`,
           category: 'tutorial-checkpoint'
-        }).catch((e: unknown) => console.error("Failed to sync progress to cloud", e));
+        }, {
+          onError: (e: unknown) => console.error("Failed to sync progress to cloud", e)
+        });
       }
     }
   };

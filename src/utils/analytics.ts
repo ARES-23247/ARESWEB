@@ -5,18 +5,17 @@
 
 export type AnalyticsCategory = 'blog' | 'doc' | 'event' | 'system';
 
-import { fetchJson } from '../api';
+import { client } from '../api/honoClient';
 
 export async function trackPageView(path: string, category: AnalyticsCategory) {
   try {
     // Analytics are now tracked in all environments (including local) to allow testing.
-    await fetchJson("/api/analytics/track", {
-      method: "POST",
-      body: JSON.stringify({
+    await client.analytics.track.$post({
+      json: {
         path,
         category,
         referrer: document.referrer,
-      })
+      }
     });
   } catch (err) {
     // Silent fail to avoid disrupting user experience

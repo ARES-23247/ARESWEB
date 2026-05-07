@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Combobox, ComboboxInput, ComboboxButton, ComboboxOptions, ComboboxOption } from '@headlessui/react';
 import { MapPin, Search } from 'lucide-react';
-import { LocationRow } from './EventEditor';
+import { type Location } from '../api/locations';
 
 interface LocationComboboxProps {
-  locations: LocationRow[];
+  locations: Location[];
   value: string;
   onChange: (value: string) => void;
   onCustomClick: () => void;

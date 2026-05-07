@@ -3,15 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
 import { useGetLocations } from "../../api/locations";
 import { useSaveEvent } from "../../api/events";
-
-interface LocationRow {
-  id: string;
-  name: string;
-  address: string;
-}
 
 interface QuickAddEventModalProps {
   isOpen: boolean;
@@ -126,6 +119,9 @@ export function QuickAddEventModal({
         category: formData.category,
         description: "",
         isDraft: false,
+        isPotluck: false,
+        isVolunteer: false,
+        meetingNotes: undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create event");

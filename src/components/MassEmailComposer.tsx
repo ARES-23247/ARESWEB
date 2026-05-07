@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Mail, Users, Send, AlertTriangle } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { fetchJson } from "../api";
+import { useGetMassEmailStats, useSendMassEmail } from "../api";
 import { toast } from "sonner";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -9,22 +8,14 @@ import { CopilotMenu } from "./editor/CopilotMenu";
 
 export default function MassEmailComposer() {
   const [subject, setSubject] = useState("");
-  
-  const editor = useRichEditor({ 
+
+  const editor = useRichEditor({
     placeholder: "<p>Start drafting your mass email here...</p>"
   });
 
-  const { isLoading: isStatsLoading, data: statsRes } = useQuery({
-    queryKey: ["mass_email_stats"],
-    queryFn: () => fetchJson<{ activeUsers: number }>("/api/communications/admin/stats")
-  });
+  const { isLoading: isStatsLoading, data: statsRes } = useGetMassEmailStats();
 
-  const sendMutation = useMutation({
-    mutationFn: (body: { subject: string, htmlContent: string }) => 
-      fetchJson<{ success?: boolean; recipientCount?: number; error?: string; message?: string }>("/api/communications/admin/send-mass-email", {
-        method: "POST",
-        body: JSON.stringify(body)
-      }),
+  const sendMutation = useSendMassEmail({
     onSuccess: (data) => {
       if (data.success) {
         toast.success(`Mass email dispatched successfully to ${data.recipientCount} recipients.`);

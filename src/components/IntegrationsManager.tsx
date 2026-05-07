@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Settings, Save } from "lucide-react";
 import { ZulipCard } from "./integrations/ZulipCard";
 import { GithubCard } from "./integrations/GithubCard";
@@ -8,6 +6,7 @@ import { SocialCard } from "./integrations/SocialCard";
 import { DataBackupCard } from "./integrations/DataBackupCard";
 import { ResendCard } from "./integrations/ResendCard";
 import { useGetSettings, useUpdateSettings } from "../api/settings";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 
 type SettingsData = Record<string, string>;

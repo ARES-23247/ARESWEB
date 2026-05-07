@@ -25,17 +25,6 @@ export interface RichEditorToolbarProps {
   documentTitle?: string;
 }
 
-/* ---------- Helper: file upload ---------- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const internalUpload = async (file: File): Promise<{url: string, altText?: string}> => {
-  const { blob: compressedBlob, ext } = await compressImage(file);
-  const formData = new FormData();
-  formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, ext));
-  const data = await uploadFile<{ url?: string, error?: string, altText?: string }>("/api/admin/upload", formData);
-  if (!data.url) throw new Error(data.error || "Upload failed");
-  return { url: data.url, altText: data.altText };
-};
-
 /* ---------- Helper: export HTML document ---------- */
 function exportAsHtml(editor: Editor, title: string) {
   const html = editor.getHTML();

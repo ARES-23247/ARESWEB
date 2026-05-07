@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { siteConfig } from "../site.config";
-import { fetchJson } from "../api";
+import { useGetGitHubActivity, type GithubHeatmapDay } from "../api";
 
 interface DayCell {
   date: string;
@@ -20,32 +20,14 @@ const LEVEL_COLORS = [
 ];
 
 export default function GitHubHeatmap() {
-  const [grid, setGrid] = useState<DayCell[][]>([]);
-  const [totalCommits, setTotalCommits] = useState(0);
-  const [repoCount, setRepoCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [hoveredCell, setHoveredCell] = useState<DayCell | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetchJson<{ grid?: DayCell[][]; totalCommits?: number; repoCount?: number }>("/api/github/activity");
+  const { data, isLoading, error } = useGetGitHubActivity();
 
-        const rawGridBody = res?.grid;
-
-        setGrid((Array.isArray(rawGridBody) ? rawGridBody : []) as DayCell[][]);
-        setTotalCommits(res?.totalCommits || 0);
-        setRepoCount(res?.repoCount || 0);
-        setLoading(false);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load activity");
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
+  const grid = (Array.isArray(data?.grid) ? data.grid : []) as DayCell[][];
+  const totalCommits = data?.totalCommits || 0;
+  const repoCount = data?.repoCount || 0;
+  const loading = isLoading;
 
   // Determine which month labels to show
   const monthLabels: { label: string; col: number }[] = [];
@@ -61,6 +43,8 @@ export default function GitHubHeatmap() {
     });
   }
 
+  const hasError = !!error;
+
   if (loading) {
     return (
       <div className="bg-white/5 border border-white/10 hero-card p-8 animate-pulse">
@@ -70,7 +54,7 @@ export default function GitHubHeatmap() {
     );
   }
 
-  if (error) {
+  if (hasError) {
     return (
       <div className="bg-white/5 border border-white/10 hero-card p-8">
         <p className="text-marble/50 text-sm">Unable to load GitHub activity.</p>

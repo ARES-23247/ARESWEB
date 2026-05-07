@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { useGetOrders, useUpdateOrderStatus } from "../../api/store";
 import { Package, Truck, CheckCircle2, Loader2, Search } from "lucide-react";
 import { format } from "date-fns";

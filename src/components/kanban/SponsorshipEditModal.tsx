@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Building, DollarSign, Type, AlignLeft, User, CheckCircle2, Plus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { useGetUsers } from "../../api/users";
 import ZulipThread from "../ZulipThread";
 import type { PipelineItem } from "../../types/finance";

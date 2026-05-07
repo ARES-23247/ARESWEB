@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, Trash2, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGetSocialCalendar, useDeleteSocialPost, type SocialQueuePost } from "../../../api/socialQueue";
+import { useGetSocialCalendar, useDeleteSocialPost, type SocialQueuePost } from "../../api/socialQueue";
 
 interface SocialCalendarProps {
   onEditPost?: (post: SocialQueuePost) => void;
