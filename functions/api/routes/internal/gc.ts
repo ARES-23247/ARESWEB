@@ -1,6 +1,8 @@
 import { typedHandler } from "../../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
+import { eq, and, lt } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import { AppEnv } from "../../middleware";
 import { gcRoute } from "../../../../shared/routes/internal";
 
@@ -26,15 +28,15 @@ gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
     const dateStr = thirtyDaysAgo.toISOString();
 
     const results = await Promise.all([
-      db.deleteFrom("docs").where("is_deleted", "=", 1).where("updated_at", "<", dateStr).execute(),
-      db.deleteFrom("comments").where("is_deleted", "=", 1).where("updated_at", "<", dateStr).execute(),
-      db.deleteFrom("seasons").where("is_deleted", "=", 1).where("updated_at", "<", dateStr).execute()
+      db.delete(schema.docs).where(and(eq(schema.docs.isDeleted, 1), lt(schema.docs.updatedAt, dateStr))).run(),
+      db.delete(schema.comments).where(and(eq(schema.comments.isDeleted, 1), lt(schema.comments.updatedAt, dateStr))).run(),
+      db.delete(schema.seasons).where(and(eq(schema.seasons.isDeleted, 1), lt(schema.seasons.updatedAt, dateStr))).run()
     ]);
 
     const deletedCounts = {
-      docs: Number(results[0][0]?.numDeletedRows ?? 0),
-      comments: Number(results[1][0]?.numDeletedRows ?? 0),
-      seasons: Number(results[2][0]?.numDeletedRows ?? 0)
+      docs: Number((results[0] as any).meta?.changes ?? 0),
+      comments: Number((results[1] as any).meta?.changes ?? 0),
+      seasons: Number((results[2] as any).meta?.changes ?? 0)
     };
 
     return c.json({ success: true, deleted: deletedCounts }, 200);
