@@ -48,7 +48,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
     }
 
     const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     let condition = undefined;
     const conditions = [];
@@ -100,7 +100,7 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendar
     }
 
     const { start, end } = c.req.valid("query");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const conditions = [
       gte(schema.socialQueue.scheduledFor, start),
@@ -136,7 +136,7 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
     }
 
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const id = nanoid();
     const createdAt = new Date().toISOString();
 
@@ -186,7 +186,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
 
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const existing = await db
       .select()
@@ -239,7 +239,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
     }
 
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const existing = await db
       .select()
@@ -272,7 +272,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
     }
 
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const record = await db
       .select()
@@ -314,7 +314,7 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
     }
 
     const { start, end } = c.req.valid("query");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const conditions = [];
     if (start) conditions.push(gte(schema.socialQueue.scheduledFor, start));
@@ -328,9 +328,9 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
     }
 
     const total_posts = results.length;
-    const total_sent = results.filter((r: any) => r.status === "sent").length;
-    const total_pending = results.filter((r: any) => r.status === "pending").length;
-    const total_failed = results.filter((r: any) => r.status === "failed").length;
+    const total_sent = results.filter((r) => r.status === "sent").length;
+    const total_pending = results.filter((r) => r.status === "pending").length;
+    const total_failed = results.filter((r) => r.status === "failed").length;
 
     const by_platform = {
       twitter: 0,
@@ -346,7 +346,7 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
       band: 0,
     };
 
-    results.forEach((r: any) => {
+    results.forEach((r) => {
       const platforms = JSON.parse(String(r.platforms));
       Object.entries(platforms).forEach(([key, value]) => {
         if (value && key in by_platform) {
