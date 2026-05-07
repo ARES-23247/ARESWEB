@@ -21,7 +21,7 @@ vi.mock("./indexer", () => ({
 }));
 
 // Import after mocks
-import aiRouter from "./index";
+import { aiRouter } from "./index";
 
 
 
