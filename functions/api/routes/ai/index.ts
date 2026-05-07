@@ -4,17 +4,15 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, persistentRateLimitMiddleware, verifyTurnstile } from "../../middleware";
 import { streamSSE } from "hono/streaming";
-import { Kysely } from "kysely";
-import { DB } from "../../../../shared/schemas/database";
 import { MessageContent, ZaiChatResponse, ChatMessage, isTextContentPart } from "./types";
-import { 
+import {
 
-  aiStatusRoute, 
-  liveblocksCopilotRoute, 
-  simPlaygroundRoute, 
-  editorChatRoute, 
-  aiSuggestRoute, 
-  ragChatbotRoute 
+  aiStatusRoute,
+  liveblocksCopilotRoute,
+  simPlaygroundRoute,
+  editorChatRoute,
+  aiSuggestRoute,
+  ragChatbotRoute
 } from "../../../../shared/routes/ai";
 
 
