@@ -2,11 +2,54 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 // import type { Context } from "hono";
-import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
+import { mockExecutionContext, flushWaitUntil, createDrizzleProxy } from "../../../src/test/utils";
 import { TestEnv, DrizzleMock } from "../../../src/test/types";
 import postsRouter from "./posts";
 
+// Mock utilities used by posts router
+vi.mock("../../utils/postHistory", () => ({
+  getPostHistory: vi.fn().mockResolvedValue([]),
+  approvePost: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../../utils/socialSync", () => ({
+  dispatchSocials: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../../utils/zulipSync", () => ({
+  sendZulipMessage: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../../utils/notifications", () => ({
+  notifyByRole: vi.fn().mockResolvedValue(undefined),
+  emitNotification: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../middleware", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware")>();
+  return {
+    ...actual,
+    ensureAuth: async (_c: unknown, next: () => Promise<void>) => next(),
+    ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
+    getSessionUser: vi.fn().mockResolvedValue({ id: "1", email: "admin@test.com", name: null, role: "admin", member_type: "student" }),
+    getDb: vi.fn(),
+  };
+});
 
+function createMockPost(overrides: Record<string, unknown> = {}) {
+  return {
+    slug: "test-post-" + Math.random().toString(36).substring(7),
+    title: "Test Post",
+    author: "admin@test.com",
+    thumbnail: null,
+    snippet: "Test snippet",
+    ast: '{"type":"doc","content":[]}',
+    status: "published",
+    publishedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isDeleted: 0,
+    season_id: null,
+    cf_email: "admin@test.com",
+    ...overrides,
+  };
+}
 describe("Hono Backend - /posts Router", () => {
 
   let mockDb: DrizzleMock;
@@ -27,7 +70,6 @@ describe("Hono Backend - /posts Router", () => {
     vi.clearAllMocks();
 
     mockDb = {
-      select: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockImplementation((arg1: any) => {
         if (typeof arg1 === "function") {
@@ -176,7 +218,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("GET /admin/:slug/history - get post history", async () => {
-    const { getPostHistory } = await import("../../../functions/utils/postHistory");
+    const { getPostHistory } = await import("../../utils/postHistory");
     vi.mocked(getPostHistory).mockResolvedValueOnce([{
       id: 1,
       slug: "old-post",
@@ -250,7 +292,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("POST /admin/:slug/approve - handles internal error", async () => {
-    const { approvePost } = await import("../../../functions/utils/postHistory");
+    const { approvePost } = await import("../../utils/postHistory");
     vi.mocked(approvePost).mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/admin/test/approve", { 
       method: "POST",
@@ -293,7 +335,7 @@ describe("Hono Backend - /posts Router", () => {
 
   it("POST /admin/:slug/repush - repush socials error", async () => {
     mockDb.executeTakeFirst.mockResolvedValueOnce({ title: "Test" });
-    const { dispatchSocials } = await import("../../../functions/utils/socialSync");
+    const { dispatchSocials } = await import("../../utils/socialSync");
     vi.mocked(dispatchSocials).mockRejectedValueOnce(new Error("Social failed"));
     
     const res = await testApp.request("/admin/test-post/repush", {
@@ -367,7 +409,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("POST /admin/save - handles social dispatch failure gracefully", async () => {
-    const { dispatchSocials } = await import("../../../functions/utils/socialSync");
+    const { dispatchSocials } = await import("../../utils/socialSync");
     vi.mocked(dispatchSocials).mockRejectedValueOnce(new Error("Fail"));
     
     const postData = {
@@ -420,7 +462,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("GET /admin/:slug/history - handles error", async () => {
-    const { getPostHistory } = await import("../../../functions/utils/postHistory");
+    const { getPostHistory } = await import("../../utils/postHistory");
     vi.mocked(getPostHistory).mockRejectedValueOnce(new Error("History fail"));
     
     const res = await testApp.request("/admin/test/history", {}, env, mockExecutionContext);
@@ -464,7 +506,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("POST /admin/save - handles notifyByRole failure gracefully", async () => {
-    const { notifyByRole } = await import("../../../functions/utils/notifications");
+    const { notifyByRole } = await import("../../utils/notifications");
     vi.mocked(notifyByRole).mockRejectedValueOnce(new Error("Notify fail"));
     
     const postData = {
@@ -487,7 +529,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("POST /admin/save - handles synchronous error in Zulip prepare", async () => {
-    const { sendZulipMessage } = await import("../../../functions/utils/zulipSync");
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
     vi.mocked(sendZulipMessage).mockImplementationOnce(() => { throw new Error("Sync Fail"); });
     
     const postData = {
@@ -505,7 +547,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("POST /admin/save - handles async error in Zulip prepare", async () => {
-    const { sendZulipMessage } = await import("../../../functions/utils/zulipSync");
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
     vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Async Fail"));
     
     const postData = {
