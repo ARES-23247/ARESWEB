@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import { AppEnv } from "../api/middleware/utils";
+import { AppEnv, getDb } from "../api/middleware/utils";
 import { sendZulipAlert } from "./zulipSync";
 import { eq, and, or, exists, inArray } from "drizzle-orm";
 import * as schema from "../../src/db/schema";
@@ -26,7 +26,7 @@ export async function emitNotification(
     priority?: "low" | "medium" | "high";
   }
 ) {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     // 1. Database Persistence
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Date.now()}`;
@@ -46,7 +46,7 @@ export async function emitNotification(
     if (external) {
       c.executionCtx.waitUntil(
         sendZulipAlert(c.env, "System", title, `${message}\n\n[View Details](${link || "#"})`)
-          .catch((e: any) => console.error("[Notification] External broadcast failed:", e))
+          .catch((e: unknown) => console.error("[Notification] External broadcast failed:", e))
       );
     }
   } catch (err) {
@@ -73,11 +73,11 @@ export async function notifyByRole(
 ) {
   if (audiences.length === 0) return;
 
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   try {
     const includeAdmin = audiences.includes("admin");
-    const profileTypes = audiences.filter((a: any) => a !== "admin");
+    const profileTypes = audiences.filter((a) => a !== "admin");
 
     let query = db.select({
       id: schema.user.id
@@ -116,8 +116,8 @@ export async function notifyByRole(
       const chunk = results.slice(i, i + MAX_BATCH_SIZE);
       
       const values = chunk
-        .filter((row: any) => row.id !== null)
-        .map((row: any) => ({
+        .filter((row) => row.id !== null)
+        .map((row) => ({
           id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
           userId: row.id as string,
           title: payload.title,
@@ -137,7 +137,7 @@ export async function notifyByRole(
     if (payload.external) {
       c.executionCtx.waitUntil(
         sendZulipAlert(c.env, "System", payload.title, `${payload.message}\n\n[View Details](${payload.link || "#"})`)
-          .catch((e: any) => console.error("[Notification] Role broadcast failed:", e))
+          .catch((e: unknown) => console.error("[Notification] Role broadcast failed:", e))
       );
     }
   } catch (err) {
