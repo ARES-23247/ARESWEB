@@ -834,3 +834,14 @@ export const simulations = sqliteTable("simulations", {
 	index("idx_simulations_author").on(table.authorId),
 ]);
 
+export const pointsLedger = sqliteTable("points_ledger", {
+	id: text().primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	pointsDelta: integer("points_delta").notNull(),
+	reason: text().notNull(),
+	createdBy: text("created_by").references(() => user.id, { onDelete: "set null" } ),
+	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+},
+(table) => [
+	index("idx_points_ledger_user").on(table.userId),
+]);

@@ -2,8 +2,8 @@ import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import type { AppEnv } from "../../../shared/types/api";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, desc, sum, sql } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { 
 
   getPointsBalanceRoute, 
@@ -29,12 +29,12 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
 
     const db = c.get("db") as any;
     const ledger = await db
-      .selectFrom("points_ledger")
-      .select(["points_delta"])
-      .where("user_id", "=", user_id)
-      .execute();
+      .select({ points_delta: schema.pointsLedger.pointsDelta })
+      .from(schema.pointsLedger)
+      .where(eq(schema.pointsLedger.userId, user_id))
+      .all();
 
-    const balance = ledger.reduce((sum: any, tx: any) => sum + tx.points_delta, 0);
+    const balance = ledger.reduce((sum: any, tx: any) => sum + (tx.points_delta || 0), 0);
 
     return c.json({ user_id, balance }, 200);
   } catch (err) {
@@ -57,16 +57,19 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
 
     const db = c.get("db") as any;
     const history = await db
-      .selectFrom("points_ledger")
-      .selectAll()
-      .where("user_id", "=", user_id)
-      .orderBy("created_at", "desc")
-      .execute();
+      .select()
+      .from(schema.pointsLedger)
+      .where(eq(schema.pointsLedger.userId, user_id))
+      .orderBy(desc(schema.pointsLedger.createdAt))
+      .all();
 
     return c.json(history.map((tx: any) => ({
       ...tx,
+      points_delta: tx.pointsDelta,
+      user_id: tx.userId,
+      created_by: tx.createdBy,
       id: tx.id || "",
-      created_at: tx.created_at || null
+      created_at: tx.createdAt || null
     })), 200);
   } catch (err) {
     console.error("[Points] Get history failed:", err);
@@ -88,14 +91,14 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
 
     const newTx = {
       id,
-      user_id,
-      points_delta,
+      userId: user_id,
+      pointsDelta: points_delta,
       reason,
-      created_at: new Date().toISOString(),
-      created_by: sessionUser.id
+      createdAt: new Date().toISOString(),
+      createdBy: sessionUser.id
     };
 
-    await db.insertInto("points_ledger").values(newTx).execute();
+    await db.insert(schema.pointsLedger).values(newTx).run();
 
     return c.json({ 
       success: true, 
@@ -112,18 +115,18 @@ pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLea
     const db = c.get("db") as any;
 
     const results = await db
-      .selectFrom("user")
-      .leftJoin("points_ledger", "user.id", "points_ledger.user_id")
-      .select([
-        "user.id",
-        "user.name",
-        "user.role",
-        (eb: any) => eb.fn.sum("points_ledger.points_delta").as("points_balance")
-      ])
-      .groupBy("user.id")
-      .orderBy("points_balance", "desc")
+      .select({
+        id: schema.user.id,
+        name: schema.user.name,
+        role: schema.user.role,
+        points_balance: sum(schema.pointsLedger.pointsDelta).mapWith(Number).as("points_balance")
+      })
+      .from(schema.user)
+      .leftJoin(schema.pointsLedger, eq(schema.user.id, schema.pointsLedger.userId))
+      .groupBy(schema.user.id)
+      .orderBy(desc(sql`points_balance`))
       .limit(50)
-      .execute();
+      .all();
 
     const leaderboard = results.map((r: any) => {
       return {
