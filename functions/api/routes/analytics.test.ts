@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { TestEnv, MockExecutionContext } from "../../../src/test/types";
 import { createMockDrizzle } from "../../../src/test/utils";
-import type { DrizzleMock, DrizzleProxy, DrizzleProxyTarget } from "../../../src/test/mocks";
+import type { DrizzleMock } from "../../../src/test/mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import analyticsRouter from "./analytics";
@@ -179,21 +179,21 @@ describe("Analytics Router", () => {
 
   describe("Admin Endpoints", () => {
     it("GET /admin/platform-analytics should return analytics data", async () => {
-      mockDb.get = vi.fn()
+      mockDb.get
         .mockResolvedValueOnce({ total: 100 }) // totalViewsData
-        .mockResolvedValueOnce({ total: 50 }) // assetsCount
-        .mockResolvedValueOnce({ total: 1000 }) as typeof mockDb.get; // apiCount
+        .mockResolvedValueOnce({ total: 50 }); // assetsCount
 
-      mockDb.execute = vi.fn()
+      mockDb.execute
         .mockResolvedValueOnce({ results: [{ unique_count: 20 }] }) // uniqueVisitorsData
         .mockResolvedValueOnce({ results: [{ date: "2023-01-01", pageViews: 10 }] }) // activityData
-        .mockResolvedValueOnce({ results: [{ date: "2023-01-01", avg_latency: 150 }] }) as typeof mockDb.execute; // latencyData
+        .mockResolvedValueOnce({ results: [{ total: 1000 }] }) // apiCount
+        .mockResolvedValueOnce({ results: [{ date: "2023-01-01", avg_latency: 150 }] }); // latencyData
 
-      mockDb.all = vi.fn()
+      mockDb.all
         .mockResolvedValueOnce([{ path: "/", category: "home", views: 10 }]) // topPagesDataRow
         .mockResolvedValueOnce([{ referrer: "google.com", visits: 5 }]) // referrersDataRow
         .mockResolvedValueOnce([{ path: "/", category: "home", user_agent: "test", referrer: "google.com", timestamp: "2023-01-01T12:00:00Z" }]) // recentViewsDataRow
-        .mockResolvedValueOnce([{ category: "home", total: 10 }]) as typeof mockDb.all; // totalsDataRow
+        .mockResolvedValueOnce([{ category: "home", total: 10 }]); // totalsDataRow
 
       const req = new Request("http://localhost/admin/platform-analytics");
       const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -220,7 +220,9 @@ describe("Analytics Router", () => {
     });
 
     it("GET /admin/platform-analytics should handle DB errors gracefully", async () => {
-      mockDb.get = vi.fn().mockRejectedValueOnce(new Error("DB Error")) as typeof mockDb.get;
+      mockDb.get.mockRejectedValue(new Error("DB Error"));
+      mockDb.execute.mockRejectedValue(new Error("DB Error"));
+      mockDb.all.mockRejectedValue(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       const req = new Request("http://localhost/admin/platform-analytics");
