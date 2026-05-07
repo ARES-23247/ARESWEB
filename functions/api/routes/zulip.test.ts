@@ -45,10 +45,14 @@ describe("Hono Backend - /zulip Router", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   let mockDb: MockDrizzle;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
 
     mockDb = createMockDrizzle();
+
+    // Set default behavior for sendZulipMessage mock
+    vi.mocked(sendZulipMessage).mockResolvedValue(123 as never);
+
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
       c.set("db", mockDb as any);

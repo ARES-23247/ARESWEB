@@ -102,12 +102,15 @@ export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDr
     get: getMock,
     executeTakeFirst: executeTakeFirstMock,
     $dynamic: vi.fn().mockReturnThis(),
-    query: new Proxy({}, {
-      get: (_target: unknown, _prop: string) => {
-        return {
-          findFirst: vi.fn().mockResolvedValue(null),
-          findMany: vi.fn().mockResolvedValue([]),
-        };
+    query: new Proxy({} as Record<string, { findFirst: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn> }>, {
+      get: (target: Record<string, { findFirst: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn> }>, prop: string) => {
+        if (!(prop in target)) {
+          target[prop] = {
+            findFirst: vi.fn().mockResolvedValue(null),
+            findMany: vi.fn().mockResolvedValue([]),
+          };
+        }
+        return target[prop];
       }
     }),
     // Proxy marker for identification
@@ -223,17 +226,27 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
     }),
   };
 
+  // Cache query table accessors so mock setups persist between test setup and handler execution
+  const queryCache: Record<string, { findFirst: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn> }> = {};
+  const queryProxy = new Proxy({}, {
+    get: (_t: unknown, tableName: string) => {
+      if (!(tableName in queryCache)) {
+        queryCache[tableName] = {
+          findFirst: vi.fn().mockResolvedValue(null),
+          findMany: vi.fn().mockResolvedValue([]),
+        };
+      }
+      return queryCache[tableName];
+    }
+  });
+
   const proxy = new Proxy(dbMock, {
     get(target, prop) {
       if (prop === 'transaction') {
         return vi.fn().mockImplementation(async (cb: (db: DrizzleProxy) => Promise<unknown>) => cb(proxy as DrizzleProxy));
       }
       if (prop === 'query') {
-        return {
-          userProfiles: { findFirst: vi.fn().mockResolvedValue(null) },
-          teams: { findFirst: vi.fn().mockResolvedValue(null) },
-          entities: { findFirst: vi.fn().mockResolvedValue(null) }
-        };
+        return queryProxy;
       }
       if (prop === 'then') {
         return function(resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) {

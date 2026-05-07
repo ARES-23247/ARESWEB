@@ -8,22 +8,22 @@ import postsRouter from "./posts";
 
 // Mock utilities used by posts router
 vi.mock("../../utils/postHistory", () => ({
-  getPostHistory: vi.fn().mockResolvedValue([]),
-  approvePost: vi.fn().mockResolvedValue({ success: true, warnings: [] }),
-  restorePostFromHistory: vi.fn().mockResolvedValue({ success: true }),
-  pruneHistory: vi.fn().mockResolvedValue(undefined),
-  captureHistory: vi.fn().mockResolvedValue(undefined),
-  createShadowRevision: vi.fn().mockResolvedValue(undefined),
+  getPostHistory: vi.fn(),
+  approvePost: vi.fn(),
+  restorePostFromHistory: vi.fn(),
+  pruneHistory: vi.fn(),
+  captureHistory: vi.fn(),
+  createShadowRevision: vi.fn(),
 }));
 vi.mock("../../utils/socialSync", () => ({
-  dispatchSocials: vi.fn().mockResolvedValue(undefined),
+  dispatchSocials: vi.fn(),
 }));
 vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue(undefined),
+  sendZulipMessage: vi.fn(),
 }));
 vi.mock("../../utils/notifications", () => ({
-  notifyByRole: vi.fn().mockResolvedValue(undefined),
-  emitNotification: vi.fn().mockResolvedValue(undefined),
+  notifyByRole: vi.fn(),
+  emitNotification: vi.fn(),
 }));
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -69,10 +69,29 @@ describe("Hono Backend - /posts Router", () => {
     DEV_BYPASS: "true"
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
 
     mockDb = createMockDrizzle();
+
+    // Set default behavior for mocks
+    const { getPostHistory, approvePost, restorePostFromHistory, pruneHistory, captureHistory, createShadowRevision } = await import("../../utils/postHistory");
+    vi.mocked(getPostHistory).mockResolvedValue([]);
+    vi.mocked(approvePost).mockResolvedValue({ success: true, warnings: [] });
+    vi.mocked(restorePostFromHistory).mockResolvedValue({ success: true });
+    vi.mocked(pruneHistory).mockResolvedValue(undefined);
+    vi.mocked(captureHistory).mockResolvedValue(undefined);
+    vi.mocked(createShadowRevision).mockResolvedValue("new-slug");
+
+    const { dispatchSocials } = await import("../../utils/socialSync");
+    vi.mocked(dispatchSocials).mockResolvedValue(undefined);
+
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
+    vi.mocked(sendZulipMessage).mockResolvedValue(undefined);
+
+    const { notifyByRole, emitNotification } = await import("../../utils/notifications");
+    vi.mocked(notifyByRole).mockResolvedValue(undefined);
+    vi.mocked(emitNotification).mockResolvedValue(undefined);
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: any, next: () => Promise<void>) => {
@@ -120,7 +139,8 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("GET /admin/list - handles db error from fallback", async () => {
-    mockDb.all.mockRejectedValue(new Error("Fail twice"));
+    mockDb.all.mockRejectedValueOnce(new Error("Fail twice"));
+    mockDb.all.mockRejectedValueOnce(new Error("Fallback also fails"));
     const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -242,7 +262,7 @@ describe("Hono Backend - /posts Router", () => {
   });
 
   it("GET / - search error", async () => {
-    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/?q=fail", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });

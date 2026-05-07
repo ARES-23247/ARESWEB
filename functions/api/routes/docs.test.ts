@@ -50,7 +50,7 @@ describe("Hono Backend - /docs Router", () => {
   let testApp: Hono<TestEnv>;
   const mockEnv: TestEnv["Bindings"] = { DEV_BYPASS: "true", DB: {} as unknown as D1Database };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockDb = createMockDrizzle();
 

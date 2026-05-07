@@ -21,7 +21,7 @@ vi.mock("../middleware", async (importOriginal) => {
 
 // Mock Zulip
 vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue({ success: true }),
+  sendZulipMessage: vi.fn(),
 }));
 
 import { badgesRouter } from "./badges";
@@ -31,9 +31,13 @@ describe("Hono Backend - /badges Router", () => {
   let testApp: Hono<TestEnv>;
   const mockEnv: TestEnv["Bindings"] = { DEV_BYPASS: "true", DB: {} as any };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockDb = createMockDrizzle();
+
+    // Set default behavior for sendZulipMessage mock
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
+    vi.mocked(sendZulipMessage).mockResolvedValue({ success: true } as never);
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {

@@ -7,7 +7,7 @@ import type { MockExecutionContext } from "../../../src/test/types";
 
 // Mock zulip sync BEFORE importing the router
 vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue("msg-id"),
+  sendZulipMessage: vi.fn(),
 }));
 
 import githubWebhookRouter from "./githubWebhook";
@@ -20,8 +20,11 @@ describe("GitHub Webhook Router", () => {
     DB: {},
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Set default behavior for sendZulipMessage mock
+    vi.mocked(zulipSync.sendZulipMessage).mockResolvedValue("msg-id" as never);
 
     // Create test app with middleware that adds executionCtx to context
     testApp = new Hono();
@@ -461,12 +464,12 @@ describe("GitHub Webhook Router", () => {
 
     it("should catch errors in processing event", async () => {
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      
+
       const payload = JSON.stringify({
         action: "created",
         projects_v2_item: null
       });
-      
+
       const req = new Request("http://localhost/", {
         method: "POST",
         body: payload,
@@ -475,16 +478,28 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "projects_v2_item",
         },
       });
-      
-      // We force an error by making JSON.parse valid but causing a TypeError down the line,
-      // actually the easiest way is to mock executionCtx.waitUntil to throw
+
+      // Mock the executionCtx to throw an error
       const badCtx: MockExecutionContext = {
         waitUntil: vi.fn(() => { throw new Error("Forced error in processing"); }),
         passThroughOnException: vi.fn(),
         props: {},
       };
 
-      const res = await testApp.request(req, {}, env, badCtx as any);
+      // Create a separate test app with bad executionCtx
+      const badApp = new Hono();
+      badApp.use("*", async (c, next) => {
+        Object.defineProperty(c, 'executionCtx', {
+          value: badCtx,
+          writable: false,
+          enumerable: true,
+          configurable: true,
+        });
+        await next();
+      });
+      badApp.route("/", githubWebhookRouter);
+
+      const res = await badApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(consoleSpy).toHaveBeenCalled();
     });

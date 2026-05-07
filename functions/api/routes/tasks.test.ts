@@ -29,10 +29,13 @@ describe("Hono Backend - /tasks Router", () => {
   let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks(); vi.mocked(getSessionUser).mockReset();
 
     mockDb = createMockDrizzle();
+
+    // Set default behavior for sendZulipMessage mock
+    vi.mocked(sendZulipMessage).mockResolvedValue(123 as never);
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {

@@ -8,13 +8,13 @@ import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 
 // Mock Zulip and Notifications
 vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn(() => Promise.resolve(123)),
-  updateZulipMessage: vi.fn(() => Promise.resolve()),
-  deleteZulipMessage: vi.fn(() => Promise.resolve()),
+  sendZulipMessage: vi.fn(),
+  updateZulipMessage: vi.fn(),
+  deleteZulipMessage: vi.fn(),
 }));
 
 vi.mock("../../utils/notifications", () => ({
-  emitNotification: vi.fn(() => Promise.resolve()),
+  emitNotification: vi.fn(),
 }));
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -37,9 +37,18 @@ describe("Hono Backend - /comments Router", () => {
   let mockDb: MockDrizzle;
   let testApp: Hono<TestEnv>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockDb = createMockDrizzle();
+
+    // Set default behavior for mocks
+    const { sendZulipMessage, updateZulipMessage, deleteZulipMessage } = await import("../../utils/zulipSync");
+    vi.mocked(sendZulipMessage).mockResolvedValue(123 as never);
+    vi.mocked(updateZulipMessage).mockResolvedValue(undefined as never);
+    vi.mocked(deleteZulipMessage).mockResolvedValue(undefined as never);
+
+    const { emitNotification } = await import("../../utils/notifications");
+    vi.mocked(emitNotification).mockResolvedValue(undefined as never);
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {

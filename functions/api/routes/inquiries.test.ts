@@ -42,11 +42,11 @@ vi.mock("../../utils/githubProjects", () => ({
 }));
 
 vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue(true),
+  sendZulipMessage: vi.fn(),
 }));
 
 vi.mock("../../utils/notifications", () => ({
-  notifyByRole: vi.fn().mockResolvedValue(true),
+  notifyByRole: vi.fn(),
 }));
 
 import inquiriesRouter from "./inquiries/index";
@@ -69,7 +69,7 @@ describe("Hono Backend - /inquiries Router", () => {
   let testApp: Hono<TestEnv>;
   let env: { DB: D1Database; [key: string]: unknown };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
 
     // Polyfill crypto for Node.js test environment if needed
@@ -80,9 +80,16 @@ describe("Hono Backend - /inquiries Router", () => {
     } else if (typeof (global as any).crypto.randomUUID === "undefined") {
       (global as any).crypto.randomUUID = () => `test-uuid-${Math.random().toString(36).substring(7)}` as any;
     }
-     
+
 
     mockDb = createMockDrizzle();
+
+    // Set default behavior for mocks
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
+    vi.mocked(sendZulipMessage).mockResolvedValue(true as never);
+
+    const { notifyByRole } = await import("../../utils/notifications");
+    vi.mocked(notifyByRole).mockResolvedValue(true as never);
 
     env = {
       DB: {

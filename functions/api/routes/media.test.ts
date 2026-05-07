@@ -43,7 +43,7 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 vi.mock("../../utils/zulipSync", () => ({
-  sendZulipAlert: vi.fn().mockResolvedValue(true),
+  sendZulipAlert: vi.fn(),
 }));
 
 import mediaRouter from "./media/index";
@@ -68,8 +68,12 @@ describe("Hono Backend - /media Router", () => {
   let testApp: Hono<TestEnv>;
   let env: TestEnvWithStorage;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Set default behavior for sendZulipAlert mock
+    const { sendZulipAlert } = await import("../../utils/zulipSync");
+    vi.mocked(sendZulipAlert).mockResolvedValue(true as never);
 
     mockR2 = {
       list: vi.fn().mockResolvedValue({ objects: [], truncated: false }),
