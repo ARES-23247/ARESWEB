@@ -1,9 +1,9 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, and, desc, asc, sql, inArray } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware, ensureAuth, originIntegrityMiddleware, logAuditAction } from "../middleware";
+import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware, ensureAuth, originIntegrityMiddleware, logAuditAction, getDb } from "../middleware";
 import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
 import { listCommentsRoute, submitCommentRoute, updateCommentRoute, deleteCommentRoute } from "../../../shared/routes/comments";
@@ -41,7 +41,7 @@ commentsRouter.use("/{id}", (c, next) => {
 commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>(async (c) => {
   const { targetType, targetId } = c.req.valid("param");
   const user = await getSessionUser(c);
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   try {
     const results = await db.select({
@@ -63,7 +63,7 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
       .orderBy(asc(schema.comments.createdAt))
       .execute();
 
-    const comments = results.map((r: any) => ({
+    const comments = results.map((r) => ({
       id: String(r.id),
       user_id: String(r.user_id),
       nickname: r.nickname || "ARES Member",
@@ -94,7 +94,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
   }
 
   const { targetType, targetId } = c.req.valid("param");
-  const db = c.get("db") as any;
+  const db = getDb(c);
   const body = c.req.valid("json");
   const rawContent = body.content;
   if (!rawContent) {
@@ -140,7 +140,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
       if (msgId) {
         await db.update(schema.comments).set({ zulipMessageId: String(msgId) }).where(eq(schema.comments.id, id)).execute();
       }
-    })().catch((err: any) => console.error("[Comments:ZulipSync] Error", err)));
+    })().catch((err: Error) => console.error("[Comments:ZulipSync] Error", err)));
 
     if (targetType === 'post') {
       const row = await db.select({ cf_email: schema.posts.cfEmail }).from(schema.posts).where(eq(schema.posts.slug, targetId)).executeTakeFirst();
@@ -153,7 +153,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
             message: `${user.name || 'Someone'} commented on your post "${targetId}"`,
             link: `/blog/${targetId}`,
             priority: "medium"
-          }).catch((err: any) => console.error("[Comments:Notification] Error", err)));
+          }).catch((err: Error) => console.error("[Comments:Notification] Error", err)));
         }
       }
     }
@@ -171,7 +171,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
 
   const { id } = c.req.valid("param");
-  const db = c.get("db") as any;
+  const db = getDb(c);
   const body = c.req.valid("json");
   const rawContent = body.content;
   const content = rawContent?.trim();
@@ -210,7 +210,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
       c.executionCtx.waitUntil((async () => {
         const social = await getSocialConfig(c);
         await updateZulipMessage(social, String(row.zulip_message_id), `**${user.name}** (edited):\n\n${content}`)
-          .catch((err: any) => console.error("[Comments:ZulipUpdate] Error", err));
+          .catch((err: Error) => console.error("[Comments:ZulipUpdate] Error", err));
       })());
     }
 
@@ -227,7 +227,7 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
 
   const { id } = c.req.valid("param");
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   try {
     const row = await db.select({
@@ -253,7 +253,7 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
       c.executionCtx.waitUntil((async () => {
         const social = await getSocialConfig(c);
         await deleteZulipMessage(social, String(row.zulip_message_id))
-          .catch((err: any) => console.error("[Comments:ZulipDelete] Error", err));
+          .catch((err: Error) => console.error("[Comments:ZulipDelete] Error", err));
       })());
     }
 
