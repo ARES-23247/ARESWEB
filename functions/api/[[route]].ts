@@ -2,8 +2,9 @@ import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
-import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMiddleware, envMiddleware, originIntegrityMiddleware } from "./middleware";
+import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMiddleware, envMiddleware, originIntegrityMiddleware, DrizzleDB } from "./middleware";
 import { sql, desc } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../../src/db/schema";
 
 // ── Domain Routers ───────────────────────────────────────────────────
@@ -40,7 +41,7 @@ import entitiesRouter from "./routes/entities";
 import gcRouter from "./routes/internal/gc";
 import storeHandler from "./routes/store";
 import pointsRouter from "./routes/points";
-import aiRouter from "./routes/ai/index";
+import { aiRouter } from "./routes/ai/index";
 import socialQueueRouter from "./routes/socialQueue";
 import scoutingRouter from "./routes/scouting/index";
 import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
@@ -239,9 +240,9 @@ apiRouter.openapi(searchRoute, async (c) => {
   ]);
   return c.json({
     results: [
-      ...(postsReq || []).map((r: { id: string; title: string; snippet: string }) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
-      ...(eventsReq || []).map((r: { id: string; title: string; snippet: string }) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
-      ...(docsReq || []).map((r: { id: string; title: string; snippet: string }) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
+      ...((postsReq as unknown[] | undefined) || []).map((r: Record<string, unknown>) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
+      ...((eventsReq as unknown[] | undefined) || []).map((r: Record<string, unknown>) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
+      ...((docsReq as unknown[] | undefined) || []).map((r: Record<string, unknown>) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
     ]
   }, 200);
 });
@@ -294,7 +295,8 @@ app.route("/dashboard/api", apiRouter);
 export const onRequest = handle(app);
 import { purgeOldInquiries } from "./routes/inquiries/index";
 export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
-  await purgeOldInquiries(env.DB, 30);
+  const db = drizzle(env.DB, { schema });
+  await purgeOldInquiries(db as DrizzleDB, 30);
   const auditRetentionDays = parseInt(env.AUDIT_LOG_RETENTION_DAYS || "90", 10);
   await env.DB.prepare(`DELETE FROM audit_log WHERE id IN (SELECT id FROM audit_log WHERE created_at < datetime('now', '-' || ? || ' days') LIMIT 100)`).bind(auditRetentionDays).run();
   
@@ -312,7 +314,7 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
       try {
         await env.DB.prepare(`UPDATE social_queue SET status = 'processing' WHERE id = ?`).bind(post.id).run();
         const platforms = JSON.parse(post.platforms as string);
-        await dispatchSocials(env.DB, { title: post.linked_type ? "ARES Content Update" : "ARES Social Post", url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", snippet: post.content as string, thumbnail: post.media_urls ? JSON.parse(post.media_urls as string)?.[0] : undefined }, socialConfig, platforms);
+        await dispatchSocials(db as DrizzleDB, { title: post.linked_type ? "ARES Content Update" : "ARES Social Post", url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", snippet: post.content as string, thumbnail: post.media_urls ? JSON.parse(post.media_urls as string)?.[0] : undefined }, socialConfig, platforms);
         await env.DB.prepare(`UPDATE social_queue SET status = 'sent', sent_at = ? WHERE id = ?`).bind(now, post.id).run();
       } catch (error) {
         console.error(`[Cron] Failed to send social post ${post.id}:`, error);
@@ -323,7 +325,7 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   if (env.AI && env.VECTORIZE_DB) {
     try {
       const { indexSiteContent } = await import("./routes/ai/indexer");
-      await indexSiteContent(env.DB, env.AI, env.VECTORIZE_DB);
+      await indexSiteContent(db as DrizzleDB, env.AI, env.VECTORIZE_DB);
     } catch (e) { console.error("[Cron] Vectorize indexing failed:", e); }
   }
   try {
