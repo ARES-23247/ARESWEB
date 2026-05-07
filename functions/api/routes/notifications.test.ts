@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
-import type { DrizzleProxy } from "../../../src/test/mocks";
 import { getSessionUser } from "../middleware";
 
 // Mock middleware
@@ -46,7 +45,7 @@ describe("Hono Backend - /notifications Router", () => {
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
         transformQuery: vi.fn((q: unknown) => q),
       }),
-    } as unknown as any;
+    } as unknown as DrizzleMock;
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
