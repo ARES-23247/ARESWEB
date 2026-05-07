@@ -16,7 +16,7 @@ vi.mock("../middleware", async (importOriginal) => {
 
 vi.mock("../middleware/cache", async () => {
   return {
-    edgeCacheMiddleware: () => async (_c: any, next: any) => next()
+    edgeCacheMiddleware: () => async (_c: Context, next: () => Promise<void>) => next()
   };
 });
 
