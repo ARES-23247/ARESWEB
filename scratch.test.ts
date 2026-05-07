@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { usersRouter } from "./functions/api/routes/users";
 import { createMockDrizzle } from "./src/test/utils";
+import type { DrizzleProxy } from "./src/test/mocks";
 
 async function run() {
-  const mockDb = createMockDrizzle();
+  const mockDb = createMockDrizzle() as DrizzleProxy;
   mockDb.query.user.findMany.mockResolvedValueOnce([]);
 
   const testApp = new Hono();

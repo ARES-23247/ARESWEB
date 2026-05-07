@@ -2,8 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv, DrizzleMock } from "../../../src/test/types";
+import { mockExecutionContext, createDrizzleProxy, createMockDrizzle } from "../../../src/test/utils";
+import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 
 
 // Mock Zulip and Notifications
@@ -34,34 +34,16 @@ describe("Hono Backend - /comments Router", () => {
 
 
 
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue({ numInsertedOrUpdatedRows: 1n, insertId: 1n }),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      getExecutor: vi.fn().mockReturnValue({
-        compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
-        executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: unknown) => q),
-      }),
-    };
+    mockDb = createMockDrizzle();
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       await next();
     });
     testApp.route("/", commentsRouter);
@@ -71,7 +53,7 @@ describe("Hono Backend - /comments Router", () => {
     const mockComments = [
       { id: "1", content: "Great post!", created_at: "2024-01-01", nickname: "User1", avatar: "img1", user_id: "u1" },
     ];
-    mockDb.execute.mockResolvedValueOnce(mockComments);
+    mockDb.all.mockResolvedValueOnce(mockComments);
 
     const res = await testApp.request("/post/my-post", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
@@ -103,7 +85,7 @@ describe("Hono Backend - /comments Router", () => {
   });
 
   it("should edit an existing comment", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
+    mockDb.get.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
 
     const res = await testApp.request("/1", {
       method: "PATCH",
@@ -115,7 +97,7 @@ describe("Hono Backend - /comments Router", () => {
   });
 
   it("should soft-delete a comment", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
+    mockDb.get.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
 
     const res = await testApp.request("/1", { 
       method: "DELETE",
@@ -127,7 +109,7 @@ describe("Hono Backend - /comments Router", () => {
 
   // Error paths and edge cases
   it("GET list - handles db error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/post/my-post", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -153,7 +135,7 @@ describe("Hono Backend - /comments Router", () => {
   });
 
   it("POST submit - handles internal error", async () => {
-    mockDb.insertInto.mockReturnValue({ values: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Fail")) }) });
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/post/my-post", { method: "POST", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -164,7 +146,7 @@ describe("Hono Backend - /comments Router", () => {
     vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip fail"));
     vi.mocked(emitNotification).mockRejectedValueOnce(new Error("Notif fail"));
     
-    mockDb.executeTakeFirst = vi.fn()
+    mockDb.get
       .mockResolvedValueOnce({ cf_email: "other@test.com" })
       .mockResolvedValueOnce({ id: "author-id" });
     
@@ -179,7 +161,7 @@ describe("Hono Backend - /comments Router", () => {
   });
 
   it("PATCH edit - handles not found", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.get.mockResolvedValueOnce(null);
     const res = await testApp.request("/1", { method: "PATCH", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(404);
   });
@@ -195,20 +177,20 @@ describe("Hono Backend - /comments Router", () => {
       role: "member",
       member_type: "student",
     });
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "other-user" });
+    mockDb.get.mockResolvedValueOnce({ user_id: "other-user" });
     const res = await testApp.request("/1", { method: "PATCH", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(403);
   });
 
   it("PATCH edit - handles db error", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev" });
-    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Fail")) }) }) });
+    mockDb.get.mockResolvedValueOnce({ user_id: "local-dev" });
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/1", { method: "PATCH", body: JSON.stringify({ content: "test" }), headers: { "Content-Type": "application/json" } }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("PATCH edit - handles Zulip Update failure", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
+    mockDb.get.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
     const { updateZulipMessage } = await import("../../utils/zulipSync");
     vi.mocked(updateZulipMessage).mockRejectedValueOnce(new Error("Zulip fail"));
     
@@ -223,7 +205,7 @@ describe("Hono Backend - /comments Router", () => {
   });
 
   it("DELETE - handles not found", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.get.mockResolvedValueOnce(null);
     const res = await testApp.request("/1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(404);
   });
@@ -239,20 +221,20 @@ describe("Hono Backend - /comments Router", () => {
       role: "member",
       member_type: "student",
     });
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "other-user" });
+    mockDb.get.mockResolvedValueOnce({ user_id: "other-user" });
     const res = await testApp.request("/1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(403);
   });
 
   it("DELETE - handles internal error", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev" });
-    mockDb.updateTable.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ execute: vi.fn().mockRejectedValueOnce(new Error("Fail")) }) }) });
+    mockDb.get.mockResolvedValueOnce({ user_id: "local-dev" });
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("DELETE - handles Zulip Delete failure", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
+    mockDb.get.mockResolvedValueOnce({ user_id: "local-dev", zulip_message_id: 123 });
     const { deleteZulipMessage } = await import("../../utils/zulipSync");
     vi.mocked(deleteZulipMessage).mockRejectedValueOnce(new Error("Zulip fail"));
 
