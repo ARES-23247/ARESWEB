@@ -74,7 +74,7 @@ export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDr
     get: vi.fn().mockResolvedValue(defaultResolve[0] || null),
     $dynamic: vi.fn().mockReturnThis(),
     query: new Proxy({}, {
-      get: (_target: unknown, prop: string) => {
+      get: (_target: unknown, _prop: string) => {
         return {
           findFirst: vi.fn().mockResolvedValue(null),
           findMany: vi.fn().mockResolvedValue([]),
@@ -197,7 +197,7 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       if (prop in drizzleMethods) {
         return drizzleMethods[prop as string];
       }
-      return (target as any)[prop as string];
+      return (target as DrizzleProxyTarget)[prop as string];
     }
   }) as unknown as DrizzleProxy;
 
