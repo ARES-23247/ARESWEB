@@ -236,7 +236,7 @@
 
 ---
 
-### Phase 46: Media Optimization
+### [x] Phase 46: Media Optimization
 
 **Goal**: Convert images to WebP, implement responsive images, and add font-display swap.
 
