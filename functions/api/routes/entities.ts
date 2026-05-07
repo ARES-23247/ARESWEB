@@ -1,8 +1,8 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, and, desc, asc, sql, inArray, or } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import { AppEnv, ensureAuth, logAuditAction } from "../middleware";
 import { getEntityLinksRoute, saveEntityLinkRoute, deleteEntityLinkRoute } from "../../../shared/routes/entities";
 
@@ -17,12 +17,19 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
     const db = c.get("db") as any;
     const { type, id } = c.req.valid("query");
 
-    const rawLinks = await db.selectFrom("entity_links")
-      .select(["id", "source_type", "source_id", "target_type", "target_id", "link_type"])
-      .where((eb: any) => eb.or([
-        eb.and([eb("source_type", "=", type), eb("source_id", "=", id)]),
-        eb.and([eb("target_type", "=", type), eb("target_id", "=", id)])
-      ]))
+    const rawLinks = await db.select({
+      id: schema.entityLinks.id,
+      source_type: schema.entityLinks.sourceType,
+      source_id: schema.entityLinks.sourceId,
+      target_type: schema.entityLinks.targetType,
+      target_id: schema.entityLinks.targetId,
+      link_type: schema.entityLinks.linkType
+    })
+      .from(schema.entityLinks)
+      .where(or(
+        and(eq(schema.entityLinks.sourceType, type), eq(schema.entityLinks.sourceId, id)),
+        and(eq(schema.entityLinks.targetType, type), eq(schema.entityLinks.targetId, id))
+      ))
       .execute();
 
     // Collect target IDs by type to resolve titles in bulk (Eliminate N+1)
@@ -31,32 +38,32 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
       const isSource = link.source_type === type && link.source_id === id;
       const targetType = isSource ? link.target_type : link.source_type;
       const targetId = isSource ? link.target_id : link.source_id;
-      
+
       if (!targetMap.has(targetType)) targetMap.set(targetType, new Set());
       targetMap.get(targetType)!.add(targetId);
-      
+
       return { ...link, resolvedTargetType: targetType, resolvedTargetId: targetId };
     });
 
     const titleCache = new Map<string, string | null>();
-    
+
     // Bulk resolve titles for each type
     for (const [tType, tIds] of targetMap.entries()) {
       const ids = Array.from(tIds);
       if (tType === 'doc') {
-        const res = await db.selectFrom("docs").select(["slug", "title"]).where("slug", "in", ids).execute();
+        const res = await db.select({ slug: schema.docs.slug, title: schema.docs.title }).from(schema.docs).where(inArray(schema.docs.slug, ids)).execute();
         for (const r of res) titleCache.set(`doc:${r.slug}`, r.title);
       } else if (tType === 'task') {
-        const res = await db.selectFrom("tasks").select(["id", "title"]).where("id", "in", ids).execute();
+        const res = await db.select({ id: schema.tasks.id, title: schema.tasks.title }).from(schema.tasks).where(inArray(schema.tasks.id, ids)).execute();
         for (const r of res) if (r.id) titleCache.set(`task:${r.id}`, r.title);
       } else if (tType === 'post') {
-        const res = await db.selectFrom("posts").select(["slug", "title"]).where("slug", "in", ids).execute();
+        const res = await db.select({ slug: schema.posts.slug, title: schema.posts.title }).from(schema.posts).where(inArray(schema.posts.slug, ids)).execute();
         for (const r of res) if (r.slug) titleCache.set(`post:${r.slug}`, r.title);
       } else if (tType === 'outreach') {
-        const res = await db.selectFrom("outreach_logs").select(["id", "title"]).where("id", "in", ids.map(Number) ).execute();
+        const res = await db.select({ id: schema.outreachLogs.id, title: schema.outreachLogs.title }).from(schema.outreachLogs).where(inArray(schema.outreachLogs.id, ids.map(Number))).execute();
         for (const r of res) if (r.id) titleCache.set(`outreach:${r.id}`, r.title);
       } else if (tType === 'event') {
-        const res = await db.selectFrom("events").select(["id", "title"]).where("id", "in", ids).execute();
+        const res = await db.select({ id: schema.events.id, title: schema.events.title }).from(schema.events).where(inArray(schema.events.id, ids)).execute();
         for (const r of res) if (r.id) titleCache.set(`event:${r.id}`, r.title);
       }
     }
@@ -82,14 +89,14 @@ entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRo
     const body = c.req.valid("json");
     const id = crypto.randomUUID();
 
-    await db.insertInto("entity_links")
+    await db.insert(schema.entityLinks)
       .values({
         id,
-        source_type: body.source_type,
-        source_id: body.source_id,
-        target_type: body.target_type,
-        target_id: body.target_id,
-        link_type: body.link_type
+        sourceType: body.source_type,
+        sourceId: body.source_id,
+        targetType: body.target_type,
+        targetId: body.target_id,
+        linkType: body.link_type
       })
       .execute();
 
@@ -105,7 +112,7 @@ entitiesRouter.openapi(deleteEntityLinkRoute, typedHandler<typeof deleteEntityLi
   try {
     const db = c.get("db") as any;
     const { id } = c.req.valid("param");
-    await db.deleteFrom("entity_links").where("id", "=", id).execute();
+    await db.delete(schema.entityLinks).where(eq(schema.entityLinks.id, id)).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_link", "entity_links", id));
     return c.json({ success: true }, 200);
   } catch (_e) {
