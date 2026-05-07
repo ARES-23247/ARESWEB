@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin } from "../../middleware";
-import { Kysely } from "kysely";
-import { DB } from "../../../../shared/schemas/database";
+import { eq, sql } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 
 const perfRouter = new OpenAPIHono<AppEnv>();
 
@@ -29,9 +29,9 @@ perfRouter.openapi(createRoute({
   const db = c.get('db') as any;
 
   for (const metric of metrics) {
-    await db.insertInto('performance_metrics').values({
+    await db.insert(schema.performanceMetrics).values({
       id: crypto.randomUUID(),
-      metric_name: metric.name,
+      metricName: metric.name,
       value: metric.value,
       rating: metric.rating,
       page: metric.page,
@@ -54,19 +54,21 @@ perfRouter.openapi(createRoute({
   }
 }), async (c) => {
   const db = c.get('db') as any;
-  
+
   // A simple summary by taking the average of the last 100 entries for each metric.
-  const results = await db.selectFrom('performance_metrics')
-    .select(['metric_name'])
-    .select((eb: any) => eb.fn.avg('value').as('avg_value'))
-    .groupBy('metric_name')
-    .execute();
+  const results = await db.select({
+    metric_name: schema.performanceMetrics.metricName,
+    avg_value: sql<number>`avg(${schema.performanceMetrics.value})`.as('avg_value')
+  })
+  .from(schema.performanceMetrics)
+  .groupBy(schema.performanceMetrics.metricName)
+  .execute();
 
   const summary: Record<string, number> = {};
   for (const row of results) {
     summary[row.metric_name.toLowerCase()] = row.avg_value as number;
   }
-  
+
   return c.json(summary as any, 200);
 });
 

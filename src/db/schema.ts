@@ -125,6 +125,7 @@ export const events = sqliteTable("events", {
 	publishedAt: text("published_at"),
 	meetingNotes: text("meeting_notes"),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	updatedAt: text("updated_at"),
 },
 (table) => [
 	index("idx_events_category").on(table.category),
@@ -865,3 +866,23 @@ export const scoutingAnalyses = sqliteTable("scouting_analyses", {
 	index("idx_scouting_analyses_team").on(table.teamNumber),
 	index("idx_scouting_analyses_event").on(table.eventKey),
 ]);
+
+export const externalKnowledgeSources = sqliteTable("external_knowledge_sources", {
+	id: text().primaryKey(),
+	type: text().notNull(),
+	url: text().notNull(),
+	branch: text(),
+	status: text().default("active"),
+	lastIndexedSha: text("last_indexed_sha"),
+	lastIndexedAt: text("last_indexed_at"),
+	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+});
+
+export const performanceMetrics = sqliteTable("performance_metrics", {
+	id: text().primaryKey(),
+	metricName: text("metric_name").notNull(),
+	value: real().notNull(),
+	rating: text().notNull(),
+	page: text().notNull(),
+	timestamp: text().notNull(),
+});
