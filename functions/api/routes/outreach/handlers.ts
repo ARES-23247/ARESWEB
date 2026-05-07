@@ -2,7 +2,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { getSessionUser, logAuditAction, getDb } from "../../middleware";
+import { getSessionUser, logAuditAction, getDb, type AppEnv } from "../../middleware";
 
 import type {
   listOutreachRoute,

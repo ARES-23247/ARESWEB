@@ -238,7 +238,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
       ORDER BY f.rank LIMIT 20
     `);
 
-    const mapped = (results.rows ?? []).map((row: any) => {
+    const mapped = ((results as any).rows ?? []).map((row: any) => {
       return {
         slug: String(row.slug),
         title: String(row.title),
@@ -565,7 +565,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
           revisionOf: slug,
           zulipStream: "documents",
           zulipTopic: `Doc: ${title || "Untitled"}`
-        })
+        } as any)
         .run();
 
       c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
@@ -600,7 +600,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
         contentDraft: null,
         zulipStream: "documents",
         zulipTopic: `Doc: ${title || "Untitled"}`
-      })
+      } as any)
       .onConflictDoUpdate({
         target: schema.docs.slug,
         set: {
@@ -620,7 +620,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
           contentDraft: null,
           zulipStream: "documents",
           zulipTopic: `Doc: ${title || "Untitled"}`
-        }
+        } as any
       })
       .run();
 

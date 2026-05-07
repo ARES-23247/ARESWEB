@@ -78,6 +78,9 @@ export const posts = sqliteTable("posts", {
 	isPortfolio: integer("is_portfolio").default(0),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
 	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	zulipStream: text("zulip_stream"),
+	zulipTopic: text("zulip_topic"),
+	authorAvatar: text("author_avatar"),
 },
 (table) => [
 	index("idx_posts_published_at").on(table.publishedAt, table.status, table.isDeleted),
@@ -185,6 +188,8 @@ export const docs = sqliteTable("docs", {
 	displayInMathCorner: integer("display_in_math_corner").default(0),
 	displayInScienceCorner: integer("display_in_science_corner").default(0),
 	revisionOf: text("revision_of"),
+	zulipStream: text("zulip_stream"),
+	zulipTopic: text("zulip_topic"),
 },
 (table) => [
 	index("idx_docs_category_sort").on(table.category, table.sortOrder),

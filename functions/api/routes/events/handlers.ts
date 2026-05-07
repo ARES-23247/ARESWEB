@@ -79,16 +79,16 @@ export const eventHandlers = {
       if (q) {
         // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
         const cleanQ = sanitizeFtsQuery(String(q || ''));
-        const results = await sql<{ id: string, title: string, category: string, date_start: string, date_end: string | null, location: string | null, description: string | null, cover_image: string | null, status: string, is_deleted: number, season_id: number | null, meeting_notes: string | null, tba_event_key: string | null, recurring_exception: number, is_potluck: number, is_volunteer: number }>`
+        const results = await (db as any).all(sql`
           SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.status, e.is_deleted, e.season_id, e.meeting_notes, e.tba_event_key, e.recurring_exception, e.is_potluck, e.is_volunteer
            FROM events_fts f
            JOIN events e ON f.id = e.id
            WHERE e.is_deleted = 0 AND e.status = 'published' AND (e.published_at IS NULL OR datetime(e.published_at) <= datetime('now'))
            AND f.events_fts MATCH ${cleanQ}
            ORDER BY f.rank LIMIT ${Number(limit) || 50} OFFSET ${Number(offset) || 0}
-        `.execute(db);
+        `);
 
-        const events = results.rows.map((e: any) => ({
+        const events = (results as any).map((e: any) => ({
           ...e,
           season_id: e.season_id ? Number(e.season_id) : null,
           is_deleted: Number(e.is_deleted || 0)
@@ -117,11 +117,13 @@ export const eventHandlers = {
           isVolunteer: schema.events.isVolunteer,
         })
           .from(schema.events)
-          .where(eq(schema.events.isDeleted, 0))
-          .where(eq(schema.events.status, "published"))
-          .where(or(
-            isNull(schema.events.publishedAt),
-            sql`${schema.events.publishedAt} <= datetime('now')`
+          .where(and(
+            eq(schema.events.isDeleted, 0),
+            eq(schema.events.status, "published"),
+            or(
+              isNull(schema.events.publishedAt),
+              sql`${schema.events.publishedAt} <= datetime('now')`
+            )
           ))
           .orderBy(desc(schema.events.dateStart))
           .limit(Number(limit) || 50)
@@ -144,7 +146,7 @@ export const eventHandlers = {
           .orderBy(desc(schema.events.dateStart))
           .limit(Number(limit) || 50)
           .offset(Number(offset) || 0)
-          .all() as PartialEvent[];
+          .all() as any[];
       }
 
       // Resolve location addresses from the locations registry
@@ -227,9 +229,11 @@ export const eventHandlers = {
         isVolunteer: schema.events.isVolunteer,
       })
         .from(schema.events)
-        .where(eq(schema.events.id, id))
-        .where(eq(schema.events.isDeleted, 0))
-        .where(eq(schema.events.status, "published"))
+        .where(and(
+          eq(schema.events.id, id),
+          eq(schema.events.isDeleted, 0),
+          eq(schema.events.status, "published")
+        ))
         .get();
 
       if (!row) return { status: 404 as const, body: { error: "Event not found" } };
@@ -272,7 +276,7 @@ export const eventHandlers = {
       const db = getDb(c);
       const { limit = 100, cursor } = query;
 
-      let baseQuery = db.select({
+      let baseQuery: any = db.select({
         id: schema.events.id,
         title: schema.events.title,
         category: schema.events.category,
@@ -299,7 +303,7 @@ export const eventHandlers = {
 
       let results;
       try {
-        results = await baseQuery.all();
+        results = await baseQuery.all() as any[];
       } catch {
         results = await db.select({
           id: schema.events.id,
@@ -314,7 +318,7 @@ export const eventHandlers = {
           .from(schema.events)
           .orderBy(desc(schema.events.dateStart))
           .limit(Number(limit) || 100)
-          .all() as PartialEvent[];
+          .all() as any[];
       }
 
       const lastSyncRow = await db.select({
@@ -333,7 +337,7 @@ export const eventHandlers = {
         meeting_notes: e.meetingNotes ?? null
       }));
 
-      const nextCursor = results.length === (Number(limit) || 100) ? results[results.length - 1].dateStart : null;
+      const nextCursor = results.length === (Number(limit) || 100) ? (results[results.length - 1] as any).dateStart : null;
 
       return { status: 200 as const, body: { events, lastSyncedAt: lastSyncRow?.value || null, nextCursor } };
     } catch (e) {
@@ -391,11 +395,11 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            season_id: row.seasonId ? Number(row.seasonId) : null,
-            is_deleted: Number(row.isDeleted || 0),
-            status: row.status ?? "published",
-            category: row.category ?? "internal",
-            meeting_notes: row.meetingNotes ?? null
+            season_id: (row as any).seasonId ? Number((row as any).seasonId) : null,
+            is_deleted: Number((row as any).isDeleted || 0),
+            status: (row as any).status ?? "published",
+            category: (row as any).category ?? "internal",
+            meeting_notes: (row as any).meetingNotes ?? null
           }
         }
       };
@@ -424,9 +428,11 @@ export const eventHandlers = {
 
       const recent = await db.select({ id: schema.events.id })
         .from(schema.events)
-        .where(eq(schema.events.title, title || ""))
-        .where(eq(schema.events.dateStart, dateStart))
-        .where(eq(schema.events.isDeleted, 0))
+        .where(and(
+          eq(schema.events.title, title || ""),
+          eq(schema.events.dateStart, dateStart),
+          eq(schema.events.isDeleted, 0)
+        ))
         .get();
 
       if (recent) {

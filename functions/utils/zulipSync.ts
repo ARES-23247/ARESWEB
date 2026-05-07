@@ -1,4 +1,5 @@
-import type { Bindings, logSystemError, DrizzleDB } from "../api/middleware";
+import type { Bindings, DrizzleDB } from "../api/middleware";
+import { logSystemError } from "../api/middleware";
 import pRetry from "p-retry";
 import { z } from "zod";
 import type { D1Database } from "@cloudflare/workers-types";

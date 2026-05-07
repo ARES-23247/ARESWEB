@@ -5,7 +5,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, ensureAuth, getDb } from "../../middleware";
 import { eventHandlers } from "./handlers";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import {
   getEventsRoute,
@@ -210,8 +210,7 @@ eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventH
       content: schema.documentHistory.content,
     })
       .from(schema.documentHistory)
-      .where(eq(schema.documentHistory.id, Number(historyId)))
-      .where(eq(schema.documentHistory.roomId, `event_${id}`))
+      .where(and(eq(schema.documentHistory.id, Number(historyId)), eq(schema.documentHistory.roomId, `event_${id}`)))
       .get();
 
     if (!row) {

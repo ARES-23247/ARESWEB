@@ -2,7 +2,7 @@ import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, and, asc } from "drizzle-orm";
-import * as schema from "../../../../src/db/schema";
+import * as schema from "../../../src/db/schema";
 import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware, ensureAuth, originIntegrityMiddleware, logAuditAction, getDb } from "../middleware";
 import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";

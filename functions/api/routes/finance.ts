@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
  
-import { eq, desc, inArray, sum } from "drizzle-orm";
+import { eq, desc, inArray, sum, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -154,8 +154,10 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
       let existingTxQuery = db
         .select({ id: schema.financeTransactions.id })
         .from(schema.financeTransactions)
-        .where(eq(schema.financeTransactions.description, `Sponsorship from ${body.company_name}`))
-        .where(eq(schema.financeTransactions.amount, body.estimated_value || 0))
+        .where(and(
+          eq(schema.financeTransactions.description, `Sponsorship from ${body.company_name}`),
+          eq(schema.financeTransactions.amount, body.estimated_value || 0)
+        ))
         .$dynamic();
 
       if (body.season_id) {

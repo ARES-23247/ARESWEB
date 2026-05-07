@@ -67,7 +67,7 @@ export async function indexSiteContent(
     );
 
     if (!force && lastIndexed) {
-      whereClause = and(whereClause, gt(schema.events.updatedAt, lastIndexed));
+      whereClause = and(whereClause, gt(schema.events.updatedAt, lastIndexed))!;
     }
 
     const eventResults = await db.select()
@@ -192,7 +192,7 @@ export async function indexSiteContent(
     let whereClause = eq(schema.seasons.status, "published");
 
     if (!force && lastIndexed) {
-      whereClause = and(whereClause, gt(schema.seasons.updatedAt, lastIndexed));
+      whereClause = and(whereClause, gt(schema.seasons.updatedAt, lastIndexed))!;
     }
 
     const seasonResults = await db.select()
@@ -294,7 +294,7 @@ export async function indexExternalResources(
 
   let whereClause = eq(schema.externalKnowledgeSources.status, "active");
   if (sourceId) {
-    whereClause = and(whereClause, eq(schema.externalKnowledgeSources.id, sourceId));
+    whereClause = and(whereClause, eq(schema.externalKnowledgeSources.id, sourceId))!;
   }
 
   const sources = await db.select()

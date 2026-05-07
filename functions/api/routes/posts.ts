@@ -4,7 +4,7 @@ import { typedHandler } from "../utils/handler";
 import { sql } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, or, desc, isNull, lte } from "drizzle-orm";
+import { eq, or, and, desc, isNull, lte } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 
 import {
@@ -95,7 +95,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       const cleanQ = sanitizeFtsQuery(String(q || ""));
       if (!cleanQ) return c.json({ posts: [] } as any, 200 as any);
 
-      const results = await db.execute(sql<{
+      const results = await (db as any).execute(sql<{
         slug: string;
         title: string;
         date: string | null;
@@ -119,7 +119,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
          ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
       `);
 
-      const rows = results.results || results.rows || (Array.isArray(results) ? results : []);
+      const rows = (results as any).results || (results as any).rows || (Array.isArray(results) ? results : []);
       const posts = rows.map((p: any) => ({
         ...p,
         season_id: p.season_id ? Number(p.season_id) : null,
@@ -147,14 +147,14 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       .from(schema.posts)
       .leftJoin(schema.user, eq(schema.posts.cfEmail, schema.user.email))
       .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
-      .where(eq(schema.posts.isDeleted, 0))
-      .where(eq(schema.posts.status, "published"))
-      .where(
+      .where(and(
+        eq(schema.posts.isDeleted, 0),
+        eq(schema.posts.status, "published"),
         or(
           isNull(schema.posts.publishedAt),
           lte(schema.posts.publishedAt, new Date().toISOString())
         )
-      )
+      ))
       .orderBy(desc(schema.posts.date))
       .limit(Number(limit) || 10)
       .offset(Number(offset) || 0)
@@ -200,15 +200,15 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
       .from(schema.posts)
       .leftJoin(schema.user, eq(schema.posts.cfEmail, schema.user.email))
       .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
-      .where(eq(schema.posts.slug, slug))
-      .where(eq(schema.posts.isDeleted, 0))
-      .where(eq(schema.posts.status, "published"))
-      .where(
+      .where(and(
+        eq(schema.posts.slug, slug),
+        eq(schema.posts.isDeleted, 0),
+        eq(schema.posts.status, "published"),
         or(
           isNull(schema.posts.publishedAt),
           lte(schema.posts.publishedAt, new Date().toISOString())
         )
-      )
+      ))
       .limit(1)
       .get();
 
@@ -400,9 +400,11 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
     const recent = await db
       .select({ slug: schema.posts.slug })
       .from(schema.posts)
-      .where(eq(schema.posts.title, body.title))
-      .where(eq(schema.posts.cfEmail, email))
-      .where(eq(schema.posts.date, dateStr))
+      .where(and(
+        eq(schema.posts.title, body.title),
+        eq(schema.posts.cfEmail, email),
+        eq(schema.posts.date, dateStr)
+      ))
       .limit(1)
       .get();
 
@@ -458,7 +460,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
           content: astStr,
           createdBy: email,
           createdAt: new Date().toISOString(),
-        })
+        } as any)
         .run()
     );
 
@@ -577,7 +579,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
       .get();
 
     if (current) {
-      await captureHistory(c, slug, current);
+      await captureHistory(c, slug, current as any);
     }
 
     await db
@@ -604,7 +606,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
           content: astStr,
           createdBy: user?.email || "anonymous",
           createdAt: new Date().toISOString(),
-        })
+        } as any)
         .run()
     );
 

@@ -1,7 +1,7 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import type { AppEnv } from "../../../shared/types/api";
+import { AppEnv } from "../middleware";
 import { eq, desc, sum, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { getDb } from "../middleware";
@@ -44,7 +44,7 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
   }
 }));
 
-pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c) => {
+pointsRouter.openapi(getPointsHistoryRoute, (async (c: any) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -64,7 +64,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       .orderBy(desc(schema.pointsLedger.createdAt))
       .all();
 
-    return c.json(history.map((tx) => ({
+    return c.json(history.map((tx: any) => ({
       ...tx,
       points_delta: tx.pointsDelta,
       user_id: tx.userId,
@@ -76,7 +76,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
     console.error("[Points] Get history failed:", err);
     return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
-}));
+}) as any);
 
 pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(async (c) => {
   const { user_id, points_delta, reason } = c.req.valid("json");

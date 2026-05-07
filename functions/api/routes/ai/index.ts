@@ -234,7 +234,8 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
 
 // ── Simulator Playground AI Route ──────────────────────────────────────────
 aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(async (c) => {
-  const { messages, userCode } = c.req.valid("json");
+  const body = c.req.valid("json") as any;
+  const { messages, userCode } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
@@ -309,7 +310,7 @@ Provide helpful, technical advice. Be concise.`;
         const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
           messages: [
             { role: "system", content: truncateForFallback(systemPrompt) },
-            ...messages.map((m: ChatMessage) => ({ role: m.role, content: truncateForFallback(m.content) }))
+            ...messages.map((m: ChatMessage) => ({ role: m.role, content: truncateForFallback(m.content as string) }))
           ],
           max_tokens: 1024,
           stream: true
@@ -347,7 +348,8 @@ Provide helpful, technical advice. Be concise.`;
 
 // ── Documentation Editor Chat Route ────────────────────────────────────────
 aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c) => {
-  const { messages, documentContext } = c.req.valid("json");
+  const body = c.req.valid("json") as any;
+  const { messages, documentContext } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
@@ -415,7 +417,7 @@ Be technical, helpful, and follow FIRST Core Values.`;
         const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
           messages: [
             { role: "system", content: truncateForFallback(systemPrompt) },
-            ...messages.map((m: ChatMessage) => ({ role: m.role, content: truncateForFallback(m.content) }))
+            ...messages.map((m: ChatMessage) => ({ role: m.role, content: truncateForFallback(m.content as string) }))
           ],
           max_tokens: 1536,
           stream: true
@@ -793,7 +795,7 @@ async function saveHistory(db: DrizzleDB, sessionId: string | undefined, history
 
 // ── Manual Reindexing ──────────────────────────────────────────────────────
 aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) => {
-  const { type, content } = c.req.valid("json");
+  const { type, content } = c.req.valid("json") as any;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
@@ -896,18 +898,18 @@ aiRouter.post("/external-sources", ensureAdmin, async (c) => {
     branch: body.branch || "main",
     status: "active",
     createdAt: new Date().toISOString()
-  }).execute();
+  } as any).execute();
 
   return c.json({ id, success: true });
 });
 
-aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
+aiRouter.delete("/external-sources/:id", ensureAdmin, (async (c: any) => {
   const id = c.req.param("id");
   const db = getDb(c);
   
   await db.delete(schema.externalKnowledgeSources).where(eq(schema.externalKnowledgeSources.id, id)).execute();
   return c.json({ success: true });
-});
+}) as any);
 
 aiRouter.get("/chat-session/:id", async (c) => {
   const id = c.req.param("id");

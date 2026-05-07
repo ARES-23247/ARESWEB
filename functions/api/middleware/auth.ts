@@ -2,7 +2,7 @@ import { Context, Next } from "hono";
 import { getAuth } from "../../utils/auth";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { AppEnv, UserRole, SessionUser } from "./utils";
+import { AppEnv, UserRole, SessionUser, DrizzleDB } from "./utils";
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
 export function isDevBypassEnabled(c: Context<AppEnv>): boolean {
