@@ -16,7 +16,7 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import awardsRouter from "./awards";
 import { createDrizzleProxy } from "../../../src/test/utils";
-import type { DrizzleProxy } from "../../../src/test/mocks";
+// import type { DrizzleProxy } from "../../../src/test/mocks";
 import type { DrizzleMock } from "../../../src/test/types";
 
 describe("Hono Backend - /awards Router", () => {
