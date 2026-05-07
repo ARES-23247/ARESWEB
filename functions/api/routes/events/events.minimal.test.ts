@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { mockExecutionContext, createMockDrizzle, createDrizzleProxy } from "../../../../src/test/utils";
-import { TestEnv, MockDrizzle } from "../../../../src/test/types";
+import { AppEnv } from "../../middleware";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
 
@@ -31,7 +29,7 @@ vi.mock("../../middleware", async (importOriginal) => {
       CALENDAR_ID: "cal1"
     }),
     getSessionUser: vi.fn().mockResolvedValue(null),
-    sanitizeProfileForPublic: vi.fn().mockImplementation((val: any) => val),
+    sanitizeProfileForPublic: vi.fn().mockImplementation((val: unknown) => val),
   };
 });
 
@@ -50,44 +48,59 @@ vi.mock("../../../utils/gcalSync", () => ({
 }));
 
 vi.mock("../../utils/crypto", () => ({
-  decrypt: vi.fn().mockImplementation((val: any) => val),
-  encrypt: vi.fn().mockImplementation((val: any) => val),
+  decrypt: vi.fn().mockImplementation((val: unknown) => val),
+  encrypt: vi.fn().mockImplementation((val: unknown) => val),
 }));
 
+const mockExecutionContext = {
+  waitUntil: vi.fn(),
+};
+
 describe("Hono Backend - Events Router", () => {
-  let mockDb: MockDrizzle;
-  let testApp: Hono<TestEnv>;
-  let env: Record<string, unknown>;
+  let app: Hono<AppEnv>;
+
+  const createMockDb = () => ({
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue([]),
+    executeTakeFirst: vi.fn().mockResolvedValue(null),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    all: vi.fn().mockResolvedValue([]),
+    get: vi.fn().mockResolvedValue(null),
+    transaction: vi.fn().mockImplementation(async (cb: unknown) => cb(mockDb)),
+  });
+
+  let mockDb: ReturnType<typeof createMockDb>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
-    env = {
-      DB: {},
-      ENVIRONMENT: "test",
-      DEV_BYPASS: "true",
-    };
-
-    testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb) as any);
+    app = new Hono<AppEnv>();
+    app.use("*", async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      c.set("db", mockDb as never);
       const user = { id: "local-dev", email: "admin@test.com", role: "admin", name: "Local Dev", nickname: "Local Dev", image: null, member_type: "mentor" };
       vi.mocked(shared.getSessionUser).mockResolvedValue(user);
       await next();
     });
-    testApp.route("/", eventsRouter);
+    app.route("/", eventsRouter);
   });
 
   afterEach(async () => {
-    const calls = mockExecutionContext.waitUntil.mock.calls as unknown as ReadonlyArray<readonly [Promise<unknown>]>;
+    const calls = mockExecutionContext.waitUntil.mock.calls as ReadonlyArray<readonly [Promise<unknown>]>;
     const promises = calls.map((call) => call[0]);
     await Promise.all(promises);
   });
 
   it("GET / - list public events", async () => {
-    mockDb.all.mockResolvedValueOnce([]);
-    const res = await testApp.request("/", {}, env, mockExecutionContext);
+    mockDb.execute.mockResolvedValueOnce([]);
+    const res = await app.request("/", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(200);
     expect(mockDb.select).toHaveBeenCalled();
   });

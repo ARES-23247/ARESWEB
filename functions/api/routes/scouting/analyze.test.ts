@@ -3,17 +3,15 @@ import { Hono } from "hono";
 import analyzeRouter from "./analyze";
 import { AppEnv } from "../../middleware";
 
-vi.mock("../../middleware", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../middleware")>();
-  return {
-    ...actual,
-    getDb: () => ({
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      run: vi.fn().mockResolvedValue({ success: true })
-    }),
-  };
-});
+vi.mock("../../middleware", () => ({
+  getDb: () => ({
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    run: vi.fn().mockResolvedValue({ success: true })
+  }),
+}));
+
+
 
 describe("scoutingAnalyzeRouter", () => {
   let app: Hono<AppEnv>;
@@ -33,12 +31,12 @@ describe("scoutingAnalyzeRouter", () => {
       }),
     } as any);
 
-    const res = await app.request("/scouting/analyze", {
+    const res = await app.request("/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: "team_analysis",
-        teamNumber: "23247",
+        teamNumber: 23247,
         seasonKey: "2023",
         context: { OPR: 50 }
       })
@@ -55,7 +53,7 @@ describe("scoutingAnalyzeRouter", () => {
   });
 
   it("should reject invalid modes", async () => {
-    const res = await app.request("/scouting/analyze", {
+    const res = await app.request("/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -1,10 +1,17 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
- 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 import { settingsRouter } from "./settings";
+import { AppEnv } from "../middleware";
+
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
+
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -15,31 +22,49 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
+// Simple inline mock database
+function createMockDb() {
+  return {
+    prepare: vi.fn().mockReturnThis(),
+    bind: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([]),
+    first: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    onConflictDoUpdate: vi.fn().mockReturnThis(),
+  };
+}
+
 describe("Hono Backend - /settings Router", () => {
-  let mockDb: DrizzleMock;
-  let testApp: Hono<TestEnv>;
-  let env: TestEnv["Bindings"];
+  let mockDb: ReturnType<typeof createMockDb>;
+  let testApp: Hono<AppEnv>;
+  let env: AppEnv["Bindings"];
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = createMockDrizzle() as unknown as DrizzleMock;
+    mockDb = createMockDb();
 
     env = {
       DB: {} as unknown as D1Database,
       ENVIRONMENT: "test",
       DEV_BYPASS: "true",
-    };
+    } as AppEnv["Bindings"];
 
-    testApp = new Hono<TestEnv>();
+    testApp = new Hono<AppEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
-      c.set("sessionUser", { 
-        id: "1", 
-        email: "admin@test.com", 
-        name: "Admin User", 
-        role: "admin", 
-        member_type: "mentor" 
+      c.set("db", mockDb as any);
+      c.set("sessionUser", {
+        id: "1",
+        email: "admin@test.com",
+        name: "Admin User",
+        role: "admin",
+        member_type: "mentor"
       });
       await next();
     });
@@ -48,7 +73,8 @@ describe("Hono Backend - /settings Router", () => {
 
   it("GET / - list settings (masked)", async () => {
     const res = await testApp.request("/admin/settings", {}, env, mockExecutionContext);
-    if (res.status === 500) console.log(await res.json()); expect(res.status).toBe(200);
+    if (res.status === 500) console.log(await res.json());
+    expect(res.status).toBe(200);
     const body = await res.json() as { settings: Record<string, string>; success: boolean };
     expect(body.settings.site_name).toBe("ARES");
     expect(body.settings.BETTER_AUTH_SECRET).toContain("••••");
@@ -67,7 +93,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /stats - get platform stats", async () => {
-    mockDb.get.mockResolvedValue({ count: 10 });
+    mockDb.first.mockResolvedValue({ count: 10 });
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { posts: number; users: number; events: number; docs: number };
@@ -75,7 +101,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /stats - get platform stats with null values", async () => {
-    mockDb.get.mockResolvedValue(null);
+    mockDb.first.mockResolvedValue(null);
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { posts: number; users: number; events: number; docs: number };
@@ -84,7 +110,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /stats - handles database error", async () => {
-    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -162,7 +188,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /admin/stats - error", async () => {
-    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -188,4 +214,3 @@ describe("Hono Backend - /settings Router", () => {
     expect(body.backup.posts).toEqual([]);
   });
 });
-

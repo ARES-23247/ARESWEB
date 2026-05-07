@@ -31,7 +31,7 @@ describe("simulationsRouter", () => {
       text: async () => JSON.stringify({ simulators: [{ id: "test-sim", name: "Test Sim" }] }),
     } as any);
 
-    const res = await app.request("/simulations", {
+    const res = await app.request("/", {
       method: "GET"
     }, {
       env: { GITHUB_PAT: "test-pat" } as any,
@@ -59,7 +59,7 @@ describe("simulationsRouter", () => {
       }),
     } as any);
 
-    const res = await app.request("/simulations/gist/12345", {
+    const res = await app.request("/gist/12345", {
       method: "GET"
     }, {
       env: { GITHUB_PAT: "test-pat" } as any,

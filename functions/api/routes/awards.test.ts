@@ -1,15 +1,23 @@
-import { TestEnv } from "../../../src/test/types";
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
+import type { Context } from "hono";
+import { AppEnv } from "../middleware";
+
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
     ...actual,
-    ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
+    ensureAdmin: async (c: Context<AppEnv>, next: () => Promise<void>) => next(),
     logAuditAction: vi.fn().mockResolvedValue(true),
   };
 });
@@ -19,19 +27,40 @@ vi.mock("../middleware/cache", () => ({
 }));
 
 import awardsRouter from "./awards";
-import { createDrizzleProxy, createMockDrizzle } from "../../../src/test/utils";
-import type { MockDrizzle } from "../../../src/test/types";
+
+// Simple inline mock database
+function createMockDb() {
+  return {
+    prepare: vi.fn().mockReturnThis(),
+    bind: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([]),
+    first: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    offset: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+  };
+}
 
 describe("Hono Backend - /awards Router", () => {
-  let mockDb: MockDrizzle;
-  let testApp: Hono<TestEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  let testApp: Hono<AppEnv>;
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(() => {
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
-    testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb) as MockDrizzle);
+    testApp = new Hono<AppEnv>();
+    testApp.use("*", async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      c.set("db", mockDb as any);
       await next();
     });
     testApp.route("/", awardsRouter);
@@ -90,7 +119,7 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - update existing award by ID", async () => {
-    mockDb.get.mockResolvedValueOnce({ id: 123 }); // Find by ID
+    mockDb.first.mockResolvedValueOnce({ id: 123 }); // Find by ID
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -104,8 +133,8 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - update by ID but not found falls back to duplicate check", async () => {
-    mockDb.get.mockResolvedValueOnce(null); // Find by ID fails
-    mockDb.get.mockResolvedValueOnce({ id: 456 }); // Duplicate check succeeds
+    mockDb.first.mockResolvedValueOnce(null); // Find by ID fails
+    mockDb.first.mockResolvedValueOnce({ id: 456 }); // Duplicate check succeeds
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -121,7 +150,7 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - update existing award by duplicate match", async () => {
-    mockDb.get.mockResolvedValueOnce({ id: 123 }); // Find by duplicate title/year/event
+    mockDb.first.mockResolvedValueOnce({ id: 123 }); // Find by duplicate title/year/event
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -135,8 +164,8 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - create new award with mock insert object", async () => {
-    mockDb.get.mockResolvedValueOnce(null); // Not duplicate
-    mockDb.get.mockResolvedValueOnce({ insertId: 999n }); // Insert result
+    mockDb.first.mockResolvedValueOnce(null); // Not duplicate
+    mockDb.first.mockResolvedValueOnce({ insertId: 999n }); // Insert result
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -151,7 +180,7 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - handles db error", async () => {
-    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ title: "Fail", year: 2024 }),
@@ -181,4 +210,3 @@ describe("Hono Backend - /awards Router", () => {
     expect(res.status).toBe(500);
   });
 });
-

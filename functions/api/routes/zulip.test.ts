@@ -1,11 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
-import { TestEnv, MockDrizzle } from "../../../src/test/types";
-import { getSocialConfig } from "../middleware";
-import { sendZulipMessage } from "../../utils/zulipSync";
 import zulipRouter from "./zulip";
+import { AppEnv } from "../middleware";
+import { sendZulipMessage } from "../../utils/zulipSync";
 
 // Define local types for casting since they might be internal to the router/utils
 type ZulipConfig = {
@@ -17,8 +14,8 @@ type ZulipConfig = {
 type ZulipResponse = {
   success: boolean;
   userNames?: Record<string, string>;
-  presence?: any;
-  messages?: any[];
+  presence?: unknown;
+  messages?: unknown[];
   missingEmails?: string[];
   invitedCount?: number;
 };
@@ -28,11 +25,15 @@ vi.mock("../middleware", async (importOriginal) => {
   return {
     ...actual,
     getSocialConfig: vi.fn(),
-    ensureAuth: async (c: any, next: any) => {
-      c.set("sessionUser", { nickname: "TestNick", role: "admin", member_type: "mentor" });
+    ensureAuth: async (c: unknown, next: () => Promise<void>) => {
+      const context = c as { set: (key: string, value: unknown) => void };
+      context.set("sessionUser", { nickname: "TestNick", role: "admin", member_type: "mentor" });
       await next();
     },
-    ensureAdmin: async (_c: any, next: any) => await next(),
+    ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
+    getDb: () => ({
+      all: vi.fn().mockResolvedValue([]),
+    }),
   };
 });
 
@@ -41,36 +42,31 @@ vi.mock("../../utils/zulipSync", () => ({
 }));
 
 describe("Hono Backend - /zulip Router", () => {
-  let testApp: Hono<TestEnv>;
+  let app: Hono<AppEnv>;
   let fetchMock: ReturnType<typeof vi.fn>;
-  let mockDb: MockDrizzle;
 
   beforeEach(async () => {
     vi.clearAllMocks();
 
-    mockDb = createMockDrizzle();
-
     // Set default behavior for sendZulipMessage mock
     vi.mocked(sendZulipMessage).mockResolvedValue(123 as never);
 
-    testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c, next) => {
-      c.set("db", mockDb as any);
-      await next();
-    });
-    testApp.route("/", zulipRouter);
+    app = new Hono<AppEnv>();
+    app.route("/", zulipRouter);
 
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
 
   it("GET /presence - handles missing config", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({});
-    const res = await testApp.request("/presence", {}, {}, mockExecutionContext);
+    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(500);
   });
 
   it("GET /presence - fetches presence and maps user names", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -78,10 +74,10 @@ describe("Hono Backend - /zulip Router", () => {
     } as ZulipConfig);
 
     fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: { "alice@test.com": {} } }) }) // /presence
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ members: [{ email: "alice@test.com", full_name: "Alice" }] }) }); // /users
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: { "alice@test.com": {} } }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ members: [{ email: "alice@test.com", full_name: "Alice" }] }) });
 
-    const res = await testApp.request("/presence", {}, {}, mockExecutionContext);
+    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
     expect(body.success).toBe(true);
@@ -90,6 +86,7 @@ describe("Hono Backend - /zulip Router", () => {
   });
 
   it("GET /presence - handles fetch error", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -98,21 +95,23 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: false, text: async () => "Unauthorized" });
 
-    const res = await testApp.request("/presence", {}, {}, mockExecutionContext);
+    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(500);
   });
 
   it("POST /message - handles missing config", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({});
-    const res = await testApp.request("/message", {
+    const res = await app.request("/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stream: "general", topic: "test", content: "hello" })
-    }, {}, mockExecutionContext);
+    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(500);
   });
 
   it("POST /message - sends message", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -121,17 +120,18 @@ describe("Hono Backend - /zulip Router", () => {
 
     vi.mocked(sendZulipMessage).mockResolvedValueOnce(true as any);
 
-    const res = await testApp.request("/message", {
+    const res = await app.request("/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stream: "general", topic: "test", content: "hello" })
-    }, {}, mockExecutionContext);
+    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
 
     expect(res.status).toBe(200);
     expect(sendZulipMessage).toHaveBeenCalledWith(expect.anything(), "general", "test", "**TestNick** (via ARES Web):\n\nhello", "stream");
   });
 
   it("POST /message - handles send failure", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -140,16 +140,17 @@ describe("Hono Backend - /zulip Router", () => {
 
     vi.mocked(sendZulipMessage).mockResolvedValueOnce(false as any);
 
-    const res = await testApp.request("/message", {
+    const res = await app.request("/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stream: "general", topic: "test", content: "hello" })
-    }, {}, mockExecutionContext);
+    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
 
     expect(res.status).toBe(500);
   });
 
   it("GET /messages - fetches topic messages", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -158,15 +159,16 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [{ id: 1, content: "hi" }] }) });
 
-    const res = await testApp.request("/topic?stream=general&topic=test", {}, {}, mockExecutionContext);
+    const res = await app.request("/topic?stream=general&topic=test", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
     expect(body.messages).toHaveLength(1);
 
-    expect((body.messages as any[])[0].content).toBe("hi");
+    expect((body.messages as unknown[])[0]).toEqual({ id: 1, content: "hi" });
   });
 
   it("GET /topic - handles 403 error", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -175,11 +177,12 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 403, text: async () => "Forbidden" });
 
-    const res = await testApp.request("/topic?stream=general&topic=test", {}, {}, mockExecutionContext);
+    const res = await app.request("/topic?stream=general&topic=test", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(403);
   });
 
   it("GET /topic - handles 500 error", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -188,11 +191,12 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 500, text: async () => "Internal Error" });
 
-    const res = await testApp.request("/topic?stream=general&topic=test", {}, {}, mockExecutionContext);
+    const res = await app.request("/topic?stream=general&topic=test", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(500);
   });
 
   it("GET /presence - handles users fetch error", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -200,14 +204,15 @@ describe("Hono Backend - /zulip Router", () => {
     } as ZulipConfig);
 
     fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) }) // /presence
-      .mockResolvedValueOnce({ ok: false }); // /users
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) })
+      .mockResolvedValueOnce({ ok: false });
 
-    const res = await testApp.request("/presence", {}, {}, mockExecutionContext);
+    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(200);
   });
 
   it("GET /presence - handles empty users response", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
@@ -215,46 +220,49 @@ describe("Hono Backend - /zulip Router", () => {
     } as ZulipConfig);
 
     fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) }) // /presence
-      .mockResolvedValueOnce({ ok: true, json: async () => ({}) }); // /users
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
 
-    const res = await testApp.request("/presence", {}, {}, mockExecutionContext);
+    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(200);
   });
 
   it("GET /invites/audit - handles missing config", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({});
-    const res = await testApp.request("/invites/audit", {}, {}, mockExecutionContext);
+    const res = await app.request("/invites/audit", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
     expect(res.status).toBe(500);
   });
 
   it("GET /invites/audit - fetches users and returns missing emails", async () => {
+    const { getSocialConfig, getDb } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
       ZULIP_URL: "https://test.zulip.com"
     } as ZulipConfig);
 
-    fetchMock.mockResolvedValueOnce({ 
-      ok: true, 
-      json: async () => ({ 
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
         members: [
           { email: "alice@test.com", is_bot: false, is_active: true },
           { email: "bob@test.com", is_bot: false, is_active: true }
-        ] 
-      }) 
+        ]
+      })
     }).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ members: [] })
     });
 
-    mockDb.all.mockResolvedValueOnce([
+    const mockDb = getDb();
+    (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
       { email: "alice@test.com" },
       { email: "charlie@test.com" }
     ]);
 
-    const res = await testApp.request("/invites/audit", {}, { DB: {} as any }, mockExecutionContext);
-    
+    const res = await app.request("/invites/audit", {}, { env: { DB: {} as any }, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
     expect(body.success).toBe(true);
@@ -262,29 +270,28 @@ describe("Hono Backend - /zulip Router", () => {
   });
 
   it("POST /invites/send - handles batch sending successfully", async () => {
+    const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({
       ZULIP_BOT_EMAIL: "bot@test.com",
       ZULIP_API_KEY: "key123",
       ZULIP_URL: "https://test.zulip.com"
     } as ZulipConfig);
 
-    // Mock streams response
-    fetchMock.mockResolvedValueOnce({ 
-      ok: true, 
-      json: async () => ({ default_streams: [{ stream_id: 1 }] }) 
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ default_streams: [{ stream_id: 1 }] })
     });
 
-    // Mock invite batch response
-    fetchMock.mockResolvedValueOnce({ 
-      ok: true, 
-      text: async () => JSON.stringify({ result: "success" }) 
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify({ result: "success" })
     });
 
-    const res = await testApp.request("/invites/send", {
+    const res = await app.request("/invites/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emails: ["newuser@test.com"] })
-    }, {}, mockExecutionContext);
+    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
 
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
@@ -292,4 +299,3 @@ describe("Hono Backend - /zulip Router", () => {
     expect(body.invitedCount).toBe(1);
   });
 });
-

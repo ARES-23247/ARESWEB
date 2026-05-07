@@ -1,9 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext, flushWaitUntil, createMockDrizzle } from "../../../src/test/utils";
+import { AppEnv } from "../middleware";
 import tasksRouter from "./tasks";
+
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  const promises: Promise<unknown>[] = [];
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => {
+      promises.push(promise);
+      return promise;
+    }),
+    passThroughOnException: vi.fn(),
+    props: {},
+    promises,
+  };
+}
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -16,8 +28,6 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
-
-
 vi.mock("../../utils/zulipSync", () => ({
   sendZulipMessage: vi.fn()
 }));
@@ -25,21 +35,43 @@ vi.mock("../../utils/zulipSync", () => ({
 import { getSessionUser } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 
+// Simple inline mock database
+function createMockDb() {
+  return {
+    prepare: vi.fn().mockReturnThis(),
+    bind: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([]),
+    first: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+  };
+}
+
 describe("Hono Backend - /tasks Router", () => {
-  let mockDb: DrizzleMock;
-  let testApp: Hono<TestEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  let testApp: Hono<AppEnv>;
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(async () => {
-    vi.clearAllMocks(); vi.mocked(getSessionUser).mockReset();
+    vi.clearAllMocks();
+    (getSessionUser as unknown as ReturnType<typeof vi.fn>).mockReset();
 
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
     // Set default behavior for sendZulipMessage mock
     vi.mocked(sendZulipMessage).mockResolvedValue(123 as never);
 
-    testApp = new Hono<TestEnv>();
+    testApp = new Hono<AppEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", mockDb as any);
       (c.set as any)("executionCtx", mockExecutionContext);
       c.env.DEV_BYPASS = "true";
       await next();
@@ -57,23 +89,23 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("GET / - lists tasks", async () => {
     mockDb.all.mockResolvedValueOnce([
-      { 
-        id: "task1", 
-        title: "Test Task", 
-        status: "todo", 
-        priority: "high", 
-        sortOrder: 1, 
-        createdBy: "user1", 
-        assignees_json: '[{"id":"user2","nickname":"Alice"}]' 
+      {
+        id: "task1",
+        title: "Test Task",
+        status: "todo",
+        priority: "high",
+        sortOrder: 1,
+        createdBy: "user1",
+        assignees_json: '[{"id":"user2","nickname":"Alice"}]'
       },
-      { 
-        id: "task2", 
-        title: "Test Task 2", 
-        status: null, 
-        priority: null, 
-        sortOrder: 2, 
-        createdBy: "user1", 
-        assignees_json: '[]' 
+      {
+        id: "task2",
+        title: "Test Task 2",
+        status: null,
+        priority: null,
+        sortOrder: 2,
+        createdBy: "user1",
+        assignees_json: '[]'
       }
     ]);
 
@@ -147,9 +179,9 @@ describe("Hono Backend - /tasks Router", () => {
     const res = await testApp.request("/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        title: "New Task", 
-        description: "Desc", 
+      body: JSON.stringify({
+        title: "New Task",
+        description: "Desc",
         priority: "high",
         assignees: ["user2", "user3"]
       })
@@ -158,7 +190,6 @@ describe("Hono Backend - /tasks Router", () => {
     expect(res.status).toBe(200);
     expect(mockDb.insert).toHaveBeenCalled();
     expect(mockDb.insert).toHaveBeenCalled();
-    
 
     const body = await res.json() as any;
     expect(body.success).toBe(true);
@@ -191,7 +222,8 @@ describe("Hono Backend - /tasks Router", () => {
       body: JSON.stringify({ title: "Fail" })
     }, {}, mockExecutionContext);
 
-    console.log(await res.text()); expect(res.status).toBe(401);
+    console.log(await res.text());
+    expect(res.status).toBe(401);
   });
 
   it("POST / - handles create error", async () => {
@@ -209,7 +241,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("POST / - handles Zulip failure in create gracefully", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "student" } as any);
-    
+
     // Fail the user query to trigger the catch block for assignee notifications
     mockDb.all = vi.fn()
       .mockResolvedValueOnce([]) // insert tasks
@@ -225,7 +257,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await flushWaitUntil(); // allow waitUntil to throw
+    await Promise.allSettled(mockExecutionContext.promises); // allow waitUntil to throw
   });
 
   it("POST / - handles Zulip thread creation failure gracefully", async () => {
@@ -236,7 +268,7 @@ describe("Hono Backend - /tasks Router", () => {
       .mockResolvedValueOnce([]) // insert audit
       .mockResolvedValueOnce([]) // profiles
       .mockResolvedValueOnce([]); // emails
-    
+
     vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip Thread Down"));
 
     const res = await testApp.request("/", {
@@ -246,7 +278,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await flushWaitUntil(); // allow waitUntil to throw
+    await Promise.allSettled(mockExecutionContext.promises); // allow waitUntil to throw
   });
 
   it("POST / - sends Zulip notification on create", async () => {
@@ -261,7 +293,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await flushWaitUntil(); // allow waitUntil to resolve
+    await Promise.allSettled(mockExecutionContext.promises); // allow waitUntil to resolve
     expect(sendZulipMessage).toHaveBeenCalled();
   });
 
@@ -283,7 +315,7 @@ describe("Hono Backend - /tasks Router", () => {
     }, {}, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    await flushWaitUntil(); // allow waitUntil to resolve
+    await Promise.allSettled(mockExecutionContext.promises); // allow waitUntil to resolve
   });
 
   // ─── REORDER ────────────────────────────────────────────────────────────
@@ -316,7 +348,8 @@ describe("Hono Backend - /tasks Router", () => {
       body: JSON.stringify({ items: [] })
     }, {}, mockExecutionContext);
 
-    console.log(await res.text()); expect(res.status).toBe(401);
+    console.log(await res.text());
+    expect(res.status).toBe(401);
   });
 
   it("PATCH /reorder - handles db error", async () => {
@@ -336,8 +369,8 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - updates task and assignments (admin)", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
-    
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
+
     const res = await testApp.request("/task1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -352,7 +385,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - allows any member to update task fields (no assignees)", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "member1", role: "student" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "other_user", title: "Task" });
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "other_user", title: "Task" });
 
     const res = await testApp.request("/task1", {
       method: "PATCH",
@@ -366,7 +399,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - blocks assignment change by non-privileged non-owner", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "student1", role: "student" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "other_user", title: "Task" });
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "other_user", title: "Task" });
 
     const res = await testApp.request("/task1", {
       method: "PATCH",
@@ -382,7 +415,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - allows task creator to change assignments", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "creator1", role: "student" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "creator1", title: "My Task" });
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "creator1", title: "My Task" });
 
     const res = await testApp.request("/task1", {
       method: "PATCH",
@@ -397,7 +430,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - allows mentor to change assignments", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "mentor1", role: "mentor" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "other", title: "Task" });
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "other", title: "Task" });
 
     const res = await testApp.request("/task1", {
       method: "PATCH",
@@ -410,7 +443,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - returns 404 for non-existent task", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce(null);
+    mockDb.first.mockResolvedValueOnce(null);
 
     const res = await testApp.request("/nonexistent", {
       method: "PATCH",
@@ -430,12 +463,13 @@ describe("Hono Backend - /tasks Router", () => {
       body: JSON.stringify({ title: "Nope" })
     }, {}, mockExecutionContext);
 
-    console.log(await res.text()); expect(res.status).toBe(401);
+    console.log(await res.text());
+    expect(res.status).toBe(401);
   });
 
   it("PATCH /:id - handles update error", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await testApp.request("/task1", {
       method: "PATCH",
@@ -448,10 +482,10 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - sends Zulip notification to new assignees", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
     mockDb.all = vi.fn().mockResolvedValue([{ email: "bob@test.com", user_id: "user3", nickname: "Bob" }]);
     vi.mocked(sendZulipMessage).mockResolvedValueOnce("msg123");
-    
+
     const res = await testApp.request("/task1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -464,10 +498,10 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - handles Zulip notification rejection", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
     mockDb.all = vi.fn().mockResolvedValue([{ email: "bob@test.com", user_id: "user3", nickname: "Bob" }]);
     vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip API down"));
-    
+
     const res = await testApp.request("/task1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -479,17 +513,17 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - updates all fields and clears assignees", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
     mockDb.all = vi.fn().mockResolvedValue([]);
-    
+
     const res = await testApp.request("/task1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         description: "New desc",
         due_date: "2024-01-01",
         sortOrder: 5,
-        assignees: [] 
+        assignees: []
       })
     }, {}, mockExecutionContext);
 
@@ -498,15 +532,15 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - handles Zulip failure in update gracefully", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
-    
+    mockDb.first.mockResolvedValueOnce({ id: "task1", createdBy: "user2", title: "Task" });
+
     // Fail the user query to trigger the catch block for assignee notifications
     mockDb.all = vi.fn()
       .mockResolvedValueOnce([]) // update task
       .mockResolvedValueOnce([]) // delete assignments
       .mockResolvedValueOnce([]) // insert assignments
       .mockRejectedValueOnce(new Error("DB query fail for user emails"));
-    
+
     const res = await testApp.request("/task1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -520,8 +554,8 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("DELETE /:id - deletes task (admin)", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce({ createdBy: "user2" });
-    
+    mockDb.first.mockResolvedValueOnce({ createdBy: "user2" });
+
     const res = await testApp.request("/task1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" }, {}, mockExecutionContext);
     expect(res.status).toBe(200);
     expect(mockDb.delete).toHaveBeenCalled();
@@ -529,7 +563,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("DELETE /:id - deletes task (owner)", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "owner1", role: "student" } as any);
-    mockDb.get.mockResolvedValueOnce({ createdBy: "owner1" });
+    mockDb.first.mockResolvedValueOnce({ createdBy: "owner1" });
 
     const res = await testApp.request("/task1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" }, {}, mockExecutionContext);
     expect(res.status).toBe(200);
@@ -538,7 +572,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("DELETE /:id - blocks non-admin non-owner", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "student1", role: "student" } as any);
-    mockDb.get.mockResolvedValueOnce({ createdBy: "other_user" });
+    mockDb.first.mockResolvedValueOnce({ createdBy: "other_user" });
 
     const res = await testApp.request("/task1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" }, {}, mockExecutionContext);
     expect(res.status).toBe(403);
@@ -549,7 +583,7 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("DELETE /:id - returns 404 for non-existent task", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockResolvedValueOnce(null);
+    mockDb.first.mockResolvedValueOnce(null);
 
     const res = await testApp.request("/task1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" }, {}, mockExecutionContext);
     expect(res.status).toBe(404);
@@ -559,15 +593,15 @@ describe("Hono Backend - /tasks Router", () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce(null);
 
     const res = await testApp.request("/task1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" }, {}, mockExecutionContext);
-    console.log(await res.text()); expect(res.status).toBe(401);
+    console.log(await res.text());
+    expect(res.status).toBe(401);
   });
 
   it("DELETE /:id - handles error", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
-    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await testApp.request("/task1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" }, {}, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 });
-

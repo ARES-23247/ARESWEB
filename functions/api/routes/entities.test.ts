@@ -1,11 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TestEnv, MockDrizzle } from "../../../src/test/types";
 import { Hono } from "hono";
-import { mockExecutionContext, createDrizzleProxy, createMockDrizzle } from "../../../src/test/utils";
+import { AppEnv } from "../middleware";
 import entitiesRouter from "./entities";
-
-
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -18,17 +14,40 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import { logAuditAction } from "../middleware";
 
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
+
+// Simple inline mock database for Drizzle ORM
+function createMockDb() {
+  return {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue([]),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+  };
+}
+
 describe("Hono Backend - /entities Router", () => {
-  let mockDb: MockDrizzle;
-  let testApp: Hono<TestEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  let testApp: Hono<AppEnv>;
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
-    testApp = new Hono<TestEnv>();
+    testApp = new Hono<AppEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb) as any);
+      c.set("db", mockDb as any);
       await next();
     });
     testApp.route("/", entitiesRouter);
@@ -52,7 +71,7 @@ describe("Hono Backend - /entities Router", () => {
     const res = await testApp.request("/links?type=doc&id=doc1", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
-    
+
     expect(body.links).toHaveLength(4);
     expect(body.links[0]).toEqual({
       id: "1", target_type: "task", target_id: "task1", target_title: "Task 1", link_type: "reference"
@@ -72,7 +91,7 @@ describe("Hono Backend - /entities Router", () => {
     const res = await testApp.request("/links?type=task&id=task1", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as any;
-    
+
     expect(body.links[0].target_title).toBe("Doc 2");
   });
 
@@ -90,7 +109,7 @@ describe("Hono Backend - /entities Router", () => {
         source_type: "doc", source_id: "1", target_type: "task", target_id: "2", link_type: "reference"
       })
     }, {}, mockExecutionContext);
-    
+
     expect(res.status).toBe(200);
     expect(mockDb.insert).toHaveBeenCalledWith(expect.anything());
     expect(logAuditAction).toHaveBeenCalled();
@@ -119,4 +138,3 @@ describe("Hono Backend - /entities Router", () => {
     expect(res.status).toBe(500);
   });
 });
-

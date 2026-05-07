@@ -1,13 +1,81 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
-import { TestEnv, MockDrizzle } from "../../../src/test/types";
-import { createMockUser } from "../../../src/test/factories/userFactory";
+import docsRouter from "./docs";
+import { AppEnv } from "../middleware";
 
-const mockUser = createMockUser({ id: "1", email: "admin@test.com", role: "admin" });
+const mockExecutionContext = {
+  waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+  passThroughOnException: vi.fn(),
+  props: {},
+};
+
 let authBypass = true;
+
+// Mock utilities
+vi.mock("./ai/autoReindex", () => ({
+  triggerBackgroundReindex: vi.fn(),
+}));
+
+vi.mock("../../utils/zulipSync", () => ({
+  sendZulipMessage: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("../middleware/cache", () => ({
+  edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+}));
+
+vi.mock("../middleware", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware")>();
+  return {
+    ...actual,
+    ensureAdmin: async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      if (authBypass) return next();
+      return c.json({ error: "Forbidden" }, 403);
+    },
+    ensureAuth: async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      if (authBypass) return next();
+      return c.json({ error: "Unauthorized" }, 401);
+    },
+    getSessionUser: vi.fn().mockResolvedValue({
+      id: "1",
+      email: "admin@test.com",
+      name: null,
+      nickname: "Admin",
+      image: null,
+      role: "admin",
+      member_type: "student"
+    }),
+    verifyTurnstile: vi.fn().mockResolvedValue(true),
+    logAuditAction: vi.fn().mockResolvedValue(true),
+    notifyByRole: vi.fn().mockResolvedValue(true),
+    emitNotification: vi.fn().mockResolvedValue(true),
+  };
+});
+
+function createMockDb() {
+  const allMock = vi.fn().mockResolvedValue([]);
+  const runMock = vi.fn().mockResolvedValue({ success: true });
+  const getMock = vi.fn().mockResolvedValue(null);
+
+  return {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    leftJoin: vi.fn().mockReturnThis(),
+    all: allMock,
+    get: getMock,
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    run: runMock,
+    onConflictDoUpdate: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+  };
+}
 
 interface DocsResponse {
   success?: boolean;
@@ -17,80 +85,48 @@ interface DocsResponse {
   [key: string]: unknown;
 }
 
-// Mock middleware
-vi.mock("../middleware", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../middleware")>();
-  return {
-    ...actual,
-    ensureAdmin: async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      if (authBypass) return next();
-      return c.json({ error: "Forbidden" }, 403);
-    },
-    ensureAuth: async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      if (authBypass) return next();
-      return c.json({ error: "Unauthorized" }, 401);
-    },
-    getSessionUser: vi.fn().mockImplementation(() => Promise.resolve(mockUser)),
-    verifyTurnstile: vi.fn().mockResolvedValue(true),
-    logAuditAction: vi.fn().mockResolvedValue(true),
-    notifyByRole: vi.fn().mockResolvedValue(true),
-    emitNotification: vi.fn().mockResolvedValue(true),
-  };
-});
-
-vi.mock("../middleware/cache", () => ({
-  edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
-}));
-
-vi.mock("./ai/autoReindex", () => ({
-  triggerBackgroundReindex: vi.fn(),
-}));
-
-vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn(),
-}));
-
-import docsRouter from "./docs";
-
 describe("Hono Backend - /docs Router", () => {
+  let app: Hono<AppEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  let env: { DEV_BYPASS: string; DB: D1Database };
 
-  let mockDb: MockDrizzle;
-  let testApp: Hono<TestEnv>;
-  const mockEnv: TestEnv["Bindings"] = { DEV_BYPASS: "true", DB: {} as unknown as D1Database };
-
-  beforeEach(async () => {
+  beforeEach(() => {
+    mockDb = createMockDb();
+    env = {
+      DEV_BYPASS: "true",
+      DB: {} as unknown as D1Database
+    };
     vi.clearAllMocks();
-    mockDb = createMockDrizzle();
+    authBypass = true;
 
-    // Set default behavior for sendZulipMessage mock
-    const { sendZulipMessage } = await import("../../utils/zulipSync");
-    vi.mocked(sendZulipMessage).mockResolvedValue(true as never);
-
-    testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
+    app = new Hono<AppEnv>();
+    app.use("*", async (c, next) => {
       c.set("db", mockDb as any);
       await next();
     });
-    testApp.route("/", docsRouter);
+    app.route("/", docsRouter);
   });
 
   it("GET / - list public docs", async () => {
     mockDb.all.mockResolvedValueOnce([{ slug: "test", title: "Test Doc", category: "General" }]);
-    const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("GET / - legacy database fallback and undefined mappings", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("Fail"));
     mockDb.all.mockResolvedValueOnce([{ slug: "test", title: "Test Doc", category: "General", sort_order: null }]);
-    const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("GET /:slug - get single doc", async () => {
     mockDb.get.mockResolvedValueOnce({ slug: "test", title: "Test Doc", content: "..." });
     mockDb.all.mockResolvedValueOnce([]); // contributors
-    const res = await testApp.request("/test", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/test", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
@@ -99,26 +135,30 @@ describe("Hono Backend - /docs Router", () => {
     mockDb.all.mockResolvedValueOnce([
       { nickname: "Admin", avatar: "admin.png" },
       { nickname: null, avatar: null },
-      { } // undefined branch
+      {} // undefined branch
     ]);
-    const res = await testApp.request("/test2", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/test2", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/save - prunes history if results > 0", async () => {
     mockDb.get.mockResolvedValueOnce(null); // No existing doc
     mockDb.all.mockResolvedValueOnce([{ id: 5 }]); // prune query result
-    const res = await testApp.request("/admin/save", {
+
+    const res = await app.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ slug: "new-doc-prune", title: "New Doc", category: "Manuals", content: "Content here" }),
       headers: { "Content-Type": "application/json" }
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/save - save new doc as admin", async () => {
     mockDb.get.mockResolvedValueOnce(null); // No existing doc
-    const res = await testApp.request("/admin/save", {
+
+    const res = await app.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
         slug: "new-doc",
@@ -128,22 +168,24 @@ describe("Hono Backend - /docs Router", () => {
         isDraft: false
       }),
       headers: { "Content-Type": "application/json" }
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/save - save existing doc as admin", async () => {
     mockDb.get.mockResolvedValueOnce({ slug: "existing-doc", title: "Existing", cf_email: "test@test.com" });
-    const res = await testApp.request("/admin/save", {
+
+    const res = await app.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ slug: "existing-doc", title: "Updated", category: "Manuals", content: "Content here" }),
       headers: { "Content-Type": "application/json" }
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/save - save doc as non-admin", async () => {
-    // Override getSessionUser for this test
     const { getSessionUser } = await import("../middleware");
     vi.mocked(getSessionUser).mockResolvedValueOnce({
       id: "2",
@@ -153,38 +195,41 @@ describe("Hono Backend - /docs Router", () => {
       image: null,
       role: "member",
       member_type: "student",
-    });
+    } as any);
 
     mockDb.get.mockResolvedValueOnce({ slug: "existing-doc", title: "Existing" });
-    const res = await testApp.request("/admin/save", {
+
+    const res = await app.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ slug: "existing-doc", title: "Updated", category: "Manuals", content: "Content here" }),
       headers: { "Content-Type": "application/json" }
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/save - block unauthorized user", async () => {
     authBypass = false;
-    const res = await testApp.request("/admin/save", {
+
+    const res = await app.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ slug: "fail", title: "Test", category: "Manuals", content: "content" }),
       headers: { "Content-Type": "application/json" }
-    }, { ...mockEnv, DEV_BYPASS: "false" }, mockExecutionContext);
+    }, { ...env, DEV_BYPASS: "false" }, mockExecutionContext);
 
     expect(res.status).toBe(401);
     authBypass = true; // reset for other tests
   });
 
   it("GET /search - returns matching docs", async () => {
-    // Handler uses db.run(sql`...`) for FTS5 search, which returns { rows: [...] }
     mockDb.run.mockResolvedValueOnce({
       rows: [
         { slug: "test", title: "Test Doc", category: "Cat", description: "query is here" },
         { slug: "test2", title: "Test Doc 2", category: "Cat", description: null }
       ]
     });
-    const res = await testApp.request("/search?q=query", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/search?q=query", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as DocsResponse;
     expect(body.results).toHaveLength(2);
@@ -192,7 +237,7 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("GET /search - ignores short queries", async () => {
-    const res = await testApp.request("/search?q=ab", {}, mockEnv, mockExecutionContext);
+    const res = await app.request("/search?q=ab", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as DocsResponse;
     expect(body.results).toEqual([]);
@@ -200,42 +245,46 @@ describe("Hono Backend - /docs Router", () => {
 
   it("GET /admin/list - list all docs for admin", async () => {
     mockDb.all.mockResolvedValueOnce([{ slug: "test", title: "Test Doc", category: "General", sort_order: 1, status: "draft" }]);
-    const res = await testApp.request("/admin/list", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("DELETE /admin/:slug - soft deletes a doc", async () => {
     mockDb.get.mockResolvedValueOnce({ slug: "test-doc" });
-    const res = await testApp.request("/admin/test-doc", {
+
+    const res = await app.request("/admin/test-doc", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
-    if (res.status !== 200) {
-      console.error(await res.text());
-    }
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("PATCH /admin/:slug/history/:id/restore - restores a soft-deleted doc", async () => {
     mockDb.get.mockResolvedValueOnce({ title: "test", content: "test" });
     mockDb.get.mockResolvedValueOnce(null); // No current doc
-    const res = await testApp.request("/admin/test-doc/history/1/restore", {
+
+    const res = await app.request("/admin/test-doc/history/1/restore", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("PATCH /admin/:slug/history/:id/restore - restores over existing doc", async () => {
     mockDb.get.mockResolvedValueOnce({ title: "test old", content: "test" }); // Row from history
     mockDb.get.mockResolvedValueOnce({ slug: "test-doc", title: "test new", content: "test new", cf_email: "test@test.com" }); // Current doc
-    const res = await testApp.request("/admin/test-doc/history/1/restore", {
+
+    const res = await app.request("/admin/test-doc/history/1/restore", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
@@ -251,71 +300,82 @@ describe("Hono Backend - /docs Router", () => {
         created_at: "2026-01-01T00:00:00Z"
       }
     ]);
-    const res = await testApp.request("/admin/test-doc/history", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/test-doc/history", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("GET /admin/:slug/detail - fetches admin detail", async () => {
     mockDb.get.mockResolvedValueOnce({ slug: "test-doc", title: "Test Doc", content: "..." });
-    const res = await testApp.request("/admin/test-doc/detail", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/test-doc/detail", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("PATCH /admin/:slug/sort - updates sort order", async () => {
-    const res = await testApp.request("/admin/test-doc/sort", {
+    const res = await app.request("/admin/test-doc/sort", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortOrder: 5 })
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /:slug/feedback - submits feedback", async () => {
-    const res = await testApp.request("/test-doc/feedback", {
+    const res = await app.request("/test-doc/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isHelpful: true, comment: "Great doc!", turnstileToken: "abc" })
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/:slug/approve - approves new doc", async () => {
     mockDb.get.mockResolvedValueOnce({ title: "Test Doc", cf_email: "test@test.com" });
-    const res = await testApp.request("/admin/test-doc/approve", {
+
+    const res = await app.request("/admin/test-doc/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/:slug/approve - approves revision of doc", async () => {
     mockDb.get.mockResolvedValueOnce({ revision_of: "parent-doc", title: "Test Doc", cf_email: "test@test.com" });
     mockDb.get.mockResolvedValueOnce({ id: "2" }); // Author ID
-    const res = await testApp.request("/admin/test-doc/approve", {
+
+    const res = await app.request("/admin/test-doc/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/:slug/reject - rejects doc", async () => {
     mockDb.get.mockResolvedValueOnce({ title: "Test Doc", cf_email: "test@test.com" });
-    const res = await testApp.request("/admin/test-doc/reject", {
+
+    const res = await app.request("/admin/test-doc/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason: "Needs work" })
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/:slug/undelete - undeletes doc", async () => {
-    const res = await testApp.request("/admin/test-doc/undelete", {
+    const res = await app.request("/admin/test-doc/undelete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
@@ -323,11 +383,13 @@ describe("Hono Backend - /docs Router", () => {
     mockDb.get.mockResolvedValueOnce({
       content: "test https://ares-media.example.com/asset123.png"
     });
-    const res = await testApp.request("/admin/test-doc/purge", {
+
+    const res = await app.request("/admin/test-doc/purge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, { ...mockEnv, ARES_STORAGE: { delete: vi.fn().mockResolvedValue(true) } }, mockExecutionContext);
+    }, { ...env, ARES_STORAGE: { delete: vi.fn().mockResolvedValue(true) } } as any, mockExecutionContext);
+
     expect(res.status).toBe(200);
   });
 
@@ -336,9 +398,7 @@ describe("Hono Backend - /docs Router", () => {
       content: "test https://ares-media.example.com/asset123.png"
     });
 
-    // Create an array of all waitUntil promises
-
-    const waitUntils: Promise<any>[] = [];
+    const waitUntils: Promise<unknown>[] = [];
     const mockCtx = {
       ...mockExecutionContext,
       waitUntil: vi.fn((p: Promise<unknown>) => {
@@ -346,11 +406,11 @@ describe("Hono Backend - /docs Router", () => {
       })
     };
 
-    const res = await testApp.request("/admin/test-doc/purge", {
+    const res = await app.request("/admin/test-doc/purge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, { ...mockEnv, ARES_STORAGE: { delete: vi.fn().mockRejectedValue(new Error("S3 Error")) } }, mockCtx);
+    }, { ...env, ARES_STORAGE: { delete: vi.fn().mockRejectedValue(new Error("S3 Error")) } } as any, mockCtx);
 
     expect(res.status).toBe(200); // Storage failure shouldn't fail the API call
     await Promise.all(waitUntils); // Ensure background catch block is executed
@@ -358,256 +418,274 @@ describe("Hono Backend - /docs Router", () => {
 
   it("POST /admin/:slug/purge - handles error", async () => {
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/purge", {
+
+    const res = await app.request("/admin/test-doc/purge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("GET / - list public docs error", async () => {
-    // Handler has try { .all() } catch { .all() } catch { 500 }
-    // Both .all() must fail to get 500.
-    // With cache middleware mocked, this should work.
     mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("GET /:slug - single doc not found", async () => {
     mockDb.get.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-    const res = await testApp.request("/not-found", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/not-found", {}, env, mockExecutionContext);
     expect(res.status).toBe(404);
   });
 
   it("GET /:slug - single doc error", async () => {
-    // Handler uses .get() for slug lookup — reject it
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/test", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/test", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/save - handles insert error", async () => {
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/save", {
+
+    const res = await app.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ slug: "new-doc", title: "New Doc", category: "Manuals", content: "Content here" }),
       headers: { "Content-Type": "application/json" }
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("GET /search - search error", async () => {
-    // Handler uses db.run(sql`...`) for FTS5 — mock run to reject
     mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
-    const res2 = await testApp.request("/search?q=newquery" + Date.now(), {}, mockEnv, mockExecutionContext);
+
+    const res2 = await app.request("/search?q=newquery" + Date.now(), {}, env, mockExecutionContext);
     expect(res2.status).toBe(500);
   });
 
   it("GET /admin/list - list error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/list", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("DELETE /admin/:slug - delete not found", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/test-doc", {
+
+    const res = await app.request("/admin/test-doc", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(404);
   });
 
   it("DELETE /admin/:slug - delete error", async () => {
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc", {
+
+    const res = await app.request("/admin/test-doc", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("PATCH /admin/:slug/history/:id/restore - restore not found", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/test-doc/history/1/restore", {
+
+    const res = await app.request("/admin/test-doc/history/1/restore", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(404);
   });
 
   it("PATCH /admin/:slug/history/:id/restore - restore error", async () => {
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/history/1/restore", {
+
+    const res = await app.request("/admin/test-doc/history/1/restore", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("GET /admin/:slug/history - history error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/history", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/test-doc/history", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("GET /admin/:slug/detail - detail not found", async () => {
     mockDb.get.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/test-doc/detail", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/test-doc/detail", {}, env, mockExecutionContext);
     expect(res.status).toBe(404);
   });
 
   it("GET /admin/:slug/detail - detail error", async () => {
     mockDb.get.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/detail", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/test-doc/detail", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("PATCH /admin/:slug/sort - sort error", async () => {
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/sort", {
+
+    const res = await app.request("/admin/test-doc/sort", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortOrder: 5 })
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
-
-
   it("POST /admin/:slug/approve - approve not found", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/test-doc/approve", {
+
+    const res = await app.request("/admin/test-doc/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(404);
   });
 
   it("POST /admin/:slug/approve - approve error", async () => {
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/approve", {
+
+    const res = await app.request("/admin/test-doc/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/:slug/reject - reject error", async () => {
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/reject", {
+
+    const res = await app.request("/admin/test-doc/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason: "bad" })
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/:slug/undelete - undelete error", async () => {
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/undelete", {
+
+    const res = await app.request("/admin/test-doc/undelete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/:slug/reject - handles error", async () => {
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/admin/test-doc/reject", {
+
+    const res = await app.request("/admin/test-doc/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason: "Needs work" })
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/:slug/undelete - handles error", async () => {
-    (mockDb.update as ReturnType<typeof vi.fn>).mockImplementationOnce(() => { throw new Error("DB fail") });
-    const res = await testApp.request("/admin/test-doc/undelete", {
+    mockDb.update.mockImplementationOnce(() => { throw new Error("DB fail") });
+
+    const res = await app.request("/admin/test-doc/undelete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(500);
   });
-
-  // ─── ERROR BRANCHES ──────────────────────────────────────────────────
 
   it("GET /:slug - returns 404 for missing doc", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/missing-doc", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/missing-doc", {}, env, mockExecutionContext);
     expect(res.status).toBe(404);
-  });
-
-  it("GET / - handles db error", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("DB fail"))
-                 .mockRejectedValueOnce(new Error("DB fail")); // fallback also fails
-    const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
-    expect(res.status).toBe(500);
-  });
-
-  it("GET /:slug - handles db error", async () => {
-    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
-    const res = await testApp.request("/crash-doc", {}, mockEnv, mockExecutionContext);
-    // Should be 500 or fall through to error
-    expect([404, 500]).toContain(res.status);
   });
 
   it("GET /admin/:slug/detail - returns 404 for missing doc", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/missing-doc/detail", {}, mockEnv, mockExecutionContext);
+
+    const res = await app.request("/admin/missing-doc/detail", {}, env, mockExecutionContext);
     expect(res.status).toBe(404);
   });
 
   it("DELETE /admin/:slug - returns 404 for missing doc", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/missing-doc", {
+
+    const res = await app.request("/admin/missing-doc", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(404);
   });
 
   it("GET /search - handles db error", async () => {
-    // Need to bypass cache
-    const res = await testApp.request("/search?q=failquery" + Date.now(), {}, mockEnv, mockExecutionContext);
-    // Uses fallback sql which returns empty rows, so should be 200
+    mockDb.run.mockResolvedValue({
+      rows: []
+    });
+
+    const res = await app.request("/search?q=failquery" + Date.now(), {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("POST /admin/:slug/approve - returns 404 for missing doc", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/missing-doc/approve", {
+
+    const res = await app.request("/admin/missing-doc/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(404);
   });
 
   it("PATCH /admin/:slug/history/:id/restore - returns 404 for missing version", async () => {
     mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/admin/test-doc/history/999/restore", {
+
+    const res = await app.request("/admin/test-doc/history/999/restore", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, mockEnv, mockExecutionContext);
+    }, env, mockExecutionContext);
+
     expect(res.status).toBe(404);
   });
-
-
 });
-

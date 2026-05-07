@@ -1,17 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
-import { TestEnv, DrizzleMock } from "../../../src/test/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import type { Context } from "hono";
+import { AppEnv } from "../middleware";
 import judgesRouter from "./judges";
 
-interface JudgesResponse {
-  success?: boolean;
-  judges?: unknown[];
-  error?: string;
-  [key: string]: unknown;
-}
-
+// Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -27,18 +20,46 @@ vi.mock("../middleware/security", () => ({
   checkPersistentRateLimit: vi.fn().mockResolvedValue(true)
 }));
 
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
+
+// Simple inline mock database
+function createMockDb() {
+  return {
+    prepare: vi.fn().mockReturnThis(),
+    bind: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([]),
+    first: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+  };
+}
+
+interface JudgesResponse {
+  success?: boolean;
+  judges?: unknown[];
+  error?: string;
+  [key: string]: unknown;
+}
+
 describe("Hono Backend - /judges Router", () => {
-  
-  
-   
-  let mockDb: DrizzleMock;
-  let testApp: Hono<TestEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  let testApp: Hono<AppEnv>;
   let env: Record<string, unknown>;
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
     env = {
       DB: {
@@ -52,9 +73,9 @@ describe("Hono Backend - /judges Router", () => {
       TURNSTILE_SECRET_KEY: "secret",
     };
 
-    testApp = new Hono<TestEnv>();
+    testApp = new Hono<AppEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", mockDb as any);
       c.set("sessionUser", { id: "1", email: "admin@test.com", role: "admin" } as any);
       await next();
     });
@@ -63,7 +84,7 @@ describe("Hono Backend - /judges Router", () => {
 
   it("POST /login - valid code", async () => {
     mockDb.all.mockResolvedValueOnce([{ code: "VALID", label: "Judge" }]);
-    
+
     const res = await testApp.request("/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -78,20 +99,20 @@ describe("Hono Backend - /judges Router", () => {
   it("GET /portfolio - fetch and sanitize data", async () => {
     // 1st call: rate limit check
     // 2nd call: judge code check
-    mockDb.all.mockResolvedValueOnce([{ code: "VALID" }]); 
-    
+    mockDb.all.mockResolvedValueOnce([{ code: "VALID" }]);
+
     // Mock documents with internal notes
     const mockDocs = [
       { slug: "test", title: "Test Doc", content: "Championship info. TODO: check intake physics. FIXME: robot image missing.", category: "Build", description: "TODO: fix" }
     ];
     // Mock records without optional fields
     mockDb.all.mockResolvedValueOnce(mockDocs) // docs
-                 .mockResolvedValueOnce([{ id: "1", title: "Outreach 1", students_count: "5", hours_logged: "10", reach_count: "100" }]) // outreach (no description)
-                 .mockResolvedValueOnce([{ id: "1", title: "Award 1", date: "2024" }]) // awards (no description)
-                 .mockResolvedValueOnce([{ name: "Sponsor 1", tier: "Gold" }]); // sponsors (no id)
+      .mockResolvedValueOnce([{ id: "1", title: "Outreach 1", students_count: "5", hours_logged: "10", reach_count: "100" }]) // outreach (no description)
+      .mockResolvedValueOnce([{ id: "1", title: "Award 1", date: "2024" }]) // awards (no description)
+      .mockResolvedValueOnce([{ name: "Sponsor 1", tier: "Gold" }]); // sponsors (no id)
 
     const res = await testApp.request("/portfolio", {
-      headers: { 
+      headers: {
         "x-judge-code": "VALID",
         "CF-Connecting-IP": "127.0.0.1",
         "User-Agent": "vitest"
@@ -105,7 +126,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("GET /portfolio - returns cached data on second call", async () => {
-    mockDb.all.mockResolvedValueOnce([{ code: "VALID" }]); 
+    mockDb.all.mockResolvedValueOnce([{ code: "VALID" }]);
     const res = await testApp.request("/portfolio", {
       headers: { "x-judge-code": "VALID" }
     }, env, mockExecutionContext);
@@ -164,13 +185,9 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("GET /portfolio - rejects missing code header", async () => {
-    
-
     const res = await testApp.request("/portfolio", {}, env, mockExecutionContext);
     expect(res.status).toBe(401);
   });
-
-
 
   it("GET /admin/codes - list codes", async () => {
     mockDb.all.mockResolvedValueOnce([
@@ -251,4 +268,3 @@ describe("Hono Backend - /judges Router", () => {
     }
   });
 });
-

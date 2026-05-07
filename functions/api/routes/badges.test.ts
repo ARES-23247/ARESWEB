@@ -1,19 +1,17 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { mockExecutionContext, createDrizzleProxy, createMockDrizzle } from "../../../src/test/utils";
-import type { TestEnv, MockDrizzle } from "../../../src/test/types";
+import { AppEnv } from "../middleware";
+import { badgesRouter } from "./badges";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
     ...actual,
-    ensureAdmin: async (c: Context<TestEnv>, next: () => Promise<void>) => next(),
-    ensureAuth: async (c: Context<TestEnv>, next: () => Promise<void>) => next(),
-    rateLimitMiddleware: () => (c: Context<TestEnv>, next: () => Promise<void>) => next(),
+    ensureAdmin: async (c: Context<AppEnv>, next: () => Promise<void>) => next(),
+    ensureAuth: async (c: Context<AppEnv>, next: () => Promise<void>) => next(),
+    rateLimitMiddleware: () => (c: Context<AppEnv>, next: () => Promise<void>) => next(),
     getSessionUser: vi.fn().mockResolvedValue({ id: "1", email: "admin@test.com", role: "admin" }),
   };
 });
@@ -23,24 +21,50 @@ vi.mock("../../utils/zulipSync", () => ({
   sendZulipMessage: vi.fn(),
 }));
 
-import { badgesRouter } from "./badges";
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
+
+// Simple inline mock database
+function createMockDb() {
+  return {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([]),
+    get: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    onConflictDoUpdate: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+  };
+}
 
 describe("Hono Backend - /badges Router", () => {
-  let mockDb: MockDrizzle;
-  let testApp: Hono<TestEnv>;
-  const mockEnv: TestEnv["Bindings"] = { DEV_BYPASS: "true", DB: {} as any };
+  let mockDb: ReturnType<typeof createMockDb>;
+  let testApp: Hono<AppEnv>;
+  const mockEnv = {} as any;
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
     // Set default behavior for sendZulipMessage mock
     const { sendZulipMessage } = await import("../../utils/zulipSync");
     vi.mocked(sendZulipMessage).mockResolvedValue({ success: true } as never);
 
-    testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb) as any);
+    testApp = new Hono<AppEnv>();
+    testApp.use("*", async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      c.set("db", mockDb as any);
       await next();
     });
     testApp.route("/", badgesRouter);
@@ -80,7 +104,7 @@ describe("Hono Backend - /badges Router", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: "u1", badgeId: "b1" }),
     }, mockEnv, mockExecutionContext);
-    
+
     expect(res.status).toBe(200);
     expect(mockDb.insert).toHaveBeenCalled();
   });
@@ -168,6 +192,7 @@ describe("Hono Backend - /badges Router", () => {
     }, mockEnv, mockExecutionContext);
     expect(res.status).toBe(200);
   });
+
   it("GET / - list badges with missing optional fields", async () => {
     mockDb.all.mockResolvedValueOnce([{ id: "2", name: "No Options", created_at: "2024-01-01" }]); // missing description, icon, color_theme
     const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
@@ -254,4 +279,3 @@ describe("Hono Backend - /badges Router", () => {
     expect(res.status).toBe(500);
   });
 });
-

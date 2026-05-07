@@ -57,7 +57,9 @@ describe("socialQueueRouter", () => {
       body: JSON.stringify({
         content: "New Post",
         platforms: { twitter: true },
-        scheduled_for: "2030-01-01T00:00:00Z"
+        scheduled_for: "2030-01-01T00:00:00Z",
+        linked_type: null,
+        linked_id: null,
       })
     }, {
       env: {} as any,

@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
+import type { Context } from "hono";
 import { getSessionUser } from "../middleware";
+import { AppEnv } from "../middleware";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
@@ -17,40 +16,95 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import notificationsRouter from "./notifications";
 
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
+
+// Simple inline mock database for Drizzle ORM
+function createMockDb() {
+  // Create chainable query builder
+  const queryBuilder = {
+    from: vi.fn().mockReturnThis(),
+    selectFrom: vi.fn().mockReturnThis(),
+    selectAll: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    and: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    offset: vi.fn().mockReturnThis(),
+    innerJoin: vi.fn().mockReturnThis(),
+    leftJoin: vi.fn().mockReturnThis(),
+    rightJoin: vi.fn().mockReturnThis(),
+    fullJoin: vi.fn().mockReturnThis(),
+    groupBy: vi.fn().mockReturnThis(),
+    having: vi.fn().mockReturnThis(),
+    $dynamic: vi.fn().mockReturnThis(),
+    // Terminal methods
+    all: vi.fn().mockResolvedValue([]),
+    get: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    execute: vi.fn().mockResolvedValue([]),
+    executeTakeFirst: vi.fn().mockResolvedValue(null),
+  };
+
+  return {
+    select: vi.fn(() => queryBuilder),
+    insert: vi.fn(() => queryBuilder),
+    update: vi.fn(() => queryBuilder),
+    delete: vi.fn(() => queryBuilder),
+    // Direct access to query builder methods
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    // Direct methods
+    all: vi.fn().mockResolvedValue([]),
+    get: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    execute: vi.fn().mockResolvedValue([]),
+    executeTakeFirst: vi.fn().mockResolvedValue(null),
+    // Values and set for mutations
+    values: vi.fn(() => queryBuilder),
+    set: vi.fn(() => queryBuilder),
+    // Aggregates
+    fn: {
+      count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("count") }),
+      avg: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("avg") }),
+      sum: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("sum") }),
+      max: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("max") }),
+      min: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("min") }),
+    },
+    // Query executor
+    getExecutor: vi.fn().mockReturnValue({
+      compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
+      executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
+      transformQuery: vi.fn((q: unknown) => q),
+    }),
+    // Transaction support
+    transaction: vi.fn().mockImplementation(async (cb: any) => cb(queryBuilder)),
+    batch: vi.fn().mockResolvedValue([]),
+  };
+}
+
 describe("Hono Backend - /notifications Router", () => {
-  let mockDb: DrizzleMock;
-  let testApp: Hono<TestEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  let testApp: Hono<AppEnv>;
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(() => {
     vi.clearAllMocks();
     (getSessionUser as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: "1", email: "test@test.com", role: "member" });
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      fn: {
-        count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("count") })
-      },
-      getExecutor: vi.fn().mockReturnValue({
-        compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
-        executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: unknown) => q),
-      }),
-    } as unknown as DrizzleMock;
+    mockDb = createMockDb();
 
-    testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb) as any);
+    testApp = new Hono<AppEnv>();
+    testApp.use("*", async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      c.set("db", mockDb as any);
       await next();
     });
     testApp.route("/", notificationsRouter);
@@ -261,4 +315,3 @@ describe("Hono Backend - /notifications Router", () => {
     expect(res.status).toBe(200);
   });
 });
-

@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
- 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { createDrizzleProxy } from "../../../src/test/utils";
+import { AppEnv } from "../middleware";
 import pointsRouter from "./points";
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -16,28 +13,33 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
+// Simple inline mock database for Drizzle ORM
+function createMockDb() {
+  return {
+    select: vi.fn().mockReturnThis(),
+    selectAll: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue([]),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+  };
+}
+
 describe("Hono Backend - /points Router", () => {
-  let app: Hono<TestEnv>;
-  let mockDb: DrizzleMock;
+  let app: Hono<AppEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
   let sessionUser: { id: string; role: string } | null;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = {
-      select: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis()
-    } as any;
+    mockDb = createMockDb();
 
     sessionUser = { id: "user-1", role: "user" };
 
-    app = new Hono<TestEnv>();
+    app = new Hono<AppEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb) as any);
+      c.set("db", mockDb as any);
       if (sessionUser) {
         c.set("sessionUser", sessionUser as any);
       }
@@ -147,4 +149,3 @@ describe("Hono Backend - /points Router", () => {
     });
   });
 });
-

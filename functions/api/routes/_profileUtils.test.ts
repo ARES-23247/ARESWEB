@@ -2,15 +2,27 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { upsertProfile } from "./_profileUtils";
 import { Context } from "hono";
 import { AppEnv } from "../middleware";
-import { createMockDrizzle } from "../../../src/test/utils";
-import type { DrizzleMock } from "../../../src/test/types";
 
 vi.mock("../../utils/crypto", () => ({
   encrypt: vi.fn((val: string) => Promise.resolve("encrypted_" + val)),
 }));
 
+// Simple inline mock database
+function createMockDb() {
+  return {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue([]),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    onConflictDoUpdate: vi.fn().mockReturnThis(),
+    get: vi.fn().mockResolvedValue(null),
+  };
+}
+
 describe("Profile Utils", () => {
-  let mockDb: DrizzleMock;
+  let mockDb: ReturnType<typeof createMockDb>;
   let mockContext: {
     env: { ENCRYPTION_SECRET: string };
     get: ReturnType<typeof vi.fn>;
@@ -27,7 +39,7 @@ describe("Profile Utils", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
     mockContext = {
       env: { ENCRYPTION_SECRET: "secret" },
@@ -47,27 +59,27 @@ describe("Profile Utils", () => {
   it("prevents self-escalation of member_type for non-admins", async () => {
     mockContext.var.session.user = { id: "2", role: "user", member_type: "student" };
     mockDb.get.mockResolvedValueOnce({ member_type: "student" });
-    
+
     await upsertProfile(mockContext as unknown as Context<AppEnv>, "2", { member_type: "mentor" });
-    
+
     expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("prevents self-escalation and defaults to student if existing has no member_type", async () => {
     mockContext.var.session.user = { id: "2", role: "user", member_type: "student" };
     mockDb.get.mockResolvedValueOnce({}); // No member_type
-    
+
     await upsertProfile(mockContext as unknown as Context<AppEnv>, "2", { member_type: "mentor" });
-    
+
     expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("defaults to student if no existing profile", async () => {
     mockContext.var.session.user = { id: "2", role: "user", member_type: "student" };
     mockDb.get.mockResolvedValueOnce(null);
-    
+
     await upsertProfile(mockContext as unknown as Context<AppEnv>, "2", { member_type: "mentor" });
-    
+
     expect(mockDb.insert).toHaveBeenCalled();
   });
 
@@ -83,4 +95,3 @@ describe("Profile Utils", () => {
     expect(mockDb.insert).toHaveBeenCalled();
   });
 });
-

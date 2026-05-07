@@ -1,29 +1,49 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MockExecutionContext } from "../../../../src/test/types";
 import { triggerBackgroundReindex } from "./autoReindex";
 import type { VectorizeIndex, Ai } from "@cloudflare/workers-types";
 
-import { createMockDrizzle } from "../../../../src/test/utils";
-import type { DrizzleProxy } from "../../../../src/test/mocks";
+vi.mock("../middleware", () => ({
+  ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
+  logAuditAction: vi.fn().mockResolvedValue(true),
+  rateLimitMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+  persistentRateLimitMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+  getDb: vi.fn().mockReturnValue({}),
+}));
 
-// Mock Cloudflare Worker bindings for AI tests
-type MockAI = { run: ReturnType<typeof vi.fn> };
-type MockVectorize = { upsert: ReturnType<typeof vi.fn> };
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  const promises: Promise<unknown>[] = [];
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => {
+      promises.push(promise);
+      return promise;
+    }),
+    passThroughOnException: vi.fn(),
+    props: {},
+    promises,
+  };
+}
+
+// Simple inline mock database
+function createMockDb() {
+  return {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue([]),
+  };
+}
 
 describe("triggerBackgroundReindex", () => {
-  let mockExecutionCtx: MockExecutionContext;
-  let mockDb: DrizzleProxy;
-  let mockAi: MockAI;
-  let mockVectorize: MockVectorize;
+  let mockExecutionCtx: ReturnType<typeof createMockExecutionContext>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  let mockAi: { run: ReturnType<typeof vi.fn> };
+  let mockVectorize: { upsert: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockExecutionCtx = {
-      waitUntil: vi.fn() as unknown as MockExecutionContext["waitUntil"],
-      passThroughOnException: vi.fn() as unknown as MockExecutionContext["passThroughOnException"],
-      props: {}
-    };
-    mockDb = createMockDrizzle();
+    mockExecutionCtx = createMockExecutionContext();
+    mockDb = createMockDb();
     mockAi = { run: vi.fn() };
     mockVectorize = { upsert: vi.fn() };
   });
@@ -84,4 +104,3 @@ describe("triggerBackgroundReindex", () => {
     expect(mockExecutionCtx.waitUntil).toHaveBeenCalledTimes(1);
   });
 });
-

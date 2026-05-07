@@ -8,12 +8,9 @@ import {
   saveOutreachRoute, 
   deleteOutreachRoute 
 } from "../../../../shared/routes/outreach";
-import { 
-  handleListOutreach, 
-  handleAdminListOutreach, 
-  handleSaveOutreach, 
-  handleDeleteOutreach 
-} from "./handlers";
+import { handleListOutreach, handleAdminListOutreach } from "./list";
+import { handleSaveOutreach } from "./save";
+import { handleDeleteOutreach } from "./delete";
 
 const outreachRouter = new OpenAPIHono<AppEnv>();
 

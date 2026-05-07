@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { TestEnv, MockDrizzle } from "../../../src/test/types";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import { AppEnv } from "../middleware";
 import seasonsRouter from "./seasons";
 
 vi.mock("../middleware/cache", () => ({
@@ -13,9 +12,9 @@ vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
     ...actual,
-    ensureAdmin: (c: Context<TestEnv>, next: () => Promise<void>) => next(),
+    ensureAdmin: (c: Context<AppEnv>, next: () => Promise<void>) => next(),
     logAuditAction: vi.fn().mockResolvedValue(true),
-    rateLimitMiddleware: () => (c: Context<TestEnv>, next: () => Promise<void>) => next(),
+    rateLimitMiddleware: () => (c: Context<AppEnv>, next: () => Promise<void>) => next(),
   };
 });
 
@@ -23,19 +22,49 @@ vi.mock("./ai/autoReindex", () => ({
   triggerBackgroundReindex: vi.fn(),
 }));
 
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
+
+// Simple inline mock database
+function createMockDb() {
+  return {
+    prepare: vi.fn().mockReturnThis(),
+    bind: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([]),
+    first: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+  };
+}
+
 describe("Seasons Router", () => {
-  let app: Hono<TestEnv>;
-  let mockDb: MockDrizzle;
-  const env: TestEnv["Bindings"] = { DB: {} as unknown as D1Database };
+  let app: Hono<AppEnv>;
+  let mockDb: ReturnType<typeof createMockDb>;
+  const env = { DB: {} as unknown as D1Database };
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
-    app = new Hono<TestEnv>();
-    app.use("*", async (c, next) => {
-      c.set("db", mockDb as MockDrizzle);
+    app = new Hono<AppEnv>();
+    app.use("*", async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      c.set("db", mockDb as any);
       await next();
     });
     app.route("/", seasonsRouter);
@@ -64,7 +93,7 @@ describe("Seasons Router", () => {
 
   it("GET /:year - returns season details with relations", async () => {
     // Handler does Promise.all([...get(), ...all(), ...all(), ...all(), ...all()])
-    mockDb.get.mockResolvedValueOnce({ start_year: 2023, end_year: 2024, challenge_name: "Centerstage", status: "published" });
+    mockDb.first.mockResolvedValueOnce({ start_year: 2023, end_year: 2024, challenge_name: "Centerstage", status: "published" });
     // Reset all to return [] for each of the 4 relation queries
     mockDb.all.mockResolvedValue([]);
     const res = await app.request("/2023", {}, env, mockExecutionContext);
@@ -73,7 +102,7 @@ describe("Seasons Router", () => {
 
   it("GET /:year - handles error", async () => {
     // Handler uses .get() for season lookup — reject it
-    mockDb.get.mockRejectedValueOnce(new Error("Detail fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Detail fail"));
     // Also need all() to reject since Promise.all will call it too
     mockDb.all.mockRejectedValue(new Error("Detail fail"));
     const res = await app.request("/2023", {}, env, mockExecutionContext);
@@ -81,20 +110,20 @@ describe("Seasons Router", () => {
   });
 
   it("GET /admin/:id - returns details", async () => {
-    mockDb.get.mockResolvedValueOnce({ start_year: 2023, end_year: 2024, challenge_name: "Centerstage", status: "draft" });
+    mockDb.first.mockResolvedValueOnce({ start_year: 2023, end_year: 2024, challenge_name: "Centerstage", status: "draft" });
     const res = await app.request("/admin/2023", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("GET /admin/:id - handles error", async () => {
-    // Handler uses .select().from().where().get() — mock .get to reject
-    mockDb.get.mockRejectedValueOnce(new Error("Admin Detail fail"));
+    // Handler uses .select().from().where().get() — mock .first to reject
+    mockDb.first.mockRejectedValueOnce(new Error("Admin Detail fail"));
     const res = await app.request("/admin/2023", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/save - creates new season", async () => {
-    mockDb.get.mockResolvedValueOnce(null); // not existing
+    mockDb.first.mockResolvedValueOnce(null); // not existing
     mockDb.run.mockResolvedValueOnce({ success: true, meta: { changes: 1 } }); // insert success
     const res = await app.request("/admin/save", {
       method: "POST",
@@ -105,8 +134,8 @@ describe("Seasons Router", () => {
   });
 
   it("POST /admin/save - handles error", async () => {
-    // Handler uses .select().from().where().get() for collision check — mock .get to reject
-    mockDb.get.mockRejectedValueOnce(new Error("Save check fail"));
+    // Handler uses .select().from().where().get() for collision check — mock .first to reject
+    mockDb.first.mockRejectedValueOnce(new Error("Save check fail"));
     const res = await app.request("/admin/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -162,8 +191,8 @@ describe("Seasons Router", () => {
   });
 
   it("POST /admin/save - handles year change and cascading updates", async () => {
-    mockDb.get.mockResolvedValueOnce(null); // no collision
-    mockDb.get.mockResolvedValueOnce({ start_year: 2023 }); // existing
+    mockDb.first.mockResolvedValueOnce(null); // no collision
+    mockDb.first.mockResolvedValueOnce({ start_year: 2023 }); // existing
     const res = await app.request("/admin/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -174,7 +203,7 @@ describe("Seasons Router", () => {
   });
 
   it("GET /:year - returns 404 for missing season", async () => {
-    mockDb.get.mockResolvedValueOnce(null);
+    mockDb.first.mockResolvedValueOnce(null);
     const res = await app.request("/9999", {}, env, mockExecutionContext);
     expect(res.status).toBe(404);
   });
@@ -184,4 +213,3 @@ describe("Seasons Router", () => {
     expect(res.status).toBe(404);
   });
 });
-

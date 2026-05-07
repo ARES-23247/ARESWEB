@@ -1,18 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
- 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv, MockDrizzle } from "../../../src/test/types";
-import { createMockDrizzle } from "../../../src/test/utils";
 import storeRouter from "./store";
-
-interface _StoreResponse {
-  success?: boolean;
-  data?: unknown;
-  error?: string;
-  session?: { id: string; url: string };
-  [key: string]: unknown;
-}
+import { AppEnv } from "../middleware";
 
 vi.mock("../../utils/zulip", () => ({
   sendZulipMessage: vi.fn().mockResolvedValue(true)
@@ -39,17 +28,37 @@ vi.mock("stripe", () => {
   };
 });
 
+vi.mock("../middleware", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware")>();
+  return {
+    ...actual,
+    getDb: () => ({
+      all: vi.fn().mockResolvedValue([]),
+      run: vi.fn().mockResolvedValue({ success: true }),
+    }),
+  };
+});
+
+interface _StoreResponse {
+  success?: boolean;
+  data?: unknown;
+  error?: string;
+  session?: { id: string; url: string };
+  [key: string]: unknown;
+}
+
 describe("Hono Backend - /store Router", () => {
-  let app: Hono<TestEnv>;
-  let mockDb: MockDrizzle;
+  let app: Hono<AppEnv>;
+  let getDbMock: () => ReturnType<typeof vi.mocked<typeof import("../middleware").getDb>>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    mockDb = createMockDrizzle();
+    const middleware = await import("../middleware");
+    getDbMock = middleware.getDb as any;
 
-    app = new Hono<TestEnv>();
+    app = new Hono<AppEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", mockDb as any);
+      c.set("db", getDbMock());
       c.set("sessionUser", { id: "admin-1", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" });
       c.env = {
         STRIPE_SECRET_KEY: "sk_test_123",
@@ -57,7 +66,7 @@ describe("Hono Backend - /store Router", () => {
         DB: {} as unknown as D1Database,
         ENVIRONMENT: "test",
         DEV_BYPASS: "true",
-      } as TestEnv["Bindings"];
+      } as AppEnv["Bindings"];
       await next();
     });
     app.route("/store", storeRouter);
@@ -88,7 +97,8 @@ describe("Hono Backend - /store Router", () => {
     });
 
     it("inserts order on checkout.session.completed", async () => {
-      mockDb.run.mockResolvedValueOnce({ success: true });
+      const mockDb = getDbMock();
+      mockDb.run = vi.fn().mockResolvedValueOnce({ success: true });
       const payload = {
         type: "checkout.session.completed",
         data: {
@@ -111,7 +121,7 @@ describe("Hono Backend - /store Router", () => {
         },
         body: JSON.stringify(payload)
       });
-      
+
       expect(res.status).toBe(200);
       expect(mockDb.run).toHaveBeenCalled();
     });
@@ -119,7 +129,8 @@ describe("Hono Backend - /store Router", () => {
 
   describe("GET /store/products", () => {
     it("returns active products", async () => {
-      mockDb.all.mockResolvedValueOnce([
+      const mockDb = getDbMock();
+      mockDb.all = vi.fn().mockResolvedValueOnce([
         { id: "prod_1", name: "T-Shirt", active: 1, price_cents: 2000, description: "Cool shirt", image_url: null, stock_count: 10, created_at: null }
       ]);
       const res = await app.request("/store/products");
@@ -132,7 +143,8 @@ describe("Hono Backend - /store Router", () => {
 
   describe("POST /store/checkout", () => {
     it("creates a checkout session", async () => {
-      mockDb.all.mockResolvedValueOnce([
+      const mockDb = getDbMock();
+      mockDb.all = vi.fn().mockResolvedValueOnce([
         { id: "prod_1", name: "T-Shirt", active: 1, price_cents: 2000, description: "Cool shirt", image_url: null, stock_count: 10, created_at: null }
       ]);
 

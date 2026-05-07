@@ -1,14 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { TestEnv, MockDrizzle } from "../../../src/test/types";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import { AppEnv } from "../middleware";
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
     ...actual,
-    ensureAdmin: async (_c: Context<TestEnv>, next: () => Promise<void>) => next(),
+    ensureAdmin: async (_c: Context<AppEnv>, next: () => Promise<void>) => next(),
   };
 });
 
@@ -18,26 +17,32 @@ vi.mock("../../utils/crypto", () => ({
 
 import logisticsRouter from "./logistics";
 
+const mockExecutionContext = {
+  waitUntil: vi.fn(),
+};
+
 describe("Hono Backend - /logistics Router", () => {
-  let mockDb: MockDrizzle;
-  let testApp: Hono<TestEnv>;
-  let env: Record<string, unknown>;
+  let app: Hono<AppEnv>;
+
+  const createMockDb = () => ({
+    all: vi.fn().mockResolvedValue([]),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    get: vi.fn().mockResolvedValue(null),
+  });
+
+  let mockDb: ReturnType<typeof createMockDb>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = createMockDrizzle();
+    mockDb = createMockDb();
 
-    env = {
-      ENCRYPTION_SECRET: "test-secret"
-    };
-
-    testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", mockDb as MockDrizzle);
+    app = new Hono<AppEnv>();
+    app.use("*", async (c: Context<AppEnv>, next: () => Promise<void>) => {
+      c.set("db", mockDb as never);
       await next();
     });
-    testApp.route("/", logisticsRouter);
+    app.route("/", logisticsRouter);
   });
 
   it("GET /admin/summary - fetches logistics summary", async () => {
@@ -47,7 +52,7 @@ describe("Hono Backend - /logistics Router", () => {
       { dietary_restrictions: null, tshirt_size: "L", member_type: "student", name: "Charlie" }
     ]);
 
-    const res = await testApp.request("/admin/summary", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/summary", {}, { ENCRYPTION_SECRET: "test-secret" } as never, mockExecutionContext as never);
     expect(res.status).toBe(200);
     const body = await res.json() as {
       totalCount: number;
@@ -68,7 +73,7 @@ describe("Hono Backend - /logistics Router", () => {
       { name: "Charlie", email: "invalid-email", role: "admin", emergency_contact_name: null, emergency_contact_phone: null } // Should be skipped
     ]);
 
-    const res = await testApp.request("/admin/export-emails", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/export-emails", {}, { ENCRYPTION_SECRET: "test-secret" } as never, mockExecutionContext as never);
     expect(res.status).toBe(200);
     const body = await res.json() as {
       users: Array<{ name: string; email: string; role: string; emergencyName: string; emergencyPhone: string }>;
@@ -78,4 +83,3 @@ describe("Hono Backend - /logistics Router", () => {
     expect(body.users[1]).toEqual({ name: "Bob", email: "bob@test.com", role: "mentor", emergencyName: "—", emergencyPhone: "—" });
   });
 });
-

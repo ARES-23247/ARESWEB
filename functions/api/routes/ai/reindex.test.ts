@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
-import { createMockDrizzle } from "../../../../src/test/utils";
+import { AppEnv } from "../../middleware";
 
 // Mock middleware
 vi.mock("../../middleware", () => ({
@@ -14,7 +12,24 @@ vi.mock("../../middleware", () => ({
   getDb: vi.fn().mockReturnValue({}),
 }));
 
-import { getDb } from "../../middleware";
+// Simple inline mock execution context
+function createMockExecutionContext() {
+  return {
+    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
+    passThroughOnException: vi.fn(),
+    props: {},
+  };
+}
+
+// Simple inline mock database
+function createMockDb() {
+  return {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue([]),
+  };
+}
 
 // Mock the dynamic import of indexer
 const mockIndexSiteContent = vi.fn();
@@ -39,27 +54,22 @@ interface TestBindings {
   DB: Record<string, unknown>;
 }
 
-interface MockExecutionContext {
-  waitUntil: ReturnType<typeof vi.fn>;
-}
-
 describe("AI Router - /reindex endpoint", () => {
-  let mockDb: any;
+  let mockDb: ReturnType<typeof createMockDb>;
   let app: Hono<{ Bindings: TestBindings }>;
   const baseEnv: TestBindings = {
     AI: { run: vi.fn() },
     VECTORIZE_DB: { upsert: vi.fn() },
     DB: {},
   };
-  const mockExecutionContext: MockExecutionContext = { waitUntil: vi.fn() };
+  const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = createMockDrizzle() as any;
-    vi.mocked(getDb).mockReturnValue(mockDb);
+    mockDb = createMockDb();
     app = new Hono();
     app.use("*", async (c: Context, next: Next) => {
-      c.set("db", mockDb);
+      c.set("db", mockDb as any);
       await next();
     });
     app.route("/", aiRouter);
@@ -72,7 +82,7 @@ describe("AI Router - /reindex endpoint", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, baseEnv, mockExecutionContext as any);
+    }, baseEnv, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { indexed: number };
     expect(body.indexed).toBe(3);
@@ -89,7 +99,7 @@ describe("AI Router - /reindex endpoint", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ force: true })
-    }, baseEnv, mockExecutionContext as any);
+    }, baseEnv, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { indexed: number };
     expect(body.indexed).toBe(3);
@@ -107,7 +117,7 @@ describe("AI Router - /reindex endpoint", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, envNoAi, mockExecutionContext as any);
+    }, envNoAi, mockExecutionContext);
     expect(res.status).toBe(500);
     const body = await res.json() as { error: string };
     expect(body.error).toContain("not configured");
@@ -119,7 +129,7 @@ describe("AI Router - /reindex endpoint", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, envNoVec, mockExecutionContext as any);
+    }, envNoVec, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
@@ -129,7 +139,7 @@ describe("AI Router - /reindex endpoint", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, baseEnv, mockExecutionContext as any);
+    }, baseEnv, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { errors: string[] };
     expect(body.errors).toEqual(["Batch 0 failed"]);
