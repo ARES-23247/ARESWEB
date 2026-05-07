@@ -80,33 +80,40 @@ describe("Hono Backend - /media Router", () => {
 
     mockDb = {
       select: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
+      selectDistinct: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn((cb: any) => {
-        const oc = {
-          column: vi.fn().mockReturnThis(),
-          columns: vi.fn().mockReturnThis(),
-          doUpdateSet: vi.fn().mockReturnThis(),
-          execute: vi.fn().mockResolvedValue([]),
-        };
-        if (typeof cb === 'function') cb(oc);
-        return oc;
-      }),
-      doUpdateSet: vi.fn().mockReturnThis(),
+      onConflictDoUpdate: vi.fn().mockReturnThis(),
+      onConflictDoNothing: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
+      returning: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      offset: vi.fn().mockReturnThis(),
+      groupBy: vi.fn().mockReturnThis(),
+      having: vi.fn().mockReturnThis(),
+      then: vi.fn().mockResolvedValue([]),
+      batch: vi.fn().mockResolvedValue([]),
+      transaction: vi.fn().mockImplementation(async (cb: any) => cb(mockDb)),
+      all: vi.fn().mockResolvedValue([]),
+      run: vi.fn().mockResolvedValue({ success: true }),
+      get: vi.fn().mockResolvedValue(null),
+      $dynamic: vi.fn().mockReturnThis(),
+      query: new Proxy({}, { get: () => ({ findFirst: vi.fn().mockResolvedValue(null), findMany: vi.fn().mockResolvedValue([]) }) }),
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
         transformQuery: vi.fn((q: unknown) => q),
       }),
-    };
+    } as unknown as DrizzleMock;
 
     env = {
       ARES_STORAGE: mockR2,
@@ -294,7 +301,7 @@ describe("Hono Backend - /media Router", () => {
       parseBody: vi.fn().mockResolvedValue(formData),
     };
 
-    const mockC = { env, req: mockReq };
+    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
 
     const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await uploadFn(mockC as any);
@@ -376,7 +383,7 @@ describe("Hono Backend - /media Router", () => {
         return {};
       }),
     };
-    const mockC = { env, req: mockReq };
+    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
 
     const moveFn = mediaHandlers.move as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await moveFn(mockC as any);
@@ -395,7 +402,7 @@ describe("Hono Backend - /media Router", () => {
         return {};
       }),
     };
-    const mockC = { env, req: mockReq };
+    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
 
     const deleteFn = mediaHandlers.delete as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await deleteFn(mockC as any);
@@ -405,7 +412,7 @@ describe("Hono Backend - /media Router", () => {
 
   it("POST /admin/syndicate - failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
-    const mockC = { env, req: { url: "invalid url", header: vi.fn() }, executionCtx: mockExecutionContext };
+    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: { url: "invalid url", header: vi.fn() }, executionCtx: mockExecutionContext };
     const syndicateFn = mediaHandlers.syndicate as unknown as (h: { body: { key: string }, params: Record<string, string>, query: Record<string, string> }, c: MockContext) => Promise<HandlerResponse>;
     const res = await syndicateFn({ body: { key: "test.png" }, params: {}, query: {} }, mockC as any);
     expect(res.status).toBe(500);
@@ -534,7 +541,7 @@ describe("Hono Backend - /media Router", () => {
 
   it("GET / - filter non-public objects", async () => {
     mockR2.list.mockResolvedValue({ objects: [{ key: "Public.png", size: 100, uploaded: new Date() }, { key: "Private.png", size: 100, uploaded: new Date() }], truncated: false });
-    const localMockDb = { select: vi.fn().mockReturnThis(), select: vi.fn().mockReturnThis(), where: vi.fn().mockReturnThis(), execute: vi.fn().mockResolvedValue([{ key: "Public.png", folder: "Gallery", tags: "" }]) };
+    const localMockDb = { select: vi.fn().mockReturnThis(), where: vi.fn().mockReturnThis(), execute: vi.fn().mockResolvedValue([{ key: "Public.png", folder: "Gallery", tags: "" }]) };
     const { mediaHandlers } = await import("./media/handlers");
 
     const mockReq = {
