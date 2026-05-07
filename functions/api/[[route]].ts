@@ -106,7 +106,7 @@ apiRouter.use("*", async (c, next) => {
 
   if (!c.req.path.includes("polling") && c.req.method !== "OPTIONS" && !c.req.path.startsWith("/assets")) {
     const user = c.get("sessionUser") as SessionUser | undefined;
-    const db = c.get("db") as any;
+    const db = c.get("db");
     if (db) {
       c.executionCtx.waitUntil(
         (async () => {
@@ -225,7 +225,7 @@ apiRouter.openapi(searchRoute, async (c) => {
   const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
   if (!qClean || qClean.length > 100) return c.json({ results: [] }, 200);
   const ftsQ = qClean.replace(/\*/g, '') + '*';
-  const db = c.get("db") as any;
+  const db = c.get("db");
   const [postsReq, eventsReq, docsReq] = await Promise.all([
     db.all(sql`
       SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet
@@ -237,12 +237,12 @@ apiRouter.openapi(searchRoute, async (c) => {
       SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet
       FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.isDeleted = 0 AND f.docs_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`)
   ]);
-  return c.json({ 
+  return c.json({
     results: [
-      ...(postsReq || []).map((r: any) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
-      ...(eventsReq || []).map((r: any) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
-      ...(docsReq || []).map((r: any) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
-    ] 
+      ...(postsReq || []).map((r: { id: string; title: string; snippet: string }) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
+      ...(eventsReq || []).map((r: { id: string; title: string; snippet: string }) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
+      ...(docsReq || []).map((r: { id: string; title: string; snippet: string }) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
+    ]
   }, 200);
 });
 
@@ -252,7 +252,7 @@ apiRouter.openapi(auditLogRoute, async (c) => {
   const limit = l ? parseInt(l, 10) : 50;
   const offset = o ? parseInt(o, 10) : 0;
   
-  const db = c.get("db") as any;
+  const db = c.get("db");
   const results = await db.select({
       id: schema.auditLog.id,
       actor: schema.auditLog.actor,
@@ -268,7 +268,7 @@ apiRouter.openapi(auditLogRoute, async (c) => {
     .offset(offset)
     .all();
   
-  const logs = results.map((r: any) => ({
+  const logs = results.map((r: { id?: string; created_at?: string | null; details?: string | null }) => ({
     ...r,
     id: r.id || crypto.randomUUID(),
     created_at: r.created_at || new Date().toISOString(),
@@ -280,7 +280,7 @@ apiRouter.openapi(auditLogRoute, async (c) => {
 
 app.onError(async (err, c) => {
   console.error("Global API Error:", err);
-  const db = c.get("db") as any;
+  const db = c.get("db");
   if (c.env?.DB && db) {
     c.executionCtx.waitUntil(logSystemError(db, "GlobalErrorHandler", err.message || "Unknown error", err.stack));
   }
@@ -305,7 +305,7 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   if (pendingPosts.length > 0) {
     const settingsRes = await env.DB.prepare(`SELECT * FROM settings`).all();
     const settings = settingsRes.results || [];
-    const settingsMap = settings.reduce((acc: any, s: any) => { if (s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+    const settingsMap = settings.reduce((acc: Record<string, string>, s: { key?: string; value?: string }) => { if (s.key) acc[s.key] = s.value || ""; return acc; }, {} as Record<string, string>);
     const socialConfig = { DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"], MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"], BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"], BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"], SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"], TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"], GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"], FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"], FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"], TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"], TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"], TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"], TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"] };
     const { dispatchSocials } = await import("../utils/socialSync");
     for (const post of pendingPosts) {
@@ -323,7 +323,7 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   if (env.AI && env.VECTORIZE_DB) {
     try {
       const { indexSiteContent } = await import("./routes/ai/indexer");
-      await indexSiteContent(env.DB as any, env.AI, env.VECTORIZE_DB);
+      await indexSiteContent(env.DB, env.AI, env.VECTORIZE_DB);
     } catch (e) { console.error("[Cron] Vectorize indexing failed:", e); }
   }
   try {
