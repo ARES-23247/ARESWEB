@@ -153,9 +153,8 @@ export default function Navbar() {
             <ShoppingBag size={14} /> Store
           </Link>
 
-          <Link to="/academy" aria-label="ARES Academy" className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group/acad border border-white/5 bg-white/5">
-            <span className="bg-ares-red h-full px-3 flex items-center text-[10px] font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">ARES</span>
-            <span className="text-white h-full px-3 flex items-center text-[10px] font-heading font-bold uppercase tracking-[0.2em] group-hover/acad:bg-white/10 transition-colors"><GraduationCap size={12} className="mr-1" />ACADEMY</span>
+          <Link to="/academy" aria-label="Academy" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+            <GraduationCap size={14} /> Academy
           </Link>
 
           <Link to="/docs" aria-label="ARES Documentation Library" className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group/lib border border-white/5 bg-white/5">
@@ -312,7 +311,7 @@ export default function Navbar() {
           <Link to="/outreach" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">OUTREACH</Link>
           <Link to="/events" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">CALENDAR</Link>
           <Link to="/blog" onClick={() => setOpen(false)} className="text-xl font-black italic tracking-tighter text-ares-gold">TEAM BLOG</Link>
-          <Link to="/academy" onClick={() => setOpen(false)} className="text-xl font-black italic tracking-tighter text-ares-cyan">ARES ACADEMY</Link>
+          <Link to="/academy" onClick={() => setOpen(false)} className="text-xl font-black italic tracking-tighter text-ares-cyan">ACADEMY</Link>
           <Link to="/store" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">STORE</Link>
           <Link to="/sponsors" onClick={() => setOpen(false)} className="text-xl font-black text-white italic tracking-tighter">SUPPORT US</Link>
         </div>
