@@ -7,12 +7,14 @@ import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql } from "drizzle-orm";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
-import type { SelectableRow } from "@shared/types/database";
 
 import { eq, or, and, ne, isNull, inArray, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
 import type { SocialConfig } from "../../middleware";
+
+// Drizzle ORM type inference for events table
+type EventRow = typeof schema.events.$inferSelect;
 
 /**
  * Sanitize FTS query to prevent SQL injection via SQLite FTS syntax.
@@ -62,11 +64,11 @@ type SocialsBody = {
 };
 
 // Type for partial event results from fallback queries (older schema compatibility)
-type PartialEvent = Pick<SelectableRow<"events">, "id" | "title" | "category" | "date_start" | "date_end" | "location" | "description" | "cover_image" | "season_id" | "is_deleted"> & {
+type PartialEvent = Pick<EventRow, "id" | "title" | "category" | "dateStart" | "dateEnd" | "location" | "description" | "coverImage" | "seasonId" | "isDeleted"> & {
   status?: string | null;
-  meeting_notes?: string | null;
-  zulip_stream?: string | null;
-  zulip_topic?: string | null;
+  meetingNotes?: string | null;
+  zulipStream?: string | null;
+  zulipTopic?: string | null;
 };
 
 export const eventHandlers = {

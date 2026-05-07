@@ -60,18 +60,6 @@ function createDrizzleProxy(dbMock: any): any {
   return proxy;
 }
 
-vi.mock("kysely", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("kysely")>();
-  return {
-    ...actual,
-    sql: Object.assign(vi.fn().mockReturnValue({
-      execute: vi.fn().mockResolvedValue({ rows: [{ id: "1", title: "Test", category: "outreach", dateStart: "2026", dateEnd: null, location: "Lab", description: null, coverImage: null, status: "published", isDeleted: 0, seasonId: 1, meetingNotes: null }] })
-    }), {
-      type: vi.fn().mockReturnThis()
-    })
-  };
-});
-
 vi.mock("../../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../middleware")>();
   return {

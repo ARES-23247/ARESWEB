@@ -1,5 +1,8 @@
 import { faker } from "@faker-js/faker";
-import type { D1Row } from "../../../shared/types/database";
+import * as schema from "../../db/schema";
+
+// Drizzle ORM type inference
+type NotificationRow = typeof schema.notifications.$inferSelect;
 
 /**
  * Mock Analytics interface for aggregate analytics data.
@@ -13,15 +16,15 @@ export interface MockAnalytics {
 
 /**
  * Mock Notification factory matching Notifications table schema.
- * Returns D1Row<"notifications"> type for compile-time schema validation.
+ * Returns NotificationRow type for compile-time schema validation.
  */
-export const createMockNotification = (overrides?: Partial<D1Row<"notifications">>): D1Row<"notifications"> => ({
+export const createMockNotification = (overrides?: Partial<NotificationRow>): NotificationRow => ({
   id: faker.string.uuid(),
   title: faker.lorem.sentence(),
   message: faker.lorem.paragraph(),
-  is_read: faker.datatype.boolean() ? 1 : 0,
-  created_at: faker.date.recent().toISOString(),
-  user_id: faker.string.uuid(),
+  isRead: faker.datatype.boolean() ? 1 : 0,
+  createdAt: faker.date.recent().toISOString(),
+  userId: faker.string.uuid(),
   link: faker.internet.url(),
   priority: faker.helpers.arrayElement(["low", "normal", "high"]),
   ...overrides,

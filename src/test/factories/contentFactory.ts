@@ -1,5 +1,9 @@
 import { faker } from "@faker-js/faker";
-import type { D1Row } from "../../../shared/types/database";
+import * as schema from "../../db/schema";
+
+// Drizzle ORM type inference
+type PostRow = typeof schema.posts.$inferSelect;
+type DocRow = typeof schema.docs.$inferSelect;
 
 /**
  * Mock Media interface for R2-stored media files.
@@ -16,60 +20,61 @@ export interface MockMedia {
 
 /**
  * Mock Post factory matching Posts table schema.
- * Returns D1Row<"posts"> type for compile-time schema validation.
+ * Returns PostRow type for compile-time schema validation.
  *
  * Note: ast is a JSON string representing TipTap document structure.
  * Posts table uses slug as the primary identifier (no separate id column).
  */
-export const createMockPost = (overrides?: Partial<D1Row<"posts">>): D1Row<"posts"> => ({
+export const createMockPost = (overrides?: Partial<PostRow>): PostRow => ({
   slug: faker.helpers.slugify(faker.company.catchPhrase().toLowerCase()),
   title: faker.company.catchPhrase(),
   snippet: faker.lorem.sentence(),
   ast: JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: faker.lorem.paragraph() }] }] }),
   author: faker.person.fullName(),
   date: faker.date.recent().toISOString(),
-  cf_email: faker.internet.email(),
-  content_draft: null,
-  is_deleted: 0,
-  is_portfolio: 0,
-  published_at: faker.date.recent().toISOString(),
-  revision_of: null,
-  season_id: null,
+  cfEmail: faker.internet.email(),
+  contentDraft: null,
+  isDeleted: 0,
+  isPortfolio: 0,
+  publishedAt: faker.date.recent().toISOString(),
+  revisionOf: null,
+  seasonId: null,
   status: "published",
   thumbnail: null,
-  updated_at: faker.date.recent().toISOString(),
-  zulip_stream: null,
-  zulip_topic: null,
+  updatedAt: faker.date.recent().toISOString(),
+  zulipStream: null,
+  zulipTopic: null,
+  authorAvatar: null,
   ...overrides,
 });
 
 /**
  * Mock Doc factory matching Docs table schema.
- * Returns D1Row<"docs"> type for compile-time schema validation.
+ * Returns DocRow type for compile-time schema validation.
  *
  * Note: content is a JSON string representing rich text.
  * Docs table uses slug as the primary identifier (no separate id column).
  */
-export const createMockDoc = (overrides?: Partial<D1Row<"docs">>): D1Row<"docs"> => ({
+export const createMockDoc = (overrides?: Partial<DocRow>): DocRow => ({
   slug: faker.helpers.slugify(faker.commerce.productName().toLowerCase()),
   title: faker.commerce.productName(),
   description: faker.lorem.sentence(),
   content: JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: faker.lorem.paragraph() }] }] }),
   category: faker.helpers.arrayElement(["software", "hardware", "business", "outreach"]),
   status: "published",
-  cf_email: faker.internet.email(),
-  is_deleted: 0,
-  is_executive_summary: 0,
-  is_portfolio: 0,
-  content_draft: null,
-  revision_of: null,
-  display_in_areslib: 1,
-  display_in_math_corner: 0,
-  display_in_science_corner: 0,
-  sort_order: 0,
-  updated_at: faker.date.recent().toISOString(),
-  zulip_stream: null,
-  zulip_topic: null,
+  cfEmail: faker.internet.email(),
+  isDeleted: 0,
+  isExecutiveSummary: 0,
+  isPortfolio: 0,
+  contentDraft: null,
+  revisionOf: null,
+  displayInAreslib: 1,
+  displayInMathCorner: 0,
+  displayInScienceCorner: 0,
+  sortOrder: 0,
+  updatedAt: faker.date.recent().toISOString(),
+  zulipStream: null,
+  zulipTopic: null,
   ...overrides,
 });
 

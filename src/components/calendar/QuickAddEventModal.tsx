@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
-import { fetchJson } from "../../api";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { useGetLocations } from "../../api/locations";
+import { useSaveEvent } from "../../api/events";
 
 interface LocationRow {
   id: string;
@@ -55,13 +56,8 @@ export function QuickAddEventModal({
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   // Fetch locations from registry (only when modal is open)
-  const { data: locations = [] } = useQuery<LocationRow[]>({
-    queryKey: ["locations"],
-    queryFn: () => fetchJson<{ locations?: LocationRow[] }>("/api/locations")
-      .then(data => data.locations || []),
-    enabled: isOpen,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
+  const { data: locationsData } = useGetLocations({ enabled: isOpen, staleTime: 5 * 60 * 1000 });
+  const locations = locationsData?.locations || [];
 
   // Initialize form with selected date when modal opens or date changes
   useEffect(() => {

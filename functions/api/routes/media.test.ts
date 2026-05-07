@@ -164,12 +164,9 @@ describe("Hono Backend - /media Router", () => {
 
     const res = await testApp.request("/admin", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    // The response might be the raw OpenAPI handler return value { status, body }
-    // or a Response object. Handle both cases.
-    const body = (res as any).body ? (res as any).body : await res.text();
-    const parsed = typeof body === "string" ? JSON.parse(body) : body;
-    expect(parsed.media).toHaveLength(1);
-    expect(parsed.media[0].folder).toBe("Library");
+    const parsed = await res.json();
+    expect((parsed as any).media).toHaveLength(1);
+    expect((parsed as any).media[0].folder).toBe("Library");
   });
 
   it("DELETE /admin/:key - delete asset", async () => {
@@ -236,6 +233,7 @@ describe("Hono Backend - /media Router", () => {
     };
 
     const mockC = {
+      json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })),
       get: vi.fn().mockReturnValue(mockDb),
       env,
       req: mockReq,
@@ -275,6 +273,7 @@ describe("Hono Backend - /media Router", () => {
     };
 
     const mockC = {
+      json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })),
       get: vi.fn().mockReturnValue(mockDb),
       env,
       req: mockReq,
@@ -305,7 +304,7 @@ describe("Hono Backend - /media Router", () => {
       parseBody: vi.fn().mockResolvedValue(formData),
     };
 
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: mockReq };
 
     const uploadFn = mediaHandlers.upload as unknown as (c: any) => Promise<HandlerResponse>;
     const res = await uploadFn(mockC as any);
@@ -416,9 +415,9 @@ describe("Hono Backend - /media Router", () => {
 
   it("POST /admin/syndicate - failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
-    const mockC = { get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: { url: "invalid url", header: vi.fn() }, executionCtx: mockExecutionContext };
-    const syndicateFn = mediaHandlers.syndicate as unknown as (h: { body: { key: string }, params: Record<string, string>, query: Record<string, string> }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await syndicateFn({ body: { key: "test.png" }, params: {}, query: {} }, mockC as any);
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDb), set: vi.fn(), env, req: { url: "invalid url", header: vi.fn() }, executionCtx: mockExecutionContext };
+    const syndicateFn = mediaHandlers.syndicate as unknown as (c: MockContext) => Promise<HandlerResponse>;
+    const res = await syndicateFn(mockC as any);
     expect(res.status).toBe(500);
   });
 
@@ -442,7 +441,7 @@ describe("Hono Backend - /media Router", () => {
       }),
       parseBody: vi.fn().mockResolvedValue(mockFormData),
     };
-    const mockC = { get: vi.fn().mockReturnValue(null), env, req: mockReq, executionCtx: mockExecutionContext };
+    const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(null), env, req: mockReq, executionCtx: mockExecutionContext };
 
     const res = await (mediaHandlers.upload as unknown as (c: any) => Promise<any>)(mockC as any);
     expect(res.status).toBe(500);
@@ -460,6 +459,7 @@ describe("Hono Backend - /media Router", () => {
       }),
     };
     const mockC = {
+      json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })),
       get: vi.fn().mockReturnValue(mockDb),
       env: { ...env, ARES_STORAGE: null },
       req: mockReq,
@@ -511,8 +511,8 @@ describe("Hono Backend - /media Router", () => {
     const mockReq = { url: "http://localhost/api/media/admin", header: vi.fn().mockReturnValue("admin") };
     const mockC = { json: vi.fn((body: any, status: number = 200) => ({ status, body, headers: new Headers() })), get: vi.fn().mockReturnValue(mockDbFail), env, req: mockReq };
     const { mediaHandlers } = await import("./media/handlers");
-    const adminListFn = mediaHandlers.adminList as unknown as (_h: { params: any, query: any }, c: MockContext) => Promise<HandlerResponse>;
-    const res = await adminListFn({ params: {}, query: {} }, mockC as any);
+    const adminListFn = mediaHandlers.adminList as unknown as (c: MockContext) => Promise<HandlerResponse>;
+    const res = await adminListFn(mockC as any);
     expect(res.status).toBe(500);
   });
 

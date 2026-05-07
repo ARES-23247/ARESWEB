@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchJson } from "../api";
+import { useGetSeasons } from "../api/seasons";
 
 interface Season {
   start_year: number;
@@ -14,11 +14,8 @@ interface SeasonPickerProps {
 }
 
 export default function SeasonPicker({ value, onChange, label = "Linked Season" }: SeasonPickerProps) {
-  const { data: rawSeasons } = useQuery({
-    queryKey: ["seasons-list"],
-    queryFn: () => fetchJson<{ seasons?: Season[] } | Season[]>("/api/seasons"),
-  });
-  
+  const { data: rawSeasons } = useGetSeasons();
+
   const seasons = Array.isArray(rawSeasons) ? rawSeasons : (rawSeasons?.seasons || []);
 
   return (

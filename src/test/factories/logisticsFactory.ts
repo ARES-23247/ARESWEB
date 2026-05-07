@@ -1,78 +1,84 @@
 import { faker } from "@faker-js/faker";
-import type { D1Row } from "../../../shared/types/database";
+import * as schema from "../../db/schema";
+
+// Drizzle ORM type inference
+type OutreachLogRow = typeof schema.outreachLogs.$inferSelect;
+type SponsorRow = typeof schema.sponsors.$inferSelect;
+type AwardRow = typeof schema.awards.$inferSelect;
+type InquiryRow = typeof schema.inquiries.$inferSelect;
 
 /**
  * Mock Outreach factory matching OutreachLogs table schema.
- * Returns D1Row<"outreach_logs"> type for compile-time schema validation.
+ * Returns OutreachLogRow type for compile-time schema validation.
  */
-export const createMockOutreach = (overrides?: Partial<D1Row<"outreach_logs">>): D1Row<"outreach_logs"> => ({
+export const createMockOutreach = (overrides?: Partial<OutreachLogRow>): OutreachLogRow => ({
   id: faker.number.int({ min: 1, max: 10000 }),
   title: faker.company.catchPhrase(),
   date: faker.date.future().toISOString(),
   hours: faker.number.int({ min: 1, max: 8 }),
-  cf_email: faker.internet.email(),
-  event_id: null,
-  impact_summary: faker.lorem.paragraph(),
-  is_deleted: 0,
-  is_mentoring: faker.datatype.boolean() ? 1 : 0,
+  cfEmail: faker.internet.email(),
+  eventId: null,
+  impactSummary: faker.lorem.paragraph(),
+  isDeleted: 0,
+  isMentoring: faker.datatype.boolean() ? 1 : 0,
   location: faker.location.streetAddress(),
-  mentored_team_number: null,
-  mentor_count: null,
-  mentor_hours: null,
+  mentoredTeamNumber: null,
+  mentorCount: null,
+  mentorHours: null,
   metadata: null,
-  people_reached: faker.number.int({ min: 1, max: 100 }),
-  season_id: null,
-  students_count: faker.number.int({ min: 1, max: 20 }),
-  created_at: faker.date.recent().toISOString(),
+  peopleReached: faker.number.int({ min: 1, max: 100 }),
+  seasonId: null,
+  studentsCount: faker.number.int({ min: 1, max: 20 }),
+  createdAt: faker.date.recent().toISOString(),
   ...overrides,
 });
 
 /**
  * Mock Sponsor factory matching Sponsors table schema.
- * Returns D1Row<"sponsors"> type for compile-time schema validation.
+ * Returns SponsorRow type for compile-time schema validation.
  */
-export const createMockSponsor = (overrides?: Partial<D1Row<"sponsors">>): D1Row<"sponsors"> => ({
+export const createMockSponsor = (overrides?: Partial<SponsorRow>): SponsorRow => ({
   id: faker.string.uuid(),
   name: faker.company.name(),
   tier: faker.helpers.arrayElement(["platinum", "gold", "silver", "bronze"]),
-  logo_url: faker.image.url(),
-  website_url: faker.internet.url(),
-  created_at: faker.date.recent().toISOString(),
-  is_active: 1,
+  logoUrl: faker.image.url(),
+  websiteUrl: faker.internet.url(),
+  createdAt: faker.date.recent().toISOString(),
+  isActive: 1,
   ...overrides,
 });
 
 /**
  * Mock Award factory matching Awards table schema.
- * Returns D1Row<"awards"> type for compile-time schema validation.
+ * Returns AwardRow type for compile-time schema validation.
  */
-export const createMockAward = (overrides?: Partial<D1Row<"awards">>): D1Row<"awards"> => ({
+export const createMockAward = (overrides?: Partial<AwardRow>): AwardRow => ({
   id: faker.number.int({ min: 1, max: 1000 }),
   title: faker.commerce.productName() + " Award",
-  event_name: faker.company.catchPhrase(),
+  eventName: faker.company.catchPhrase(),
   date: "2024",
   description: faker.lorem.sentence(),
-  icon_type: faker.helpers.arrayElement(["trophy", "medal", "ribbon", "star"]),
-  created_at: faker.date.recent().toISOString(),
-  is_deleted: 0,
-  season_id: null,
+  iconType: faker.helpers.arrayElement(["trophy", "medal", "ribbon", "star"]),
+  createdAt: faker.date.recent().toISOString(),
+  isDeleted: 0,
+  seasonId: null,
   ...overrides,
 });
 
 /**
  * Mock Inquiry factory matching Inquiries table schema.
- * Returns D1Row<"inquiries"> type for compile-time schema validation.
+ * Returns InquiryRow type for compile-time schema validation.
  */
-export const createMockInquiry = (overrides?: Partial<D1Row<"inquiries">>): D1Row<"inquiries"> => ({
+export const createMockInquiry = (overrides?: Partial<InquiryRow>): InquiryRow => ({
   id: faker.string.uuid(),
   name: faker.person.fullName(),
   email: faker.internet.email(),
   type: faker.helpers.arrayElement(["general", "sponsorship", "media", "technical"]),
   status: faker.helpers.arrayElement(["new", "contacted", "resolved", "closed"]),
-  created_at: faker.date.recent().toISOString(),
-  is_deleted: 0,
+  createdAt: faker.date.recent().toISOString(),
+  isDeleted: 0,
   metadata: null,
   notes: null,
-  zulip_message_id: null,
+  zulipMessageId: null,
   ...overrides,
 });

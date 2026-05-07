@@ -54,6 +54,12 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
         ],
         database: drizzleAdapter(drizzleDb, {
             provider: "sqlite",
+            schema: {
+                user: schema.user,
+                session: schema.session,
+                account: schema.account,
+                verification: schema.verification
+            }
         }),
         onAPIError: {
             throw: true,

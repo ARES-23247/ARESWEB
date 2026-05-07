@@ -85,7 +85,7 @@ const router = s.router(myContract, myHandlers);
 createHonoEndpoints(myContract, router, myHonoRouter);
 ```
 
-3. For Kysely SQL builder expressions that fail type inference (e.g., `sql` template literals, `ReferenceExpression`, `.set()` values), apply targeted `as any` casts:
+3. For Drizzle ORM SQL expressions that fail type inference (e.g., `sql` template literals, dynamic values), apply targeted `as any` casts:
 ```ts
 .where("created_at", "<", sql`datetime('now', '-90 days')` as any)
 .values({ id: crypto.randomUUID() } as any)

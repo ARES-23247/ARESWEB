@@ -13,10 +13,11 @@ import { triggerBackgroundReindex } from "./ai/autoReindex";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 import type { HonoContext } from "@shared/types/api";
-import type { SelectableRow } from "@shared/types/database";
 import * as docsRoutes from "../../../shared/routes/docs";
 
-// type DrizzleDb = DrizzleD1Database<typeof schema>;
+// Drizzle ORM type inference
+type DocRow = typeof schema.docs.$inferSelect;
+type UserRow = typeof schema.user.$inferSelect;
 
 
 
@@ -73,14 +74,38 @@ type DocSearchPayload = {
   }>;
 };
 
-// Type for doc with author info (from join query)
-type DocWithAuthor = SelectableRow<"docs"> & {
+// Type for doc with author info (from join query with snake_case aliases)
+type DocWithAuthor = {
+  slug: string;
+  title: string | null;
+  category: string | null;
+  description: string | null;
+  content: string | null;
+  updated_at: string | null;
+  is_portfolio: number | null;
+  is_executive_summary: number | null;
+  is_deleted: number | null;
+  status: string | null;
+  revision_of: string | null;
+  display_in_areslib: number | null;
+  display_in_math_corner: number | null;
+  display_in_science_corner: number | null;
   original_author_nickname?: string;
   original_author_avatar?: string;
 };
 
-// Type for partial doc results (fallback queries for older schema)
-type PartialDoc = Pick<SelectableRow<"docs">, "slug" | "title" | "category" | "sort_order" | "description" | "is_portfolio" | "is_executive_summary" | "display_in_areslib" | "display_in_math_corner" | "display_in_science_corner"> & {
+// Type for partial doc results (fallback queries with snake_case aliases)
+type PartialDoc = {
+  slug: string;
+  title: string | null;
+  category: string | null;
+  sort_order: number | null;
+  description: string | null;
+  is_portfolio: number | null;
+  is_executive_summary: number | null;
+  display_in_areslib: number | null;
+  display_in_math_corner: number | null;
+  display_in_science_corner: number | null;
   is_deleted?: number;
   status?: string;
   revision_of?: string | null;
@@ -187,7 +212,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .leftJoin(schema.user, eq(schema.docs.cfEmail, schema.user.email))
         .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
         .orderBy(asc(schema.docs.category), asc(schema.docs.sortOrder))
-        .all() as DocWithAuthor[];
+        .all() as any[];
     }
 
     const docs = results.map((d: any) => ({

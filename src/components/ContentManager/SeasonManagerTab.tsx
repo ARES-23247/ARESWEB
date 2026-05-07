@@ -1,8 +1,7 @@
 
 import { History } from "lucide-react";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { ViewType } from "./shared";
-import { fetchJson } from "../../api";
+import { useGetAdminSeasons, useDeleteSeason, useUndeleteSeason, usePurgeSeason } from "../../api/seasons";
 import { toast } from "sonner";
 import GenericManagerList from "./GenericManagerList";
 
@@ -28,37 +27,25 @@ export default function SeasonManagerTab({
   confirmId,
   setConfirmId,
 }: SeasonManagerTabProps) {
-  const queryClient = useQueryClient();
-
-  const { data: rawSeasons, isLoading, isError } = useQuery({
-    queryKey: ["admin-seasons"],
-    queryFn: () => fetchJson<{ seasons?: SeasonItem[] } | SeasonItem[]>("/api/seasons/admin/list")
-  });
+  const { data: rawSeasons, isLoading, isError } = useGetAdminSeasons();
 
   const seasons = Array.isArray(rawSeasons) ? rawSeasons : (rawSeasons?.seasons || []);
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/admin/${id}`, { method: "DELETE" }),
+  const deleteMutation = useDeleteSeason({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       setConfirmId(null);
       toast.success("Season deleted");
     }
   });
 
-  const restoreMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/admin/${id}/undelete`, { method: "POST" }),
+  const restoreMutation = useUndeleteSeason({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       toast.success("Season restored");
     }
   });
 
-  const purgeMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/admin/${id}/purge`, { method: "DELETE" }),
-
+  const purgeMutation = usePurgeSeason({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       setConfirmId(null);
       toast.success("Season purged");
     }

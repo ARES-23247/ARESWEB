@@ -1,5 +1,10 @@
 import { faker } from "@faker-js/faker";
-import type { D1Row } from "../../../shared/types/database";
+import * as schema from "../../db/schema";
+
+// Drizzle ORM type inference
+type UserProfileRow = typeof schema.userProfiles.$inferSelect;
+type BadgeRow = typeof schema.badges.$inferSelect;
+type CommentRow = typeof schema.comments.$inferSelect;
 
 /**
  * Mock User factory for testing.
@@ -24,71 +29,71 @@ export const createMockUser = (overrides?: Partial<MockUser>): MockUser => ({
 
 /**
  * Mock User Profile factory matching UserProfiles table schema.
- * Returns D1Row<"user_profiles"> type for compile-time schema validation.
+ * Returns UserProfileRow type for compile-time schema validation.
  */
-export const createMockProfile = (overrides?: Partial<D1Row<"user_profiles">>): D1Row<"user_profiles"> => ({
-  user_id: faker.string.uuid(),
+export const createMockProfile = (overrides?: Partial<UserProfileRow>): UserProfileRow => ({
+  userId: faker.string.uuid(),
   nickname: faker.person.firstName(),
   bio: faker.lorem.sentence(),
-  member_type: faker.helpers.arrayElement(["student", "coach", "mentor", "parent"]),
-  show_on_about: 1,
-  leadership_role: faker.helpers.arrayElement([null, "Captain", "Lead Engineer"]),
-  rookie_year: "2023",
-  first_name: faker.person.firstName(),
-  last_name: faker.person.lastName(),
-  contact_email: faker.internet.email(),
+  memberType: faker.helpers.arrayElement(["student", "coach", "mentor", "parent"]),
+  showOnAbout: 1,
+  leadershipRole: faker.helpers.arrayElement([null, "Captain", "Lead Engineer"]),
+  rookieYear: "2023",
+  firstName: faker.person.firstName(),
+  lastName: faker.person.lastName(),
+  contactEmail: faker.internet.email(),
   phone: faker.phone.number(),
   pronouns: faker.helpers.arrayElement(["he/him", "she/her", "they/them", null]),
-  tshirt_size: faker.helpers.arrayElement(["XS", "S", "M", "L", "XL", "XXL", null]),
-  grade_year: faker.helpers.arrayElement(["2024", "2025", "2026", "2027", null]),
+  tshirtSize: faker.helpers.arrayElement(["XS", "S", "M", "L", "XL", "XXL", null]),
+  gradeYear: faker.helpers.arrayElement(["2024", "2025", "2026", "2027", null]),
   subteams: JSON.stringify(["Software", "Hardware"]),
   colleges: null,
   employers: null,
-  show_email: 0,
-  show_phone: 0,
-  favorite_food: null,
-  favorite_robot_mechanism: null,
-  fun_fact: null,
-  favorite_first_thing: null,
-  pre_match_superstition: null,
-  dietary_restrictions: null,
-  emergency_contact_name: null,
-  emergency_contact_phone: null,
-  parents_name: null,
-  parents_email: null,
-  students_name: null,
-  students_email: null,
-  updated_at: faker.date.recent().toISOString(),
+  showEmail: 0,
+  showPhone: 0,
+  favoriteFood: null,
+  favoriteRobotMechanism: null,
+  funFact: null,
+  favoriteFirstThing: null,
+  preMatchSuperstition: null,
+  dietaryRestrictions: null,
+  emergencyContactName: null,
+  emergencyContactPhone: null,
+  parentsName: null,
+  parentsEmail: null,
+  studentsName: null,
+  studentsEmail: null,
+  updatedAt: faker.date.recent().toISOString(),
   ...overrides,
 });
 
 /**
  * Mock Badge factory matching Badges table schema.
- * Returns D1Row<"badges"> type for compile-time schema validation.
+ * Returns BadgeRow type for compile-time schema validation.
  */
-export const createMockBadge = (overrides?: Partial<D1Row<"badges">>): D1Row<"badges"> => ({
+export const createMockBadge = (overrides?: Partial<BadgeRow>): BadgeRow => ({
   id: faker.string.uuid(),
   name: faker.commerce.productAdjective() + " Badge",
   description: faker.lorem.sentence(),
   icon: "award",
-  color_theme: faker.helpers.arrayElement(["red", "gold", "bronze", "blue", "green"]),
-  created_at: faker.date.recent().toISOString(),
+  colorTheme: faker.helpers.arrayElement(["red", "gold", "bronze", "blue", "green"]),
+  createdAt: faker.date.recent().toISOString(),
   ...overrides,
 });
 
 /**
  * Mock Comment factory matching Comments table schema.
- * Returns D1Row<"comments"> type for compile-time schema validation.
+ * Returns CommentRow type for compile-time schema validation.
  */
-export const createMockComment = (overrides?: Partial<D1Row<"comments">>): D1Row<"comments"> => ({
+export const createMockComment = (overrides?: Partial<CommentRow>): CommentRow => ({
   id: faker.string.uuid(),
   content: faker.lorem.sentence(),
-  user_id: faker.string.uuid(),
-  target_id: faker.string.uuid(),
-  target_type: faker.helpers.arrayElement(["post", "doc", "event"]),
-  created_at: faker.date.recent().toISOString(),
-  updated_at: faker.date.recent().toISOString(),
-  is_deleted: 0,
-  zulip_message_id: null,
+  userId: faker.string.uuid(),
+  targetId: faker.string.uuid(),
+  targetType: faker.helpers.arrayElement(["post", "doc", "event"]),
+  createdAt: faker.date.recent().toISOString(),
+  updatedAt: faker.date.recent().toISOString(),
+  isDeleted: 0,
+  zulipMessageId: null,
   ...overrides,
 });
