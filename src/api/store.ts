@@ -4,7 +4,7 @@
  * Types imported from backend route definitions in @shared/routes/store.ts
  */
 
-import { useQuery, useMutation, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
 import { client, unwrapResponse } from "./honoClient";
 import { ProductSchema, OrderSchema, CheckoutItemSchema } from "@shared/routes/store";
@@ -78,6 +78,28 @@ export function useGetOrders(
     queryFn: async () => {
       const response = await client.store.orders.$get();
       return unwrapResponse<OrdersResponse>(response);
+    },
+    ...options,
+  });
+}
+
+/**
+ * PATCH /api/store/orders/:id/status - Update order fulfillment status
+ */
+export function useUpdateOrderStatus(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; fulfillment_status: string }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, { id: string; fulfillment_status: string }>({
+    mutationFn: async ({ id, fulfillment_status }) => {
+      const response = await client.store.orders[":id"].status.$patch({
+        param: { id },
+        json: { fulfillment_status }
+      });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store", "orders"] });
     },
     ...options,
   });

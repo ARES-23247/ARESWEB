@@ -1,25 +1,13 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchJson } from "../../api";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useGetOrders, useUpdateOrderStatus } from "../../api/store";
 import { Package, Truck, CheckCircle2, Loader2, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Order } from "@shared/routes/store";
 
 export const StoreOrders: React.FC = () => {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["store", "orders"],
-    queryFn: () => fetchJson<{ orders: Order[] }>("/api/store/orders")
-  });
-  const updateStatus = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: { fulfillment_status: string } }) => fetchJson(`/api/store/orders/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify(body)
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["store", "orders"] });
-    }
-  });
+  const { data, isLoading } = useGetOrders();
+  const updateStatus = useUpdateOrderStatus();
   const [filter, setFilter] = useState<"all" | "unfulfilled" | "fulfilled">("all");
   const [search, setSearch] = useState("");
 
@@ -27,7 +15,7 @@ export const StoreOrders: React.FC = () => {
     const newStatus = currentStatus === "fulfilled" ? "unfulfilled" : "fulfilled";
     await updateStatus.mutateAsync({
       id: orderId,
-      body: { fulfillment_status: newStatus }
+      fulfillment_status: newStatus
     });
   };
 

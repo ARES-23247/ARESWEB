@@ -1,18 +1,12 @@
 import React, { useState } from "react";
 import { X, ShoppingCart, Plus, Minus, Loader2 } from "lucide-react";
 import { useCartStore } from "../../store/useCartStore";
-import { useMutation } from "@tanstack/react-query";
-import { fetchJson } from "../../api";
+import { useCreateCheckoutSession } from "../../api/store";
 
 export const CartDrawer: React.FC = () => {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, getCartTotal } = useCartStore();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const checkoutMutation = useMutation({
-    mutationFn: (body: { items: Array<{ productId: string; quantity: number }>; successUrl: string; cancelUrl: string }) => fetchJson<{ url: string }>("/api/store/checkout", {
-      method: "POST",
-      body: JSON.stringify(body)
-    })
-  });
+  const checkoutMutation = useCreateCheckoutSession();
 
   if (!isOpen) return null;
 

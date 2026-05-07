@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, Plus, Save, RefreshCw, Trash2, CheckCircle2, Circle, AlertCircle, Users } from "lucide-react";
-import { fetchJson } from "../api";
+import { useGetEventSignups, useSubmitEventSignup, useDeleteMyEventSignup, useUpdateMyEventAttendance, useUpdateUserEventAttendance } from "../api/events";
 
 interface SignupEntry {
   id: number;
@@ -22,87 +22,66 @@ interface EventSignupsProps {
 }
 
 export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventSignupsProps) {
-  const [signups, setSignups] = useState<SignupEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [canManage, setCanManage] = useState(false);
-  const [dietarySummary, setDietarySummary] = useState<Record<string, number> | null>(null);
-  const [teamDietarySummary, setTeamDietarySummary] = useState<Record<string, number> | null>(null);
   const [mySignup, setMySignup] = useState<{ bringing: string; notes: string; prep_hours?: number } | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
-  const fetchSignups = useCallback(() => {
-    fetchJson<{
-      signups?: SignupEntry[];
-      authenticated: boolean;
-      role?: string;
-      can_manage: boolean;
-      dietary_summary?: Record<string, number>;
-      team_dietary_summary?: Record<string, number>;
-    }>(`/api/events/${eventId}/signups`)
-      .then((data) => {
-        setSignups(data.signups || []);
-        setIsAuthenticated(data.authenticated);
-        setUserRole(data.role || "unverified");
-        setCanManage(data.can_manage);
-        setDietarySummary(data.dietary_summary || null);
-        setTeamDietarySummary(data.team_dietary_summary || null);
+  const { data: signupsData, isLoading } = useGetEventSignups(eventId);
+  const submitSignup = useSubmitEventSignup();
+  const deleteSignup = useDeleteMyEventSignup();
+  const updateMyAttendance = useUpdateMyEventAttendance();
+  const updateUserAttendance = useUpdateUserEventAttendance();
 
-        const own = (data.signups || []).find((s: SignupEntry) => s.is_own);
-        if (own)
-          setMySignup({
-            bringing: own.bringing,
-            notes: own.notes,
-            prep_hours: own.prep_hours || 0,
-          });
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [eventId]);
+  const signups = signupsData?.signups || [];
+  const isAuthenticated = signupsData?.authenticated || false;
+  const userRole = signupsData?.role || "unverified";
+  const canManage = signupsData?.can_manage || false;
+  const dietarySummary = signupsData?.dietary_summary || null;
+  const teamDietarySummary = signupsData?.team_dietary_summary || null;
 
-  useEffect(() => { fetchSignups(); }, [fetchSignups]);
+  useEffect(() => {
+    const own = signups.find((s: SignupEntry) => s.is_own);
+    if (own) {
+      setMySignup({
+        bringing: own.bringing,
+        notes: own.notes,
+        prep_hours: own.prep_hours || 0,
+      });
+    }
+  }, [signups]);
 
   const handleSignUp = async () => {
-    setIsSaving(true);
     try {
-      await fetchJson(`/api/events/${eventId}/signups`, {
-        method: "POST",
-        body: JSON.stringify(mySignup || { bringing: "", notes: "", prep_hours: 0 })
+      await submitSignup.mutateAsync({
+        eventId,
+        body: mySignup || { bringing: "", notes: "", prep_hours: 0 }
       });
     } catch (e) {
       console.error(e);
     }
-    setIsSaving(false);
-    fetchSignups();
   };
 
   const handleRemove = async () => {
-    await fetchJson(`/api/events/${eventId}/signups`, {
-      method: "DELETE"
-    });
+    await deleteSignup.mutateAsync(eventId);
     setMySignup(null);
-    fetchSignups();
   };
 
   const toggleAttendance = async (userId: string, currentStatus: boolean) => {
-    await fetchJson(`/api/events/admin/${eventId}/signups/${userId}/attendance`, {
-      method: "PATCH",
-      body: JSON.stringify({ attended: !currentStatus })
+    await updateUserAttendance.mutateAsync({
+      eventId,
+      userId,
+      attended: !currentStatus
     });
-    fetchSignups();
   };
 
   const selfCheckIn = async () => {
+    const myEntry = signups.find(s => s.is_own);
     const isCurrentlyAttended = myEntry?.attended || false;
-    await fetchJson(`/api/events/${eventId}/signups/me/attendance`, {
-      method: "PATCH",
-      body: JSON.stringify({ attended: !isCurrentlyAttended })
+    await updateMyAttendance.mutateAsync({
+      eventId,
+      attended: !isCurrentlyAttended
     });
-    fetchSignups();
   };
 
-  if (loading) return null;
+  if (isLoading) return null;
 
   const myEntry = signups.find(s => s.is_own);
   const totalAttending = signups.filter(s => s.attended).length;
@@ -274,10 +253,10 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
               )}
             </div>
             <div className="flex gap-3">
-              <button onClick={handleSignUp} disabled={isSaving}
+              <button onClick={handleSignUp} disabled={submitSignup.isPending}
                 className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/30 text-ares-gold ares-cut-sm text-sm font-black uppercase tracking-widest transition-all disabled:opacity-50"
               >
-                {isSaving ? <RefreshCw size={16} className="animate-spin" /> : mySignup !== null ? <Save size={16} /> : <Plus size={16} />}
+                {submitSignup.isPending ? <RefreshCw size={16} className="animate-spin" /> : mySignup !== null ? <Save size={16} /> : <Plus size={16} />}
                 {mySignup !== null ? "Update RSVP" : "RSVP Here"}
               </button>
               {mySignup !== null && signups.some(s => s.is_own) && (
