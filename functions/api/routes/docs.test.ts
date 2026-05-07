@@ -44,7 +44,7 @@ vi.mock("../../utils/zulipSync", () => ({
 
 import docsRouter from "./docs";
 import { createDrizzleProxy } from "../../../src/test/utils";
-import type { DrizzleProxy } from "../../../src/test/mocks";
+// import type { DrizzleProxy } from "../../../src/test/mocks";
 
 describe("Hono Backend - /docs Router", () => {
 
