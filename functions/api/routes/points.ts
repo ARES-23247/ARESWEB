@@ -27,14 +27,14 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const ledger = await db
       .select({ points_delta: schema.pointsLedger.pointsDelta })
       .from(schema.pointsLedger)
       .where(eq(schema.pointsLedger.userId, user_id))
       .all();
 
-    const balance = ledger.reduce((sum: any, tx: any) => sum + (tx.points_delta || 0), 0);
+    const balance = ledger.reduce((sum, tx) => sum + (tx.points_delta || 0), 0);
 
     return c.json({ user_id, balance }, 200);
   } catch (err) {
@@ -55,7 +55,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const history = await db
       .select()
       .from(schema.pointsLedger)
@@ -63,7 +63,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       .orderBy(desc(schema.pointsLedger.createdAt))
       .all();
 
-    return c.json(history.map((tx: any) => ({
+    return c.json(history.map((tx) => ({
       ...tx,
       points_delta: tx.pointsDelta,
       user_id: tx.userId,
@@ -85,7 +85,7 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const id = crypto.randomUUID();
 
@@ -112,7 +112,7 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
 
 pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLeaderboardRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const results = await db
       .select({
@@ -128,7 +128,7 @@ pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLea
       .limit(50)
       .all();
 
-    const leaderboard = results.map((r: any) => {
+    const leaderboard = results.map((r) => {
       return {
         id: String(r.id),
         name: r.name || "Anonymous",
