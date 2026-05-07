@@ -229,7 +229,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
     if (fileCount > MAX_FILES) {
       return c.json({ error: `Too many files: ${fileCount} (max ${MAX_FILES})` }, 400);
     }
-    const totalSize = (Object.values(files) as string[]).reduce((sum: any, content: any) => sum + content.length, 0);
+    const totalSize = (Object.values(files) as string[]).reduce((sum, content) => sum + content.length, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
       return c.json({ error: `Total size too large: ${totalSize} bytes (max ${MAX_TOTAL_SIZE})` }, 400);
     }
