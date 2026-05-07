@@ -54,7 +54,7 @@ export default function Navbar() {
 
   const markAllRead = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/notifications/mark-all-read", { method: "POST" });
+      const res = await fetch("/api/notifications/read-all", { method: "PUT" });
       if (!res.ok) throw new Error("Failed to mark all read");
       return res.json();
     },
@@ -65,7 +65,7 @@ export default function Navbar() {
 
   const markRead = useMutation({
     mutationFn: async (data: { params: { id: string } }) => {
-      const res = await fetch(`/api/notifications/${data.params.id}/read`, { method: "POST" });
+      const res = await fetch(`/api/notifications/${data.params.id}/read`, { method: "PUT" });
       if (!res.ok) throw new Error("Failed to mark read");
       return res.json();
     },

@@ -10,7 +10,7 @@ import { fetchJson } from '../api';
 export async function trackPageView(path: string, category: AnalyticsCategory) {
   try {
     // Analytics are now tracked in all environments (including local) to allow testing.
-    await fetchJson("/api/analytics/track-page-view", {
+    await fetchJson("/api/analytics/track", {
       method: "POST",
       body: JSON.stringify({
         path,

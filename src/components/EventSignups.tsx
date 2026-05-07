@@ -40,7 +40,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
       can_manage: boolean;
       dietary_summary?: Record<string, number>;
       team_dietary_summary?: Record<string, number>;
-    }>(`/api/events/signups/${eventId}`)
+    }>(`/api/events/${eventId}/signups`)
       .then((data) => {
         setSignups(data.signups || []);
         setIsAuthenticated(data.authenticated);
@@ -66,7 +66,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   const handleSignUp = async () => {
     setIsSaving(true);
     try {
-      await fetchJson(`/api/events/signups/${eventId}`, {
+      await fetchJson(`/api/events/${eventId}/signups`, {
         method: "POST",
         body: JSON.stringify(mySignup || { bringing: "", notes: "", prep_hours: 0 })
       });
@@ -78,7 +78,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   };
 
   const handleRemove = async () => {
-    await fetchJson(`/api/events/signups/${eventId}`, {
+    await fetchJson(`/api/events/${eventId}/signups`, {
       method: "DELETE"
     });
     setMySignup(null);
@@ -86,7 +86,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   };
 
   const toggleAttendance = async (userId: string, currentStatus: boolean) => {
-    await fetchJson(`/api/events/signups/${eventId}/attendance/${userId}`, {
+    await fetchJson(`/api/events/admin/${eventId}/signups/${userId}/attendance`, {
       method: "PATCH",
       body: JSON.stringify({ attended: !currentStatus })
     });
@@ -95,7 +95,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 
   const selfCheckIn = async () => {
     const isCurrentlyAttended = myEntry?.attended || false;
-    await fetchJson(`/api/events/signups/${eventId}/attendance`, {
+    await fetchJson(`/api/events/${eventId}/signups/me/attendance`, {
       method: "PATCH",
       body: JSON.stringify({ attended: !isCurrentlyAttended })
     });
