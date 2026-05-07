@@ -4,13 +4,12 @@ import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
-import { sql, Kysely } from "kysely";
-import { DB } from "../../../../shared/schemas/database";
+import { sql } from "drizzle-orm";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 
-import { eq, or, and, ne, isNull } from "drizzle-orm";
+import { eq, or, and, ne, isNull, inArray, desc, asc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
 import type { SocialConfig } from "../../middleware";
@@ -88,7 +87,7 @@ export const eventHandlers = {
            AND f.events_fts MATCH ${cleanQ}
            ORDER BY f.rank LIMIT ${Number(limit) || 50} OFFSET ${Number(offset) || 0}
         `.execute(db);
-        
+
         const events = results.rows.map((e: any) => ({
           ...e,
           season_id: e.season_id ? Number(e.season_id) : null,
@@ -100,27 +99,52 @@ export const eventHandlers = {
 
       let results;
       try {
-        results = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
-          .where("is_deleted", "=", 0)
-          .where("status", "=", "published")
-          .where((eb: any) => eb.or([
-            eb("published_at", "is", null),
-            eb("published_at", "<=", new Date().toISOString())
-          ]))
-          .orderBy("date_start", "desc")
+        results = await db.select({
+          id: schema.events.id,
+          title: schema.events.title,
+          category: schema.events.category,
+          dateStart: schema.events.dateStart,
+          dateEnd: schema.events.dateEnd,
+          location: schema.events.location,
+          description: schema.events.description,
+          coverImage: schema.events.coverImage,
+          status: schema.events.status,
+          isDeleted: schema.events.isDeleted,
+          seasonId: schema.events.seasonId,
+          meetingNotes: schema.events.meetingNotes,
+          tbaEventKey: schema.events.tbaEventKey,
+          isPotluck: schema.events.isPotluck,
+          isVolunteer: schema.events.isVolunteer,
+        })
+          .from(schema.events)
+          .where(eq(schema.events.isDeleted, 0))
+          .where(eq(schema.events.status, "published"))
+          .where(or(
+            isNull(schema.events.publishedAt),
+            sql`${schema.events.publishedAt} <= datetime('now')`
+          ))
+          .orderBy(desc(schema.events.dateStart))
           .limit(Number(limit) || 50)
           .offset(Number(offset) || 0)
-          .execute();
+          .all();
       } catch (_errInner) {
         // Fallback for older schemas
-        results = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image"])
-          .where("is_deleted", "=", 0)
-          .orderBy("date_start", "desc")
+        results = await db.select({
+          id: schema.events.id,
+          title: schema.events.title,
+          category: schema.events.category,
+          dateStart: schema.events.dateStart,
+          dateEnd: schema.events.dateEnd,
+          location: schema.events.location,
+          description: schema.events.description,
+          coverImage: schema.events.coverImage,
+        })
+          .from(schema.events)
+          .where(eq(schema.events.isDeleted, 0))
+          .orderBy(desc(schema.events.dateStart))
           .limit(Number(limit) || 50)
           .offset(Number(offset) || 0)
-          .execute() as PartialEvent[];
+          .all() as PartialEvent[];
       }
 
       // Resolve location addresses from the locations registry
@@ -128,18 +152,24 @@ export const eventHandlers = {
       const locationMap: Record<string, string> = {};
       if (locationNames.length > 0) {
         try {
-          const locs = await db.selectFrom("locations").select(["name", "address"]).where("name", "in", locationNames).execute();
+          const locs = await db.select({
+            name: schema.locations.name,
+            address: schema.locations.address,
+          })
+            .from(schema.locations)
+            .where(inArray(schema.locations.name, locationNames))
+            .all();
           locs.forEach((l: any) => { if (l.address) locationMap[l.name] = l.address; });
         } catch { /* locations table may not exist */ }
       }
 
       const events = results.map((e: any) => ({
         ...e,
-        season_id: e.season_id ? Number(e.season_id) : null,
-        is_deleted: Number(e.is_deleted || 0),
+        season_id: e.seasonId ? Number(e.seasonId) : null,
+        is_deleted: Number(e.isDeleted || 0),
         status: e.status ?? "published",
         category: e.category ?? "internal",
-        meeting_notes: e.meeting_notes ?? null,
+        meeting_notes: e.meetingNotes ?? null,
         location_address: e.location ? (locationMap[e.location] || null) : null
       }));
 
@@ -152,14 +182,17 @@ export const eventHandlers = {
   getCalendarSettings: async (_input: HandlerInput, c: any) => {
     try {
       const db = c.get("db") as any;
-      const results = await db.selectFrom("settings")
-        .select(["key", "value"])
-        .where("key", "in", ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"])
-        .execute();
+      const results = await db.select({
+        key: schema.settings.key,
+        value: schema.settings.value,
+      })
+        .from(schema.settings)
+        .where(inArray(schema.settings.key, ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"]))
+        .all();
 
       const map = results.reduce((acc: any, row: any) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
-      
-      return { status: 200 as const, body: { 
+
+      return { status: 200 as const, body: {
         calendarIdInternal: map["CALENDAR_ID_INTERNAL"] || map["CALENDAR_ID"] || "",
         calendarIdOutreach: map["CALENDAR_ID_OUTREACH"] || "",
         calendarIdExternal: map["CALENDAR_ID_EXTERNAL"] || "",
@@ -176,12 +209,28 @@ export const eventHandlers = {
       const db = c.get("db") as any;
       const user = await getSessionUser(c);
 
-      const row = await db.selectFrom("events")
-        .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
-        .where("id", "=", id)
-        .where("is_deleted", "=", 0)
-        .where("status", "=", "published")
-        .executeTakeFirst();
+      const row = await db.select({
+        id: schema.events.id,
+        title: schema.events.title,
+        category: schema.events.category,
+        dateStart: schema.events.dateStart,
+        dateEnd: schema.events.dateEnd,
+        location: schema.events.location,
+        description: schema.events.description,
+        coverImage: schema.events.coverImage,
+        status: schema.events.status,
+        isDeleted: schema.events.isDeleted,
+        seasonId: schema.events.seasonId,
+        meetingNotes: schema.events.meetingNotes,
+        tbaEventKey: schema.events.tbaEventKey,
+        isPotluck: schema.events.isPotluck,
+        isVolunteer: schema.events.isVolunteer,
+      })
+        .from(schema.events)
+        .where(eq(schema.events.id, id))
+        .where(eq(schema.events.isDeleted, 0))
+        .where(eq(schema.events.status, "published"))
+        .get();
 
       if (!row) return { status: 404 as const, body: { error: "Event not found" } };
 
@@ -189,19 +238,24 @@ export const eventHandlers = {
       let locationAddress: string | null = null;
       if (row.location) {
         try {
-          const loc = await db.selectFrom("locations").select("address").where("name", "=", row.location).executeTakeFirst();
+          const loc = await db.select({
+            address: schema.locations.address,
+          })
+            .from(schema.locations)
+            .where(eq(schema.locations.name, row.location))
+            .get();
           locationAddress = loc?.address || null;
         } catch { /* locations table may not exist */ }
       }
 
-      return { 
-        status: 200 as const, 
-        body: { 
+      return {
+        status: 200 as const,
+        body: {
           event: {
             ...row,
-            season_id: row.season_id ? Number(row.season_id) : null,
-            is_deleted: Number(row.is_deleted || 0),
-            meeting_notes: (user && user.role !== "unverified") ? row.meeting_notes : null,
+            season_id: row.seasonId ? Number(row.seasonId) : null,
+            is_deleted: Number(row.isDeleted || 0),
+            meeting_notes: (user && user.role !== "unverified") ? row.meetingNotes : null,
             location_address: locationAddress
           },
           is_editor: user?.role === "admin"
@@ -217,36 +271,69 @@ export const eventHandlers = {
       const { query } = input;
       const db = c.get("db") as any;
       const { limit = 100, cursor } = query;
-      
-      let baseQuery = db.selectFrom("events").orderBy("date_start", "desc").limit(Number(limit) || 100);
-      
+
+      let baseQuery = db.select({
+        id: schema.events.id,
+        title: schema.events.title,
+        category: schema.events.category,
+        dateStart: schema.events.dateStart,
+        dateEnd: schema.events.dateEnd,
+        location: schema.events.location,
+        description: schema.events.description,
+        coverImage: schema.events.coverImage,
+        status: schema.events.status,
+        isDeleted: schema.events.isDeleted,
+        seasonId: schema.events.seasonId,
+        meetingNotes: schema.events.meetingNotes,
+        tbaEventKey: schema.events.tbaEventKey,
+        isPotluck: schema.events.isPotluck,
+        isVolunteer: schema.events.isVolunteer,
+      })
+        .from(schema.events)
+        .orderBy(desc(schema.events.dateStart))
+        .limit(Number(limit) || 100);
+
       if (cursor) {
-        baseQuery = baseQuery.where("date_start", "<", cursor);
+        baseQuery = baseQuery.where(sql`${schema.events.dateStart} < ${cursor}`);
       }
-      
+
       let results;
       try {
-        results = await baseQuery
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "zulip_stream", "zulip_topic", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
-          .execute();
+        results = await baseQuery.all();
       } catch {
-        results = await baseQuery
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image"])
-          .execute() as PartialEvent[];
+        results = await db.select({
+          id: schema.events.id,
+          title: schema.events.title,
+          category: schema.events.category,
+          dateStart: schema.events.dateStart,
+          dateEnd: schema.events.dateEnd,
+          location: schema.events.location,
+          description: schema.events.description,
+          coverImage: schema.events.coverImage,
+        })
+          .from(schema.events)
+          .orderBy(desc(schema.events.dateStart))
+          .limit(Number(limit) || 100)
+          .all() as PartialEvent[];
       }
-      
-      const lastSyncRow = await db.selectFrom("settings").select("value").where("key", "=", "LAST_CALENDAR_SYNC").executeTakeFirst();
-      
+
+      const lastSyncRow = await db.select({
+        value: schema.settings.value,
+      })
+        .from(schema.settings)
+        .where(eq(schema.settings.key, "LAST_CALENDAR_SYNC"))
+        .get();
+
       const events = results.map((e: any) => ({
         ...e,
-        season_id: e.season_id ? Number(e.season_id) : null,
-        is_deleted: Number(e.is_deleted || 0),
+        season_id: e.seasonId ? Number(e.seasonId) : null,
+        is_deleted: Number(e.isDeleted || 0),
         status: e.status ?? "published",
         category: e.category ?? "internal",
-        meeting_notes: e.meeting_notes ?? null
+        meeting_notes: e.meetingNotes ?? null
       }));
 
-      const nextCursor = results.length === (Number(limit) || 100) ? results[results.length - 1].date_start : null;
+      const nextCursor = results.length === (Number(limit) || 100) ? results[results.length - 1].dateStart : null;
 
       return { status: 200 as const, body: { events, lastSyncedAt: lastSyncRow?.value || null, nextCursor } };
     } catch (e) {
@@ -261,29 +348,54 @@ export const eventHandlers = {
       const db = c.get("db") as any;
       let row;
       try {
-        row = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
-          .where("id", "=", id)
-          .executeTakeFirst();
+        row = await db.select({
+          id: schema.events.id,
+          title: schema.events.title,
+          category: schema.events.category,
+          dateStart: schema.events.dateStart,
+          dateEnd: schema.events.dateEnd,
+          location: schema.events.location,
+          description: schema.events.description,
+          coverImage: schema.events.coverImage,
+          status: schema.events.status,
+          isDeleted: schema.events.isDeleted,
+          seasonId: schema.events.seasonId,
+          meetingNotes: schema.events.meetingNotes,
+          tbaEventKey: schema.events.tbaEventKey,
+          isPotluck: schema.events.isPotluck,
+          isVolunteer: schema.events.isVolunteer,
+        })
+          .from(schema.events)
+          .where(eq(schema.events.id, id))
+          .get();
       } catch {
-        row = await db.selectFrom("events")
-          .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image"])
-          .where("id", "=", id)
-          .executeTakeFirst() as PartialEvent | undefined;
+        row = await db.select({
+          id: schema.events.id,
+          title: schema.events.title,
+          category: schema.events.category,
+          dateStart: schema.events.dateStart,
+          dateEnd: schema.events.dateEnd,
+          location: schema.events.location,
+          description: schema.events.description,
+          coverImage: schema.events.coverImage,
+        })
+          .from(schema.events)
+          .where(eq(schema.events.id, id))
+          .get() as PartialEvent | undefined;
       }
 
       if (!row) return { status: 404 as const, body: { error: "Event not found" } };
 
-      return { 
-        status: 200 as const, 
+      return {
+        status: 200 as const,
         body: {
           event: {
             ...row,
-            season_id: row.season_id ? Number(row.season_id) : null,
-            is_deleted: Number(row.is_deleted || 0),
+            season_id: row.seasonId ? Number(row.seasonId) : null,
+            is_deleted: Number(row.isDeleted || 0),
             status: row.status ?? "published",
             category: row.category ?? "internal",
-            meeting_notes: row.meeting_notes ?? null
+            meeting_notes: row.meetingNotes ?? null
           }
         }
       };
@@ -298,7 +410,7 @@ export const eventHandlers = {
       const db = c.get("db") as any;
 
       if (body.id) {
-        const existing = await db.selectFrom("events").select("id").where("id", "=", body.id).executeTakeFirst();
+        const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, body.id)).get();
         if (existing) {
           return eventHandlers.updateEvent({ params: { id: body.id }, body, query: {} }, c);
         }
@@ -310,13 +422,13 @@ export const eventHandlers = {
         return { status: 400 as const, body: { success: false, error: "dateStart is required" } };
       }
 
-      const recent = await db.selectFrom("events")
-        .select("id")
-        .where("title", "=", title || "")
-        .where("date_start", "=", dateStart)
-        .where("is_deleted", "=", 0)
-        .executeTakeFirst();
-      
+      const recent = await db.select({ id: schema.events.id })
+        .from(schema.events)
+        .where(eq(schema.events.title, title || ""))
+        .where(eq(schema.events.dateStart, dateStart))
+        .where(eq(schema.events.isDeleted, 0))
+        .get();
+
       if (recent) {
         return { status: 200 as const, body: { success: true, id: recent.id, warning: "Double-submission prevented" } };
       }
@@ -332,8 +444,6 @@ export const eventHandlers = {
       if (!user) return { status: 401 as const, body: { success: false, error: "Authentication required" } };
       const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
-      const recurringGroupId = body.rrule ? crypto.randomUUID() : null;
-
       const MAX_RRULE_LENGTH = 200;
       const ALLOWED_RRULE_KEYS = ['FREQ', 'INTERVAL', 'UNTIL', 'COUNT', 'BYDAY', 'BYMONTHDAY', 'BYMONTH', 'BYSETPOS'];
 
@@ -341,28 +451,21 @@ export const eventHandlers = {
         id: string;
         title: string;
         category: string;
-        date_start: string;
-        date_end: string | null;
+        dateStart: string;
+        dateEnd: string | null;
         location: string;
         description: string;
-        cover_image: string;
-        gcal_event_id: string | null;
+        coverImage: string;
+        gcalEventId: string | null;
         status: string;
-        is_potluck: number;
-        is_volunteer: number;
-        tba_event_key: string | null;
-        published_at: string | null;
-        season_id: number | null;
-        meeting_notes: string | null;
-        recurring_group_id: string | null;
-        rrule: string | null;
-        recurring_exception: number;
-        recurrence_rule: string | null;
-        parent_event_id: string | null;
-        original_start_time: string | null;
-        zulip_stream: string;
-        zulip_topic: string;
+        isPotluck: number;
+        isVolunteer: number;
+        tbaEventKey: string | null;
+        publishedAt: string | null;
+        seasonId: number | null;
+        meetingNotes: string | null;
       }> = [];
+
       if (body.rrule) {
         if (typeof body.rrule !== 'string' || body.rrule.length > MAX_RRULE_LENGTH) {
           return { status: 400 as const, body: { error: "Invalid recurrence rule: exceeds maximum length" } };
@@ -376,8 +479,8 @@ export const eventHandlers = {
 
         try {
           const rule = rrulestr(body.rrule, { dtstart: new Date(dateStart) });
-          const dates = rule.all((d: any, i: any) => i < 52); 
-          
+          const dates = rule.all((d: any, i: any) => i < 52);
+
           const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
 
           instances = dates.map((d: any, i: any) => {
@@ -385,14 +488,11 @@ export const eventHandlers = {
              const instEnd = dateEnd ? new Date(d.getTime() + duration).toISOString() : null;
              return {
                 id: i === 0 ? genId : crypto.randomUUID(),
-                title: title || "", category: cat, date_start: instStart, date_end: instEnd,
-                location: location || "", description: description || "", cover_image: coverImage || "",
-                gcal_event_id: null, status,
-                is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0, tba_event_key: tbaEventKey || null,
-                published_at: publishedAt || null, season_id: seasonId || null, meeting_notes: meetingNotes || null,
-                recurring_group_id: recurringGroupId, rrule: body.rrule || null, recurring_exception: 0,
-                recurrence_rule: recurrenceRule || body.rrule || null, parent_event_id: parentEventId || null, original_start_time: originalStartTime || null,
-                zulip_stream: "events", zulip_topic: `Event: ${title || "Untitled"}`
+                title: title || "", category: cat, dateStart: instStart, dateEnd: instEnd,
+                location: location || "", description: description || "", coverImage: coverImage || "",
+                gcalEventId: null, status,
+                isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0, tbaEventKey: tbaEventKey || null,
+                publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null,
              };
           });
         } catch(e) {
@@ -402,32 +502,29 @@ export const eventHandlers = {
 
       if (instances.length === 0) {
         instances.push({
-            id: genId, title: title || "", category: cat, date_start: dateStart, date_end: dateEnd || null,
-            location: location || "", description: description || "", cover_image: coverImage || "",
-            gcal_event_id: null, status,
-            is_potluck: isPotluck ? 1 : 0, is_volunteer: isVolunteer ? 1 : 0, tba_event_key: tbaEventKey || null,
-            published_at: publishedAt || null, season_id: seasonId || null, meeting_notes: meetingNotes || null,
-            recurring_group_id: null, rrule: null, recurring_exception: 0,
-            recurrence_rule: recurrenceRule || body.rrule || null, parent_event_id: parentEventId || null, original_start_time: originalStartTime || null,
-            zulip_stream: "events", zulip_topic: `Event: ${title || "Untitled"}`
+            id: genId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
+            location: location || "", description: description || "", coverImage: coverImage || "",
+            gcalEventId: null, status,
+            isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0, tbaEventKey: tbaEventKey || null,
+            publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null,
         });
       }
 
       const CHUNK_SIZE = 5;
       for (let i = 0; i < instances.length; i += CHUNK_SIZE) {
-        await db.insertInto("events").values(instances.slice(i, i + CHUNK_SIZE)).execute();
+        await db.insert(schema.events).values(instances.slice(i, i + CHUNK_SIZE)).run();
       }
 
       if (description) {
         c.executionCtx.waitUntil(
-          db.insertInto("document_history")
+          db.insert(schema.documentHistory)
             .values({
-              room_id: `event_${genId}`,
+              roomId: `event_${genId}`,
               content: description,
-              created_by: user?.email || "anonymous_admin",
-              created_at: new Date().toISOString()
+              createdBy: user?.email || "anonymous_admin",
+              createdAt: sql`CURRENT_TIMESTAMP`,
             })
-            .execute()
+            .run()
         );
       }
 
@@ -439,7 +536,7 @@ export const eventHandlers = {
               { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
             );
             if (gcalId) {
-              await db.updateTable("events").set({ gcal_event_id: gcalId }).where("id", "=", genId).execute();
+              await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, genId)).run();
             }
           } catch (e) { console.error("GCAL_SAVE_FAIL", e); }
         }
@@ -903,10 +1000,13 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
       const db = c.get("db") as any;
-      await db.insertInto("event_signups")
-        .values({ event_id: params.id, user_id: user.id, attended: body.attended ? 1 : 0 })
-        .onConflict((oc: any) => oc.columns(["event_id", "user_id"]).doUpdateSet({ attended: body.attended ? 1 : 0 }))
-        .execute();
+      await db.insert(schema.eventSignups)
+        .values({ eventId: params.id, userId: user.id, attended: body.attended ? 1 : 0 })
+        .onConflictDoUpdate({
+          target: [schema.eventSignups.eventId, schema.eventSignups.userId],
+          set: { attended: body.attended ? 1 : 0 }
+        })
+        .run();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:UpdateMyAttendance] Error", e);
