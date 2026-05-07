@@ -69,7 +69,7 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
   }
 
   if (arr.length >= 4) {
-    const header4 = Array.from(arr.subarray(0, 4)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    const header4 = Array.from(arr.subarray(0, 4)).map((b: any) => b.toString(16).padStart(2, '0')).toLowerCase();
     if (header4.startsWith('ffd8ff') || header4 === 'ffd8ffe0' || header4 === 'ffd8ffe1') return true; // JPEG
     if (header4.startsWith('47494638')) return true; // GIF
     if (header4 === '52494646') return true; // WEBP
@@ -111,7 +111,7 @@ export const mediaHandlers = {
     const ua = c.req.header("user-agent") || "unknown";
     const rl = await checkPersistentRateLimit(getDb(c), `media_list_${ip}`, ua, 30, 60);
     if (!rl) {
-      return { status: 429, body: { error: "Rate limit exceeded", media: [] } };
+      return c.json({ error: "Rate limit exceeded", media: [] }, 429);
     }
 
     try {
@@ -158,17 +158,17 @@ export const mediaHandlers = {
         }));
 
       const payload = { media };
-      const response = new Response(JSON.stringify(payload), {
-        headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=300", "Vary": "Accept" },
-      });
+      const response = c.json(payload, 200);
+      response.headers.set("Cache-Control", "public, max-age=300");
+      response.headers.set("Vary", "Accept");
       if (cache && c.executionCtx) {
         c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
       }
 
-      return { status: 200, body: payload };
+      return response;
     } catch (e) {
       console.error("[Media:GetMedia] Error", e);
-      return { status: 500, body: { error: "List failed", media: [] } };
+      return c.json({ error: "List failed", media: [] }, 500);
     }
   },
   adminList: async (c: any) => {
@@ -200,10 +200,10 @@ export const mediaHandlers = {
         tags: metaMap.get(obj.key)?.tags || ""
       }));
 
-      return { status: 200, body: { media } };
+      return c.json({ media }, 200);
     } catch (e) {
       console.error("[Media:AdminList] Error", e);
-      return { status: 500, body: { error: "List failed", media: [] } };
+      return c.json({ error: "List failed", media: [] }, 500);
     }
   },
   upload: async (c: any) => {
@@ -213,14 +213,11 @@ export const mediaHandlers = {
       const folder = formData["folder"] as string | null;
 
       if (!file || !(file instanceof File)) {
-        return { status: 400, body: { error: "No valid file uploaded" } };
+        return c.json({ error: "No valid file uploaded" }, 400);
       }
 
       if (file.size > MAX_FILE_SIZE) {
-        return {
-          status: 413,
-          body: { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB` }
-        };
+        return c.json({ error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB` }, 413);
       }
 
       const isLarge = file.size > MAX_FILE_SIZE_FOR_AI;
@@ -235,12 +232,12 @@ export const mediaHandlers = {
       }
 
       if (!isValidImage(headerBuffer)) {
-        return { status: 400, body: { error: "Invalid file type. Only standard images are supported." } };
+        return c.json({ error: "Invalid file type. Only standard images are supported." }, 400);
       }
 
       const canonicalExtension = getExtensionForMimeType(file.type);
       if (!canonicalExtension) {
-        return { status: 400, body: { error: `Unsupported image type: ${file.type}` } };
+        return c.json({ error: `Unsupported image type: ${file.type}` }, 400);
       }
 
       const normalizedName = normalizeFileNameExtension(file.name, file.type);
@@ -288,11 +285,11 @@ export const mediaHandlers = {
         }
       }
 
-      return { status: 200, body: { success: true, key, url: `/api/media/${key}`, altText } };
+      return c.json({ success: true, key, url: `/api/media/${key}`, altText }, 200);
     } catch (err: unknown) {
       const error = err as Error;
       console.error("[Media:Upload] Error", error.stack || error);
-      return { status: 500, body: { error: "Upload failed: " + (error.message || String(error)) } };
+      return c.json({ error: "Upload failed: " + (error.message || String(error)) }, 500);
     }
   },
   move: async (c: any) => {
@@ -304,7 +301,7 @@ export const mediaHandlers = {
 
       if (c.env.ARES_STORAGE) {
         const object = await c.env.ARES_STORAGE.get(key);
-        if (!object) return { status: 404, body: { error: "Source not found" } };
+        if (!object) return c.json({ error: "Source not found" }, 404);
 
         await c.env.ARES_STORAGE.put(newKey, object.body, { httpMetadata: { contentType: object.httpMetadata?.contentType } });
         await c.env.ARES_STORAGE.delete(key);
@@ -323,10 +320,10 @@ export const mediaHandlers = {
       }
 
       c.executionCtx.waitUntil(logAuditAction(c, "media_move", "media", newKey, `Moved from ${key} to ${folder}`));
-      return { status: 200, body: { success: true, newKey } };
+      return c.json({ success: true, newKey }, 200);
     } catch (e) {
       console.error("[Media:Move] Error", e);
-      return { status: 500, body: { error: "Move failed" } };
+      return c.json({ error: "Move failed" }, 500);
     }
   },
   delete: async (c: any) => {
@@ -338,10 +335,10 @@ export const mediaHandlers = {
       const db = getDb(c);
       await db.delete(schema.mediaTags).where(eq(schema.mediaTags.key, key)).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
-      return { status: 200, body: { success: true } };
+      return c.json({ success: true }, 200);
     } catch (e) {
       console.error("[Media:Delete] Error", e);
-      return { status: 500, body: { error: "Delete failed" } };
+      return c.json({ error: "Delete failed" }, 500);
     }
   },
   syndicate: async (c: any) => {
@@ -353,10 +350,10 @@ export const mediaHandlers = {
       const { dispatchPhotoSocials } = await import("../../../utils/socialSync");
 
       c.executionCtx.waitUntil(dispatchPhotoSocials(imageUrl, caption || "", config));
-      return { status: 200, body: { success: true, message: "Dispatched" } };
+      return c.json({ success: true, message: "Dispatched" }, 200);
     } catch (e) {
       console.error("[Media:Syndicate] Error", e);
-      return { status: 500, body: { error: "Syndicate failed" } };
+      return c.json({ error: "Syndicate failed" }, 500);
     }
   },
 };

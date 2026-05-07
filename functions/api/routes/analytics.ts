@@ -24,8 +24,8 @@ analyticsRouter.route("/performance", perfRouter);
 
 // CR-01 FIX: Apply authentication to all analytics routes
 // Public routes (page view tracking, search) have rate limiting only
-analyticsRouter.use("/stats", ensureAuth);
-analyticsRouter.use("/roster-stats", ensureAuth);
+analyticsRouter.use("/admin/stats", ensureAuth);
+analyticsRouter.use("/admin/roster-stats", ensureAuth);
 analyticsRouter.use("/leaderboard", ensureAuth);
 
 // Apply ensureAdmin ONLY to administrative routes
@@ -132,8 +132,13 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
     ]);
 
     const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get().catch(() => ({ total: 0 }));
-    const apiCount = await (db as any).execute(sql`SELECT COUNT(id) as total FROM usage_metrics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ total: 0 }));
-    const latencyData: any = await (db as any).execute(sql`
+
+    // usage_metrics table may not exist in all environments (needs migration)
+    let apiCount = { total: 0 };
+    let latencyData: { results?: Array<{ date: string; avg_latency: number }>; rows?: Array<{ date: string; avg_latency: number }> } = { results: [] };
+    try {
+      apiCount = await (db as any).execute(sql`SELECT COUNT(id) as total FROM usage_metrics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ total: 0 }));
+      latencyData = await (db as any).execute(sql`
         SELECT
           date(timestamp, 'localtime') as date,
           AVG(latency_ms) as avg_latency
@@ -141,7 +146,12 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         WHERE timestamp >= datetime('now', '-30 days')
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
-      `).catch(() => ({ results: [], rows: [] }));
+      `);
+    } catch {
+      // Table doesn't exist or other error - use defaults
+      apiCount = { total: 0 };
+      latencyData = { results: [] };
+    }
 
     const topPages = topPagesDataRow.map((p: any) => ({
       path: String(p.path),

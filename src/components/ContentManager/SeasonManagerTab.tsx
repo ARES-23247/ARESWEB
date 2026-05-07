@@ -32,13 +32,13 @@ export default function SeasonManagerTab({
 
   const { data: rawSeasons, isLoading, isError } = useQuery({
     queryKey: ["admin-seasons"],
-    queryFn: () => fetchJson<{ seasons?: SeasonItem[] } | SeasonItem[]>("/api/seasons/admin")
+    queryFn: () => fetchJson<{ seasons?: SeasonItem[] } | SeasonItem[]>("/api/seasons/admin/list")
   });
 
   const seasons = Array.isArray(rawSeasons) ? rawSeasons : (rawSeasons?.seasons || []);
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/admin/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       setConfirmId(null);
@@ -47,7 +47,7 @@ export default function SeasonManagerTab({
   });
 
   const restoreMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/${id}/restore`, { method: "POST" }),
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/admin/${id}/undelete`, { method: "POST" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       toast.success("Season restored");
@@ -55,7 +55,8 @@ export default function SeasonManagerTab({
   });
 
   const purgeMutation = useMutation({
-    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/${id}/purge`, { method: "DELETE" }),
+    mutationFn: (id: string) => fetchJson<{ success?: boolean }>(`/api/seasons/admin/${id}/purge`, { method: "DELETE" }),
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
       setConfirmId(null);

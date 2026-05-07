@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchJson, uploadFile } from "../api";
 import { toast } from "sonner";
 import { compressImage } from "../utils/imageProcessor";
+import { useGetAdminMedia, useUploadMedia, useDeleteMedia, useMoveMedia, type Asset, type MediaResponse } from "../api/media";
 
-export interface R2MediaItem {
-  key: string;
-  url: string;
-  folder: string;
-  size?: number;
-  type?: string;
-  uploadedAt?: string;
-}
+export { type Asset, type MediaResponse };
 
 export function useMedia() {
   const queryClient = useQueryClient();
@@ -19,17 +12,20 @@ export function useMedia() {
   const [syndicateCaption, setSyndicateCaption] = useState("");
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
 
-  const { data: rawBody, isLoading, isError } = useQuery({
-    queryKey: ['media'],
-    queryFn: () => fetchJson<{ media?: R2MediaItem[] } | R2MediaItem[]>("/api/media/admin")
-  });
-
-  const assets: R2MediaItem[] = (Array.isArray(rawBody) ? rawBody : (rawBody?.media || [])) as R2MediaItem[];
+  // Use the typed API hook for admin media
+  const { data: mediaResponse, isLoading, isError } = useGetAdminMedia();
+  const assets: Asset[] = mediaResponse?.media || [];
 
   const deleteMutation = useMutation({
-    mutationFn: (key: string) => fetchJson<{ success?: boolean }>(`/api/media/${key}`, { method: "DELETE" }),
+    mutationFn: (key: string) => {
+      // Direct fetch for delete since the typed hook expects a different format
+      return fetch(`/api/media/admin/${encodeURIComponent(key)}`, {
+        method: "DELETE",
+        credentials: "include"
+      }).then(res => res.json());
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       toast.success("Asset deleted");
     },
     onError: (err: Error) => {
@@ -37,10 +33,9 @@ export function useMedia() {
     }
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: (formData: FormData) => uploadFile<{ success?: boolean }>("/api/media", formData),
+  const uploadMutation = useUploadMedia({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-media"] });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Upload failed");
@@ -59,7 +54,7 @@ export function useMedia() {
         const formData = new FormData();
         formData.append("file", compressedBlob, fileName);
         formData.append("folder", selectedFolderFilter === "All" ? "Library" : selectedFolderFilter);
-        
+
         await uploadMutation.mutateAsync(formData);
         successCount++;
       } catch (err) {
@@ -72,12 +67,16 @@ export function useMedia() {
   };
 
   const syndicateMutation = useMutation({
-    mutationFn: ({ key, platforms, caption }: { key: string, platforms: string[], caption?: string }) => fetchJson<{ success?: boolean }>(`/api/media/${key}/syndicate`, {
-      method: "POST",
-      body: JSON.stringify({ platforms, caption })
-    }),
+    mutationFn: ({ key, caption }: { key: string, caption?: string }) => {
+      return fetch(`/api/media/admin/syndicate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ key, caption })
+      }).then(res => res.json());
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       setSyndicateKey(null);
       setSyndicateCaption("");
       toast.success("Syndicated!");
@@ -87,13 +86,9 @@ export function useMedia() {
     }
   });
 
-  const moveMutation = useMutation({
-    mutationFn: ({ key, folder }: { key: string, folder: string }) => fetchJson<{ success?: boolean }>(`/api/media/${key}/move`, {
-      method: "PATCH",
-      body: JSON.stringify({ folder })
-    }),
+  const moveMutation = useMoveMedia({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       toast.success("Asset moved");
     },
     onError: (err: Error) => {
@@ -101,8 +96,8 @@ export function useMedia() {
     }
   });
 
-  const uniqueFolders = Array.from(new Set(assets.map((a: R2MediaItem) => a.folder))).filter(Boolean) as string[];
-  const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter((a: R2MediaItem) => a.folder === selectedFolderFilter);
+  const uniqueFolders = Array.from(new Set(assets.map((a: Asset) => a.folder))).filter(Boolean) as string[];
+  const filteredAssets = selectedFolderFilter === "All" ? assets : assets.filter((a: Asset) => a.folder === selectedFolderFilter);
 
   return {
     assets,
@@ -118,14 +113,14 @@ export function useMedia() {
     setSyndicateCaption,
     deleteAsset: (key: string) => {
        if (confirm("Permanently purge this asset from R2?")) {
-         deleteMutation.mutate(encodeURIComponent(key));
+         deleteMutation.mutate(key);
        }
     },
     isDeleting: deleteMutation.isPending,
     uploadAssets: bulkUpload,
     isUploading: uploadMutation.isPending,
     syndicateMutation,
-    moveAsset: (key: string, newFolder: string) => moveMutation.mutate({ key: encodeURIComponent(key), folder: newFolder }),
+    moveAsset: (key: string, newFolder: string) => moveMutation.mutate({ key, folder: newFolder }),
     isMoving: moveMutation.isPending
   };
 }

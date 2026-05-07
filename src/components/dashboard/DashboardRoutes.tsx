@@ -93,7 +93,7 @@ export default function DashboardRoutes({
       <Route path="impact_roster" element={isAdmin ? <MemberImpactOverview /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="badges" element={isAdmin ? <ContentManager mode="badges" /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="logistics" element={canSeeLogistics ? <DietarySummary /> : <div className="text-center py-20">Access Denied</div>} />
-      <Route path="analytics" element={<AnalyticsDashboard />} />
+      <Route path="analytics" element={isAdmin ? <AnalyticsDashboard /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="performance" element={isAdmin ? <PerformanceDashboard /> : <div className="text-center py-20">Access Denied</div>} />
 
       <Route path="finance" element={isAdmin ? <FinanceManager /> : <div className="text-center py-20">Access Denied</div>} />

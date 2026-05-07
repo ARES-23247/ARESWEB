@@ -160,7 +160,7 @@ describe("useMedia hook", () => {
 
     // Trigger syndicate mutation
     await act(async () => {
-      result.current.syndicateMutation.mutate({ key: "test-key", platforms: ["twitter"], caption: "test" });
+      result.current.syndicateMutation.mutate({ key: "test-key", caption: "test" });
     });
 
     expect(toast.success).toHaveBeenCalledWith("Syndicated!");

@@ -200,7 +200,7 @@ export default function Navbar() {
                 <div className="absolute top-12 right-0 w-80 bg-obsidian border border-white/10 shadow-2xl ares-cut-sm overflow-hidden flex flex-col z-[200]">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
                     <h3 className="text-sm font-bold text-white">Notifications</h3>
-                    {unreadCount > 0 && (
+                    {notifications.some((n: MergedNotification) => !n.is_read && !n.is_inquiry) && (
                       <button 
                         onClick={() => markAllRead.mutate()}
                         className="text-xs text-ares-gold hover:text-white flex items-center gap-1"
