@@ -54,7 +54,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
   const command = args[0]?.toLowerCase();
 
   const PRIVILEGED_COMMANDS = ["!task", "!broadcast"];
-  const db = c.get("db") as any;
+  const db = c.get("db");
 
   if (PRIVILEGED_COMMANDS.includes(command || "")) {
     const senderEmail = body.message?.sender_email;
@@ -112,7 +112,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         if (taskResults.length === 0) {
           return c.json({ content: "📋 **Task Board** — No open tasks." }, 200);
         }
-        const lines = taskResults.map((item: any, i: any) => {
+        const lines = taskResults.map((item, i) => {
           const status = item.status ? `\`${item.status}\`` : "—";
           const assignee = item.assignee_name ? `@${item.assignee_name}` : "";
           return `${i + 1}. **${item.title}** ${status} ${assignee}`;
@@ -245,7 +245,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           return c.json({ content: "📅 No upcoming events scheduled." }, 200);
         }
 
-        const lines = results.map((e: any) => {
+        const lines = results.map((e) => {
           const dtStart = new Date(String(e.date_start)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
           const dtEnd = e.date_end ? ` - ${new Date(String(e.date_end)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "";
           return `• **${e.title}** — ${dtStart}${dtEnd}${e.location ? ` @ ${e.location}` : ""}`;
