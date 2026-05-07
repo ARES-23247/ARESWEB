@@ -98,7 +98,7 @@ export async function sendZulipMessage(
   } catch (err) {
     console.error("[ZulipSync] Critical failure after retries:", err);
     const db = ('DB' in env) ? env.DB : undefined;
-    if (db) await logSystemError(db as any, "Zulip", "Critical failure after retries", String(err));
+    if (db) await logSystemError(db, "Zulip", "Critical failure after retries", String(err));
     return null;
   }
 }
