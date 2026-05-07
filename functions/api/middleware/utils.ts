@@ -4,9 +4,9 @@ import { parseAstToText } from "../../utils/content";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
 import * as relations from "../../../src/db/relations";
-import { DB } from "../../../shared/schemas/database";
+import type { DrizzleDB } from "../../../src/db/types";
 import { safeJSONParse } from "../../utils/json";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import type { D1Database, R2Bucket, VectorizeIndex, Ai } from "@cloudflare/workers-types";
 
 // ── Cloudflare Bindings ──────────────────────────────────────────────
@@ -69,6 +69,22 @@ export type Variables = {
   env: Bindings;
   requestId?: string;
 };
+
+// ── Database Types ───────────────────────────────────────────────────────
+/**
+ * Type alias for the Drizzle database with schema and relations.
+ * Use this to type database parameters instead of `any`.
+ */
+export type { DrizzleDB };
+
+// ── Database Context Helper ─────────────────────────────────────────────
+/**
+ * Type-safe helper to get the database from Hono context.
+ * Use this instead of `c.get("db") as any` to avoid lint errors.
+ */
+export function getDb(c: Context<AppEnv>): DrizzleD1Database<typeof schema & typeof relations> {
+  return c.get("db");
+}
 
 export type AppEnv = {
   Bindings: Bindings;
