@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit } from "../middleware";
@@ -60,14 +60,20 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
       return c.json({ error: "Security verification failed." } as any, 403 as any);
     }
 
-    const row = await db.selectFrom("judge_access_codes")
-      .select(["code", "label", "expires_at"])
-      .where("code", "=", code)
-      .where((eb: any) => eb.or([
-        eb("expires_at", "is", null),
-        eb("expires_at", ">", new Date().toISOString())
-      ]))
-      .executeTakeFirst();
+    const [row] = await db.select({
+      code: schema.judgeAccessCodes.code,
+      label: schema.judgeAccessCodes.label,
+      expires_at: schema.judgeAccessCodes.expiresAt,
+    }).from(schema.judgeAccessCodes)
+      .where(
+        and(
+          eq(schema.judgeAccessCodes.code, code),
+          or(
+            isNull(schema.judgeAccessCodes.expiresAt),
+            gt(schema.judgeAccessCodes.expiresAt, new Date().toISOString())
+          )
+        )
+      ).limit(1);
 
     if (!row) {
       return c.json({ error: "Invalid or expired access code" } as any, 403 as any);
@@ -94,14 +100,18 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
       return c.json({ error: "Too many requests" } as any, 429 as any);
     }
 
-    const valid = await db.selectFrom("judge_access_codes")
-      .select("code")
-      .where("code", "=", code)
-      .where((eb: any) => eb.or([
-        eb("expires_at", "is", null),
-        eb("expires_at", ">", new Date().toISOString())
-      ]))
-      .executeTakeFirst();
+    const [valid] = await db.select({
+      code: schema.judgeAccessCodes.code,
+    }).from(schema.judgeAccessCodes)
+      .where(
+        and(
+          eq(schema.judgeAccessCodes.code, code),
+          or(
+            isNull(schema.judgeAccessCodes.expiresAt),
+            gt(schema.judgeAccessCodes.expiresAt, new Date().toISOString())
+          )
+        )
+      ).limit(1);
     if (!valid) {
       return c.json({ error: "Invalid or expired access code" } as any, 403 as any);
     }
@@ -117,29 +127,51 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     }
 
     const [portfolioDocs, outreach, awards, sponsors] = await Promise.all([
-      db.selectFrom("docs")
-        .select(["slug", "title", "category", "description", "content"])
-        .where("is_deleted", "=", 0)
-        .where("status", "=", "published")
-        .where((eb: any) => eb.or([eb("is_portfolio", "=", 1), eb("is_executive_summary", "=", 1)]))
-        .orderBy("is_executive_summary", "desc")
-        .orderBy("category")
-        .orderBy("sort_order")
-        .execute(),
-      db.selectFrom("outreach_logs")
-        .select(["id", "title", "date", "location", "students_count", "hours as hours_logged", "people_reached as reach_count", "impact_summary as description"])
-        .where("is_deleted", "=", 0)
-        .orderBy("date", "desc")
-        .execute(),
-      db.selectFrom("awards")
-        .select(["id", "title", "date", "event_name", "icon_type as image_url", "description"])
-        .where("is_deleted", "=", 0)
-        .orderBy("date", "desc")
-        .execute(),
-      db.selectFrom("sponsors")
-        .select(["id", "name", "tier", "logo_url", "website_url"])
-        .where("is_active", "=", 1)
-        .execute()
+      db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        description: schema.docs.description,
+        content: schema.docs.content,
+      }).from(schema.docs)
+        .where(
+          and(
+            eq(schema.docs.isDeleted, 0),
+            eq(schema.docs.status, "published"),
+            or(eq(schema.docs.isPortfolio, 1), eq(schema.docs.isExecutiveSummary, 1))
+          )
+        )
+        .orderBy(desc(schema.docs.isExecutiveSummary), schema.docs.category, schema.docs.sortOrder),
+      db.select({
+        id: schema.outreachLogs.id,
+        title: schema.outreachLogs.title,
+        date: schema.outreachLogs.date,
+        location: schema.outreachLogs.location,
+        students_count: schema.outreachLogs.studentsCount,
+        hours_logged: schema.outreachLogs.hours,
+        reach_count: schema.outreachLogs.peopleReached,
+        description: schema.outreachLogs.impactSummary,
+      }).from(schema.outreachLogs)
+        .where(eq(schema.outreachLogs.isDeleted, 0))
+        .orderBy(desc(schema.outreachLogs.date)),
+      db.select({
+        id: schema.awards.id,
+        title: schema.awards.title,
+        date: schema.awards.date,
+        event_name: schema.awards.eventName,
+        image_url: schema.awards.iconType,
+        description: schema.awards.description,
+      }).from(schema.awards)
+        .where(eq(schema.awards.isDeleted, 0))
+        .orderBy(desc(schema.awards.date)),
+      db.select({
+        id: schema.sponsors.id,
+        name: schema.sponsors.name,
+        tier: schema.sponsors.tier,
+        logo_url: schema.sponsors.logoUrl,
+        website_url: schema.sponsors.websiteUrl,
+      }).from(schema.sponsors)
+        .where(eq(schema.sponsors.isActive, 1))
     ]);
 
     const payload = {
@@ -177,10 +209,14 @@ judgesRouter.use("/admin/*", ensureAdmin);
 judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRoute>(async (c) => {
   const db = c.get("db") as any;
   try {
-    const results = await db.selectFrom("judge_access_codes")
-      .select(["id", "code", "label", "created_at", "expires_at"])
-      .orderBy("created_at", "desc")
-      .execute();
+    const results = await db.select({
+      id: schema.judgeAccessCodes.id,
+      code: schema.judgeAccessCodes.code,
+      label: schema.judgeAccessCodes.label,
+      created_at: schema.judgeAccessCodes.createdAt,
+      expires_at: schema.judgeAccessCodes.expiresAt,
+    }).from(schema.judgeAccessCodes)
+      .orderBy(desc(schema.judgeAccessCodes.createdAt));
 
     const codes = results.map((r: any) => ({
       ...r,
@@ -201,14 +237,14 @@ judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRo
     const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
     const id = crypto.randomUUID();
 
-    await db.insertInto("judge_access_codes")
+    await db.insert(schema.judgeAccessCodes)
       .values({
         id,
         code,
         label: label || "Judges",
-        expires_at: expiresAt || null
+        expiresAt: expiresAt || null
       })
-      .execute();
+      .run();
 
     // WR-08: Invalidate cache when content changes
     portfolioCacheVersion++;
@@ -225,7 +261,7 @@ judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRo
   const db = c.get("db") as any;
   try {
     const { id } = c.req.valid("param");
-    await db.deleteFrom("judge_access_codes").where("id", "=", id).execute();
+    await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();
 
     // WR-08: Invalidate cache when content changes
     portfolioCacheVersion++;
