@@ -30,9 +30,9 @@ describe("Hono Backend - /communications Router", () => {
     globalThis.fetch = vi.fn();
 
     mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockResolvedValue([]),
+      }),
     } as any;
 
     testApp = new Hono<TestEnv>();
@@ -48,11 +48,13 @@ describe("Hono Backend - /communications Router", () => {
   });
 
   it("GET /stats - returns active users count", async () => {
-    mockDb.execute.mockResolvedValueOnce([
-      { email: "test1@test.com" },
-      { email: "test2@test.com" },
-      { email: null }
-    ]);
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValueOnce([
+        { email: "test1@test.com" },
+        { email: "test2@test.com" },
+        { email: null }
+      ]),
+    });
 
     const res = await testApp.request("/stats", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
@@ -76,7 +78,9 @@ describe("Hono Backend - /communications Router", () => {
   });
 
   it("GET /stats - handles DB error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB Connection Error"));
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockRejectedValueOnce(new Error("DB Connection Error")),
+    });
 
     const res = await testApp.request("/stats", {}, {}, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -100,7 +104,9 @@ describe("Hono Backend - /communications Router", () => {
 
   it("POST /mass-email - returns 400 if no active users", async () => {
     vi.mocked(getSocialConfig).mockResolvedValueOnce({ RESEND_API_KEY: "test_key" });
-    mockDb.execute.mockResolvedValueOnce([]); // No users
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValueOnce([]), // No users
+    });
 
     const res = await testApp.request("/mass-email", {
       method: "POST",
@@ -115,7 +121,9 @@ describe("Hono Backend - /communications Router", () => {
 
   it("POST /mass-email - handles Resend API failure", async () => {
     vi.mocked(getSocialConfig).mockResolvedValueOnce({ RESEND_API_KEY: "test_key" });
-    mockDb.execute.mockResolvedValueOnce([{ email: "test@test.com" }]);
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValueOnce([{ email: "test@test.com" }]),
+    });
 
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
@@ -136,7 +144,9 @@ describe("Hono Backend - /communications Router", () => {
 
   it("POST /mass-email - handles Resend Batch payload error", async () => {
     vi.mocked(getSocialConfig).mockResolvedValueOnce({ RESEND_API_KEY: "test_key" });
-    mockDb.execute.mockResolvedValueOnce([{ email: "test@test.com" }]);
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValueOnce([{ email: "test@test.com" }]),
+    });
 
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
@@ -159,7 +169,9 @@ describe("Hono Backend - /communications Router", () => {
 
     // Create 51 users to test batching logic (batch size is 50)
     const mockUsers = Array.from({ length: 51 }, (_, i) => ({ email: `user${i}@test.com` }));
-    mockDb.execute.mockResolvedValueOnce(mockUsers);
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValueOnce(mockUsers),
+    });
 
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
