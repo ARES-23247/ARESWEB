@@ -64,15 +64,12 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
     }
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || !turnstileToken) {
+  const sendMessage = async (userMessage: string) => {
+    if (!userMessage.trim() || !turnstileToken) {
       toast.error("Please wait for security verification to complete.");
       return;
     }
 
-    const userMessage = input.trim();
-    // Cache the token to use for this request, then immediately clear it so we wait for a new one
     const currentToken = turnstileToken;
     setTurnstileToken(null);
     if (turnstileRef.current) {
@@ -114,7 +111,6 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
             if (line.startsWith("data: ")) {
               try {
                 const data = JSON.parse(line.slice(6));
-                // Skip non-chunk events (model indicator, etc.)
                 if (!data.chunk) continue;
                 setMessages(prev => {
                   const newMsgs = [...prev];
@@ -135,6 +131,11 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage(input);
   };
 
 
@@ -190,7 +191,7 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
           </button>
         </div>
 
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-zinc-700">
+        <div aria-live="polite" className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-zinc-700">
           {messages.length === 0 && (
             <div className="text-center text-zinc-400 mt-12 px-6">
               <div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/5">
@@ -204,12 +205,7 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
                   <button
                     key={q}
                     onClick={() => {
-                      setInput(q);
-                      // Trigger a small delay to feel more natural
-                      setTimeout(() => {
-                        const form = document.querySelector('form');
-                        if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                      }, 100);
+                      sendMessage(q);
                     }}
                     className="text-left px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-[11px] text-zinc-300 transition-all hover:border-indigo-500/30"
                   >

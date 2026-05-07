@@ -7,6 +7,9 @@ import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMidd
 import { sql, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../../src/db/schema";
+import { purgeOldInquiries } from "./routes/inquiries/index";
+import { dispatchSocials } from "../utils/socialSync";
+import { indexSiteContent } from "./routes/ai/indexer";
 
 // ── Domain Routers ───────────────────────────────────────────────────
 import authRouter from "./routes/auth";
@@ -302,7 +305,6 @@ app.route("/api", apiRouter);
 app.route("/dashboard/api", apiRouter);
 
 export const onRequest = handle(app);
-import { purgeOldInquiries } from "./routes/inquiries/index";
 export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   const db = drizzle(env.DB, { schema });
   await purgeOldInquiries(db as unknown as DrizzleDB, 30);
@@ -310,20 +312,48 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   await env.DB.prepare(`DELETE FROM audit_log WHERE id IN (SELECT id FROM audit_log WHERE created_at < datetime('now', '-' || ? || ' days') LIMIT 100)`).bind(auditRetentionDays).run();
   
   const now = new Date().toISOString();
-  const pendingPostsRes = await env.DB.prepare(`SELECT * FROM social_queue WHERE status = 'pending' AND scheduled_for <= ?`).bind(now).all();
+  const pendingPostsRes = await env.DB.prepare(`SELECT id, content, platforms, media_urls, linked_type, linked_id FROM social_queue WHERE status = 'pending' AND scheduled_for <= ?`).bind(now).all();
   const pendingPosts = pendingPostsRes.results || [];
   
   if (pendingPosts.length > 0) {
-    const settingsRes = await env.DB.prepare(`SELECT * FROM settings`).all();
+    const settingsRes = await env.DB.prepare(`SELECT key, value FROM settings`).all();
     const settings = settingsRes.results || [];
-    const settingsMap = settings.reduce((acc: Record<string, string>, s: { key?: string; value?: string }) => { if (s.key) acc[s.key] = s.value || ""; return acc; }, {} as Record<string, string>);
-    const socialConfig = { DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"], MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"], BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"], BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"], SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"], TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"], GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"], FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"], FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"], TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"], TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"], TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"], TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"] };
-    const { dispatchSocials } = await import("../utils/socialSync");
+    const settingsMap = settings.reduce((acc: Record<string, string>, s: { key?: string; value?: string }) => { 
+      if (s.key) acc[s.key] = s.value || ""; 
+      return acc; 
+    }, {} as Record<string, string>);
+    
+    const socialConfig = { 
+      DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"], 
+      MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"], 
+      BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"], 
+      BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"], 
+      SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"], 
+      TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"], 
+      GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"], 
+      FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"], 
+      FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"], 
+      TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"], 
+      TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"], 
+      TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"], 
+      TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"] 
+    };
+    
     for (const post of pendingPosts) {
       try {
         await env.DB.prepare(`UPDATE social_queue SET status = 'processing' WHERE id = ?`).bind(post.id).run();
         const platforms = JSON.parse(post.platforms as string);
-        await dispatchSocials(db as unknown as DrizzleDB, { title: post.linked_type ? "ARES Content Update" : "ARES Social Post", url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", snippet: post.content as string, thumbnail: post.media_urls ? JSON.parse(post.media_urls as string)?.[0] : undefined }, socialConfig, platforms);
+        await dispatchSocials(
+          db as unknown as DrizzleDB, 
+          { 
+            title: post.linked_type ? "ARES Content Update" : "ARES Social Post", 
+            url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", 
+            snippet: post.content as string, 
+            thumbnail: post.media_urls ? JSON.parse(post.media_urls as string)?.[0] : undefined 
+          }, 
+          socialConfig, 
+          platforms
+        );
         await env.DB.prepare(`UPDATE social_queue SET status = 'sent', sent_at = ? WHERE id = ?`).bind(now, post.id).run();
       } catch (error) {
         console.error(`[Cron] Failed to send social post ${post.id}:`, error);
@@ -331,16 +361,21 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
       }
     }
   }
+  
   if (env.AI && env.VECTORIZE_DB) {
     try {
-      const { indexSiteContent } = await import("./routes/ai/indexer");
       await indexSiteContent(db as unknown as DrizzleDB, env.AI, env.VECTORIZE_DB);
-    } catch (e) { console.error("[Cron] Vectorize indexing failed:", e); }
+    } catch (e) { 
+      console.error("[Cron] Vectorize indexing failed:", e); 
+    }
   }
+  
   try {
     const nowIso = new Date().toISOString();
     await env.DB.prepare(`INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).bind("cron_last_run", nowIso, nowIso).run();
-  } catch (err) { console.error("[Cron] Failed to update heartbeat in D1", err); }
+  } catch (err) { 
+    console.error("[Cron] Failed to update heartbeat in D1", err); 
+  }
 };
 
 export { apiRouter };

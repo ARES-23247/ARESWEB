@@ -36,7 +36,7 @@ export async function transformCode(
       logger.debug("Lazy-loading Babel Standalone...");
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore - no types available for @babel/standalone
+      // @ts-expect-error - no types available for @babel/standalone
       const mod = await import("@babel/standalone");
 
       // Babel exports as default or named depending on bundler
