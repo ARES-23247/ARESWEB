@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MockExecutionContext, MockKysely } from "../../../../src/test/types";
+import { MockExecutionContext } from "../../../../src/test/types";
 import { triggerBackgroundReindex } from "./autoReindex";
 import type { VectorizeIndex, Ai } from "@cloudflare/workers-types";
 import { Kysely } from "kysely";
@@ -11,7 +11,7 @@ type MockVectorize = { upsert: ReturnType<typeof vi.fn> };
 
 describe("triggerBackgroundReindex", () => {
   let mockExecutionCtx: MockExecutionContext;
-  let mockDb: MockKysely;
+  let mockDb: any;
   let mockAi: MockAI;
   let mockVectorize: MockVectorize;
 
@@ -27,25 +27,25 @@ describe("triggerBackgroundReindex", () => {
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
-    } as unknown as MockKysely;
+    } as unknown as any;
     mockAi = { run: vi.fn() };
     mockVectorize = { upsert: vi.fn() };
   });
 
   it("no-ops when AI binding is undefined", () => {
-    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as Kysely<DB>, undefined, mockVectorize as unknown as VectorizeIndex);
+    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as any, undefined, mockVectorize as unknown as VectorizeIndex);
 
     expect(mockExecutionCtx.waitUntil).not.toHaveBeenCalled();
   });
 
   it("no-ops when Vectorize binding is undefined", () => {
-    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as Kysely<DB>, mockAi as unknown as Ai, undefined);
+    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as any, mockAi as unknown as Ai, undefined);
 
     expect(mockExecutionCtx.waitUntil).not.toHaveBeenCalled();
   });
 
   it("calls waitUntil with a promise when bindings are present", () => {
-    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as Kysely<DB>, mockAi as unknown as Ai, mockVectorize as unknown as VectorizeIndex);
+    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as any, mockAi as unknown as Ai, mockVectorize as unknown as VectorizeIndex);
 
     expect(mockExecutionCtx.waitUntil).toHaveBeenCalledTimes(1);
     expect(mockExecutionCtx.waitUntil).toHaveBeenCalledWith(expect.any(Promise));
@@ -53,12 +53,12 @@ describe("triggerBackgroundReindex", () => {
 
   it("does not throw when AI and Vectorize are present (fire-and-forget)", () => {
     expect(() => {
-      triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as Kysely<DB>, mockAi as unknown as Ai, mockVectorize as unknown as VectorizeIndex);
+      triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as any, mockAi as unknown as Ai, mockVectorize as unknown as VectorizeIndex);
     }).not.toThrow();
   });
 
   it("works without KV (optional parameter)", () => {
-    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as Kysely<DB>, mockAi as unknown as Ai, mockVectorize as unknown as VectorizeIndex);
+    triggerBackgroundReindex(mockExecutionCtx, mockDb as unknown as any, mockAi as unknown as Ai, mockVectorize as unknown as VectorizeIndex);
 
     expect(mockExecutionCtx.waitUntil).toHaveBeenCalledTimes(1);
   });

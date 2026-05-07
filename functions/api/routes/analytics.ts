@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
-import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit } from "../middleware";
-import { sql } from "kysely";
+import { eq, and, desc, asc, sql } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import {
 
   trackPageViewRoute,
@@ -39,24 +39,24 @@ analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `track:${ip}`, ua, 20, 600))) {
+  if (!(await checkPersistentRateLimit(c.get("db") as any, `track:${ip}`, ua, 20, 600))) {
     return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
 
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const { path, category, referrer } = c.req.valid("json");
     const userAgent = c.req.header("user-agent") || ua;
 
-    await db.insertInto("page_analytics")
+    await db.insert(schema.pageAnalytics)
       .values({
         path: path || "/",
         category: category || "system",
         referrer: referrer || "",
-        user_agent: userAgent,
+        userAgent: userAgent,
         timestamp: new Date().toISOString()
       })
-      .execute();
+      .run();
 
     return c.json({ success: true } as any, 200 as any);
   } catch {
@@ -68,11 +68,11 @@ analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRou
 analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsorClickRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `click:${ip}`, ua, 10, 600))) {
+  if (!(await checkPersistentRateLimit(c.get("db") as any, `click:${ip}`, ua, 10, 600))) {
     return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
 
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const { sponsor_id } = c.req.valid("json");
 
@@ -81,11 +81,10 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
       return c.json({ error: "Invalid sponsor ID" } as any, 400 as any);
     }
 
-    const sponsor = await db.selectFrom("sponsors")
-      .select("id")
-      .where("id", "=", sponsor_id)
-      .where("is_active", "=", 1)
-      .executeTakeFirst();
+    const sponsor = await db.select({ id: schema.sponsors.id })
+      .from(schema.sponsors)
+      .where(and(eq(schema.sponsors.id, sponsor_id), eq(schema.sponsors.isActive, 1)))
+      .get();
 
     if (!sponsor) {
       return c.json({ error: "Invalid sponsor" } as any, 400 as any);
@@ -93,18 +92,11 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
 
     const yearMonth = new Date().toISOString().slice(0, 7);
 
-    await db.insertInto("sponsor_metrics")
-      .values({
-        id: crypto.randomUUID(),
-        sponsor_id,
-        year_month: yearMonth,
-        clicks: 1,
-        impressions: 0
-      })
-      .onConflict((oc) => oc.columns(["sponsor_id", "year_month"]).doUpdateSet({
-        clicks: sql`clicks + 1`
-      }))
-      .execute();
+    await db.execute(sql`
+      INSERT INTO sponsor_metrics (id, sponsor_id, year_month, clicks, impressions)
+      VALUES (${crypto.randomUUID()}, ${sponsor_id}, ${yearMonth}, 1, 0)
+      ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = sponsor_metrics.clicks + 1
+    `);
 
     return c.json({ success: true } as any, 200 as any);
   } catch {
@@ -114,7 +106,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
 
 // Get platform analytics (admin)
 analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const [
       totalViewsData,
@@ -125,13 +117,13 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       totalsDataRow,
       activityData,
     ] = await Promise.all([
-      db.selectFrom("page_analytics").select((eb) => eb.fn.count("path").as("total")).executeTakeFirst().catch(() => ({ total: 0 })),
-      sql<{ unique_count: number }>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`.execute(db).then(r => r.rows[0]).catch(() => ({ unique_count: 0 })),
-      db.selectFrom("page_analytics").select(["path", "category", (eb) => eb.fn.count("path").as("views")]).groupBy(["path", "category"]).orderBy("views", "desc").limit(10).execute().catch(() => []),
-      db.selectFrom("page_analytics").select(["referrer", (eb) => eb.fn.count("referrer").as("visits")]).where("referrer", "!=", "").groupBy("referrer").orderBy("visits", "desc").limit(10).execute().catch(() => []),
-      db.selectFrom("page_analytics").select(["path", "category", "user_agent", "referrer", "timestamp"]).orderBy("timestamp", "desc").limit(20).execute().catch(() => []),
-      db.selectFrom("page_analytics").select(["category", (eb) => eb.fn.count("category").as("total")]).groupBy("category").execute().catch(() => []),
-      sql<{ date: string, pageViews: number }>`
+      db.select({ total: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).get().catch(() => ({ total: 0 })),
+      db.execute(sql`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ unique_count: 0 })),
+      db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all().catch(() => []),
+      db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` }).from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all().catch(() => []),
+      db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, user_agent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp }).from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all().catch(() => []),
+      db.select({ category: schema.pageAnalytics.category, total: sql<number>`count(${schema.pageAnalytics.category})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.category).all().catch(() => []),
+      db.execute(sql`
         SELECT
           date(timestamp, 'localtime') as date,
           COUNT(*) as pageViews
@@ -139,12 +131,12 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         WHERE timestamp >= datetime('now', '-30 days')
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
-      `.execute(db).catch(() => ({ rows: [] }))
+      `).catch(() => ({ results: [], rows: [] }))
     ]);
 
-    const assetsCount = await db.selectFrom("media_tags").select((eb) => eb.fn.count("key").as("total")).executeTakeFirst().catch(() => ({ total: 0 }));
-    const apiCount = await db.selectFrom("usage_metrics").select((eb) => eb.fn.count("id").as("total")).executeTakeFirst().catch(() => ({ total: 0 }));
-    const latencyData = await sql<{ date: string, avg_latency: number }>`
+    const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get().catch(() => ({ total: 0 }));
+    const apiCount = await db.execute(sql`SELECT COUNT(id) as total FROM usage_metrics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ total: 0 }));
+    const latencyData: any = await db.execute(sql`
         SELECT
           date(timestamp, 'localtime') as date,
           AVG(latency_ms) as avg_latency
@@ -152,20 +144,20 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         WHERE timestamp >= datetime('now', '-30 days')
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
-      `.execute(db).catch(() => ({ rows: [] }));
+      `).catch(() => ({ results: [], rows: [] }));
 
-    const topPages = topPagesDataRow.map(p => ({
+    const topPages = topPagesDataRow.map((p: any) => ({
       path: String(p.path),
       category: String(p.category),
       views: Number(p.views)
     }));
 
-    const topReferrers = referrersDataRow.map(r => ({
+    const topReferrers = referrersDataRow.map((r: any) => ({
       referrer: String(r.referrer),
       visits: Number(r.visits),
     }));
 
-    const recentViews = recentViewsDataRow.map(v => ({
+    const recentViews = recentViewsDataRow.map((v: any) => ({
       path: String(v.path),
       category: String(v.category),
       user_agent: String(v.user_agent || ""),
@@ -173,17 +165,23 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       timestamp: String(v.timestamp)
     }));
 
-    const totals = totalsDataRow.map(t => ({
+    const totals = totalsDataRow.map((t: any) => ({
       category: String(t.category),
       total: Number(t.total)
     }));
 
-    const userActivity = activityData.rows?.map(a => ({
+    const userActivity = (activityData as any).results?.map((a: any) => ({
+      date: String(a.date),
+      pageViews: Number(a.pageViews),
+    })) || (activityData as any).rows?.map((a: any) => ({
       date: String(a.date),
       pageViews: Number(a.pageViews),
     })) || [];
 
-    const latency = latencyData.rows?.map(l => ({
+    const latency = latencyData.results?.map((l: any) => ({
+      date: String(l.date),
+      avg_latency: Number(l.avg_latency)
+    })) || latencyData.rows?.map((l: any) => ({
       date: String(l.date),
       avg_latency: Number(l.avg_latency)
     })) || [];
@@ -211,37 +209,27 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
 
 // Get roster stats (admin)
 analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
-    const results = await db.selectFrom("user_profiles as u")
-      .innerJoin("user as auth_user", "auth_user.id", "u.user_id")
-      .leftJoin("event_signups as s", "u.user_id", "s.user_id")
-      .leftJoin("events as e", (join) => join
-        .onRef("s.event_id", "=", "e.id")
-        .on("e.status", "=", "published")
-        .on("e.is_deleted", "=", 0)
-      )
-      .select([
-        "u.user_id",
-        "u.nickname",
-        "u.member_type",
-        "auth_user.image as avatar",
-        (eb) => eb.fn.sum(eb.case().when("s.attended", "=", 1).then(1).else(0).end()).as("attended_events"),
-        (eb) => eb.fn.coalesce(eb.fn.sum(eb.case().when("s.attended", "=", 1).then("s.prep_hours").else(0).end()), sql`0`).as("manual_prep_hours"),
-        (eb) => eb.fn.coalesce(
-          eb.fn.sum(eb.case()
-            .when(eb.and([eb("s.attended", "=", 1), eb("e.is_volunteer", "=", 1)]))
-            .then(sql`(strftime('%s', e.date_end) - strftime('%s', e.date_start)) / 3600.0`)
-            .else(0)
-            .end()
-          ), sql`0`
-        ).as("event_volunteer_hours")
-      ])
-      .groupBy(["u.user_id", "u.nickname", "u.member_type", "auth_user.image"])
-      .orderBy("u.nickname", "asc")
-      .execute();
-
-    const roster = results.map(r => ({
+    const results: any = await db.execute(sql`
+      SELECT 
+        u.user_id,
+        u.nickname,
+        u.member_type,
+        auth_user.image as avatar,
+        sum(case when s.attended = 1 then 1 else 0 end) as attended_events,
+        coalesce(sum(case when s.attended = 1 then s.prep_hours else 0 end), 0) as manual_prep_hours,
+        coalesce(sum(case when s.attended = 1 and e.is_volunteer = 1 then (strftime('%s', e.date_end) - strftime('%s', e.date_start)) / 3600.0 else 0 end), 0) as event_volunteer_hours
+      FROM user_profiles u
+      INNER JOIN user auth_user ON auth_user.id = u.user_id
+      LEFT JOIN event_signups s ON u.user_id = s.user_id
+      LEFT JOIN events e ON s.event_id = e.id AND e.status = 'published' AND e.is_deleted = 0
+      GROUP BY u.user_id, u.nickname, u.member_type, auth_user.image
+      ORDER BY u.nickname ASC
+    `);
+    
+    const rows = results.results || results.rows || results;
+    const roster = rows.map((r: any) => ({
       user_id: String(r.user_id),
       nickname: r.nickname || null,
       member_type: r.member_type || null,
@@ -259,27 +247,28 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
 
 // Get leaderboard
 analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
-    const results = await db.selectFrom("user as u")
-      .innerJoin("user_profiles as p", "u.id", "p.user_id")
-      .innerJoin("user_badges as ub", "u.id", "ub.user_id")
-      .select([
-        "u.id as user_id",
-        "u.name as first_name",
-        "p.last_name",
-        "p.nickname",
-        "p.member_type",
-        "u.image as avatar",
-        (eb) => eb.fn.count("ub.id").as("badge_count")
-      ])
-      .where("p.show_on_about", "=", 1)
-      .groupBy(["u.id", "u.name", "p.last_name", "p.nickname", "p.member_type", "u.image"])
-      .orderBy("badge_count", "desc")
-      .limit(50)
-      .execute();
+    const results: any = await db.execute(sql`
+      SELECT 
+        u.id as user_id,
+        u.name as first_name,
+        p.last_name,
+        p.nickname,
+        p.member_type,
+        u.image as avatar,
+        COUNT(ub.id) as badge_count
+      FROM user as u
+      INNER JOIN user_profiles as p ON u.id = p.user_id
+      INNER JOIN user_badges as ub ON u.id = ub.user_id
+      WHERE p.show_on_about = 1
+      GROUP BY u.id, u.name, p.last_name, p.nickname, p.member_type, u.image
+      ORDER BY badge_count DESC
+      LIMIT 50
+    `);
 
-    const leaderboard = results.map(r => {
+    const rows = results.results || results.rows || results;
+    const leaderboard = rows.map((r: any) => {
       const isMinor = r.member_type === "student";
       return {
         user_id: String(r.user_id),
@@ -300,13 +289,13 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
 
 // Get stats (admin)
 analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
-      db.selectFrom("posts").select((eb) => eb.fn.count("slug").as("total")).where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("events").select((eb) => eb.fn.count("id").as("total")).where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("docs").select((eb) => eb.fn.count("slug").as("total")).where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("audit_log").select((eb) => eb.fn.count("id").as("total")).where("action", "=", "SECURITY_BLOCK").executeTakeFirst(),
+      db.select({ total: sql<number>`count(${schema.posts.slug})` }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
+      db.select({ total: sql<number>`count(${schema.events.id})` }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
+      db.select({ total: sql<number>`count(${schema.docs.slug})` }).from(schema.docs).where(eq(schema.docs.isDeleted, 0)).get(),
+      db.select({ total: sql<number>`count(${schema.auditLog.id})` }).from(schema.auditLog).where(eq(schema.auditLog.action, "SECURITY_BLOCK")).get(),
       getDbSettings(c)
     ]);
 
@@ -332,7 +321,7 @@ analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async 
 
 // Search
 analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const { q } = c.req.valid("query");
   try {
     // SCA-FTS-01: Sanitize FTS5 query
@@ -340,16 +329,20 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
     if (!qClean) return c.json({ results: [] } as any, 200 as any);
     const ftsQ = `"${qClean}"*`;
 
-    const [postsReq, eventsReq, docsReq] = await Promise.all([
-      sql<{ id: string, title: string }>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
-      sql<{ id: string, title: string }>`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`.execute(db),
-      sql<{ id: string, title: string }>`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`.execute(db)
+    const [postsReq, eventsReq, docsReq]: any[] = await Promise.all([
+      db.execute(sql`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
+      db.execute(sql`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
+      db.execute(sql`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
     ]);
 
+    const postsRows = postsReq.results || postsReq.rows || postsReq;
+    const eventsRows = eventsReq.results || eventsReq.rows || eventsReq;
+    const docsRows = docsReq.results || docsReq.rows || docsReq;
+
     const results = [
-      ...(postsReq.rows || []).map(r => ({ type: "blog" as const, id: r.id, title: r.title })),
-      ...(eventsReq.rows || []).map(r => ({ type: "event" as const, id: r.id, title: r.title })),
-      ...(docsReq.rows || []).map(r => ({ type: "doc" as const, id: r.id, title: r.title }))
+      ...(postsRows || []).map((r: any) => ({ type: "blog" as const, id: r.id, title: r.title })),
+      ...(eventsRows || []).map((r: any) => ({ type: "event" as const, id: r.id, title: r.title })),
+      ...(docsRows || []).map((r: any) => ({ type: "doc" as const, id: r.id, title: r.title }))
     ];
 
     return c.json({ results } as any, 200 as any);

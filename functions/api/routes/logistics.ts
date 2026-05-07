@@ -14,7 +14,7 @@ export const logisticsRouter = new OpenAPIHono<AppEnv>();
 logisticsRouter.use("/admin/*", ensureAdmin);
 
 logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisticsSummaryRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
 
   try {
     const results = await db.selectFrom("user_profiles as p")
@@ -37,7 +37,7 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisti
       }
 
       if (r.dietary_restrictions) {
-        const restrictions = r.dietary_restrictions.split(",").map(st => st.trim());
+        const restrictions = r.dietary_restrictions.split(",").map((st: any) => st.trim());
         for (const dr of restrictions) {
           if (dr) summary[dr] = (summary[dr] || 0) + 1;
         }
@@ -56,7 +56,7 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisti
 }));
 
 logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLogisticsEmailsRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const secret = c.env.ENCRYPTION_SECRET;
 
   try {

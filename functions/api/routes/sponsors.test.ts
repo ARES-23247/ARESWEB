@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import type { TestEnv, MockKysely } from "../../../src/test/types";
+import type { TestEnv } from "../../../src/test/types";
 import sponsorsRouter from "./sponsors";
 
 // Mock middleware
@@ -24,7 +24,7 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 describe("Hono Backend - /sponsors Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   let env: TestEnv["Bindings"];
 
@@ -49,7 +49,7 @@ describe("Hono Backend - /sponsors Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
     };
 
@@ -63,7 +63,7 @@ describe("Hono Backend - /sponsors Router", () => {
       c.set("db", mockDb);
       await next();
     });
-    testApp.onError((err, c) => {
+    testApp.onError((err: any, c: any) => {
       console.error("HONO ERROR:", err);
       return c.text("Internal Server Error", 500);
     });

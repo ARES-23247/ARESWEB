@@ -33,9 +33,9 @@ describe("Hono Backend - /tasks Router", () => {
     return {
       selectFrom: vi.fn().mockReturnThis(),
       leftJoin: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation((args) => {
+      select: vi.fn().mockImplementation((args: any) => {
         if (Array.isArray(args)) {
-          args.forEach(arg => typeof arg === "function" && arg(mockDb));
+          args.forEach((arg: any) => typeof arg === "function" && arg(mockDb));
         }
         return mockDb;
       }),

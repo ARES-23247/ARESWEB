@@ -26,12 +26,12 @@ export function triggerBackgroundReindex(
   executionCtx.waitUntil(
     import("./indexer")
       .then(({ indexSiteContent }) => indexSiteContent(db, ai, vectorize))
-      .then((r) => {
+      .then((r: any) => {
         if (r.indexed > 0 || r.errors.length > 0) {
           console.log(`[Auto-Reindex] Indexed: ${r.indexed}, Errors: ${r.errors.length}`);
         }
       })
-      .catch((e) => {
+      .catch((e: any) => {
         console.error("[Auto-Reindex] Failed:", e);
       })
   );
@@ -50,12 +50,12 @@ export function triggerExternalReindex(
   executionCtx.waitUntil(
     import("./indexer")
       .then(({ indexExternalResources }) => indexExternalResources(db, ai, vectorize, zaiApiKey, githubPat))
-      .then((r) => {
+      .then((r: any) => {
         if (r.indexed > 0 || r.errors.length > 0) {
           console.log(`[External-Reindex] Indexed: ${r.indexed}, Errors: ${r.errors.length}`);
         }
       })
-      .catch((e) => {
+      .catch((e: any) => {
         console.error("[External-Reindex] Failed:", e);
       })
   );

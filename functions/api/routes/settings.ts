@@ -58,13 +58,13 @@ settingsRouter.openapi(getSettingsRoute, typedHandler<typeof getSettingsRoute>(a
 }));
 
 settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const body = c.req.valid("json");
     const validationResult = settingsSchema.safeParse(body);
     if (!validationResult.success) {
       return c.json(
-        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i) => i.message).join(", ") } as any, 400 as any);
+        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i: any) => i.message).join(", ") } as any, 400 as any);
     }
 
     const entries = Object.entries(validationResult.data) as [string, string][];
@@ -82,7 +82,7 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
       await db
         .insertInto("settings")
         .values({ key, value, updated_at: new Date().toISOString() })
-        .onConflict((oc) => oc.column("key").doUpdateSet({ value, updated_at: new Date().toISOString() }))
+        .onConflict((oc: any) => oc.column("key").doUpdateSet({ value, updated_at: new Date().toISOString() }))
         .execute();
 
       updatedCount++;
@@ -102,7 +102,7 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
 }));
 
 settingsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
       db.selectFrom("posts").select(db.fn.count("slug").as("count")).where("is_deleted", "=", 0).executeTakeFirst(),
@@ -141,7 +141,7 @@ settingsRouter.openapi(getPublicSettingsRoute, typedHandler<typeof getPublicSett
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
 settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const SAFE_TABLES = [
       "posts", "events", "docs", "docs_history", "docs_feedback",
@@ -175,7 +175,7 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
         if (tableName === "inquiries") {
           return {
             tableName,
-            data: (data || []).map((r) => {
+            data: (data || []).map((r: any) => {
               const row = r as Record<string, unknown>;
               return { ...row, name: row.name ? String(row.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
             }),

@@ -12,7 +12,6 @@ const mockExecutionContext: MockExecutionContext = {
   props: {},
 };
 
-import { createMockExpressionBuilder } from "../../../src/test/utils";
 
 const rateLimitStore = new Map<string, number>();
 
@@ -41,11 +40,11 @@ describe("Analytics Router", () => {
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation((arg) => {
+      select: vi.fn().mockImplementation((arg: any) => {
         const executeArg = (a: unknown) => {
           if (typeof a === "function") {
             try {
-              a(createMockExpressionBuilder());
+              a(({} as any));
             } catch (_e) { /* ignore */ }
           }
         };
@@ -80,7 +79,7 @@ describe("Analytics Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((arg) => {
+      onConflict: vi.fn().mockImplementation((arg: any) => {
         if (typeof arg === "function") {
           try { arg({ columns: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() }); } catch(_e) { /* ignore */ }
         }

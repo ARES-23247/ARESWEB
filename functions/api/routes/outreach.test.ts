@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { MockKysely, TestEnv } from "../../../src/test/types";
+import type { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 
 // Mock middleware
@@ -17,7 +17,7 @@ vi.mock("../middleware", async (importOriginal) => {
 import outreachRouter from "./outreach/index";
 
 describe("Hono Backend - /outreach Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -40,7 +40,7 @@ describe("Hono Backend - /outreach Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
     };
 

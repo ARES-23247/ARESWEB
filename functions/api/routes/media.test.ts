@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 
 interface _MediaResponse {
   success?: boolean;
@@ -62,7 +62,7 @@ type TestEnvWithStorage = TestEnv["Bindings"] & {
 
 describe("Hono Backend - /media Router", () => {
   let mockR2: MockR2;
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   let env: TestEnvWithStorage;
 
@@ -84,7 +84,7 @@ describe("Hono Backend - /media Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn((cb) => {
+      onConflict: vi.fn((cb: any) => {
         const oc = {
           column: vi.fn().mockReturnThis(),
           columns: vi.fn().mockReturnThis(),
@@ -102,7 +102,7 @@ describe("Hono Backend - /media Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
     };
 
@@ -589,7 +589,7 @@ describe("Hono Backend - /media Router", () => {
   });
 
   it("GET /:key - serves raw object", async () => {
-    mockR2.get.mockResolvedValue({ body: "data", httpMetadata: { contentType: "image/png" }, writeHttpMetadata: vi.fn((headers) => headers.set("Content-Type", "image/png")) });
+    mockR2.get.mockResolvedValue({ body: "data", httpMetadata: { contentType: "image/png" }, writeHttpMetadata: vi.fn((headers: any) => headers.set("Content-Type", "image/png")) });
     const res = await testApp.request("/Gallery/img1.png", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });

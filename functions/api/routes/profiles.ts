@@ -43,8 +43,7 @@ profilesRouter.use("/avatar", persistentRateLimitMiddleware(15, 60));
 // Input validation schema for profile updates
 const updateUserProfileSchema = z
   .record(z.string(), z.union([z.string(), z.boolean(), z.array(z.string()), z.null()]).optional())
-  .refine(
-    (data) => {
+  .refine((data: any) => {
       const MAX_BIO_LENGTH = 2000;
       const MAX_NAME_LENGTH = 100;
       const MAX_GENERAL_LENGTH = 500;
@@ -71,7 +70,7 @@ profilesRouter.use("/avatar", ensureAuth);
 
 profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => {
   const user = (await getSessionUser(c))!;
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
 
   try {
     const profileRow = await db
@@ -183,7 +182,7 @@ profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (
     const validationResult = updateUserProfileSchema.safeParse(body);
     if (!validationResult.success) {
       return c.json(
-        { error: "Invalid profile data: " + validationResult.error.issues.map((i) => i.message).join(", ") },
+        { error: "Invalid profile data: " + validationResult.error.issues.map((i: any) => i.message).join(", ") },
         400
       );
     }
@@ -211,7 +210,7 @@ profilesRouter.openapi(updateAvatarRoute, typedHandler<typeof updateAvatarRoute>
 // ─── Public Routes ────────────────────────────────────────────────────────
 
 profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const results = await db
       .selectFrom("user_profiles as p")
@@ -254,7 +253,7 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
 
     const members = (
       await Promise.all(
-        (results || []).map(async (r) => {
+        (results || []).map(async (r: any) => {
           const row = r as Record<string, unknown>;
           const memberType = String(row.member_type || "student").toLowerCase();
 
@@ -277,7 +276,7 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
           };
         })
       )
-    ).filter((m) => !!m);
+    ).filter((m: any) => !!m);
 
     if (members.length === 0 && results.length > 0) {
       console.warn("[Roster] Results found but all members were filtered out or failed processing.");
@@ -292,7 +291,7 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
 
 profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfileRoute>(async (c) => {
   const { userId } = c.req.valid("param");
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const profileRow = await db
       .selectFrom("user_profiles as p")

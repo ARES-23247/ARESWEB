@@ -22,7 +22,7 @@ export async function upsertProfile(
 ) {
   const secret = c.env.ENCRYPTION_SECRET;
   const sessionUser = await getSessionUser(c);
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   
   const existing = await db.query.userProfiles.findFirst({
     columns: {

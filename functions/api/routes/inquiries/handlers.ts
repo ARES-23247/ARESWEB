@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { sql } from "kysely";
+import { eq, desc, inArray, and, sql } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { DB } from "../../../../shared/schemas/database";
 import { getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
@@ -52,17 +53,27 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
       }
     }
 
-    let dbQuery = db.selectFrom("inquiries")
-      .select(["id", "type", "name", "email", "metadata", "status", "created_at", "zulip_message_id", "notes"])
-      .orderBy("created_at", "desc")
+    let dbQuery = db.select({
+        id: schema.inquiries.id,
+        type: schema.inquiries.type,
+        name: schema.inquiries.name,
+        email: schema.inquiries.email,
+        metadata: schema.inquiries.metadata,
+        status: schema.inquiries.status,
+        created_at: schema.inquiries.createdAt,
+        zulip_message_id: schema.inquiries.zulipMessageId,
+        notes: schema.inquiries.notes
+      })
+      .from(schema.inquiries)
+      .orderBy(desc(schema.inquiries.createdAt))
       .limit(limit)
       .offset(offset);
     
     if (filterOutreach) {
-      dbQuery = dbQuery.where("type", "in", ["outreach", "support"]);
+      dbQuery.where(inArray(schema.inquiries.type, ["outreach", "support"]));
     }
 
-    const results = await dbQuery.execute();
+    const results = await dbQuery.all();
     const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
 
     const inquiries = await Promise.all(results.map(async (r: any) => {
@@ -123,11 +134,17 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
     const secret = c.env.ENCRYPTION_SECRET;
 
     // Prevents double submissions
-    const recent = await db.selectFrom("inquiries")
-      .select(["id", "email", "metadata"])
-      .where("type", "=", type)
-      .where("created_at", ">", sql<string>`datetime('now', '-60 seconds')`)
-      .execute();
+    const recent = await db.select({
+        id: schema.inquiries.id,
+        email: schema.inquiries.email,
+        metadata: schema.inquiries.metadata
+      })
+      .from(schema.inquiries)
+      .where(and(
+        eq(schema.inquiries.type, type),
+        sql`${schema.inquiries.createdAt} > datetime('now', '-60 seconds')`
+      ))
+      .all();
 
     for (const r of recent) {
       try {
@@ -150,7 +167,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
       metadataStr = metadataStr.substring(0, 5000);
     }
 
-    await db.insertInto("inquiries")
+    await db.insert(schema.inquiries)
       .values({
         id,
         type,
@@ -158,7 +175,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
         email: encryptedEmail,
         metadata: metadataStr,
       })
-      .execute();
+      .run();
 
     if (type === "sponsor") {
       let tierStr = "Pending";
@@ -168,14 +185,14 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
         tierStr = tierStr.replace(" Tier Sponsor", "");
       }
       const encryptedSponsorName = await encrypt(name, secret);
-      await db.insertInto("sponsors")
+      await db.insert(schema.sponsors)
         .values({
           id,
           name: encryptedSponsorName,
           tier: tierStr,
-          is_active: 0,
+          isActive: 0,
         })
-        .execute();
+        .run();
     }
 
     const baseUrl = new URL(c.req.url).origin;
@@ -197,7 +214,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
       const messageId = await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => null);
 
       if (messageId) {
-        await db.updateTable("inquiries").set({ zulip_message_id: messageId }).where("id", "=", id).execute();
+        await db.update(schema.inquiries).set({ zulipMessageId: messageId }).where(eq(schema.inquiries.id, id)).run();
       }
 
       const audiences: NotifyAudience[] = (type === "outreach" || type === "support") ? ["admin", "coach", "mentor", "student"] : ["admin", "coach", "mentor"];
@@ -248,10 +265,10 @@ export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, A
     const { id } = c.req.valid("param");
     const { status } = c.req.valid("json");
     const db = c.get("db") as any;
-    await db.updateTable("inquiries")
+    await db.update(schema.inquiries)
       .set({ status })
-      .where("id", "=", id)
-      .execute();
+      .where(eq(schema.inquiries.id, id))
+      .run();
 
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", id, `Status changed to ${status}`));
     return c.json({ success: true, status }, 200);
@@ -266,10 +283,10 @@ export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, App
     const { id } = c.req.valid("param");
     const { notes } = c.req.valid("json");
     const db = c.get("db") as any;
-    await db.updateTable("inquiries")
+    await db.update(schema.inquiries)
       .set({ notes })
-      .where("id", "=", id)
-      .execute();
+      .where(eq(schema.inquiries.id, id))
+      .run();
 
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_notes_change", "inquiries", id, `Notes updated`));
     return c.json({ success: true }, 200);
@@ -283,7 +300,7 @@ export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as any;
-    await db.deleteFrom("inquiries").where("id", "=", id).execute();
+    await db.delete(schema.inquiries).where(eq(schema.inquiries.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry deleted"));
     return c.json({ success: true }, 200);
   } catch (e: unknown) {

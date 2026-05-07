@@ -45,7 +45,7 @@ const adminPrivilegedPaths = [
   "/admin/:slug" // deleteDoc
 ];
 
-adminPrivilegedPaths.forEach(path => {
+adminPrivilegedPaths.forEach((path: any) => {
   docsRouter.use(path, ensureAdmin);
 });
 
@@ -111,7 +111,7 @@ const sanitizeFtsQuery = (query: string): string => {
 
 async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await db.selectFrom("docs_history")
       .select("id")
       .where("slug", "=", slug)
@@ -133,7 +133,7 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 // GET /docs - List all public docs
 docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDocsRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     let results;
     try {
       results = await db.selectFrom("docs")
@@ -184,7 +184,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .execute() as DocWithAuthor[];
     }
 
-    const docs = results.map(d => ({
+    const docs = results.map((d: any) => ({
       ...d,
       sort_order: Number(d.sort_order || 0),
       is_portfolio: Number(d.is_portfolio || 0),
@@ -223,7 +223,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
     const cleanQ = sanitizeFtsQuery(String(q));
     if (!cleanQ) return c.json({ results: [] } as any, 200 as any);
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await sql<{ slug: string, title: string, category: string, description: string | null }>`
       SELECT f.slug, f.title, f.category, f.description
       FROM docs_fts f
@@ -232,7 +232,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
       ORDER BY f.rank LIMIT 20
     `.execute(db);
 
-    const mapped = (results.rows ?? []).map((row) => {
+    const mapped = (results.rows ?? []).map((row: any) => {
       return {
         slug: String(row.slug),
         title: String(row.title),
@@ -254,7 +254,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
 // GET /docs/admin/list - List all docs (admin view)
 docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adminListRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     let results;
     try {
       results = await db.selectFrom("docs")
@@ -270,7 +270,7 @@ docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adm
         .execute() as PartialDoc[];
     }
 
-    const docs = results.map(d => ({
+    const docs = results.map((d: any) => ({
       ...d,
       title: d.title || "Untitled",
       category: d.category || "Uncategorized",
@@ -294,7 +294,7 @@ docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adm
 docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.adminDetailRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     let row;
     try {
       row = await db.selectFrom("docs")
@@ -332,7 +332,7 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.a
 docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     let row;
     try {
       row = await db.selectFrom("docs")
@@ -399,7 +399,7 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
       .where("h.author_email", "is not", null)
       .execute();
 
-    const contributors = contributorRows.map(cnt => ({
+    const contributors = contributorRows.map((cnt: any) => ({
       nickname: cnt.nickname || null,
       avatar: cnt.avatar || null
     }));
@@ -429,13 +429,13 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
 docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.deleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const existing = await db.selectFrom("docs").selectAll().where("slug", "=", slug).executeTakeFirst();
     if (!existing) return c.json({ error: "Doc not found" } as any, 404 as any);
 
     await db.updateTable("docs").set({ is_deleted: 1 }).where("slug", "=", slug).execute();
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI as any, c.env.VECTORIZE_DB as any);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI as any, c.env.VECTORIZE_DB as any);
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Delete] Error", e);
@@ -446,7 +446,7 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.del
 // POST /docs/admin/save - Save or update doc
 docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveDocRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = c.req.valid("json");
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
@@ -531,7 +531,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
         zulip_stream: "documents",
         zulip_topic: `Doc: ${title || "Untitled"}`
       })
-      .onConflict((oc) => oc.column("slug").doUpdateSet({
+      .onConflict((oc: any) => oc.column("slug").doUpdateSet({
         title: title || "",
         category: category || "",
         sort_order: sortOrder || 0,
@@ -583,7 +583,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
       }));
     }
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Save] Error", e);
@@ -596,7 +596,7 @@ docsRouter.openapi(docsRoutes.updateSortRoute, typedHandler<typeof docsRoutes.up
   const { slug } = c.req.valid("param");
   const { sortOrder } = c.req.valid("json");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.updateTable("docs").set({ sort_order: sortOrder }).where("slug", "=", slug).execute();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -611,7 +611,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   const { isHelpful, comment, turnstileToken } = c.req.valid("json");
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `feedback:${ip}`, ua, 10, 60))) return c.json({ error: "Too many submissions" } as any, 429 as any);
+  if (!(await checkPersistentRateLimit(c.get("db") as any, `feedback:${ip}`, ua, 10, 60))) return c.json({ error: "Too many submissions" } as any, 429 as any);
 
   const valid = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
   if (!valid) return c.json({ error: "Security verification failed" } as any, 403 as any);
@@ -619,7 +619,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   if (comment && comment.length > 2000) return c.json({ error: "Comment too long" } as any, 400 as any);
 
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.insertInto("docs_feedback").values({ slug, is_helpful: isHelpful ? 1 : 0, comment: comment || null }).execute();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -632,7 +632,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
 docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.getHistoryRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await db.selectFrom("docs_history")
       .select(["id", "slug", "title", "category", "description", "author_email", "created_at"])
       .where("slug", "=", slug)
@@ -640,7 +640,7 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
       .limit(50)
       .execute();
 
-    const history = results.map(h => ({
+    const history = results.map((h: any) => ({
       ...h,
       id: Number(h.id)
     }));
@@ -656,7 +656,7 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
 docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoutes.restoreHistoryRoute>(async (c) => {
   const { slug, id } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const row = await db.selectFrom("docs_history")
       .select(["title", "category", "description", "content"])
       .where("id", "=", Number(id))
@@ -710,7 +710,7 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoute
 docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.approveDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const row = await db.selectFrom("docs").select(["revision_of", "title", "category", "sort_order", "description", "content", "is_portfolio", "is_executive_summary", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
     if (!row) return c.json({ error: "Doc not found" } as any, 404 as any);
 
@@ -755,7 +755,7 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
   const { slug } = c.req.valid("param");
   const { reason } = c.req.valid("json");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const row = await db.selectFrom("docs").select(["title", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
     await db.updateTable("docs").set({ status: "rejected" }).where("slug", "=", slug).execute();
     if (row?.cf_email) {
@@ -773,7 +773,7 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
 docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.undeleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.updateTable("docs").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -786,7 +786,7 @@ docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.u
 docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purgeDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     // 1. Fetch content to find embedded assets
     const doc = await db.selectFrom("docs")

@@ -71,7 +71,7 @@ export const eventHandlers = {
   getEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const { limit = 50, offset = 0, q } = query;
 
       if (q) {
@@ -86,7 +86,7 @@ export const eventHandlers = {
            ORDER BY f.rank LIMIT ${Number(limit) || 50} OFFSET ${Number(offset) || 0}
         `.execute(db);
         
-        const events = results.rows.map(e => ({
+        const events = results.rows.map((e: any) => ({
           ...e,
           season_id: e.season_id ? Number(e.season_id) : null,
           is_deleted: Number(e.is_deleted || 0)
@@ -101,7 +101,7 @@ export const eventHandlers = {
           .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "status", "is_deleted", "season_id", "meeting_notes", "tba_event_key", "recurring_exception", "is_potluck", "is_volunteer"])
           .where("is_deleted", "=", 0)
           .where("status", "=", "published")
-          .where((eb) => eb.or([
+          .where((eb: any) => eb.or([
             eb("published_at", "is", null),
             eb("published_at", "<=", new Date().toISOString())
           ]))
@@ -121,16 +121,16 @@ export const eventHandlers = {
       }
 
       // Resolve location addresses from the locations registry
-      const locationNames = [...new Set(results.map(e => e.location).filter(Boolean))] as string[];
+      const locationNames = [...new Set(results.map((e: any) => e.location).filter(Boolean))] as string[];
       const locationMap: Record<string, string> = {};
       if (locationNames.length > 0) {
         try {
           const locs = await db.selectFrom("locations").select(["name", "address"]).where("name", "in", locationNames).execute();
-          locs.forEach(l => { if (l.address) locationMap[l.name] = l.address; });
+          locs.forEach((l: any) => { if (l.address) locationMap[l.name] = l.address; });
         } catch { /* locations table may not exist */ }
       }
 
-      const events = results.map(e => ({
+      const events = results.map((e: any) => ({
         ...e,
         season_id: e.season_id ? Number(e.season_id) : null,
         is_deleted: Number(e.is_deleted || 0),
@@ -148,13 +148,13 @@ export const eventHandlers = {
   },
   getCalendarSettings: async (_input: HandlerInput, c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const results = await db.selectFrom("settings")
         .select(["key", "value"])
         .where("key", "in", ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"])
         .execute();
 
-      const map = results.reduce<Record<string, string>>((acc, row) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
+      const map = results.reduce((acc: any, row: any) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
       
       return { status: 200 as const, body: { 
         calendarIdInternal: map["CALENDAR_ID_INTERNAL"] || map["CALENDAR_ID"] || "",
@@ -170,7 +170,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const user = await getSessionUser(c);
 
       const row = await db.selectFrom("events")
@@ -212,7 +212,7 @@ export const eventHandlers = {
   getAdminEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const { limit = 100, cursor } = query;
       
       let baseQuery = db.selectFrom("events").orderBy("date_start", "desc").limit(Number(limit) || 100);
@@ -234,7 +234,7 @@ export const eventHandlers = {
       
       const lastSyncRow = await db.selectFrom("settings").select("value").where("key", "=", "LAST_CALENDAR_SYNC").executeTakeFirst();
       
-      const events = results.map(e => ({
+      const events = results.map((e: any) => ({
         ...e,
         season_id: e.season_id ? Number(e.season_id) : null,
         is_deleted: Number(e.is_deleted || 0),
@@ -255,7 +255,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       let row;
       try {
         row = await db.selectFrom("events")
@@ -292,7 +292,7 @@ export const eventHandlers = {
   saveEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
     try {
       const { body } = input;
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
 
       if (body.id) {
         const existing = await db.selectFrom("events").select("id").where("id", "=", body.id).executeTakeFirst();
@@ -366,18 +366,18 @@ export const eventHandlers = {
         }
 
         const upperRule = body.rrule.toUpperCase();
-        const hasValidKey = ALLOWED_RRULE_KEYS.some(key => upperRule.includes(`${key}=`));
+        const hasValidKey = ALLOWED_RRULE_KEYS.some((key: any) => upperRule.includes(`${key}=`));
         if (!hasValidKey) {
           return { status: 400 as const, body: { error: "Invalid recurrence rule format" } };
         }
 
         try {
           const rule = rrulestr(body.rrule, { dtstart: new Date(dateStart) });
-          const dates = rule.all((d, i) => i < 52); 
+          const dates = rule.all((d: any, i: any) => i < 52); 
           
           const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
 
-          instances = dates.map((d, i) => {
+          instances = dates.map((d: any, i: any) => {
              const instStart = d.toISOString();
              const instEnd = dateEnd ? new Date(d.getTime() + duration).toISOString() : null;
              return {
@@ -466,7 +466,7 @@ export const eventHandlers = {
     const { params, body } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes, recurrenceRule, parentEventId, originalStartTime } = body;
 
       if (!dateStart) {
@@ -506,9 +506,9 @@ export const eventHandlers = {
         if (body.rrule) {
           try {
             const rule = rrulestr(body.rrule, { dtstart: new Date(dateStart) });
-            const dates = rule.all((d, i) => i < 52); 
+            const dates = rule.all((d: any, i: any) => i < 52); 
             const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
-            const instances = dates.slice(1).map((d) => {
+            const instances = dates.slice(1).map((d: any) => {
               const instStart = d.toISOString();
               const instEnd = dateEnd ? new Date(d.getTime() + duration).toISOString() : null;
               return {
@@ -617,7 +617,7 @@ export const eventHandlers = {
     const { params, body } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const existing = await db.selectFrom("events").select(["recurring_group_id", "date_start", "recurrence_rule", "parent_event_id", "gcal_event_id", "category"]).where("id", "=", id).executeTakeFirst();
       
       let gcalAction = "delete";
@@ -683,7 +683,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const row = await db.selectFrom("events").select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "tba_event_key", "status", "is_potluck", "is_volunteer", "season_id", "meeting_notes", "revision_of", "gcal_event_id"]).where("id", "=", id).executeTakeFirst();
       if (row && row.revision_of) {
         await db.updateTable("events")
@@ -733,7 +733,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.updateTable("events").set({ status: 'rejected', updated_at: new Date().toISOString() }).where("id", "=", id).execute();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
@@ -745,7 +745,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.updateTable("events").set({ is_deleted: 0, updated_at: new Date().toISOString() }).where("id", "=", id).execute();
 
       c.executionCtx.waitUntil((async () => {
@@ -780,7 +780,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const row = await db.selectFrom("events").select(["gcal_event_id", "category"]).where("id", "=", id).executeTakeFirst();
       await db.deleteFrom("events").where("id", "=", id).execute();
 
@@ -810,7 +810,7 @@ export const eventHandlers = {
   },
   syncEvents: async (_input: HandlerInput, c: HonoContext) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const dbSettings = await getDbSettings(c);
       const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
       const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
@@ -819,7 +819,7 @@ export const eventHandlers = {
         { id: dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"], category: "internal" },
         { id: dbSettings["CALENDAR_ID_OUTREACH"], category: "outreach" },
         { id: dbSettings["CALENDAR_ID_EXTERNAL"], category: "external" }
-      ].filter(cal => !!cal.id);
+      ].filter((cal: any) => !!cal.id);
 
       if (!gcalEmail || !gcalKey || calendars.length === 0) {
         return { status: 500 as const, body: { success: false, error: "GCal config missing" } };
@@ -834,7 +834,7 @@ export const eventHandlers = {
           
           const CHUNK_SIZE = 20;
           for (let i = 0; i < events.length; i += CHUNK_SIZE) {
-            const chunk = events.slice(i, i + CHUNK_SIZE).map(ev => ({
+            const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: any) => ({
               id: crypto.randomUUID(),
               title: ev.title,
               date_start: ev.date_start,
@@ -851,7 +851,7 @@ export const eventHandlers = {
 
             await db.insertInto("events")
               .values(chunk)
-              .onConflict((oc) => oc.column("gcal_event_id").doUpdateSet({
+              .onConflict((oc: any) => oc.column("gcal_event_id").doUpdateSet({
                 title: sql`excluded.title`,
                 date_start: sql`excluded.date_start`,
                 date_end: sql`excluded.date_end`,
@@ -884,7 +884,7 @@ export const eventHandlers = {
       const { params } = input;
       const eventId = params.id;
       const user = await getSessionUser(c);
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const isVerified = user && user.role !== "unverified";
       const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.member_type || ""));
 
@@ -898,7 +898,7 @@ export const eventHandlers = {
         .orderBy("s.created_at", "asc")
         .execute();
 
-      const signups = isVerified ? results.map((rec) => ({
+      const signups = isVerified ? results.map((rec: any) => ({
         user_id: rec.user_id,
         nickname: rec.nickname || null,
         bringing: rec.bringing || null,
@@ -909,7 +909,7 @@ export const eventHandlers = {
       })) : [];
 
       const dietarySummary: Record<string, number> = {};
-      results.forEach((r) => {
+      results.forEach((r: any) => {
         if (r.dietary_restrictions) {
           const restrictions = r.dietary_restrictions.split(',').map((st: string) => st.trim());
           restrictions.forEach((res: string) => {
@@ -937,10 +937,10 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (!user || user.role === "unverified") return { status: 403 as const, body: { error: "Forbidden" } };
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.insertInto("event_signups")
         .values({ event_id: params.id, user_id: user.id, bringing: body.bringing || "", notes: body.notes || "", prep_hours: body.prep_hours || 0 })
-        .onConflict((oc) => oc.columns(["event_id", "user_id"]).doUpdateSet({ bringing: body.bringing || "", notes: body.notes || "", prep_hours: body.prep_hours || 0 }))
+        .onConflict((oc: any) => oc.columns(["event_id", "user_id"]).doUpdateSet({ bringing: body.bringing || "", notes: body.notes || "", prep_hours: body.prep_hours || 0 }))
         .execute();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
@@ -953,7 +953,7 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.deleteFrom("event_signups").where("event_id", "=", params.id).where("user_id", "=", user.id).execute();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
@@ -966,10 +966,10 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.insertInto("event_signups")
         .values({ event_id: params.id, user_id: user.id, attended: body.attended ? 1 : 0 })
-        .onConflict((oc) => oc.columns(["event_id", "user_id"]).doUpdateSet({ attended: body.attended ? 1 : 0 }))
+        .onConflict((oc: any) => oc.columns(["event_id", "user_id"]).doUpdateSet({ attended: body.attended ? 1 : 0 }))
         .execute();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
@@ -982,10 +982,10 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.insertInto("event_signups")
         .values({ event_id: params.id, user_id: params.userId, attended: body.attended ? 1 : 0 })
-        .onConflict((oc) => oc.columns(["event_id", "user_id"]).doUpdateSet({ attended: body.attended ? 1 : 0 }))
+        .onConflict((oc: any) => oc.columns(["event_id", "user_id"]).doUpdateSet({ attended: body.attended ? 1 : 0 }))
         .execute();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
@@ -997,7 +997,7 @@ export const eventHandlers = {
     const { params, body } = input;
     const user = await getSessionUser(c);
     if (user?.role !== "admin" && user?.role !== "author") return { status: 401 as const, body: { error: "Unauthorized" } };
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     try {
       const event = await db.selectFrom("events").selectAll().where("id", "=", params.id).executeTakeFirst();
       if (!event) return { status: 404 as const, body: { error: "Event not found" } };
@@ -1047,7 +1047,7 @@ export const eventHandlers = {
   },
   repairCalendar: async (_input: HandlerInput, c: HonoContext) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const dbSettings = await getDbSettings(c);
       const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
       const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
@@ -1060,7 +1060,7 @@ export const eventHandlers = {
         .select(["id", "title", "category", "date_start", "date_end", "location", "description", "cover_image", "gcal_event_id", "meeting_notes"])
         .where("is_deleted", "=", 0)
         .where("status", "=", "published")
-        .where((eb) => eb.or([
+        .where((eb: any) => eb.or([
           eb("gcal_event_id", "is", null),
           eb("gcal_event_id", "=", ""),
         ]))

@@ -23,8 +23,8 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 vi.mock("../../utils/crypto", () => ({
-  decrypt: vi.fn((val) => Promise.resolve("decrypted_" + val)),
-  encrypt: vi.fn((val) => Promise.resolve("encrypted_" + val)),
+  decrypt: vi.fn((val: any) => Promise.resolve("decrypted_" + val)),
+  encrypt: vi.fn((val: any) => Promise.resolve("encrypted_" + val)),
 }));
 
 vi.mock("./_profileUtils", () => ({

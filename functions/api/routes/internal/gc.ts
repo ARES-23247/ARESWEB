@@ -18,7 +18,7 @@ gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const db = c.get("db");
+    const db = c.get("db") as any;
 
     // Delete rows soft-deleted more than 30 days ago
     const thirtyDaysAgo = new Date();

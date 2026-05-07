@@ -30,7 +30,7 @@ seasonsRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
 seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const results = await db
       .selectFrom("seasons")
       .select([
@@ -69,7 +69,7 @@ seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(as
 
 seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeasonsRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const results = await db
       .selectFrom("seasons")
       .select([
@@ -107,7 +107,7 @@ seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeason
 seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const year = parseInt(id);
     const row = await db
       .selectFrom("seasons")
@@ -151,7 +151,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSea
 seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailRoute>(async (c) => {
   try {
     const { year } = c.req.valid("param");
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const yearNum = parseInt(year);
     if (isNaN(yearNum)) return c.json({ error: "Invalid year" }, 404);
 
@@ -260,7 +260,7 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
 seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db");
+    const db = c.get("db") as any;
 
     // Type assertion for the body
     const seasonData = body;
@@ -334,7 +334,7 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
         logAuditAction(c, "season_created", "seasons", seasonData.start_year.toString(), `Season "${seasonData.start_year}" created`)
       );
     }
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Save] Error", e);
@@ -345,7 +345,7 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
 seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const year = parseInt(id);
     await db
       .updateTable("seasons")
@@ -354,7 +354,7 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
       .execute();
     c.executionCtx.waitUntil(logAuditAction(c, "season_deleted", "seasons", id, `Season "${id}" soft-deleted`));
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Delete] Error", e);
@@ -365,7 +365,7 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
 seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const year = parseInt(id);
     await db
       .updateTable("seasons")
@@ -383,7 +383,7 @@ seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRou
 seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const year = parseInt(id);
     await db
       .deleteFrom("seasons")

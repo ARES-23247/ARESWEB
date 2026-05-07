@@ -123,7 +123,7 @@ describe("Hono Backend - /inquiries Router", () => {
     };
 
     testApp = new Hono<TestEnv>();
-    testApp.onError((err, c) => {
+    testApp.onError((err: any, c: any) => {
       console.error("Test App Error:", err);
       return c.json({ error: err.message }, 500);
     });

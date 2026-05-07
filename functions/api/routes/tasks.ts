@@ -25,7 +25,7 @@ tasksRouter.use("*", originIntegrityMiddleware());
 tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c) => {
   try {
     const query = c.req.valid("query") || {};
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const { limit, offset } = parsePagination(c, 50, 200);
 
     let baseQuery = db.selectFrom("tasks")
@@ -106,7 +106,7 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
 tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -192,7 +192,7 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
 tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -216,7 +216,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -265,7 +265,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
             .where("user_id", "in", body.assignees)
             .execute();
 
-          const hasMismatchedSubteam = assigneeSubteams.some(p => p.subteams && p.subteams !== existing.subteam);
+          const hasMismatchedSubteam = assigneeSubteams.some((p: any) => p.subteams && p.subteams !== existing.subteam);
           if (hasMismatchedSubteam) {
             return c.json({ error: "Cannot assign users from different subteams to this task" }, 403);
           }
@@ -286,7 +286,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
         // Notify new assignees
         try {
           const users = await db.selectFrom("user").select("email").where("id", "in", body.assignees).execute();
-          const emails = users.map(u => u.email).filter(Boolean);
+          const emails = users.map((u: any) => u.email).filter(Boolean);
           if (emails.length > 0) {
             const env = await getSocialConfig(c);
             for (const email of emails) {
@@ -319,7 +319,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
 tasksRouter.openapi(deleteTaskRoute, typedHandler<typeof deleteTaskRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 

@@ -26,7 +26,7 @@ perfRouter.openapi(createRoute({
   }
 }), async (c) => {
   const { metrics } = c.req.valid("json");
-  const db = c.get('db') as Kysely<DB>;
+  const db = c.get('db') as any;
 
   for (const metric of metrics) {
     await db.insertInto('performance_metrics').values({
@@ -53,12 +53,12 @@ perfRouter.openapi(createRoute({
     }
   }
 }), async (c) => {
-  const db = c.get('db') as Kysely<DB>;
+  const db = c.get('db') as any;
   
   // A simple summary by taking the average of the last 100 entries for each metric.
   const results = await db.selectFrom('performance_metrics')
     .select(['metric_name'])
-    .select((eb) => eb.fn.avg('value').as('avg_value'))
+    .select((eb: any) => eb.fn.avg('value').as('avg_value'))
     .groupBy('metric_name')
     .execute();
 

@@ -85,7 +85,7 @@ const sanitizeFtsQuery = (query: string): string => {
 
 postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const { limit = 10, offset = 0, q } = c.req.valid("query");
 
     if (q) {
@@ -116,7 +116,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
          ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
       `.execute(db);
 
-      const posts = results.rows.map((p) => ({
+      const posts = results.rows.map((p: any) => ({
         ...p,
         season_id: p.season_id ? Number(p.season_id) : null,
         is_deleted: 0,
@@ -145,7 +145,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       ])
       .where("posts.is_deleted", "=", 0)
       .where("posts.status", "=", "published")
-      .where((eb) =>
+      .where((eb: any) =>
         eb.or([
           eb("published_at", "is", null),
           eb("published_at", "<=", new Date().toISOString()),
@@ -156,7 +156,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       .offset(Number(offset) || 0)
       .execute();
 
-    const posts = results.map((p) => ({
+    const posts = results.map((p: any) => ({
       ...p,
       season_id: p.season_id ? Number(p.season_id) : null,
       is_deleted: 0,
@@ -174,7 +174,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
 postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
 
     const row = await db
@@ -199,7 +199,7 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
       .where("posts.slug", "=", slug)
       .where("posts.is_deleted", "=", 0)
       .where("posts.status", "=", "published")
-      .where((eb) =>
+      .where((eb: any) =>
         eb.or([
           eb("published_at", "is", null),
           eb("published_at", "<=", new Date().toISOString()),
@@ -236,7 +236,7 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
 
 postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const { limit = 50, offset = 0 } = c.req.valid("query");
 
     let results;
@@ -272,7 +272,7 @@ postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(
         .execute();
     }
 
-    const posts = results.map((p) => {
+    const posts = results.map((p: any) => {
       const item = p as { season_id?: unknown; is_deleted?: unknown };
       return {
         ...p,
@@ -292,7 +292,7 @@ postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(
 postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const row = await db
       .selectFrom("posts")
       .select([
@@ -334,7 +334,7 @@ postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(as
 
 postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const body = c.req.valid("json");
 
     // If slug is provided, update existing post
@@ -439,7 +439,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
     c.executionCtx.waitUntil(
       logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`)
     );
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
 
     const warnings: string[] = [];
 
@@ -452,7 +452,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
         (async () => {
           try {
             await dispatchSocials(
-              c.get("db") as Kysely<DB>,
+              c.get("db") as any,
               {
                 title: body.title,
                 url: `${baseUrl}/blog/${slug}`,
@@ -476,7 +476,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
             "blog",
             `Blog: ${body.title}`,
             `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
-          ).catch((err) => {
+          ).catch((err: any) => {
             console.error("[Posts] Zulip announcement failed:", err);
             warnings.push("Zulip Notification Failed");
           })
@@ -513,7 +513,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
 postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const body = c.req.valid("json");
     const astStr = JSON.stringify(body.ast);
     const snippet = extractAstText(body.ast).substring(0, 200);
@@ -575,7 +575,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
     c.executionCtx.waitUntil(
       logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`)
     );
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug } as any, 200 as any);
   } catch (e) {
     console.error("[Posts:Update] Error", e);
@@ -586,7 +586,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
 postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db
       .updateTable("posts")
       .set({ is_deleted: 1, status: "draft", updated_at: new Date().toISOString() })
@@ -594,7 +594,7 @@ postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async 
       .execute();
     c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Posts:Delete] Error", e);
@@ -605,7 +605,7 @@ postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async 
 postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db
       .updateTable("posts")
       .set({ is_deleted: 0, status: "draft", updated_at: new Date().toISOString() })
@@ -622,7 +622,7 @@ postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(as
 postsRouter.openapi(purgePostRoute, typedHandler<typeof purgePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     const post = await db
       .selectFrom("posts")
@@ -666,7 +666,7 @@ postsRouter.openapi(rejectPostRoute, typedHandler<typeof rejectPostRoute>(async 
   const _body = c.req.valid("json");
   const { reason } = c.req.valid("json");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const row = await db
       .selectFrom("posts")
       .select(["title", "cf_email"])
@@ -709,7 +709,7 @@ postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute
   const { slug } = c.req.valid("param");
   try {
     const historyRows = await getPostHistory(c, slug);
-    const history = historyRows.map((h) => ({
+    const history = historyRows.map((h: any) => ({
       ...h,
       id: Number(h.id),
     }));
@@ -733,7 +733,7 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
   const _body = c.req.valid("json");
   const { socials } = c.req.valid("json");
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const post = await db
       .selectFrom("posts")
       .select(["title", "snippet", "thumbnail"])
@@ -746,7 +746,7 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
 
     c.executionCtx.waitUntil(
       dispatchSocials(
-        c.get("db") as Kysely<DB>,
+        c.get("db") as any,
         {
           title: String(post.title),
           url: `${baseUrl}/blog/${slug}`,
@@ -761,7 +761,7 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
               {} as Record<string, boolean>
             )
           : null
-      ).catch((err) => console.error("[Repush] Social dispatch failed:", err))
+      ).catch((err: any) => console.error("[Repush] Social dispatch failed:", err))
     );
     return c.json({ success: true } as any, 200 as any);
   } catch (err) {

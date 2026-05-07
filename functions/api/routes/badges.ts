@@ -1,7 +1,8 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { Kysely } from "kysely";
+import { eq, asc, desc, and, sql } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { DB } from "../../../shared/schemas/database";
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -26,14 +27,21 @@ badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
 badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await db
-      .selectFrom("badges")
-      .select(["id", "name", "description", "icon", "color_theme", "created_at"])
-      .orderBy("created_at", "asc")
-      .execute();
+      .select({
+        id: schema.badges.id,
+        name: schema.badges.name,
+        description: schema.badges.description,
+        icon: schema.badges.icon,
+        color_theme: schema.badges.colorTheme,
+        created_at: schema.badges.createdAt,
+      })
+      .from(schema.badges)
+      .orderBy(asc(schema.badges.createdAt))
+      .all();
 
-    const badges = results.map((b) => ({
+    const badges = results.map((b: any) => ({
       id: b.id as string,
       name: b.name,
       description: b.description || "",
@@ -52,17 +60,17 @@ badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async
 badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(async (c) => {
   try {
     const { id, name, description, icon, color_theme } = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db
-      .insertInto("badges")
+      .insert(schema.badges)
       .values({
         id,
         name,
         description,
         icon,
-        color_theme,
+        colorTheme: color_theme,
       })
-      .execute();
+      .run();
     return c.json({ success: true }, 200);
   } catch (e: unknown) {
     const err = e as Error;
@@ -73,33 +81,40 @@ badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(asy
 badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async (c) => {
   try {
     const { userId, badgeId } = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
     const sessionId = user?.id || "system";
 
     await db
-      .insertInto("user_badges")
+      .insert(schema.userBadges)
       .values({
-        user_id: userId,
-        badge_id: badgeId,
-        awarded_by: sessionId,
+        userId: userId,
+        badgeId: badgeId,
+        awardedBy: sessionId,
       })
-      .execute();
+      .run();
 
     c.executionCtx.waitUntil(
       (async () => {
         try {
           const userProfile = await db
-            .selectFrom("user_profiles")
-            .select(["first_name", "last_name", "nickname"])
-            .where("user_id", "=", userId)
-            .executeTakeFirst();
+            .select({
+              first_name: schema.userProfiles.firstName,
+              last_name: schema.userProfiles.lastName,
+              nickname: schema.userProfiles.nickname
+            })
+            .from(schema.userProfiles)
+            .where(eq(schema.userProfiles.userId, userId))
+            .get();
 
           const badge = await db
-            .selectFrom("badges")
-            .select(["name", "icon"])
-            .where("id", "=", badgeId)
-            .executeTakeFirst();
+            .select({
+              name: schema.badges.name,
+              icon: schema.badges.icon
+            })
+            .from(schema.badges)
+            .where(eq(schema.badges.id, badgeId))
+            .get();
 
           if (userProfile && badge) {
             const userName = userProfile.nickname || userProfile.first_name || "A team member";
@@ -137,12 +152,11 @@ badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async
 badgesRouter.openapi(revokeBadgeRoute, typedHandler<typeof revokeBadgeRoute>(async (c) => {
   try {
     const { userId, badgeId } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db
-      .deleteFrom("user_badges")
-      .where("user_id", "=", userId)
-      .where("badge_id", "=", badgeId)
-      .execute();
+      .delete(schema.userBadges)
+      .where(and(eq(schema.userBadges.userId, userId), eq(schema.userBadges.badgeId, badgeId)))
+      .run();
     return c.json({ success: true }, 200);
   } catch (e: unknown) {
     const err = e as Error;
@@ -153,8 +167,8 @@ badgesRouter.openapi(revokeBadgeRoute, typedHandler<typeof revokeBadgeRoute>(asy
 badgesRouter.openapi(deleteBadgeRoute, typedHandler<typeof deleteBadgeRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
-    await db.deleteFrom("badges").where("id", "=", id).execute();
+    const db = c.get("db") as any;
+    await db.delete(schema.badges).where(eq(schema.badges.id, id)).run();
     return c.json({ success: true }, 200);
   } catch (e: unknown) {
     const err = e as Error;
@@ -164,19 +178,23 @@ badgesRouter.openapi(deleteBadgeRoute, typedHandler<typeof deleteBadgeRoute>(asy
 
 badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadgeRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await db
-      .selectFrom("user_profiles as u")
-      .innerJoin("user_badges as ub", "u.user_id", "ub.user_id")
-      .select(["u.user_id", "u.nickname", "u.member_type", (eb) => eb.fn.count("ub.id").as("badge_count")])
-      .where("u.show_on_about", "=", 1)
-      .groupBy("u.user_id")
-      .orderBy("badge_count", "desc")
-      .orderBy("u.nickname", "asc")
+      .select({
+        user_id: schema.userProfiles.userId,
+        nickname: schema.userProfiles.nickname,
+        member_type: schema.userProfiles.memberType,
+        badge_count: sql<number>`count(${schema.userBadges.id})`.as("badge_count")
+      })
+      .from(schema.userProfiles)
+      .innerJoin(schema.userBadges, eq(schema.userProfiles.userId, schema.userBadges.userId))
+      .where(eq(schema.userProfiles.showOnAbout, 1))
+      .groupBy(schema.userProfiles.userId)
+      .orderBy(desc(sql`count(${schema.userBadges.id})`), asc(schema.userProfiles.nickname))
       .limit(20)
-      .execute();
+      .all();
 
-    const leaderboard = results.map((r) => ({
+    const leaderboard = results.map((r: any) => ({
       user_id: r.user_id as string,
       nickname: r.nickname as string | null,
       member_type: r.member_type as string | null,

@@ -3,8 +3,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipWebhookRouter from "./zulipWebhook";
-import { mockExecutionContext, flushWaitUntil, createMockExpressionBuilder } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
+import { TestEnv } from "../../../src/test/types";
 
 
 vi.mock("../../utils/zulipSync", () => ({
@@ -40,7 +40,7 @@ describe("Zulip Webhook Router", () => {
   };
 
   let testApp: Hono<TestEnv>;
-  let mockDb: MockKysely;
+  let mockDb: any;
 
   type ZulipPayloadOverrides = {
     token?: string;
@@ -82,9 +82,9 @@ describe("Zulip Webhook Router", () => {
 
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation((cb) => {
+      select: vi.fn().mockImplementation((cb: any) => {
         if (typeof cb === 'function') {
-          cb(createMockExpressionBuilder());
+          cb(({} as any));
         }
         return mockDb;
       }),

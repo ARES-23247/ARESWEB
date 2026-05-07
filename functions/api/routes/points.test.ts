@@ -2,12 +2,12 @@
  
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import pointsRouter from "./points";
 
 describe("Hono Backend - /points Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: MockKysely;
+  let mockDb: any;
   let sessionUser: { id: string; role: string } | null;
 
   beforeEach(() => {

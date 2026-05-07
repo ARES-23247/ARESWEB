@@ -40,7 +40,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   const role = rawRole.toLowerCase() as string;
 
   // EFF-05: Store session in context so handlers don't need to re-fetch
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const profile = await db.selectFrom("user_profiles")
     .select(["nickname", "member_type"])
     .where("user_id", "=", session.user.id)
@@ -111,7 +111,7 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (session && session.user) {
       // Fetch member_type and nickname from profile
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const profile = await db.selectFrom("user_profiles")
         .select(["nickname", "member_type"])
         .where("user_id", "=", session.user.id)

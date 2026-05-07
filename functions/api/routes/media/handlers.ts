@@ -64,12 +64,12 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
   const arr = new Uint8Array(buffer);
 
   if (arr.length >= 8) {
-    const header8 = Array.from(arr.subarray(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    const header8 = Array.from(arr.subarray(0, 8)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (header8 === '89504e470d0a1a0a') return true; // PNG
   }
 
   if (arr.length >= 4) {
-    const header4 = Array.from(arr.subarray(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    const header4 = Array.from(arr.subarray(0, 4)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (header4.startsWith('ffd8ff') || header4 === 'ffd8ffe0' || header4 === 'ffd8ffe1') return true; // JPEG
     if (header4.startsWith('47494638')) return true; // GIF
     if (header4 === '52494646') return true; // WEBP
@@ -79,7 +79,7 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
   // HEIC/HEIF usually have 'ftyp' at offset 4, but let's check first 16 bytes for 'ftypheic' or similar
   const checkLen = Math.min(arr.length, 16);
   if (checkLen >= 8) {
-    const longerHeader = Array.from(arr.subarray(0, checkLen)).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    const longerHeader = Array.from(arr.subarray(0, checkLen)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (longerHeader.includes('66747970')) return true; // 'ftyp'
   }
 
@@ -109,7 +109,7 @@ export const mediaHandlers = {
   getMedia: async (c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
-    const rl = await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `media_list_${ip}`, ua, 30, 60);
+    const rl = await checkPersistentRateLimit(c.get("db") as any, `media_list_${ip}`, ua, 30, 60);
     if (!rl) {
       return { status: 429, body: { error: "Rate limit exceeded", media: [] } };
     }
@@ -125,7 +125,7 @@ export const mediaHandlers = {
         if (cached) return cached;
       }
 
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const [objects, results] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
         db.selectFrom("media_tags").select(["key", "folder", "tags"]).where("folder", "=", "Gallery").execute()
@@ -136,11 +136,11 @@ export const mediaHandlers = {
         if (row.key) metaMap.set(row.key, { tags: row.tags || "" });
       }
 
-      const publicKeys = new Set(results.map(r => r.key));
+      const publicKeys = new Set(results.map((r: any) => r.key));
 
       const media = objects.objects
-        .filter(obj => publicKeys.has(obj.key))
-        .map(obj => ({
+        .filter((obj: any) => publicKeys.has(obj.key))
+        .map((obj: any) => ({
           key: obj.key,
           size: obj.size,
           uploaded: obj.uploaded.toISOString(),
@@ -166,7 +166,7 @@ export const mediaHandlers = {
   },
   adminList: async (c: any) => {
     try {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       const [objects, results] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
         db.selectFrom("media_tags").select(["key", "folder", "tags"]).execute()
@@ -177,7 +177,7 @@ export const mediaHandlers = {
         if (row.key) metaMap.set(row.key, { folder: row.folder || "", tags: row.tags || "" });
       }
 
-      const media = objects.objects.map(obj => ({
+      const media = objects.objects.map((obj: any) => ({
         key: obj.key,
         size: obj.size,
         uploaded: obj.uploaded.toISOString(),
@@ -258,10 +258,10 @@ export const mediaHandlers = {
         }
       }
 
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.insertInto("media_tags")
         .values({ key, folder: finalFolder, tags: altText })
-        .onConflict(oc => oc.column("key").doUpdateSet({ folder: finalFolder, tags: altText }))
+        .onConflict((oc: any) => oc.column("key").doUpdateSet({ folder: finalFolder, tags: altText }))
         .execute();
 
       if (c.executionCtx) {
@@ -293,13 +293,13 @@ export const mediaHandlers = {
         await c.env.ARES_STORAGE.put(newKey, object.body, { httpMetadata: { contentType: object.httpMetadata?.contentType } });
         await c.env.ARES_STORAGE.delete(key);
 
-        const db = c.get("db") as Kysely<DB>;
+        const db = c.get("db") as any;
         await db.updateTable("media_tags")
           .set({ key: newKey, folder })
           .where("key", "=", key)
           .execute();
       } else {
-        const db = c.get("db") as Kysely<DB>;
+        const db = c.get("db") as any;
         await db.updateTable("media_tags")
           .set({ key: newKey, folder })
           .where("key", "=", key)
@@ -319,7 +319,7 @@ export const mediaHandlers = {
       if (c.env.ARES_STORAGE) {
         await c.env.ARES_STORAGE.delete(key);
       }
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db") as any;
       await db.deleteFrom("media_tags").where("key", "=", key).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
       return { status: 200, body: { success: true } };

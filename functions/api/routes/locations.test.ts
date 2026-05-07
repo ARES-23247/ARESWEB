@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 
 // Mock middleware
@@ -17,7 +17,7 @@ vi.mock("../middleware", async (importOriginal) => {
 import locationsRouter from "./locations";
 
 describe("Hono Backend - /locations Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe("Hono Backend - /locations Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn((cb) => {
+      onConflict: vi.fn((cb: any) => {
         if (typeof cb === "function") {
           cb({ column: vi.fn().mockReturnValue({ doUpdateSet: vi.fn() }) });
         }
@@ -45,7 +45,7 @@ describe("Hono Backend - /locations Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
     };
 

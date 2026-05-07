@@ -28,7 +28,7 @@ describe("Hono Backend - /entities Router", () => {
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation((cb) => {
+      where: vi.fn().mockImplementation((cb: any) => {
         if (typeof cb === 'function') {
           const eb = Object.assign(vi.fn().mockReturnThis(), {
             or: vi.fn().mockReturnThis(),

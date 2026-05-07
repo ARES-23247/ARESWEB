@@ -14,12 +14,12 @@ entitiesRouter.use("*", ensureAuth);
 
 entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const { type, id } = c.req.valid("query");
 
     const rawLinks = await db.selectFrom("entity_links")
       .select(["id", "source_type", "source_id", "target_type", "target_id", "link_type"])
-      .where((eb) => eb.or([
+      .where((eb: any) => eb.or([
         eb.and([eb("source_type", "=", type), eb("source_id", "=", id)]),
         eb.and([eb("target_type", "=", type), eb("target_id", "=", id)])
       ]))
@@ -27,7 +27,7 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
 
     // Collect target IDs by type to resolve titles in bulk (Eliminate N+1)
     const targetMap = new Map<string, Set<string>>();
-    const links = rawLinks.map(link => {
+    const links = rawLinks.map((link: any) => {
       const isSource = link.source_type === type && link.source_id === id;
       const targetType = isSource ? link.target_type : link.source_type;
       const targetId = isSource ? link.target_id : link.source_id;
@@ -61,7 +61,7 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
       }
     }
 
-    const enrichedLinks = links.map(link => ({
+    const enrichedLinks = links.map((link: any) => ({
       id: link.id!,
       target_type: link.resolvedTargetType,
       target_id: link.resolvedTargetId,
@@ -78,7 +78,7 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
 
 entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const body = c.req.valid("json");
     const id = crypto.randomUUID();
 
@@ -103,7 +103,7 @@ entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRo
 
 entitiesRouter.openapi(deleteEntityLinkRoute, typedHandler<typeof deleteEntityLinkRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const { id } = c.req.valid("param");
     await db.deleteFrom("entity_links").where("id", "=", id).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_link", "entity_links", id));

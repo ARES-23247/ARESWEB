@@ -38,7 +38,7 @@ const truncateForFallback = (text: string, maxChars = 18000): string => {
 // ── AI Status Diagnostic (admin only) ──────────────────────────────────────
 aiRouter.openapi(aiStatusRoute, typedHandler<typeof aiStatusRoute>(async (c) => {
   let indexErrors = null;
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   
   try {
     const errSetting = await db.selectFrom("settings").select("value").where("key", "=", "LAST_INDEX_ERRORS").executeTakeFirst();
@@ -244,7 +244,7 @@ aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(asy
       const mediaType = header.split(';')[0].split(':')[1];
       const textContent = typeof lastMsg.content === 'string' 
         ? lastMsg.content 
-        : (Array.isArray(lastMsg.content) ? lastMsg.content.find(p => p.type === 'text')?.text || "" : "");
+        : (Array.isArray(lastMsg.content) ? lastMsg.content.find((p: any) => p.type === 'text')?.text || "" : "");
       
       lastMsg.content = [
         {
@@ -343,7 +343,7 @@ aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(asy
       console.log("[Sim IDE] Falling back to Workers AI (Llama 3.1)");
 
       // Normalize images back out for Llama 3.1, which may not support Vision in the standard instruct route
-      const cleanMessages = (messages as ChatMessage[]).map((m) => {
+      const cleanMessages = (messages as ChatMessage[]).map((m: any) => {
         if (Array.isArray(m.content)) {
           const textPart = m.content.find(isTextContentPart);
           return { role: m.role, content: textPart ? truncateForFallback(textPart.text) : "" };
@@ -489,7 +489,7 @@ aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c)
 
       console.log("[Editor Chat] Falling back to Workers AI (Llama 3.1)");
       
-      const cleanMessages = (messages as ChatMessage[]).map((m) => ({
+      const cleanMessages = (messages as ChatMessage[]).map((m: any) => ({
         role: m.role,
         content: typeof m.content === "string" ? truncateForFallback(m.content) : ""
       }));
@@ -651,7 +651,7 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
     try {
       if (c.env.VECTORIZE_DB && embeddingVector.length > 0) {
         const vecRes = await c.env.VECTORIZE_DB.query(embeddingVector, { topK: 3, returnMetadata: true });
-        contextDocs = vecRes.matches.map((m) => (m.metadata?.text as string) || "").join("\n\n");
+        contextDocs = vecRes.matches.map((m: any) => (m.metadata?.text as string) || "").join("\n\n");
       }
     } catch (e) {
       console.error("Vectorize query failed:", e);
@@ -659,7 +659,7 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
   }
 
   // DB reference for both upcoming events and session history
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
 
   // Supplement with upcoming events from D1 (critical for time-sensitive queries)
   let upcomingEventsContext = "";
@@ -674,7 +674,7 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
       .execute();
 
     if (upcomingEvents.length > 0) {
-      upcomingEventsContext = "\n\nUpcoming events (from database):\n" + upcomingEvents.map(e => {
+      upcomingEventsContext = "\n\nUpcoming events (from database):\n" + upcomingEvents.map((e: any) => {
         const start = e.date_start ? new Date(e.date_start).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "TBD";
         const end = e.date_end ? ` to ${new Date(e.date_end).toLocaleDateString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}` : "";
         return `- ${e.title} | ${start}${end} | ${e.location || "TBD"} | ${e.category || "general"}`;
@@ -717,7 +717,7 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
       .execute();
 
     if (recentPosts.length > 0) {
-      recentPostsContext = "\n\nRecent blog posts:\n" + recentPosts.map(p => {
+      recentPostsContext = "\n\nRecent blog posts:\n" + recentPosts.map((p: any) => {
         const date = p.published_at ? new Date(p.published_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "unpublished";
         return `- ${p.title} (${date})`;
       }).join("\n");
@@ -775,7 +775,7 @@ Never make up event dates, team members, or scores — only use what's provided 
 ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : ""}${upcomingEventsContext}${seasonContext}${recentPostsContext}`;
 
   const messages = [
-    ...historyMessages.map((m) => ({ role: m.role, content: m.content })),
+    ...historyMessages.map((m: any) => ({ role: m.role, content: m.content })),
     { role: "user" as const, content: safeQuery }
   ];
 
@@ -868,7 +868,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       console.log("[RAG] Falling back to Workers AI (Llama 3.1) — Z_AI_API_KEY:", hasZai ? "present but z.ai failed" : "NOT SET");
       await stream.writeSSE({ data: JSON.stringify({ model: "llama-3.1-8b" }) });
       
-      const cleanMessages = (messages as ChatMessage[]).map((m) => ({
+      const cleanMessages = (messages as ChatMessage[]).map((m: any) => ({
         role: m.role,
         content: typeof m.content === "string" ? truncateForFallback(m.content) : ""
       }));
@@ -934,7 +934,7 @@ async function saveHistory(db: Kysely<DB>, sessionId: string | undefined, histor
       id: sessionId,
       user_id: "anonymous",
       history: JSON.stringify(updatedHistory)
-    }).onConflict((oc) => oc.column("id").doUpdateSet({
+    }).onConflict((oc: any) => oc.column("id").doUpdateSet({
       history: JSON.stringify(updatedHistory),
       updated_at: new Date().toISOString()
     })).execute();
@@ -951,7 +951,7 @@ aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), as
   }
 
   const force = c.req.query("force") === "true";
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const { indexSiteContent } = await import("./indexer");
   const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, { force });
 
@@ -971,7 +971,7 @@ aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50
   const body = await c.req.json().catch(() => ({}));
   const sourceId = body.sourceId as string | undefined;
 
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const { indexExternalResources } = await import("./indexer");
   const githubPat = c.env.GITHUB_PAT;
   const result = await indexExternalResources(db, c.env.AI, c.env.VECTORIZE_DB, c.env.Z_AI_API_KEY, githubPat, sourceId);
@@ -985,13 +985,13 @@ aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50
 });
 
 aiRouter.get("/external-sources", ensureAdmin, async (c: any) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const sources = await db.selectFrom("external_knowledge_sources").selectAll().execute();
   return c.json(sources);
 });
 
 aiRouter.post("/external-sources", ensureAdmin, async (c: any) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const body = await c.req.json();
   const id = crypto.randomUUID();
   await db.insertInto("external_knowledge_sources").values({
@@ -1005,14 +1005,14 @@ aiRouter.post("/external-sources", ensureAdmin, async (c: any) => {
 });
 
 aiRouter.delete("/external-sources/:id", ensureAdmin, async (c: any) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const id = c.req.param("id") as string;
   await db.deleteFrom("external_knowledge_sources").where("id", "=", id).execute();
   return c.json({ success: true });
 });
 
 aiRouter.get("/chat-session/:id", async (c: any) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const id = c.req.param("id") as string;
   try {
     const session = await db.selectFrom("chat_sessions").select("history").where("id", "=", id).executeTakeFirst();

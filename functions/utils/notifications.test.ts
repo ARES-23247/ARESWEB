@@ -148,7 +148,7 @@ describe('notifications utility', () => {
     });
 
     it('chunks notifications into batches of 100 to respect D1 limits', async () => {
-      const mockUsers = Array.from({ length: 150 }).map((_, i) => ({ id: `user-${i}` }));
+      const mockUsers = Array.from({ length: 150 }).map((_: any, i: any) => ({ id: `user-${i}` }));
       
       const { mockCtx, mockDb } = createMockContext({
         dbResults: mockUsers,

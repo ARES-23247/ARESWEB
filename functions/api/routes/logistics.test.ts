@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -19,7 +19,7 @@ vi.mock("../../utils/crypto", () => ({
 import logisticsRouter from "./logistics";
 
 describe("Hono Backend - /logistics Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 
@@ -34,7 +34,7 @@ describe("Hono Backend - /logistics Router", () => {
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue(null),
-    } as unknown as MockKysely;
+    } as unknown as any;
 
     env = {
       ENCRYPTION_SECRET: "test-secret"

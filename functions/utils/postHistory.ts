@@ -37,7 +37,7 @@ export async function createShadowRevision(
     seasonId?: string | number;
   }
 ) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   const suffix = Math.random().toString(36).substring(2, 6);
   const revSlug = `${originalSlug}-rev-${suffix}`;
   const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" });
@@ -71,7 +71,7 @@ export async function approveAndMergeRevision(
   originalSlug: string,
   row: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cf_email: string | null; season_id?: string | number | null }
 ) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
 
   // Update original
   await db.updateTable("posts")
@@ -113,7 +113,7 @@ export async function approveAndMergeRevision(
  * Prunes old history records, keeping only the last N versions.
  */
 export async function pruneHistory(c: Context<AppEnv>, slug: string, limit = 10) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   try {
     const oldestToKeep = await db.selectFrom("posts_history")
       .select("id")
@@ -142,7 +142,7 @@ export async function captureHistory(
   slug: string,
   data: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cf_email: string | null; season_id?: string | number | null }
 ) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   await db.insertInto("posts_history")
     .values({
       slug,
@@ -164,7 +164,7 @@ export async function captureHistory(
  * Fetches history records for a post.
  */
 export async function getPostHistory(c: Context<AppEnv>, slug: string) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   const results = await db.selectFrom("posts_history")
     .select(["id", "title", "author", "author_email", "created_at", "season_id"])
     .where("slug", "=", slug)
@@ -183,7 +183,7 @@ export async function restorePostFromHistory(
   id: string,
   restorerEmail: string
 ) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   const row = await db.selectFrom("posts_history")
     .select(["title", "author", "thumbnail", "snippet", "ast", "season_id"])
     .where("id", "=", Number(id))
@@ -222,7 +222,7 @@ export async function restorePostFromHistory(
  * Approves a pending post or shadow revision.
  */
 export async function approvePost(c: Context<AppEnv>, slug: string) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   const row = await db.selectFrom("posts")
     .select(["revision_of", "title", "author", "thumbnail", "snippet", "ast", "cf_email", "season_id"])
     .where("slug", "=", slug)
@@ -248,7 +248,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
 
   c.executionCtx.waitUntil(
     dispatchSocials(
-      c.get("db"),
+      c.get("db") as any,
       {
         title: row.title as string,
         url: `${baseUrl}/blog/${slug}`,
@@ -257,7 +257,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         baseUrl: baseUrl
       },
       socialConfig
-    ).catch(err => console.error("[Approve] Social dispatch failed:", err))
+    ).catch((err: any) => console.error("[Approve] Social dispatch failed:", err))
   );
 
   // Initialize Zulip Thread
@@ -268,7 +268,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         "announcements",
         `Blog: ${row.title}`,
         `🚀 **New Blog Post Published:** [${row.title}](${baseUrl}/blog/${slug})\n\n${row.snippet?.substring(0, 300) || ""}`
-      ).catch(err => console.error("[Approve] Zulip thread creation failed:", err))
+      ).catch((err: any) => console.error("[Approve] Zulip thread creation failed:", err))
     );
   }).catch(() => {});
 
@@ -287,7 +287,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
           message: `Your post "${row.title}" has been published.`,
           link: `/blog/${slug}`,
           priority: "medium"
-        }).catch(err => console.error("[Approve] Author notification failed:", err))
+        }).catch((err: any) => console.error("[Approve] Author notification failed:", err))
       );
     }
   }

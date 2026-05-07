@@ -20,7 +20,7 @@ financeRouter.use("*", rateLimitMiddleware(30, 60));
 financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof financeRoutes.getSummaryRoute>(async (c) => {
   try {
     const { season_id } = c.req.valid("query");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     let latestSeasonId: number | undefined | null = season_id;
     if (!latestSeasonId) {
@@ -48,8 +48,8 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
       .execute();
 
     const totals = {
-      income: Number(summary.find((s) => s.type === "income")?.total || 0),
-      expense: Number(summary.find((s) => s.type === "expense")?.total || 0),
+      income: Number(summary.find((s: any) => s.type === "income")?.total || 0),
+      expense: Number(summary.find((s: any) => s.type === "expense")?.total || 0),
     };
 
     return c.json({
@@ -68,25 +68,25 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
 financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof financeRoutes.listPipelineRoute>(async (c) => {
   try {
     const { season_id } = c.req.valid("query");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     let queryBuilder = db.selectFrom("sponsorship_pipeline").selectAll();
     if (season_id) {
       queryBuilder = queryBuilder.where("season_id", "=", Number(season_id));
     }
     const pipeline = await queryBuilder.orderBy("created_at", "desc").execute();
-    const pipelineIds = pipeline.map(p => p.id).filter(Boolean);
+    const pipelineIds = pipeline.map((p: any) => p.id).filter(Boolean);
 
     let assignments: Array<{ sponsorship_id: string; user_id: string }> = [];
     if (pipelineIds.length > 0) {
       assignments = await db.selectFrom("sponsorship_assignments").selectAll().where("sponsorship_id", "in", pipelineIds).execute();
     }
 
-    const result = pipeline.map(p => ({
+    const result = pipeline.map((p: any) => ({
       ...p,
       season_id: p.season_id ? Number(p.season_id) : null,
       estimated_value: Number(p.estimated_value || 0),
       status: (p.status || "potential").toLowerCase(),
-      assignees: assignments.filter(a => a.sponsorship_id === p.id).map(a => a.user_id)
+      assignees: assignments.filter((a: any) => a.sponsorship_id === p.id).map((a: any) => a.user_id)
     }));
 
     return c.json({ pipeline: result } as any, 200 as any);
@@ -100,7 +100,7 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
 financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof financeRoutes.savePipelineRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for pipeline modifications
@@ -202,7 +202,7 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
 financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof financeRoutes.deletePipelineRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.deleteFrom("sponsorship_pipeline").where("id", "=", id).execute();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
     return c.json({ success: true } as any, 200 as any);
@@ -216,7 +216,7 @@ financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof fin
 financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof financeRoutes.listTransactionsRoute>(async (c) => {
   try {
     const { season_id, type } = c.req.valid("query");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     let queryBuilder = db.selectFrom("finance_transactions").selectAll();
     if (season_id) {
       queryBuilder = queryBuilder.where("season_id", "=", season_id);
@@ -227,7 +227,7 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
     const transactions = await queryBuilder.orderBy("date", "desc").execute();
 
     return c.json({
-      transactions: transactions.map(t => ({
+      transactions: transactions.map((t: any) => ({
         ...t,
         season_id: t.season_id ? Number(t.season_id) : null,
         amount: Number(t.amount)
@@ -243,7 +243,7 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
 financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof financeRoutes.saveTransactionRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for transaction modifications
@@ -296,7 +296,7 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
 financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof financeRoutes.deleteTransactionRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const tx = await db
       .selectFrom("finance_transactions")
       .select("receipt_url")

@@ -70,7 +70,7 @@ function prepareGcalPayload(event: ARES_Event) {
       timeZoneName: "shortOffset" 
     }).formatToParts(d);
     
-    const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value || "";
+    const offsetPart = parts.find((p: any) => p.type === 'timeZoneName')?.value || "";
     // offsetPart could be "GMT-4", "GMT-5", "GMT", "GMT-05:00", or "+00:00" depending on environment
     
     if (offsetPart === "GMT" || offsetPart === "UTC") return "+00:00";
@@ -282,7 +282,7 @@ export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event
     location: item.location || "",
     description: item.description || "",
     gcal_event_id: item.id,
-    recurrence_rule: item.recurrence?.find(r => r.startsWith("RRULE:"))?.replace("RRULE:", "") || undefined,
+    recurrence_rule: item.recurrence?.find((r: any) => r.startsWith("RRULE:"))?.replace("RRULE:", "") || undefined,
     parent_gcal_id: item.recurringEventId || undefined,
     original_start_time: item.originalStartTime?.dateTime || item.originalStartTime?.date || undefined,
   }));

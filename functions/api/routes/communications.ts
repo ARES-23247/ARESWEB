@@ -21,14 +21,14 @@ communicationsRouter.use("/stats", ensureAdmin);
 // Get stats
 communicationsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB> | null;
+    const db = c.get("db") as any | null;
     if (!db) {
       console.error("[Communications] db context is null/undefined");
       return c.json({ success: false, error: "Database not initialized" }, 500);
     }
     const users = await db.selectFrom("user").select(["email"]).execute();
 
-    const activeMembers = users.filter((m) => m.email);
+    const activeMembers = users.filter((m: any) => m.email);
     return c.json({ activeUsers: activeMembers.length }, 200);
 
   } catch (err: unknown) {
@@ -51,10 +51,10 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
     const fromEmail = socialConfig.RESEND_FROM_EMAIL || "team@aresfirst.org";
 
     // Fetch users from database
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const users = await db.selectFrom("user").select(["email"]).execute();
 
-    const activeMembers = users.filter((m) => m.email);
+    const activeMembers = users.filter((m: any) => m.email);
 
     if (activeMembers.length === 0) {
       return c.json({ success: false, error: "No active users found to send emails to." }, 400);
@@ -118,7 +118,7 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
       : errMsg;
     console.error("[Communications] Send mass email failed:", sanitizedErrMsg);
     try {
-      const db = c.get("db");
+      const db = c.get("db") as any;
       await logSystemError(db, "Communications", "Failed to send mass email", errMsg);
     } catch { /* don't let logging failure mask the real error */ }
     return c.json({ success: false, error: errMsg || "Failed to dispatch emails" }, 500);

@@ -56,7 +56,7 @@ export interface PostPayload {
  * Fails gracefully on any single provider so others still execute.
  */
 export async function dispatchSocials(
-  db: Kysely<DB>,
+  db: any,
   payload: PostPayload, 
   config: SocialConfig, 
   socialsFilter: Record<string, boolean> | null = null
@@ -109,7 +109,7 @@ export async function dispatchSocials(
   const results = await Promise.allSettled(promises);
   const failures: string[] = [];
   
-  results.forEach(result => {
+  results.forEach((result: any) => {
     if (result.status === 'rejected') {
       failures.push(String(result.reason?.message || result.reason));
     }
@@ -156,7 +156,7 @@ export async function dispatchPhotoSocials(imageUrl: string, caption: string, co
  * Orchestrates the dispatch of a queued social post, resolving linked metadata if necessary.
  */
 export async function dispatchQueuePost(
-  db: Kysely<DB>,
+  db: any,
   post: SocialQueuePost,
   config: SocialConfig
 ) {

@@ -19,7 +19,7 @@ async function generateOAuth1Signature(url: string, method: string, config: Soci
   const percentEncode = (str: string) => encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
   
   const sortedKeys = Object.keys(params).sort();
-  const paramString = sortedKeys.map(k => `${percentEncode(k)}=${percentEncode(params[k])}`).join('&');
+  const paramString = sortedKeys.map((k: any) => `${percentEncode(k)}=${percentEncode(params[k])}`).join('&');
   
   const signatureBaseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(paramString)}`;
   const signingKey = `${percentEncode(config.TWITTER_API_SECRET!)}&${percentEncode(config.TWITTER_ACCESS_SECRET!)}`;
@@ -40,7 +40,7 @@ async function generateOAuth1Signature(url: string, method: string, config: Soci
   
   return "OAuth " + Object.keys(params)
     .sort()
-    .map(k => `${percentEncode(k)}="${percentEncode(params[k])}"`)
+    .map((k: any) => `${percentEncode(k)}="${percentEncode(params[k])}"`)
     .join(', ');
 }
 

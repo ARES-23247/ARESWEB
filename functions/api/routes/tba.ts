@@ -23,7 +23,7 @@ tbaRouter.use("*", cache({
 }));
 
 async function getTBA(path: string, c: HonoContext) {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "TBA_API_KEY").executeTakeFirst();
   const apiKey = settingsRow?.value;
   if (!apiKey) throw new Error("TBA_API_KEY missing");
@@ -58,7 +58,7 @@ tbaRouter.openapi(getMatchesRoute, typedHandler<typeof getMatchesRoute>(async (c
       return c.json({ error: "Invalid eventKey" }, 400);
     }
     const data = await getTBA(`/event/${eventKey}/matches/simple`, c) as Array<{ time?: number }>;
-    const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
+    const sorted = (data || []).sort((a: any, b: any) => (a.time || 0) - (b.time || 0));
     return c.json({ matches: sorted as unknown[] }, 200);
   } catch (e) {
     console.error("GET_TBA_MATCHES ERROR", e);
@@ -71,7 +71,7 @@ tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(asyn
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "FTC_EVENTS_API_KEY").executeTakeFirst();
     const apiKey = settingsRow?.value;
     if (!apiKey) throw new Error("FTC_EVENTS_API_KEY missing");

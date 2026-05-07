@@ -66,7 +66,7 @@ describe("Hono Backend - /docs Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((cb) => {
+      onConflict: vi.fn().mockImplementation((cb: any) => {
         if (typeof cb === 'function') {
           const ocMock = { column: vi.fn().mockReturnValue({ doUpdateSet: vi.fn().mockReturnThis() }) };
           cb(ocMock);
@@ -82,7 +82,7 @@ describe("Hono Backend - /docs Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
     };
 
@@ -360,7 +360,7 @@ describe("Hono Backend - /docs Router", () => {
     const waitUntils: Promise<any>[] = [];
     const mockCtx = {
       ...mockExecutionContext,
-      waitUntil: vi.fn((p) => {
+      waitUntil: vi.fn((p: any) => {
         waitUntils.push(p);
       })
     };

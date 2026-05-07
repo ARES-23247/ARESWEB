@@ -125,7 +125,7 @@ export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) =>
     }
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const allowed = await checkPersistentRateLimit(db, ip, ua, limit, windowSeconds, c.req.path);
     if (!allowed) {
       if (db) {
@@ -237,7 +237,7 @@ export const turnstileMiddleware = () => {
 
     const valid = await verifyTurnstile(token, c.env.TURNSTILE_SECRET_KEY, ip);
     if (!valid) {
-      const db = c.get("db");
+      const db = c.get("db") as any;
       if (db) {
         c.executionCtx.waitUntil(
           db.insert(schema.auditLog).values({

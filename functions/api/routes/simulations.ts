@@ -52,11 +52,11 @@ async function canModifySimulation(
   if (sessionUser.role === "admin") return true;
 
   try {
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
 
-    const patSetting = config.find((s) => s.key === "GITHUB_PAT");
+    const patSetting = config.find((s: any) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
     if (!pat) return false;
 
@@ -105,7 +105,7 @@ simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulati
     let pat = c.env.GITHUB_PAT;
 
     try {
-      const db = c.get("db");
+      const db = c.get("db") as any;
       const config = await db.selectFrom("settings").selectAll().execute();
       const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
@@ -165,7 +165,7 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
   const filePath = `src/sims/${simId}/index.tsx`;
 
   try {
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -230,7 +230,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
     if (fileCount > MAX_FILES) {
       return c.json({ error: `Too many files: ${fileCount} (max ${MAX_FILES})` }, 400);
     }
-    const totalSize = (Object.values(files) as string[]).reduce((sum, content) => sum + content.length, 0);
+    const totalSize = (Object.values(files) as string[]).reduce((sum: any, content: any) => sum + content.length, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
       return c.json({ error: `Total size too large: ${totalSize} bytes (max ${MAX_TOTAL_SIZE})` }, 400);
     }
@@ -240,7 +240,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
       }
     }
 
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -363,7 +363,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 
     const filename = `${simIdStr}.tsx`;
 
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
     const config = await db.selectFrom("settings").selectAll().execute();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -440,7 +440,7 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
       return c.json({ error: "No files provided" }, 400);
     }
 
-    const db = c.get("db");
+    const db = c.get("db") as any;
     const config = await db.selectFrom("settings").selectAll().execute();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
@@ -490,7 +490,7 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
   const { id } = c.req.valid("param");
 
   try {
-    const db = c.get("db");
+    const db = c.get("db") as any;
     let pat = c.env.GITHUB_PAT;
     try {
       const config = await db.selectFrom("settings").selectAll().execute();

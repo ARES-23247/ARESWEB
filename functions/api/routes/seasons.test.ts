@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { TestEnv, MockKysely } from "../../../src/test/types";
+import type { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 import seasonsRouter from "./seasons";
 
@@ -17,7 +17,7 @@ vi.mock("../middleware", async (importOriginal) => {
 
 describe("Seasons Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: MockKysely;
+  let mockDb: any;
   const env: TestEnv["Bindings"] = { DB: {} as unknown as D1Database };
 
   beforeEach(() => {

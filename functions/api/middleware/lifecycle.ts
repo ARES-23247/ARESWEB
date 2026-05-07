@@ -42,7 +42,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     }
 
     if (!handled) {
-      const db = c.get("db");
+      const db = c.get("db") as any;
       await sql`UPDATE ${sql.table(tableName)} SET status = 'published' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
     }
 
@@ -62,7 +62,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     if (hooks?.onReject) handled = (await hooks.onReject(c, id, body.reason)) === true;
 
     if (!handled) {
-      const db = c.get("db");
+      const db = c.get("db") as any;
       await sql`UPDATE ${sql.table(tableName)} SET status = 'rejected' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
     }
 
@@ -78,7 +78,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     if (hooks?.onRestore) handled = (await hooks.onRestore(c, id)) === true;
 
     if (!handled) {
-      const db = c.get("db");
+      const db = c.get("db") as any;
       await sql`UPDATE ${sql.table(tableName)} SET is_deleted = 0, status = 'draft' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
     }
 
@@ -95,7 +95,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
       if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "trashed")) === true;
 
       if (!handled) {
-        const db = c.get("db");
+        const db = c.get("db") as any;
         await sql`UPDATE ${sql.table(tableName)} SET is_deleted = 1 WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
       }
       
@@ -116,7 +116,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
       if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "purged")) === true;
 
       if (!handled) {
-        const db = c.get("db");
+        const db = c.get("db") as any;
         await sql`DELETE FROM ${sql.table(tableName)} WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
       }
       

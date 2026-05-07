@@ -2,7 +2,7 @@
  
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { MockKysely, TestEnv } from "../../../src/test/types";
+import type { TestEnv } from "../../../src/test/types";
 import storeRouter from "./store";
 
 interface StoreResponse {
@@ -40,7 +40,7 @@ vi.mock("stripe", () => {
 
 describe("Hono Backend - /store Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: MockKysely;
+  let mockDb: any;
 
   beforeEach(() => {
     vi.clearAllMocks();

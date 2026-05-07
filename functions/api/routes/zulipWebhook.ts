@@ -57,7 +57,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
   const command = args[0]?.toLowerCase();
 
   const PRIVILEGED_COMMANDS = ["!task", "!broadcast"];
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
 
   if (PRIVILEGED_COMMANDS.includes(command || "")) {
     const senderEmail = body.message?.sender_email;
@@ -107,14 +107,14 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         if (taskResults.length === 0) {
           return c.json({ content: "📋 **Task Board** — No open tasks." }, 200);
         }
-        const lines = taskResults.map((item, i) => {
+        const lines = taskResults.map((item: any, i: any) => {
           const status = item.status ? `\`${item.status}\`` : "—";
           const assignee = item.assignee_name ? `@${item.assignee_name}` : "";
           return `${i + 1}. **${item.title}** ${status} ${assignee}`;
         });
 
         const totalRes = await db.selectFrom("tasks")
-          .select((eb) => eb.fn.count("id").as("count"))
+          .select((eb: any) => eb.fn.count("id").as("count"))
           .executeTakeFirst() ;
         const total = Number(totalRes?.count || taskResults.length);
 
@@ -181,10 +181,10 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
       case "!stats": {
         const [postsRes, eventsRes, usersRes, inquiriesRes] = await Promise.all([
-          db.selectFrom("posts").select((eb) => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
-          db.selectFrom("events").select((eb) => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
-          db.selectFrom("user_profiles").select((eb) => eb.fn.count("user_id").as("count")).executeTakeFirst() ,
-          db.selectFrom("inquiries").select((eb) => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst() ,
+          db.selectFrom("posts").select((eb: any) => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
+          db.selectFrom("events").select((eb: any) => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
+          db.selectFrom("user_profiles").select((eb: any) => eb.fn.count("user_id").as("count")).executeTakeFirst() ,
+          db.selectFrom("inquiries").select((eb: any) => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst() ,
         ]);
 
         return c.json({
@@ -203,7 +203,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
       case "!inquiries": {
         const result = await db.selectFrom("inquiries")
-          .select((eb) => eb.fn.count("id").as("count"))
+          .select((eb: any) => eb.fn.count("id").as("count"))
           .where("status", "=", "pending")
           .executeTakeFirst() ;
         const count = Number(result?.count || 0);
@@ -228,7 +228,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           return c.json({ content: "📅 No upcoming events scheduled." }, 200);
         }
 
-        const lines = results.map((e) => {
+        const lines = results.map((e: any) => {
           const dtStart = new Date(String(e.date_start)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
           const dtEnd = e.date_end ? ` - ${new Date(String(e.date_end)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "";
           return `• **${e.title}** — ${dtStart}${dtEnd}${e.location ? ` @ ${e.location}` : ""}`;

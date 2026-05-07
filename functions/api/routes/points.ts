@@ -27,14 +27,14 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const ledger = await db
       .selectFrom("points_ledger")
       .select(["points_delta"])
       .where("user_id", "=", user_id)
       .execute();
 
-    const balance = ledger.reduce((sum, tx) => sum + tx.points_delta, 0);
+    const balance = ledger.reduce((sum: any, tx: any) => sum + tx.points_delta, 0);
 
     return c.json({ user_id, balance }, 200);
   } catch (err) {
@@ -55,7 +55,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const history = await db
       .selectFrom("points_ledger")
       .selectAll()
@@ -63,7 +63,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       .orderBy("created_at", "desc")
       .execute();
 
-    return c.json(history.map((tx) => ({
+    return c.json(history.map((tx: any) => ({
       ...tx,
       id: tx.id || "",
       created_at: tx.created_at || null
@@ -82,7 +82,7 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     const id = crypto.randomUUID();
 
@@ -109,7 +109,7 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
 
 pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLeaderboardRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     const results = await db
       .selectFrom("user")
@@ -118,14 +118,14 @@ pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLea
         "user.id",
         "user.name",
         "user.role",
-        (eb) => eb.fn.sum<number>("points_ledger.points_delta").as("points_balance")
+        (eb: any) => eb.fn.sum("points_ledger.points_delta").as("points_balance")
       ])
       .groupBy("user.id")
       .orderBy("points_balance", "desc")
       .limit(50)
       .execute();
 
-    const leaderboard = results.map((r) => {
+    const leaderboard = results.map((r: any) => {
       return {
         id: String(r.id),
         name: r.name || "Anonymous",

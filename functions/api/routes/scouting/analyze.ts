@@ -113,7 +113,7 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
 
     // Save to database
     try {
-      const db = c.get("db");
+      const db = c.get("db") as any;
       const user = c.get("sessionUser");
       const id = crypto.randomUUID();
       

@@ -4,14 +4,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import type { MockKysely, TestEnv } from "../../../src/test/types";
+import type { TestEnv } from "../../../src/test/types";
 import profilesRouter from "./profiles";
 import { createMockProfile } from "../../../src/test/factories/userFactory";
 
 // Mock crypto to avoid Web Crypto API issues in test env
 vi.mock("../../utils/crypto", () => ({
-  decrypt: vi.fn((val) => Promise.resolve(val)),
-  encrypt: vi.fn((val) => Promise.resolve(val)),
+  decrypt: vi.fn((val: any) => Promise.resolve(val)),
+  encrypt: vi.fn((val: any) => Promise.resolve(val)),
 }));
 
 vi.mock("../../utils/auth", () => ({
@@ -33,13 +33,13 @@ vi.mock("../middleware", async (importOriginal) => {
     persistentRateLimitMiddleware: () => (c: Context<TestEnv>, next: () => Promise<void>) => next(),
     rateLimitMiddleware: () => (c: Context<TestEnv>, next: () => Promise<void>) => next(),
     getSessionUser: vi.fn((c: Context<TestEnv>) => c.get("sessionUser")),
-    sanitizeProfileForPublic: vi.fn().mockImplementation((val, type) => actual.sanitizeProfileForPublic(val, type)),
+    sanitizeProfileForPublic: vi.fn().mockImplementation((val: any, type: any) => actual.sanitizeProfileForPublic(val, type)),
     getDbSettings: vi.fn(),
   };
 });
 
 describe("Hono Backend - /profiles Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   let env: TestEnv["Bindings"];
 
@@ -67,7 +67,7 @@ describe("Hono Backend - /profiles Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
     };
 

@@ -25,7 +25,7 @@ interface WeekData {
 githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as Kysely<DB>, `github-activity:${ip}`, ua, 10, 60))) {
+  if (!(await checkPersistentRateLimit(c.get("db") as any, `github-activity:${ip}`, ua, 10, 60))) {
     return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
 
@@ -57,9 +57,9 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
     const repos = await repoRes.json() as { name: string }[];
 
     const activityResults = await Promise.all(
-      repos.map(repo =>
+      repos.map((repo: any) =>
         fetch(`https://api.github.com/repos/${org}/${repo.name}/stats/commit_activity`, { headers })
-          .then(res => res.ok && res.status !== 202 ? res.json() : null)
+          .then((res: any) => res.ok && res.status !== 202 ? res.json() : null)
           .catch(() => null)
       )
     );

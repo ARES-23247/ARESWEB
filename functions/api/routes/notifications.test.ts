@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { MockKysely, TestEnv } from "../../../src/test/types";
+import type { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 import { getSessionUser } from "../middleware";
 
@@ -17,7 +17,7 @@ vi.mock("../middleware", async (importOriginal) => {
 import notificationsRouter from "./notifications";
 
 describe("Hono Backend - /notifications Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -43,9 +43,9 @@ describe("Hono Backend - /notifications Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
-    } as unknown as MockKysely;
+    } as unknown as any;
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {

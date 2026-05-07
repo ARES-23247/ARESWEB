@@ -49,7 +49,7 @@ storeRouter.post("/webhook", async (c) => {
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
-        const db = c.get("db") as Kysely<DB>;
+        const db = c.get("db") as any;
 
         // Fulfill order
         const metadata = session.metadata;
@@ -74,7 +74,7 @@ storeRouter.post("/webhook", async (c) => {
         for (const item of cartItems) {
           await db
             .updateTable("products")
-            .set((eb) => ({ stock_count: eb("stock_count", "-", item.q) }))
+            .set((eb: any) => ({ stock_count: eb("stock_count", "-", item.q) }))
             .where("id", "=", item.id)
             .where("stock_count", "is not", null)
             .execute();
@@ -89,7 +89,7 @@ storeRouter.post("/webhook", async (c) => {
 
       return c.json({ success: true }, 200);
     } catch (err: unknown) {
-      logSystemError(c.get("db") as Kysely<DB>, "webhook_error", String(err));
+      logSystemError(c.get("db") as any, "webhook_error", String(err));
       return c.json({ error: "Webhook fulfillment failed" }, 500);
     }
   }
@@ -101,7 +101,7 @@ storeRouter.use("/orders", ensureAdmin);
 
 storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const products = await db
       .selectFrom("products")
       .selectAll()
@@ -109,7 +109,7 @@ storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(asyn
       .execute();
 
     return c.json(
-      products.map((p) => ({
+      products.map((p: any) => ({
         id: p.id || "",
         name: p.name || "Unknown Product",
         description: p.description || null,
@@ -138,7 +138,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     // Fetch product details
     const productIds = items.map((i: { productId: string }) => i.productId);
@@ -149,10 +149,10 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       .where("active", "=", 1)
       .execute();
 
-    const productMap = new Map(products.map((p) => [p.id, p]));
+    const productMap = new Map(products.map((p: any) => [p.id, p]));
 
     const lineItems = items.map((item: { productId: string; quantity: number }) => {
-      const product = productMap.get(item.productId);
+      const product = productMap.get(item.productId) as any;
       if (!product) {
         throw new Error(`Product ${item.productId} not found or inactive.`);
       }
@@ -203,7 +203,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
 
 storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const orders = await db.selectFrom("orders").selectAll().orderBy("created_at", "desc").execute();
 
     return c.json({ orders: orders as any }, 200);
@@ -217,7 +217,7 @@ storeRouter.openapi(updateOrderStatusRoute, typedHandler<typeof updateOrderStatu
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.updateTable("orders").set({ status: body.fulfillment_status }).where("id", "=", id).execute();
     return c.json({ success: true }, 200);
   } catch (err: unknown) {

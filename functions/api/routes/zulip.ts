@@ -74,7 +74,7 @@ zulipRouter.openapi(getPresenceRoute, typedHandler<typeof getPresenceRoute>(asyn
         members: Array<{ email: string; full_name: string }>;
       };
       if (usersData.members) {
-        userNames = usersData.members.reduce((acc, user) => {
+        userNames = usersData.members.reduce((acc: any, user: any) => {
           acc[user.email] = user.full_name;
           return acc;
         }, {} as Record<string, string>);
@@ -259,9 +259,7 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
       }
     }
 
-    const db = c.get("db") as import("kysely").Kysely<
-      import("../../../shared/schemas/database").DB
-    >;
+    const db = c.get("db") as any;
     const aresUsers = await db
       .selectFrom("user")
       .select("email")
@@ -269,8 +267,8 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
       .execute();
 
     const missingEmails = aresUsers
-      .map((u) => u.email)
-      .filter((email) => {
+      .map((u: any) => u.email)
+      .filter((email: any) => {
         if (!email) return false;
         const normalized = normalizeEmail(email);
         return !zulipEmails.has(normalized);
@@ -324,7 +322,7 @@ zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(asyn
       const streamsData = (await streamsRes.json()) as {
         default_streams?: Array<{ stream_id: number }>;
       };
-      streamIds = (streamsData.default_streams || []).map((s) => s.stream_id);
+      streamIds = (streamsData.default_streams || []).map((s: any) => s.stream_id);
     }
 
     const BATCH_SIZE = 10;

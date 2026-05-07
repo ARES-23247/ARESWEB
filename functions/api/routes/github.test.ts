@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import githubRouter from "./github";
 
 interface GitHubResponse {
@@ -46,7 +46,7 @@ vi.mock("../../utils/githubProjects", () => ({
 
 describe("Hono Backend - /github Router", () => {
   let testApp: Hono<TestEnv>;
-  let mockDb: MockKysely;
+  let mockDb: any;
   let env: TestEnv["Bindings"];
 
   beforeEach(() => {
@@ -75,7 +75,7 @@ describe("Hono Backend - /github Router", () => {
       await next();
     });
     
-    testApp.onError((err, c) => {
+    testApp.onError((err: any, c: any) => {
       console.error("Test App Error:", err);
       return c.json({ error: err.message }, 500);
     });

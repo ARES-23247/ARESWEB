@@ -176,7 +176,7 @@ export async function logAuditAction(
   resource_id: string | null,
   details?: string
 ): Promise<void> {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   try {
     const sessionUser = c.get("sessionUser") as SessionUser | undefined;
     const actor = sessionUser?.email || "unknown";
@@ -302,7 +302,7 @@ export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, 
     'RESEND_API_KEY', 'RESEND_FROM_EMAIL'
   ];
   
-  const db = c.get("db");
+  const db = c.get("db") as any;
   const results = await db.query.settings.findMany({
     columns: { key: true, value: true },
     where: inArray(schema.settings.key, keys)

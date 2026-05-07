@@ -49,7 +49,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
     }
 
     const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     let queryBuilder = db.selectFrom("social_queue").selectAll();
 
@@ -62,7 +62,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
     }
 
     const totalResult = await queryBuilder
-      .select((eb) => eb.fn.count("id").as("count"))
+      .select((eb: any) => eb.fn.count("id").as("count"))
       .execute();
 
     const total = Number(totalResult[0].count);
@@ -91,7 +91,7 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendar
     }
 
     const { start, end } = c.req.valid("query");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     let queryBuilder = db
       .selectFrom("social_queue")
@@ -123,7 +123,7 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
     }
 
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const id = nanoid();
     const createdAt = new Date().toISOString();
 
@@ -173,7 +173,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
 
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     const existing = await db
       .selectFrom("social_queue")
@@ -216,7 +216,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
     }
 
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     const existing = await db
       .selectFrom("social_queue")
@@ -249,7 +249,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
     }
 
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     const record = await db
       .selectFrom("social_queue")
@@ -291,7 +291,7 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
     }
 
     const { start, end } = c.req.valid("query");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     let q = db.selectFrom("social_queue");
     if (start) q = q.where("scheduled_for", ">=", start);
@@ -300,9 +300,9 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
     const results = await q.selectAll().execute();
 
     const total_posts = results.length;
-    const total_sent = results.filter((r) => r.status === "sent").length;
-    const total_pending = results.filter((r) => r.status === "pending").length;
-    const total_failed = results.filter((r) => r.status === "failed").length;
+    const total_sent = results.filter((r: any) => r.status === "sent").length;
+    const total_pending = results.filter((r: any) => r.status === "pending").length;
+    const total_failed = results.filter((r: any) => r.status === "failed").length;
 
     const by_platform = {
       twitter: 0,
@@ -318,7 +318,7 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
       band: 0,
     };
 
-    results.forEach((r) => {
+    results.forEach((r: any) => {
       const platforms = JSON.parse(String(r.platforms));
       Object.entries(platforms).forEach(([key, value]) => {
         if (value && key in by_platform) {

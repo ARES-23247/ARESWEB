@@ -183,8 +183,8 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                 
                                 if (admins.length > 0) {
                                     const values = admins
-                                        .filter(admin => admin.id !== null)
-                                        .map(admin => ({
+                                        .filter((admin: any) => admin.id !== null)
+                                        .map((admin: any) => ({
                                             id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
                                             userId: admin.id as string,
                                             title: "New User Registration",

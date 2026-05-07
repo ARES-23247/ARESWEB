@@ -3,8 +3,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { mockExecutionContext, createMockExpressionBuilder } from "../../../src/test/utils";
-import type { MockKysely, TestEnv } from "../../../src/test/types";
+import { mockExecutionContext } from "../../../src/test/utils";
+import type { TestEnv } from "../../../src/test/types";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
@@ -26,7 +26,7 @@ vi.mock("../../utils/zulipSync", () => ({
 import { badgesRouter } from "./badges";
 
 describe("Hono Backend - /badges Router", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   const mockEnv: TestEnv["Bindings"] = { DEV_BYPASS: "true", DB: {} as any };
 
@@ -36,11 +36,11 @@ describe("Hono Backend - /badges Router", () => {
       selectFrom: vi.fn().mockReturnThis(),
       innerJoin: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn((args) => {
+      select: vi.fn((args: any) => {
         if (Array.isArray(args)) {
-          args.forEach((arg) => {
+          args.forEach((arg: any) => {
             if (typeof arg === "function") {
-              arg(createMockExpressionBuilder());
+              arg(({} as any));
             }
           });
         }

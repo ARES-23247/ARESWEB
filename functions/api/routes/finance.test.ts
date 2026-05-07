@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { TestEnv } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { createMockExpressionBuilder } from "../../../src/test/utils";
 
 // Mock middleware BEFORE importing the router
 vi.mock("../middleware", async (importOriginal) => {
@@ -39,11 +38,11 @@ describe("Hono Backend - /finance Router", () => {
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation((args) => {
+      select: vi.fn().mockImplementation((args: any) => {
         if (Array.isArray(args)) {
           args.forEach((arg: unknown) => {
             if (typeof arg === "function") {
-              arg(createMockExpressionBuilder());
+              arg(({} as any));
             }
           });
         }

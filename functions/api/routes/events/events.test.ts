@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { mockExecutionContext, createMockExpressionBuilder } from "../../../../src/test/utils";
+import { mockExecutionContext } from "../../../../src/test/utils";
 import { TestEnv } from "../../../../src/test/types";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
@@ -44,7 +44,7 @@ vi.mock("../../middleware", async (importOriginal) => {
       CALENDAR_ID: "cal1"
     }),
     getSessionUser: vi.fn().mockResolvedValue(null),
-    sanitizeProfileForPublic: vi.fn().mockImplementation((val) => val),
+    sanitizeProfileForPublic: vi.fn().mockImplementation((val: any) => val),
   };
 });
 
@@ -63,8 +63,8 @@ vi.mock("../../../utils/gcalSync", () => ({
 }));
 
 vi.mock("../../utils/crypto", () => ({
-  decrypt: vi.fn().mockImplementation((val) => val),
-  encrypt: vi.fn().mockImplementation((val) => val),
+  decrypt: vi.fn().mockImplementation((val: any) => val),
+  encrypt: vi.fn().mockImplementation((val: any) => val),
 }));
 
 describe("Hono Backend - Events Router", () => {
@@ -86,9 +86,9 @@ describe("Hono Backend - Events Router", () => {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation((cb) => {
+      where: vi.fn().mockImplementation((cb: any) => {
         if (typeof cb === 'function') {
-          const ebMock = createMockExpressionBuilder();
+          const ebMock = ({} as any);
           cb(ebMock);
         }
         return mockDb;
@@ -103,7 +103,7 @@ describe("Hono Backend - Events Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue({ id: "1", title: "Test" }),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((cb) => {
+      onConflict: vi.fn().mockImplementation((cb: any) => {
       if (typeof cb === "function") cb(mockDb);
       return mockDb;
     }),

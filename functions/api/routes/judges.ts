@@ -41,7 +41,7 @@ const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
 judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
 
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
@@ -63,7 +63,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
     const row = await db.selectFrom("judge_access_codes")
       .select(["code", "label", "expires_at"])
       .where("code", "=", code)
-      .where((eb) => eb.or([
+      .where((eb: any) => eb.or([
         eb("expires_at", "is", null),
         eb("expires_at", ">", new Date().toISOString())
       ]))
@@ -80,7 +80,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
 }));
 
 judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const { "x-judge-code": code } = c.req.valid("header");
     if (!code) {
@@ -97,7 +97,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     const valid = await db.selectFrom("judge_access_codes")
       .select("code")
       .where("code", "=", code)
-      .where((eb) => eb.or([
+      .where((eb: any) => eb.or([
         eb("expires_at", "is", null),
         eb("expires_at", ">", new Date().toISOString())
       ]))
@@ -121,7 +121,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         .select(["slug", "title", "category", "description", "content"])
         .where("is_deleted", "=", 0)
         .where("status", "=", "published")
-        .where((eb) => eb.or([eb("is_portfolio", "=", 1), eb("is_executive_summary", "=", 1)]))
+        .where((eb: any) => eb.or([eb("is_portfolio", "=", 1), eb("is_executive_summary", "=", 1)]))
         .orderBy("is_executive_summary", "desc")
         .orderBy("category")
         .orderBy("sort_order")
@@ -143,23 +143,23 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     ]);
 
     const payload = {
-      portfolioDocs: portfolioDocs.map(d => ({
+      portfolioDocs: portfolioDocs.map((d: any) => ({
         ...d,
         content: sanitizeJudgeContent(d.content)
       })),
-      outreach: outreach.map(o => ({
+      outreach: outreach.map((o: any) => ({
         ...o,
         description: sanitizeJudgeContent(o.description || ""),
         students_count: Number(o.students_count),
         hours_logged: Number(o.hours_logged),
         reach_count: Number(o.reach_count)
       })),
-      awards: awards.map(a => ({
+      awards: awards.map((a: any) => ({
         ...a,
         description: sanitizeJudgeContent(a.description || ""),
         year: Number(a.date)
       })),
-      sponsors: sponsors.map(s => ({ ...s, id: s.id || "", tier: s.tier as string }))
+      sponsors: sponsors.map((s: any) => ({ ...s, id: s.id || "", tier: s.tier as string }))
     };
 
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
@@ -175,14 +175,14 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
 judgesRouter.use("/admin/*", ensureAdmin);
 
 judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const results = await db.selectFrom("judge_access_codes")
       .select(["id", "code", "label", "created_at", "expires_at"])
       .orderBy("created_at", "desc")
       .execute();
 
-    const codes = results.map(r => ({
+    const codes = results.map((r: any) => ({
       ...r,
       created_at: String(r.created_at),
       expires_at: r.expires_at || null
@@ -195,7 +195,7 @@ judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRout
 }));
 
 judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const { label, expiresAt } = c.req.valid("json");
     const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
@@ -222,7 +222,7 @@ judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRo
 }));
 
 judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRoute>(async (c) => {
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   try {
     const { id } = c.req.valid("param");
     await db.deleteFrom("judge_access_codes").where("id", "=", id).execute();

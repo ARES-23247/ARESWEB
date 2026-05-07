@@ -24,7 +24,7 @@ export async function emitNotification(
     priority?: "low" | "medium" | "high";
   }
 ) {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   try {
     // 1. Database Persistence
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Date.now()}`;
@@ -44,7 +44,7 @@ export async function emitNotification(
     if (external) {
       c.executionCtx.waitUntil(
         sendZulipAlert(c.env, "System", title, `${message}\n\n[View Details](${link || "#"})`)
-          .catch(e => console.error("[Notification] External broadcast failed:", e))
+          .catch((e: any) => console.error("[Notification] External broadcast failed:", e))
       );
     }
   } catch (err) {
@@ -71,17 +71,17 @@ export async function notifyByRole(
 ) {
   if (audiences.length === 0) return;
 
-  const db = c.get("db");
+  const db = c.get("db") as any;
 
   try {
     const includeAdmin = audiences.includes("admin");
-    const profileTypes = audiences.filter(a => a !== "admin");
+    const profileTypes = audiences.filter((a: any) => a !== "admin");
 
     let query = db.selectFrom("user as u")
       .select("u.id");
 
     if (includeAdmin && profileTypes.length > 0) {
-      query = query.where((eb) => eb.or([
+      query = query.where((eb: any) => eb.or([
         eb("u.role", "=", "admin"),
         eb.and([
           eb("u.role", "!=", "unverified"),
@@ -112,8 +112,8 @@ export async function notifyByRole(
       const chunk = results.slice(i, i + MAX_BATCH_SIZE);
       
       const values = chunk
-        .filter(row => row.id !== null)
-        .map(row => ({
+        .filter((row: any) => row.id !== null)
+        .map((row: any) => ({
           id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
           user_id: row.id as string,
           title: payload.title,
@@ -133,7 +133,7 @@ export async function notifyByRole(
     if (payload.external) {
       c.executionCtx.waitUntil(
         sendZulipAlert(c.env, "System", payload.title, `${payload.message}\n\n[View Details](${payload.link || "#"})`)
-          .catch(e => console.error("[Notification] Role broadcast failed:", e))
+          .catch((e: any) => console.error("[Notification] Role broadcast failed:", e))
       );
     }
   } catch (err) {

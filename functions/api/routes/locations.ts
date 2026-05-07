@@ -1,7 +1,8 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { Kysely } from "kysely";
+import { eq, asc } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { z } from "zod";
 import { DB } from "../../../shared/schemas/database";
 import { 
@@ -27,14 +28,20 @@ locationsRouter.use("/admin/*", ensureAdmin);
 
 locationsRouter.openapi(listLocationsRoute, typedHandler<typeof listLocationsRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
-    const results = await db.selectFrom("locations")
-      .select(["id", "name", "address", "maps_url", "is_deleted"])
-      .where("is_deleted", "=", 0)
-      .orderBy("name", "asc")
-      .execute();
+    const db = c.get("db") as any;
+    const results = await db.select({
+        id: schema.locations.id,
+        name: schema.locations.name,
+        address: schema.locations.address,
+        maps_url: schema.locations.mapsUrl,
+        is_deleted: schema.locations.isDeleted
+      })
+      .from(schema.locations)
+      .where(eq(schema.locations.isDeleted, 0))
+      .orderBy(asc(schema.locations.name))
+      .all();
 
-    const locations = results.map(r => ({
+    const locations = results.map((r: any) => ({
       ...r,
       id: r.id || undefined,
       is_deleted: Number(r.is_deleted || 0)
@@ -49,13 +56,19 @@ locationsRouter.openapi(listLocationsRoute, typedHandler<typeof listLocationsRou
 
 locationsRouter.openapi(adminListLocationsRoute, typedHandler<typeof adminListLocationsRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
-    const results = await db.selectFrom("locations")
-      .select(["id", "name", "address", "maps_url", "is_deleted"])
-      .orderBy("name", "asc")
-      .execute();
+    const db = c.get("db") as any;
+    const results = await db.select({
+        id: schema.locations.id,
+        name: schema.locations.name,
+        address: schema.locations.address,
+        maps_url: schema.locations.mapsUrl,
+        is_deleted: schema.locations.isDeleted
+      })
+      .from(schema.locations)
+      .orderBy(asc(schema.locations.name))
+      .all();
 
-    const locations = results.map(r => ({
+    const locations = results.map((r: any) => ({
       ...r,
       id: r.id || undefined,
       is_deleted: Number(r.is_deleted || 0)
@@ -71,24 +84,27 @@ locationsRouter.openapi(adminListLocationsRoute, typedHandler<typeof adminListLo
 locationsRouter.openapi(saveLocationRoute, typedHandler<typeof saveLocationRoute>(async (c) => {
   try {
     const validatedData = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const id = validatedData.id || crypto.randomUUID();
 
-    await db.insertInto("locations")
+    await db.insert(schema.locations)
       .values({
         id,
         name: validatedData.name,
         address: validatedData.address,
-        maps_url: validatedData.maps_url || null,
-        is_deleted: validatedData.is_deleted || 0,
+        mapsUrl: validatedData.maps_url || null,
+        isDeleted: validatedData.is_deleted || 0,
       })
-      .onConflict(oc => oc.column("id").doUpdateSet({
-        name: validatedData.name,
-        address: validatedData.address,
-        maps_url: validatedData.maps_url || null,
-        is_deleted: validatedData.is_deleted || 0,
-      }))
-      .execute();
+      .onConflictDoUpdate({
+        target: schema.locations.id,
+        set: {
+          name: validatedData.name,
+          address: validatedData.address,
+          mapsUrl: validatedData.maps_url || null,
+          isDeleted: validatedData.is_deleted || 0,
+        }
+      })
+      .run();
 
     c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
     return c.json({ success: true, id }, 200);
@@ -101,11 +117,11 @@ locationsRouter.openapi(saveLocationRoute, typedHandler<typeof saveLocationRoute
 locationsRouter.openapi(deleteLocationRoute, typedHandler<typeof deleteLocationRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
-    await db.updateTable("locations")
-      .set({ is_deleted: 1 })
-      .where("id", "=", id)
-      .execute();
+    const db = c.get("db") as any;
+    await db.update(schema.locations)
+      .set({ isDeleted: 1 })
+      .where(eq(schema.locations.id, id))
+      .run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location soft-deleted"));
     return c.json({ success: true }, 200);
   } catch (e) {

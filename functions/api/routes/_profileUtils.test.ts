@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { upsertProfile } from "./_profileUtils";
 import { Context } from "hono";
 import { AppEnv } from "../middleware";
-import type { MockKysely } from "../../../src/test/types";
+import type {  } from "../../../src/test/types";
 
 vi.mock("../../utils/crypto", () => ({
-  encrypt: vi.fn((val) => Promise.resolve("encrypted_" + val)),
+  encrypt: vi.fn((val: any) => Promise.resolve("encrypted_" + val)),
 }));
 
 describe("Profile Utils", () => {
-  let mockDb: MockKysely;
+  let mockDb: any;
   let mockContext: {
     env: { ENCRYPTION_SECRET: string };
     get: ReturnType<typeof vi.fn>;
@@ -33,7 +33,7 @@ describe("Profile Utils", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((cb) => {
+      onConflict: vi.fn().mockImplementation((cb: any) => {
         if (typeof cb === "function") {
           cb({
             column: vi.fn().mockReturnValue({

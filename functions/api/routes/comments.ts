@@ -41,7 +41,7 @@ commentsRouter.use("/{id}", (c, next) => {
 commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>(async (c) => {
   const { targetType, targetId } = c.req.valid("param");
   const user = await getSessionUser(c);
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
 
   try {
     const results = await db.selectFrom("comments as c")
@@ -57,7 +57,7 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
       .orderBy("c.created_at", "asc")
       .execute();
 
-    const comments = results.map((r) => ({
+    const comments = results.map((r: any) => ({
       id: String(r.id),
       user_id: String(r.user_id),
       nickname: r.nickname || "ARES Member",
@@ -88,7 +88,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
   }
 
   const { targetType, targetId } = c.req.valid("param");
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const body = c.req.valid("json");
   const rawContent = body.content;
   if (!rawContent) {
@@ -134,7 +134,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
       if (msgId) {
         await db.updateTable("comments").set({ zulip_message_id: String(msgId) }).where("id", "=", id).execute();
       }
-    })().catch((err) => console.error("[Comments:ZulipSync] Error", err)));
+    })().catch((err: any) => console.error("[Comments:ZulipSync] Error", err)));
 
     if (targetType === 'post') {
       const row = await db.selectFrom("posts").select("cf_email").where("slug", "=", targetId).executeTakeFirst();
@@ -147,7 +147,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
             message: `${user.name || 'Someone'} commented on your post "${targetId}"`,
             link: `/blog/${targetId}`,
             priority: "medium"
-          }).catch((err) => console.error("[Comments:Notification] Error", err)));
+          }).catch((err: any) => console.error("[Comments:Notification] Error", err)));
         }
       }
     }
@@ -165,7 +165,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
 
   const { id } = c.req.valid("param");
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const body = c.req.valid("json");
   const rawContent = body.content;
   const content = rawContent?.trim();
@@ -201,7 +201,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
       c.executionCtx.waitUntil((async () => {
         const social = await getSocialConfig(c);
         await updateZulipMessage(social, String(row.zulip_message_id), `**${user.name}** (edited):\n\n${content}`)
-          .catch((err) => console.error("[Comments:ZulipUpdate] Error", err));
+          .catch((err: any) => console.error("[Comments:ZulipUpdate] Error", err));
       })());
     }
 
@@ -218,7 +218,7 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
   if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
 
   const { id } = c.req.valid("param");
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
 
   try {
     const row = await db.selectFrom("comments").select(["user_id", "zulip_message_id"]).where("id", "=", id).executeTakeFirst();
@@ -241,7 +241,7 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
       c.executionCtx.waitUntil((async () => {
         const social = await getSocialConfig(c);
         await deleteZulipMessage(social, String(row.zulip_message_id))
-          .catch((err) => console.error("[Comments:ZulipDelete] Error", err));
+          .catch((err: any) => console.error("[Comments:ZulipDelete] Error", err));
       })());
     }
 

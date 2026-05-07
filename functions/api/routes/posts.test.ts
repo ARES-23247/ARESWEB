@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
-import { TestEnv, MockKysely } from "../../../src/test/types";
+import { TestEnv } from "../../../src/test/types";
 import postsRouter from "./posts";
 import { createMockPost } from "../../../src/test/factories/contentFactory";
 
@@ -52,7 +52,7 @@ vi.mock("../../../functions/utils/postHistory", () => ({
 
 describe("Hono Backend - /posts Router", () => {
 
-  let mockDb: MockKysely;
+  let mockDb: any;
   let testApp: Hono<TestEnv>;
   const env = { 
     DB: {
@@ -72,7 +72,7 @@ describe("Hono Backend - /posts Router", () => {
     mockDb = {
       selectFrom: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation((arg1) => {
+      where: vi.fn().mockImplementation((arg1: any) => {
         if (typeof arg1 === "function") {
           const ebMock = vi.fn().mockReturnThis() as any;
           ebMock.or = vi.fn().mockReturnThis();
@@ -96,14 +96,14 @@ describe("Hono Backend - /posts Router", () => {
       onConflict: vi.fn().mockReturnThis(),
       doUpdateSet: vi.fn().mockReturnThis(),
       transaction: vi.fn().mockImplementation(() => ({
-        execute: vi.fn().mockImplementation((callback) => callback(mockDb)),
+        execute: vi.fn().mockImplementation((callback: any) => callback(mockDb)),
       })),
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q) => q),
+        transformQuery: vi.fn((q: any) => q),
       }),
-    } as unknown as MockKysely;
+    } as unknown as any;
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: any, next: () => Promise<void>) => {

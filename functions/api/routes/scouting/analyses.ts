@@ -11,7 +11,7 @@ const analysesRouter = new OpenAPIHono<AppEnv>();
 
 analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScoutingAnalysesRoute>(async (c) => {
   const { teamNumber: teamNumberStr, eventKey } = c.req.valid("query");
-  const db = c.get("db");
+  const db = c.get("db") as any;
 
   try {
     let query = db.selectFrom("scouting_analyses").selectAll();

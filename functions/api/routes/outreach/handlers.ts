@@ -23,9 +23,9 @@ async function fetchVolunteerEvents(db: Kysely<DB>, existingEventIds: string[]) 
       .orderBy("date_start", "desc")
       .execute();
       
-    const filteredResults = results.filter(r => !existingEventIds.includes(String(r.id)));
+    const filteredResults = results.filter((r: any) => !existingEventIds.includes(String(r.id)));
     
-    return filteredResults.map((r) => ({
+    return filteredResults.map((r: any) => ({
       id: String(r.id),
       title: r.title,
       date: r.date,
@@ -47,7 +47,7 @@ async function fetchVolunteerEvents(db: Kysely<DB>, existingEventIds: string[]) 
 
 export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async (c: any) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await db.selectFrom("outreach_logs")
       .select([
         "id", "title", "date", "location",
@@ -60,10 +60,10 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async 
       .orderBy("date", "desc")
       .execute();
     
-    const existingEventIds = results.filter(r => r.event_id).map(r => String(r.event_id));
+    const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
     
-    const logs = results.map(r => ({
+    const logs = results.map((r: any) => ({
       id: String(r.id),
       title: r.title,
       date: r.date,
@@ -81,8 +81,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async 
       mentor_hours: Number(r.mentor_hours || 0)
     }));
 
-    const combined = [...logs, ...volunteerEvents].sort(
-      (a, b) => b.date.localeCompare(a.date)
+    const combined = [...logs, ...volunteerEvents].sort((a: any, b: any) => b.date.localeCompare(a.date)
     );
 
      
@@ -95,7 +94,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async 
 
 export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute> = async (c: any) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await db.selectFrom("outreach_logs")
       .select([
         "id", "title", "date", "location",
@@ -108,10 +107,10 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
       .orderBy("date", "desc")
       .execute();
     
-    const existingEventIds = results.filter(r => r.event_id).map(r => String(r.event_id));
+    const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
     
-    const logs = results.map(r => ({
+    const logs = results.map((r: any) => ({
       id: String(r.id),
       title: r.title,
       date: r.date,
@@ -129,8 +128,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
       mentor_hours: Number(r.mentor_hours || 0)
     }));
 
-    const combined = [...logs, ...volunteerEvents].sort(
-      (a, b) => b.date.localeCompare(a.date)
+    const combined = [...logs, ...volunteerEvents].sort((a: any, b: any) => b.date.localeCompare(a.date)
     );
 
      
@@ -144,7 +142,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
 export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async (c: any) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -207,7 +205,7 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async 
 export const handleDeleteOutreach: RouteHandler<typeof deleteOutreachRoute> = async (c: any) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 

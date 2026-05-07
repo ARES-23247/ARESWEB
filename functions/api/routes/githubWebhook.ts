@@ -25,7 +25,7 @@ async function verifyGitHubSignature(
 
     const PREFIX = "sha256=";
     const sigHex = signature.length >= PREFIX.length ? signature.slice(PREFIX.length) : signature;
-    const sigBytes = new Uint8Array((sigHex.match(/.{1,2}/g) || []).map(byte => parseInt(byte, 16)));
+    const sigBytes = new Uint8Array((sigHex.match(/.{1,2}/g) || []).map((byte: any) => parseInt(byte, 16)));
 
     const prefixMatches = signature.length >= PREFIX.length &&
       signature.substring(0, PREFIX.length) === PREFIX;
@@ -86,7 +86,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             "Project Board",
             `📋 **New project item created**\nItem ID: \`${item?.node_id || "unknown"}\``
-          ).catch(err => console.error(err)));
+          ).catch((err: any) => console.error(err)));
         } else if (action === "edited" && changes) {
           const fieldChanges = Object.entries(changes)
             .map(([key, val]: [string, any]) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
@@ -98,7 +98,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
               engineeringStream,
               "Project Board",
               `🔄 **Project item updated**\nItem: \`${item?.node_id || "unknown"}\`\n${fieldChanges}`
-            ).catch(err => console.error(err)));
+            ).catch((err: any) => console.error(err)));
           }
         } else if (action === "deleted") {
           c.executionCtx.waitUntil(sendZulipMessage(
@@ -106,7 +106,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             "Project Board",
             `🗑️ **Project item removed** from board`
-          ).catch(err => console.error(err)));
+          ).catch((err: any) => console.error(err)));
         }
         break;
       }
@@ -129,7 +129,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             `${repo}`,
             `⚡ **${commitCount} new commit${commitCount > 1 ? "s" : ""}** pushed to \`${branch}\`\n\n${commitList}${commitCount > 5 ? `\n...and ${commitCount - 5} more` : ""}`
-          ).catch(err => console.error(err)));
+          ).catch((err: any) => console.error(err)));
         }
         break;
       }
@@ -147,7 +147,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             `${repo2}`,
             `${emoji} **PR ${status}**: [${pr?.title || "Untitled"}](${pr?.html_url || "#"}) by @${pr?.user?.login || "unknown"}`
-          ).catch(err => console.error(err)));
+          ).catch((err: any) => console.error(err)));
         }
         break;
       }
@@ -164,7 +164,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             `${repo3}`,
             `${emoji} **Issue ${action3}**: [${issue?.title || "Untitled"}](${issue?.html_url || "#"}) by @${issue?.user?.login || "unknown"}`
-          ).catch(err => console.error(err)));
+          ).catch((err: any) => console.error(err)));
         }
         break;
       }

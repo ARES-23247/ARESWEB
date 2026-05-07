@@ -42,7 +42,7 @@ describe("Hono Backend - /judges Router", () => {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
-      where: vi.fn((key) => {
+      where: vi.fn((key: any) => {
         if (typeof key === "function") {
           key(Object.assign(vi.fn(), {
             or: vi.fn(),

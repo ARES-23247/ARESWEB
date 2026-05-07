@@ -173,7 +173,7 @@ eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAt
 eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const results = await db.selectFrom("document_history")
       .select(["id", "room_id", "content", "created_by", "created_at"])
       .where("room_id", "=", `event_${id}`)
@@ -181,7 +181,7 @@ eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRo
       .limit(50)
       .execute();
 
-    const history = results.map(h => ({
+    const history = results.map((h: any) => ({
       id: Number(h.id),
       title: `Revision ${h.id}`,
       author_email: h.created_by,
@@ -198,7 +198,7 @@ eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRo
 eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventHistoryRoute>(async (c) => {
   try {
     const { id, historyId } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
 
     const row = await db.selectFrom("document_history")
       .select(["content"])

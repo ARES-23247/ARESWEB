@@ -13,7 +13,7 @@ export const sitemapRouter = new OpenAPIHono<AppEnv>();
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
 
 sitemapRouter.openapi(getSitemapRoute, typedHandler<typeof getSitemapRoute>(async (c) => {
-  const db = c.get("db");
+  const db = c.get("db") as any;
   try {
     const now = Date.now();
     if (sitemapCache && sitemapCache.expiresAt > now) {
