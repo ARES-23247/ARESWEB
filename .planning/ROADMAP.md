@@ -7,7 +7,7 @@
 - v6.8 Hono Zod OpenAPI Migration - Phases 34-37 (shipped 2026-05-06)
 - v6.9 Type Safety Debt Elimination - Phases 38-42 (shipped 2026-05-06)
 - v6.10 Infrastructure & Polish - Phases 43-44 (shipped 2026-05-07)
-- **v7.0 Performance Optimization** - Phases 45-49 (planned)
+- **v7.0 Performance Optimization** - Phases 45-50 (planned)
 
 ## Phases
 
@@ -267,3 +267,18 @@
 **Plans**: See `.planning/milestones/v7.0-phases/05-monitoring/PLAN.md`
 
 ---
+
+### Phase 50: Dashboard UX Flattening
+
+**Goal**: Integrate Social Media Manager directly into dashboard layout by removing redundant nesting and matching standard page patterns.
+
+**Depends on**: Nothing
+
+**Requirements**: UX-01, UX-02
+
+**Success Criteria**:
+1. `SocialHub` no longer has redundant borders/backgrounds.
+2. Dashboard header pattern applied to Social Media Manager.
+3. Tab navigation matches dashboard standard.
+
+**Plans**: 0 (run /gsd-plan-phase 50 to create)
