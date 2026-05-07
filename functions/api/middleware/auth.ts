@@ -1,7 +1,9 @@
 import { Context, Next } from "hono";
 import { getAuth } from "../../utils/auth";
 import { eq } from "drizzle-orm";
+import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
+import * as relations from "../../../src/db/relations";
 import { AppEnv, UserRole, SessionUser } from "./utils";
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
@@ -40,7 +42,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   const role = rawRole.toLowerCase() as string;
 
   // EFF-05: Store session in context so handlers don't need to re-fetch
-  const db = c.get("db") as any;
+  const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
   const profile = await db.select({
     nickname: schema.userProfiles.nickname,
     member_type: schema.userProfiles.memberType
@@ -114,7 +116,7 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (session && session.user) {
       // Fetch member_type and nickname from profile
-      const db = c.get("db") as any;
+      const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
       const profile = await db.select({
         nickname: schema.userProfiles.nickname,
         member_type: schema.userProfiles.memberType
