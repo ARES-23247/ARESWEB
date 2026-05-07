@@ -1,7 +1,7 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, asc, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, asc, desc, and, inArray, sql, aliasedTable } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, getSocialConfig, getSessionUser, originIntegrityMiddleware, getDb } from "../middleware";
 import { parsePagination } from "../middleware/utils";
@@ -37,6 +37,7 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
       conditions.push(eq(schema.tasks.assignedTo, query.assigned_to));
     }
 
+    const creatorProfile = aliasedTable(schema.userProfiles, "creatorProfile");
     const baseQuery = db.select({
         id: schema.tasks.id,
         title: schema.tasks.title,
@@ -51,6 +52,7 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
         createdBy: schema.tasks.createdBy,
         createdAt: schema.tasks.createdAt,
         updatedAt: schema.tasks.updatedAt,
+        creator_name: creatorProfile.nickname,
         assignee_name: schema.userProfiles.nickname,
         assigned_to: schema.userProfiles.userId,
         assignees_json: sql<string>`(
@@ -66,7 +68,8 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
         )`,
       })
       .from(schema.tasks)
-      .leftJoin(schema.userProfiles, eq(schema.tasks.assignedTo, schema.userProfiles.userId));
+      .leftJoin(schema.userProfiles, eq(schema.tasks.assignedTo, schema.userProfiles.userId))
+      .leftJoin(creatorProfile, eq(schema.tasks.createdBy, creatorProfile.userId));
 
     const finalQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
@@ -91,17 +94,18 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
       return {
         ...t,
         due_date: t.dueDate,
-        sort_order: t.sortOrder,
+        sort_order: t.sortOrder ?? 0,
         parent_id: t.parentId,
         time_spent_seconds: t.timeSpentSeconds,
         created_by: t.createdBy,
-        created_at: t.createdAt,
-        updated_at: t.updatedAt,
+        created_at: t.createdAt ?? new Date().toISOString(),
+        updated_at: t.updatedAt ?? new Date().toISOString(),
         status: t.status || "todo",
         priority: t.priority || "normal",
         assigned_to: t.assigned_to ?? null,
         assignee_name: t.assignee_name ?? null,
         assignees,
+        creator_name: ("creator_name" in t ? t.creator_name : undefined) ?? "ARES Member",
         zulip_stream: null,
         zulip_topic: null,
       };

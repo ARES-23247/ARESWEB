@@ -48,6 +48,7 @@ export type MockDrizzle = {
   execute: ReturnType<typeof vi.fn>;
   run: ReturnType<typeof vi.fn>;
   get: ReturnType<typeof vi.fn>;
+  $dynamic: ReturnType<typeof vi.fn>;
   query: {
     [table: string]: {
       findFirst: ReturnType<typeof vi.fn>;

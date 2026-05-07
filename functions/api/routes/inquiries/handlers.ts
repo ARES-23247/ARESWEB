@@ -2,7 +2,7 @@
 import { eq, desc, inArray, and, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
+import { getSocialConfig, logAuditAction, SocialConfig, getDb } from "../../middleware";
 import { encrypt, decrypt } from "../../../utils/crypto";
 import { safeJSONStringify } from "../../../utils/json";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -41,10 +41,10 @@ export async function purgeOldInquiries(db: any, days: number) {
   return { deleted: res.meta?.changes ?? 0 };
 }
 
-export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv> = async (c: any) => {
+export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv> = async (c) => {
   try {
     const { limit = 50, offset = 0 } = c.req.valid("query");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = c.get("sessionUser");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -134,10 +134,10 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
   }
 };
 
-export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv> = async (c: any) => {
+export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv> = async (c) => {
   try {
     const { type, name, email, metadata } = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const secret = c.env.ENCRYPTION_SECRET;
 
     // Prevents double submissions
@@ -267,11 +267,11 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
   }
 };
 
-export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, AppEnv> = async (c: any) => {
+export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, AppEnv> = async (c) => {
   try {
     const { id } = c.req.valid("param");
     const { status } = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     await db.update(schema.inquiries)
       .set({ status })
       .where(eq(schema.inquiries.id, id))
@@ -285,11 +285,11 @@ export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, A
   }
 };
 
-export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, AppEnv> = async (c: any) => {
+export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, AppEnv> = async (c) => {
   try {
     const { id } = c.req.valid("param");
     const { notes } = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     await db.update(schema.inquiries)
       .set({ notes })
       .where(eq(schema.inquiries.id, id))
@@ -303,10 +303,10 @@ export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, App
   }
 };
 
-export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv> = async (c: any) => {
+export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv> = async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     await db.delete(schema.inquiries).where(eq(schema.inquiries.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry deleted"));
     return c.json({ success: true }, 200);

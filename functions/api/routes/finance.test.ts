@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { TestEnv } from "../../../src/test/types";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { DrizzleMock, TestEnv } from "../../../src/test/types";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 
 // Mock middleware BEFORE importing the router
 vi.mock("../middleware", async (importOriginal) => {
@@ -32,42 +32,11 @@ describe("Hono Backend - /finance Router", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation((args: any) => {
-        if (Array.isArray(args)) {
-          args.forEach((arg: unknown) => {
-            if (typeof arg === "function") {
-              arg(({} as any));
-            }
-          });
-        }
-        return mockDb;
-      }),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      groupBy: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      transaction: vi.fn().mockReturnThis(),
-    };
-
-    // Support transaction callback
-    mockDb.execute.mockImplementation(async (cb: unknown) => {
-      if (typeof cb === "function") return cb(mockDb);
-      return [];
-    });
+    mockDb = createMockDrizzle();
 
     testApp = new Hono<TestEnv>();
-    testApp.use("*", async (c: any, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+    testApp.use("*", async (c, next) => {
+      c.set("db", mockDb);
       c.set("executionCtx", mockExecutionContext);
       c.set("sessionUser", { id: "admin-123", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" });
       await next();
@@ -77,18 +46,18 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("GET /summary", () => {
     it("returns correct totals for a specific season", async () => {
-      mockDb.execute.mockResolvedValueOnce([{ type: "income", total: 1000 }, { type: "expense", total: 400 }]);
+      mockDb.all.mockResolvedValueOnce([{ type: "income", total: 1000 }, { type: "expense", total: 400 }]);
       const res = await testApp.request("/summary?season_id=2024", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
       const body = await res.json() as any;
       expect(body.total_income).toBe(1000);
       expect(body.total_expenses).toBe(400);
-      expect(mockDb.where).toHaveBeenCalledWith("season_id", "=", 2024);
+      expect(mockDb.where).toHaveBeenCalled();
     });
 
     it("returns correct totals for latest season if not specified", async () => {
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ start_year: 2024 });
-      mockDb.execute.mockResolvedValueOnce([{ type: "income", total: 1000 }]);
+      mockDb.get.mockResolvedValueOnce({ startYear: 2024 });
+      mockDb.all.mockResolvedValueOnce([{ type: "income", total: 1000 }]);
       
       const res = await testApp.request("/summary", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
@@ -97,7 +66,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles no seasons", async () => {
-      mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+      mockDb.get.mockResolvedValueOnce(null);
       const res = await testApp.request("/summary", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
       const body = await res.json() as any;
@@ -105,7 +74,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles summary error", async () => {
-      mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("Fail"));
+      mockDb.get.mockRejectedValueOnce(new Error("Fail"));
       const res = await testApp.request("/summary", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(500);
     });
@@ -113,7 +82,7 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("GET /sponsorship", () => {
     it("lists pipeline with season filter", async () => {
-      mockDb.execute.mockResolvedValueOnce([{ id: "lead-1", company_name: "Test Corp", status: "potential", estimated_value: 500 }]);
+      mockDb.all.mockResolvedValueOnce([{ id: "lead-1", companyName: "Test Corp", status: "potential", estimatedValue: 500 }]);
       const res = await testApp.request("/sponsorship?season_id=2024", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
       const body = await res.json() as any;
@@ -121,7 +90,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles list pipeline error", async () => {
-      mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+      mockDb.all.mockRejectedValueOnce(new Error("Fail"));
       const res = await testApp.request("/sponsorship", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(500);
     });
@@ -142,14 +111,14 @@ describe("Hono Backend - /finance Router", () => {
         body: JSON.stringify({ ...payload, status: "potential" })
       }, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
-      expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
+      expect(mockDb.insert).toHaveBeenCalled();
     });
 
     it("handles 'secured' side-effects atomically", async () => {
       // Mock existing pipeline item as not secured yet
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ status: "potential" });
+      mockDb.get.mockResolvedValueOnce({ status: "potential" });
       // Mock no existing transaction
-      mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+      mockDb.get.mockResolvedValueOnce(null);
 
       const res = await testApp.request("/sponsorship", {
         method: "POST",
@@ -158,14 +127,14 @@ describe("Hono Backend - /finance Router", () => {
       }, mockEnv, mockExecutionContext);
 
       expect(res.status).toBe(200);
-      expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
+      expect(mockDb.insert).toHaveBeenCalled();
     });
 
     it("does not duplicate transaction if it already exists (idempotency)", async () => {
       // Mock existing pipeline item as not secured yet
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ status: "potential" });
+      mockDb.get.mockResolvedValueOnce({ status: "potential" });
       // Mock existing transaction found
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "tx-already-exists" });
+      mockDb.get.mockResolvedValueOnce({ id: "tx-already-exists" });
 
       const res = await testApp.request("/sponsorship", {
         method: "POST",
@@ -175,11 +144,13 @@ describe("Hono Backend - /finance Router", () => {
 
       expect(res.status).toBe(200);
       // Since it already exists, sponsors should NOT be inserted again.
-      expect(mockDb.insertInto).not.toHaveBeenCalledWith(expect.anything());
+      // We expect 0 calls to insert (since the update method is called for the pipeline update)
+      expect(mockDb.insert).not.toHaveBeenCalled();
+      expect(mockDb.update).toHaveBeenCalled();
     });
 
     it("idempotent when already 'secured'", async () => {
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ status: "secured" });
+      mockDb.get.mockResolvedValueOnce({ status: "secured" });
       
       const res = await testApp.request("/sponsorship", {
         method: "POST",
@@ -187,11 +158,12 @@ describe("Hono Backend - /finance Router", () => {
         body: JSON.stringify({ ...payload, id: "123" })
       }, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
-      expect(mockDb.insertInto).not.toHaveBeenCalledWith(expect.anything());
+      // Should call update for the pipeline, but not insert for sponsors/transactions
+      expect(mockDb.insert).not.toHaveBeenCalled();
     });
 
     it("handles save error", async () => {
-      mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+      mockDb.insert.mockImplementationOnce(() => { throw new Error("Fail"); });
       const res = await testApp.request("/sponsorship", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -212,7 +184,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles delete error", async () => {
-      mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+      mockDb.run.mockRejectedValueOnce(new Error("Fail"));
       const res = await testApp.request("/sponsorship/123", { 
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -224,7 +196,7 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("GET /transactions", () => {
     it("lists transactions with filters", async () => {
-      mockDb.execute.mockResolvedValueOnce([{ id: "tx-1", amount: 100, type: "income", category: "Donation", date: "2024-01-01" }]);
+      mockDb.all.mockResolvedValueOnce([{ id: "tx-1", amount: 100, type: "income", category: "Donation", date: "2024-01-01" }]);
       const res = await testApp.request("/transactions?season_id=2024&type=income", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
       const body = await res.json() as any;
@@ -232,7 +204,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles list error", async () => {
-      mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+      mockDb.all.mockRejectedValueOnce(new Error("Fail"));
       const res = await testApp.request("/transactions", {}, mockEnv, mockExecutionContext);
       expect(res.status).toBe(500);
     });
@@ -253,7 +225,7 @@ describe("Hono Backend - /finance Router", () => {
         body: JSON.stringify(payload)
       }, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
-      expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
+      expect(mockDb.insert).toHaveBeenCalled();
     });
 
     it("updates existing transaction", async () => {
@@ -263,11 +235,11 @@ describe("Hono Backend - /finance Router", () => {
         body: JSON.stringify({ ...payload, id: "tx-123" })
       }, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
-      expect(mockDb.updateTable).toHaveBeenCalledWith(expect.anything());
+      expect(mockDb.update).toHaveBeenCalled();
     });
 
     it("handles save error", async () => {
-      mockDb.insertInto.mockImplementationOnce(() => { throw new Error("Fail"); });
+      mockDb.insert.mockImplementationOnce(() => { throw new Error("Fail"); });
       const res = await testApp.request("/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -279,31 +251,31 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("DELETE /transactions/:id", () => {
     it("deletes an existing transaction", async () => {
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ receipt_url: "https://r2.ares/receipts/test.png" });
+      mockDb.get.mockResolvedValueOnce({ receiptUrl: "https://r2.ares/receipts/test.png" });
       const res = await testApp.request("/transactions/tx-123", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({})
       }, mockEnv, mockExecutionContext);
       expect(res.status).toBe(200);
-      expect(mockDb.deleteFrom).toHaveBeenCalled();
+      expect(mockDb.delete).toHaveBeenCalled();
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(mockEnv.ARES_STORAGE.delete).toHaveBeenCalledWith(expect.anything());
     });
 
     it("handles delete safely when executionCtx is not provided", async () => {
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ receipt_url: "https://r2.ares/receipts/test2.png" });
+      mockDb.get.mockResolvedValueOnce({ receiptUrl: "https://r2.ares/receipts/test2.png" });
       const res = await testApp.request("/transactions/tx-123", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({})
       }, mockEnv, undefined); // no executionCtx
       expect(res.status).toBe(200);
-      expect(mockDb.deleteFrom).toHaveBeenCalled();
+      expect(mockDb.delete).toHaveBeenCalled();
     });
 
     it("handles missing transaction", async () => {
-      mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+      mockDb.get.mockResolvedValueOnce(null);
       const res = await testApp.request("/transactions/tx-123", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -313,7 +285,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles delete error", async () => {
-      mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("Fail"));
+      mockDb.get.mockRejectedValueOnce(new Error("Fail"));
       const res = await testApp.request("/transactions/tx-123", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },

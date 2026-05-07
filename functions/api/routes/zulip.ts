@@ -3,7 +3,7 @@ import { typedHandler } from "../utils/handler";
  
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, ensureAuth, getSocialConfig } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getSocialConfig, getDb } from "../middleware";
 import {
   getPresenceRoute,
   sendMessageRoute,
@@ -261,7 +261,7 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
       }
     }
 
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const aresUsers = await db
       .select({ email: schema.user.email })
       .from(schema.user)

@@ -1,10 +1,9 @@
 import { typedHandler } from "../utils/handler";
 import { eq, desc, asc, and, gte, lte, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, getSessionUser, originIntegrityMiddleware } from "../middleware";
+import { AppEnv, getSessionUser, originIntegrityMiddleware, getDb } from "../middleware";
 import {
   listSocialQueueRoute,
   calendarSocialQueueRoute,
@@ -48,7 +47,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
     }
 
     const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
-    const db = c.get("db");
+    const db = getDb(c);
 
     let condition = undefined;
     const conditions = [];
@@ -100,7 +99,7 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendar
     }
 
     const { start, end } = c.req.valid("query");
-    const db = c.get("db");
+    const db = getDb(c);
 
     const conditions = [
       gte(schema.socialQueue.scheduledFor, start),
@@ -136,7 +135,7 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
     }
 
     const body = c.req.valid("json");
-    const db = c.get("db");
+    const db = getDb(c);
     const id = nanoid();
     const createdAt = new Date().toISOString();
 
@@ -186,7 +185,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
 
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const db = c.get("db");
+    const db = getDb(c);
 
     const existing = await db
       .select()
@@ -239,7 +238,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
     }
 
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = getDb(c);
 
     const existing = await db
       .select()
@@ -272,7 +271,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
     }
 
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = getDb(c);
 
     const record = await db
       .select()
@@ -314,7 +313,7 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
     }
 
     const { start, end } = c.req.valid("query");
-    const db = c.get("db");
+    const db = getDb(c);
 
     const conditions = [];
     if (start) conditions.push(gte(schema.socialQueue.scheduledFor, start));

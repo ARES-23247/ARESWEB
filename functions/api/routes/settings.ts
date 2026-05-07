@@ -12,6 +12,7 @@ import {
   MAX_INPUT_LENGTHS,
   getDbSettings,
   rateLimitMiddleware,
+  getDb,
 } from "../middleware";
 import {
   getSettingsRoute,
@@ -56,7 +57,7 @@ settingsRouter.openapi(getSettingsRoute, typedHandler<typeof getSettingsRoute>(a
 }));
 
 settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const body = c.req.valid("json");
     const validationResult = settingsSchema.safeParse(body);
@@ -102,7 +103,7 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
 }));
 
 settingsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
       db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
@@ -164,7 +165,7 @@ const SCHEMA_MAP: Record<string, any> = {
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
 settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const SAFE_TABLES = [
       "posts", "events", "docs", "docs_history", "docs_feedback",

@@ -5,7 +5,7 @@ import { eq, desc, inArray, sum } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser } from "../middleware";
+import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser, getDb } from "../middleware";
 import * as financeRoutes from "../../../shared/routes/finance";
 
 
@@ -20,7 +20,7 @@ financeRouter.use("*", rateLimitMiddleware(30, 60));
 financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof financeRoutes.getSummaryRoute>(async (c) => {
   try {
     const { season_id } = c.req.valid("query");
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     let latestSeasonId: number | undefined | null = season_id;
     if (!latestSeasonId) {
@@ -68,7 +68,7 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
 financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof financeRoutes.listPipelineRoute>(async (c) => {
   try {
     const { season_id } = c.req.valid("query");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     let queryBuilder = db.select().from(schema.sponsorshipPipeline).$dynamic();
     if (season_id) {
       queryBuilder = queryBuilder.where(eq(schema.sponsorshipPipeline.seasonId, Number(season_id)));
@@ -100,7 +100,7 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
 financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof financeRoutes.savePipelineRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for pipeline modifications
@@ -203,7 +203,7 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
 financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof financeRoutes.deletePipelineRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     await db.delete(schema.sponsorshipPipeline).where(eq(schema.sponsorshipPipeline.id, id)).run();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
     return c.json({ success: true } as any, 200 as any);
@@ -217,7 +217,7 @@ financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof fin
 financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof financeRoutes.listTransactionsRoute>(async (c) => {
   try {
     const { season_id, type } = c.req.valid("query");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     let queryBuilder = db.select().from(schema.financeTransactions).$dynamic();
     if (season_id) {
       queryBuilder = queryBuilder.where(eq(schema.financeTransactions.seasonId, season_id));
@@ -244,7 +244,7 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
 financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof financeRoutes.saveTransactionRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for transaction modifications
@@ -297,7 +297,7 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
 financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof financeRoutes.deleteTransactionRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const tx = await db
       .select({ receiptUrl: schema.financeTransactions.receiptUrl })
       .from(schema.financeTransactions)

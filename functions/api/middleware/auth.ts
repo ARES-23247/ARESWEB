@@ -1,9 +1,7 @@
 import { Context, Next } from "hono";
 import { getAuth } from "../../utils/auth";
 import { eq } from "drizzle-orm";
-import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
-import * as relations from "../../../src/db/relations";
 import { AppEnv, UserRole, SessionUser } from "./utils";
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
@@ -42,16 +40,16 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   const role = rawRole.toLowerCase() as string;
 
   // EFF-05: Store session in context so handlers don't need to re-fetch
-  const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
+  const db: DrizzleDB = c.get("db");
   const profile = await db.select({
     nickname: schema.userProfiles.nickname,
     member_type: schema.userProfiles.memberType
   })
   .from(schema.userProfiles)
   .where(eq(schema.userProfiles.userId, session.user.id))
-  .executeTakeFirst();
+  .get();
 
-  const memberType = profile?.member_type || profile?.memberType || "student";
+  const memberType = profile?.member_type || "student";
   const nickname = profile?.nickname || "ARES Member";
 
   // Authors and Adult Leaders can do everything EXCEPT manage users
@@ -116,14 +114,14 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (session && session.user) {
       // Fetch member_type and nickname from profile
-      const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
+      const db: DrizzleDB = c.get("db");
       const profile = await db.select({
         nickname: schema.userProfiles.nickname,
         member_type: schema.userProfiles.memberType
       })
       .from(schema.userProfiles)
       .where(eq(schema.userProfiles.userId, session.user.id))
-      .executeTakeFirst();
+      .get();
 
       const sessionUser = {
         id: session.user.id,
@@ -133,7 +131,7 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
         image: session.user.image,
         // WR-03: Normalize role to lowercase for consistent comparison
         role: ((session.user as { role?: string }).role || UserRole.UNVERIFIED).toLowerCase() as string,
-        member_type: profile?.member_type || profile?.memberType || "student",
+        member_type: profile?.member_type || "student",
       };
       // WR-02: Cache sessionUser in context so subsequent getSessionUser calls don't re-fetch
       c.set("sessionUser", sessionUser);

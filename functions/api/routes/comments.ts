@@ -61,7 +61,7 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
         eq(schema.comments.isDeleted, 0)
       ))
       .orderBy(asc(schema.comments.createdAt))
-      .execute();
+      .all();
 
     const comments = results.map((r) => ({
       id: String(r.id),
@@ -125,7 +125,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
         content,
         createdAt: new Date().toISOString()
       })
-      .execute();
+      .run();
 
     const social = await getSocialConfig(c);
     const zulipStream = social.ZULIP_COMMENT_STREAM || "website-discussion";
@@ -138,14 +138,14 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
         `**${user.name || 'ARES Member'}** commented on ${targetType} \`${targetId}\`:\n\n${content}`
       );
       if (msgId) {
-        await db.update(schema.comments).set({ zulipMessageId: String(msgId) }).where(eq(schema.comments.id, id)).execute();
+        await db.update(schema.comments).set({ zulipMessageId: String(msgId) }).where(eq(schema.comments.id, id)).run();
       }
     })().catch((err: Error) => console.error("[Comments:ZulipSync] Error", err)));
 
     if (targetType === 'post') {
-      const row = await db.select({ cf_email: schema.posts.cfEmail }).from(schema.posts).where(eq(schema.posts.slug, targetId)).executeTakeFirst();
+      const row = await db.select({ cf_email: schema.posts.cfEmail }).from(schema.posts).where(eq(schema.posts.slug, targetId)).get();
       if (row?.cf_email && row.cf_email !== user.email) {
-        const author = await db.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, row.cf_email)).executeTakeFirst();
+        const author = await db.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, row.cf_email)).get();
         if (author) {
           c.executionCtx.waitUntil(emitNotification(c, {
             userId: String(author.id),
@@ -190,7 +190,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
     const row = await db.select({
       user_id: schema.comments.userId,
       zulip_message_id: schema.comments.zulipMessageId
-    }).from(schema.comments).where(eq(schema.comments.id, id)).executeTakeFirst();
+    }).from(schema.comments).where(eq(schema.comments.id, id)).get();
     if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
 
     const isOwner = row.user_id === user.id;
@@ -201,7 +201,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
     await db.update(schema.comments)
       .set({ content })
       .where(eq(schema.comments.id, id))
-      .execute();
+      .run();
 
     // IN-08: Audit log comment updates
     c.executionCtx.waitUntil(logAuditAction(c, "UPDATE_COMMENT", "comments", id, `Updated comment ${id} by ${user.name}`));
@@ -233,7 +233,7 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
     const row = await db.select({
       user_id: schema.comments.userId,
       zulip_message_id: schema.comments.zulipMessageId
-    }).from(schema.comments).where(eq(schema.comments.id, id)).executeTakeFirst();
+    }).from(schema.comments).where(eq(schema.comments.id, id)).get();
     if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
 
     const isOwner = row.user_id === user.id;
@@ -244,7 +244,7 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
     await db.update(schema.comments)
       .set({ isDeleted: 1 })
       .where(eq(schema.comments.id, id))
-      .execute();
+      .run();
 
     // IN-08: Audit log comment deletion
     c.executionCtx.waitUntil(logAuditAction(c, "DELETE_COMMENT", "comments", id, `Deleted comment ${id} by ${user.name}`));

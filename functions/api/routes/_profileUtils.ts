@@ -117,10 +117,10 @@ export async function upsertProfile(
   const { userId: _, ...updateSet } = values;
 
   await db.insert(schema.userProfiles)
-    .values(values)
+    .values(values as typeof schema.userProfiles.$inferInsert)
     .onConflictDoUpdate({
       target: schema.userProfiles.userId,
-      set: updateSet
+      set: updateSet as typeof schema.userProfiles.$inferInsert
     });
 }
 

@@ -1,10 +1,9 @@
 import { typedHandler } from "../utils/handler";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import {
@@ -39,7 +38,7 @@ sponsorsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 // Get all public sponsors
 sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = getDb(c);
     const results = await db
       .select({
         id: schema.sponsors.id,
@@ -76,7 +75,7 @@ sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(a
 sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) => {
   try {
     const { token } = c.req.valid("param");
-    const db = c.get("db");
+    const db = getDb(c);
     const tokens = await db
       .select({ sponsorId: schema.sponsorTokens.sponsorId })
       .from(schema.sponsorTokens)
@@ -147,7 +146,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
 // Admin list all sponsors
 sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSponsorsRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = getDb(c);
     const sponsors = await db.select({
         id: schema.sponsors.id,
         name: schema.sponsors.name,
@@ -182,7 +181,7 @@ sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSpon
 sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db");
+    const db = getDb(c);
     const id = body.id || crypto.randomUUID();
 
     if (body.id) {
@@ -226,7 +225,7 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
 sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = getDb(c);
 
     await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", id));
@@ -240,7 +239,7 @@ sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRout
 // Get admin tokens
 sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = getDb(c);
     const results = await db
       .select({
         token: schema.sponsorTokens.token,
@@ -272,7 +271,7 @@ sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRo
 sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRoute>(async (c) => {
   try {
     const { sponsor_id } = c.req.valid("json");
-    const db = c.get("db");
+    const db = getDb(c);
 
     const token = crypto.randomUUID();
     await db.insert(schema.sponsorTokens).values({ token, sponsorId: sponsor_id }).run();

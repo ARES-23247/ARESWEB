@@ -3,10 +3,9 @@ import { typedHandler } from "../utils/handler";
  
 import { eq, desc, and, inArray, isNotNull, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, logSystemError, ensureAdmin } from "../middleware";
+import { AppEnv, logSystemError, ensureAdmin, getDb } from "../middleware";
 import Stripe from "stripe";
 import { sendZulipMessage } from "../../utils/zulip";
 import {
@@ -48,7 +47,7 @@ storeRouter.post("/webhook", async (c) => {
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
-        const db = c.get("db") as any;
+        const db = getDb(c);
 
         // Fulfill order
         const metadata = session.metadata;
@@ -92,7 +91,7 @@ storeRouter.post("/webhook", async (c) => {
 
       return c.json({ success: true }, 200);
     } catch (err: unknown) {
-      logSystemError(c.get("db") as any, "webhook_error", String(err));
+      logSystemError(getDb(c), "webhook_error", String(err));
       return c.json({ error: "Webhook fulfillment failed" }, 500);
     }
   }
@@ -104,7 +103,7 @@ storeRouter.use("/orders", ensureAdmin);
 
 storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const products = await db
       .select()
       .from(schema.products)
@@ -141,7 +140,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     // Fetch product details
     const productIds = items.map((i: { productId: string }) => i.productId);
@@ -210,7 +209,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
 
 storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const orders = await db
       .select()
       .from(schema.orders)
@@ -245,7 +244,7 @@ storeRouter.openapi(updateOrderStatusRoute, typedHandler<typeof updateOrderStatu
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     await db.update(schema.orders).set({ status: body.fulfillment_status }).where(eq(schema.orders.id, id)).run();
     return c.json({ success: true }, 200);
   } catch (err: unknown) {

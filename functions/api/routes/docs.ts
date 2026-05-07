@@ -632,7 +632,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
             roomId: `doc_${slug}`,
             content: content,
             createdBy: email,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString() as any
           })
           .run()
       );

@@ -1,8 +1,7 @@
 import "@testing-library/jest-dom";
 import { server } from "./mocks/server";
-import { beforeEach } from "vitest";
 
-// Start MSW Server
+// Start MSW Server - runs immediately when setup file loads
 server.listen({ onUnhandledRequest: "warn" });
 
 // Reset handlers after each test to ensure test isolation
@@ -56,11 +55,6 @@ export const clearTestCache = () => cacheStores.clear();
     };
   },
 };
-
-// Clear cache before each test to prevent cached responses from interfering with error tests
-beforeEach(() => {
-  clearTestCache();
-});
 
 // Mock ExecutionContext for Hono request testing
 export const mockExecutionContext = {

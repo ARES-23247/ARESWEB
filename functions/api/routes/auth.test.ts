@@ -4,7 +4,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { mockExecutionContext, createMockDrizzle, createDrizzleProxy } from "../../../src/test/utils";
 import type { TestEnv, MockDrizzle } from "../../../src/test/types";
-import type { DrizzleProxy } from "../../../src/test/mocks";
 import authRouter from "./auth";
 import * as shared from "../middleware";
 import * as authUtils from "../../utils/auth";
@@ -32,7 +31,7 @@ describe("Auth Router", () => {
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb) as DrizzleProxy);
+      c.set("db", createDrizzleProxy(mockDb) as any);
       await next();
     });
     app.route("/", authRouter);

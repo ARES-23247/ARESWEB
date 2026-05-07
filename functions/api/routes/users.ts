@@ -5,7 +5,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, desc, lt } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 
-import { AppEnv, ensureAdmin, logAuditAction, parsePagination } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, parsePagination, getDb } from "../middleware";
 import { upsertProfile } from "./_profileUtils";
 import { decrypt } from "../../utils/crypto";
 import {
@@ -26,7 +26,7 @@ usersRouter.use("/admin/*", ensureAdmin);
 
 usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const { limit, cursor } = parsePagination(c, 50, 100);
 
     const results = await db.query.user.findMany({
@@ -99,7 +99,7 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
 usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     
     const row = await db.query.user.findFirst({
       columns: {
@@ -183,7 +183,7 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
       return c.json({ error: "Invalid member_type value" }, 400);
     }
 
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     if (role) {
       await db
@@ -253,7 +253,7 @@ usersRouter.openapi(updateUserProfileRoute, typedHandler<typeof updateUserProfil
 usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     
     const user = await db.query.user.findFirst({
       columns: { id: true, name: true, email: true, image: true, role: true },
@@ -379,7 +379,7 @@ usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRou
 usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     // Atomicity Fix: Delete all related records in parallel, then the user
     await Promise.all([

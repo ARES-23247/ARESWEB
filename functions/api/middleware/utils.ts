@@ -65,7 +65,7 @@ export type Bindings = {
 export type Variables = {
   sessionUser: SessionUser;
   socialConfig?: SocialConfig;
-  db: DrizzleD1Database<typeof schema & typeof relations>;
+  db: DrizzleDB;
   env: Bindings;
   requestId?: string;
 };
@@ -82,7 +82,7 @@ export type { DrizzleDB };
  * Type-safe helper to get the database from Hono context.
  * Use this instead of `c.get("db") as any` to avoid lint errors.
  */
-export function getDb(c: Context<AppEnv>): DrizzleD1Database<typeof schema & typeof relations> {
+export function getDb(c: Context<AppEnv>): DrizzleDB {
   return c.get("db");
 }
 

@@ -3,6 +3,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { indexSiteContent } from "./indexer";
 
+const KV_KEY = "rag_last_indexed";
+
 // ── Mock DB (Kysely chain) ────────────────────────────────────────────────
 interface MockQuery {
   select: ReturnType<typeof vi.fn>;
@@ -39,16 +41,29 @@ const createMockQuery = (): MockQuery => {
   return q;
 };
 
+// Mock the Drizzle relational query API
+interface MockRelationalQuery {
+  settings: {
+    findFirst: ReturnType<typeof vi.fn>;
+  };
+}
+
 interface MockDB {
   selectFrom: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
   insertInto: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
   deleteFrom: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
+  query: MockRelationalQuery;
 }
 
 const mockDb: MockDB = {
   selectFrom: vi.fn(() => createMockQuery()),
   insertInto: vi.fn(() => createMockQuery()),
   deleteFrom: vi.fn(() => createMockQuery()),
+  query: {
+    settings: {
+      findFirst: vi.fn().mockResolvedValue({ key: 'test', value: 'test' }),
+    },
+  },
 };
 
 // ── Mock Workers AI ───────────────────────────────────────────────────────
@@ -85,6 +100,7 @@ describe("indexSiteContent", () => {
     vi.clearAllMocks();
     // Re-set default mock implementations after clearAllMocks
     mockDb.selectFrom.mockImplementation(() => createMockQuery());
+    mockDb.query.settings.findFirst.mockResolvedValue({ key: KV_KEY, value: '2026-01-01T00:00:00Z' });
     mockAi.run.mockResolvedValue({ data: [] });
     mockVectorize.upsert.mockResolvedValue(undefined);
   });
@@ -95,23 +111,21 @@ describe("indexSiteContent", () => {
     expect(result.indexed).toBe(0);
     expect(result.skipped).toBe(0);
     expect(result.errors).toEqual([]);
-    // Should query settings, events, posts, docs, seasons (5 selectFrom calls)
-    expect(mockDb.selectFrom).toHaveBeenCalledTimes(5);
+    // Should query settings via query API and events, posts, docs, seasons (4 selectFrom calls)
+    expect(mockDb.query.settings.findFirst).toHaveBeenCalled();
+    expect(mockDb.selectFrom).toHaveBeenCalledTimes(4);
     // Should NOT call AI or Vectorize when nothing to index
     expect(mockAi.run).not.toHaveBeenCalled();
     expect(mockVectorize.upsert).not.toHaveBeenCalled();
   });
 
   it("indexes events and generates embeddings", async () => {
-    const settingsQuery = createMockQuery();
     const mockQuery = createMockQuery();
     mockQuery.execute.mockResolvedValue([
       { title: "Practice", description: "Weekly practice", date_start: "2026-05-01T18:00:00Z", date_end: null, location: "Lab", category: "practice" },
     ]);
-    // First selectFrom = settings, Second = events
-    mockDb.selectFrom
-      .mockImplementationOnce(() => settingsQuery)
-      .mockImplementationOnce(() => mockQuery);
+    // First selectFrom = events
+    mockDb.selectFrom.mockImplementationOnce(() => mockQuery);
 
     mockAi.run.mockResolvedValue({ data: [[0.1, 0.2, 0.3]] });
 
@@ -125,7 +139,6 @@ describe("indexSiteContent", () => {
   });
 
   it("indexes posts with AST content extraction", async () => {
-    const settingsQuery = createMockQuery();
     const eventsQuery = createMockQuery();
     const postsQuery = createMockQuery();
     postsQuery.execute.mockResolvedValue([
@@ -133,7 +146,6 @@ describe("indexSiteContent", () => {
     ]);
 
     mockDb.selectFrom
-      .mockImplementationOnce(() => settingsQuery) // settings
       .mockImplementationOnce(() => eventsQuery)   // events
       .mockImplementationOnce(() => postsQuery);   // posts
 
@@ -146,8 +158,7 @@ describe("indexSiteContent", () => {
   });
 
   it("indexes docs with incremental timestamp filter", async () => {
-    const settingsQuery = createMockQuery();
-    settingsQuery.executeTakeFirst.mockResolvedValue({ value: "2026-04-29T00:00:00Z" });
+    mockDb.query.settings.findFirst.mockResolvedValue({ key: KV_KEY, value: "2026-04-29T00:00:00Z" });
 
     const eventsQuery = createMockQuery();
     const postsQuery = createMockQuery();
@@ -157,7 +168,6 @@ describe("indexSiteContent", () => {
     ]);
 
     mockDb.selectFrom
-      .mockImplementationOnce(() => settingsQuery)
       .mockImplementationOnce(() => eventsQuery)
       .mockImplementationOnce(() => postsQuery)
       .mockImplementationOnce(() => docsQuery);
@@ -168,34 +178,27 @@ describe("indexSiteContent", () => {
 
     expect(result.indexed).toBe(1);
     // Verify incremental: D1 setting was read
-    expect(settingsQuery.executeTakeFirst).toHaveBeenCalled();
+    expect(mockDb.query.settings.findFirst).toHaveBeenCalled();
     // Verify the docs query chain got a where("updated_at", ">", ...) call
     expect(docsQuery.where).toHaveBeenCalled();
   });
 
   it("force mode skips D1 timestamp check", async () => {
-    const settingsQuery = createMockQuery();
-    mockDb.selectFrom.mockImplementationOnce(() => settingsQuery);
-
     const result = await indexSiteContent(mockDb as any, mockAi as any, mockVectorize as any, { force: true });
 
     // DB should NOT be queried for settings in force mode
-    expect(settingsQuery.executeTakeFirst).not.toHaveBeenCalled();
+    expect(mockDb.query.settings.findFirst).not.toHaveBeenCalled();
     expect(result.indexed).toBe(0); // no data in mock DB
   });
 
   it("handles DB errors gracefully per-section", async () => {
-    const settingsQuery = createMockQuery();
-    settingsQuery.executeTakeFirst.mockResolvedValue(null);
+    mockDb.query.settings.findFirst.mockResolvedValue(null);
 
     const failQuery = createMockQuery();
     failQuery.execute.mockRejectedValue(new Error("DB connection lost"));
 
-    // settings works, but all 4 indexing queries fail
-    mockDb.selectFrom.mockImplementation((table?: string) => {
-      if (table === "settings") return settingsQuery;
-      return failQuery;
-    });
+    // All 4 indexing queries fail
+    mockDb.selectFrom.mockReturnValue(failQuery);
 
     const result = await indexSiteContent(mockDb as any, mockAi as any, mockVectorize as any);
 
@@ -208,15 +211,12 @@ describe("indexSiteContent", () => {
   });
 
   it("handles embedding API returning mismatched results", async () => {
-    const settingsQuery = createMockQuery();
     const eventsQuery = createMockQuery();
     eventsQuery.execute.mockResolvedValue([
       { title: "Event A", description: "Test", date_start: "2026-05-01", date_end: null, location: "Lab", category: "practice" },
       { title: "Event B", description: "Test", date_start: "2026-05-02", date_end: null, location: "Lab", category: "meeting" },
     ]);
-    mockDb.selectFrom
-      .mockImplementationOnce(() => settingsQuery)
-      .mockImplementationOnce(() => eventsQuery);
+    mockDb.selectFrom.mockImplementationOnce(() => eventsQuery);
 
     // Return only 1 embedding for 2 documents
     mockAi.run.mockResolvedValue({ data: [[0.1, 0.2]] });
@@ -228,14 +228,11 @@ describe("indexSiteContent", () => {
   });
 
   it("handles vectorize upsert failure", async () => {
-    const settingsQuery = createMockQuery();
     const eventsQuery = createMockQuery();
     eventsQuery.execute.mockResolvedValue([
       { title: "Event", description: "x", date_start: "2026-05-01", date_end: null, location: "Lab", category: "practice" },
     ]);
-    mockDb.selectFrom
-      .mockImplementationOnce(() => settingsQuery)
-      .mockImplementationOnce(() => eventsQuery);
+    mockDb.selectFrom.mockImplementationOnce(() => eventsQuery);
 
     mockAi.run.mockResolvedValue({ data: [[0.1, 0.2]] });
     mockVectorize.upsert.mockRejectedValue(new Error("Vectorize quota exceeded"));
@@ -249,7 +246,6 @@ describe("indexSiteContent", () => {
 
 
   it("indexes seasons with published status filter", async () => {
-    const settingsQuery = createMockQuery();
     const eventsQuery = createMockQuery();
     const postsQuery = createMockQuery();
     const docsQuery = createMockQuery();
@@ -262,11 +258,10 @@ describe("indexSiteContent", () => {
     mockDb.selectFrom.mockImplementation(() => {
       callCount++;
       switch (callCount) {
-        case 1: return settingsQuery;
-        case 2: return eventsQuery;
-        case 3: return postsQuery;
-        case 4: return docsQuery;
-        case 5: return seasonsQuery;
+        case 1: return eventsQuery;
+        case 2: return postsQuery;
+        case 3: return docsQuery;
+        case 4: return seasonsQuery;
         default: return createMockQuery();
       }
     });

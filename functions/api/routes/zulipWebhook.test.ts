@@ -3,6 +3,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipWebhookRouter from "./zulipWebhook";
+import { mockExecutionContext, flushWaitUntil, createMockDrizzle } from "../../../src/test/utils";
+import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 
 
 describe("Zulip Webhook Router", () => {
@@ -19,7 +21,7 @@ describe("Zulip Webhook Router", () => {
   };
 
   let testApp: Hono<TestEnv>;
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
 
   type ZulipPayloadOverrides = {
     token?: string;
@@ -59,30 +61,11 @@ describe("Zulip Webhook Router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation((cb: any) => {
-        if (typeof cb === 'function') {
-          cb(({} as any));
-        }
-        return mockDb;
-      }),
-      where: vi.fn().mockReturnThis(),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      execute: vi.fn().mockResolvedValue([]),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      leftJoin: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-    };
+    mockDb = createMockDrizzle();
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb as any);
       // Ensure ZULIP_WEBHOOK_TOKEN is in env for getSocialConfig
       (c.env as any).ZULIP_WEBHOOK_TOKEN = "test-token";
       await next();
@@ -151,7 +134,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should respond to !events with no events", async () => {
-    (mockDb.execute ).mockResolvedValueOnce([]);
+    (mockDb.execute as any).mockResolvedValueOnce([]);
     const payload = createZulipPayload({ message: { content: "!events" } });
     const req = new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -160,7 +143,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should respond to !stats", async () => {
-    mockDb.executeTakeFirst.mockResolvedValue({ count: 5 });
+    mockDb.get.mockResolvedValueOnce({ count: 5 });
     const payload = createZulipPayload({ message: { content: "!stats" } });
     const req = new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -169,7 +152,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should respond to !inquiries with pending inquiries", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 2 });
+    mockDb.get.mockResolvedValueOnce({ count: 2 });
     const payload = createZulipPayload({ message: { content: "!inquiries" } });
     const req = new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -178,7 +161,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should respond to !inquiries with no pending inquiries", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0 });
+    mockDb.get.mockResolvedValueOnce({ count: 0 });
     const payload = createZulipPayload({ message: { content: "!inquiries" } });
     const req = new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -195,7 +178,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should return usage for !broadcast with missing args", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ role: "admin" });
+    mockDb.get.mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: "!broadcast general" } });
     const req = new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -204,7 +187,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should respond to !broadcast with valid args and handle successful send", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ role: "admin" });
+    mockDb.get.mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", sender_full_name: "Alice", content: "!broadcast general Hello world" } });
     const req = new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -213,7 +196,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should respond to !broadcast and catch send failure", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ role: "admin" });
+    mockDb.get.mockResolvedValueOnce({ role: "admin" });
     const { sendZulipMessage } = await import("../../utils/zulipSync");
     vi.mocked(sendZulipMessage).mockRejectedValueOnce(new Error("Zulip fail"));
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", sender_full_name: "Alice", content: "!broadcast general Fail test" } });
@@ -242,7 +225,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should deny !rcv create if not admin", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.get.mockResolvedValueOnce(null);
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: "!rcv create Title Opt1 Opt2" } });
     const req = new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
     const res = await testApp.request(req, {}, env, mockExecutionContext);
@@ -276,7 +259,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !tasks when empty", async () => {
-    mockDb.execute = vi.fn().mockResolvedValue([]);
+    mockDb.all.mockResolvedValueOnce([]);
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !tasks' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -284,11 +267,11 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !tasks with items", async () => {
-    mockDb.execute = vi.fn().mockResolvedValue([
+    mockDb.all.mockResolvedValueOnce([
       { title: "Task 1", status: "pending", due_date: "2026-01-01" },
       { title: "Task 2", status: "in_progress", due_date: null }
     ]);
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 2 });
+    mockDb.get.mockResolvedValueOnce({ count: 2 });
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !tasks' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -304,7 +287,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !task create with valid sender email", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "user123" });
+    mockDb.get.mockResolvedValueOnce({ id: "user123" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", sender_full_name: "Test User", content: '@**ARES Bot** !task new task' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -319,7 +302,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !task completion", async () => {
-    mockDb.execute = vi.fn().mockResolvedValue([{ id: "123", title: "Test Task" }]); // openTasks
+    mockDb.all.mockResolvedValueOnce([{ id: "123", title: "Test Task" }]); // openTasks
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !task 1 done' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -327,7 +310,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !stats", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ count: 5 });
+    mockDb.get.mockResolvedValueOnce({ count: 5 });
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !stats' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -335,7 +318,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !inquiries", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ count: 2 });
+    mockDb.get.mockResolvedValueOnce({ count: 2 });
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !inquiries' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -343,7 +326,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv create", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ role: "admin" });
+    mockDb.get.mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv create "Best Robot" "Option 1" "Option 2"' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -351,7 +334,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv create with missing title", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ role: "admin" });
+    mockDb.get.mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv create' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -359,7 +342,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv status", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({
+    mockDb.get.mockResolvedValueOnce({
       value: JSON.stringify({ title: "Best Robot", active: true, options: ["A", "B"], votes: {} })
     });
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !rcv status 12345' } });
@@ -369,7 +352,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv vote", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({
+    mockDb.get.mockResolvedValueOnce({
       value: JSON.stringify({ title: "Best Robot", active: true, options: ["A", "B"], votes: {} })
     });
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !rcv vote 12345 1 2', sender_email: "test@test.com" } });
@@ -379,7 +362,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv vote closed", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({
+    mockDb.get.mockResolvedValueOnce({
       value: JSON.stringify({ title: "Best Robot", active: false, options: ["A", "B"], votes: {} })
     });
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !rcv vote 12345 1 2', sender_email: "test@test.com" } });
@@ -389,7 +372,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv tally", async () => {
-    mockDb.executeTakeFirst = vi.fn()
+    mockDb.get
       .mockResolvedValueOnce({
         value: JSON.stringify({ title: "Best Robot", active: true, options: ["A", "B"], votes: { "test@test.com": [0, 1] } })
       })
@@ -402,7 +385,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle sync comments from verified user", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ id: "1", role: "member" });
+    mockDb.get.mockResolvedValueOnce({ id: "1", role: "member" });
     const payload = createZulipPayload({ 
       message: { content: "Nice post!", sender_email: "test@test.com", type: "stream", topic: "post/test-slug" } 
     });
@@ -412,7 +395,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should ignore sync comments from unverified user", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.get.mockResolvedValueOnce(null);
     const payload = createZulipPayload({ 
       message: { content: "Nice post!", sender_email: "test@test.com", type: "stream", topic: "post/test-slug" } 
     });
@@ -422,7 +405,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle DB error gracefully", async () => {
-    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !stats' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -437,7 +420,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !events", async () => {
-    mockDb.execute = vi.fn().mockResolvedValue([{ title: "Competition", date_start: "2024-01-01" }]);
+    mockDb.all.mockResolvedValueOnce([{ title: "Competition", date_start: "2024-01-01" }]);
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !events' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -445,7 +428,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should block !rcv create without admin role", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue(null); // not admin
+    mockDb.get.mockResolvedValueOnce(null); // not admin
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !rcv create "A" "1" "2"' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -453,7 +436,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle valid !rcv create", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ role: "admin" });
+    mockDb.get.mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv create "Poll" "Opt1" "Opt2"' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -461,7 +444,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should block !rcv tally without admin role", async () => {
-    mockDb.executeTakeFirst = vi.fn()
+    mockDb.get
       .mockResolvedValueOnce({ value: JSON.stringify({ title: "Poll", active: true, options: ["A"], votes: {} }) })
       .mockResolvedValueOnce(null); // not admin
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !rcv tally 12345' } });
@@ -478,7 +461,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv with missing poll", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.get.mockResolvedValueOnce(null);
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !rcv status 12345' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;
@@ -486,7 +469,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv vote without senderEmail", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({
+    mockDb.get.mockResolvedValueOnce({
       value: JSON.stringify({ title: "Poll", active: true, options: ["A", "B"], votes: {} })
     });
     const payload = createZulipPayload({ message: { content: '@**ARES Bot** !rcv vote 12345 1', sender_email: undefined } });
@@ -496,7 +479,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv vote invalid ranking", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({
+    mockDb.get.mockResolvedValueOnce({
       value: JSON.stringify({ title: "Poll", active: true, options: ["A", "B"], votes: {} })
     });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv vote 12345 3' } });
@@ -506,7 +489,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv vote duplicates", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({
+    mockDb.get.mockResolvedValueOnce({
       value: JSON.stringify({ title: "Poll", active: true, options: ["A", "B"], votes: {} })
     });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv vote 12345 1 1' } });
@@ -516,7 +499,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv tally with already closed poll", async () => {
-    mockDb.executeTakeFirst = vi.fn()
+    mockDb.get
       .mockResolvedValueOnce({ value: JSON.stringify({ title: "Poll", active: false, options: ["A"], votes: {} }) })
       .mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv tally 12345' } });
@@ -526,7 +509,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv tally with no votes", async () => {
-    mockDb.executeTakeFirst = vi.fn()
+    mockDb.get
       .mockResolvedValueOnce({ value: JSON.stringify({ title: "Poll", active: true, options: ["A"], votes: {} }) })
       .mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv tally 12345' } });
@@ -536,7 +519,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle unknown !rcv subcommand", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValueOnce({
+    mockDb.get.mockResolvedValueOnce({
       value: JSON.stringify({ title: "Poll", active: true, options: ["A"], votes: {} })
     });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv unknown 12345' } });
@@ -546,7 +529,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv tally with tie and eliminations", async () => {
-    mockDb.executeTakeFirst = vi.fn()
+    mockDb.get
       .mockResolvedValueOnce({ value: JSON.stringify({ title: "Poll", active: true, options: ["A", "B"], votes: { "u1": [0], "u2": [1] } }) })
       .mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv tally 12345' } });
@@ -556,7 +539,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !rcv tally with candidate elimination", async () => {
-    mockDb.executeTakeFirst = vi.fn()
+    mockDb.get
       .mockResolvedValueOnce({ value: JSON.stringify({ title: "Poll", active: true, options: ["A", "B", "C"], votes: { "u1": [0], "u2": [0], "u3": [1], "u4": [2], "u5": [2] } }) })
       .mockResolvedValueOnce({ role: "admin" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", content: '@**ARES Bot** !rcv tally 12345' } });
@@ -573,7 +556,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle comment sync", async () => {
-    mockDb.executeTakeFirst = vi.fn().mockResolvedValue({ id: "user1", role: "admin" });
+    mockDb.get.mockResolvedValue({ id: "user1", role: "admin" });
     const payload = createZulipPayload({ 
       message: { type: "stream", topic: "post/test-post", sender_email: "a@a.com", content: "Great post!" } 
     });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
-import { getDbSettings, checkPersistentRateLimit, logAuditAction } from "../../middleware";
+import { getDbSettings, checkPersistentRateLimit, logAuditAction, getDb } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
@@ -109,7 +109,7 @@ export const mediaHandlers = {
   getMedia: async (c: any) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
-    const rl = await checkPersistentRateLimit(c.get("db") as any, `media_list_${ip}`, ua, 30, 60);
+    const rl = await checkPersistentRateLimit(getDb(c), `media_list_${ip}`, ua, 30, 60);
     if (!rl) {
       return { status: 429, body: { error: "Rate limit exceeded", media: [] } };
     }
@@ -125,7 +125,7 @@ export const mediaHandlers = {
         if (cached) return cached;
       }
 
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const [objects, results] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
         db.select({
@@ -173,7 +173,7 @@ export const mediaHandlers = {
   },
   adminList: async (c: any) => {
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const [objects, results] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
         db.select({
@@ -271,7 +271,7 @@ export const mediaHandlers = {
         }
       }
 
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.insert(schema.mediaTags)
         .values({ key, folder: finalFolder, tags: altText })
         .onConflictDoUpdate({
@@ -309,13 +309,13 @@ export const mediaHandlers = {
         await c.env.ARES_STORAGE.put(newKey, object.body, { httpMetadata: { contentType: object.httpMetadata?.contentType } });
         await c.env.ARES_STORAGE.delete(key);
 
-        const db = c.get("db") as any;
+        const db = getDb(c);
         await db.update(schema.mediaTags)
           .set({ key: newKey, folder })
           .where(eq(schema.mediaTags.key, key))
           .execute();
       } else {
-        const db = c.get("db") as any;
+        const db = getDb(c);
         await db.update(schema.mediaTags)
           .set({ key: newKey, folder })
           .where(eq(schema.mediaTags.key, key))
@@ -335,7 +335,7 @@ export const mediaHandlers = {
       if (c.env.ARES_STORAGE) {
         await c.env.ARES_STORAGE.delete(key);
       }
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.delete(schema.mediaTags).where(eq(schema.mediaTags.key, key)).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
       return { status: 200, body: { success: true } };

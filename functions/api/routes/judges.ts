@@ -4,7 +4,7 @@ import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit } from "../middleware";
+import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit, getDb } from "../middleware";
 import {
   judgeLoginRoute,
   judgePortfolioRoute,
@@ -41,7 +41,7 @@ const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
 judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
@@ -86,7 +86,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
 }));
 
 judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const { "x-judge-code": code } = c.req.valid("header");
     if (!code) {
@@ -207,7 +207,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
 judgesRouter.use("/admin/*", ensureAdmin);
 
 judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const results = await db.select({
       id: schema.judgeAccessCodes.id,
@@ -231,7 +231,7 @@ judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRout
 }));
 
 judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const { label, expiresAt } = c.req.valid("json");
     const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
@@ -258,7 +258,7 @@ judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRo
 }));
 
 judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const { id } = c.req.valid("param");
     await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();

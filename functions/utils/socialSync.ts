@@ -12,7 +12,7 @@ import { dispatchTwitterPhoto } from './social/twitter';
 import { dispatchFacebook, dispatchMetaPhoto } from './social/meta';
 import { logSystemError, DrizzleDB } from '../api/middleware';
 import pRetry from 'p-retry';
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import * as schema from "../../src/db/schema";
 import { SocialQueuePost } from "../../shared/routes/socialQueue";
 
@@ -92,7 +92,7 @@ export async function dispatchSocials(
           ZULIP_BOT_EMAIL: config.ZULIP_BOT_EMAIL,
           ZULIP_API_KEY: config.ZULIP_API_KEY,
           ZULIP_URL: config.ZULIP_URL,
-          DB: db,
+          DB: db as DrizzleDB,
         },
         "announcements",
         "Website Updates",
@@ -181,9 +181,8 @@ export async function dispatchQueuePost(
           thumbnail: schema.posts.thumbnail
         })
         .from(schema.posts)
-        .where(eq(schema.posts.slug, post.linked_id))
-        .where(eq(schema.posts.isDeleted, 0))
-        .executeTakeFirst();
+        .where(and(eq(schema.posts.slug, post.linked_id), eq(schema.posts.isDeleted, 0)))
+        .get();
       if (p) {
         payload.title = p.title;
         payload.url = `${baseUrl}/blog/${p.slug}`;
@@ -198,9 +197,8 @@ export async function dispatchQueuePost(
           description: schema.docs.description
         })
         .from(schema.docs)
-        .where(eq(schema.docs.slug, post.linked_id))
-        .where(eq(schema.docs.isDeleted, 0))
-        .executeTakeFirst();
+        .where(and(eq(schema.docs.slug, post.linked_id), eq(schema.docs.isDeleted, 0)))
+        .get();
       if (d) {
         payload.title = d.title;
         payload.url = `${baseUrl}/docs/${d.slug}`;
@@ -215,9 +213,8 @@ export async function dispatchQueuePost(
           coverImage: schema.events.coverImage
         })
         .from(schema.events)
-        .where(eq(schema.events.id, post.linked_id))
-        .where(eq(schema.events.isDeleted, 0))
-        .executeTakeFirst();
+        .where(and(eq(schema.events.id, post.linked_id), eq(schema.events.isDeleted, 0)))
+        .get();
       if (e) {
         payload.title = e.title;
         payload.url = `${baseUrl}/events/${e.id}`;

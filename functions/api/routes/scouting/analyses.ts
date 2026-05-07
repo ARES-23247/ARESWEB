@@ -4,7 +4,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { AppEnv } from "../../middleware";
+import { AppEnv, getDb } from "../../middleware";
 import { listScoutingAnalysesRoute } from "../../../../shared/routes/scouting";
 
 
@@ -13,7 +13,7 @@ const analysesRouter = new OpenAPIHono<AppEnv>();
 
 analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScoutingAnalysesRoute>(async (c) => {
   const { teamNumber: teamNumberStr, eventKey } = c.req.valid("query");
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   try {
     let query = db.select().from(schema.scoutingAnalyses).$dynamic();

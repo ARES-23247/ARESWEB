@@ -2,14 +2,11 @@ import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, desc, asc, and } from "drizzle-orm";
-import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
-import * as relations from "../../../src/db/relations";
 import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../shared/routes/awards";
 
-type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
 
 
 

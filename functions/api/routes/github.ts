@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { AppEnv, ensureAdmin, getSocialConfig, checkPersistentRateLimit } from "../middleware";
+import { AppEnv, ensureAdmin, getSocialConfig, checkPersistentRateLimit, getDb } from "../middleware";
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem } from "../../utils/githubProjects";
 import { getBoardRoute, createItemRoute, getActivityRoute } from "../../../shared/routes/github";
 import { siteConfig } from "../../utils/site.config";
@@ -22,7 +22,8 @@ interface WeekData {
 githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as any, `github-activity:${ip}`, ua, 10, 60))) {
+  const db = getDb(c);
+  if (!(await checkPersistentRateLimit(db, `github-activity:${ip}`, ua, 10, 60))) {
     return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
 

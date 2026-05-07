@@ -89,7 +89,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
 
     const yearMonth = new Date().toISOString().slice(0, 7);
 
-    await db.execute(sql`
+    await (db as any).execute(sql`
       INSERT INTO sponsor_metrics (id, sponsor_id, year_month, clicks, impressions)
       VALUES (${crypto.randomUUID()}, ${sponsor_id}, ${yearMonth}, 1, 0)
       ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = sponsor_metrics.clicks + 1
@@ -115,12 +115,12 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       activityData,
     ] = await Promise.all([
       db.select({ total: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).get().catch(() => ({ total: 0 })),
-      db.execute(sql`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ unique_count: 0 })),
+      (db as any).execute(sql`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ unique_count: 0 })),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all().catch(() => []),
       db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` }).from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all().catch(() => []),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, user_agent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp }).from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all().catch(() => []),
       db.select({ category: schema.pageAnalytics.category, total: sql<number>`count(${schema.pageAnalytics.category})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.category).all().catch(() => []),
-      db.execute(sql`
+      (db as any).execute(sql`
         SELECT
           date(timestamp, 'localtime') as date,
           COUNT(*) as pageViews
@@ -132,8 +132,8 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
     ]);
 
     const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get().catch(() => ({ total: 0 }));
-    const apiCount = await db.execute(sql`SELECT COUNT(id) as total FROM usage_metrics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ total: 0 }));
-    const latencyData: any = await db.execute(sql`
+    const apiCount = await (db as any).execute(sql`SELECT COUNT(id) as total FROM usage_metrics`).then((r: any) => r.results?.[0] || r.rows?.[0] || r[0]).catch(() => ({ total: 0 }));
+    const latencyData: any = await (db as any).execute(sql`
         SELECT
           date(timestamp, 'localtime') as date,
           AVG(latency_ms) as avg_latency
@@ -208,7 +208,7 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
 analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
   const db = getDb(c);
   try {
-    const results: any = await db.execute(sql`
+    const results: any = await (db as any).execute(sql`
       SELECT 
         u.user_id,
         u.nickname,
@@ -246,7 +246,7 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
 analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
   const db = getDb(c);
   try {
-    const results: any = await db.execute(sql`
+    const results: any = await (db as any).execute(sql`
       SELECT 
         u.id as user_id,
         u.name as first_name,
@@ -327,9 +327,9 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
     const ftsQ = `"${qClean}"*`;
 
     const [postsReq, eventsReq, docsReq]: any[] = await Promise.all([
-      db.execute(sql`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
-      db.execute(sql`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
-      db.execute(sql`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
+      (db as any).execute(sql`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
+      (db as any).execute(sql`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
+      (db as any).execute(sql`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
     ]);
 
     const postsRows = postsReq.results || postsReq.rows || (Array.isArray(postsReq) ? postsReq : []);

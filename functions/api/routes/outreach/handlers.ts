@@ -2,7 +2,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { getSessionUser, logAuditAction } from "../../middleware";
+import { getSessionUser, logAuditAction, getDb } from "../../middleware";
 
 import type {
   listOutreachRoute,
@@ -53,9 +53,9 @@ async function fetchVolunteerEvents(db: any, existingEventIds: string[]) {
   }
 }
 
-export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async (c: any) => {
+export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> = async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const results = await db.select({
         id: schema.outreachLogs.id,
         title: schema.outreachLogs.title,
@@ -107,9 +107,9 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async 
   }
 };
 
-export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute> = async (c: any) => {
+export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute, AppEnv> = async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const results = await db.select({
         id: schema.outreachLogs.id,
         title: schema.outreachLogs.title,
@@ -161,10 +161,10 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
   }
 };
 
-export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async (c: any) => {
+export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> = async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -224,10 +224,10 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async 
   }
 };
 
-export const handleDeleteOutreach: RouteHandler<typeof deleteOutreachRoute> = async (c: any) => {
+export const handleDeleteOutreach: RouteHandler<typeof deleteOutreachRoute, AppEnv> = async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 

@@ -3,7 +3,7 @@ import { typedHandler } from "../../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import * as schema from "../../../../src/db/schema";
-import { AppEnv } from "../../middleware";
+import { AppEnv, getDb } from "../../middleware";
 import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
 
 
@@ -114,7 +114,7 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
 
     // Save to database
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const user = c.get("sessionUser");
       const id = crypto.randomUUID();
       

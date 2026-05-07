@@ -4,6 +4,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../../../shared/types/api";
 import { eq, desc, sum, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
+import { getDb } from "../middleware";
 import { 
 
   getPointsBalanceRoute, 
@@ -27,7 +28,7 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const db = c.get("db");
+    const db = getDb(c);
     const ledger = await db
       .select({ points_delta: schema.pointsLedger.pointsDelta })
       .from(schema.pointsLedger)
@@ -55,7 +56,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const db = c.get("db");
+    const db = getDb(c);
     const history = await db
       .select()
       .from(schema.pointsLedger)
@@ -85,7 +86,7 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const db = c.get("db");
+    const db = getDb(c);
 
     const id = crypto.randomUUID();
 
@@ -112,7 +113,7 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
 
 pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLeaderboardRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = getDb(c);
 
     const results = await db
       .select({

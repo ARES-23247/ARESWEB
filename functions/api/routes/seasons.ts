@@ -4,7 +4,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, desc, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 
-import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware, getDb } from "../middleware";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import {
   listSeasonsRoute,
@@ -30,7 +30,7 @@ seasonsRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
 seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const results = await db
       .select({
         start_year: schema.seasons.startYear,
@@ -73,7 +73,7 @@ seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(as
 
 seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeasonsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const results = await db
       .select({
         start_year: schema.seasons.startYear,
@@ -111,7 +111,7 @@ seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeason
 seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const year = parseInt(id);
     const row = await db
       .select({
@@ -155,7 +155,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSea
 seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailRoute>(async (c) => {
   try {
     const { year } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const yearNum = parseInt(year);
     if (isNaN(yearNum)) return c.json({ error: "Invalid year" }, 404);
 
@@ -287,7 +287,7 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
 seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     const seasonData = body;
     const targetYear = seasonData.original_year || seasonData.start_year;
@@ -358,7 +358,7 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
         logAuditAction(c, "season_created", "seasons", seasonData.start_year.toString(), `Season "${seasonData.start_year}" created`)
       );
     }
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Save] Error", e);
@@ -369,7 +369,7 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
 seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const year = parseInt(id);
     await db
       .update(schema.seasons)
@@ -377,7 +377,7 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
       .where(eq(schema.seasons.startYear, year));
     c.executionCtx.waitUntil(logAuditAction(c, "season_deleted", "seasons", id, `Season "${id}" soft-deleted`));
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Delete] Error", e);
@@ -388,7 +388,7 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
 seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const year = parseInt(id);
     await db
       .update(schema.seasons)
@@ -405,7 +405,7 @@ seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRou
 seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const year = parseInt(id);
     await db
       .delete(schema.seasons)

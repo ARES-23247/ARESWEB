@@ -26,7 +26,7 @@ async function getTBA(path: string, c: HonoContext) {
   const settingsRow = await db.select({ value: schema.settings.value })
     .from(schema.settings)
     .where(eq(schema.settings.key, "TBA_API_KEY"))
-    .executeTakeFirst();
+    .get();
   const apiKey = settingsRow?.value;
   if (!apiKey) throw new Error("TBA_API_KEY missing");
 
@@ -77,7 +77,7 @@ tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(asyn
     const settingsRow = await db.select({ value: schema.settings.value })
       .from(schema.settings)
       .where(eq(schema.settings.key, "FTC_EVENTS_API_KEY"))
-      .executeTakeFirst();
+      .get();
     const apiKey = settingsRow?.value;
     if (!apiKey) throw new Error("FTC_EVENTS_API_KEY missing");
 

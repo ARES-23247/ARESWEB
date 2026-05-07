@@ -1,18 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv } from "../../../src/test/types";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import tbaRouter from "./tba";
 
-interface TBAResponse {
-  success?: boolean;
-  data?: unknown;
-  error?: string;
-  [key: string]: unknown;
-}
-
-type MockKysely = any;
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -31,22 +23,11 @@ describe("Hono Backend - /tba Router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      executeTakeFirst: vi.fn().mockResolvedValue({ value: "test-api-key" }),
-      execute: vi.fn().mockResolvedValue([]),
-      insertInto: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-    };
+    mockDb = createMockDrizzle();
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb);
       c.env.DEV_BYPASS = "true";
       await next();
     });
@@ -63,6 +44,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /rankings/:eventKey - fetches rankings from TBA", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ rankings: [{ team_key: "frc123", rank: 1 }] })
@@ -76,6 +58,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /rankings/:eventKey - handles missing rankings array in response", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({}) // missing rankings array
@@ -93,12 +76,13 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /rankings/:eventKey - handles missing API key", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.get.mockResolvedValueOnce(null);
     const res = await testApp.request("/rankings/2023testMissing", {}, {}, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("GET /matches/:eventKey - fetches matches from TBA", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ([
@@ -115,6 +99,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /matches/:eventKey - handles null matches and missing times", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ([
@@ -135,6 +120,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /matches/:eventKey - handles external API error without cache", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 404
@@ -145,6 +131,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /matches/:eventKey - handles fetch rejection", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockRejectedValueOnce(new Error("Network Error"));
 
     const res = await testApp.request("/matches/2023testReject", {}, {}, mockExecutionContext);
@@ -152,6 +139,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /ftc-events/:season/:eventCode/:type - fetches FTC events", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ events: [{ code: "test" }] })
@@ -164,6 +152,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /ftc-events/:season/:eventCode/:type - uses cache on second hit", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     vi.useFakeTimers();
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -180,12 +169,13 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /ftc-events/:season/:eventCode/:type - handles missing API key", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.get.mockResolvedValueOnce(null);
     const res = await testApp.request("/ftc-events/2023/TEST_NO_KEY/matches", {}, {}, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("GET /ftc-events/:season/:eventCode/:type - handles API error", async () => {
+    mockDb.get.mockResolvedValueOnce({ value: "test-api-key" });
     fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 401
@@ -196,6 +186,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /rankings/:eventKey - tests cache eviction", async () => {
+    mockDb.get.mockResolvedValue({ value: "test-api-key" });
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ rankings: [] })
@@ -206,6 +197,7 @@ describe("Hono Backend - /tba Router", () => {
   });
 
   it("GET /rankings/:eventKey - tests fallback to expired cache on API error", async () => {
+    mockDb.get.mockResolvedValue({ value: "test-api-key" });
     vi.useFakeTimers();
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -224,12 +216,13 @@ describe("Hono Backend - /tba Router", () => {
     });
     const res = await testApp.request("/rankings/2023fallback", {}, {}, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as TBAResponse;
+    const body = await res.json() as any;
     expect((body as any).rankings[0].team_key).toBe("frc999");
     vi.useRealTimers();
   });
 
   it("GET /rankings/:eventKey - uses unexpired cache", async () => {
+    mockDb.get.mockResolvedValue({ value: "test-api-key" });
     vi.useFakeTimers();
     fetchMock.mockResolvedValueOnce({
       ok: true,

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
-import { TestEnv, MockExecutionContext } from "../../../src/test/types";
+import { TestEnv, MockExecutionContext, MockDrizzle } from "../../../src/test/types";
 import { createMockDrizzle } from "../../../src/test/utils";
-import type { DrizzleMock } from "../../../src/test/mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import analyticsRouter from "./analytics";
@@ -33,7 +32,7 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 describe("Analytics Router", () => {
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
   let testApp: Hono<TestEnv>;
   let env: { DB: D1Database; TURNSTILE_SECRET_KEY: string; DEV_BYPASS: string };
 

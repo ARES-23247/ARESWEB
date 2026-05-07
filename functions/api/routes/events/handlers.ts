@@ -9,7 +9,7 @@ import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 
-import { eq, or, and, ne, isNull, inArray, desc, asc } from "drizzle-orm";
+import { eq, or, and, ne, isNull, inArray, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
 import type { SocialConfig } from "../../middleware";

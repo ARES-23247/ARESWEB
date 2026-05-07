@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { TestEnv } from "../../../src/test/types";
+import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 import seasonsRouter from "./seasons";
 
@@ -17,7 +17,7 @@ vi.mock("../middleware", async (importOriginal) => {
 
 describe("Seasons Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
   const env: TestEnv["Bindings"] = { DB: {} as unknown as D1Database };
 
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe("Seasons Router", () => {
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", mockDb as MockDrizzle);
       await next();
     });
     app.route("/", seasonsRouter);

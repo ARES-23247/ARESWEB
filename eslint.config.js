@@ -27,6 +27,7 @@ export default ts.config(
       "src/components/editor/physics/**", // Migrated from .eslintignore
       "migrations/**/*.sql", // Ignore SQL migration files
       "tools/ares-sim-preview/out", // Ignore compiled VSCode extension output
+      ".vite/**", // Ignore Vite cache directory
     ],
   },
   js.configs.recommended,

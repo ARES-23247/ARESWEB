@@ -1,23 +1,57 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv } from "../../../src/test/types";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import { TestEnv, MockDrizzle } from "../../../src/test/types";
+import { getSocialConfig } from "../middleware";
+import { sendZulipMessage } from "../../utils/zulipSync";
 import zulipRouter from "./zulip";
-// import type { DrizzleMock } from "../../../src/test/types";
+
+// Define local types for casting since they might be internal to the router/utils
+type ZulipConfig = {
+  ZULIP_BOT_EMAIL?: string;
+  ZULIP_API_KEY?: string;
+  ZULIP_URL?: string;
+};
+
+type ZulipResponse = {
+  success: boolean;
+  userNames?: Record<string, string>;
+  presence?: any;
+  messages?: any[];
+  missingEmails?: string[];
+  invitedCount?: number;
+};
+
+vi.mock("../middleware", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware")>();
+  return {
+    ...actual,
+    getSocialConfig: vi.fn(),
+    ensureAuth: async (c: any, next: any) => {
+      c.set("sessionUser", { nickname: "TestNick", role: "admin", member_type: "mentor" });
+      await next();
+    },
+    ensureAdmin: async (_c: any, next: any) => await next(),
+  };
+});
+
+vi.mock("../../utils/zulipSync", () => ({
+  sendZulipMessage: vi.fn(),
+}));
 
 describe("Hono Backend - /zulip Router", () => {
   let testApp: Hono<TestEnv>;
   let fetchMock: ReturnType<typeof vi.fn>;
+  let mockDb: MockDrizzle;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
+    mockDb = createMockDrizzle();
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      if (c.env && (c.env).DB) {
-        c.set("db", createDrizzleProxy((c.env).DB as unknown as MockKysely));
-      }
+      c.set("db", mockDb as any);
       await next();
     });
     testApp.route("/", zulipRouter);
@@ -210,26 +244,13 @@ describe("Hono Backend - /zulip Router", () => {
       json: async () => ({ members: [] })
     });
 
-    const mockDb: MockKysely = {
-      selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      execute: vi.fn().mockResolvedValue([
-        { email: "alice@test.com" },
-        { email: "charlie@test.com" }
-      ]),
-      insertInto: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-    };
+    mockDb.all.mockResolvedValueOnce([
+      { email: "alice@test.com" },
+      { email: "charlie@test.com" }
+    ]);
 
-    const res = await testApp.request("/invites/audit", {}, { DB: mockDb }, mockExecutionContext);
-    if (res.status === 500) {
-      console.log(await res.text());
-    }
+    const res = await testApp.request("/invites/audit", {}, { DB: {} as any }, mockExecutionContext);
+    
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
     expect(body.success).toBe(true);

@@ -1,8 +1,7 @@
 import { Hono, Context } from "hono";
-import { AppEnv, logAuditAction } from "./utils";
+import { AppEnv, logAuditAction, getDb } from "./utils";
 import { ensureAdmin } from "./auth";
-import { Kysely, sql } from "kysely";
-import type { DB } from "../../../shared/schemas/database";
+import { sql } from "drizzle-orm";
 
 // ── Generic Content Management Factory ────────────────────────────────
 
@@ -43,8 +42,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     }
 
     if (!handled) {
-      const db = c.get("db") as Kysely<DB>;
-      await sql`UPDATE ${sql.table(tableName)} SET status = 'published' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
+      const db = getDb(c);
+      await db.run(sql.raw(`UPDATE ${tableName} SET status = 'published' WHERE ${idColumn} = '${id}'`));
     }
 
     c.executionCtx.waitUntil(logAuditAction(c, `APPROVE_${tableName.toUpperCase()}`, tableName, id));
@@ -63,8 +62,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     if (hooks?.onReject) handled = (await hooks.onReject(c, id, body.reason)) === true;
 
     if (!handled) {
-      const db = c.get("db") as Kysely<DB>;
-      await sql`UPDATE ${sql.table(tableName)} SET status = 'rejected' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
+      const db = getDb(c);
+      await db.run(sql.raw(`UPDATE ${tableName} SET status = 'rejected' WHERE ${idColumn} = '${id}'`));
     }
 
     c.executionCtx.waitUntil(logAuditAction(c, `REJECT_${tableName.toUpperCase()}`, tableName, id));
@@ -79,8 +78,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     if (hooks?.onRestore) handled = (await hooks.onRestore(c, id)) === true;
 
     if (!handled) {
-      const db = c.get("db") as Kysely<DB>;
-      await sql`UPDATE ${sql.table(tableName)} SET is_deleted = 0, status = 'draft' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
+      const db = getDb(c);
+      await db.run(sql.raw(`UPDATE ${tableName} SET is_deleted = 0, status = 'draft' WHERE ${idColumn} = '${id}'`));
     }
 
     c.executionCtx.waitUntil(logAuditAction(c, `RESTORE_${tableName.toUpperCase()}`, tableName, id));
@@ -96,8 +95,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
       if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "trashed")) === true;
 
       if (!handled) {
-        const db = c.get("db") as Kysely<DB>;
-        await sql`UPDATE ${sql.table(tableName)} SET is_deleted = 1 WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
+        const db = getDb(c);
+        await db.run(sql.raw(`UPDATE ${tableName} SET is_deleted = 1 WHERE ${idColumn} = '${id}'`));
       }
       
       c.executionCtx.waitUntil(logAuditAction(c, `DELETE_${tableName.toUpperCase()}`, tableName, id));
@@ -117,8 +116,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
       if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "purged")) === true;
 
       if (!handled) {
-        const db = c.get("db") as Kysely<DB>;
-        await sql`DELETE FROM ${sql.table(tableName)} WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
+        const db = getDb(c);
+        await db.run(sql.raw(`DELETE FROM ${tableName} WHERE ${idColumn} = '${id}'`));
       }
       
       c.executionCtx.waitUntil(logAuditAction(c, `PURGE_${tableName.toUpperCase()}`, tableName, id));

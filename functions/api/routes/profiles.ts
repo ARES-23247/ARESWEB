@@ -1,5 +1,5 @@
 import { typedHandler } from "../utils/handler";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -237,8 +237,10 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
       })
       .from(schema.userProfiles)
       .innerJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
-      .where(eq(schema.userProfiles.showOnAbout, 1))
-      .where(sql`${schema.user.role} != 'unverified'`)
+      .where(and(
+        eq(schema.userProfiles.showOnAbout, 1),
+        sql`${schema.user.role} != 'unverified'`
+      ))
       .all();
 
     const secret = c.env.ENCRYPTION_SECRET;

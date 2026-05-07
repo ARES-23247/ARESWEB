@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
 type GamePhase = 'setup' | 'deploy' | 'attack' | 'reinforce' | 'gameover';
 // Unused type retained for potential future use

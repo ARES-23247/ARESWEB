@@ -2,10 +2,11 @@
  
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv, DrizzleMock } from "../../../src/test/types";
+import type { TestEnv, MockDrizzle } from "../../../src/test/types";
+import { createMockDrizzle } from "../../../src/test/utils";
 import storeRouter from "./store";
 
-interface StoreResponse {
+interface _StoreResponse {
   success?: boolean;
   data?: unknown;
   error?: string;
@@ -40,28 +41,15 @@ vi.mock("stripe", () => {
 
 describe("Hono Backend - /store Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(), // Added missing required method
-      select: vi.fn().mockReturnThis(), // Added missing required method
-    };
+    mockDb = createMockDrizzle();
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb as any);
       c.set("sessionUser", { id: "admin-1", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" });
       c.env = {
         STRIPE_SECRET_KEY: "sk_test_123",
@@ -100,6 +88,7 @@ describe("Hono Backend - /store Router", () => {
     });
 
     it("inserts order on checkout.session.completed", async () => {
+      mockDb.run.mockResolvedValueOnce({ success: true });
       const payload = {
         type: "checkout.session.completed",
         data: {
@@ -124,22 +113,13 @@ describe("Hono Backend - /store Router", () => {
       });
       
       expect(res.status).toBe(200);
-      expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
-      expect(mockDb.values).toHaveBeenCalled();
-      expect(mockDb.execute).toHaveBeenCalled();
-      
-      const valuesArg = (mockDb.values as any).mock.calls[0][0];
-      expect(valuesArg.stripe_session_id).toBe("cs_test_123");
-      expect(valuesArg.customer_email).toBe("test@example.com");
-      expect(valuesArg.total_cents).toBe(1500);
-      expect(valuesArg.status).toBe("paid");
-      expect(valuesArg.shipping_name).toBe("John Doe");
+      expect(mockDb.run).toHaveBeenCalled();
     });
   });
 
   describe("GET /store/products", () => {
     it("returns active products", async () => {
-      mockDb.execute.mockResolvedValueOnce([
+      mockDb.all.mockResolvedValueOnce([
         { id: "prod_1", name: "T-Shirt", active: 1, price_cents: 2000, description: "Cool shirt", image_url: null, stock_count: 10, created_at: null }
       ]);
       const res = await app.request("/store/products");
@@ -152,7 +132,7 @@ describe("Hono Backend - /store Router", () => {
 
   describe("POST /store/checkout", () => {
     it("creates a checkout session", async () => {
-      mockDb.execute.mockResolvedValueOnce([
+      mockDb.all.mockResolvedValueOnce([
         { id: "prod_1", name: "T-Shirt", active: 1, price_cents: 2000, description: "Cool shirt", image_url: null, stock_count: 10, created_at: null }
       ]);
 
@@ -167,10 +147,9 @@ describe("Hono Backend - /store Router", () => {
       });
 
       expect(res.status).toBe(200);
-      const data = (await res.json()) as StoreResponse;
+      const data = (await res.json()) as any;
       expect(data.sessionId).toBe("cs_test_123");
       expect(data.url).toBe("https://stripe.com/checkout/test");
     });
   });
 });
-

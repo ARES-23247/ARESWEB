@@ -3,7 +3,7 @@ import { typedHandler } from "../../utils/handler";
 
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, ensureAuth } from "../../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getDb } from "../../middleware";
 import { eventHandlers } from "./handlers";
 import { eq, desc, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
@@ -173,7 +173,7 @@ eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAt
 eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const results = await db.select({
       id: schema.documentHistory.id,
       roomId: schema.documentHistory.roomId,
@@ -204,7 +204,7 @@ eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRo
 eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventHistoryRoute>(async (c) => {
   try {
     const { id, historyId } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     const row = await db.select({
       content: schema.documentHistory.content,
