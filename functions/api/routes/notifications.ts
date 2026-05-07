@@ -1,5 +1,5 @@
 import { typedHandler } from "../utils/handler";
-import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware } from "../middleware";
+import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware, getDb } from "../middleware";
 import { eq, desc, and, count, inArray } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -23,7 +23,7 @@ notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 
 notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotificationsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -43,7 +43,7 @@ notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotifi
       .limit(50)
       .all();
 
-    const notifications = results.map((n: any) => ({
+    const notifications = results.map((n) => ({
       ...n,
       id: String(n.id),
       title: String(n.title),
@@ -63,7 +63,7 @@ notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotifi
 
 notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markNotificationReadRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -82,7 +82,7 @@ notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markN
 
 notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof markAllNotificationsReadRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -100,7 +100,7 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof m
 
 notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteNotificationRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -118,7 +118,7 @@ notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteN
 
 notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendingCountsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -170,7 +170,7 @@ notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendin
 
 notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof getDashboardActionItemsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
