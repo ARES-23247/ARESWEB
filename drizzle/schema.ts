@@ -77,7 +77,7 @@ export const posts = sqliteTable("posts", {
 	publishedAt: text("published_at"),
 	isPortfolio: integer("is_portfolio").default(0),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_posts_published_at").on(table.publishedAt, table.status, table.isDeleted),
@@ -97,7 +97,7 @@ export const postsHistory = sqliteTable("posts_history", {
 	snippet: text(),
 	ast: text().notNull(),
 	authorEmail: text("author_email"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
 },
 (table) => [
@@ -147,8 +147,8 @@ export const seasons = sqliteTable("seasons", {
 	albumCover: text("album_cover"),
 	status: text().default("published"),
 	isDeleted: integer("is_deleted").default(0),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 });
 
 export const eventSignups = sqliteTable("event_signups", {
@@ -159,7 +159,7 @@ export const eventSignups = sqliteTable("event_signups", {
 	notes: text(),
 	prepHours: real("prep_hours"),
 	attended: integer().default(0),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_signups_user").on(table.userId),
@@ -175,7 +175,7 @@ export const docs = sqliteTable("docs", {
 	content: text().notNull(),
 	contentDraft: text("content_draft"),
 	cfEmail: text("cf_email"),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 	isDeleted: integer("is_deleted").default(0),
 	status: text().default("published"),
 	isPortfolio: integer("is_portfolio").default(0),
@@ -199,7 +199,7 @@ export const docsHistory = sqliteTable("docs_history", {
 	description: text(),
 	content: text(),
 	authorEmail: text("author_email"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_docs_history_slug_created").on(table.slug, table.createdAt),
@@ -232,7 +232,7 @@ export const docsFeedback = sqliteTable("docs_feedback", {
 	slug: text().notNull().references(() => docs.slug, { onDelete: "cascade" } ),
 	isHelpful: integer("is_helpful"),
 	comment: text(),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_docs_feedback_slug").on(table.slug),
@@ -270,7 +270,7 @@ export const userProfiles = sqliteTable("user_profiles", {
 	parentsEmail: text("parents_email"),
 	studentsName: text("students_name"),
 	studentsEmail: text("students_email"),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_user_profiles_show_on_about").on(table.showOnAbout),
@@ -283,7 +283,7 @@ export const badges = sqliteTable("badges", {
 	description: text(),
 	icon: text().default("Award"),
 	colorTheme: text("color_theme").default("ares-gold"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
 export const userBadges = sqliteTable("user_badges", {
@@ -291,7 +291,7 @@ export const userBadges = sqliteTable("user_badges", {
 	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	badgeId: text("badge_id").notNull().references(() => badges.id, { onDelete: "cascade" } ),
 	awardedBy: text("awarded_by"),
-	awardedAt: text("awarded_at").default("sql`(datetime('now'))`"),
+	awardedAt: text("awarded_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_user_badges_badge").on(table.badgeId),
@@ -305,7 +305,7 @@ export const sponsors = sqliteTable("sponsors", {
 	logoUrl: text("logo_url"),
 	websiteUrl: text("website_url"),
 	isActive: integer("is_active").default(1),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
 export const sponsorMetrics = sqliteTable("sponsor_metrics", {
@@ -314,7 +314,7 @@ export const sponsorMetrics = sqliteTable("sponsor_metrics", {
 	yearMonth: text("year_month").notNull(),
 	impressions: integer().default(0),
 	clicks: integer().default(0),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_sponsor_metrics_sponsor").on(table.sponsorId),
@@ -324,7 +324,7 @@ export const sponsorTokens = sqliteTable("sponsor_tokens", {
 	token: text().primaryKey(),
 	sponsorId: text("sponsor_id").notNull().references(() => sponsors.id, { onDelete: "cascade" } ),
 	createdBy: text("created_by"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_sponsor_tokens_sponsor").on(table.sponsorId),
@@ -338,7 +338,7 @@ export const inquiries = sqliteTable("inquiries", {
 	metadata: text(),
 	status: text().default("pending"),
 	isDeleted: integer("is_deleted").default(0),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 	zulipMessageId: text("zulip_message_id"),
 	notes: text(),
 },
@@ -365,7 +365,7 @@ export const awards = sqliteTable("awards", {
 	iconType: text("icon_type").default("trophy"),
 	isDeleted: integer("is_deleted").default(0),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_awards_date").on(table.date),
@@ -387,7 +387,7 @@ export const outreachLogs = sqliteTable("outreach_logs", {
 	metadata: text(),
 	isDeleted: integer("is_deleted").default(0),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_outreach_date_desc").on(table.date),
@@ -403,8 +403,8 @@ export const comments = sqliteTable("comments", {
 	content: text().notNull(),
 	zulipMessageId: text("zulip_message_id"),
 	isDeleted: integer("is_deleted").default(0),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_comments_is_deleted").on(table.isDeleted),
@@ -421,7 +421,7 @@ export const notifications = sqliteTable("notifications", {
 	link: text(),
 	priority: text().default("low"),
 	isRead: integer("is_read").default(0),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_notifications_user_id").on(table.userId),
@@ -433,7 +433,7 @@ export const pageAnalytics = sqliteTable("page_analytics", {
 	category: text().default("system"),
 	referrer: text(),
 	userAgent: text("user_agent"),
-	timestamp: text().default("sql`(datetime('now'))`"),
+	timestamp: text().default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_analytics_path_time").on(table.path, table.timestamp),
@@ -451,7 +451,7 @@ export const judgeAccessCodes = sqliteTable("judge_access_codes", {
 	id: text().primaryKey(),
 	code: text().notNull(),
 	label: text().default("Judge Access"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 	expiresAt: text("expires_at"),
 },
 (table) => [
@@ -461,7 +461,7 @@ export const judgeAccessCodes = sqliteTable("judge_access_codes", {
 export const settings = sqliteTable("settings", {
 	key: text().primaryKey(),
 	value: text().notNull(),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_settings_key").on(table.key),
@@ -478,8 +478,8 @@ export const tasks = sqliteTable("tasks", {
 	assignedTo: text("assigned_to"),
 	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	dueDate: text("due_date"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_tasks_sort").on(table.status, table.sortOrder),
@@ -502,7 +502,7 @@ export const auditLog = sqliteTable("audit_log", {
 	resourceType: text("resource_type").notNull(),
 	resourceId: text("resource_id"),
 	details: text(),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_audit_log_created_at").on(table.createdAt),
@@ -697,7 +697,7 @@ export const products = sqliteTable("products", {
 	priceCents: integer("price_cents").notNull(),
 	imageUrl: text("image_url"),
 	active: integer().default(1),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
 export const orders = sqliteTable("orders", {
@@ -714,8 +714,8 @@ export const orders = sqliteTable("orders", {
 	totalCents: integer("total_cents").notNull(),
 	status: text().default("processing"),
 	fulfillmentStatus: text("fulfillment_status").default("unfulfilled"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_orders_email").on(table.customerEmail),
@@ -732,8 +732,8 @@ export const chatSessions = sqliteTable("chat_sessions", {
 	id: text().primaryKey(),
 	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	history: text().notNull(),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_chat_sessions_updated_at").on(table.updatedAt),
@@ -777,7 +777,7 @@ export const sponsorshipPipeline = sqliteTable("sponsorship_pipeline", {
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
 	notes: text(),
 	zulipMessageId: text("zulip_message_id"),
-	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 },
 (table) => [
 	index("idx_sponsorship_season").on(table.seasonId),
@@ -807,8 +807,8 @@ export const simulations = sqliteTable("simulations", {
 	files: text().notNull(),
 	authorId: text("author_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	isPublic: integer("is_public").default(0).notNull(),
-	createdAt: text("created_at").default("sql`(datetime('now'))`").notNull(),
-	updatedAt: text("updated_at").default("sql`(datetime('now'))`").notNull(),
+	createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+	updatedAt: text("updated_at").default(sql`(datetime('now'))`).notNull(),
 },
 (table) => [
 	index("idx_simulations_public").on(table.isPublic),
