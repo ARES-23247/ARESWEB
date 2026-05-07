@@ -1,11 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipWebhookRouter from "./zulipWebhook";
 import { mockExecutionContext, flushWaitUntil, createMockDrizzle } from "../../../src/test/utils";
 import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 
+// Mock zulipSync
+vi.mock("../../utils/zulipSync", () => ({
+  sendZulipMessage: vi.fn(),
+}));
 
 describe("Zulip Webhook Router", () => {
   const env: TestEnv["Bindings"] = {
@@ -58,10 +62,14 @@ describe("Zulip Webhook Router", () => {
     });
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
 
     mockDb = createMockDrizzle();
+
+    // Set default behavior for sendZulipMessage mock
+    const { sendZulipMessage } = await import("../../utils/zulipSync");
+    vi.mocked(sendZulipMessage).mockResolvedValue(true as never);
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {

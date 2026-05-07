@@ -1,17 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import githubWebhookRouter from "./githubWebhook";
+import { Hono } from "hono";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
 import type { MockExecutionContext } from "../../../src/test/types";
 
-// Mock zulip sync
+// Mock zulip sync BEFORE importing the router
 vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue(undefined),
+  sendZulipMessage: vi.fn().mockResolvedValue("msg-id"),
 }));
+
+import githubWebhookRouter from "./githubWebhook";
 import * as zulipSync from "../../utils/zulipSync";
 
 describe("GitHub Webhook Router", () => {
+  let testApp: Hono;
   const env = {
     GITHUB_WEBHOOK_SECRET: "test-secret",
     DB: {},
@@ -19,6 +22,20 @@ describe("GitHub Webhook Router", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Create test app with middleware that adds executionCtx to context
+    testApp = new Hono();
+    testApp.use("*", async (c, next) => {
+      // Add executionCtx directly to the context object (mimics Cloudflare Pages behavior)
+      Object.defineProperty(c, 'executionCtx', {
+        value: mockExecutionContext,
+        writable: false,
+        enumerable: true,
+        configurable: true,
+      });
+      await next();
+    });
+    testApp.route("/", githubWebhookRouter);
   });
 
   afterEach(() => {
@@ -38,13 +55,13 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+    const res = await testApp.request(req, {}, env);
     expect(res.status).toBe(401);
   });
 
   it("should fail-closed if secret is missing", async () => {
     const req = new Request("http://localhost/", { method: "POST" });
-    const res = await githubWebhookRouter.request(req, {}, { ...env, GITHUB_WEBHOOK_SECRET: "" }, mockExecutionContext);
+    const res = await testApp.request(req, {}, { ...env, GITHUB_WEBHOOK_SECRET: "" });
     expect(res.status).toBe(503);
   });
 
@@ -58,7 +75,7 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+    const res = await testApp.request(req, {}, env);
     expect(res.status).toBe(401);
   });
 
@@ -73,7 +90,7 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+    const res = await testApp.request(req, {}, env);
     expect(res.status).toBe(200);
   });
 
@@ -97,7 +114,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -117,7 +134,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -137,7 +154,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -156,7 +173,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -176,7 +193,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -195,7 +212,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -215,7 +232,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -234,7 +251,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "projects_v2_item",
         },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -251,7 +268,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "projects_v2_item",
         },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -268,7 +285,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "projects_v2_item",
         },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -286,7 +303,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "pull_request",
         },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -304,7 +321,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "pull_request",
         },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -322,7 +339,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "issues",
         },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -344,7 +361,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -370,7 +387,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -390,7 +407,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -410,7 +427,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -424,7 +441,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(400);
     });
 
@@ -438,7 +455,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -467,7 +484,7 @@ describe("GitHub Webhook Router", () => {
         props: {},
       };
 
-      const res = await githubWebhookRouter.request(req, {}, env, badCtx as any);
+      const res = await testApp.request(req, {}, env, badCtx as any);
       expect(res.status).toBe(200);
       expect(consoleSpy).toHaveBeenCalled();
     });
@@ -485,7 +502,7 @@ describe("GitHub Webhook Router", () => {
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -503,7 +520,7 @@ describe("GitHub Webhook Router", () => {
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -520,7 +537,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "push" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -533,7 +550,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "projects_v2_item" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -546,7 +563,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "projects_v2_item" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -559,7 +576,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "projects_v2_item" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -574,7 +591,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -590,7 +607,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -603,7 +620,7 @@ describe("GitHub Webhook Router", () => {
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "unknown_event" },
       });
 
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -618,7 +635,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -634,7 +651,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -648,7 +665,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -664,7 +681,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -678,7 +695,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
-      const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+      const res = await testApp.request(req, {}, env);
       expect(res.status).toBe(200);
       await flushWaitUntil();
     });
@@ -695,7 +712,7 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await githubWebhookRouter.request(req, {}, env, mockExecutionContext);
+    const res = await testApp.request(req, {}, env);
     expect(res.status).toBe(401);
   });
 });

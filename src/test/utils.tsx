@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, RenderHookOptions } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -45,6 +45,34 @@ export async function flushWaitUntil() {
  * which avoids coverage drops from missing internal builder methods.
  */
 export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDrizzle & DrizzleProxy {
+  // Create the mock functions without initial implementations to allow mockRejectedValueOnce
+  const allMock = vi.fn();
+  const executeMock = vi.fn();
+  const runMock = vi.fn();
+  const getMock = vi.fn();
+  const executeTakeFirstMock = vi.fn();
+
+  // Set default implementations
+  allMock.mockImplementation((...args: unknown[]) => {
+    // Handle Drizzle sql template strings
+    if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
+      return Promise.resolve(defaultResolve);
+    }
+    return Promise.resolve(defaultResolve);
+  });
+
+  executeMock.mockImplementation((...args: unknown[]) => {
+    // Handle Drizzle sql template strings
+    if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
+      return Promise.resolve(defaultResolve);
+    }
+    return Promise.resolve(defaultResolve);
+  });
+
+  runMock.mockResolvedValue({ success: true });
+  getMock.mockResolvedValue(defaultResolve[0] || null);
+  executeTakeFirstMock.mockResolvedValue(defaultResolve[0] || null);
+
   const mockDb = {
     select: vi.fn().mockReturnThis(),
     selectDistinct: vi.fn().mockReturnThis(),
@@ -65,26 +93,14 @@ export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDr
     onConflictDoNothing: vi.fn().mockReturnThis(),
     groupBy: vi.fn().mockReturnThis(),
     having: vi.fn().mockReturnThis(),
-    then: vi.fn().mockImplementation((resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) => mockDb.all().then(resolve, reject)),
+    then: vi.fn().mockImplementation((resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) => allMock().then(resolve, reject)),
     transaction: vi.fn().mockImplementation(async (cb: (db: typeof mockDb) => Promise<unknown>) => cb(mockDb)),
     batch: vi.fn().mockResolvedValue([]),
-    all: vi.fn().mockImplementation((...args: unknown[]) => {
-      // Handle Drizzle sql template strings
-      if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
-        return Promise.resolve(defaultResolve);
-      }
-      return Promise.resolve(defaultResolve);
-    }),
-    execute: vi.fn().mockImplementation((...args: unknown[]) => {
-      // Handle Drizzle sql template strings
-      if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
-        return Promise.resolve(defaultResolve);
-      }
-      return Promise.resolve(defaultResolve);
-    }),
-    run: vi.fn().mockResolvedValue({ success: true }),
-    get: vi.fn().mockResolvedValue(defaultResolve[0] || null),
-    executeTakeFirst: vi.fn().mockResolvedValue(defaultResolve[0] || null),
+    all: allMock,
+    execute: executeMock,
+    run: runMock,
+    get: getMock,
+    executeTakeFirst: executeTakeFirstMock,
     $dynamic: vi.fn().mockReturnThis(),
     query: new Proxy({}, {
       get: (_target: unknown, _prop: string) => {
@@ -121,18 +137,36 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
     }),
     from: vi.fn().mockImplementation((..._args: unknown[]) => proxy),
     all: vi.fn().mockImplementation(async (...args: unknown[]) => {
+      if ('all' in dbMock && typeof dbMock.all === 'function') {
+        const result = (dbMock.all as (...a: unknown[]) => unknown)(...args);
+        if (result && typeof (result as Promise<unknown>).then === 'function') {
+          return result;
+        }
+      }
       if ((dbMock as DrizzleProxyTarget).execute) {
         return (dbMock as DrizzleProxyTarget).execute!(...args);
       }
       return Promise.resolve([]);
     }),
     get: vi.fn().mockImplementation(async (...args: unknown[]) => {
+      if ('get' in dbMock && typeof dbMock.get === 'function') {
+        const result = (dbMock.get as (...a: unknown[]) => unknown)(...args);
+        if (result && typeof (result as Promise<unknown>).then === 'function') {
+          return result;
+        }
+      }
       if ((dbMock as DrizzleProxyTarget).executeTakeFirst) {
         return (dbMock as DrizzleProxyTarget).executeTakeFirst!(...args);
       }
       return Promise.resolve(null);
     }),
     run: vi.fn().mockImplementation(async (...args: unknown[]) => {
+      if ('run' in dbMock && typeof dbMock.run === 'function') {
+        const result = (dbMock.run as (...a: unknown[]) => unknown)(...args);
+        if (result && typeof (result as Promise<unknown>).then === 'function') {
+          return result;
+        }
+      }
       if ((dbMock as DrizzleProxyTarget).execute) {
         return (dbMock as DrizzleProxyTarget).execute!(...args).then(() => ({ success: true, meta: { changes: 1 } }));
       }
@@ -203,11 +237,27 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       }
       if (prop === 'then') {
         return function(resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) {
-          if (isMutation && (target as DrizzleProxyTarget).executeTakeFirst) {
-            return (target as DrizzleProxyTarget).executeTakeFirst!()
-              .then(() => ({ success: true, meta: { changes: 1 } }))
-              .then(resolve, reject);
-          } else if ((target as DrizzleProxyTarget).execute) {
+          if (isMutation) {
+            if ('run' in target && typeof target.run === 'function') {
+              const result = (target.run as () => unknown)();
+              if (result && typeof (result as Promise<unknown>).then === 'function') {
+                return (result as Promise<unknown>).then(resolve, reject);
+              }
+            }
+            if ((target as DrizzleProxyTarget).executeTakeFirst) {
+              return (target as DrizzleProxyTarget).executeTakeFirst!()
+                .then(() => ({ success: true, meta: { changes: 1 } }))
+                .then(resolve, reject);
+            }
+            return Promise.resolve({ success: true, meta: { changes: 1 } }).then(resolve, reject);
+          }
+          if ('all' in target && typeof target.all === 'function') {
+            const result = (target.all as () => unknown)();
+            if (result && typeof (result as Promise<unknown>).then === 'function') {
+              return (result as Promise<unknown>).then(resolve, reject);
+            }
+          }
+          if ((target as DrizzleProxyTarget).execute) {
             return (target as DrizzleProxyTarget).execute!().then(resolve, reject);
           }
           return Promise.resolve([]).then(resolve, reject);
