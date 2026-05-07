@@ -289,7 +289,6 @@ export default function SimComponent() {
   const [winner, setWinner] = useState<PlayerColor | null>(null);
   const [reinforceAmount, setReinforceAmount] = useState(0);
   const [isAIThinking, setIsAIThinking] = useState(false);
-  const [continentBonuses, setContinentBonuses] = useState<Record<string, number>>({});
 
   // Get current active player
   const currentPlayer = activePlayers[currentPlayerIdx] || DEFAULT_PLAYERS[0];
@@ -338,13 +337,13 @@ export default function SimComponent() {
   }, [playerConfigs]);
 
   // Calculate continent bonuses
-  useEffect(() => {
-    if (territories.length === 0) return;
+  const continentBonuses = useMemo(() => {
+    if (territories.length === 0) return {};
     const bonuses: Record<string, number> = {};
     playerConfigs.forEach(p => {
       bonuses[p.color] = getContinentBonus(territories, p.color);
     });
-    setContinentBonuses(bonuses);
+    return bonuses;
   }, [territories, playerConfigs]);
 
   const canDeploy = (territoryId: string): boolean => {
@@ -381,7 +380,10 @@ export default function SimComponent() {
 
   const handleDeploy = useCallback(
     (territoryId: string) => {
-      if (phase !== 'deploy' || deployRemaining <= 0 || !canDeploy(territoryId) || currentPlayer.isAI) return;
+      const t = territories.find(x => x.id === territoryId);
+      const canDeployHere = t !== undefined && t.owner === currentPlayer.color;
+
+      if (phase !== 'deploy' || deployRemaining <= 0 || !canDeployHere || currentPlayer.isAI) return;
 
       setTerritories(prev =>
         prev.map(t => (t.id === territoryId ? { ...t, armies: t.armies + 1 } : t))
@@ -393,7 +395,7 @@ export default function SimComponent() {
         setMessage('Select your territory to attack from!');
       }
     },
-    [phase, deployRemaining, currentPlayer]
+    [phase, deployRemaining, currentPlayer, territories]
   );
 
   const handleAttack = useCallback(() => {
