@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { format, subMonths } from "date-fns";
 import {
-  BarChart3,
   TrendingUp,
   Send,
   Clock,
