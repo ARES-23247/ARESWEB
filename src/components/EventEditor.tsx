@@ -23,11 +23,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useGetAdminEventDetail, useSaveEvent, useUpdateEvent, useDeleteEvent } from "../api";
 
-export interface LocationRow {
-  id: string;
-  name: string;
-  address: string;
-}
+import { type Location } from "../api/locations";
 
 import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
 import VersionHistorySidebar from "./editor/VersionHistorySidebar";
@@ -100,13 +96,13 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   const [limitCount, setLimitCount] = useState("");
   const [limitDate, setLimitDate] = useState("");
 
-  const { data: locations = [] } = useQuery<LocationRow[]>({
+  const { data: locations = [] } = useQuery<Location[]>({
     queryKey: ["locations"],
     queryFn: async () => {
       try {
         const res = await fetch("/api/locations");
         if (res.ok) {
-          const data = (await res.json()) as { locations?: LocationRow[] };
+          const data = (await res.json()) as { locations?: Location[] };
           return data.locations || [];
         }
         return [];

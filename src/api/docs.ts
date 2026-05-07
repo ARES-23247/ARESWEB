@@ -423,7 +423,7 @@ export function useExportSingleDoc(
 ) {
   return useMutation<string, Error, string>({
     mutationFn: async (slug) => {
-      const response = await client.docs.admin[":slug"].export.$get({ param: { slug } });
+      const response = await fetch(`/api/docs/admin/${slug}/export`);
       if (!response.ok) {
         throw new Error(`Failed to export doc: ${response.status}`);
       }

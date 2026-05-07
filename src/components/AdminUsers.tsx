@@ -23,12 +23,12 @@ const MEMBER_TYPES = ["student", "alumni", "parent", "coach", "mentor", "sponsor
 type User = {
   id: string;
   name: string | null;
-  image: string | null;
+  image?: string | null;
   role: string;
   createdAt: number;
-  nickname?: string;
-  member_type?: string;
-  email?: string;
+  nickname?: string | null;
+  member_type?: string | null;
+  email?: string | null;
 };
 
 export default function AdminUsers() {

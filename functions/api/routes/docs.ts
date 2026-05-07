@@ -971,7 +971,7 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
 docsRouter.openapi(docsRoutes.exportAllDocsRoute, typedHandler<typeof docsRoutes.exportAllDocsRoute>(async (c) => {
   try {
     const db = getDb(c);
-    const docs = await db.select().from(schema.docs).orderBy(desc(schema.docs.updated_at)).all();
+    const docs = await db.select().from(schema.docs).orderBy(desc(schema.docs.updatedAt)).all();
     return c.json({ docs } as any, 200 as any);
   } catch (_e) {
     return c.json({ error: "Export failed" } as any, 500 as any);
@@ -979,9 +979,9 @@ docsRouter.openapi(docsRoutes.exportAllDocsRoute, typedHandler<typeof docsRoutes
 }));
 
 // Export single doc as Markdown
-docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRoutes.exportSingleDocRoute>(async (c) => {
+docsRouter.get("/admin/:slug/export", async (c) => {
   try {
-    const { slug } = c.req.valid("param");
+    const { slug } = c.req.param();
     const db = getDb(c);
     const doc = await db.select({
       title: schema.docs.title,
@@ -990,7 +990,7 @@ docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRout
     }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
     if (!doc) {
-      return c.json({ error: "Doc not found" } as any, 404 as any);
+      return c.json({ error: "Doc not found" }, 404);
     }
 
     // Convert Tiptap JSON to Markdown if needed
@@ -1008,9 +1008,9 @@ docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRout
     const markdown = `# ${doc.title || slug}\n\n**Category:** ${doc.category || "General"}\n\n${markdownContent}`;
     return c.text(markdown, 200, { "Content-Type": "text/plain; charset=utf-8" });
   } catch (_e) {
-    return c.json({ error: "Export failed" } as any, 500 as any);
+    return c.json({ error: "Export failed" }, 500);
   }
-}));
+});
 
 // Simple Tiptap JSON to Markdown converter
 function tiptapToMarkdown(node: any): string {
