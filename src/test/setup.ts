@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom";
+import { vi } from "vitest";
 import { server } from "./mocks/server";
 
 // Start MSW Server - runs immediately when setup file loads
@@ -61,3 +62,11 @@ export const mockExecutionContext = {
   waitUntil: (promise: Promise<unknown>) => promise,
   passThroughOnException: () => {},
 };
+
+// Mock AbortSignal.timeout for tests (not available in Node.js without fetch ponyfill)
+AbortSignal.timeout = vi.fn((ms: number) => {
+  const controller = new AbortController();
+  // Don't actually timeout in tests - just return a signal that never aborts
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}) as unknown as typeof AbortSignal.timeout;
