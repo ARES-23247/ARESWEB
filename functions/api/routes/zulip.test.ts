@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Hono, Context } from "hono";
+import { Hono } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 import zulipRouter from "./zulip";
-import type { DrizzleMock } from "../../../src/test/types";
+// import type { DrizzleMock } from "../../../src/test/types";
 
 describe("Hono Backend - /zulip Router", () => {
   let testApp: Hono<TestEnv>;
