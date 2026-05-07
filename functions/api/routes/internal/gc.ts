@@ -3,7 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, and, lt } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { AppEnv } from "../../middleware";
+import { AppEnv, getDb } from "../../middleware";
 import { gcRoute } from "../../../../shared/routes/internal";
 
 
@@ -20,7 +20,7 @@ gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     // Delete rows soft-deleted more than 30 days ago
     const thirtyDaysAgo = new Date();
@@ -34,9 +34,9 @@ gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
     ]);
 
     const deletedCounts = {
-      docs: Number((results[0] as any).meta?.changes ?? 0),
-      comments: Number((results[1] as any).meta?.changes ?? 0),
-      seasons: Number((results[2] as any).meta?.changes ?? 0)
+      docs: Number((results[0] as { meta?: { changes?: number } }).meta?.changes ?? 0),
+      comments: Number((results[1] as { meta?: { changes?: number } }).meta?.changes ?? 0),
+      seasons: Number((results[2] as { meta?: { changes?: number } }).meta?.changes ?? 0)
     };
 
     return c.json({ success: true, deleted: deletedCounts }, 200);
