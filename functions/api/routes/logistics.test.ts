@@ -34,7 +34,7 @@ describe("Hono Backend - /logistics Router", () => {
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue(null),
-    } as unknown as any;
+    } as unknown as DrizzleMock;
 
     env = {
       ENCRYPTION_SECRET: "test-secret"
