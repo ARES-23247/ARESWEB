@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
-import type { DrizzleProxy } from "../../../src/test/mocks";
+// import type { DrizzleProxy } from "../../../src/test/mocks";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
