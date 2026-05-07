@@ -139,6 +139,10 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
     const { type, name, email, metadata } = c.req.valid("json");
     const db = getDb(c);
     const secret = c.env.ENCRYPTION_SECRET;
+    if (!secret) {
+      console.error("[Inquiry:Submit] ENCRYPTION_SECRET is not configured!");
+      return c.json({ error: "Server configuration error: encryption key missing. Please contact the team." }, 500);
+    }
 
     // Prevents double submissions
     const recent = await db.select({
@@ -262,8 +266,16 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
 
     return c.json({ success: true, id }, 200);
   } catch (e) {
-    console.error("[Inquiry:Submit] Error", e);
-    return c.json({ error: "Submission failed" }, 500);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[Inquiry:Submit] Error", msg, e);
+    // Surface a more specific error for debugging
+    if (msg.includes("encrypt") || msg.includes("importKey") || msg.includes("subtle")) {
+      return c.json({ error: "Server configuration error: encryption service unavailable. Please contact the team." }, 500);
+    }
+    if (msg.includes("UNIQUE constraint") || msg.includes("constraint")) {
+      return c.json({ error: "A duplicate submission was detected." } as any, 409 as any);
+    }
+    return c.json({ error: `Submission failed: ${msg.substring(0, 120)}` }, 500);
   }
 };
 
