@@ -69,6 +69,7 @@ export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDr
     transaction: vi.fn().mockImplementation(async (cb: (db: typeof mockDb) => Promise<unknown>) => cb(mockDb)),
     batch: vi.fn().mockResolvedValue([]),
     all: vi.fn().mockResolvedValue(defaultResolve),
+    execute: vi.fn().mockResolvedValue(defaultResolve),
     run: vi.fn().mockResolvedValue({ success: true }),
     get: vi.fn().mockResolvedValue(defaultResolve[0] || null),
     query: new Proxy({}, {

@@ -6,17 +6,6 @@ import { mockExecutionContext } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 import githubRouter from "./github";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 interface GitHubResponse {
   success?: boolean;
   data?: unknown;

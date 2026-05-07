@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { TestEnv } from "../../../src/test/types";
+import { TestEnv, DrizzleMock } from "../../../src/test/types";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
+import type { DrizzleProxy } from "../../../src/test/mocks";
 import communicationsRouter from "./communications";
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -17,17 +18,6 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 import { getSocialConfig, logAuditAction, logSystemError } from "../middleware";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
 
 const globalFetch = globalThis.fetch;
 

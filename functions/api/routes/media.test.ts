@@ -47,17 +47,8 @@ vi.mock("../../utils/zulipSync", () => ({
 }));
 
 import mediaRouter from "./media/index";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
+import { createDrizzleProxy } from "../../../src/test/utils";
+import type { DrizzleProxy } from "../../../src/test/mocks";
 
 interface MockR2 {
   list: ReturnType<typeof vi.fn>;

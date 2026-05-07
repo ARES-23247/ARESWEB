@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
+import type { DrizzleProxy } from "../../../src/test/mocks";
 import { getSessionUser } from "../middleware";
 
 // Mock middleware
@@ -15,17 +16,6 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 import notificationsRouter from "./notifications";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
 
 describe("Hono Backend - /notifications Router", () => {
   let mockDb: DrizzleMock;

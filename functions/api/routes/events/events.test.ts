@@ -123,7 +123,7 @@ describe("Hono Backend - Events Router", () => {
   
   
    
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 

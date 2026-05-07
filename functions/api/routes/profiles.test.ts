@@ -6,48 +6,7 @@ import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import profilesRouter from "./profiles";
-import { createMockProfile } from "../../../src/test/factories/userFactory";
 
-// Mock crypto to avoid Web Crypto API issues in test env
-vi.mock("../../utils/crypto", () => ({
-  decrypt: vi.fn((val: any) => Promise.resolve(val)),
-  encrypt: vi.fn((val: any) => Promise.resolve(val)),
-}));
-
-vi.mock("../../utils/auth", () => ({
-  getAuth: vi.fn().mockReturnValue({
-    api: {
-      updateUser: vi.fn().mockResolvedValue({ success: true })
-    }
-  } )
-}));
-
-import * as shared from "../middleware";
-import * as cryptoUtils from "../../utils/crypto";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
-vi.mock("../middleware", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../middleware")>();
-  return {
-    ...actual,
-    ensureAuth: async (_c: Context<TestEnv>, next: () => Promise<void>) => next(),
-    persistentRateLimitMiddleware: () => (c: Context<TestEnv>, next: () => Promise<void>) => next(),
-    rateLimitMiddleware: () => (c: Context<TestEnv>, next: () => Promise<void>) => next(),
-    getSessionUser: vi.fn((c: Context<TestEnv>) => c.get("sessionUser")),
-    sanitizeProfileForPublic: vi.fn().mockImplementation((val: any, type: any) => actual.sanitizeProfileForPublic(val, type)),
-    getDbSettings: vi.fn(),
-  };
-});
 
 describe("Hono Backend - /profiles Router", () => {
   let mockDb: DrizzleMock;

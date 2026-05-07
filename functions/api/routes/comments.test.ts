@@ -30,17 +30,6 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import commentsRouter from "./comments";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 describe("Hono Backend - /comments Router", () => {
 
 

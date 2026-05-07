@@ -15,22 +15,11 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 import awardsRouter from "./awards";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
+import { createDrizzleProxy } from "../../../src/test/utils";
+import type { DrizzleProxy } from "../../../src/test/mocks";
+import type { DrizzleMock } from "../../../src/test/types";
 
 describe("Hono Backend - /awards Router", () => {
-  
-  
-   
   let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 

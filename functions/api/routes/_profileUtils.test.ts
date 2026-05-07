@@ -3,20 +3,11 @@ import { upsertProfile } from "./_profileUtils";
 import { Context } from "hono";
 import { AppEnv } from "../middleware";
 import type { DrizzleMock } from "../../../src/test/types";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
+import { createDrizzleProxy } from "../../../src/test/utils";
+import type { DrizzleProxy } from "../../../src/test/mocks";
 
 vi.mock("../../utils/crypto", () => ({
-  encrypt: vi.fn((val: any) => Promise.resolve("encrypted_" + val)),
+  encrypt: vi.fn((val: string) => Promise.resolve("encrypted_" + val)),
 }));
 
 describe("Profile Utils", () => {
@@ -58,11 +49,11 @@ describe("Profile Utils", () => {
       deleteFrom: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
-    };
+    } as DrizzleMock & { insertInto: ReturnType<typeof vi.fn>; updateTable: ReturnType<typeof vi.fn>; deleteFrom: ReturnType<typeof vi.fn>; onConflict: ReturnType<typeof vi.fn>; };
 
     mockContext = {
       env: { ENCRYPTION_SECRET: "secret" },
-      get: vi.fn().mockReturnValue(createDrizzleProxy(mockDb)),
+      get: vi.fn().mockReturnValue(createDrizzleProxy(mockDb) as DrizzleProxy),
       var: {
         session: { user: { id: "1", role: "admin", member_type: "mentor" } }
       }

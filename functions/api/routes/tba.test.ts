@@ -5,17 +5,6 @@ import { mockExecutionContext } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 import tbaRouter from "./tba";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 interface TBAResponse {
   success?: boolean;
   data?: unknown;

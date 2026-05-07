@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
-import { glob } from 'glob';
-import sharp from 'sharp';
 
 describe('Image Optimization Script', () => {
   const testPublicDir = './test-public';

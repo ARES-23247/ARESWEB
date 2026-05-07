@@ -3,39 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipWebhookRouter from "./zulipWebhook";
-import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
-import { TestEnv } from "../../../src/test/types";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
-
-vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue(1),
-}));
-
-vi.mock("../middleware/utils", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("../middleware/utils")>();
-  return {
-    ...mod,
-    getSocialConfig: vi.fn().mockImplementation(async (c) => {
-      console.log("[MockSocialConfig] Env:", { ZULIP_WEBHOOK_TOKEN: c.env?.ZULIP_WEBHOOK_TOKEN });
-      return {
-        ZULIP_WEBHOOK_TOKEN: c.env?.ZULIP_WEBHOOK_TOKEN || "test-token",
-        ZULIP_BOT_EMAIL: c.env?.ZULIP_BOT_EMAIL,
-        ZULIP_API_KEY: c.env?.ZULIP_API_KEY,
-      };
-    }),
-  };
-});
 
 describe("Zulip Webhook Router", () => {
   const env: TestEnv["Bindings"] = {

@@ -2,10 +2,10 @@
  * Shared test type definitions for type-safe mocking.
  *
  * Provides typed interfaces for common test mocks:
- * - MockKysely: Type-safe database mocking
+ * - MockDrizzle: Type-safe Drizzle ORM mocking
+ * - DrizzleMock: Alias for MockDrizzle for consistent naming
  * - TestEnv: Hono environment binding for tests
  * - MockExecutionContext: Cloudflare Workers ExecutionContext mock
- * - MockExpressionBuilder: Kysely ExpressionBuilder mock interface
  *
  * All types use vi.fn mock types and avoid `any` for compile-time safety.
  */
@@ -45,6 +45,7 @@ export type MockDrizzle = {
   batch: ReturnType<typeof vi.fn>;
   transaction: ReturnType<typeof vi.fn>;
   all: ReturnType<typeof vi.fn>;
+  execute: ReturnType<typeof vi.fn>;
   run: ReturnType<typeof vi.fn>;
   get: ReturnType<typeof vi.fn>;
   query: {
@@ -54,6 +55,12 @@ export type MockDrizzle = {
     }
   };
 };
+
+// ── DrizzleMock (alias for consistency) ─────────────────────────────────────────
+/**
+ * Alias for MockDrizzle for consistent naming across test files.
+ */
+export type DrizzleMock = MockDrizzle;
 
 // ── TestEnv ───────────────────────────────────────────────────────────────────
 /**

@@ -1,18 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { indexSiteContent } from "./indexer";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
 
 // ── Mock DB (Kysely chain) ────────────────────────────────────────────────
 interface MockQuery {

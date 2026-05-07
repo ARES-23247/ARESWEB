@@ -18,17 +18,6 @@ vi.mock("../../utils/crypto", () => ({
 
 import logisticsRouter from "./logistics";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 describe("Hono Backend - /logistics Router", () => {
   let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;

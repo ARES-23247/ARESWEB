@@ -4,55 +4,7 @@ import { Hono, Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 import zulipRouter from "./zulip";
-
-type MockKysely = any;
-
-interface ZulipConfig {
-  ZULIP_BOT_EMAIL?: string;
-  ZULIP_API_KEY?: string;
-  ZULIP_URL?: string;
-  [key: string]: unknown;
-}
-
-interface ZulipResponse {
-  success?: boolean;
-  userNames?: Record<string, string>;
-  presence?: Record<string, unknown>;
-  error?: string;
-  [key: string]: unknown;
-}
-
-vi.mock("../middleware", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../middleware")>();
-  return {
-    ...actual,
-    ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
- 
-    ensureAuth: async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("sessionUser", { id: "test-user", email: "test@test.com", name: "Test User", nickname: "TestNick", image: null, role: "admin", member_type: "mentor" });
-      return next();
-    },
-    getSocialConfig: vi.fn(),
-  };
-});
-
-vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn()
-}));
-
-import { getSocialConfig } from "../middleware";
-import { sendZulipMessage } from "../../utils/zulipSync";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
+import type { DrizzleMock } from "../../../src/test/types";
 
 describe("Hono Backend - /zulip Router", () => {
   let testApp: Hono<TestEnv>;

@@ -5,17 +5,6 @@ import { Hono } from "hono";
 import { TestEnv } from "../../../src/test/types";
 import pointsRouter from "./points";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 describe("Hono Backend - /points Router", () => {
   let app: Hono<TestEnv>;
   let mockDb: DrizzleMock;

@@ -4,17 +4,6 @@ import { mockExecutionContext } from "../../../src/test/utils";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import sponsorsRouter from "./sponsors";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();

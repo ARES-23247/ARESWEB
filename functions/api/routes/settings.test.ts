@@ -23,26 +23,7 @@ describe("Hono Backend - /settings Router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      offset: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockReturnThis(),
-      doUpdateSet: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(), // Added missing required method
-      fn: {
-        count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnThis() }),
-      },
-    };
+    mockDb = createMockDrizzle() as unknown as DrizzleMock;
 
     env = {
       DB: {} as unknown as D1Database,
@@ -52,7 +33,7 @@ describe("Hono Backend - /settings Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb);
       c.set("sessionUser", { 
         id: "1", 
         email: "admin@test.com", 
@@ -124,7 +105,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("POST / - handles update error", async () => {
-    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
     const payload = { site_name: "New Name" };
     const res = await testApp.request("/admin/settings", {
       method: "POST",
@@ -136,17 +117,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /admin/backup - database export", async () => {
-    let currentTable = "";
-    mockDb.selectFrom.mockImplementation((table: string) => {
-      currentTable = table;
-      return mockDb;
-    });
-    mockDb.execute.mockImplementation(async () => {
-      if (currentTable === "inquiries") {
-        return [{ id: 1, name: "Bob", email: "bob@test.com" }];
-      }
-      return [];
-    });
+    mockDb.all.mockResolvedValue([{ id: 1, name: "Bob", email: "bob@test.com" }]);
 
     const res = await testApp.request("/admin/backup", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
@@ -190,7 +161,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /admin/stats - error", async () => {
-    mockDb.selectFrom.mockImplementationOnce(() => { throw new Error("DB error") });
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -207,8 +178,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /admin/backup - database export with db execution failure", async () => {
-    mockDb.selectFrom.mockImplementation((_table: string) => mockDb);
-    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    mockDb.all.mockRejectedValue(new Error("DB Error"));
 
     const res = await testApp.request("/admin/backup", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);

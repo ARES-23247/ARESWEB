@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
@@ -16,55 +16,24 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import outreachRouter from "./outreach/index";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 describe("Hono Backend - /outreach Router", () => {
   let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockReturnThis(),
-      doUpdateSet: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      getExecutor: vi.fn().mockReturnValue({
-        compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
-        executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: unknown) => q),
-      }),
-    };
+    mockDb = createMockDrizzle() as unknown as DrizzleMock;
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb);
       await next();
     });
     testApp.route("/", outreachRouter);
   });
 
   it("GET / - list outreach logs with volunteer events", async () => {
-    mockDb.execute
+    mockDb.all
       .mockResolvedValueOnce([
         { id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "..." }
       ]) // outreach_logs
@@ -84,13 +53,13 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("GET / - handles list failure", async () => {
-    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    mockDb.all.mockRejectedValue(new Error("DB Error"));
     const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/save - create", async () => {
-    mockDb.executeTakeFirst.mockResolvedValue({ insertId: 123n });
+    mockDb.all.mockResolvedValue([{ id: 123 }]);
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ title: "New", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
@@ -111,7 +80,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("POST /admin/save - handles save failure", async () => {
-    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    mockDb.all.mockRejectedValue(new Error("DB Error"));
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -129,7 +98,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("GET /admin/list - list outreach logs with volunteer events", async () => {
-    mockDb.execute
+    mockDb.all
       .mockResolvedValueOnce([
         { id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "..." }
       ]) // outreach_logs
@@ -145,7 +114,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("GET /admin/list - fallback properties and long description", async () => {
-    mockDb.execute
+    mockDb.all
       .mockResolvedValueOnce([
         { id: "1", title: "Test", date: "2024-01-01", students_count: null, hours_logged: null, reach_count: null, description: "A".repeat(250), is_mentoring: null, mentored_team_number: null, season_id: null }
       ])
@@ -158,7 +127,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("GET / - handles volunteer fetch failure gracefully", async () => {
-    mockDb.execute
+    mockDb.all
       .mockResolvedValueOnce([
         { id: "1", title: "Test", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, description: "A".repeat(250) }
       ])
@@ -171,7 +140,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("GET /admin/list - handles admin list failure", async () => {
-    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    mockDb.all.mockRejectedValue(new Error("DB Error"));
     const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -186,7 +155,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("DELETE /admin/:id - handles delete failure", async () => {
-    mockDb.execute.mockRejectedValue(new Error("DB Error"));
+    mockDb.run.mockRejectedValue(new Error("DB Error"));
     const res = await testApp.request("/admin/123", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -207,7 +176,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("POST /admin/save - create with mentoring", async () => {
-    mockDb.executeTakeFirst.mockResolvedValue({ insertId: 123n });
+    mockDb.all.mockResolvedValue([{ id: 123 }]);
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ title: "New", is_mentoring: true, mentored_team_number: "1234", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),

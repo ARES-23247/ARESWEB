@@ -5,61 +5,7 @@ import type { Context } from "hono";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
 import { TestEnv, DrizzleMock } from "../../../src/test/types";
 import postsRouter from "./posts";
-import { createMockPost } from "../../../src/test/factories/contentFactory";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
-
-
-// Mock global dependencies
-vi.stubGlobal("crypto", {
-  randomUUID: () => "test-uuid",
-});
-
-// Mock external utilities
-vi.mock("../../../functions/utils/socialSync", () => ({
-  dispatchSocials: vi.fn().mockResolvedValue(true),
-}));
-vi.mock("../../../functions/utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue(true),
-}));
-const { mockEmitNotification, mockNotifyByRole } = vi.hoisted(() => ({
-  mockEmitNotification: vi.fn().mockResolvedValue(true),
-  mockNotifyByRole: vi.fn().mockResolvedValue(true),
-}));
-
-vi.mock("../../../functions/utils/notifications", () => ({
-  emitNotification: mockEmitNotification,
-  notifyByRole: mockNotifyByRole,
-}));
-
-vi.mock("../middleware", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../middleware")>();
-  return {
-    ...actual,
-    ensureAdmin: async (_c: Context<TestEnv>, next: () => Promise<void>) => next(),
-    ensureAuth: async (_c: Context<TestEnv>, next: () => Promise<void>) => next(),
-    logAuditAction: vi.fn().mockResolvedValue(true),
-    getSessionUser: vi.fn().mockResolvedValue({ id: "1", email: "admin@test.com", role: "admin" }),
-  };
-});
-vi.mock("../../../functions/utils/postHistory", () => ({
-  createShadowRevision: vi.fn().mockResolvedValue("new-slug"),
-  approvePost: vi.fn().mockResolvedValue({ success: true, warnings: [] }),
-  getPostHistory: vi.fn().mockResolvedValue([]),
-  restorePostFromHistory: vi.fn().mockResolvedValue({ success: true }),
-  pruneHistory: vi.fn().mockResolvedValue(true),
-  captureHistory: vi.fn().mockResolvedValue(true),
-}));
 
 describe("Hono Backend - /posts Router", () => {
 

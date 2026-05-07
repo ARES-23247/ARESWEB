@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { TestEnv, MockExecutionContext } from "../../../src/test/types";
-import { createDrizzleProxy } from "../../../src/test/utils";
+import { createMockDrizzle } from "../../../src/test/utils";
 import type { DrizzleMock, DrizzleProxy, DrizzleProxyTarget } from "../../../src/test/mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
@@ -38,47 +38,7 @@ describe("Analytics Router", () => {
   let env: { DB: D1Database; TURNSTILE_SECRET_KEY: string; DEV_BYPASS: string };
 
   beforeEach(() => {
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      groupBy: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      leftJoin: vi.fn().mockImplementation((_table, arg1, arg2) => {
-        const joinMock = { onRef: vi.fn().mockReturnThis(), on: vi.fn().mockReturnThis() };
-        if (typeof arg2 === "function") {
-          try { arg2(joinMock); } catch(_e) { /* ignore */ }
-        } else if (typeof arg1 === "function") {
-          try { arg1(joinMock); } catch(_e) { /* ignore */ }
-        }
-        return mockDb;
-      }),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      all: vi.fn().mockResolvedValue([]),
-      get: vi.fn().mockResolvedValue(null),
-      run: vi.fn().mockResolvedValue({ success: true }),
-      getExecutor: vi.fn().mockReturnValue({
-        compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
-        executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: unknown) => q),
-      }),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === "function") {
-          try { arg({ columns: vi.fn().mockReturnThis(), doUpdateSet: vi.fn().mockReturnThis() }); } catch(_e) { /* ignore */ }
-        }
-        return mockDb;
-      }),
-      doUpdateSet: vi.fn().mockReturnThis(),
-      fn: {}
-    };
+    mockDb = createMockDrizzle();
     env = {
       DB: {} as D1Database,
       TURNSTILE_SECRET_KEY: "test-secret",
@@ -89,7 +49,7 @@ describe("Analytics Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb);
       c.set("sessionUser", { id: "1", role: "admin" } as TestEnv["Variables"]["sessionUser"]);
       await next();
     });

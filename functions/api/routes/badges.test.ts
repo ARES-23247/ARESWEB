@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
+import type { DrizzleProxy } from "../../../src/test/mocks";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
@@ -24,17 +25,6 @@ vi.mock("../../utils/zulipSync", () => ({
 }));
 
 import { badgesRouter } from "./badges";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
 
 describe("Hono Backend - /badges Router", () => {
   let mockDb: DrizzleMock;

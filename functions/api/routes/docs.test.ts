@@ -43,21 +43,10 @@ vi.mock("../../utils/zulipSync", () => ({
 }));
 
 import docsRouter from "./docs";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
+import { createDrizzleProxy } from "../../../src/test/utils";
+import type { DrizzleProxy } from "../../../src/test/mocks";
 
 describe("Hono Backend - /docs Router", () => {
-
-
 
   let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;

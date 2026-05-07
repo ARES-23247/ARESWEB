@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
+import { createMockDrizzle } from "../../../../src/test/utils";
+import type { DrizzleMock } from "../../../../src/test/types";
 
 // Mock middleware
 vi.mock("../../middleware", () => ({
@@ -22,29 +24,6 @@ vi.mock("./indexer", () => ({
 import aiRouter from "./index";
 
 
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
-interface MockDB {
-  selectFrom: ReturnType<typeof vi.fn>;
-  select: ReturnType<typeof vi.fn>;
-  where: ReturnType<typeof vi.fn>;
-  execute: ReturnType<typeof vi.fn>;
-}
-
-const mockDb: MockDB = {
-  selectFrom: vi.fn().mockReturnThis(),
-  select: vi.fn().mockReturnThis(),
-  where: vi.fn().mockReturnThis(),
-  execute: vi.fn().mockResolvedValue([]),
-};
 
 interface MockAI {
   run: ReturnType<typeof vi.fn>;
@@ -71,6 +50,7 @@ interface MockExecutionContext {
 }
 
 describe("AI Router - /reindex endpoint", () => {
+  let mockDb: any;
   let app: Hono<{ Bindings: TestBindings }>;
   const baseEnv: TestBindings = {
     AI: { run: vi.fn() },
@@ -82,9 +62,10 @@ describe("AI Router - /reindex endpoint", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDb = createMockDrizzle() as any;
     app = new Hono();
     app.use("*", async (c: Context, next: Next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb);
       await next();
     });
     app.route("/", aiRouter);

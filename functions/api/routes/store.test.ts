@@ -5,17 +5,6 @@ import { Hono } from "hono";
 import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import storeRouter from "./store";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
 interface StoreResponse {
   success?: boolean;
   data?: unknown;

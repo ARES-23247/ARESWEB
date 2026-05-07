@@ -2,24 +2,7 @@
  
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import githubWebhookRouter from "./githubWebhook";
-import { mockExecutionContext, flushWaitUntil }, createDrizzleProxy from "../../../src/test/utils";
-import type { MockExecutionContext, DrizzleMock } from "../../../src/test/types";
-import * as zulipSync from "../../utils/zulipSync";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
-vi.mock("../../utils/zulipSync", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue(true)
-}));
 
 describe("GitHub Webhook Router", () => {
   const env = {

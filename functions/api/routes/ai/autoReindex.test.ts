@@ -1,20 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MockExecutionContext } from "../../../../src/test/types";
+import { MockExecutionContext, DrizzleMock } from "../../../../src/test/types";
 import { triggerBackgroundReindex } from "./autoReindex";
 import type { VectorizeIndex, Ai } from "@cloudflare/workers-types";
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
-
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
 
 // Mock Cloudflare Worker bindings for AI tests
 type MockAI = { run: ReturnType<typeof vi.fn> };

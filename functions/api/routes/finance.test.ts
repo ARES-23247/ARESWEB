@@ -18,19 +18,6 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import financeRouter from "./finance";
 
-
-          return Promise.resolve([]).then(resolve, reject);
-        };
-      }
-      if (prop in drizzleMethods) return drizzleMethods[prop as string];
-      return target[prop];
-    }
-  });
-  return proxy;
-}
-
-
-
 const mockEnv = {
   DB: {} as D1Database,
   ARES_STORAGE: {
