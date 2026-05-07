@@ -8,36 +8,73 @@ const KV_KEY = "rag_last_indexed";
 // ── Mock DB (Kysely chain) ────────────────────────────────────────────────
 interface MockQuery {
   select: ReturnType<typeof vi.fn>;
+  from: ReturnType<typeof vi.fn>;
   where: ReturnType<typeof vi.fn>;
   orderBy: ReturnType<typeof vi.fn>;
   limit: ReturnType<typeof vi.fn>;
   execute: ReturnType<typeof vi.fn>;
   executeTakeFirst: ReturnType<typeof vi.fn>;
+  all: ReturnType<typeof vi.fn>;
+  then: ReturnType<typeof vi.fn>;
   values: ReturnType<typeof vi.fn>;
   onConflict: ReturnType<typeof vi.fn>;
+  onConflictDoUpdate: ReturnType<typeof vi.fn>;
   doUpdateSet: ReturnType<typeof vi.fn>;
 }
 
 const createMockQuery = (): MockQuery => {
+  let executeResult: any[] = [];
+  let shouldFail = false;
   const q: MockQuery = {
     select: vi.fn(),
+    from: vi.fn(),
     where: vi.fn(),
     orderBy: vi.fn(),
     limit: vi.fn(),
-    execute: vi.fn().mockResolvedValue([]),
+    execute: vi.fn().mockImplementation(async () => {
+      if (shouldFail) throw new Error("DB connection lost");
+      return executeResult;
+    }),
     executeTakeFirst: vi.fn().mockResolvedValue(null),
+    all: vi.fn().mockImplementation(async () => {
+      if (shouldFail) throw new Error("DB connection lost");
+      return executeResult;
+    }),
+    then: vi.fn().mockImplementation(async (resolve: (value: any) => unknown, reject?: (reason: any) => unknown) => {
+      if (shouldFail) {
+        if (reject) return reject(new Error("DB connection lost"));
+        throw new Error("DB connection lost");
+      }
+      return resolve(executeResult);
+    }),
     values: vi.fn(),
     onConflict: vi.fn(),
+    onConflictDoUpdate: vi.fn(),
     doUpdateSet: vi.fn(),
   };
   // Each method returns the same object for chaining
   q.select.mockReturnValue(q);
+  q.from.mockReturnValue(q);
   q.where.mockReturnValue(q);
   q.orderBy.mockReturnValue(q);
   q.limit.mockReturnValue(q);
   q.values.mockReturnValue(q);
   q.onConflict.mockReturnValue(q);
+  q.onConflictDoUpdate.mockReturnValue(q);
   q.doUpdateSet.mockReturnValue(q);
+
+  // Helper to set the result that execute/all/then will return
+  (q as any).__setExecuteResult = (result: any[]) => {
+    executeResult = result;
+    q.execute.mockResolvedValue(result);
+    q.all.mockResolvedValue(result);
+  };
+
+  // Helper to make the query fail
+  (q as any).__setShouldFail = (fail: boolean) => {
+    shouldFail = fail;
+  };
+
   return q;
 };
 
@@ -121,7 +158,7 @@ describe("indexSiteContent", () => {
 
   it("indexes events and generates embeddings", async () => {
     const mockQuery = createMockQuery();
-    mockQuery.execute.mockResolvedValue([
+    (mockQuery as any).__setExecuteResult([
       { title: "Practice", description: "Weekly practice", date_start: "2026-05-01T18:00:00Z", date_end: null, location: "Lab", category: "practice" },
     ]);
     // First select = events
@@ -141,7 +178,7 @@ describe("indexSiteContent", () => {
   it("indexes posts with AST content extraction", async () => {
     const eventsQuery = createMockQuery();
     const postsQuery = createMockQuery();
-    postsQuery.execute.mockResolvedValue([
+    (postsQuery as any).__setExecuteResult([
       { slug: "hello-world", title: "Hello World", ast: JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Test body" }] }] }), published_at: "2026-04-01" },
     ]);
 
@@ -163,7 +200,7 @@ describe("indexSiteContent", () => {
     const eventsQuery = createMockQuery();
     const postsQuery = createMockQuery();
     const docsQuery = createMockQuery();
-    docsQuery.execute.mockResolvedValue([
+    (docsQuery as any).__setExecuteResult([
       { slug: "getting-started", title: "Getting Started", content: "Setup guide", category: "guide" },
     ]);
 
@@ -195,7 +232,7 @@ describe("indexSiteContent", () => {
     mockDb.query.settings.findFirst.mockResolvedValue(null);
 
     const failQuery = createMockQuery();
-    failQuery.execute.mockRejectedValue(new Error("DB connection lost"));
+    (failQuery as any).__setShouldFail(true);
 
     // All 4 indexing queries fail
     mockDb.select.mockReturnValue(failQuery);
@@ -212,7 +249,7 @@ describe("indexSiteContent", () => {
 
   it("handles embedding API returning mismatched results", async () => {
     const eventsQuery = createMockQuery();
-    eventsQuery.execute.mockResolvedValue([
+    (eventsQuery as any).__setExecuteResult([
       { title: "Event A", description: "Test", date_start: "2026-05-01", date_end: null, location: "Lab", category: "practice" },
       { title: "Event B", description: "Test", date_start: "2026-05-02", date_end: null, location: "Lab", category: "meeting" },
     ]);
@@ -229,7 +266,7 @@ describe("indexSiteContent", () => {
 
   it("handles vectorize upsert failure", async () => {
     const eventsQuery = createMockQuery();
-    eventsQuery.execute.mockResolvedValue([
+    (eventsQuery as any).__setExecuteResult([
       { title: "Event", description: "x", date_start: "2026-05-01", date_end: null, location: "Lab", category: "practice" },
     ]);
     mockDb.select.mockImplementationOnce(() => eventsQuery);
@@ -250,7 +287,7 @@ describe("indexSiteContent", () => {
     const postsQuery = createMockQuery();
     const docsQuery = createMockQuery();
     const seasonsQuery = createMockQuery();
-    seasonsQuery.execute.mockResolvedValue([
+    (seasonsQuery as any).__setExecuteResult([
       { start_year: 2025, challenge_name: "Into The Deep", robot_name: "ARES", summary: "Great season", robot_description: "Powerful bot" },
     ]);
 

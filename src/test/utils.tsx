@@ -68,10 +68,23 @@ export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDr
     then: vi.fn().mockImplementation((resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) => mockDb.all().then(resolve, reject)),
     transaction: vi.fn().mockImplementation(async (cb: (db: typeof mockDb) => Promise<unknown>) => cb(mockDb)),
     batch: vi.fn().mockResolvedValue([]),
-    all: vi.fn().mockResolvedValue(defaultResolve),
-    execute: vi.fn().mockResolvedValue(defaultResolve),
+    all: vi.fn().mockImplementation((...args: unknown[]) => {
+      // Handle Drizzle sql template strings
+      if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
+        return Promise.resolve(defaultResolve);
+      }
+      return Promise.resolve(defaultResolve);
+    }),
+    execute: vi.fn().mockImplementation((...args: unknown[]) => {
+      // Handle Drizzle sql template strings
+      if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
+        return Promise.resolve(defaultResolve);
+      }
+      return Promise.resolve(defaultResolve);
+    }),
     run: vi.fn().mockResolvedValue({ success: true }),
     get: vi.fn().mockResolvedValue(defaultResolve[0] || null),
+    executeTakeFirst: vi.fn().mockResolvedValue(defaultResolve[0] || null),
     $dynamic: vi.fn().mockReturnThis(),
     query: new Proxy({}, {
       get: (_target: unknown, _prop: string) => {
@@ -168,6 +181,12 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       return proxy;
     }),
     returning: vi.fn().mockImplementation((..._args: unknown[]) => proxy),
+    execute: vi.fn().mockImplementation(async (...args: unknown[]) => {
+      if ((dbMock as DrizzleProxyTarget).execute) {
+        return (dbMock as DrizzleProxyTarget).execute!(...args);
+      }
+      return Promise.resolve([]);
+    }),
   };
 
   const proxy = new Proxy(dbMock, {

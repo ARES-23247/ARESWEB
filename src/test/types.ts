@@ -55,6 +55,15 @@ export type MockDrizzle = {
       findMany: ReturnType<typeof vi.fn>;
     }
   };
+  /** Legacy Kysely compatibility aliases (used by existing tests) */
+  insertInto?: ReturnType<typeof vi.fn>;
+  deleteFrom?: ReturnType<typeof vi.fn>;
+  updateTable?: ReturnType<typeof vi.fn>;
+  selectFrom?: ReturnType<typeof vi.fn>;
+  selectAll?: ReturnType<typeof vi.fn>;
+  executeTakeFirst: ReturnType<typeof vi.fn>;
+  /** Allow additional properties for test flexibility */
+  [key: string]: unknown;
 };
 
 // ── DrizzleMock (alias for consistency) ─────────────────────────────────────────
@@ -72,7 +81,7 @@ export type DrizzleMock = MockDrizzle;
  */
 export type TestEnv = {
   Variables: {
-    db: MockDrizzle;
+    db: any;
     sessionUser: {
       id: string;
       email: string;
@@ -81,7 +90,7 @@ export type TestEnv = {
       image?: string | null;
       role: string;
       member_type: string;
-    };
+    } | any;
     socialConfig?: Record<string, string | undefined>;
     requestId?: string;
   };
