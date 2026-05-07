@@ -387,6 +387,9 @@ export const outreachLogs = sqliteTable("outreach_logs", {
 	metadata: text(),
 	isDeleted: integer("is_deleted").default(0),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	eventId: text("event_id"),
+	mentorCount: integer("mentor_count").default(0),
+	mentorHours: integer("mentor_hours").default(0),
 	createdAt: text("created_at").default("sql`(datetime('now'))`"),
 },
 (table) => [
@@ -844,4 +847,21 @@ export const pointsLedger = sqliteTable("points_ledger", {
 },
 (table) => [
 	index("idx_points_ledger_user").on(table.userId),
+]);
+
+export const scoutingAnalyses = sqliteTable("scouting_analyses", {
+	id: text().primaryKey(),
+	seasonKey: text("season_key").notNull(),
+	eventKey: text("event_key"),
+	teamNumber: integer("team_number"),
+	mode: text().notNull(),
+	model: text().notNull(),
+	markdown: text().notNull(),
+	tokensUsed: integer("tokens_used"),
+	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "set null" }),
+	createdAt: text("created_at").default("sql`(datetime('now'))`"),
+},
+(table) => [
+	index("idx_scouting_analyses_team").on(table.teamNumber),
+	index("idx_scouting_analyses_event").on(table.eventKey),
 ]);

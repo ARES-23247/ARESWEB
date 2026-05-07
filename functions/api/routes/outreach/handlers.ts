@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
-import { Kysely } from "kysely";
+import { eq, and, desc } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { DB } from "../../../../shared/schemas/database";
 import { getSessionUser, logAuditAction } from "../../middleware";
 
 import type {
@@ -13,15 +13,23 @@ import type {
 
 const SNIPPET_LENGTH = 200;
 
-async function fetchVolunteerEvents(db: Kysely<DB>, existingEventIds: string[]) {
+async function fetchVolunteerEvents(db: any, existingEventIds: string[]) {
   try {
-    const results = await db.selectFrom("events")
-      .select(["id", "title", "date_start as date", "location", "season_id"])
-      .where("is_volunteer", "=", 1)
-      .where("is_deleted", "=", 0)
-      .where("status", "=", "published")
-      .orderBy("date_start", "desc")
-      .execute();
+    const results = await db.select({
+      id: schema.events.id,
+      title: schema.events.title,
+      date: schema.events.dateStart,
+      location: schema.events.location,
+      season_id: schema.events.seasonId,
+    }).from(schema.events)
+      .where(
+        and(
+          eq(schema.events.isVolunteer, 1),
+          eq(schema.events.isDeleted, 0),
+          eq(schema.events.status, "published")
+        )
+      )
+      .orderBy(desc(schema.events.dateStart));
       
     const filteredResults = results.filter((r: any) => !existingEventIds.includes(String(r.id)));
     
@@ -48,17 +56,24 @@ async function fetchVolunteerEvents(db: Kysely<DB>, existingEventIds: string[]) 
 export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async (c: any) => {
   try {
     const db = c.get("db") as any;
-    const results = await db.selectFrom("outreach_logs")
-      .select([
-        "id", "title", "date", "location",
-        "hours as hours_logged", "people_reached as reach_count",
-        "students_count", "impact_summary as description", "season_id",
-        "is_mentoring", "mentored_team_number", "event_id",
-        "mentor_count", "mentor_hours"
-      ])
-      .where("is_deleted", "=", 0)
-      .orderBy("date", "desc")
-      .execute();
+    const results = await db.select({
+        id: schema.outreachLogs.id,
+        title: schema.outreachLogs.title,
+        date: schema.outreachLogs.date,
+        location: schema.outreachLogs.location,
+        hours_logged: schema.outreachLogs.hours,
+        reach_count: schema.outreachLogs.peopleReached,
+        students_count: schema.outreachLogs.studentsCount,
+        description: schema.outreachLogs.impactSummary,
+        season_id: schema.outreachLogs.seasonId,
+        is_mentoring: schema.outreachLogs.isMentoring,
+        mentored_team_number: schema.outreachLogs.mentoredTeamNumber,
+        event_id: schema.outreachLogs.eventId,
+        mentor_count: schema.outreachLogs.mentorCount,
+        mentor_hours: schema.outreachLogs.mentorHours,
+    }).from(schema.outreachLogs)
+      .where(eq(schema.outreachLogs.isDeleted, 0))
+      .orderBy(desc(schema.outreachLogs.date));
     
     const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
@@ -95,17 +110,24 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute> = async 
 export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute> = async (c: any) => {
   try {
     const db = c.get("db") as any;
-    const results = await db.selectFrom("outreach_logs")
-      .select([
-        "id", "title", "date", "location",
-        "hours as hours_logged", "people_reached as reach_count",
-        "students_count", "impact_summary as description", "season_id",
-        "is_mentoring", "mentored_team_number", "event_id",
-        "mentor_count", "mentor_hours"
-      ])
-      .where("is_deleted", "=", 0)
-      .orderBy("date", "desc")
-      .execute();
+    const results = await db.select({
+        id: schema.outreachLogs.id,
+        title: schema.outreachLogs.title,
+        date: schema.outreachLogs.date,
+        location: schema.outreachLogs.location,
+        hours_logged: schema.outreachLogs.hours,
+        reach_count: schema.outreachLogs.peopleReached,
+        students_count: schema.outreachLogs.studentsCount,
+        description: schema.outreachLogs.impactSummary,
+        season_id: schema.outreachLogs.seasonId,
+        is_mentoring: schema.outreachLogs.isMentoring,
+        mentored_team_number: schema.outreachLogs.mentoredTeamNumber,
+        event_id: schema.outreachLogs.eventId,
+        mentor_count: schema.outreachLogs.mentorCount,
+        mentor_hours: schema.outreachLogs.mentorHours,
+    }).from(schema.outreachLogs)
+      .where(eq(schema.outreachLogs.isDeleted, 0))
+      .orderBy(desc(schema.outreachLogs.date));
     
     const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
@@ -149,44 +171,44 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute> = async 
     const validatedData = body;
     let result: string | number;
     if (validatedData.id) {
-      await db.updateTable("outreach_logs")
+      await db.update(schema.outreachLogs)
         .set({
           title: validatedData.title,
           date: validatedData.date,
           location: validatedData.location || null,
           hours: validatedData.hours_logged,
-          people_reached: validatedData.reach_count,
-          students_count: validatedData.students_count,
-          impact_summary: validatedData.description || null,
-          is_mentoring: validatedData.is_mentoring ? 1 : 0,
-          mentored_team_number: validatedData.mentored_team_number || null,
-          season_id: validatedData.season_id || null,
-          event_id: validatedData.event_id || null,
-          mentor_count: validatedData.mentor_count || 0,
-          mentor_hours: validatedData.mentor_hours || 0,
+          peopleReached: validatedData.reach_count,
+          studentsCount: validatedData.students_count,
+          impactSummary: validatedData.description || null,
+          isMentoring: validatedData.is_mentoring ? 1 : 0,
+          mentoredTeamNumber: validatedData.mentored_team_number || null,
+          seasonId: validatedData.season_id || null,
+          eventId: validatedData.event_id || null,
+          mentorCount: validatedData.mentor_count || 0,
+          mentorHours: validatedData.mentor_hours || 0,
         })
-        .where("id", "=", Number(validatedData.id))
-        .execute();
+        .where(eq(schema.outreachLogs.id, Number(validatedData.id)))
+        .run();
       result = validatedData.id;
     } else {
-      const inserted = await db.insertInto("outreach_logs")
+      const inserted = await db.insert(schema.outreachLogs)
         .values({
           title: validatedData.title,
           date: validatedData.date,
           location: validatedData.location || null,
           hours: validatedData.hours_logged,
-          people_reached: validatedData.reach_count,
-          students_count: validatedData.students_count,
-          impact_summary: validatedData.description || null,
-          is_mentoring: validatedData.is_mentoring ? 1 : 0,
-          mentored_team_number: validatedData.mentored_team_number || null,
-          season_id: validatedData.season_id || null,
-          event_id: validatedData.event_id || null,
-          mentor_count: validatedData.mentor_count || 0,
-          mentor_hours: validatedData.mentor_hours || 0,
+          peopleReached: validatedData.reach_count,
+          studentsCount: validatedData.students_count,
+          impactSummary: validatedData.description || null,
+          isMentoring: validatedData.is_mentoring ? 1 : 0,
+          mentoredTeamNumber: validatedData.mentored_team_number || null,
+          seasonId: validatedData.season_id || null,
+          eventId: validatedData.event_id || null,
+          mentorCount: validatedData.mentor_count || 0,
+          mentorHours: validatedData.mentor_hours || 0,
         })
-        .executeTakeFirst();
-      result = inserted.insertId?.toString() || "new";
+        .returning({ id: schema.outreachLogs.id });
+      result = inserted[0]?.id?.toString() || "new";
     }
 
     if (validatedData.id) {
@@ -209,10 +231,10 @@ export const handleDeleteOutreach: RouteHandler<typeof deleteOutreachRoute> = as
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
-    await db.updateTable("outreach_logs")
-      .set({ is_deleted: 1 })
-      .where("id", "=", Number(id))
-      .execute();
+    await db.update(schema.outreachLogs)
+      .set({ isDeleted: 1 })
+      .where(eq(schema.outreachLogs.id, Number(id)))
+      .run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_outreach", "outreach_logs", id, "Outreach log soft-deleted"));
     return c.json({ success: true }, 200);
   } catch (err) {
