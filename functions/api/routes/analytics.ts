@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
-import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit } from "../middleware";
-import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit, getDb } from "../middleware";
+import { eq, and, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import {
 
@@ -37,13 +36,12 @@ analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 
 // Track page view
 analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRoute>(async (c) => {
+  const db = getDb(c);
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as any, `track:${ip}`, ua, 20, 600))) {
+  if (!(await checkPersistentRateLimit(db, `track:${ip}`, ua, 20, 600))) {
     return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
-
-  const db = c.get("db") as any;
   try {
     const { path, category, referrer } = c.req.valid("json");
     const userAgent = c.req.header("user-agent") || ua;
@@ -66,13 +64,12 @@ analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRou
 
 // Track sponsor click
 analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsorClickRoute>(async (c) => {
+  const db = getDb(c);
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as any, `click:${ip}`, ua, 10, 600))) {
+  if (!(await checkPersistentRateLimit(db, `click:${ip}`, ua, 10, 600))) {
     return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
   }
-
-  const db = c.get("db") as any;
   try {
     const { sponsor_id } = c.req.valid("json");
 
@@ -106,7 +103,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
 
 // Get platform analytics (admin)
 analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const [
       totalViewsData,
@@ -209,7 +206,7 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
 
 // Get roster stats (admin)
 analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const results: any = await db.execute(sql`
       SELECT 
@@ -247,7 +244,7 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
 
 // Get leaderboard
 analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const results: any = await db.execute(sql`
       SELECT 
@@ -289,7 +286,7 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
 
 // Get stats (admin)
 analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
       db.select({ total: sql<number>`count(${schema.posts.slug})` }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
@@ -321,7 +318,7 @@ analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async 
 
 // Search
 analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   const { q } = c.req.valid("query");
   try {
     // SCA-FTS-01: Sanitize FTS5 query
