@@ -1,16 +1,16 @@
 import { sendZulipMessage } from './zulipSync';
-import { 
-  dispatchDiscord, dispatchDiscordPhoto, 
-  dispatchSlack, dispatchSlackPhoto, 
-  dispatchTeams, dispatchTeamsPhoto, 
-  dispatchGChat, dispatchGChatPhoto, 
-  dispatchMake 
+import {
+  dispatchDiscord, dispatchDiscordPhoto,
+  dispatchSlack, dispatchSlackPhoto,
+  dispatchTeams, dispatchTeamsPhoto,
+  dispatchGChat, dispatchGChatPhoto,
+  dispatchMake
 } from './social/webhooks';
 import { dispatchBluesky } from './social/bluesky';
 import { dispatchBand } from './social/band';
 import { dispatchTwitterPhoto } from './social/twitter';
 import { dispatchFacebook, dispatchMetaPhoto } from './social/meta';
-import { logSystemError } from '../api/middleware';
+import { logSystemError, DrizzleDB } from '../api/middleware';
 import pRetry from 'p-retry';
 import { Kysely } from "kysely";
 import { DB } from "../../shared/schemas/database";
@@ -56,9 +56,9 @@ export interface PostPayload {
  * Fails gracefully on any single provider so others still execute.
  */
 export async function dispatchSocials(
-  db: any,
-  payload: PostPayload, 
-  config: SocialConfig, 
+  db: DrizzleDB,
+  payload: PostPayload,
+  config: SocialConfig,
   socialsFilter: Record<string, boolean> | null = null
 ) {
   const promises: Promise<unknown>[] = [];

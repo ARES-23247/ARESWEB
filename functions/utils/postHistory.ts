@@ -281,7 +281,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
 
   c.executionCtx.waitUntil(
     dispatchSocials(
-      c.get("db") as any,
+      c.get("db"),
       {
         title: row.title as string,
         url: `${baseUrl}/blog/${slug}`,
@@ -290,7 +290,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         baseUrl: baseUrl
       },
       socialConfig
-    ).catch((err: any) => console.error("[Approve] Social dispatch failed:", err))
+    ).catch((err: unknown) => console.error("[Approve] Social dispatch failed:", err))
   );
 
   // Initialize Zulip Thread
@@ -301,7 +301,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         "announcements",
         `Blog: ${row.title}`,
         `🚀 **New Blog Post Published:** [${row.title}](${baseUrl}/blog/${slug})\n\n${row.snippet?.substring(0, 300) || ""}`
-      ).catch((err: any) => console.error("[Approve] Zulip thread creation failed:", err))
+      ).catch((err: unknown) => console.error("[Approve] Zulip thread creation failed:", err))
     );
   }).catch(() => {});
 
@@ -319,7 +319,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
           message: `Your post "${row.title}" has been published.`,
           link: `/blog/${slug}`,
           priority: "medium"
-        }).catch((err: any) => console.error("[Approve] Author notification failed:", err))
+        }).catch((err: unknown) => console.error("[Approve] Author notification failed:", err))
       );
     }
   }
