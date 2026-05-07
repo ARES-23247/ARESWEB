@@ -3,17 +3,16 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, asc, desc, and, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { DB } from "../../../shared/schemas/database";
-import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware, getDb } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
-import { 
+import {
 
-  listBadgesRoute, 
-  createBadgeRoute, 
-  grantBadgeRoute, 
-  revokeBadgeRoute, 
-  deleteBadgeRoute, 
-  leaderboardBadgeRoute 
+  listBadgesRoute,
+  createBadgeRoute,
+  grantBadgeRoute,
+  revokeBadgeRoute,
+  deleteBadgeRoute,
+  leaderboardBadgeRoute
 } from "../../../shared/routes/badges";
 
 
@@ -27,7 +26,7 @@ badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
 badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = getDb(c);
     const results = await db
       .select({
         id: schema.badges.id,
@@ -60,7 +59,7 @@ badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async
 badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(async (c) => {
   try {
     const { id, name, description, icon, color_theme } = c.req.valid("json");
-    const db = c.get("db");
+    const db = getDb(c);
     await db
       .insert(schema.badges)
       .values({
@@ -81,7 +80,7 @@ badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(asy
 badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async (c) => {
   try {
     const { userId, badgeId } = c.req.valid("json");
-    const db = c.get("db");
+    const db = getDb(c);
     const user = await getSessionUser(c);
     const sessionId = user?.id || "system";
 
@@ -152,7 +151,7 @@ badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async
 badgesRouter.openapi(revokeBadgeRoute, typedHandler<typeof revokeBadgeRoute>(async (c) => {
   try {
     const { userId, badgeId } = c.req.valid("param");
-    const db = c.get("db");
+    const db = getDb(c);
     await db
       .delete(schema.userBadges)
       .where(and(eq(schema.userBadges.userId, userId), eq(schema.userBadges.badgeId, badgeId)))
@@ -167,7 +166,7 @@ badgesRouter.openapi(revokeBadgeRoute, typedHandler<typeof revokeBadgeRoute>(asy
 badgesRouter.openapi(deleteBadgeRoute, typedHandler<typeof deleteBadgeRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db");
+    const db = getDb(c);
     await db.delete(schema.badges).where(eq(schema.badges.id, id)).run();
     return c.json({ success: true }, 200);
   } catch (e: unknown) {
@@ -178,7 +177,7 @@ badgesRouter.openapi(deleteBadgeRoute, typedHandler<typeof deleteBadgeRoute>(asy
 
 badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadgeRoute>(async (c) => {
   try {
-    const db = c.get("db");
+    const db = getDb(c);
     const results = await db
       .select({
         user_id: schema.userProfiles.userId,
