@@ -1,5 +1,6 @@
 import { typedHandler } from "../utils/handler";
-import { Kysely, sql } from "kysely";
+import { eq, asc, desc, sql } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -15,8 +16,6 @@ import {
   getAdminTokensRoute,
   generateTokenRoute,
 } from "../../../shared/routes/sponsors";
-
-
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
 
@@ -42,11 +41,19 @@ sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(a
   try {
     const db = c.get("db") as any;
     const results = await db
-      .selectFrom("sponsors")
-      .select(["id", "name", "tier", "logo_url", "website_url", "is_active", "created_at"])
-      .where("is_active", "=", 1)
+      .select({
+        id: schema.sponsors.id,
+        name: schema.sponsors.name,
+        tier: schema.sponsors.tier,
+        logo_url: schema.sponsors.logoUrl,
+        website_url: schema.sponsors.websiteUrl,
+        is_active: schema.sponsors.isActive,
+        created_at: schema.sponsors.createdAt,
+      })
+      .from(schema.sponsors)
+      .where(eq(schema.sponsors.isActive, 1))
       .orderBy(sql<number>`CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END`)
-      .execute();
+      .all();
 
     const sponsors = (results as SponsorSelectedRow[] & { created_at: string | null }[]).map((s: any) => ({
       id: s.id ?? "",
@@ -71,32 +78,46 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
     const { token } = c.req.valid("param");
     const db = c.get("db") as any;
     const tokens = await db
-      .selectFrom("sponsor_tokens")
-      .select("sponsor_id")
-      .where("token", "=", token)
-      .execute();
+      .select({ sponsorId: schema.sponsorTokens.sponsorId })
+      .from(schema.sponsorTokens)
+      .where(eq(schema.sponsorTokens.token, token))
+      .all();
 
     if (!tokens || tokens.length === 0) {
       return c.json({ error: "Invalid token" }, 403);
     }
-    const sponsor_id = tokens[0].sponsor_id;
+    const sponsor_id = tokens[0].sponsorId;
 
     const sponsorRow = await db
-      .selectFrom("sponsors")
-      .select(["id", "name", "tier", "logo_url", "website_url", "is_active", "created_at"])
-      .where("id", "=", sponsor_id)
-      .executeTakeFirst();
+      .select({
+        id: schema.sponsors.id,
+        name: schema.sponsors.name,
+        tier: schema.sponsors.tier,
+        logo_url: schema.sponsors.logoUrl,
+        website_url: schema.sponsors.websiteUrl,
+        is_active: schema.sponsors.isActive,
+        created_at: schema.sponsors.createdAt,
+      })
+      .from(schema.sponsors)
+      .where(eq(schema.sponsors.id, sponsor_id))
+      .get();
 
     if (!sponsorRow) {
       return c.json({ error: "Sponsor not found" }, 403);
     }
 
     const metricsRow = await db
-      .selectFrom("sponsor_metrics")
-      .select(["id", "sponsor_id", "clicks", "impressions", "year_month"])
-      .where("sponsor_id", "=", sponsor_id)
-      .orderBy("created_at", "asc")
-      .execute();
+      .select({
+        id: schema.sponsorMetrics.id,
+        sponsor_id: schema.sponsorMetrics.sponsorId,
+        clicks: schema.sponsorMetrics.clicks,
+        impressions: schema.sponsorMetrics.impressions,
+        year_month: schema.sponsorMetrics.yearMonth,
+      })
+      .from(schema.sponsorMetrics)
+      .where(eq(schema.sponsorMetrics.sponsorId, sponsor_id))
+      .orderBy(asc(schema.sponsorMetrics.createdAt))
+      .all();
 
     const sponsor = {
       id: sponsorRow.id ?? "",
@@ -127,7 +148,15 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
 sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSponsorsRoute>(async (c) => {
   try {
     const db = c.get("db") as any;
-    const sponsors = await db.selectFrom("sponsors").selectAll().execute();
+    const sponsors = await db.select({
+        id: schema.sponsors.id,
+        name: schema.sponsors.name,
+        tier: schema.sponsors.tier,
+        logo_url: schema.sponsors.logoUrl,
+        website_url: schema.sponsors.websiteUrl,
+        is_active: schema.sponsors.isActive,
+        created_at: schema.sponsors.createdAt,
+      }).from(schema.sponsors).all();
 
     return c.json(
       {
@@ -158,29 +187,29 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
 
     if (body.id) {
       await db
-        .updateTable("sponsors")
+        .update(schema.sponsors)
         .set({
           name: body.name,
           tier: body.tier,
-          logo_url: body.logo_url || null,
-          website_url: body.website_url || null,
-          is_active: body.is_active ? 1 : 0,
+          logoUrl: body.logo_url || null,
+          websiteUrl: body.website_url || null,
+          isActive: body.is_active ? 1 : 0,
         })
-        .where("id", "=", body.id)
-        .execute();
+        .where(eq(schema.sponsors.id, body.id))
+        .run();
       c.executionCtx.waitUntil(logAuditAction(c, "update_sponsor", "sponsors", id));
     } else {
       await db
-        .insertInto("sponsors")
+        .insert(schema.sponsors)
         .values({
           id,
           name: body.name,
           tier: body.tier,
-          logo_url: body.logo_url || null,
-          website_url: body.website_url || null,
-          is_active: body.is_active ? 1 : 0,
+          logoUrl: body.logo_url || null,
+          websiteUrl: body.website_url || null,
+          isActive: body.is_active ? 1 : 0,
         })
-        .execute();
+        .run();
       c.executionCtx.waitUntil(
         logAuditAction(c, "create_sponsor", "sponsors", id, `Created sponsor ${body.name}`)
       );
@@ -199,7 +228,7 @@ sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRout
     const { id } = c.req.valid("param");
     const db = c.get("db") as any;
 
-    await db.deleteFrom("sponsors").where("id", "=", id).execute();
+    await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", id));
     return c.json({ success: true }, 200);
   } catch (e) {
@@ -213,11 +242,16 @@ sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRo
   try {
     const db = c.get("db") as any;
     const results = await db
-      .selectFrom("sponsor_tokens as t")
-      .innerJoin("sponsors as s", "t.sponsor_id", "s.id")
-      .select(["t.token", "t.sponsor_id", "t.created_at", "s.name as sponsor_name"])
-      .orderBy("t.created_at", "desc")
-      .execute();
+      .select({
+        token: schema.sponsorTokens.token,
+        sponsor_id: schema.sponsorTokens.sponsorId,
+        created_at: schema.sponsorTokens.createdAt,
+        sponsor_name: schema.sponsors.name,
+      })
+      .from(schema.sponsorTokens)
+      .innerJoin(schema.sponsors, eq(schema.sponsorTokens.sponsorId, schema.sponsors.id))
+      .orderBy(desc(schema.sponsorTokens.createdAt))
+      .all();
 
     const tokens = results.map((t: any) => ({
       token: t.token ?? "",
@@ -241,15 +275,15 @@ sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRout
     const db = c.get("db") as any;
 
     const token = crypto.randomUUID();
-    await db.insertInto("sponsor_tokens").values({ token, sponsor_id }).execute();
+    await db.insert(schema.sponsorTokens).values({ token, sponsorId: sponsor_id }).run();
 
     c.executionCtx.waitUntil(logAuditAction(c, "generate_token", "sponsor_tokens", sponsor_id));
 
     const sRes = await db
-      .selectFrom("sponsors")
-      .select("name")
-      .where("id", "=", sponsor_id)
-      .executeTakeFirst();
+      .select({ name: schema.sponsors.name })
+      .from(schema.sponsors)
+      .where(eq(schema.sponsors.id, sponsor_id))
+      .get();
     if (sRes) await sendZulipAlert(c.env, "Sponsor", "ROI Token Generated", `ROI token for **${sRes.name}**.`);
 
     return c.json({ success: true, token }, 200);

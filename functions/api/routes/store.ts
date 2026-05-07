@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
  
-import { Kysely } from "kysely";
+import { eq, desc, and, inArray, isNotNull, sql } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -14,8 +15,6 @@ import {
   getOrdersRoute,
   updateOrderStatusRoute,
 } from "../../../shared/routes/store";
-
-
 
 export const storeRouter = new OpenAPIHono<AppEnv>();
 
@@ -58,26 +57,30 @@ storeRouter.post("/webhook", async (c) => {
         const shippingName = (session as { shipping_details?: { name?: string | null } }).shipping_details?.name || null;
 
         await db
-          .insertInto("orders")
+          .insert(schema.orders)
           .values({
             id: session.id,
-            stripe_session_id: session.id,
-            customer_email: session.customer_details?.email || "unknown",
-            shipping_name: shippingName,
-            total_cents: session.amount_total || 0,
+            stripeSessionId: session.id,
+            customerEmail: session.customer_details?.email || "unknown",
+            shippingName: shippingName,
+            totalCents: session.amount_total || 0,
             status: "paid",
-            created_at: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
           } as any)
-          .execute();
+          .run();
 
         // Deplete inventory
         for (const item of cartItems) {
           await db
-            .updateTable("products")
-            .set((eb: any) => ({ stock_count: eb("stock_count", "-", item.q) }))
-            .where("id", "=", item.id)
-            .where("stock_count", "is not", null)
-            .execute();
+            .update(schema.products)
+            .set({ stockCount: sql`${schema.products.stockCount} - ${item.q}` })
+            .where(
+              and(
+                eq(schema.products.id, item.id),
+                isNotNull(schema.products.stockCount)
+              )
+            )
+            .run();
         }
 
         // Alert team
@@ -103,21 +106,21 @@ storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(asyn
   try {
     const db = c.get("db") as any;
     const products = await db
-      .selectFrom("products")
-      .selectAll()
-      .where("active", "=", 1)
-      .execute();
+      .select()
+      .from(schema.products)
+      .where(eq(schema.products.active, 1))
+      .all();
 
     return c.json(
       products.map((p: any) => ({
         id: p.id || "",
         name: p.name || "Unknown Product",
         description: p.description || null,
-        price_cents: p.price_cents || 0,
-        image_url: p.image_url || null,
+        price_cents: p.priceCents || 0,
+        image_url: p.imageUrl || null,
         active: p.active || 1,
-        stock_count: p.stock_count ?? null,
-        created_at: p.created_at || null,
+        stock_count: p.stockCount ?? null,
+        created_at: p.createdAt || null,
       })),
       200
     );
@@ -143,11 +146,15 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
     // Fetch product details
     const productIds = items.map((i: { productId: string }) => i.productId);
     const products = await db
-      .selectFrom("products")
-      .selectAll()
-      .where("id", "in", productIds)
-      .where("active", "=", 1)
-      .execute();
+      .select()
+      .from(schema.products)
+      .where(
+        and(
+          inArray(schema.products.id, productIds),
+          eq(schema.products.active, 1)
+        )
+      )
+      .all();
 
     const productMap = new Map(products.map((p: any) => [p.id, p]));
 
@@ -161,9 +168,9 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
           currency: "usd",
           product_data: {
             name: product.name,
-            images: product.image_url ? [product.image_url] : [],
+            images: product.imageUrl ? [product.imageUrl] : [],
           },
-          unit_amount: product.price_cents,
+          unit_amount: product.priceCents,
         },
         quantity: item.quantity,
       };
@@ -204,9 +211,30 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
 storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c) => {
   try {
     const db = c.get("db") as any;
-    const orders = await db.selectFrom("orders").selectAll().orderBy("created_at", "desc").execute();
+    const orders = await db
+      .select()
+      .from(schema.orders)
+      .orderBy(desc(schema.orders.createdAt))
+      .all();
 
-    return c.json({ orders: orders as any }, 200);
+    const formattedOrders = orders.map((o: any) => ({
+      ...o,
+      stripe_session_id: o.stripeSessionId,
+      customer_email: o.customerEmail,
+      shipping_name: o.shippingName,
+      shipping_address_line1: o.shippingAddressLine1,
+      shipping_address_line2: o.shippingAddressLine2,
+      shipping_city: o.shippingCity,
+      shipping_state: o.shippingState,
+      shipping_postal_code: o.shippingPostalCode,
+      shipping_country: o.shippingCountry,
+      total_cents: o.totalCents,
+      fulfillment_status: o.fulfillmentStatus,
+      created_at: o.createdAt,
+      updated_at: o.updatedAt,
+    }));
+
+    return c.json({ orders: formattedOrders as any }, 200);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);
@@ -218,7 +246,7 @@ storeRouter.openapi(updateOrderStatusRoute, typedHandler<typeof updateOrderStatu
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
     const db = c.get("db") as any;
-    await db.updateTable("orders").set({ status: body.fulfillment_status }).where("id", "=", id).execute();
+    await db.update(schema.orders).set({ status: body.fulfillment_status }).where(eq(schema.orders.id, id)).run();
     return c.json({ success: true }, 200);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

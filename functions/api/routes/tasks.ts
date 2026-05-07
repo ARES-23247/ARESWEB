@@ -1,8 +1,8 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, asc, desc, and, inArray } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { AppEnv, getSocialConfig, getSessionUser, originIntegrityMiddleware } from "../middleware";
 import { parsePagination } from "../middleware/utils";
 import {
@@ -15,8 +15,6 @@ import {
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 
-
-
 export const tasksRouter = new OpenAPIHono<AppEnv>();
 
 // WR-11: Add origin integrity to prevent CSRF attacks on task operations
@@ -28,42 +26,44 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
     const db = c.get("db") as any;
     const { limit, offset } = parsePagination(c, 50, 200);
 
-    let baseQuery = db.selectFrom("tasks")
-      .leftJoin("user_profiles as ap", "tasks.assigned_to", "ap.user_id")
-      .select([
-        "tasks.id",
-        "tasks.title",
-        "tasks.description",
-        "tasks.status",
-        "tasks.priority",
-        "tasks.subteam",
-        "tasks.due_date",
-        "tasks.sort_order",
-        "tasks.parent_id",
-        "tasks.time_spent_seconds",
-        "tasks.created_by",
-        "tasks.created_at",
-        "tasks.updated_at",
-        "ap.nickname as assignee_name",
-        "ap.user_id as assigned_to",
-      ]);
-
+    const conditions = [];
     if (query.status) {
-      baseQuery = baseQuery.where("tasks.status", "=", query.status);
+      conditions.push(eq(schema.tasks.status, query.status));
     }
     if (query.subteam) {
-      baseQuery = baseQuery.where("tasks.subteam", "=", query.subteam);
+      conditions.push(eq(schema.tasks.subteam, query.subteam));
     }
     if (query.assigned_to) {
-      baseQuery = baseQuery.where("tasks.assigned_to", "=", query.assigned_to);
+      conditions.push(eq(schema.tasks.assignedTo, query.assigned_to));
     }
 
-    const tasks = await baseQuery
-      .orderBy("tasks.sort_order", "asc")
-      .orderBy("tasks.created_at", "desc")
+    const baseQuery = db.select({
+        id: schema.tasks.id,
+        title: schema.tasks.title,
+        description: schema.tasks.description,
+        status: schema.tasks.status,
+        priority: schema.tasks.priority,
+        subteam: schema.tasks.subteam,
+        dueDate: schema.tasks.dueDate,
+        sortOrder: schema.tasks.sortOrder,
+        parentId: schema.tasks.parentId,
+        timeSpentSeconds: schema.tasks.timeSpentSeconds,
+        createdBy: schema.tasks.createdBy,
+        createdAt: schema.tasks.createdAt,
+        updatedAt: schema.tasks.updatedAt,
+        assignee_name: schema.userProfiles.nickname,
+        assigned_to: schema.userProfiles.userId,
+      })
+      .from(schema.tasks)
+      .leftJoin(schema.userProfiles, eq(schema.tasks.assignedTo, schema.userProfiles.userId));
+
+    const finalQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+
+    const tasks = await finalQuery
+      .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
       .limit(limit)
       .offset(Number(offset))
-      .execute();
+      .all();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formattedTasks = tasks.map((t: any) => {
@@ -80,6 +80,13 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
       }
       return {
         ...t,
+        due_date: t.dueDate,
+        sort_order: t.sortOrder,
+        parent_id: t.parentId,
+        time_spent_seconds: t.timeSpentSeconds,
+        created_by: t.createdBy,
+        created_at: t.createdAt,
+        updated_at: t.updatedAt,
         status: t.status || "todo",
         priority: t.priority || "normal",
         assigned_to: t.assigned_to ?? null,
@@ -121,29 +128,27 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
       status: body.status || "todo",
       priority: body.priority || "normal",
       subteam: body.subteam || null,
-      due_date: body.due_date || null,
-      sort_order: body.sort_order || 0,
-      parent_id: body.parent_id || null,
-      time_spent_seconds: 0,
-      created_by: user.id,
-      created_at: now,
-      updated_at: now,
+      dueDate: body.due_date || null,
+      sortOrder: body.sort_order || 0,
+      parentId: body.parent_id || null,
+      timeSpentSeconds: 0,
+      createdBy: user.id,
+      createdAt: now,
+      updatedAt: now,
     };
 
     if (body.assigned_to) {
-      taskData.assigned_to = body.assigned_to;
+      taskData.assignedTo = body.assigned_to;
     }
 
-    await db.insertInto("tasks").values(taskData).execute();
+    await db.insert(schema.tasks).values(taskData).run();
 
     if (body.assignees && body.assignees.length > 0) {
       const assignments = body.assignees.map((userId: string) => ({
-        id: crypto.randomUUID(),
-        task_id: id,
-        user_id: userId,
-        assigned_at: now,
+        taskId: id,
+        userId: userId,
       }));
-      await db.insertInto("task_assignments").values(assignments).execute();
+      await db.insert(schema.taskAssignments).values(assignments).run();
     }
 
     // Zulip Notification
@@ -162,23 +167,30 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
       console.error("[Tasks:ZulipThread] Error creating discussion thread", e);
     }
 
-    await db.insertInto("audit_log").values({
+    await db.insert(schema.auditLog).values({
       id: crypto.randomUUID(),
       actor: user.id,
       action: "create_task",
-      resource_type: "task",
-      resource_id: id,
+      resourceType: "task",
+      resourceId: id,
       details: `Created task: ${body.title}`,
-      created_at: now,
-    }).execute();
+      createdAt: now,
+    }).run();
 
     const createdTask = {
       ...taskData,
+      due_date: taskData.dueDate,
+      sort_order: taskData.sortOrder,
+      parent_id: taskData.parentId,
+      time_spent_seconds: taskData.timeSpentSeconds,
+      created_by: taskData.createdBy,
+      created_at: taskData.createdAt,
+      updated_at: taskData.updatedAt,
       assignees: body.assignees ? body.assignees.map((userId: string) => ({ id: userId, nickname: null })) : [],
       creator_name: user.nickname || null,
       zulip_stream: null,
       zulip_topic: null,
-      assigned_to: taskData.assigned_to || null,
+      assigned_to: taskData.assignedTo || null,
       assignee_name: null,
     };
 
@@ -199,10 +211,10 @@ tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(as
     // Batch update sort orders
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await Promise.all(body.items.map((o: any) => 
-      db.updateTable("tasks")
-        .set({ sort_order: o.sort_order, updated_at: new Date().toISOString() })
-        .where("id", "=", o.id)
-        .execute()
+      db.update(schema.tasks)
+        .set({ sortOrder: o.sort_order, updatedAt: new Date().toISOString() })
+        .where(eq(schema.tasks.id, o.id))
+        .run()
     ));
 
     return c.json({ success: true }, 200);
@@ -220,36 +232,41 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
-    const existing = await db.selectFrom("tasks")
-      .select(["id", "title", "created_by", "subteam"])
-      .where("id", "=", id)
-      .executeTakeFirst();
+    const existing = await db.select({
+        id: schema.tasks.id,
+        title: schema.tasks.title,
+        createdBy: schema.tasks.createdBy,
+        subteam: schema.tasks.subteam,
+      })
+      .from(schema.tasks)
+      .where(eq(schema.tasks.id, id))
+      .get();
 
     if (!existing) return c.json({ error: "Task not found" }, 404);
 
     const isAdmin = user.role === "admin";
     const isMentor = user.role === "mentor" || user.role === "coach";
-    const isOwner = existing.created_by === user.id;
+    const isOwner = existing.createdBy === user.id;
     const canAssign = isAdmin || isMentor || isOwner;
 
     // Any authenticated user can update task fields
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+    const updates: Record<string, any> = { updatedAt: new Date().toISOString() };
     if (body.title !== undefined) updates.title = body.title;
     if (body.description !== undefined) updates.description = body.description;
     if (body.status !== undefined) updates.status = body.status;
     if (body.priority !== undefined) updates.priority = body.priority;
     if (body.subteam !== undefined) updates.subteam = body.subteam;
-    if (body.due_date !== undefined) updates.due_date = body.due_date;
-    if (body.sort_order !== undefined) updates.sort_order = body.sort_order;
-    if (body.parent_id !== undefined) updates.parent_id = body.parent_id;
-    if (body.time_spent_seconds !== undefined) updates.time_spent_seconds = body.time_spent_seconds;
-    if (body.assigned_to !== undefined) updates.assigned_to = body.assigned_to;
+    if (body.due_date !== undefined) updates.dueDate = body.due_date;
+    if (body.sort_order !== undefined) updates.sortOrder = body.sort_order;
+    if (body.parent_id !== undefined) updates.parentId = body.parent_id;
+    if (body.time_spent_seconds !== undefined) updates.timeSpentSeconds = body.time_spent_seconds;
+    if (body.assigned_to !== undefined) updates.assignedTo = body.assigned_to;
 
-    await db.updateTable("tasks")
+    await db.update(schema.tasks)
       .set(updates)
-      .where("id", "=", id)
-      .execute();
+      .where(eq(schema.tasks.id, id))
+      .run();
 
     // Only admins, mentors/coaches, and the task creator can change assignments
     if (body.assignees !== undefined) {
@@ -260,10 +277,12 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
       // WR-12: Additional validation - prevent assigning users from different subteams
       if (existing.subteam && body.assignees && body.assignees.length > 0) {
         if (!isAdmin && isMentor) {
-          const assigneeSubteams = await db.selectFrom("user_profiles")
-            .select("subteams")
-            .where("user_id", "in", body.assignees)
-            .execute();
+          const assigneeSubteams = await db.select({
+              subteams: schema.userProfiles.subteams,
+            })
+            .from(schema.userProfiles)
+            .where(inArray(schema.userProfiles.userId, body.assignees))
+            .all();
 
           const hasMismatchedSubteam = assigneeSubteams.some((p: any) => p.subteams && p.subteams !== existing.subteam);
           if (hasMismatchedSubteam) {
@@ -273,19 +292,17 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
       }
 
       // Sync assignments: delete and re-insert
-      await db.deleteFrom("task_assignments").where("task_id", "=", id).execute();
+      await db.delete(schema.taskAssignments).where(eq(schema.taskAssignments.taskId, id)).run();
       if (body.assignees && body.assignees.length > 0) {
         const assignments = body.assignees.map((userId: string) => ({
-          id: crypto.randomUUID(),
-          task_id: id,
-          user_id: userId,
-          assigned_at: new Date().toISOString()
+          taskId: id,
+          userId: userId,
         }));
-        await db.insertInto("task_assignments").values(assignments).execute();
+        await db.insert(schema.taskAssignments).values(assignments).run();
 
         // Notify new assignees
         try {
-          const users = await db.selectFrom("user").select("email").where("id", "in", body.assignees).execute();
+          const users = await db.select({ email: schema.user.email }).from(schema.user).where(inArray(schema.user.id, body.assignees)).all();
           const emails = users.map((u: any) => u.email).filter(Boolean);
           if (emails.length > 0) {
             const env = await getSocialConfig(c);
@@ -299,15 +316,15 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
       }
     }
 
-    await db.insertInto("audit_log").values({
+    await db.insert(schema.auditLog).values({
       id: crypto.randomUUID(),
       actor: user.id,
       action: "update_task",
-      resource_type: "task",
-      resource_id: id,
+      resourceType: "task",
+      resourceId: id,
       details: "Updated task",
-      created_at: new Date().toISOString(),
-    }).execute();
+      createdAt: new Date().toISOString(),
+    }).run();
 
     return c.json({ success: true }, 200);
   } catch (err) {
@@ -323,33 +340,33 @@ tasksRouter.openapi(deleteTaskRoute, typedHandler<typeof deleteTaskRoute>(async 
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
-    const existing = await db.selectFrom("tasks")
-      .select(["created_by"])
-      .where("id", "=", id)
-      .executeTakeFirst();
+    const existing = await db.select({ createdBy: schema.tasks.createdBy })
+      .from(schema.tasks)
+      .where(eq(schema.tasks.id, id))
+      .get();
 
     if (!existing) return c.json({ error: "Task not found" }, 404);
 
     const isAdmin = user.role === "admin";
-    const isOwner = existing.created_by === user.id;
+    const isOwner = existing.createdBy === user.id;
 
     if (!isAdmin && !isOwner) {
       return c.json({ error: "You are not authorized to delete this task" }, 403);
     }
 
-    await db.deleteFrom("tasks")
-      .where("id", "=", id)
-      .execute();
+    await db.delete(schema.tasks)
+      .where(eq(schema.tasks.id, id))
+      .run();
 
-    await db.insertInto("audit_log").values({
+    await db.insert(schema.auditLog).values({
       id: crypto.randomUUID(),
       actor: user.id,
       action: "delete_task",
-      resource_type: "task",
-      resource_id: id,
+      resourceType: "task",
+      resourceId: id,
       details: "Deleted task",
-      created_at: new Date().toISOString(),
-    }).execute();
+      createdAt: new Date().toISOString(),
+    }).run();
 
     return c.json({ success: true }, 200);
   } catch (err) {

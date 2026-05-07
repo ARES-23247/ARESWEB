@@ -476,6 +476,8 @@ export const tasks = sqliteTable("tasks", {
 	subteam: text(),
 	sortOrder: integer("sort_order").default(0),
 	assignedTo: text("assigned_to"),
+	parentId: text("parent_id"),
+	timeSpentSeconds: integer("time_spent_seconds").default(0),
 	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	dueDate: text("due_date"),
 	createdAt: text("created_at").default("sql`(datetime('now'))`"),
@@ -697,6 +699,7 @@ export const products = sqliteTable("products", {
 	priceCents: integer("price_cents").notNull(),
 	imageUrl: text("image_url"),
 	active: integer().default(1),
+	stockCount: integer("stock_count"),
 	createdAt: text("created_at").default("sql`(datetime('now'))`"),
 });
 
@@ -726,6 +729,22 @@ export const rateLimits = sqliteTable("rate_limits", {
 	ip: text().primaryKey(),
 	count: integer().notNull(),
 	expiresAt: integer("expires_at").notNull(),
+});
+
+export const socialQueue = sqliteTable("social_queue", {
+	id: text().primaryKey(),
+	content: text().notNull(),
+	mediaUrls: text("media_urls"),
+	scheduledFor: text("scheduled_for").notNull(),
+	platforms: text().notNull(),
+	status: text().notNull().default("pending"),
+	createdAt: text("created_at").notNull().default("sql`(datetime('now'))`"),
+	sentAt: text("sent_at"),
+	errorMessage: text("error_message"),
+	createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+	linkedType: text("linked_type"),
+	linkedId: text("linked_id"),
+	analytics: text(),
 });
 
 export const chatSessions = sqliteTable("chat_sessions", {

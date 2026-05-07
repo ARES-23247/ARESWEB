@@ -1,5 +1,6 @@
 import { typedHandler } from "../utils/handler";
-import { Kysely } from "kysely";
+import { eq, desc, asc, and, gte, lte, count } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -17,8 +18,6 @@ import {
 import { nanoid } from "nanoid";
 import { dispatchQueuePost } from "../../utils/socialSync";
 
-
-
 export const socialQueueRouter = new OpenAPIHono<AppEnv>();
 
 // WR-11: Add origin integrity to prevent CSRF attacks on social queue operations
@@ -27,17 +26,17 @@ socialQueueRouter.use("*", originIntegrityMiddleware());
 const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
   id: String(r.id),
   content: String(r.content),
-  media_urls: r.media_urls ? JSON.parse(String(r.media_urls)) : undefined,
-  scheduled_for: String(r.scheduled_for),
+  media_urls: r.mediaUrls ? JSON.parse(String(r.mediaUrls)) : undefined,
+  scheduled_for: String(r.scheduledFor),
   platforms: JSON.parse(String(r.platforms)),
   analytics: r.analytics ? JSON.parse(String(r.analytics)) : null,
   status: r.status as SocialQueuePost["status"],
-  linked_type: (r.linked_type as SocialQueuePost["linked_type"]) || null,
-  linked_id: (r.linked_id as string) || null,
-  created_at: r.created_at ? String(r.created_at) : new Date().toISOString(),
-  sent_at: (r.sent_at as string) || null,
-  error_message: (r.error_message as string) || null,
-  created_by: (r.created_by as string) || null,
+  linked_type: (r.linkedType as SocialQueuePost["linked_type"]) || null,
+  linked_id: (r.linkedId as string) || null,
+  created_at: r.createdAt ? String(r.createdAt) : new Date().toISOString(),
+  sent_at: (r.sentAt as string) || null,
+  error_message: (r.errorMessage as string) || null,
+  created_by: (r.createdBy as string) || null,
 });
 
 // List posts
@@ -51,27 +50,37 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
     const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
     const db = c.get("db") as any;
 
-    let queryBuilder = db.selectFrom("social_queue").selectAll();
+    let condition = undefined;
+    const conditions = [];
 
     if (status !== "all") {
-      queryBuilder = queryBuilder.where("status", "=", status);
+      conditions.push(eq(schema.socialQueue.status, status));
     }
 
     if (user.role !== "admin") {
-      queryBuilder = queryBuilder.where("created_by", "=", user.id);
+      conditions.push(eq(schema.socialQueue.createdBy, user.id));
     }
 
-    const totalResult = await queryBuilder
-      .select((eb: any) => eb.fn.count("id").as("count"))
-      .execute();
+    if (conditions.length > 0) {
+      condition = and(...conditions);
+    }
 
-    const total = Number(totalResult[0].count);
+    const totalResult = await db
+      .select({ count: count(schema.socialQueue.id) })
+      .from(schema.socialQueue)
+      .where(condition)
+      .get();
 
-    const results = await queryBuilder
-      .orderBy("scheduled_for", "desc")
+    const total = Number(totalResult?.count || 0);
+
+    const results = await db
+      .select()
+      .from(schema.socialQueue)
+      .where(condition)
+      .orderBy(desc(schema.socialQueue.scheduledFor))
       .limit(limit)
       .offset(offset)
-      .execute();
+      .all();
 
     const posts: SocialQueuePost[] = results.map(toSocialQueuePost);
 
@@ -93,17 +102,21 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendar
     const { start, end } = c.req.valid("query");
     const db = c.get("db") as any;
 
-    let queryBuilder = db
-      .selectFrom("social_queue")
-      .selectAll()
-      .where("scheduled_for", ">=", start)
-      .where("scheduled_for", "<=", end);
+    const conditions = [
+      gte(schema.socialQueue.scheduledFor, start),
+      lte(schema.socialQueue.scheduledFor, end),
+    ];
 
     if (user.role !== "admin") {
-      queryBuilder = queryBuilder.where("created_by", "=", user.id);
+      conditions.push(eq(schema.socialQueue.createdBy, user.id));
     }
 
-    const results = await queryBuilder.orderBy("scheduled_for", "asc").execute();
+    const results = await db
+      .select()
+      .from(schema.socialQueue)
+      .where(and(...conditions))
+      .orderBy(asc(schema.socialQueue.scheduledFor))
+      .all();
 
     const posts: SocialQueuePost[] = results.map(toSocialQueuePost);
 
@@ -131,16 +144,16 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
       id,
       content: body.content,
       platforms: JSON.stringify(body.platforms),
-      media_urls: body.media_urls ? JSON.stringify(body.media_urls) : null,
-      scheduled_for: body.scheduled_for,
-      status: "pending" as const,
-      created_at: createdAt,
-      created_by: user.id,
-      linked_type: body.linked_type || null,
-      linked_id: body.linked_id || null,
+      mediaUrls: body.media_urls ? JSON.stringify(body.media_urls) : null,
+      scheduledFor: body.scheduled_for,
+      status: "pending",
+      createdAt,
+      createdBy: user.id,
+      linkedType: body.linked_type || null,
+      linkedId: body.linked_id || null,
     };
 
-    await db.insertInto("social_queue").values(newPost).execute();
+    await db.insert(schema.socialQueue).values(newPost).run();
 
     const post: SocialQueuePost = {
       ...body,
@@ -176,29 +189,39 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
     const db = c.get("db") as any;
 
     const existing = await db
-      .selectFrom("social_queue")
-      .selectAll()
-      .where("id", "=", id)
-      .executeTakeFirst();
+      .select()
+      .from(schema.socialQueue)
+      .where(eq(schema.socialQueue.id, id))
+      .get();
 
     if (!existing) {
       return c.json({ error: "Post not found" }, 500);
     }
-    if (user.role !== "admin" && existing.created_by !== user.id) {
+    if (user.role !== "admin" && existing.createdBy !== user.id) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const updates: Record<string, unknown> = { ...body };
-    if (body.platforms) updates.platforms = JSON.stringify(body.platforms);
-    if (body.media_urls) updates.media_urls = JSON.stringify(body.media_urls);
+    const updates: Record<string, unknown> = {};
+    if (body.content !== undefined) updates.content = body.content;
+    if (body.scheduled_for !== undefined) updates.scheduledFor = body.scheduled_for;
+    if (body.status !== undefined) updates.status = body.status;
+    if (body.linked_type !== undefined) updates.linkedType = body.linked_type;
+    if (body.linked_id !== undefined) updates.linkedId = body.linked_id;
 
-    await db.updateTable("social_queue").set(updates).where("id", "=", id).execute();
+    if (body.platforms) updates.platforms = JSON.stringify(body.platforms);
+    if (body.media_urls) updates.mediaUrls = JSON.stringify(body.media_urls);
+
+    await db.update(schema.socialQueue).set(updates).where(eq(schema.socialQueue.id, id)).run();
 
     const updated = await db
-      .selectFrom("social_queue")
-      .selectAll()
-      .where("id", "=", id)
-      .executeTakeFirstOrThrow();
+      .select()
+      .from(schema.socialQueue)
+      .where(eq(schema.socialQueue.id, id))
+      .get();
+
+    if (!updated) {
+      throw new Error("Failed to retrieve updated post");
+    }
 
     return c.json({ success: true, post: toSocialQueuePost(updated) }, 200);
   } catch (error) {
@@ -219,19 +242,19 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
     const db = c.get("db") as any;
 
     const existing = await db
-      .selectFrom("social_queue")
-      .selectAll()
-      .where("id", "=", id)
-      .executeTakeFirst();
+      .select()
+      .from(schema.socialQueue)
+      .where(eq(schema.socialQueue.id, id))
+      .get();
 
     if (!existing) {
       return c.json({ error: "Post not found" }, 500);
     }
-    if (user.role !== "admin" && existing.created_by !== user.id) {
+    if (user.role !== "admin" && existing.createdBy !== user.id) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    await db.deleteFrom("social_queue").where("id", "=", id).execute();
+    await db.delete(schema.socialQueue).where(eq(schema.socialQueue.id, id)).run();
 
     return c.json({ success: true }, 200);
   } catch (error) {
@@ -252,10 +275,10 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
     const db = c.get("db") as any;
 
     const record = await db
-      .selectFrom("social_queue")
-      .selectAll()
-      .where("id", "=", id)
-      .executeTakeFirst();
+      .select()
+      .from(schema.socialQueue)
+      .where(eq(schema.socialQueue.id, id))
+      .get();
 
     if (!record) {
       return c.json({ error: "Post not found" }, 500);
@@ -293,11 +316,16 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
     const { start, end } = c.req.valid("query");
     const db = c.get("db") as any;
 
-    let q = db.selectFrom("social_queue");
-    if (start) q = q.where("scheduled_for", ">=", start);
-    if (end) q = q.where("scheduled_for", "<=", end);
+    const conditions = [];
+    if (start) conditions.push(gte(schema.socialQueue.scheduledFor, start));
+    if (end) conditions.push(lte(schema.socialQueue.scheduledFor, end));
 
-    const results = await q.selectAll().execute();
+    let results;
+    if (conditions.length > 0) {
+      results = await db.select().from(schema.socialQueue).where(and(...conditions)).all();
+    } else {
+      results = await db.select().from(schema.socialQueue).all();
+    }
 
     const total_posts = results.length;
     const total_sent = results.filter((r: any) => r.status === "sent").length;

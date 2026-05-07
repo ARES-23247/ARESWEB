@@ -3,6 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAuth } from "../middleware";
 import type { SessionUser } from "../middleware/utils";
+import * as schema from "../../../src/db/schema";
 import {
   listSimulationsRoute,
   getSimulationRoute,
@@ -11,8 +12,6 @@ import {
   createGistRoute,
   getGistRoute
 } from "../../../shared/routes/simulations";
-
-
 
 /** Row shape returned by settings table queries */
 interface SettingsRow { key: string | null; value: string }
@@ -54,7 +53,7 @@ async function canModifySimulation(
   try {
     const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
-    const config = await db.selectFrom("settings").selectAll().execute();
+    const config = await db.select().from(schema.settings).all();
 
     const patSetting = config.find((s: any) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
@@ -106,7 +105,7 @@ simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulati
 
     try {
       const db = c.get("db") as any;
-      const config = await db.selectFrom("settings").selectAll().execute();
+      const config = await db.select().from(schema.settings).all();
       const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
     } catch (e) {
@@ -167,7 +166,7 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
   try {
     const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
-    const config = await db.selectFrom("settings").selectAll().execute();
+    const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
@@ -242,7 +241,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
 
     const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
-    const config = await db.selectFrom("settings").selectAll().execute();
+    const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
@@ -365,7 +364,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 
     const db = c.get("db") as any;
     const ghConfig = getGitHubConfig(c);
-    const config = await db.selectFrom("settings").selectAll().execute();
+    const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
@@ -441,7 +440,7 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
     }
 
     const db = c.get("db") as any;
-    const config = await db.selectFrom("settings").selectAll().execute();
+    const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
@@ -493,7 +492,7 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
     const db = c.get("db") as any;
     let pat = c.env.GITHUB_PAT;
     try {
-      const config = await db.selectFrom("settings").selectAll().execute();
+      const config = await db.select().from(schema.settings).all();
       const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
     } catch (e) {
