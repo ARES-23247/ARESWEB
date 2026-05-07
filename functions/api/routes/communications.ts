@@ -3,8 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, logSystemError } from "../middleware";
 
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import * as schema from "../../../src/db/schema";
 import {
 
   sendMassEmailRoute,
@@ -26,7 +25,7 @@ communicationsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(a
       console.error("[Communications] db context is null/undefined");
       return c.json({ success: false, error: "Database not initialized" }, 500);
     }
-    const users = await db.selectFrom("user").select(["email"]).execute();
+    const users = await db.select({ email: schema.user.email }).from(schema.user);
 
     const activeMembers = users.filter((m: any) => m.email);
     return c.json({ activeUsers: activeMembers.length }, 200);
@@ -52,7 +51,7 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
 
     // Fetch users from database
     const db = c.get("db") as any;
-    const users = await db.selectFrom("user").select(["email"]).execute();
+    const users = await db.select({ email: schema.user.email }).from(schema.user);
 
     const activeMembers = users.filter((m: any) => m.email);
 
