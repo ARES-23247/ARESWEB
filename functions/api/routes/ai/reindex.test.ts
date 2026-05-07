@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
 import { createMockDrizzle } from "../../../../src/test/utils";
-import type { DrizzleMock } from "../../../../src/test/types";
+// import type { DrizzleMock } from "../../../../src/test/types";
 
 // Mock middleware
 vi.mock("../../middleware", () => ({
