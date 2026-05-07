@@ -46,11 +46,8 @@ import { SimFileExplorer } from "./editor/SimFileExplorer";
 import { SimComponentLibrary } from "./editor/SimComponentLibrary";
 import { SimConsole, LogEntry, TestResult } from "./editor/SimConsole";
 
-import JSZip from "jszip";
-import prettier from "prettier/standalone";
-import prettierPluginEstree from "prettier/plugins/estree";
-import prettierPluginBabel from "prettier/plugins/babel";
-import prettierPluginTs from "prettier/plugins/typescript";
+// NOTE: JSZip and Prettier lazy-loaded on-demand to avoid 500KB+ initial bundle penalty
+// They only load when user actually clicks "Download ZIP" or "Format Code"
 
 // Real production templates for AI context
 import ArmKgSimRaw from "../sims/armkg/index.tsx?raw";
@@ -353,6 +350,11 @@ export default function SimulationPlayground() {
     try {
       const code = files[activeFile];
       if (!code) return;
+      // Lazy-load Prettier only when formatting is needed
+      const prettier = (await import("prettier/standalone")).default;
+      const prettierPluginBabel = await import("prettier/plugins/babel");
+      const prettierPluginEstree = await import("prettier/plugins/estree");
+      const prettierPluginTs = await import("prettier/plugins/typescript");
       const formatted = await prettier.format(code, {
         parser: "typescript",
         plugins: [prettierPluginBabel, prettierPluginEstree, prettierPluginTs],
@@ -372,6 +374,8 @@ export default function SimulationPlayground() {
 
   const handleDownloadZip = useCallback(async () => {
     try {
+      // Lazy-load JSZip only when download is needed
+      const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
       Object.entries(files).forEach(([path, content]) => {
         zip.file(path, content);
@@ -830,8 +834,9 @@ export default function SimulationPlayground() {
         const newFiles: Record<string, string> = {};
         for (const file of Array.from(items)) {
           if (file.name.endsWith('.zip')) {
-            // Handle ZIP files
+            // Handle ZIP files - lazy-load JSZip only when needed
             try {
+              const JSZip = (await import("jszip")).default;
               const zip = await JSZip.loadAsync(file);
               for (const [path, zipFile] of Object.entries(zip.files)) {
                 if (!zipFile.dir && /\.(tsx?|jsx?|css|json)$/.test(path)) {

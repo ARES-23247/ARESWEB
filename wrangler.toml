@@ -7,6 +7,7 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "ares-db"
 database_id = "24d5e2b3-5ad5-4e17-9c73-76b9a0030d16"
+migrations_dir = "drizzle"
 
 [[r2_buckets]]
 binding = "ARES_STORAGE"
@@ -18,6 +19,7 @@ bucket_name = "ares-media"
 binding = "PK_DB"
 database_name = "ares-db"
 database_id = "24d5e2b3-5ad5-4e17-9c73-76b9a0030d16"  # Shared with main DB binding
+migrations_dir = "drizzle"
 
 # DEV_BYPASS removed from production config (security audit item #1).
 # For local development, use: wrangler dev --var DEV_BYPASS:true
