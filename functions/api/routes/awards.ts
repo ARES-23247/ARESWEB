@@ -2,11 +2,14 @@ import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, desc, asc, and } from "drizzle-orm";
+import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
-import { DB } from "../../../shared/schemas/database";
+import * as relations from "../../../src/db/relations";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../shared/routes/awards";
+
+type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
 
 
 
@@ -17,7 +20,7 @@ awardsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 
 awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     const { limit = 50, offset = 0 } = c.req.valid('query');
     const results = await db.select({
         id: schema.awards.id,
@@ -36,7 +39,7 @@ awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (
       .offset(offset || 0)
       .all();
     
-    const awards = results.map((a: any) => ({
+    const awards = results.map((a) => ({
       id: String(a.id),
       title: a.title,
       year: Number(a.date),
@@ -60,7 +63,7 @@ awardsRouter.use("/admin/*", ensureAdmin);
 awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (c) => {
   try {
     const validatedData = c.req.valid('json');
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     const { id, title, year, event_name, description, image_url, season_id } = validatedData;
 
     let finalId: string | undefined = id;
@@ -149,7 +152,7 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
 
 awardsRouter.openapi(deleteAwardRoute, typedHandler<typeof deleteAwardRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     const params = c.req.valid('param');
     const numericId = Number(params.id);
     if (isNaN(numericId) || numericId <= 0) {
