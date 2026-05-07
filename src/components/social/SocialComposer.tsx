@@ -11,7 +11,6 @@ import {
   Plus,
   X,
   AlertCircle,
-  Sparkles,
 } from "lucide-react";
 import { format, addHours } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
