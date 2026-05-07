@@ -63,7 +63,7 @@ describe("Hono Backend - /sponsors Router", () => {
       c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
-    testApp.onError((err: any, c: any) => {
+    testApp.onError((err: unknown, c: { text: (msg: string, status: number) => Response }) => {
       console.error("HONO ERROR:", err);
       return c.text("Internal Server Error", 500);
     });
