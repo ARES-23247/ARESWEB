@@ -1,12 +1,12 @@
 import { typedHandler } from "../../utils/handler";
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
-
-import { AppEnv, ensureAdmin, persistentRateLimitMiddleware, verifyTurnstile } from "../../middleware";
+import { AppEnv, ensureAdmin, verifyTurnstile, getDb } from "../../middleware";
+import type { DrizzleDB } from "../../middleware/utils";
 import { streamSSE } from "hono/streaming";
-import { MessageContent, ZaiChatResponse, ChatMessage, isTextContentPart } from "./types";
+import { MessageContent, ZaiChatResponse, ChatMessage } from "./types";
+import { eq, sql, desc, and, ne } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import {
-
   aiStatusRoute,
   liveblocksCopilotRoute,
   simPlaygroundRoute,
@@ -34,12 +34,15 @@ const truncateForFallback = (text: string, maxChars = 18000): string => {
 };
 
 // ── AI Status Diagnostic (admin only) ──────────────────────────────────────
-aiRouter.openapi(aiStatusRoute, typedHandler<typeof aiStatusRoute>(async (c) => {
+aiRouter.openapi(aiStatusRoute, async (c) => {
   let indexErrors = null;
-  const db = c.get("db") as any;
+  const db = getDb(c);
   
   try {
-    const errSetting = await db.selectFrom("settings").select("value").where("key", "=", "LAST_INDEX_ERRORS").executeTakeFirst();
+    const errSetting = await db.query.settings.findFirst({
+      where: eq(schema.settings.key, "LAST_INDEX_ERRORS"),
+      columns: { value: true }
+    });
     if (errSetting && errSetting.value) {
       try {
         indexErrors = JSON.parse(errSetting.value);
@@ -58,7 +61,7 @@ aiRouter.openapi(aiStatusRoute, typedHandler<typeof aiStatusRoute>(async (c) => 
     primaryModel: c.env.Z_AI_API_KEY ? "zai-5.1" : c.env.AI ? "llama-3.1-8b" : "none",
     indexErrors,
   }, 200);
-}));
+});
 
 // ── Liveblocks AI Copilot Endpoint ────────────────────────────────────────
 // Premium: uses z.ai (Claude) if Z_AI_API_KEY is set, otherwise falls back to Workers AI (Llama 3.1)
@@ -211,6 +214,7 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
           if (line.startsWith("data: ")) {
             const dataStr = line.slice(6).trim();
             if (dataStr === "[DONE]") continue;
+
             try {
               const data = JSON.parse(dataStr) as { response?: string };
               const text = data.response || "";
@@ -228,337 +232,33 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
   });
 }));
 
-// ── Simulation Playground IDE Endpoint ──────────────────────────────────
+// ── Simulator Playground AI Route ──────────────────────────────────────────
 aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(async (c) => {
-  const { systemPrompt, messages, imageUrl } = c.req.valid("json");
-
-  const hasZai = !!c.env.Z_AI_API_KEY;
-  if (!hasZai && !c.env.AI) return c.json({ error: "AI service not configured." }, 500);
-
-  if (imageUrl && imageUrl.startsWith('data:image')) {
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg && lastMsg.role === "user") {
-      const [header, base64] = imageUrl.split(',');
-      const mediaType = header.split(';')[0].split(':')[1];
-      const textContent = typeof lastMsg.content === 'string' 
-        ? lastMsg.content 
-        : (Array.isArray(lastMsg.content) ? lastMsg.content.find((p: any) => p.type === 'text')?.text || "" : "");
-      
-      lastMsg.content = [
-        {
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: mediaType,
-            data: base64
-          }
-        },
-        {
-          type: "text",
-          text: textContent
-        }
-      ];
-    }
-  }
-
-  return streamSSE(c, async (stream) => {
-    let lastZaiError = "";
-    try {
-      if (hasZai) {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: "GLM-5.1",
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  ...messages
-                ],
-                stream: true,
-                max_tokens: 8192
-              })
-            });
-
-            const contentType = zaiRes.headers.get("content-type") || "";
-            if (contentType.includes("application/json")) {
-              const errData = await zaiRes.json() as ZaiChatResponse;
-              throw new Error(errData.error?.message || JSON.stringify(errData));
-            }
-
-            if (!zaiRes.ok) throw new Error(await zaiRes.text());
-
-            if (zaiRes.body) {
-              const reader = zaiRes.body.getReader();
-              const decoder = new TextDecoder();
-              let buffer = "";
-
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split("\n");
-                buffer = lines.pop() || "";
-
-                for (const line of lines) {
-                  if (line.startsWith("data: ")) {
-                    const dataStr = line.slice(6).trim();
-                    if (dataStr === "[DONE]") continue;
-                    try {
-                      const data = JSON.parse(dataStr) as ZaiChatResponse;
-                      if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
-                        await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
-                      }
-                    } catch (e) { console.error("[AI] Stream parsing error:", e); }
-                  }
-                }
-              }
-              return; // Successfully streamed z.ai, exit
-            }
-          } catch (zaiErr: unknown) {
-            lastZaiError = zaiErr instanceof Error ? zaiErr.message : String(zaiErr);
-            console.error(`z.ai sim error (attempt ${attempt + 1}):`, lastZaiError);
-            const isRetryable = lastZaiError.includes("Rate limit") || lastZaiError.includes("502") || lastZaiError.includes("503") || lastZaiError.includes("Network error") || lastZaiError.includes("try again") || lastZaiError.includes("1234");
-            if (!isRetryable) break; // Do not retry client errors
-          }
-          
-          if (attempt === 0) await new Promise(r => setTimeout(r, 500));
-        }
-      }
-
-      // ── Fallback: Cloudflare Workers AI (Llama 3.1) ──
-      if (!c.env.AI) {
-        const errDetails = lastZaiError || "Z.AI service unavailable";
-        await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Z.AI Error: ${errDetails}]` }) });
-        return;
-      }
-
-      console.log("[Sim IDE] Falling back to Workers AI (Llama 3.1)");
-
-      // Normalize images back out for Llama 3.1, which may not support Vision in the standard instruct route
-      const cleanMessages = (messages as ChatMessage[]).map((m: any) => {
-        if (Array.isArray(m.content)) {
-          const textPart = m.content.find(isTextContentPart);
-          return { role: m.role, content: textPart ? truncateForFallback(textPart.text) : "" };
-        }
-        return { role: m.role, content: truncateForFallback(m.content as string) };
-      });
-      
-      // Ensure we only keep the last few messages to save tokens in fallback
-      const recentMessages = cleanMessages.slice(-5);
-      
-      const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-        messages: [
-          { role: "system", content: truncateForFallback(systemPrompt) },
-          ...recentMessages
-        ],
-        max_tokens: 1536,
-        stream: true
-      }) as unknown as ReadableStream;
-
-      const reader = aiStream.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const dataStr = line.slice(6).trim();
-            if (dataStr === "[DONE]") continue;
-
-            try {
-              const data = JSON.parse(dataStr) as { response?: string };
-              const text = data.response || "";
-              if (text) {
-                await stream.writeSSE({ data: JSON.stringify({ chunk: text }) });
-              }
-            } catch (e) { console.error("[AI] Stream parsing error:", e); }
-          }
-        }
-      }
-    } catch (e) {
-      console.error("Sim IDE stream error:", e);
-      const errMsg = e instanceof Error ? e.message : String(e);
-      const details = lastZaiError ? `\n\nZ.AI Fallback Error: ${lastZaiError}` : "";
-      await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Workers AI processing error: ${errMsg}]${details}` }) });
-    }
-  });
-}));
-
-// ── Editor AI Chat Endpoint ──────────────────────────────────────────────
-aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c) => {
-  const { systemPrompt, messages, editorContent } = c.req.valid("json");
-
-  const hasZai = !!c.env.Z_AI_API_KEY;
-  if (!hasZai) return c.json({ error: "AI service not configured." }, 500);
-  
-  // Inject current editor content into the system prompt or as a hidden user message
-  const finalSystemPrompt = `${systemPrompt}\n\nCURRENT EDITOR CONTENT:\n${editorContent || "The document is currently empty."}`;
-
-  return streamSSE(c, async (stream) => {
-    let lastZaiError = "";
-    try {
-      if (hasZai) {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: "GLM-5.1",
-                messages: [
-                  { role: "system", content: finalSystemPrompt },
-                  ...messages
-                ],
-                stream: true,
-                max_tokens: 4096
-              })
-            });
-
-            const contentType = zaiRes.headers.get("content-type") || "";
-            if (contentType.includes("application/json")) {
-              const errData = await zaiRes.json() as ZaiChatResponse;
-              throw new Error(errData.error?.message || JSON.stringify(errData));
-            }
-
-            if (!zaiRes.ok) {
-              throw new Error(await zaiRes.text());
-            }
-
-            if (zaiRes.body) {
-              const reader = zaiRes.body.getReader();
-              const decoder = new TextDecoder();
-              let buffer = "";
-
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split("\n");
-                buffer = lines.pop() || "";
-
-                for (const line of lines) {
-                  if (line.startsWith("data: ")) {
-                    const dataStr = line.slice(6).trim();
-                    if (dataStr === "[DONE]") continue;
-                    try {
-                      const data = JSON.parse(dataStr) as ZaiChatResponse;
-                      if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
-                        await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
-                      }
-                    } catch (e) { console.error("[AI] Stream parsing error:", e); }
-                  }
-                }
-              }
-              return; // Successfully streamed z.ai, exit streamSSE callback
-            }
-          } catch (zaiErr: unknown) {
-            lastZaiError = zaiErr instanceof Error ? zaiErr.message : String(zaiErr);
-            console.error(`z.ai editor chat error (attempt ${attempt + 1}):`, lastZaiError);
-            const isRetryable = lastZaiError.includes("Rate limit") || lastZaiError.includes("502") || lastZaiError.includes("503") || lastZaiError.includes("Network error") || lastZaiError.includes("try again") || lastZaiError.includes("1234");
-            if (!isRetryable) break; // Do not retry client errors
-          }
-          if (attempt === 0) await new Promise(r => setTimeout(r, 500));
-        }
-      }
-
-      // ── Fallback: Cloudflare Workers AI (Llama 3.1) ──
-      if (!c.env.AI) {
-        const errDetails = lastZaiError || "Z.AI service unavailable";
-        await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Z.AI Error: ${errDetails}]` }) });
-        return;
-      }
-
-      console.log("[Editor Chat] Falling back to Workers AI (Llama 3.1)");
-      
-      const cleanMessages = (messages as ChatMessage[]).map((m: any) => ({
-        role: m.role,
-        content: typeof m.content === "string" ? truncateForFallback(m.content) : ""
-      }));
-      const recentMessages = cleanMessages.slice(-5);
-
-      const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-        messages: [
-          { role: "system", content: truncateForFallback(finalSystemPrompt) },
-          ...recentMessages
-        ],
-        max_tokens: 1536,
-        stream: true
-      }) as unknown as ReadableStream;
-
-      const reader = aiStream.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const dataStr = line.slice(6).trim();
-            if (dataStr === "[DONE]") continue;
-
-            try {
-              const data = JSON.parse(dataStr) as { response?: string };
-              const text = data.response || "";
-              if (text) {
-                await stream.writeSSE({ data: JSON.stringify({ chunk: text }) });
-              }
-            } catch (e) { console.error("[AI] Stream parsing error:", e); }
-          }
-        }
-      }
-    } catch (e) {
-      console.error("Editor Chat stream error:", e);
-      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
-    }
-  });
-}));
-
-// ── AI Inline Suggestions Endpoint ────────────────────────────────────────
-// Returns a short completion suggestion for ghost text in the editor
-aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) => {
-  const { context } = c.req.valid("json");
-
-  if (!context || typeof context !== "string" || context.trim().length < 10) {
-    return c.json({ suggestion: "" }, 200);
-  }
-
+  const { messages, userCode } = c.req.valid("json");
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
-    return c.json({ suggestion: "" }, 200);
+    return c.json({ error: "AI service not configured." }, 500);
   }
 
-  const safeContext = scrubPII(context.slice(-800)); // Last 800 chars max
+  const systemPrompt = `You are an expert FIRST Tech Challenge (FTC) robot programmer. 
+You help users write robot logic for a 2D canvas simulator.
+The simulator provides a 'robot' object with:
+- robot.moveForward(power)
+- robot.turn(angle)
+- robot.getDistance()
+- robot.getAngle()
 
-  const systemPrompt = `You are a writing autocomplete engine for ARES 23247, a FIRST Tech Challenge robotics team. Given the text context, predict the next 10-30 words the writer is likely to type. Output ONLY the continuation text, no quotes, no preamble, no explanation. If you cannot predict a useful continuation, output an empty string.`;
+Current code being edited:
+\`\`\`javascript
+${userCode || "// No code yet"}
+\`\`\`
 
-  try {
-    // ── Premium path: z.ai ──
-    if (hasZai) {
-      try {
+Provide helpful, technical advice. Be concise.`;
+
+  return streamSSE(c, async (stream) => {
+    try {
+      if (hasZai) {
         const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
           method: "POST",
           headers: {
@@ -569,46 +269,190 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
             model: "GLM-5.1",
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: safeContext }
+              ...messages
             ],
-            max_tokens: 100
+            stream: true,
+            max_tokens: 2048
           })
         });
 
-        if (!zaiRes.ok) throw new Error(await zaiRes.text());
-        
-        const data = await zaiRes.json() as ZaiChatResponse;
-        if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-        
-        const suggestion = data.choices?.[0]?.message?.content?.trim() || "";
-        return c.json({ suggestion });
-      } catch (zaiErr) {
-        console.error("z.ai suggest error, falling back:", zaiErr);
+        if (zaiRes.body) {
+          const reader = zaiRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const dataStr = line.slice(6).trim();
+                if (dataStr === "[DONE]") continue;
+                try {
+                  const data = JSON.parse(dataStr) as ZaiChatResponse;
+                  if (data.choices?.[0]?.delta?.content) {
+                    await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
+                  }
+                } catch { /* ignore */ }
+              }
+            }
+          }
+          return;
+        }
       }
+
+      // Fallback
+      if (c.env.AI) {
+        const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+          messages: [
+            { role: "system", content: truncateForFallback(systemPrompt) },
+            ...messages.map((m: ChatMessage) => ({ role: m.role, content: truncateForFallback(m.content) }))
+          ],
+          max_tokens: 1024,
+          stream: true
+        }) as unknown as ReadableStream;
+
+        const reader = aiStream.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const dataStr = line.slice(6).trim();
+              if (dataStr === "[DONE]") continue;
+              try {
+                const data = JSON.parse(dataStr) as { response?: string };
+                if (data.response) {
+                  await stream.writeSSE({ data: JSON.stringify({ chunk: data.response }) });
+                }
+              } catch { /* ignore */ }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Sim playground AI error:", e);
+      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI Error]" }) });
     }
+  });
+}));
 
-    // ── Fallback: Workers AI ──
-    if (c.env.AI) {
-      const result = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: safeContext }
-        ],
-        max_tokens: 100
-      }) as { response?: string };
+// ── Documentation Editor Chat Route ────────────────────────────────────────
+aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c) => {
+  const { messages, documentContext } = c.req.valid("json");
+  const hasZai = !!c.env.Z_AI_API_KEY;
 
-      return c.json({ suggestion: (result.response || "").trim() });
-    }
-
-    return c.json({ suggestion: "" }, 200);
-  } catch (e) {
-    console.error("[AI Suggest] Error:", e);
-    return c.json({ suggestion: "" }, 200);
+  if (!hasZai && !c.env.AI) {
+    return c.json({ error: "AI service not configured." }, 500);
   }
+
+  const systemPrompt = `You are an AI documentation assistant for ARES 23247. 
+You help technical writers improve and create content.
+
+Context of the current document:
+${documentContext || "New document"}
+
+Be technical, helpful, and follow FIRST Core Values.`;
+
+  return streamSSE(c, async (stream) => {
+    try {
+      if (hasZai) {
+        const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "GLM-5.1",
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...messages
+            ],
+            stream: true,
+            max_tokens: 4096
+          })
+        });
+
+        if (zaiRes.body) {
+          const reader = zaiRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const dataStr = line.slice(6).trim();
+                if (dataStr === "[DONE]") continue;
+                try {
+                  const data = JSON.parse(dataStr) as ZaiChatResponse;
+                  if (data.choices?.[0]?.delta?.content) {
+                    await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
+                  }
+                } catch { /* ignore */ }
+              }
+            }
+          }
+          return;
+        }
+      }
+
+      // Fallback
+      if (c.env.AI) {
+        const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+          messages: [
+            { role: "system", content: truncateForFallback(systemPrompt) },
+            ...messages.map((m: ChatMessage) => ({ role: m.role, content: truncateForFallback(m.content) }))
+          ],
+          max_tokens: 1536,
+          stream: true
+        }) as unknown as ReadableStream;
+
+        const reader = aiStream.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const dataStr = line.slice(6).trim();
+              if (dataStr === "[DONE]") continue;
+              try {
+                const data = JSON.parse(dataStr) as { response?: string };
+                if (data.response) {
+                  await stream.writeSSE({ data: JSON.stringify({ chunk: data.response }) });
+                }
+              } catch { /* ignore */ }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Editor AI error:", e);
+      await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI Error]" }) });
+    }
+  });
 }));
 
 // ── RAG Chatbot Endpoint ──────────────────────────────────────────────────
-aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c) => {
+aiRouter.openapi(ragChatbotRoute, async (c) => {
   const { query, turnstileToken, sessionId } = c.req.valid("json");
 
   if (!query || !turnstileToken) {
@@ -649,7 +493,7 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
     try {
       if (c.env.VECTORIZE_DB && embeddingVector.length > 0) {
         const vecRes = await c.env.VECTORIZE_DB.query(embeddingVector, { topK: 3, returnMetadata: true });
-        contextDocs = vecRes.matches.map((m: any) => (m.metadata?.text as string) || "").join("\n\n");
+        contextDocs = vecRes.matches.map((m: { metadata?: { text?: string } }) => m.metadata?.text || "").join("\n\n");
       }
     } catch (e) {
       console.error("Vectorize query failed:", e);
@@ -657,24 +501,25 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
   }
 
   // DB reference for both upcoming events and session history
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   // Supplement with upcoming events from D1 (critical for time-sensitive queries)
   let upcomingEventsContext = "";
   try {
-    const upcomingEvents = await db.selectFrom("events")
-      .select(["title", "date_start", "date_end", "location", "category"])
-      .where("is_deleted", "!=", 1)
-      .where("status", "!=", "draft")
-      .where("date_start", ">=", nowIso)
-      .orderBy("date_start", "asc")
-      .limit(5)
-      .execute();
+    const upcomingEvents = await db.select()
+      .from(schema.events)
+      .where(and(
+        ne(schema.events.isDeleted, 1),
+        ne(schema.events.status, "draft"),
+        sql`${schema.events.dateStart} >= ${nowIso}`
+      ))
+      .orderBy(schema.events.dateStart)
+      .limit(5);
 
     if (upcomingEvents.length > 0) {
-      upcomingEventsContext = "\n\nUpcoming events (from database):\n" + upcomingEvents.map((e: any) => {
-        const start = e.date_start ? new Date(e.date_start).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "TBD";
-        const end = e.date_end ? ` to ${new Date(e.date_end).toLocaleDateString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}` : "";
+      upcomingEventsContext = "\n\nUpcoming events (from database):\n" + upcomingEvents.map((e) => {
+        const start = e.dateStart ? new Date(e.dateStart).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "TBD";
+        const end = e.dateEnd ? ` to ${new Date(e.dateEnd).toLocaleDateString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}` : "";
         return `- ${e.title} | ${start}${end} | ${e.location || "TBD"} | ${e.category || "general"}`;
       }).join("\n");
     }
@@ -685,18 +530,16 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
   // Current season context (robot name, challenge, etc.)
   let seasonContext = "";
   try {
-    const currentSeason = await db.selectFrom("seasons")
-      .select(["start_year", "challenge_name", "robot_name", "summary"])
-      .where("status", "=", "published")
-      .orderBy("start_year", "desc")
-      .limit(1)
-      .executeTakeFirst();
+    const currentSeason = await db.query.seasons.findFirst({
+      where: eq(schema.seasons.status, "published"),
+      orderBy: desc(schema.seasons.startYear)
+    });
 
     if (currentSeason) {
-      const yr = currentSeason.start_year ?? 0;
+      const yr = currentSeason.startYear ?? 0;
       seasonContext = `\n\nCurrent season (${yr}-${yr + 1}):
-- Challenge: ${currentSeason.challenge_name || "TBD"}
-- Robot name: ${currentSeason.robot_name || "TBD"}
+- Challenge: ${currentSeason.challengeName || "TBD"}
+- Robot name: ${currentSeason.robotName || "TBD"}
 - Summary: ${currentSeason.summary || "No summary available"}`;
     }
   } catch (e) {
@@ -706,17 +549,18 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
   // Recent blog posts (for "what's new?" queries)
   let recentPostsContext = "";
   try {
-    const recentPosts = await db.selectFrom("posts")
-      .select(["title", "published_at", "slug"])
-      .where("is_deleted", "!=", 1)
-      .where("status", "!=", "draft")
-      .orderBy("published_at", "desc")
-      .limit(3)
-      .execute();
+    const recentPosts = await db.select()
+      .from(schema.posts)
+      .where(and(
+        ne(schema.posts.isDeleted, 1),
+        ne(schema.posts.status, "draft")
+      ))
+      .orderBy(desc(schema.posts.publishedAt))
+      .limit(3);
 
     if (recentPosts.length > 0) {
-      recentPostsContext = "\n\nRecent blog posts:\n" + recentPosts.map((p: any) => {
-        const date = p.published_at ? new Date(p.published_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "unpublished";
+      recentPostsContext = "\n\nRecent blog posts:\n" + recentPosts.map((p) => {
+        const date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "unpublished";
         return `- ${p.title} (${date})`;
       }).join("\n");
     }
@@ -729,7 +573,10 @@ aiRouter.openapi(ragChatbotRoute, typedHandler<typeof ragChatbotRoute>(async (c)
   
   if (sessionId) {
     try {
-      const existing = await db.selectFrom("chat_sessions").select("history").where("id", "=", sessionId).executeTakeFirst();
+      const existing = await db.query.chatSessions.findFirst({
+        where: eq(schema.chatSessions.id, sessionId),
+        columns: { history: true }
+      });
       if (existing) {
         historyMessages = JSON.parse(existing.history);
       }
@@ -773,7 +620,7 @@ Never make up event dates, team members, or scores — only use what's provided 
 ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : ""}${upcomingEventsContext}${seasonContext}${recentPostsContext}`;
 
   const messages = [
-    ...historyMessages.map((m: any) => ({ role: m.role, content: m.content })),
+    ...historyMessages.map((m: ChatMessage) => ({ role: m.role, content: m.content })),
     { role: "user" as const, content: safeQuery }
   ];
 
@@ -866,7 +713,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       console.log("[RAG] Falling back to Workers AI (Llama 3.1) — Z_AI_API_KEY:", hasZai ? "present but z.ai failed" : "NOT SET");
       await stream.writeSSE({ data: JSON.stringify({ model: "llama-3.1-8b" }) });
       
-      const cleanMessages = (messages as ChatMessage[]).map((m: any) => ({
+      const cleanMessages = (messages as ChatMessage[]).map((m: ChatMessage) => ({
         role: m.role,
         content: typeof m.content === "string" ? truncateForFallback(m.content) : ""
       }));
@@ -917,10 +764,10 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
-}));
+});
 
 // Helper to persist chat session history
-async function saveHistory(db: Kysely<DB>, sessionId: string | undefined, historyMessages: ChatMessage[], query: string, response: string) {
+async function saveHistory(db: DrizzleDB, sessionId: string | undefined, historyMessages: ChatMessage[], query: string, response: string) {
   if (!sessionId) return;
   const updatedHistory = [
     ...historyMessages,
@@ -928,100 +775,148 @@ async function saveHistory(db: Kysely<DB>, sessionId: string | undefined, histor
     { role: "assistant", content: response }
   ];
   try {
-    await db.insertInto("chat_sessions").values({
+    await db.insert(schema.chatSessions).values({
       id: sessionId,
-      user_id: "anonymous",
+      userId: "anonymous",
       history: JSON.stringify(updatedHistory)
-    }).onConflict((oc: any) => oc.column("id").doUpdateSet({
-      history: JSON.stringify(updatedHistory),
-      updated_at: new Date().toISOString()
-    })).execute();
+    }).onConflictDoUpdate({
+      target: schema.chatSessions.id,
+      set: {
+        history: JSON.stringify(updatedHistory),
+        updatedAt: new Date().toISOString()
+      }
+    }).execute();
   } catch (e) {
-    console.error("Failed to save chat session", e);
+    console.error("Failed to save chat history", e);
   }
 }
 
-// ── Manual Re-Index Endpoint (admin-only) ─────────────────────────────
+// ── Manual Reindexing ──────────────────────────────────────────────────────
+aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) => {
+  const { type, content } = c.req.valid("json");
+  const hasZai = !!c.env.Z_AI_API_KEY;
 
-aiRouter.post("/reindex", ensureAdmin, persistentRateLimitMiddleware(5, 600), async (c: any) => {
-  if (!c.env.AI || !c.env.VECTORIZE_DB) {
-    return c.json({ error: "AI or Vectorize bindings not configured" }, 500);
+  if (!hasZai && !c.env.AI) {
+    return c.json({ suggestion: "" }, 200);
   }
 
-  const force = c.req.query("force") === "true";
-  const db = c.get("db") as any;
+  try {
+    let systemPrompt = "You are an AI assistant for ARES 23247. Provide a short, helpful suggestion.";
+    if (type === "title") systemPrompt = "Generate a short, punchy title for this blog post. Output ONLY the title.";
+    if (type === "summary") systemPrompt = "Generate a 1-sentence summary for this content. Output ONLY the summary.";
+
+    if (hasZai) {
+      const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "GLM-5.1",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: content.substring(0, 5000) }
+          ],
+          max_tokens: 100
+        })
+      });
+      const data = await zaiRes.json() as ZaiChatResponse;
+      return c.json({ suggestion: (data.choices?.[0]?.message?.content || "").trim() });
+    } else if (c.env.AI) {
+      const result = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: content.substring(0, 2000) }
+        ],
+        max_tokens: 100
+      }) as { response?: string };
+
+      return c.json({ suggestion: (result.response || "").trim() });
+    }
+
+    return c.json({ suggestion: "" }, 200);
+  } catch (e) {
+    console.error("[AI Suggest] Error:", e);
+    return c.json({ suggestion: "" }, 200);
+  }
+}));
+
+aiRouter.post("/reindex", ensureAdmin, async (c) => {
+  const { force } = await c.req.json() as { force?: boolean };
+  const db = getDb(c);
+  
+  if (!c.env.AI || !c.env.VECTORIZE_DB) {
+    return c.json({ error: "AI or Vectorize not configured" }, 500);
+  }
+
   const { indexSiteContent } = await import("./indexer");
   const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, { force });
-
-  return c.json({
-    success: true,
-    indexed: result.indexed,
-    mode: force ? "full" : "incremental",
-    errors: result.errors,
-  });
+  
+  return c.json(result);
 });
 
-aiRouter.post("/reindex-external", ensureAdmin, persistentRateLimitMiddleware(50, 600), async (c: any) => {
+aiRouter.post("/reindex-external", ensureAdmin, async (c) => {
+  const { sourceId } = await c.req.json() as { sourceId?: string };
+  const db = getDb(c);
+  
   if (!c.env.VECTORIZE_DB) {
-    return c.json({ error: "Vectorize DB binding not configured" }, 500);
+    return c.json({ error: "Vectorize not configured" }, 500);
   }
 
-  const body = await c.req.json().catch(() => ({}));
-  const sourceId = body.sourceId as string | undefined;
-
-  const db = c.get("db") as any;
   const { indexExternalResources } = await import("./indexer");
-  const githubPat = c.env.GITHUB_PAT;
-  const result = await indexExternalResources(db, c.env.AI, c.env.VECTORIZE_DB, c.env.Z_AI_API_KEY, githubPat, sourceId);
-
-  return c.json({
-    success: true,
-    indexed: result.indexed,
-    skipped: result.skipped,
-    errors: result.errors,
-  });
+  const result = await indexExternalResources(
+    db, 
+    c.env.AI, 
+    c.env.VECTORIZE_DB, 
+    c.env.Z_AI_API_KEY, 
+    c.env.GITHUB_PAT,
+    sourceId
+  );
+  
+  return c.json(result);
 });
 
-aiRouter.get("/external-sources", ensureAdmin, async (c: any) => {
-  const db = c.get("db") as any;
-  const sources = await db.selectFrom("external_knowledge_sources").selectAll().execute();
+// ── Knowledge Sources Management ───────────────────────────────────────────
+aiRouter.get("/external-sources", ensureAdmin, async (c) => {
+  const db = getDb(c);
+  const sources = await db.select().from(schema.externalKnowledgeSources);
   return c.json(sources);
 });
 
-aiRouter.post("/external-sources", ensureAdmin, async (c: any) => {
-  const db = c.get("db") as any;
-  const body = await c.req.json();
+aiRouter.post("/external-sources", ensureAdmin, async (c) => {
+  const body = await c.req.json() as { type: string; url: string; branch?: string };
+  const db = getDb(c);
+
   const id = crypto.randomUUID();
-  await db.insertInto("external_knowledge_sources").values({
+  await db.insert(schema.externalKnowledgeSources).values({
     id,
     type: body.type,
     url: body.url,
     branch: body.branch || "main",
-    status: "active"
+    status: "active",
+    createdAt: new Date().toISOString()
   }).execute();
-  return c.json({ success: true, id });
+
+  return c.json({ id, success: true });
 });
 
-aiRouter.delete("/external-sources/:id", ensureAdmin, async (c: any) => {
-  const db = c.get("db") as any;
-  const id = c.req.param("id") as string;
-  await db.deleteFrom("external_knowledge_sources").where("id", "=", id).execute();
+aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
+  const id = c.req.param("id");
+  const db = getDb(c);
+  
+  await db.delete(schema.externalKnowledgeSources).where(eq(schema.externalKnowledgeSources.id, id)).execute();
   return c.json({ success: true });
 });
 
-aiRouter.get("/chat-session/:id", async (c: any) => {
-  const db = c.get("db") as any;
-  const id = c.req.param("id") as string;
-  try {
-    const session = await db.selectFrom("chat_sessions").select("history").where("id", "=", id).executeTakeFirst();
-    if (session && session.history) {
-      return c.json({ messages: JSON.parse(session.history) });
-    }
-  } catch (e) {
-    console.error("Failed to fetch chat session history", e);
-  }
-  return c.json({ messages: [] });
+aiRouter.get("/chat-session/:id", async (c) => {
+  const id = c.req.param("id");
+  const db = getDb(c);
+  
+  const session = await db.query.chatSessions.findFirst({
+    where: eq(schema.chatSessions.id, id)
+  });
+  
+  if (!session) return c.json({ error: "Not found" }, 404);
+  return c.json(session);
 });
-
-export default aiRouter;
-

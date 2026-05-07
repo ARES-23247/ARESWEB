@@ -1,21 +1,12 @@
-import { Kysely, sql, Selectable, ExpressionBuilder } from "kysely";
-import { DB } from "../../../../shared/schemas/database";
+import { sql, eq, ne, and, or, isNull, lte, gt, desc } from "drizzle-orm";
 import { fetchGithubRepoFiles } from "./external/githubFetcher";
 import { chunkText } from "./external/chunker";
 import type { VectorizeIndex, Ai } from "@cloudflare/workers-types";
+import type { DrizzleDB } from "../../middleware/utils";
+import * as schema from "../../../../src/db/schema";
 
 /**
  * Incremental Vectorize indexer for the RAG chatbot knowledge base.
- *
- * Strategy:
- * - Stores the last successful index timestamp in KV (`rag_last_indexed`)
- * - Only queries records with `updated_at > lastIndexed` (where available)
- * - Generates embeddings ONLY for changed documents (saves neurons)
- * - Upserts into Vectorize (idempotent by ID)
- * - Full re-index available via `force: true` flag
- *
- * Cost: ~50 neurons per changed doc vs ~7,000 for full re-index.
- * Safe for free tier: 10K neurons/day handles ~200 edits/day.
  */
 
 interface IndexableDocument {
@@ -24,21 +15,26 @@ interface IndexableDocument {
   metadata: Record<string, string>;
 }
 
+interface ExternalKnowledgeSourceWithSha {
+  id: string;
+  type: string;
+  url: string;
+  branch: string | null;
+  status: string;
+  lastIndexedSha: string | null;
+  lastIndexedAt: string | null;
+  createdAt: string;
+  newIndexedSha?: string;
+}
+
 const BATCH_SIZE = 100;
 const KV_KEY = "rag_last_indexed";
 
 /**
  * Indexes site content (events, blog posts, docs) for RAG search using Vectorize.
- * Performs incremental indexing by default, only reindexing content modified since last run.
- * @param db - Database instance
- * @param ai - Cloudflare AI binding for embeddings
- * @param vectorize - Vectorize index for storing embeddings
- * @param kv - KV namespace for tracking last index timestamp (optional)
- * @param options.force - If true, performs full reindex instead of incremental
- * @returns Statistics about indexed, skipped, and errors
  */
 export async function indexSiteContent(
-  db: Kysely<DB>,
+  db: DrizzleDB,
   ai: { run: (model: string, input: unknown) => Promise<unknown> },
   vectorize: VectorizeIndex,
   options?: { force?: boolean }
@@ -47,48 +43,48 @@ export async function indexSiteContent(
   const errors: string[] = [];
   const force = options?.force ?? false;
 
-  // Get the last index timestamp from D1 (or null for full index)
+  // Get the last index timestamp from D1
   let lastIndexed: string | null = null;
   if (!force) {
-    const setting = await db.selectFrom("settings").select("value").where("key", "=", KV_KEY).executeTakeFirst();
+    const setting = await db.query.settings.findFirst({
+      where: eq(schema.settings.key, KV_KEY),
+      columns: { value: true }
+    });
     lastIndexed = setting?.value || null;
   }
 
   const nowIso = new Date().toISOString();
 
   // ── 1. Index PUBLIC events ──
-  // Events schema: id, title, description, date_start, date_end, location, category, is_deleted, status, published_at
-  // No is_draft column — use status != 'draft'. No updated_at — always full scan for events.
   try {
-    let query = db
-      .selectFrom("events")
-      .select(["title", "description", "date_start", "date_end", "location", "category"])
-      .where("is_deleted", "!=", 1)
-      .where("status", "!=", "draft")
-      .where((eb: ExpressionBuilder<DB, "events">) => eb.or([
-        eb("published_at", "is", null),
-        eb("published_at", "<=", sql<string>`datetime('now')`),
-      ]))
-      .orderBy("date_start", "desc")
-      .limit(100);
+    let whereClause = and(
+      ne(schema.events.isDeleted, 1),
+      ne(schema.events.status, "draft"),
+      or(
+        isNull(schema.events.publishedAt),
+        lte(schema.events.publishedAt, sql`datetime('now')`)
+      )
+    );
 
     if (!force && lastIndexed) {
-      query = query.where("updated_at", ">", lastIndexed);
+      whereClause = and(whereClause, gt(schema.events.updatedAt, lastIndexed));
     }
 
-    const events = await query.execute();
+    const eventResults = await db.select()
+      .from(schema.events)
+      .where(whereClause)
+      .orderBy(desc(schema.events.dateStart))
+      .limit(100);
 
-    for (const event of events) {
+    for (const event of eventResults) {
       let descText = event.description || "";
       try {
         const ast = JSON.parse(descText);
         descText = extractTextFromAst(ast);
-      } catch {
-        /* plain text */
-      }
+      } catch { /* plain text */ }
 
-      const dateStr = event.date_start
-        ? new Date(event.date_start).toLocaleDateString("en-US", {
+      const dateStr = event.dateStart
+        ? new Date(event.dateStart).toLocaleDateString("en-US", {
             weekday: "long",
             year: "numeric",
             month: "long",
@@ -98,8 +94,8 @@ export async function indexSiteContent(
           })
         : "TBD";
 
-      const endStr = event.date_end
-        ? ` to ${new Date(event.date_end).toLocaleDateString("en-US", {
+      const endStr = event.dateEnd
+        ? ` to ${new Date(event.dateEnd).toLocaleDateString("en-US", {
             weekday: "long",
             month: "long",
             day: "numeric",
@@ -108,13 +104,12 @@ export async function indexSiteContent(
           })}`
         : "";
 
-      // Use title+date_start as a stable composite ID
-      const stableId = `event_${event.title?.replace(/\W+/g, "_")}_${event.date_start || "nodate"}`;
+      const stableId = `event_${event.title?.replace(/\W+/g, "_")}_${event.dateStart || "nodate"}`;
 
       documents.push({
         id: stableId,
         text: `Event: ${event.title}. Date: ${dateStr}${endStr}. Location: ${event.location || "TBD"}. Category: ${event.category || "general"}. ${descText}`.trim(),
-        metadata: { type: "event", title: event.title || "", date: event.date_start || "" },
+        metadata: { type: "event", title: event.title || "", date: event.dateStart || "" },
       });
     }
   } catch (e) {
@@ -122,23 +117,23 @@ export async function indexSiteContent(
   }
 
   // ── 2. Index published blog posts ──
-  // Posts schema: slug, title, ast, published_at, is_deleted, status, updated_at
   try {
-    let query = db
-      .selectFrom("posts")
-      .select(["slug", "title", "ast", "published_at"])
-      .where("is_deleted", "!=", 1)
-      .where("status", "!=", "draft")
-      .orderBy("published_at", "desc")
-      .limit(50);
+    let whereClause = and(
+      ne(schema.posts.isDeleted, 1),
+      ne(schema.posts.status, "draft")
+    );
 
     if (!force && lastIndexed) {
-      query = query.where("updated_at", ">", lastIndexed);
+      whereClause = and(whereClause, gt(schema.posts.updatedAt, lastIndexed));
     }
 
-    const posts = await query.execute();
+    const postResults = await db.select()
+      .from(schema.posts)
+      .where(whereClause)
+      .orderBy(desc(schema.posts.publishedAt))
+      .limit(50);
 
-    for (const post of posts) {
+    for (const post of postResults) {
       let bodyText = "";
       if (post.ast) {
         try {
@@ -151,8 +146,8 @@ export async function indexSiteContent(
 
       documents.push({
         id: `post_${post.slug || post.title?.replace(/\W+/g, "_")}`,
-        text: `Blog Post: ${post.title}. Published: ${post.published_at || "unknown"}. ${bodyText}`.trim(),
-        metadata: { type: "post", title: post.title || "", date: post.published_at || "" },
+        text: `Blog Post: ${post.title}. Published: ${post.publishedAt || "unknown"}. ${bodyText}`.trim(),
+        metadata: { type: "post", title: post.title || "", date: post.publishedAt || "" },
       });
     }
   } catch (e) {
@@ -160,29 +155,27 @@ export async function indexSiteContent(
   }
 
   // ── 3. Index PUBLIC documentation ──
-  // Table is "docs" (not "documentation"). Schema: slug, title, content, category, is_deleted, status, updated_at
   try {
-    let query = db
-      .selectFrom("docs")
-      .select(["slug", "title", "content", "category"])
-      .where("is_deleted", "!=", 1)
-      .where("status", "!=", "draft")
-      .limit(100);
+    let whereClause = and(
+      ne(schema.docs.isDeleted, 1),
+      ne(schema.docs.status, "draft")
+    );
 
     if (!force && lastIndexed) {
-      query = query.where("updated_at", ">", lastIndexed);
+      whereClause = and(whereClause, gt(schema.docs.updatedAt, lastIndexed));
     }
 
-    const docs = await query.execute();
+    const docResults = await db.select()
+      .from(schema.docs)
+      .where(whereClause)
+      .limit(100);
 
-    for (const doc of docs) {
+    for (const doc of docResults) {
       let bodyText = doc.content || "";
       try {
         const ast = JSON.parse(bodyText);
         bodyText = extractTextFromAst(ast);
-      } catch {
-        /* plain text */
-      }
+      } catch { /* plain text */ }
 
       documents.push({
         id: `doc_${doc.slug || doc.title?.replace(/\W+/g, "_")}`,
@@ -195,51 +188,44 @@ export async function indexSiteContent(
   }
 
   // ── 4. Index PUBLIC seasons ──
-  // Schema: start_year, challenge_name, robot_name, summary, robot_description, status, updated_at
   try {
-    let query = db
-      .selectFrom("seasons")
-      .select(["start_year", "challenge_name", "robot_name", "summary", "robot_description"])
-      .where("status", "=", "published")
-      .limit(20);
+    let whereClause = eq(schema.seasons.status, "published");
 
     if (!force && lastIndexed) {
-      query = query.where("updated_at", ">", lastIndexed);
+      whereClause = and(whereClause, gt(schema.seasons.updatedAt, lastIndexed));
     }
 
-    const seasons = await query.execute();
+    const seasonResults = await db.select()
+      .from(schema.seasons)
+      .where(whereClause)
+      .limit(20);
 
-    for (const season of seasons) {
-      const year = season.start_year ?? 0;
-      let descText = season.robot_description || "";
+    for (const season of seasonResults) {
+      const year = season.startYear ?? 0;
+      let descText = season.robotDescription || "";
       try {
         const ast = JSON.parse(descText);
         descText = extractTextFromAst(ast);
-      } catch {
-        /* plain text */
-      }
+      } catch { /* plain text */ }
 
       documents.push({
         id: `season_${year}`,
-        text: `Season ${year}-${year + 1}: ${season.challenge_name}. Robot: ${season.robot_name || "unnamed"}. ${season.summary || ""}. ${descText}`.trim(),
-        metadata: { type: "season", title: `${year} ${season.challenge_name}` },
+        text: `Season ${year}-${year + 1}: ${season.challengeName}. Robot: ${season.robotName || "unnamed"}. ${season.summary || ""}. ${descText}`.trim(),
+        metadata: { type: "season", title: `${year} ${season.challengeName}` },
       });
     }
   } catch (e) {
     errors.push(`Seasons indexing failed: ${e}`);
   }
 
-  // Nothing changed since last run
   if (documents.length === 0) {
     return { indexed: 0, skipped: 0, errors };
   }
 
   // ── 5. Generate embeddings and upsert in batches ──
   let indexed = 0;
-
   for (let i = 0; i < documents.length; i += BATCH_SIZE) {
     const batch = documents.slice(i, i + BATCH_SIZE);
-
     try {
       const texts = batch.map((d: IndexableDocument) => d.text.substring(0, 2000));
       const embeddingRes = (await ai.run("@cf/baai/bge-base-en-v1.5", { text: texts })) as {
@@ -266,9 +252,9 @@ export async function indexSiteContent(
 
   // ── 6. Update the last-indexed timestamp in D1 ──
   if (indexed > 0) {
-    await db.insertInto("settings")
+    await db.insert(schema.settings)
       .values({ key: KV_KEY, value: nowIso })
-      .onConflict((oc) => oc.column("key").doUpdateSet({ value: nowIso }))
+      .onConflictDoUpdate({ target: schema.settings.key, set: { value: nowIso } })
       .execute();
   }
 
@@ -293,19 +279,10 @@ function extractTextFromAst(node: Record<string, unknown>): string {
 }
 
 /**
- * Indexes external resources (FIRST manuals, FTC docs, GitHub repositories) for RAG search.
- * Fetches content from external sources and creates embeddings for cross-reference search.
- * @param db - Database instance
- * @param ai - Cloudflare AI binding for embeddings
- * @param vectorize - Vectorize index for storing embeddings
- * @param zaiApiKey - Optional Z.AI API key for alternative embedding service
- * @param githubPat - Optional GitHub PAT for accessing private repositories
- * @param kv - KV namespace for tracking last index timestamp (optional)
- * @param sourceId - Optional source identifier for targeted reindexing
- * @returns Statistics about indexed, skipped, and errors
+ * Indexes external resources (FIRST manuals, FTC docs, GitHub repositories).
  */
 export async function indexExternalResources(
-  db: Kysely<DB>,
+  db: DrizzleDB,
   ai: Ai | undefined,
   vectorize: VectorizeIndex,
   zaiApiKey?: string,
@@ -315,17 +292,16 @@ export async function indexExternalResources(
   const documents: IndexableDocument[] = [];
   const errors: string[] = [];
 
-  let query = db.selectFrom("external_knowledge_sources")
-    .selectAll()
-    .where("status", "=", "active");
-
+  let whereClause = eq(schema.externalKnowledgeSources.status, "active");
   if (sourceId) {
-    query = query.where("id", "=", sourceId);
+    whereClause = and(whereClause, eq(schema.externalKnowledgeSources.id, sourceId));
   }
 
-  const sources = (await query.execute()) as (Selectable<DB["external_knowledge_sources"]> & { new_indexed_sha?: string })[];
+  const sources = await db.select()
+    .from(schema.externalKnowledgeSources)
+    .where(whereClause);
 
-  for (const source of sources) {
+  for (const source of sources as ExternalKnowledgeSourceWithSha[]) {
     if (source.type === "github") {
       let owner: string, repo: string;
       if (source.url.includes("github.com/")) {
@@ -351,7 +327,7 @@ export async function indexExternalResources(
         continue;
       }
       
-      if (res.commitSha !== source.last_indexed_sha) {
+      if (res.commitSha !== source.lastIndexedSha) {
         for (const file of res.files) {
           const chunks = chunkText(file.content, 1000, 100);
           for (const chunk of chunks) {
@@ -362,9 +338,8 @@ export async function indexExternalResources(
             });
           }
         }
-        
-        // We will update the SHA after successful indexing
-        source.new_indexed_sha = res.commitSha; 
+
+        source.newIndexedSha = res.commitSha;
       }
     } else {
       errors.push(`Website indexing not yet implemented for ${source.url}`);
@@ -376,7 +351,6 @@ export async function indexExternalResources(
   }
 
   let indexed = 0;
-
   for (let i = 0; i < documents.length; i += BATCH_SIZE) {
     const batch = documents.slice(i, i + BATCH_SIZE);
     try {
@@ -409,26 +383,25 @@ export async function indexExternalResources(
   }
 
   if (indexed > 0) {
-    for (const source of sources) {
-      if (source.new_indexed_sha) {
-        await db.updateTable("external_knowledge_sources")
-          .set({ last_indexed_sha: source.new_indexed_sha, last_indexed_at: new Date().toISOString() })
-          .where("id", "=", source.id)
+    for (const source of sources as ExternalKnowledgeSourceWithSha[]) {
+      if (source.newIndexedSha) {
+        await db.update(schema.externalKnowledgeSources)
+          .set({ lastIndexedSha: source.newIndexedSha, lastIndexedAt: new Date().toISOString() })
+          .where(eq(schema.externalKnowledgeSources.id, source.id))
           .execute();
       }
     }
   }
 
-  // Store errors in D1 for admin console debugging
   try {
     if (errors.length > 0) {
       const errStr = JSON.stringify({ timestamp: new Date().toISOString(), errors });
-      await db.insertInto("settings")
+      await db.insert(schema.settings)
         .values({ key: "LAST_INDEX_ERRORS", value: errStr })
-        .onConflict((oc) => oc.column("key").doUpdateSet({ value: errStr }))
+        .onConflictDoUpdate({ target: schema.settings.key, set: { value: errStr } })
         .execute();
     } else {
-      await db.deleteFrom("settings").where("key", "=", "LAST_INDEX_ERRORS").execute();
+      await db.delete(schema.settings).where(eq(schema.settings.key, "LAST_INDEX_ERRORS")).execute();
     }
   } catch (e) {
     console.error("Failed to write errors to D1:", e);
@@ -436,4 +409,3 @@ export async function indexExternalResources(
 
   return { indexed, skipped: 0, errors };
 }
-
