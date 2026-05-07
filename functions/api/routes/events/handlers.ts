@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Event handlers work with dynamic external data (Gcal, rrule, Zulip, etc.) */
-import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction } from "../../middleware";
+import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
@@ -73,7 +73,7 @@ export const eventHandlers = {
   getEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const { limit = 50, offset = 0, q } = query;
 
       if (q) {
@@ -181,7 +181,7 @@ export const eventHandlers = {
   },
   getCalendarSettings: async (_input: HandlerInput, c: any) => {
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const results = await db.select({
         key: schema.settings.key,
         value: schema.settings.value,
@@ -206,7 +206,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const user = await getSessionUser(c);
 
       const row = await db.select({
@@ -269,7 +269,7 @@ export const eventHandlers = {
   getAdminEvents: async (input: HandlerInput, c: any) => {
     try {
       const { query } = input;
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const { limit = 100, cursor } = query;
 
       let baseQuery = db.select({
@@ -345,7 +345,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       let row;
       try {
         row = await db.select({
@@ -407,7 +407,7 @@ export const eventHandlers = {
   saveEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
     try {
       const { body } = input;
-      const db = c.get("db") as any;
+      const db = getDb(c);
 
       if (body.id) {
         const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, body.id)).get();
@@ -553,7 +553,7 @@ export const eventHandlers = {
       })());
 
       c.executionCtx.waitUntil(logAuditAction(c, "CREATE_EVENT", "events", genId, `Created event: ${title} (${status})`));
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+      triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
 
       return { status: 200 as const, body: { success: true, id: genId } };
     } catch (e) {
@@ -566,7 +566,7 @@ export const eventHandlers = {
     const { params, body } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
 
       if (!dateStart) {
@@ -642,7 +642,7 @@ export const eventHandlers = {
         }
       })());
 
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+      triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
       return { status: 200 as const, body: { success: true, id } };
     } catch (e) {
       console.error("[Events:Update] Error", e);
@@ -653,7 +653,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const existing = await db.select({
         gcalEventId: schema.events.gcalEventId,
         category: schema.events.category
@@ -679,7 +679,7 @@ export const eventHandlers = {
         }
       })());
 
-      triggerBackgroundReindex(c.executionCtx, c.get("db"), c.env.AI, c.env.VECTORIZE_DB);
+      triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:Delete] Error", e);
@@ -690,7 +690,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const row = await db.select({
         id: schema.events.id,
         title: schema.events.title,
@@ -758,7 +758,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.update(schema.events).set({ status: 'rejected' }).where(eq(schema.events.id, id)).run();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
@@ -770,7 +770,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.update(schema.events).set({ isDeleted: 0 }).where(eq(schema.events.id, id)).run();
 
       c.executionCtx.waitUntil((async () => {
@@ -805,7 +805,7 @@ export const eventHandlers = {
     const { params } = input;
     const { id } = params;
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const row = await db.select({ gcalEventId: schema.events.gcalEventId, category: schema.events.category }).from(schema.events).where(eq(schema.events.id, id)).get();
       await db.delete(schema.events).where(eq(schema.events.id, id)).run();
 
@@ -835,7 +835,7 @@ export const eventHandlers = {
   },
   syncEvents: async (_input: HandlerInput, c: HonoContext) => {
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const dbSettings = await getDbSettings(c);
       const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
       const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
@@ -906,7 +906,7 @@ export const eventHandlers = {
       const { params } = input;
       const eventId = params.id;
       const user = await getSessionUser(c);
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const isVerified = user && user.role !== "unverified";
       const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.member_type || ""));
 
@@ -967,7 +967,7 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (!user || user.role === "unverified") return { status: 403 as const, body: { error: "Forbidden" } };
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.insert(schema.eventSignups)
         .values({ eventId: params.id, userId: user.id, bringing: body.bringing || "", notes: body.notes || "", prepHours: body.prep_hours || 0 })
         .onConflictDoUpdate({
@@ -986,7 +986,7 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.delete(schema.eventSignups).where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id))).run();
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
@@ -999,7 +999,7 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.insert(schema.eventSignups)
         .values({ eventId: params.id, userId: user.id, attended: body.attended ? 1 : 0 })
         .onConflictDoUpdate({
@@ -1018,7 +1018,7 @@ export const eventHandlers = {
     try {
       const user = await getSessionUser(c);
       if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = c.get("db") as any;
+      const db = getDb(c);
       await db.insert(schema.eventSignups)
         .values({ eventId: params.id, userId: params.userId, attended: body.attended ? 1 : 0 })
         .onConflictDoUpdate({
@@ -1036,7 +1036,7 @@ export const eventHandlers = {
     const { params, body } = input;
     const user = await getSessionUser(c);
     if (user?.role !== "admin" && user?.role !== "author") return { status: 401 as const, body: { error: "Unauthorized" } };
-    const db = c.get("db") as any;
+    const db = getDb(c);
     try {
       const event = await db.select().from(schema.events).where(eq(schema.events.id, params.id)).get();
       if (!event) return { status: 404 as const, body: { error: "Event not found" } };
@@ -1086,7 +1086,7 @@ export const eventHandlers = {
   },
   repairCalendar: async (_input: HandlerInput, c: HonoContext) => {
     try {
-      const db = c.get("db") as any;
+      const db = getDb(c);
       const dbSettings = await getDbSettings(c);
       const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
       const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
