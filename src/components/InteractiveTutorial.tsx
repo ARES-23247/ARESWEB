@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { sanitizeHtml, signTutorialProgress, verifyTutorialProgress } from '../utils/security';
-import { fetchJson } from '../utils/apiClient';
+import { useTrackPageView } from '../api/analytics';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import './InteractiveTutorial.css';
 
@@ -26,6 +26,9 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
   const [showCode, setShowCode] = useState(false);
   const [syncId, setSyncId] = useState('');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+
+  const trackCheckpoint = useTrackPageView();
+  const trackSync = useTrackPageView();
 
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -66,13 +69,10 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
 
       // Sync to Cloudflare conditionally
       if (syncId) {
-        fetchJson("/api/analytics/track", {
-          method: "POST",
-          body: JSON.stringify({
-            path: `/tutorial/${title}/checkpoint/${currentStepData.id}`,
-            category: 'tutorial-checkpoint',
-            metadata: { syncId, progress: progressArray }
-          })
+        // Silently track checkpoint progress - don't await or interrupt flow
+        trackCheckpoint.mutate({
+          path: `/tutorial/${title}/checkpoint/${currentStepData.id}`,
+          category: 'tutorial-checkpoint'
         }).catch((e: unknown) => console.error("Failed to sync progress to cloud", e));
       }
     }
@@ -89,9 +89,9 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
     setSyncStatus('syncing');
     try {
       // Temporary: Use analytics track as a way to "log" sync attempts until progress contract exists
-      await fetchJson("/api/analytics/track", {
-        method: "POST",
-        body: JSON.stringify({ path: `/tutorial/${title}/sync`, category: 'tutorial-sync', metadata: { syncId } })
+      await trackSync.mutateAsync({
+        path: `/tutorial/${title}/sync`,
+        category: 'tutorial-sync'
       });
       setSyncStatus('success');
       setTimeout(() => setSyncStatus('idle'), 3000);

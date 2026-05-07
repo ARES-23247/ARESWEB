@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Clock, Zap, Circle, UserMinus } from "lucide-react";
-import { fetchJson } from "../api";
+import { useGetPresence } from "../api/zulip";
 
 interface PresenceData {
   status: "active" | "idle" | "offline";
@@ -18,41 +18,21 @@ interface ZulipPresences {
 }
 
 export default function TeamAvailability() {
-  const [presences, setPresences] = useState<ZulipPresences | null>(null);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPresence = async () => {
-    try {
-      const data = await fetchJson<{ success: boolean; presence: ZulipPresences; userNames?: Record<string, string>; error?: string }>("/api/zulip/presence");
-      if (data.success) {
-        setPresences(data.presence);
-        if (data.userNames) {
-          setUserNames(data.userNames);
-        }
-        setError(null);
-      } else {
-        setError(data.error || "Failed to fetch presence data");
-      }
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading, isError } = useGetPresence({
+    refetchInterval: 120000, // 2 minute polling
+    onError: (err) => setError(err.message)
+  });
+
+  const presences = data?.presence || null;
 
   useEffect(() => {
-    // Defer initial fetch to avoid synchronous state update in effect
-    const initialTimeout = setTimeout(() => {
-      void fetchPresence();
-    }, 0);
-    const interval = setInterval(fetchPresence, 120000); // 2 minute polling
-    return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(interval);
-    };
-  }, []);
+    if (data?.userNames) {
+      setUserNames(data.userNames);
+    }
+  }, [data]);
 
   // Compute highest priority status for a user across clients
   const getAggregatedStatus = (userObj: Record<string, PresenceData>): "active" | "idle" | "offline" => {
@@ -122,12 +102,12 @@ export default function TeamAvailability() {
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-[250px] scrollbar-thin scrollbar-thumb-white/5 pr-2">
-        {loading && !presences ? (
+        {isLoading && !presences ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">
             <Circle className="text-marble/20 animate-pulse" size={24} />
             <span className="text-xs font-bold uppercase tracking-widest text-marble/60">Syncing Radar...</span>
           </div>
-        ) : error ? (
+        ) : isError || error ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
             <span className="text-xs font-bold text-ares-red border border-ares-red/50 px-3 py-1 ares-cut-sm">{error}</span>
           </div>

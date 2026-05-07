@@ -43,7 +43,7 @@ export default function LocationsManager() {
   const { data: locationsData, isLoading, isError } = useQuery({
     queryKey: ["admin_locations"],
     queryFn: async () => {
-      const res = await fetch("/api/locations/admin-list");
+      const res = await fetch("/api/locations/admin/list");
       if (!res.ok) throw new Error("Failed to fetch");
       return { body: await res.json() };
     }
@@ -54,7 +54,7 @@ export default function LocationsManager() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: { body: unknown }) => {
-      const res = await fetch("/api/locations", {
+      const res = await fetch("/api/locations/admin/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data.body)
@@ -81,7 +81,7 @@ export default function LocationsManager() {
 
   const deleteMutation = useMutation({
     mutationFn: async (data: { params: { id: string } }) => {
-      const res = await fetch(`/api/locations/${data.params.id}`, {
+      const res = await fetch(`/api/locations/admin/${data.params.id}`, {
         method: "DELETE"
       });
       if (!res.ok) throw new Error(await res.text());

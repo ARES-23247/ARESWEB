@@ -58,6 +58,14 @@ export function QuickAddEventModal({
   // Fetch locations from registry (only when modal is open)
   const { data: locationsData } = useGetLocations({ enabled: isOpen, staleTime: 5 * 60 * 1000 });
   const locations = locationsData?.locations || [];
+  const saveEvent = useSaveEvent({
+    onSuccess: () => {
+      toast.success("Event created successfully!");
+      setFormData(DEFAULT_FORM_DATA);
+      onClose();
+      onSuccess?.();
+    }
+  });
 
   // Initialize form with selected date when modal opens or date changes
   useEffect(() => {
@@ -110,30 +118,17 @@ export function QuickAddEventModal({
     try {
       const locationValue = formData.location === "CUSTOM" ? undefined : formData.location;
 
-      const result = await fetchJson<{ success?: boolean; error?: string }>("/api/events/create", {
-        method: "POST",
-        body: JSON.stringify({
-          title: formData.title,
-          dateStart: formData.dateStart,
-          dateEnd: formData.dateEnd || undefined,
-          location: locationValue || undefined,
-          category: formData.category,
-          description: "",
-          isDraft: false,
-        }),
+      await saveEvent.mutateAsync({
+        title: formData.title,
+        dateStart: formData.dateStart,
+        dateEnd: formData.dateEnd || undefined,
+        location: locationValue || undefined,
+        category: formData.category,
+        description: "",
+        isDraft: false,
       });
-
-      if (result.success) {
-        toast.success("Event created successfully!");
-        setFormData(DEFAULT_FORM_DATA);
-        onClose();
-        onSuccess?.();
-      } else {
-        setError(result.error || "Failed to create event");
-      }
-    } catch (_err) {
-      setError("Network error. Please try again.");
-    } finally {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create event");
       setIsSubmitting(false);
     }
   };

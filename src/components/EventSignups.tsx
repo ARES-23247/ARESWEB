@@ -1,19 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, Plus, Save, RefreshCw, Trash2, CheckCircle2, Circle, AlertCircle, Users } from "lucide-react";
-import { useGetEventSignups, useSubmitEventSignup, useDeleteMyEventSignup, useUpdateMyEventAttendance, useUpdateUserEventAttendance } from "../api/events";
-
-interface SignupEntry {
-  id: number;
-  user_id: string;
-  nickname: string;
-  avatar: string;
-  bringing: string;
-  notes: string;
-  is_own: boolean;
-  attended: boolean;
-  prep_hours?: number;
-}
+import { useGetEventSignups, useSubmitEventSignup, useDeleteMyEventSignup, useUpdateMyEventAttendance, useUpdateUserEventAttendance, type EventSignup } from "../api/events";
 
 interface EventSignupsProps {
   eventId: string;

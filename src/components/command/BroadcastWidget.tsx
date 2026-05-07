@@ -1,37 +1,28 @@
 import { useState } from "react";
 import { MessageSquare, Send, AlertCircle } from "lucide-react";
-import { fetchJson } from "../../utils/apiClient";
+import { useSendMessage } from "../../api/zulip";
 
 export default function BroadcastWidget() {
   const [stream, setStream] = useState("general");
   const [topic, setTopic] = useState("announcements");
   const [content, setContent] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const handleSend = async () => {
-    if (!content.trim() || !stream.trim() || !topic.trim()) return;
-
-    setIsSending(true);
-    setStatus(null);
-    try {
-      const res = await fetchJson<{ success: boolean; error?: string }>("/api/zulip/message", {
-        method: "POST",
-        body: JSON.stringify({ stream: stream.trim(), topic: topic.trim(), content: content.trim() })
-      });
-
-      if (res.success) {
-        setContent("");
-        setStatus({ type: "success", message: "Broadcast sent successfully!" });
-        setTimeout(() => setStatus(null), 3000);
-      } else {
-        setStatus({ type: "error", message: res.error || "Failed to send broadcast" });
-      }
-    } catch (err) {
-      setStatus({ type: "error", message: (err as Error).message });
-    } finally {
-      setIsSending(false);
+  const sendMessage = useSendMessage({
+    onSuccess: () => {
+      setContent("");
+      setStatus({ type: "success", message: "Broadcast sent successfully!" });
+      setTimeout(() => setStatus(null), 3000);
+    },
+    onError: (err) => {
+      setStatus({ type: "error", message: err.message || "Failed to send broadcast" });
     }
+  });
+
+  const handleSend = () => {
+    if (!content.trim() || !stream.trim() || !topic.trim()) return;
+    setStatus(null);
+    sendMessage.mutate({ stream: stream.trim(), topic: topic.trim(), content: content.trim() });
   };
 
   return (
@@ -91,10 +82,10 @@ export default function BroadcastWidget() {
           </div>
           <button
             onClick={handleSend}
-            disabled={isSending || !content.trim()}
+            disabled={sendMessage.isPending || !content.trim()}
             className="flex items-center gap-2 px-4 py-2 bg-ares-cyan text-obsidian font-black text-xs uppercase tracking-widest hover:bg-ares-cyan/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ares-cut-sm"
           >
-            {isSending ? (
+            {sendMessage.isPending ? (
               <div className="w-3 h-3 border-2 border-obsidian border-t-transparent rounded-full animate-spin" />
             ) : (
               <Send size={14} />
