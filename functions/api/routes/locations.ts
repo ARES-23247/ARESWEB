@@ -28,7 +28,7 @@ locationsRouter.use("/admin/*", ensureAdmin);
 
 locationsRouter.openapi(listLocationsRoute, typedHandler<typeof listLocationsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const results = await db.select({
         id: schema.locations.id,
         name: schema.locations.name,
@@ -41,7 +41,7 @@ locationsRouter.openapi(listLocationsRoute, typedHandler<typeof listLocationsRou
       .orderBy(asc(schema.locations.name))
       .all();
 
-    const locations = results.map((r: any) => ({
+    const locations = results.map((r) => ({
       ...r,
       id: r.id || undefined,
       is_deleted: Number(r.is_deleted || 0)
@@ -56,7 +56,7 @@ locationsRouter.openapi(listLocationsRoute, typedHandler<typeof listLocationsRou
 
 locationsRouter.openapi(adminListLocationsRoute, typedHandler<typeof adminListLocationsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const results = await db.select({
         id: schema.locations.id,
         name: schema.locations.name,
@@ -68,7 +68,7 @@ locationsRouter.openapi(adminListLocationsRoute, typedHandler<typeof adminListLo
       .orderBy(asc(schema.locations.name))
       .all();
 
-    const locations = results.map((r: any) => ({
+    const locations = results.map((r) => ({
       ...r,
       id: r.id || undefined,
       is_deleted: Number(r.is_deleted || 0)
@@ -84,7 +84,7 @@ locationsRouter.openapi(adminListLocationsRoute, typedHandler<typeof adminListLo
 locationsRouter.openapi(saveLocationRoute, typedHandler<typeof saveLocationRoute>(async (c) => {
   try {
     const validatedData = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const id = validatedData.id || crypto.randomUUID();
 
     await db.insert(schema.locations)
@@ -117,7 +117,7 @@ locationsRouter.openapi(saveLocationRoute, typedHandler<typeof saveLocationRoute
 locationsRouter.openapi(deleteLocationRoute, typedHandler<typeof deleteLocationRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = c.get("db");
     await db.update(schema.locations)
       .set({ isDeleted: 1 })
       .where(eq(schema.locations.id, id))
