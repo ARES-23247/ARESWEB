@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
- 
-import { Kysely, sql } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { sql } from "drizzle-orm";
+import { DrizzleD1Database } from "drizzle-orm/d1";
+import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
+
+import { eq, desc, asc, and, ne, isNotNull, lt } from "drizzle-orm";
 
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, checkPersistentRateLimit, verifyTurnstile, emitNotification, notifyByRole, getSocialConfig, logAuditAction } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
@@ -13,6 +15,8 @@ import { siteConfig } from "../../utils/site.config";
 import type { HonoContext } from "@shared/types/api";
 import type { SelectableRow } from "@shared/types/database";
 import * as docsRoutes from "../../../shared/routes/docs";
+
+type DrizzleDb = DrizzleD1Database<typeof schema>;
 
 
 
@@ -111,21 +115,23 @@ const sanitizeFtsQuery = (query: string): string => {
 
 async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
   try {
-    const db = c.get("db") as any;
-    const results = await db.selectFrom("docs_history")
-      .select("id")
-      .where("slug", "=", slug)
-      .orderBy("created_at", "desc")
-      .offset(limit - 1)
+    const db = c.get("db") as DrizzleDb;
+    const results = await db.select({ id: schema.docsHistory.id })
+      .from(schema.docsHistory)
+      .where(eq(schema.docsHistory.slug, slug))
+      .orderBy(desc(schema.docsHistory.createdAt))
       .limit(1)
-      .execute();
+      .offset(limit - 1)
+      .all();
 
     if (results.length > 0) {
       const oldestId = results[0].id;
-      await db.deleteFrom("docs_history")
-        .where("slug", "=", slug)
-        .where("id", "<", oldestId)
-        .execute();
+      await db.delete(schema.docsHistory)
+        .where(and(
+          eq(schema.docsHistory.slug, slug),
+          lt(schema.docsHistory.id, oldestId)
+        ))
+        .run();
     }
   } catch { /* ignore */ }
 }
@@ -133,55 +139,55 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 // GET /docs - List all public docs
 docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDocsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     let results;
     try {
-      results = await db.selectFrom("docs")
-        .leftJoin("user as u", "docs.cf_email", "u.email")
-        .leftJoin("user_profiles as p", "u.id", "p.user_id")
-        .select([
-          "docs.slug",
-          "docs.title",
-          "docs.category",
-          "docs.sort_order",
-          "docs.description",
-          "docs.is_portfolio",
-          "docs.is_executive_summary",
-          "docs.is_deleted",
-          "docs.status",
-          "docs.revision_of",
-          "docs.display_in_areslib",
-          "docs.display_in_math_corner",
-          "docs.display_in_science_corner",
-          "p.nickname as original_author_nickname",
-          "u.image as original_author_avatar"
-        ])
-        .where("docs.is_deleted", "=", 0)
-        .where("docs.status", "=", "published")
-        .orderBy("docs.category")
-        .orderBy("docs.sort_order", "asc")
-        .execute();
+      results = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        sort_order: schema.docs.sortOrder,
+        description: schema.docs.description,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        is_deleted: schema.docs.isDeleted,
+        status: schema.docs.status,
+        revision_of: schema.docs.revisionOf,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner,
+        original_author_nickname: schema.userProfiles.nickname,
+        original_author_avatar: schema.user.image
+      })
+        .from(schema.docs)
+        .leftJoin(schema.user, eq(schema.docs.cfEmail, schema.user.email))
+        .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+        .where(and(
+          eq(schema.docs.isDeleted, 0),
+          eq(schema.docs.status, "published")
+        ))
+        .orderBy(asc(schema.docs.category), asc(schema.docs.sortOrder))
+        .all();
     } catch (_e) {
-      results = await db.selectFrom("docs")
-        .leftJoin("user as u", "docs.cf_email", "u.email")
-        .leftJoin("user_profiles as p", "u.id", "p.user_id")
-        .select([
-          "docs.slug",
-          "docs.title",
-          "docs.category",
-          "docs.sort_order",
-          "docs.description",
-          "docs.is_portfolio",
-          "docs.is_executive_summary",
-          "docs.display_in_areslib",
-          "docs.display_in_math_corner",
-          "docs.display_in_science_corner",
-          "p.nickname as original_author_nickname",
-          "u.image as original_author_avatar"
-        ])
-        .orderBy("docs.category")
-        .orderBy("docs.sort_order", "asc")
-        .execute() as DocWithAuthor[];
+      results = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        sort_order: schema.docs.sortOrder,
+        description: schema.docs.description,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner,
+        original_author_nickname: schema.userProfiles.nickname,
+        original_author_avatar: schema.user.image
+      })
+        .from(schema.docs)
+        .leftJoin(schema.user, eq(schema.docs.cfEmail, schema.user.email))
+        .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+        .orderBy(asc(schema.docs.category), asc(schema.docs.sortOrder))
+        .all() as DocWithAuthor[];
     }
 
     const docs = results.map((d: any) => ({
@@ -223,14 +229,14 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
     const cleanQ = sanitizeFtsQuery(String(q));
     if (!cleanQ) return c.json({ results: [] } as any, 200 as any);
 
-    const db = c.get("db") as any;
-    const results = await sql<{ slug: string, title: string, category: string, description: string | null }>`
+    const db = c.get("db") as DrizzleDb;
+    const results = await db.run(sql<{ slug: string, title: string, category: string, description: string | null }>`
       SELECT f.slug, f.title, f.category, f.description
       FROM docs_fts f
       JOIN docs d ON f.slug = d.slug
       WHERE d.is_deleted = 0 AND d.status = 'published' AND f.docs_fts MATCH ${cleanQ}
       ORDER BY f.rank LIMIT 20
-    `.execute(db);
+    `);
 
     const mapped = (results.rows ?? []).map((row: any) => {
       return {
@@ -254,20 +260,43 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
 // GET /docs/admin/list - List all docs (admin view)
 docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adminListRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     let results;
     try {
-      results = await db.selectFrom("docs")
-        .select(["slug", "title", "category", "sort_order", "description", "is_portfolio", "is_executive_summary", "is_deleted", "status", "revision_of", "display_in_areslib", "display_in_math_corner", "display_in_science_corner"])
-        .orderBy("category")
-        .orderBy("sort_order", "asc")
-        .execute();
+      results = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        sort_order: schema.docs.sortOrder,
+        description: schema.docs.description,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        is_deleted: schema.docs.isDeleted,
+        status: schema.docs.status,
+        revision_of: schema.docs.revisionOf,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner
+      })
+        .from(schema.docs)
+        .orderBy(asc(schema.docs.category), asc(schema.docs.sortOrder))
+        .all();
     } catch (_e) {
-      results = await db.selectFrom("docs")
-        .select(["slug", "title", "category", "sort_order", "description", "is_portfolio", "is_executive_summary", "display_in_areslib", "display_in_math_corner", "display_in_science_corner"])
-        .orderBy("category")
-        .orderBy("sort_order", "asc")
-        .execute() as PartialDoc[];
+      results = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        sort_order: schema.docs.sortOrder,
+        description: schema.docs.description,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner
+      })
+        .from(schema.docs)
+        .orderBy(asc(schema.docs.category), asc(schema.docs.sortOrder))
+        .all() as PartialDoc[];
     }
 
     const docs = results.map((d: any) => ({
@@ -294,18 +323,47 @@ docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adm
 docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.adminDetailRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     let row;
     try {
-      row = await db.selectFrom("docs")
-        .select(["slug", "title", "category", "sort_order", "description", "content", "is_portfolio", "is_executive_summary", "is_deleted", "status", "revision_of", "zulip_stream", "zulip_topic", "display_in_areslib", "display_in_math_corner", "display_in_science_corner"])
-        .where("slug", "=", slug)
-        .executeTakeFirst();
+      row = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        sort_order: schema.docs.sortOrder,
+        description: schema.docs.description,
+        content: schema.docs.content,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        is_deleted: schema.docs.isDeleted,
+        status: schema.docs.status,
+        revision_of: schema.docs.revisionOf,
+        zulip_stream: schema.docs.zulipStream,
+        zulip_topic: schema.docs.zulipTopic,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner
+      })
+        .from(schema.docs)
+        .where(eq(schema.docs.slug, slug))
+        .get();
     } catch (_e) {
-      row = await db.selectFrom("docs")
-        .select(["slug", "title", "category", "sort_order", "description", "content", "is_portfolio", "is_executive_summary", "display_in_areslib", "display_in_math_corner", "display_in_science_corner"])
-        .where("slug", "=", slug)
-        .executeTakeFirst() as PartialDoc | undefined;
+      row = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        sort_order: schema.docs.sortOrder,
+        description: schema.docs.description,
+        content: schema.docs.content,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner
+      })
+        .from(schema.docs)
+        .where(eq(schema.docs.slug, slug))
+        .get() as PartialDoc | undefined;
     }
 
     if (!row) return c.json({ error: "Doc not found" } as any, 404 as any);
@@ -332,72 +390,75 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.a
 docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     let row;
     try {
-      row = await db.selectFrom("docs")
-        .leftJoin("user as u", "docs.cf_email", "u.email")
-        .leftJoin("user_profiles as p", "u.id", "p.user_id")
-        .select([
-          "docs.slug",
-          "docs.title",
-          "docs.category",
-          "docs.description",
-          "docs.content",
-          "docs.updated_at",
-          "docs.is_portfolio",
-          "docs.is_executive_summary",
-          "docs.is_deleted",
-          "docs.status",
-          "docs.revision_of",
-          "docs.zulip_stream",
-          "docs.zulip_topic",
-          "docs.display_in_areslib",
-          "docs.display_in_math_corner",
-          "docs.display_in_science_corner",
-          "p.nickname as original_author_nickname",
-          "u.image as original_author_avatar"
-        ])
-        .where("docs.slug", "=", slug)
-        .where("docs.is_deleted", "=", 0)
-        .where("docs.status", "=", "published")
-        .executeTakeFirst();
+      row = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        description: schema.docs.description,
+        content: schema.docs.content,
+        updated_at: schema.docs.updatedAt,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        is_deleted: schema.docs.isDeleted,
+        status: schema.docs.status,
+        revision_of: schema.docs.revisionOf,
+        zulip_stream: schema.docs.zulipStream,
+        zulip_topic: schema.docs.zulipTopic,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner,
+        original_author_nickname: schema.userProfiles.nickname,
+        original_author_avatar: schema.user.image
+      })
+        .from(schema.docs)
+        .leftJoin(schema.user, eq(schema.docs.cfEmail, schema.user.email))
+        .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+        .where(and(
+          eq(schema.docs.slug, slug),
+          eq(schema.docs.isDeleted, 0),
+          eq(schema.docs.status, "published")
+        ))
+        .get();
     } catch (_e) {
-      row = await db.selectFrom("docs")
-        .leftJoin("user as u", "docs.cf_email", "u.email")
-        .leftJoin("user_profiles as p", "u.id", "p.user_id")
-        .select([
-          "docs.slug",
-          "docs.title",
-          "docs.category",
-          "docs.description",
-          "docs.content",
-          "docs.updated_at",
-          "docs.is_portfolio",
-          "docs.is_executive_summary",
-          "docs.display_in_areslib",
-          "docs.display_in_math_corner",
-          "docs.display_in_science_corner",
-          "p.nickname as original_author_nickname",
-          "u.image as original_author_avatar"
-        ])
-        .where("docs.slug", "=", slug)
-        .executeTakeFirst() as DocWithAuthor | undefined;
+      row = await db.select({
+        slug: schema.docs.slug,
+        title: schema.docs.title,
+        category: schema.docs.category,
+        description: schema.docs.description,
+        content: schema.docs.content,
+        updated_at: schema.docs.updatedAt,
+        is_portfolio: schema.docs.isPortfolio,
+        is_executive_summary: schema.docs.isExecutiveSummary,
+        display_in_areslib: schema.docs.displayInAreslib,
+        display_in_math_corner: schema.docs.displayInMathCorner,
+        display_in_science_corner: schema.docs.displayInScienceCorner,
+        original_author_nickname: schema.userProfiles.nickname,
+        original_author_avatar: schema.user.image
+      })
+        .from(schema.docs)
+        .leftJoin(schema.user, eq(schema.docs.cfEmail, schema.user.email))
+        .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+        .where(eq(schema.docs.slug, slug))
+        .get() as DocWithAuthor | undefined;
     }
 
     if (!row) return c.json({ error: "Doc not found" } as any, 404 as any);
 
-    const contributorRows = await db.selectFrom("docs_history as h")
-      .leftJoin("user as u", "h.author_email", "u.email")
-      .leftJoin("user_profiles as p", "u.id", "p.user_id")
-      .select([
-        "p.nickname",
-        "u.image as avatar"
-      ])
-      .distinct()
-      .where("h.slug", "=", slug)
-      .where("h.author_email", "is not", null)
-      .execute();
+    const contributorRows = await db.select({
+      nickname: schema.userProfiles.nickname,
+      avatar: schema.user.image
+    })
+      .from(schema.docsHistory)
+      .leftJoin(schema.user, eq(schema.docsHistory.authorEmail, schema.user.email))
+      .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+      .where(and(
+        eq(schema.docsHistory.slug, slug),
+        isNotNull(schema.docsHistory.authorEmail)
+      ))
+      .all();
 
     const contributors = contributorRows.map((cnt: any) => ({
       nickname: cnt.nickname || null,
@@ -429,13 +490,13 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
 docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.deleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
-    const existing = await db.selectFrom("docs").selectAll().where("slug", "=", slug).executeTakeFirst();
+    const db = c.get("db") as DrizzleDb;
+    const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
     if (!existing) return c.json({ error: "Doc not found" } as any, 404 as any);
 
-    await db.updateTable("docs").set({ is_deleted: 1 }).where("slug", "=", slug).execute();
+    await db.update(schema.docs).set({ isDeleted: 1 }).where(eq(schema.docs.slug, slug)).run();
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI as any, c.env.VECTORIZE_DB as any);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as DrizzleDb, c.env.AI as any, c.env.VECTORIZE_DB as any);
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Delete] Error", e);
@@ -446,7 +507,7 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.del
 // POST /docs/admin/save - Save or update doc
 docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveDocRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = c.req.valid("json");
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
@@ -455,48 +516,57 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
       return c.json({ error: "slug is required" } as any, 400 as any);
     }
 
-    const existing = await db.selectFrom("docs")
-      .select(["slug", "title", "category", "description", "content", "cf_email", "is_portfolio", "is_executive_summary"])
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+    const existing = await db.select({
+      slug: schema.docs.slug,
+      title: schema.docs.title,
+      category: schema.docs.category,
+      description: schema.docs.description,
+      content: schema.docs.content,
+      cf_email: schema.docs.cfEmail,
+      is_portfolio: schema.docs.isPortfolio,
+      is_executive_summary: schema.docs.isExecutiveSummary
+    })
+      .from(schema.docs)
+      .where(eq(schema.docs.slug, slug))
+      .get();
 
     if (existing) {
-      await db.insertInto("docs_history")
+      await db.insert(schema.docsHistory)
         .values({
           slug: String(existing.slug),
           title: existing.title,
           category: existing.category,
           description: existing.description || "",
           content: existing.content,
-          author_email: existing.cf_email || "unknown"
+          authorEmail: existing.cf_email || "unknown"
         })
-        .execute();
+        .run();
       c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
     }
 
     if (user?.role !== "admin" && existing) {
       const revSlug = `${slug}-rev-${Math.random().toString(36).substring(2, 6)}`;
-      await db.insertInto("docs")
+      await db.insert(schema.docs)
         .values({
           slug: revSlug,
           title: title || "",
           category: category || "",
-          sort_order: sortOrder || 0,
+          sortOrder: sortOrder || 0,
           description: description || "",
           content: content || "",
-          cf_email: email,
-          updated_at: new Date().toISOString(),
-          is_portfolio: isPortfolio ? 1 : 0,
-          is_executive_summary: isExecutiveSummary ? 1 : 0,
-          display_in_areslib: displayInAreslib ? 1 : 0,
-          display_in_math_corner: displayInMathCorner ? 1 : 0,
-          display_in_science_corner: displayInScienceCorner ? 1 : 0,
+          cfEmail: email,
+          updatedAt: new Date().toISOString(),
+          isPortfolio: isPortfolio ? 1 : 0,
+          isExecutiveSummary: isExecutiveSummary ? 1 : 0,
+          displayInAreslib: displayInAreslib ? 1 : 0,
+          displayInMathCorner: displayInMathCorner ? 1 : 0,
+          displayInScienceCorner: displayInScienceCorner ? 1 : 0,
           status: "pending",
-          revision_of: slug,
-          zulip_stream: "documents",
-          zulip_topic: `Doc: ${title || "Untitled"}`
+          revisionOf: slug,
+          zulipStream: "documents",
+          zulipTopic: `Doc: ${title || "Untitled"}`
         })
-        .execute();
+        .run();
 
       c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
         title: "📝 Doc Revision Pending",
@@ -511,57 +581,60 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
 
     const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
-    await db.insertInto("docs")
+    await db.insert(schema.docs)
       .values({
         slug,
         title: title || "",
         category: category || "",
-        sort_order: sortOrder || 0,
+        sortOrder: sortOrder || 0,
         description: description || "",
         content: content || "",
-        cf_email: email,
-        updated_at: new Date().toISOString(),
-        is_portfolio: isPortfolio ? 1 : 0,
-        is_executive_summary: isExecutiveSummary ? 1 : 0,
-        display_in_areslib: displayInAreslib ? 1 : 0,
-        display_in_math_corner: displayInMathCorner ? 1 : 0,
-        display_in_science_corner: displayInScienceCorner ? 1 : 0,
+        cfEmail: email,
+        updatedAt: new Date().toISOString(),
+        isPortfolio: isPortfolio ? 1 : 0,
+        isExecutiveSummary: isExecutiveSummary ? 1 : 0,
+        displayInAreslib: displayInAreslib ? 1 : 0,
+        displayInMathCorner: displayInMathCorner ? 1 : 0,
+        displayInScienceCorner: displayInScienceCorner ? 1 : 0,
         status,
-        content_draft: null,
-        zulip_stream: "documents",
-        zulip_topic: `Doc: ${title || "Untitled"}`
+        contentDraft: null,
+        zulipStream: "documents",
+        zulipTopic: `Doc: ${title || "Untitled"}`
       })
-      .onConflict((oc: any) => oc.column("slug").doUpdateSet({
-        title: title || "",
-        category: category || "",
-        sort_order: sortOrder || 0,
-        description: description || "",
-        content: content || "",
-        cf_email: email,
-        updated_at: new Date().toISOString(),
-        is_portfolio: isPortfolio ? 1 : 0,
-        is_executive_summary: isExecutiveSummary ? 1 : 0,
-        display_in_areslib: displayInAreslib ? 1 : 0,
-        display_in_math_corner: displayInMathCorner ? 1 : 0,
-        display_in_science_corner: displayInScienceCorner ? 1 : 0,
-        status,
-        content_draft: null,
-        zulip_stream: "documents",
-        zulip_topic: `Doc: ${title || "Untitled"}`
-      }))
-      .execute();
+      .onConflictDoUpdate({
+        target: schema.docs.slug,
+        set: {
+          title: title || "",
+          category: category || "",
+          sortOrder: sortOrder || 0,
+          description: description || "",
+          content: content || "",
+          cfEmail: email,
+          updatedAt: new Date().toISOString(),
+          isPortfolio: isPortfolio ? 1 : 0,
+          isExecutiveSummary: isExecutiveSummary ? 1 : 0,
+          displayInAreslib: displayInAreslib ? 1 : 0,
+          displayInMathCorner: displayInMathCorner ? 1 : 0,
+          displayInScienceCorner: displayInScienceCorner ? 1 : 0,
+          status,
+          contentDraft: null,
+          zulipStream: "documents",
+          zulipTopic: `Doc: ${title || "Untitled"}`
+        }
+      })
+      .run();
 
     // Push snapshot to collaborative editor history
     if (content) {
       c.executionCtx.waitUntil(
-        db.insertInto("document_history")
+        db.insert(schema.documentHistory)
           .values({
-            room_id: `doc_${slug}`,
+            roomId: `doc_${slug}`,
             content: content,
-            created_by: email,
-            created_at: new Date().toISOString()
+            createdBy: email,
+            createdAt: new Date().toISOString()
           })
-          .execute()
+          .run()
       );
     }
 
@@ -583,7 +656,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
       }));
     }
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, c.get("db") as DrizzleDb, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Save] Error", e);
@@ -596,8 +669,8 @@ docsRouter.openapi(docsRoutes.updateSortRoute, typedHandler<typeof docsRoutes.up
   const { slug } = c.req.valid("param");
   const { sortOrder } = c.req.valid("json");
   try {
-    const db = c.get("db") as any;
-    await db.updateTable("docs").set({ sort_order: sortOrder }).where("slug", "=", slug).execute();
+    const db = c.get("db") as DrizzleDb;
+    await db.update(schema.docs).set({ sortOrder: sortOrder }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Sort] Error", e);
@@ -611,7 +684,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   const { isHelpful, comment, turnstileToken } = c.req.valid("json");
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
-  if (!(await checkPersistentRateLimit(c.get("db") as any, `feedback:${ip}`, ua, 10, 60))) return c.json({ error: "Too many submissions" } as any, 429 as any);
+  if (!(await checkPersistentRateLimit(c.get("db") as DrizzleDb, `feedback:${ip}`, ua, 10, 60))) return c.json({ error: "Too many submissions" } as any, 429 as any);
 
   const valid = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
   if (!valid) return c.json({ error: "Security verification failed" } as any, 403 as any);
@@ -619,8 +692,8 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   if (comment && comment.length > 2000) return c.json({ error: "Comment too long" } as any, 400 as any);
 
   try {
-    const db = c.get("db") as any;
-    await db.insertInto("docs_feedback").values({ slug, is_helpful: isHelpful ? 1 : 0, comment: comment || null }).execute();
+    const db = c.get("db") as DrizzleDb;
+    await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment || null }).run();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Feedback] Error", e);
@@ -632,13 +705,21 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
 docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.getHistoryRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
-    const results = await db.selectFrom("docs_history")
-      .select(["id", "slug", "title", "category", "description", "author_email", "created_at"])
-      .where("slug", "=", slug)
-      .orderBy("created_at", "desc")
+    const db = c.get("db") as DrizzleDb;
+    const results = await db.select({
+      id: schema.docsHistory.id,
+      slug: schema.docsHistory.slug,
+      title: schema.docsHistory.title,
+      category: schema.docsHistory.category,
+      description: schema.docsHistory.description,
+      author_email: schema.docsHistory.authorEmail,
+      created_at: schema.docsHistory.createdAt
+    })
+      .from(schema.docsHistory)
+      .where(eq(schema.docsHistory.slug, slug))
+      .orderBy(desc(schema.docsHistory.createdAt))
       .limit(50)
-      .execute();
+      .all();
 
     const history = results.map((h: any) => ({
       ...h,
@@ -656,48 +737,62 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
 docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoutes.restoreHistoryRoute>(async (c) => {
   const { slug, id } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
-    const row = await db.selectFrom("docs_history")
-      .select(["title", "category", "description", "content"])
-      .where("id", "=", Number(id))
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+    const db = c.get("db") as DrizzleDb;
+    const row = await db.select({
+      title: schema.docsHistory.title,
+      category: schema.docsHistory.category,
+      description: schema.docsHistory.description,
+      content: schema.docsHistory.content
+    })
+      .from(schema.docsHistory)
+      .where(and(
+        eq(schema.docsHistory.id, Number(id)),
+        eq(schema.docsHistory.slug, slug)
+      ))
+      .get();
 
     if (!row) return c.json({ error: "Version not found" } as any, 404 as any);
 
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
 
-    const current = await db.selectFrom("docs")
-      .select(["slug", "title", "category", "description", "content", "cf_email"])
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+    const current = await db.select({
+      slug: schema.docs.slug,
+      title: schema.docs.title,
+      category: schema.docs.category,
+      description: schema.docs.description,
+      content: schema.docs.content,
+      cf_email: schema.docs.cfEmail
+    })
+      .from(schema.docs)
+      .where(eq(schema.docs.slug, slug))
+      .get();
 
     if (current) {
-      await db.insertInto("docs_history")
+      await db.insert(schema.docsHistory)
         .values({
           slug: String(current.slug),
           title: current.title,
           category: current.category,
           description: current.description || "",
           content: current.content,
-          author_email: current.cf_email || "unknown"
+          authorEmail: current.cf_email || "unknown"
         })
-        .execute();
+        .run();
       c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
     }
 
-    await db.updateTable("docs")
+    await db.update(schema.docs)
       .set({
         title: row.title || "",
         category: row.category || "",
         description: row.description,
         content: row.content || "",
-        cf_email: email,
-        updated_at: new Date().toISOString()
+        cfEmail: email,
+        updatedAt: new Date().toISOString()
       })
-      .where("slug", "=", slug)
-      .execute();
+      .where(eq(schema.docs.slug, slug))
+      .run();
 
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -710,16 +805,39 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoute
 docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.approveDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
-    const row = await db.selectFrom("docs").select(["revision_of", "title", "category", "sort_order", "description", "content", "is_portfolio", "is_executive_summary", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
+    const db = c.get("db") as DrizzleDb;
+    const row = await db.select({
+      revision_of: schema.docs.revisionOf,
+      title: schema.docs.title,
+      category: schema.docs.category,
+      sort_order: schema.docs.sortOrder,
+      description: schema.docs.description,
+      content: schema.docs.content,
+      is_portfolio: schema.docs.isPortfolio,
+      is_executive_summary: schema.docs.isExecutiveSummary,
+      cf_email: schema.docs.cfEmail
+    })
+      .from(schema.docs)
+      .where(eq(schema.docs.slug, slug))
+      .get();
     if (!row) return c.json({ error: "Doc not found" } as any, 404 as any);
 
     if (row.revision_of) {
-      await db.updateTable("docs")
-        .set({ title: row.title, category: row.category, sort_order: row.sort_order, description: row.description, content: row.content, is_portfolio: row.is_portfolio, is_executive_summary: row.is_executive_summary, status: "published", updated_at: new Date().toISOString() })
-        .where("slug", "=", row.revision_of)
-        .execute();
-      await db.deleteFrom("docs").where("slug", "=", slug).execute();
+      await db.update(schema.docs)
+        .set({
+          title: row.title,
+          category: row.category,
+          sortOrder: row.sort_order,
+          description: row.description,
+          content: row.content,
+          isPortfolio: row.is_portfolio,
+          isExecutiveSummary: row.is_executive_summary,
+          status: "published",
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(schema.docs.slug, row.revision_of))
+        .run();
+      await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
 
       c.executionCtx.waitUntil((async () => {
         const socialConfig = await getSocialConfig(c);
@@ -727,11 +845,14 @@ docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.ap
       })());
 
       if (row.cf_email) {
-        const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
+        const author = await db.select({ id: schema.user.id })
+          .from(schema.user)
+          .where(eq(schema.user.email, row.cf_email))
+          .get();
         if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Merged", message: `Your changes to document "${row.title}" have been approved.`, link: `/docs/${row.revision_of}`, priority: "medium" });
       }
     } else {
-      await db.updateTable("docs").set({ status: "published" }).where("slug", "=", slug).execute();
+      await db.update(schema.docs).set({ status: "published" }).where(eq(schema.docs.slug, slug)).run();
 
       c.executionCtx.waitUntil((async () => {
         const socialConfig = await getSocialConfig(c);
@@ -739,7 +860,10 @@ docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.ap
       })());
 
       if (row.cf_email) {
-        const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
+        const author = await db.select({ id: schema.user.id })
+          .from(schema.user)
+          .where(eq(schema.user.email, row.cf_email))
+          .get();
         if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Approved", message: `Your document "${row.title}" has been published.`, link: `/docs/${slug}`, priority: "medium" });
       }
     }
@@ -755,11 +879,20 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
   const { slug } = c.req.valid("param");
   const { reason } = c.req.valid("json");
   try {
-    const db = c.get("db") as any;
-    const row = await db.selectFrom("docs").select(["title", "cf_email"]).where("slug", "=", slug).executeTakeFirst();
-    await db.updateTable("docs").set({ status: "rejected" }).where("slug", "=", slug).execute();
+    const db = c.get("db") as DrizzleDb;
+    const row = await db.select({
+      title: schema.docs.title,
+      cf_email: schema.docs.cfEmail
+    })
+      .from(schema.docs)
+      .where(eq(schema.docs.slug, slug))
+      .get();
+    await db.update(schema.docs).set({ status: "rejected" }).where(eq(schema.docs.slug, slug)).run();
     if (row?.cf_email) {
-      const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
+      const author = await db.select({ id: schema.user.id })
+        .from(schema.user)
+        .where(eq(schema.user.email, row.cf_email))
+        .get();
       if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Rejected", message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`, link: "/dashboard/manage_docs", priority: "high" });
     }
     return c.json({ success: true } as any, 200 as any);
@@ -773,8 +906,8 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
 docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.undeleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
-    await db.updateTable("docs").set({ is_deleted: 0, status: "draft" }).where("slug", "=", slug).execute();
+    const db = c.get("db") as DrizzleDb;
+    await db.update(schema.docs).set({ isDeleted: 0, status: "draft" }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Docs:Undelete] Error", e);
@@ -786,13 +919,13 @@ docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.u
 docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purgeDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
 
     // 1. Fetch content to find embedded assets
-    const doc = await db.selectFrom("docs")
-      .select("content")
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+    const doc = await db.select({ content: schema.docs.content })
+      .from(schema.docs)
+      .where(eq(schema.docs.slug, slug))
+      .get();
 
     // 2. Physical R2 Cleanup (Regex search for internal asset URLs)
     if (doc?.content && c.env.ARES_STORAGE) {
@@ -804,8 +937,8 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
       }
     }
 
-    await db.deleteFrom("docs").where("slug", "=", slug).execute();
-    c.executionCtx?.waitUntil?.(db.deleteFrom("docs_history").where("slug", "=", slug).execute());
+    await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
+    c.executionCtx?.waitUntil?.(db.delete(schema.docsHistory).where(eq(schema.docsHistory.slug, slug)).run());
     c.executionCtx?.waitUntil?.(logAuditAction(c, "PURGE_DOC", "docs", slug, JSON.stringify(doc)));
 
     return c.json({ success: true } as any, 200 as any);
