@@ -8,7 +8,7 @@
  * MITIGATION: CSP restricts script sources to cdn.jsdelivr.net.
  */
 
-import { lazy, Suspense, useState, useEffect, ComponentType, ReactNode } from "react";
+import { lazy, Suspense, useState, useEffect, ReactNode } from "react";
 import { AlertCircle, RotateCw } from "lucide-react";
 import { loader } from "@monaco-editor/react";
 import { logger } from "../../utils/logger";
@@ -23,6 +23,8 @@ loader.config({
 // Lazy import Monaco Editor
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
+import type { editor } from "monaco-editor";
+
 interface LazyMonacoEditorProps {
   height?: string | number;
   language?: string;
@@ -30,18 +32,19 @@ interface LazyMonacoEditorProps {
   path?: string;
   value?: string;
   onChange?: (value: string | undefined) => void;
-  onMount?: (editor: any, monaco: any) => void;
+  onMount?: (editor: editor.IStandaloneCodeEditor, monaco: typeof import("monaco-editor")) => void;
   options?: Record<string, unknown>;
 }
 
 // Compact ARES-red spinner (matches SimLoader pattern)
-function SimLoader() {
-  return (
-    <div className="flex justify-center items-center py-8">
-      <div className="w-8 h-8 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin" />
-    </div>
-  );
-}
+// Unused component retained for reference
+// function SimLoader() {
+//   return (
+//     <div className="flex justify-center items-center py-8">
+//       <div className="w-8 h-8 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin" />
+//     </div>
+//   );
+// }
 
 // Error display with retry
 function ErrorDisplay({ error, onRetry }: { error: string; onRetry: () => void }) {
@@ -84,7 +87,7 @@ function LoadingWrapper({ children, timedOut }: { children: ReactNode; timedOut:
   );
 }
 
-export default function LazyMonacoEditor(props: LazyMonacoEditorProps) {
+export default function LazyMonacoEditor({ onMount: originalOnMount, ...restProps }: LazyMonacoEditorProps) {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
@@ -94,21 +97,6 @@ export default function LazyMonacoEditor(props: LazyMonacoEditorProps) {
     const timeoutId = setTimeout(() => {
       setTimedOut(true);
     }, 3000);
-
-    // Clear timeout if component successfully mounts (via onMount callback)
-    const handleMount = () => {
-      clearTimeout(timeoutId);
-      setTimedOut(false);
-    };
-
-    // Store original onMount and wrap it
-    const originalOnMount = props.onMount;
-    if (originalOnMount) {
-      props.onMount = ((editor: any, monaco: any) => {
-        handleMount();
-        return originalOnMount(editor, monaco);
-      }) as typeof originalOnMount;
-    }
 
     return () => clearTimeout(timeoutId);
   }, []);
@@ -130,20 +118,6 @@ export default function LazyMonacoEditor(props: LazyMonacoEditorProps) {
     }, 1000);
   };
 
-  const handleError = (err: unknown) => {
-    const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    logger.error("Monaco Editor failed to load:", errorMessage);
-
-    // Friendly error messages
-    if (errorMessage.includes("fetch") || errorMessage.includes("network")) {
-      setError("Cannot connect to the editor server. Check your internet connection.");
-    } else if (errorMessage.includes("worker")) {
-      setError("Editor worker failed to initialize. This may be due to browser security settings.");
-    } else {
-      setError("Something went wrong loading the editor. Please try again.");
-    }
-  };
-
   if (error) {
     return <ErrorDisplay error={error} onRetry={handleRetry} />;
   }
@@ -152,7 +126,12 @@ export default function LazyMonacoEditor(props: LazyMonacoEditorProps) {
     <div className="h-full w-full relative">
       <LoadingWrapper timedOut={timedOut}>
         <MonacoEditor
-          {...props}
+          {...restProps}
+          onMount={(editor, monaco) => {
+            // Clear timeout on successful mount
+            setTimedOut(false);
+            originalOnMount?.(editor, monaco);
+          }}
           // Handle Monaco worker initialization failures
           beforeMount={(monaco) => {
             // Configure Monaco to handle worker errors gracefully
