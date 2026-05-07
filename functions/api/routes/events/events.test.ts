@@ -15,7 +15,7 @@ function createDrizzleProxy(dbMock: any): any {
   let isMutation = false;
 
   const drizzleMethods: any = {
-    select: vi.fn().mockImplementation((..._args: any[]) => { isMutation = false; if (dbMock.selectFrom) dbMock.selectFrom(..._args); else if (dbMock.select) dbMock.select(..._args); return proxy; }),
+    select: vi.fn().mockImplementation((..._args: any[]) => { isMutation = false; if (dbMock.select) dbMock.select(..._args); return proxy; }),
     from: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
     all: vi.fn().mockImplementation((..._args: any[]) => { return dbMock.execute ? dbMock.execute(..._args) : Promise.resolve([]); }),
     get: vi.fn().mockImplementation((..._args: any[]) => { return dbMock.executeTakeFirst ? dbMock.executeTakeFirst(..._args) : Promise.resolve(null); }),
@@ -23,9 +23,9 @@ function createDrizzleProxy(dbMock: any): any {
       if (dbMock.execute) return dbMock.execute(..._args).then(() => ({ success: true, meta: { changes: 1 } }));
       return Promise.resolve({ success: true, meta: { changes: 1 } });
     }),
-    insert: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.insertInto) dbMock.insertInto(..._args); return proxy; }),
-    update: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.updateTable) dbMock.updateTable(..._args); return proxy; }),
-    delete: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.deleteFrom) dbMock.deleteFrom(..._args); return proxy; }),
+    insert: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.insert) dbMock.insert(..._args); return proxy; }),
+    update: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.update) dbMock.update(..._args); return proxy; }),
+    delete: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.delete) dbMock.delete(..._args); return proxy; }),
     onConflictDoUpdate: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
     leftJoin: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
     innerJoin: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
@@ -135,9 +135,8 @@ describe("Hono Backend - Events Router", () => {
     vi.mocked(dispatchSocials).mockResolvedValue(undefined as any);
 
     mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
+      selectAll: vi.fn().mockReturnThis(),
       where: vi.fn().mockImplementation((cb: any) => {
         if (typeof cb === 'function') {
           const ebMock = Object.assign(vi.fn().mockReturnThis(), { or: vi.fn().mockReturnThis(), and: vi.fn().mockReturnThis(), not: vi.fn().mockReturnThis() }) as any;
@@ -153,7 +152,7 @@ describe("Hono Backend - Events Router", () => {
       join: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue({ id: "1", title: "Test" }),
-      insertInto: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       onConflict: vi.fn().mockImplementation((cb: any) => {
       if (typeof cb === "function") cb(mockDb);
@@ -162,9 +161,9 @@ describe("Hono Backend - Events Router", () => {
     doUpdateSet: vi.fn().mockReturnThis(),
     columns: vi.fn().mockReturnThis(),
     column: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
     };
 
     env = {
@@ -194,7 +193,7 @@ describe("Hono Backend - Events Router", () => {
     mockDb.execute.mockResolvedValueOnce([]);
     const res = await testApp.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.selectFrom).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.select).toHaveBeenCalledWith(expect.anything());
   });
 
   it("GET / - list public events with locations", async () => {
@@ -212,7 +211,7 @@ describe("Hono Backend - Events Router", () => {
     mockDb.execute.mockResolvedValueOnce([]);
     const res = await testApp.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.selectFrom).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.select).toHaveBeenCalledWith(expect.anything());
   });
 
   it("GET /admin/list - list admin events with items", async () => {
@@ -232,7 +231,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /calendar-settings - handles database error", async () => {
-    const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("Fail"); }) };
+    const mockDbFail = { select: vi.fn().mockImplementation(() => { throw new Error("Fail"); }) };
     const mockC = { get: vi.fn((key: string) => key === "db" ? mockDbFail : undefined), env, req: { url: "http://localhost/calendar-settings" } };
     const result = await eventHandlers.getCalendarSettings({} as any, mockC as any);
     expect(result.status).toBe(500);
@@ -269,7 +268,7 @@ describe("Hono Backend - Events Router", () => {
     }
 
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.insert).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/save - with socials and Zulip failure", async () => {
@@ -322,13 +321,13 @@ describe("Hono Backend - Events Router", () => {
     }, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
   });
 
   it("GET /:id/signups - get signups", async () => {
     const res = await testApp.request("/1/signups", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.selectFrom).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.select).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /:id/signups - submit signup", async () => {
@@ -339,7 +338,7 @@ describe("Hono Backend - Events Router", () => {
     }, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.insert).toHaveBeenCalledWith(expect.anything());
   });
   it("PATCH /admin/:id - update event", async () => {
     const res = await testApp.request("/admin/1", {
@@ -348,7 +347,7 @@ describe("Hono Backend - Events Router", () => {
       body: JSON.stringify({ title: "Updated", category: "outreach", dateStart: "2026-01-01T00:00:00Z" })
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/:id/approve - approve event", async () => {
@@ -359,7 +358,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/:id/approve - with Zulip failure", async () => {
@@ -382,7 +381,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/:id/restore - undelete event", async () => {
@@ -393,7 +392,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
   });
 
   it("DELETE /admin/:id/purge - permanently delete event", async () => {
@@ -404,7 +403,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.deleteFrom).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.delete).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/sync - sync events", async () => {
@@ -492,7 +491,7 @@ describe("Hono Backend - Events Router", () => {
       })
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
   });
 
   it("PATCH /admin/:id - non-admin creates revision", async () => {
@@ -504,7 +503,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/save - db error", async () => {
-    (mockDb.insertInto as any).mockImplementationOnce(() => { throw new Error("DB error") });
+    (mockDb.insert as any).mockImplementationOnce(() => { throw new Error("DB error") });
     mockDb.executeTakeFirst.mockResolvedValueOnce(null); // not duplicate
     mockDb.executeTakeFirst.mockResolvedValueOnce(null); // not recent
     const res = await testApp.request("/admin/save", {
@@ -524,7 +523,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("DELETE /admin/:id - db error", async () => {
-    mockDb.updateTable.mockImplementationOnce(() => { throw new Error("DB error") });
+    mockDb.update.mockImplementationOnce(() => { throw new Error("DB error") });
     const res = await testApp.request("/admin/1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -540,7 +539,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /:id/signups - db error", async () => {
-    mockDb.insertInto.mockImplementationOnce(() => { throw new Error("DB error") });
+    mockDb.insert.mockImplementationOnce(() => { throw new Error("DB error") });
     const res = await testApp.request("/1/signups", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -591,7 +590,7 @@ describe("Hono Backend - Events Router", () => {
       body: "{}"
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.deleteFrom).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.delete).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/sync - handles GCal failure", async () => {
@@ -677,7 +676,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("PATCH /admin/:id/signups/:userId/attendance - handles db error", async () => {
-    mockDb.insertInto.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.insert.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/1/signups/user1/attendance", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -699,7 +698,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/repush - handles top level error", async () => {
-    mockDb.selectFrom.mockImplementationOnce(() => { throw new Error("Fatal") });
+    mockDb.select.mockImplementationOnce(() => { throw new Error("Fatal") });
     const res = await testApp.request("/admin/1/repush", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -709,7 +708,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("PATCH /:id/signups/me/attendance - handles db error", async () => {
-    mockDb.insertInto.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.insert.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/1/signups/me/attendance", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -719,7 +718,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("DELETE /:id/signups - handles db error", async () => {
-    mockDb.deleteFrom.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.delete.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/1/signups", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -729,7 +728,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("DELETE /admin/:id - handles db error", async () => {
-    mockDb.updateTable.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.update.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -739,7 +738,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("DELETE /admin/:id/purge - handles db error", async () => {
-    mockDb.selectFrom.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.select.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/1/purge", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -786,7 +785,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/reject - handles db error", async () => {
-    mockDb.updateTable.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.update.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/1/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -796,7 +795,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/restore - handles db error", async () => {
-    mockDb.updateTable.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.update.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/1/restore", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -871,7 +870,7 @@ describe("Hono Backend - Events Router", () => {
       body: JSON.stringify({ title: "New Title", category: "internal", dateStart: "2026-01-01T00:00:00Z" })
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.insert).toHaveBeenCalledWith(expect.anything());
     const body = await res.json() as { id: string };
     expect(body.id).toContain("-rev-");
   });
@@ -894,7 +893,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("PATCH /admin/:id - handles db fail", async () => {
-    mockDb.updateTable.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.update.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -904,7 +903,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/approve - handles db fail", async () => {
-    mockDb.selectFrom.mockImplementationOnce(() => { throw new Error("DB fail") });
+    mockDb.select.mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/1/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -921,8 +920,8 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /admin/:id - handles fatal error", async () => {
-    mockDb.selectFrom.mockImplementationOnce(() => { throw new Error("Fatal 1") });
-    mockDb.selectFrom.mockImplementationOnce(() => { throw new Error("Fatal 2") });
+    mockDb.select.mockImplementationOnce(() => { throw new Error("Fatal 1") });
+    mockDb.select.mockImplementationOnce(() => { throw new Error("Fatal 2") });
     const res = await testApp.request("/admin/1", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
