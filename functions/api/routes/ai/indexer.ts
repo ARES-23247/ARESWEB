@@ -1,4 +1,4 @@
-import { Kysely, sql, Selectable } from "kysely";
+import { Kysely, sql, Selectable, ExpressionBuilder } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 import { fetchGithubRepoFiles } from "./external/githubFetcher";
 import { chunkText } from "./external/chunker";
@@ -65,7 +65,7 @@ export async function indexSiteContent(
       .select(["title", "description", "date_start", "date_end", "location", "category"])
       .where("is_deleted", "!=", 1)
       .where("status", "!=", "draft")
-      .where((eb: any) => eb.or([
+      .where((eb: ExpressionBuilder<DB, "events">) => eb.or([
         eb("published_at", "is", null),
         eb("published_at", "<=", sql<string>`datetime('now')`),
       ]))
@@ -241,7 +241,7 @@ export async function indexSiteContent(
     const batch = documents.slice(i, i + BATCH_SIZE);
 
     try {
-      const texts = batch.map((d: any) => d.text.substring(0, 2000));
+      const texts = batch.map((d: IndexableDocument) => d.text.substring(0, 2000));
       const embeddingRes = (await ai.run("@cf/baai/bge-base-en-v1.5", { text: texts })) as {
         data: number[][];
       };
@@ -251,7 +251,7 @@ export async function indexSiteContent(
         continue;
       }
 
-      const vectors = batch.map((doc: any, j: any) => ({
+      const vectors = batch.map((doc: IndexableDocument, j: number) => ({
         id: doc.id,
         values: embeddingRes.data[j],
         metadata: { ...doc.metadata, text: doc.text.substring(0, 1000) },
@@ -268,7 +268,7 @@ export async function indexSiteContent(
   if (indexed > 0) {
     await db.insertInto("settings")
       .values({ key: KV_KEY, value: nowIso })
-      .onConflict((oc: any) => oc.column("key").doUpdateSet({ value: nowIso }))
+      .onConflict((oc) => oc.column("key").doUpdateSet({ value: nowIso }))
       .execute();
   }
 
@@ -376,13 +376,13 @@ export async function indexExternalResources(
   }
 
   let indexed = 0;
-  
+
   for (let i = 0; i < documents.length; i += BATCH_SIZE) {
     const batch = documents.slice(i, i + BATCH_SIZE);
     try {
-      const texts = batch.map((d: any) => d.text.substring(0, 2000));
+      const texts = batch.map((d: IndexableDocument) => d.text.substring(0, 2000));
       let embeddings: number[][] = [];
-      
+
       if (ai) {
         const res = (await ai.run("@cf/baai/bge-base-en-v1.5", { text: texts })) as { data: number[][] };
         embeddings = res.data;
@@ -395,7 +395,7 @@ export async function indexExternalResources(
         continue;
       }
 
-      const vectors = batch.map((doc: any, j: any) => ({
+      const vectors = batch.map((doc: IndexableDocument, j: number) => ({
         id: doc.id,
         values: embeddings[j],
         metadata: { ...doc.metadata, text: doc.text.substring(0, 1000) },
@@ -425,7 +425,7 @@ export async function indexExternalResources(
       const errStr = JSON.stringify({ timestamp: new Date().toISOString(), errors });
       await db.insertInto("settings")
         .values({ key: "LAST_INDEX_ERRORS", value: errStr })
-        .onConflict((oc: any) => oc.column("key").doUpdateSet({ value: errStr }))
+        .onConflict((oc) => oc.column("key").doUpdateSet({ value: errStr }))
         .execute();
     } else {
       await db.deleteFrom("settings").where("key", "=", "LAST_INDEX_ERRORS").execute();
