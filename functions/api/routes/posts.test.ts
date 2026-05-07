@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { Context } from "hono";
+// import type { Context } from "hono";
 import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
 import { TestEnv, DrizzleMock } from "../../../src/test/types";
 import postsRouter from "./posts";
