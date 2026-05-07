@@ -53,7 +53,7 @@ const VitalCard: React.FC<{
 };
 
 export default function PerformanceDashboard() {
-  const { data: metrics, isLoading, error } = useQuery<PerformanceSummary>({
+  const { data: metrics, error } = useQuery<PerformanceSummary>({
     queryKey: ['performance-metrics'],
     queryFn: async () => {
       const res = await fetch('/api/analytics/performance/summary');
