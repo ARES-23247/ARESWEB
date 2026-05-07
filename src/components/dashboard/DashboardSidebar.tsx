@@ -52,13 +52,13 @@ const NavButton = ({
   }
 
   return (
-    <Link to={`/dashboard/${tab}`} className={sharedClass}>
+    <Link to={`/dashboard/${tab}`} prefetch="intent" className={sharedClass}>
       <div className="flex items-center gap-3 truncate">
         {Icon && <Icon size={18} className={isActive ? "text-white" : hasPending ? "text-ares-danger" : "text-marble/50"} />}
         <span className="truncate">{label}</span>
       </div>
       {hasPending && (
-        <button 
+        <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
