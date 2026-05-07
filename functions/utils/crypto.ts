@@ -17,7 +17,7 @@ async function getCryptoKey(secret: string, saltHex?: string): Promise<CryptoKey
   // SEC-H02: Use PBKDF2 with a dynamic salt for deterministic but hardened key derivation
   let salt: Uint8Array;
   if (saltHex) {
-    salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map((byte: any) => parseInt(byte, 16)));
+    salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
   } else {
     // Legacy fixed salt for backwards compatibility
     salt = enc.encode("aresweb-pii-salt-v1");
@@ -41,7 +41,7 @@ export async function encrypt(text: string, secret: string): Promise<string> {
   if (!text) return "";
   
   const saltArray = crypto.getRandomValues(new Uint8Array(16));
-  const saltHex = Array.from(saltArray).map((b: any) => b.toString(16).padStart(2, "0")).join("");
+  const saltHex = Array.from(saltArray).map((b) => b.toString(16).padStart(2, "0")).join("");
   
   const key = await getCryptoKey(secret, saltHex);
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -53,8 +53,8 @@ export async function encrypt(text: string, secret: string): Promise<string> {
     encoded
   );
   
-  const ivHex = Array.from(iv).map((b: any) => b.toString(16).padStart(2, "0")).join("");
-  const cipherHex = Array.from(new Uint8Array(ciphertext)).map((b: any) => b.toString(16).padStart(2, "0")).join("");
+  const ivHex = Array.from(iv).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const cipherHex = Array.from(new Uint8Array(ciphertext)).map((b) => b.toString(16).padStart(2, "0")).join("");
   
   return `${saltHex}:${ivHex}:${cipherHex}`;
 }
@@ -78,8 +78,8 @@ export async function decrypt(encryptedText: string, secret: string): Promise<st
 
     if (!ivHex || !cipherHex) return encryptedText;
     
-    const iv = new Uint8Array(ivHex.match(/.{1,2}/g)!.map((byte: any) => parseInt(byte, 16)));
-    const ciphertext = new Uint8Array(cipherHex.match(/.{1,2}/g)!.map((byte: any) => parseInt(byte, 16)));
+    const iv = new Uint8Array(ivHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
+    const ciphertext = new Uint8Array(cipherHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
     
     const key = await getCryptoKey(secret, saltHex);
     
