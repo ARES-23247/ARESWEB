@@ -135,7 +135,7 @@ describe("Hono Backend - /media Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       c.set("sessionUser", { id: "1", role: "admin", email: "admin@test.com", name: null, nickname: "Admin", image: null, member_type: "student" });
       await next();
     });

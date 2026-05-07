@@ -248,15 +248,15 @@ apiRouter.openapi(searchRoute, async (c) => {
   ]);
   return c.json({
     results: [
-      ...((postsReq.results || []).map((r) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
-      ...((eventsReq.results || []).map((r) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
-      ...((docsReq.results || []).map((r) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })))
+      ...((postsReq as FTSResult[] || []).map((r: FTSResult) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
+      ...((eventsReq as FTSResult[] || []).map((r: FTSResult) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
+      ...((docsReq as FTSResult[] || []).map((r: FTSResult) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })))
     ]
   }, 200);
 });
 
 // ── Audit Log ────────────────────────────
-apiRouter.openapi(auditLogRoute, async (c) => {
+apiRouter.openapi(auditLogRoute, (async (c: any) => {
   const { limit: l, offset: o } = c.req.valid("query");
   const limit = l ? parseInt(l, 10) : 50;
   const offset = o ? parseInt(o, 10) : 0;
@@ -285,7 +285,7 @@ apiRouter.openapi(auditLogRoute, async (c) => {
   }));
 
   return c.json({ logs }, 200);
-});
+}) as any);
 
 app.onError(async (err, c) => {
   console.error("Global API Error:", err);

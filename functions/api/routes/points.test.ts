@@ -37,7 +37,7 @@ describe("Hono Backend - /points Router", () => {
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       if (sessionUser) {
         c.set("sessionUser", sessionUser as any);
       }

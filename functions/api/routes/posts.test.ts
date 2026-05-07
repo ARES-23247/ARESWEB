@@ -90,7 +90,7 @@ describe("Hono Backend - /posts Router", () => {
     vi.mocked(dispatchSocials).mockResolvedValue(undefined);
 
     const { sendZulipMessage } = await import("../../utils/zulipSync");
-    vi.mocked(sendZulipMessage).mockResolvedValue(undefined);
+    vi.mocked(sendZulipMessage).mockResolvedValue(null);
 
     const { notifyByRole, emitNotification } = await import("../../utils/notifications");
     vi.mocked(notifyByRole).mockResolvedValue(undefined);
@@ -98,7 +98,7 @@ describe("Hono Backend - /posts Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: any, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       c.set("sessionUser", { id: "1", email: "admin@test.com", name: null, nickname: "Admin", image: null, role: "admin", member_type: "student" });
       await next();
     });

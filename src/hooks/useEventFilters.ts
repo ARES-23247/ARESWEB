@@ -11,9 +11,12 @@ export function useEventFilters(events: EventItem[]) {
     const now = new Date();
     const bufferTime = subDays(now, 1);
 
-    const outreach = events.filter(e => e.category === "outreach");
-    const internal = events.filter(e => e.category === "internal");
-    const external = events.filter(e => e.category === "external");
+    // Filter out events with invalid dates
+    const validEvents = events.filter(e => e.date_start != null);
+
+    const outreach = validEvents.filter(e => e.category === "outreach");
+    const internal = validEvents.filter(e => e.category === "internal");
+    const external = validEvents.filter(e => e.category === "external");
 
     const sortAsc = (a: EventItem, b: EventItem) =>
       parseISO(a.date_start).getTime() - parseISO(b.date_start).getTime();

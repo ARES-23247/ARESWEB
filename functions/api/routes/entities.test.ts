@@ -28,7 +28,7 @@ describe("Hono Backend - /entities Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       await next();
     });
     testApp.route("/", entitiesRouter);

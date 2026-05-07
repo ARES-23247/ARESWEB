@@ -24,28 +24,32 @@ export default function Events() {
   // Transform FullEventItem to EventItem for EventCard compatibility
   const events: EventItem[] = useMemo(() => {
     const fullEvents = rawEvents?.events || [];
-    return fullEvents.map((e): EventItem => ({
-      id: e.id,
-      title: e.title,
-      date_start: e.date_start,
-      date_end: e.date_end || null,
-      location: e.location || null,
-      location_address: e.location_address,
-      description: e.description || "",
-      cover_image: e.cover_image || null,
-      tba_event_key: e.tba_event_key || null,
-      category: (e.category as "internal" | "outreach" | "external") || "internal",
-      recurring_exception: e.recurring_exception ?? undefined,
-    }));
+    return fullEvents
+      .filter((e) => e.date_start != null) // Filter out events without valid start date
+      .map((e): EventItem => ({
+        id: e.id,
+        title: e.title || "Untitled Event",
+        date_start: e.date_start,
+        date_end: e.date_end || null,
+        location: e.location || null,
+        location_address: e.location_address,
+        description: e.description || "",
+        cover_image: e.cover_image || null,
+        tba_event_key: e.tba_event_key || null,
+        category: (e.category as "internal" | "outreach" | "external") || "internal",
+        recurring_exception: e.recurring_exception ?? undefined,
+      }));
   }, [rawEvents]);
 
   // Transform backend events to CalendarEvent format
   const mappedEvents: CalendarEvent[] = useMemo(() => {
     const fullEvents = rawEvents?.events || [];
-    return fullEvents.map((e) => {
-      const start = new Date(e.date_start);
-      // If no end date is provided, default to 1 hour after start
-      const end = e.date_end ? new Date(e.date_end) : addHours(start, 1);
+    return fullEvents
+      .filter((e) => e.date_start != null) // Filter out events without valid start date
+      .map((e) => {
+        const start = new Date(e.date_start);
+        // If no end date is provided, default to 1 hour after start
+        const end = e.date_end ? new Date(e.date_end) : addHours(start, 1);
       
       let type: "internal" | "outreach" | "external" = "internal";
       if (e.category === "outreach" || e.category === "external") {

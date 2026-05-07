@@ -50,7 +50,7 @@ describe("Auth Router", () => {
         ...mockUser,
         nickname: "Test",
         member_type: "mentor"
-      } as TestEnv["Variables"]["sessionUser"]);
+      } as any);
 
       const res = await app.request("/auth-check", {
         headers: { "ENVIRONMENT": "development" }

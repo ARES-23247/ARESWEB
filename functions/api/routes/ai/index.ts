@@ -900,7 +900,7 @@ aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
   const id = c.req.param("id");
   const db = getDb(c);
 
-  await db.delete(schema.externalKnowledgeSources).where(eq(schema.externalKnowledgeSources.id, id)).execute();
+  await db.delete(schema.externalKnowledgeSources).where(eq(schema.externalKnowledgeSources.id, id as any)).execute();
   return c.json({ success: true });
 });
 

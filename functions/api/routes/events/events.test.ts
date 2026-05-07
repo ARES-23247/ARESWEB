@@ -185,7 +185,7 @@ describe("Hono Backend - Events Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       const user = (c.get("sessionUser") as any) || { id: "local-dev", email: "admin@test.com", role: "admin", name: "Local Dev", nickname: "Local Dev", image: null, member_type: "mentor" };
       vi.mocked(shared.getSessionUser).mockResolvedValue(user);
       await next();
@@ -632,7 +632,7 @@ describe("Hono Backend - Events Router", () => {
   it("PATCH /admin/:id/signups/:userId/attendance - unauthorized for normal user", async () => {
     testApp = new Hono();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       const user = { id: "user2", role: "user", member_type: "student", email: "u2@example.com", name: "User 2", nickname: "U2", image: null };
       c.set("sessionUser", user);
       vi.mocked(shared.getSessionUser).mockResolvedValue(user);
@@ -876,7 +876,7 @@ describe("Hono Backend - Events Router", () => {
     
     testApp = new Hono();
     testApp.use("*", async (c, next) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       c.set("sessionUser", { id: "author-1", role: "author" } as any);
       await next();
     });

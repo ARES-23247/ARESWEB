@@ -44,7 +44,7 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
   }
 }));
 
-pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c) => {
+pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c: any) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");

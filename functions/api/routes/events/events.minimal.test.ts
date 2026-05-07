@@ -71,7 +71,7 @@ describe("Hono Backend - Events Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", createDrizzleProxy(mockDb) as any);
       const user = { id: "local-dev", email: "admin@test.com", role: "admin", name: "Local Dev", nickname: "Local Dev", image: null, member_type: "mentor" };
       vi.mocked(shared.getSessionUser).mockResolvedValue(user);
       await next();
