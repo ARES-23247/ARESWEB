@@ -2,6 +2,8 @@ import { Context } from "hono";
 import { AppEnv, SessionUser, getSocialConfig } from "../api/middleware";
 import { emitNotification } from "./notifications";
 import { dispatchSocials } from "./socialSync";
+import { eq, desc, and, lt } from "drizzle-orm";
+import * as schema from "../../src/db/schema";
 
 export interface PostHistoryRow {
   id: number;
@@ -37,12 +39,12 @@ export async function createShadowRevision(
     seasonId?: string | number;
   }
 ) {
-  const db = c.get("db") as any;
+  const db = c.get("db");
   const suffix = Math.random().toString(36).substring(2, 6);
   const revSlug = `${originalSlug}-rev-${suffix}`;
   const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" });
 
-  await db.insertInto("posts")
+  await db.insert(schema.posts)
     .values({
       slug: revSlug,
       title: data.title,
@@ -51,11 +53,11 @@ export async function createShadowRevision(
       thumbnail: data.thumbnail || "",
       snippet: data.snippet,
       ast: data.astStr,
-      cf_email: user.email,
+      cfEmail: user.email,
       status: 'pending',
-      revision_of: originalSlug,
-      published_at: data.publishedAt || null,
-      season_id: data.seasonId ? Number(data.seasonId) : null
+      revisionOf: originalSlug,
+      publishedAt: data.publishedAt || null,
+      seasonId: data.seasonId ? Number(data.seasonId) : null
     })
     .execute();
 
@@ -69,12 +71,12 @@ export async function approveAndMergeRevision(
   c: Context<AppEnv>,
   shadowSlug: string,
   originalSlug: string,
-  row: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cf_email: string | null; season_id?: string | number | null }
+  row: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cfEmail: string | null; seasonId?: string | number | null }
 ) {
-  const db = c.get("db") as any;
+  const db = c.get("db");
 
   // Update original
-  await db.updateTable("posts")
+  await db.update(schema.posts)
     .set({
       title: row.title || "Untitled",
       author: row.author || "ARES Team",
@@ -82,24 +84,23 @@ export async function approveAndMergeRevision(
       snippet: row.snippet || "",
       ast: row.ast || "",
       status: 'published',
-      season_id: row.season_id ? Number(row.season_id) : null
+      seasonId: row.seasonId ? Number(row.seasonId) : null
     })
-    .where("slug", "=", originalSlug)
+    .where(eq(schema.posts.slug, originalSlug))
     .execute();
   
   // Delete shadow
-  await db.deleteFrom("posts").where("slug", "=", shadowSlug).execute();
+  await db.delete(schema.posts).where(eq(schema.posts.slug, shadowSlug)).run();
 
   // Notify author
-  if (row.cf_email) {
-    const author = await db.selectFrom("user")
-      .select("id")
-      .where("email", "=", row.cf_email)
-      .executeTakeFirst();
+  if (row.cfEmail) {
+    const author = await db.select({ id: schema.user.id }).from(schema.user)
+      .where(eq(schema.user.email, row.cfEmail))
+      .get();
     
     if (author) {
       c.executionCtx.waitUntil(emitNotification(c, {
-        userId: author.id as string,
+        userId: String(author.id),
         title: "Post Merged",
         message: `Your changes to "${row.title}" have been approved and published.`,
         link: `/blog/${originalSlug}`,
@@ -113,25 +114,27 @@ export async function approveAndMergeRevision(
  * Prunes old history records, keeping only the last N versions.
  */
 export async function pruneHistory(c: Context<AppEnv>, slug: string, limit = 10) {
-  const db = c.get("db") as any;
+  const db = c.get("db");
   try {
-    const oldestToKeep = await db.selectFrom("posts_history")
-      .select("id")
-      .where("slug", "=", slug)
-      .orderBy("created_at", "desc")
-      .offset(limit - 1)
-      .limit(1)
-      .executeTakeFirst();
-
-    if (oldestToKeep) {
-      await db.deleteFrom("posts_history")
-        .where("slug", "=", slug)
-        .where("id", "<", oldestToKeep.id)
-        .execute();
+    const historyRows = await db.select({ id: schema.postsHistory.id }).from(schema.postsHistory)
+      .where(eq(schema.postsHistory.slug, slug))
+      .orderBy(desc(schema.postsHistory.createdAt))
+      .all();
+      
+    if (historyRows.length > limit) {
+      const oldestToKeep = historyRows[limit - 1];
+      if (oldestToKeep) {
+        await db.delete(schema.postsHistory)
+          .where(and(
+            eq(schema.postsHistory.slug, slug),
+            lt(schema.postsHistory.id, oldestToKeep.id)
+          ))
+          .run();
+      }
     }
-    } catch {
-      // ignore
-    }
+  } catch {
+    // ignore
+  }
 }
 
 /**
@@ -140,10 +143,10 @@ export async function pruneHistory(c: Context<AppEnv>, slug: string, limit = 10)
 export async function captureHistory(
   c: Context<AppEnv>,
   slug: string,
-  data: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cf_email: string | null; season_id?: string | number | null }
+  data: { title: string | null; author: string | null; thumbnail: string | null; snippet: string | null; ast: string | null; cfEmail: string | null; seasonId?: string | number | null }
 ) {
-  const db = c.get("db") as any;
-  await db.insertInto("posts_history")
+  const db = c.get("db");
+  await db.insert(schema.postsHistory)
     .values({
       slug,
       title: data.title || "Untitled",
@@ -151,8 +154,8 @@ export async function captureHistory(
       thumbnail: data.thumbnail || "",
       snippet: data.snippet || "",
       ast: data.ast || "",
-      author_email: data.cf_email || "unknown",
-      season_id: data.season_id ? Number(data.season_id) : null
+      authorEmail: data.cfEmail || "unknown",
+      seasonId: data.seasonId ? Number(data.seasonId) : null
     })
     .execute();
 
@@ -164,13 +167,19 @@ export async function captureHistory(
  * Fetches history records for a post.
  */
 export async function getPostHistory(c: Context<AppEnv>, slug: string) {
-  const db = c.get("db") as any;
-  const results = await db.selectFrom("posts_history")
-    .select(["id", "title", "author", "author_email", "created_at", "season_id"])
-    .where("slug", "=", slug)
-    .orderBy("created_at", "desc")
+  const db = c.get("db");
+  const results = await db.select({
+      id: schema.postsHistory.id,
+      title: schema.postsHistory.title,
+      author: schema.postsHistory.author,
+      author_email: schema.postsHistory.authorEmail,
+      created_at: schema.postsHistory.createdAt,
+      season_id: schema.postsHistory.seasonId
+    }).from(schema.postsHistory)
+    .where(eq(schema.postsHistory.slug, slug))
+    .orderBy(desc(schema.postsHistory.createdAt))
     .limit(50)
-    .execute();
+    .all();
   return results || [];
 }
 
@@ -183,36 +192,52 @@ export async function restorePostFromHistory(
   id: string,
   restorerEmail: string
 ) {
-  const db = c.get("db") as any;
-  const row = await db.selectFrom("posts_history")
-    .select(["title", "author", "thumbnail", "snippet", "ast", "season_id"])
-    .where("id", "=", Number(id))
-    .where("slug", "=", slug)
-    .executeTakeFirst();
+  const db = c.get("db");
+  const row = await db.select({
+      title: schema.postsHistory.title,
+      author: schema.postsHistory.author,
+      thumbnail: schema.postsHistory.thumbnail,
+      snippet: schema.postsHistory.snippet,
+      ast: schema.postsHistory.ast,
+      seasonId: schema.postsHistory.seasonId
+    }).from(schema.postsHistory)
+    .where(and(
+      eq(schema.postsHistory.id, Number(id)),
+      eq(schema.postsHistory.slug, slug)
+    ))
+    .get();
 
   if (!row) return { success: false, error: "Version not found" };
 
   // Capture CURRENT as history before restoring
-  const current = await db.selectFrom("posts")
-    .select(["slug", "title", "author", "thumbnail", "snippet", "ast", "cf_email", "season_id"])
-    .where("slug", "=", slug)
-    .executeTakeFirst();
+  const current = await db.select({
+      slug: schema.posts.slug,
+      title: schema.posts.title,
+      author: schema.posts.author,
+      thumbnail: schema.posts.thumbnail,
+      snippet: schema.posts.snippet,
+      ast: schema.posts.ast,
+      cfEmail: schema.posts.cfEmail,
+      seasonId: schema.posts.seasonId
+    }).from(schema.posts)
+    .where(eq(schema.posts.slug, slug))
+    .get();
   
   if (current) {
     await captureHistory(c, slug, current);
   }
 
-  await db.updateTable("posts")
+  await db.update(schema.posts)
     .set({
       title: row.title as string,
       author: row.author,
       thumbnail: row.thumbnail,
       snippet: row.snippet,
       ast: row.ast,
-      cf_email: restorerEmail,
-      season_id: row.season_id ? Number(row.season_id) : null
+      cfEmail: restorerEmail,
+      seasonId: row.seasonId ? Number(row.seasonId) : null
     })
-    .where("slug", "=", slug)
+    .where(eq(schema.posts.slug, slug))
     .execute();
 
   return { success: true };
@@ -222,22 +247,30 @@ export async function restorePostFromHistory(
  * Approves a pending post or shadow revision.
  */
 export async function approvePost(c: Context<AppEnv>, slug: string) {
-  const db = c.get("db") as any;
-  const row = await db.selectFrom("posts")
-    .select(["revision_of", "title", "author", "thumbnail", "snippet", "ast", "cf_email", "season_id"])
-    .where("slug", "=", slug)
-    .executeTakeFirst();
+  const db = c.get("db");
+  const row = await db.select({
+      revisionOf: schema.posts.revisionOf,
+      title: schema.posts.title,
+      author: schema.posts.author,
+      thumbnail: schema.posts.thumbnail,
+      snippet: schema.posts.snippet,
+      ast: schema.posts.ast,
+      cfEmail: schema.posts.cfEmail,
+      seasonId: schema.posts.seasonId
+    }).from(schema.posts)
+    .where(eq(schema.posts.slug, slug))
+    .get();
 
   if (!row) return { success: false, error: "Post not found" };
 
-  if (row.revision_of) {
-    await approveAndMergeRevision(c, slug, row.revision_of, row);
+  if (row.revisionOf) {
+    await approveAndMergeRevision(c, slug, row.revisionOf, row);
     return { success: true, warnings: [] };
   }
 
-  await db.updateTable("posts")
+  await db.update(schema.posts)
     .set({ status: 'published' })
-    .where("slug", "=", slug)
+    .where(eq(schema.posts.slug, slug))
     .execute();
 
   const warnings: string[] = [];
@@ -273,16 +306,15 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
   }).catch(() => {});
 
   // Notify original author
-  if (row.cf_email) {
-    const author = await db.selectFrom("user")
-      .select("id")
-      .where("email", "=", row.cf_email)
-      .executeTakeFirst();
+  if (row.cfEmail) {
+    const author = await db.select({ id: schema.user.id }).from(schema.user)
+      .where(eq(schema.user.email, row.cfEmail))
+      .get();
 
     if (author) {
       c.executionCtx.waitUntil(
         emitNotification(c, {
-          userId: author.id as string,
+          userId: String(author.id),
           title: "Post Approved",
           message: `Your post "${row.title}" has been published.`,
           link: `/blog/${slug}`,
