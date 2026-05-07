@@ -541,7 +541,7 @@ describe("Hono Backend - /media Router", () => {
 
   it("GET / - filter non-public objects", async () => {
     mockR2.list.mockResolvedValue({ objects: [{ key: "Public.png", size: 100, uploaded: new Date() }, { key: "Private.png", size: 100, uploaded: new Date() }], truncated: false });
-    const localMockDb = { select: vi.fn().mockReturnThis(), where: vi.fn().mockReturnThis(), execute: vi.fn().mockResolvedValue([{ key: "Public.png", folder: "Gallery", tags: "" }]) };
+    const localMockDb = { select: vi.fn().mockReturnThis(), from: vi.fn().mockReturnThis(), where: vi.fn().mockReturnThis(), execute: vi.fn().mockResolvedValue([{ key: "Public.png", folder: "Gallery", tags: "" }]) };
     const { mediaHandlers } = await import("./media/handlers");
 
     const mockReq = {
