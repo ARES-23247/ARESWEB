@@ -12,8 +12,8 @@ import { dispatchTwitterPhoto } from './social/twitter';
 import { dispatchFacebook, dispatchMetaPhoto } from './social/meta';
 import { logSystemError, DrizzleDB } from '../api/middleware';
 import pRetry from 'p-retry';
-import { Kysely } from "kysely";
-import { DB } from "../../shared/schemas/database";
+import { eq } from "drizzle-orm";
+import * as schema from "../../src/db/schema";
 import { SocialQueuePost } from "../../shared/routes/socialQueue";
 
 export interface SocialConfig {
@@ -173,10 +173,15 @@ export async function dispatchQueuePost(
   if (post.linked_type && post.linked_id) {
     if (post.linked_type === "blog") {
       const p = await db
-        .selectFrom("posts")
-        .selectAll()
-        .where("slug", "=", post.linked_id)
-        .where("is_deleted", "=", 0)
+        .select({
+          title: schema.posts.title,
+          slug: schema.posts.slug,
+          snippet: schema.posts.snippet,
+          thumbnail: schema.posts.thumbnail
+        })
+        .from(schema.posts)
+        .where(eq(schema.posts.slug, post.linked_id))
+        .where(eq(schema.posts.isDeleted, 0))
         .executeTakeFirst();
       if (p) {
         payload.title = p.title;
@@ -186,10 +191,14 @@ export async function dispatchQueuePost(
       }
     } else if (post.linked_type === "document") {
       const d = await db
-        .selectFrom("docs")
-        .selectAll()
-        .where("slug", "=", post.linked_id)
-        .where("is_deleted", "=", 0)
+        .select({
+          title: schema.docs.title,
+          slug: schema.docs.slug,
+          description: schema.docs.description
+        })
+        .from(schema.docs)
+        .where(eq(schema.docs.slug, post.linked_id))
+        .where(eq(schema.docs.isDeleted, 0))
         .executeTakeFirst();
       if (d) {
         payload.title = d.title;
@@ -198,16 +207,21 @@ export async function dispatchQueuePost(
       }
     } else if (post.linked_type === "event") {
       const e = await db
-        .selectFrom("events")
-        .selectAll()
-        .where("id", "=", post.linked_id)
-        .where("is_deleted", "=", 0)
+        .select({
+          title: schema.events.title,
+          id: schema.events.id,
+          description: schema.events.description,
+          coverImage: schema.events.coverImage
+        })
+        .from(schema.events)
+        .where(eq(schema.events.id, post.linked_id))
+        .where(eq(schema.events.isDeleted, 0))
         .executeTakeFirst();
       if (e) {
         payload.title = e.title;
         payload.url = `${baseUrl}/events/${e.id}`;
         payload.snippet = e.description || post.content;
-        payload.thumbnail = e.cover_image || payload.thumbnail;
+        payload.thumbnail = e.coverImage || payload.thumbnail;
       }
     }
   }
