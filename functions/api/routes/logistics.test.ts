@@ -27,7 +27,7 @@ describe("Hono Backend - /logistics Router", () => {
     vi.clearAllMocks();
 
     mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
       innerJoin: vi.fn().mockReturnThis(),
       leftJoin: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),

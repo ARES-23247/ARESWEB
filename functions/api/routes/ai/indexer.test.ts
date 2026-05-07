@@ -49,16 +49,16 @@ interface MockRelationalQuery {
 }
 
 interface MockDB {
-  selectFrom: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
-  insertInto: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
-  deleteFrom: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
+  select: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
+  insert: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
+  delete: ReturnType<typeof vi.fn<(table?: string) => MockQuery>>;
   query: MockRelationalQuery;
 }
 
 const mockDb: MockDB = {
-  selectFrom: vi.fn(() => createMockQuery()),
-  insertInto: vi.fn(() => createMockQuery()),
-  deleteFrom: vi.fn(() => createMockQuery()),
+  select: vi.fn(() => createMockQuery()),
+  insert: vi.fn(() => createMockQuery()),
+  delete: vi.fn(() => createMockQuery()),
   query: {
     settings: {
       findFirst: vi.fn().mockResolvedValue({ key: 'test', value: 'test' }),
@@ -99,7 +99,7 @@ describe("indexSiteContent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Re-set default mock implementations after clearAllMocks
-    mockDb.selectFrom.mockImplementation(() => createMockQuery());
+    mockDb.select.mockImplementation(() => createMockQuery());
     mockDb.query.settings.findFirst.mockResolvedValue({ key: KV_KEY, value: '2026-01-01T00:00:00Z' });
     mockAi.run.mockResolvedValue({ data: [] });
     mockVectorize.upsert.mockResolvedValue(undefined);
@@ -111,9 +111,9 @@ describe("indexSiteContent", () => {
     expect(result.indexed).toBe(0);
     expect(result.skipped).toBe(0);
     expect(result.errors).toEqual([]);
-    // Should query settings via query API and events, posts, docs, seasons (4 selectFrom calls)
+    // Should query settings via query API and events, posts, docs, seasons (4 select calls)
     expect(mockDb.query.settings.findFirst).toHaveBeenCalled();
-    expect(mockDb.selectFrom).toHaveBeenCalledTimes(4);
+    expect(mockDb.select).toHaveBeenCalledTimes(4);
     // Should NOT call AI or Vectorize when nothing to index
     expect(mockAi.run).not.toHaveBeenCalled();
     expect(mockVectorize.upsert).not.toHaveBeenCalled();
@@ -124,8 +124,8 @@ describe("indexSiteContent", () => {
     mockQuery.execute.mockResolvedValue([
       { title: "Practice", description: "Weekly practice", date_start: "2026-05-01T18:00:00Z", date_end: null, location: "Lab", category: "practice" },
     ]);
-    // First selectFrom = events
-    mockDb.selectFrom.mockImplementationOnce(() => mockQuery);
+    // First select = events
+    mockDb.select.mockImplementationOnce(() => mockQuery);
 
     mockAi.run.mockResolvedValue({ data: [[0.1, 0.2, 0.3]] });
 
@@ -135,7 +135,7 @@ describe("indexSiteContent", () => {
     expect(mockAi.run).toHaveBeenCalledWith("@cf/baai/bge-base-en-v1.5", expect.any(Object));
     expect(mockVectorize.upsert).toHaveBeenCalledTimes(1);
     // Verify D1 timestamp was updated
-    expect(mockDb.insertInto).toHaveBeenCalled();
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("indexes posts with AST content extraction", async () => {
@@ -145,7 +145,7 @@ describe("indexSiteContent", () => {
       { slug: "hello-world", title: "Hello World", ast: JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Test body" }] }] }), published_at: "2026-04-01" },
     ]);
 
-    mockDb.selectFrom
+    mockDb.select
       .mockImplementationOnce(() => eventsQuery)   // events
       .mockImplementationOnce(() => postsQuery);   // posts
 
@@ -167,7 +167,7 @@ describe("indexSiteContent", () => {
       { slug: "getting-started", title: "Getting Started", content: "Setup guide", category: "guide" },
     ]);
 
-    mockDb.selectFrom
+    mockDb.select
       .mockImplementationOnce(() => eventsQuery)
       .mockImplementationOnce(() => postsQuery)
       .mockImplementationOnce(() => docsQuery);
@@ -198,7 +198,7 @@ describe("indexSiteContent", () => {
     failQuery.execute.mockRejectedValue(new Error("DB connection lost"));
 
     // All 4 indexing queries fail
-    mockDb.selectFrom.mockReturnValue(failQuery);
+    mockDb.select.mockReturnValue(failQuery);
 
     const result = await indexSiteContent(mockDb as any, mockAi as any, mockVectorize as any);
 
@@ -216,7 +216,7 @@ describe("indexSiteContent", () => {
       { title: "Event A", description: "Test", date_start: "2026-05-01", date_end: null, location: "Lab", category: "practice" },
       { title: "Event B", description: "Test", date_start: "2026-05-02", date_end: null, location: "Lab", category: "meeting" },
     ]);
-    mockDb.selectFrom.mockImplementationOnce(() => eventsQuery);
+    mockDb.select.mockImplementationOnce(() => eventsQuery);
 
     // Return only 1 embedding for 2 documents
     mockAi.run.mockResolvedValue({ data: [[0.1, 0.2]] });
@@ -232,7 +232,7 @@ describe("indexSiteContent", () => {
     eventsQuery.execute.mockResolvedValue([
       { title: "Event", description: "x", date_start: "2026-05-01", date_end: null, location: "Lab", category: "practice" },
     ]);
-    mockDb.selectFrom.mockImplementationOnce(() => eventsQuery);
+    mockDb.select.mockImplementationOnce(() => eventsQuery);
 
     mockAi.run.mockResolvedValue({ data: [[0.1, 0.2]] });
     mockVectorize.upsert.mockRejectedValue(new Error("Vectorize quota exceeded"));
@@ -255,7 +255,7 @@ describe("indexSiteContent", () => {
     ]);
 
     let callCount = 0;
-    mockDb.selectFrom.mockImplementation(() => {
+    mockDb.select.mockImplementation(() => {
       callCount++;
       switch (callCount) {
         case 1: return eventsQuery;

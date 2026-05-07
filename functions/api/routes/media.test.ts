@@ -79,12 +79,12 @@ describe("Hono Backend - /media Router", () => {
     };
 
     mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       onConflict: vi.fn((cb: any) => {
         const oc = {
@@ -97,10 +97,10 @@ describe("Hono Backend - /media Router", () => {
         return oc;
       }),
       doUpdateSet: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
@@ -496,7 +496,7 @@ describe("Hono Backend - /media Router", () => {
   });
 
   it("GET /admin - database failure", async () => {
-    const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
+    const mockDbFail = { select: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
     const mockC = { get: vi.fn().mockReturnValue(mockDbFail), env, req: { url: "http://localhost/api/media/admin", header: vi.fn().mockReturnValue("admin") } };
     const { mediaHandlers } = await import("./media/handlers");
     const adminListFn = mediaHandlers.adminList as unknown as (_h: { params: any, query: any }, c: MockContext) => Promise<HandlerResponse>;
@@ -534,7 +534,7 @@ describe("Hono Backend - /media Router", () => {
 
   it("GET / - filter non-public objects", async () => {
     mockR2.list.mockResolvedValue({ objects: [{ key: "Public.png", size: 100, uploaded: new Date() }, { key: "Private.png", size: 100, uploaded: new Date() }], truncated: false });
-    const localMockDb = { selectFrom: vi.fn().mockReturnThis(), select: vi.fn().mockReturnThis(), where: vi.fn().mockReturnThis(), execute: vi.fn().mockResolvedValue([{ key: "Public.png", folder: "Gallery", tags: "" }]) };
+    const localMockDb = { select: vi.fn().mockReturnThis(), select: vi.fn().mockReturnThis(), where: vi.fn().mockReturnThis(), execute: vi.fn().mockResolvedValue([{ key: "Public.png", folder: "Gallery", tags: "" }]) };
     const { mediaHandlers } = await import("./media/handlers");
 
     const mockReq = {
@@ -563,7 +563,7 @@ describe("Hono Backend - /media Router", () => {
 
   it("GET / - internal failure", async () => {
     const { mediaHandlers } = await import("./media/handlers");
-    const mockDbFail = { selectFrom: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
+    const mockDbFail = { select: vi.fn().mockImplementation(() => { throw new Error("DB Error"); }) };
     const mockReq = {
       url: "http://localhost/",
       header: vi.fn((key: string) => {

@@ -13,13 +13,13 @@ describe("Hono Backend - /points Router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
-      insertInto: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis()
     } as any;
 
