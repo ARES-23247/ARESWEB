@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { DashboardSession, DashboardPermissions } from "./useDashboardSession";
 
+// Named constants for notification polling intervals
+const NOTIFICATIONS_REFETCH_INTERVAL_MS = 60000; // 1 minute - how often to refetch from server
+const NOTIFICATIONS_STALE_TIME_MS = 30000; // 30 seconds - how long to consider data fresh
+
 export function useDashboardNotifications(
   _session: DashboardSession | null,
   _permissions: DashboardPermissions
@@ -12,8 +16,8 @@ export function useDashboardNotifications(
       if (!res.ok) throw new Error("Failed to fetch");
       return { status: res.status, body: await res.json() };
     },
-    refetchInterval: 60000,
-    staleTime: 1000 * 30,
+    refetchInterval: NOTIFICATIONS_REFETCH_INTERVAL_MS,
+    staleTime: NOTIFICATIONS_STALE_TIME_MS,
   });
 
   const data = actionItemsRes?.status === 200 ? actionItemsRes.body as { 

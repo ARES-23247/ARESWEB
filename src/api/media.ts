@@ -17,7 +17,17 @@ export interface MediaResponse {
   media: Asset[];
 }
 
-
+/**
+ * Wrapper type for FormData to ensure type safety with Hono client.
+ *
+ * Hono's type inference for FormData is limited because FormData structure
+ * is dynamic and cannot be statically typed. This wrapper ensures the
+ * underlying FormData is passed correctly while maintaining type safety
+ * in our API layer.
+ */
+export class UploadFormData {
+  constructor(public readonly data: FormData) {}
+}
 
 // ============================================
 // Media
@@ -59,14 +69,15 @@ export function useGetAdminMedia(
  * POST /api/media/admin/upload - Upload media file
  */
 export function useUploadMedia(
-  options?: Omit<UseMutationOptions<{ success: boolean; key: string; url: string; altText?: string }, Error, FormData>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean; key: string; url: string; altText?: string }, Error, UploadFormData>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean; key: string; url: string; altText?: string }, Error, FormData>({
-    mutationFn: async (formData) => {
+  return useMutation<{ success: boolean; key: string; url: string; altText?: string }, Error, UploadFormData>({
+    mutationFn: async (uploadFormData) => {
       const response = await client.media.admin.upload.$post({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Hono client FormData compatibility
-        body: formData as any
+        // Hono client expects FormData but doesn't infer it correctly from OpenAPIHono types.
+        // The UploadFormData wrapper ensures we pass actual FormData at runtime.
+        body: uploadFormData.data as never
       });
       return unwrapResponse<{ success: boolean; key: string; url: string; altText?: string }>(response);
     },

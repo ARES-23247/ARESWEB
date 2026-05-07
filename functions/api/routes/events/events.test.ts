@@ -580,11 +580,15 @@ describe("Hono Backend - Events Router", () => {
     expect(res.status).toBe(200);
   });
 
-  it.skip("GET / - with search query", async () => {
-    // TODO: Fix drizzle-orm sql mock for FTS search
-    mockDb.execute.mockResolvedValueOnce({ rows: [{ id: "1", title: "Searched Event" }] });
+  it("GET / - with search query", async () => {
+    // Mock db.execute for FTS search query (the proxy routes .all() calls to dbMock.execute)
+    // The code uses (db as any).all(sql...) which the proxy routes to dbMock.execute
+    mockDb.execute = vi.fn().mockResolvedValueOnce([
+      { id: "1", title: "Searched Event", category: "outreach", date_start: "2026-01-01", date_end: "2026-01-02", location: "Test", description: "Test", cover_image: null, status: "published", is_deleted: 0, season_id: 1, meeting_notes: null, tba_event_key: null, recurring_exception: null, is_potluck: 0, is_volunteer: 0 }
+    ]);
     const res = await testApp.request("/?q=search", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
+    expect(mockDb.execute).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/:id/approve - approve revision", async () => {

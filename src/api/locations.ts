@@ -16,6 +16,19 @@ export interface LocationsResponse {
   locations: Location[];
 }
 
+export interface SaveLocationResponse {
+  success: boolean;
+  id: string;
+}
+
+export interface SuccessResponse {
+  success: boolean;
+}
+
+// ============================================
+// Public Locations
+// ============================================
+
 /**
  * GET /api/locations - Get all public locations
  */
@@ -32,17 +45,57 @@ export function useGetLocations(
   });
 }
 
+// ============================================
+// Admin Locations
+// ============================================
+
 /**
- * POST /api/locations - Create a new location
+ * GET /api/locations/admin/list - List all locations (including deleted)
  */
-export function useCreateLocation(
-  options?: Omit<UseMutationOptions<{ success: boolean; id?: string }, Error, Location>, "mutationFn">
+export function useGetAdminLocations(
+  options?: Omit<UseQueryOptions<LocationsResponse>, "queryKey" | "queryFn">
+) {
+  return useQuery<LocationsResponse>({
+    queryKey: ["admin_locations"],
+    queryFn: async () => {
+      const response = await client.locations.admin.list.$get();
+      return unwrapResponse<LocationsResponse>(response);
+    },
+    ...options,
+  });
+}
+
+/**
+ * POST /api/locations/admin/save - Create or update a location
+ */
+export function useSaveLocation(
+  options?: Omit<UseMutationOptions<SaveLocationResponse, Error, Location>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean; id?: string }, Error, Location>({
+  return useMutation<SaveLocationResponse, Error, Location>({
     mutationFn: async (payload) => {
-      const response = await client.locations.$post({ json: payload });
-      return unwrapResponse<{ success: boolean; id?: string }>(response);
+      const response = await client.locations.admin.save.$post({ json: payload });
+      return unwrapResponse<SaveLocationResponse>(response);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["locations"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
+    },
+    ...options,
+  });
+}
+
+/**
+ * DELETE /api/locations/admin/:id - Soft delete a location
+ */
+export function useDeleteLocation(
+  options?: Omit<UseMutationOptions<SuccessResponse, Error, string>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<SuccessResponse, Error, string>({
+    mutationFn: async (id) => {
+      const response = await client.locations.admin[":id"].$delete({ param: { id } });
+      return unwrapResponse<SuccessResponse>(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["locations"] });

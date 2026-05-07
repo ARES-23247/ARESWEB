@@ -17,8 +17,12 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 
-const ROLES = ["unverified", "user", "author", "admin"];
-const MEMBER_TYPES = ["student", "alumni", "parent", "coach", "mentor", "sponsor"];
+// Union types for role and member_type to provide type safety
+type UserRole = "unverified" | "user" | "author" | "admin";
+type MemberType = "student" | "alumni" | "parent" | "coach" | "mentor" | "sponsor";
+
+const ROLES: readonly UserRole[] = ["unverified", "user", "author", "admin"] as const;
+const MEMBER_TYPES: readonly MemberType[] = ["student", "alumni", "parent", "coach", "mentor", "sponsor"] as const;
 
 type User = {
   id: string;
@@ -87,11 +91,15 @@ export default function AdminUsers() {
   });
 
   const changeRole = useCallback((userId: string, newRole: string) => {
-    patchMutation.mutate({ id: userId, role: newRole as any });
+    // Validate that newRole is a valid UserRole before mutation
+    const validRole = ROLES.includes(newRole as UserRole) ? (newRole as UserRole) : "unverified";
+    patchMutation.mutate({ id: userId, role: validRole });
   }, [patchMutation]);
 
   const changeMemberType = useCallback((userId: string, newType: string) => {
-    patchMutation.mutate({ id: userId, member_type: newType as any });
+    // Validate that newType is a valid MemberType before mutation
+    const validType = MEMBER_TYPES.includes(newType as MemberType) ? (newType as MemberType) : "student";
+    patchMutation.mutate({ id: userId, member_type: validType });
   }, [patchMutation]);
 
   const removeUser = (userId: string, name: string) => {

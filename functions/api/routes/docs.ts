@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 import { sql } from "drizzle-orm";
-// import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -1029,10 +1028,11 @@ function tiptapToMarkdown(node: any): string {
       case "paragraph":
         result += childText + "\n\n";
         break;
-      case "heading":
+      case "heading": {
         const level = "#".repeat(child.attrs?.level || 1);
         result += `${level} ${childText}\n\n`;
         break;
+      }
       case "bulletList":
         result += childText.split("\n").map((line: string) => line ? `- ${line}` : "").join("\n") + "\n\n";
         break;

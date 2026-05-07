@@ -38,14 +38,16 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
 
   const posts = useMemo(() => calendarData?.posts || [], [calendarData?.posts]);
 
-  // Group posts by day
-  const postsByDay = useMemo(() => {
+  // Group posts by day - optimized memoization with explicit dependencies
+  const postsByDay = useMemo<Record<string, SocialQueuePost[]>>(() => {
     const grouped: Record<string, SocialQueuePost[]> = {};
-    posts.forEach((post: SocialQueuePost) => {
+    for (const post of posts) {
       const day = format(new Date(post.scheduled_for), "yyyy-MM-dd");
-      if (!grouped[day]) grouped[day] = [];
+      if (!grouped[day]) {
+        grouped[day] = [];
+      }
       grouped[day].push(post);
-    });
+    }
     return grouped;
   }, [posts]);
 

@@ -36,16 +36,6 @@ interface LazyMonacoEditorProps {
   options?: Record<string, unknown>;
 }
 
-// Compact ARES-red spinner (matches SimLoader pattern)
-// Unused component retained for reference
-// function SimLoader() {
-//   return (
-//     <div className="flex justify-center items-center py-8">
-//       <div className="w-8 h-8 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin" />
-//     </div>
-//   );
-// }
-
 // Error display with retry
 function ErrorDisplay({ error, onRetry }: { error: string; onRetry: () => void }) {
   return (

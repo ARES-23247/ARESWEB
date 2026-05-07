@@ -4,7 +4,6 @@ import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
 import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
-// import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, MapPin, Users, Clock, Target, Calendar, CheckCircle, XCircle, Save, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SeasonPicker from "./SeasonPicker";

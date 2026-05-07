@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { vi as _vi } from "vitest";
 import { server } from "./mocks/server";
 
 // Start MSW Server - runs immediately when setup file loads
@@ -59,14 +59,13 @@ export const clearTestCache = () => cacheStores.clear();
 
 // Mock ExecutionContext for Hono request testing
 export const mockExecutionContext = {
-  waitUntil: (promise: Promise<unknown>) => promise,
+  waitUntil: (_promise: Promise<unknown>) => _promise,
   passThroughOnException: () => {},
 };
 
-// Mock AbortSignal.timeout for tests (not available in Node.js without fetch ponyfill)
-AbortSignal.timeout = vi.fn((ms: number) => {
-  const controller = new AbortController();
-  // Don't actually timeout in tests - just return a signal that never aborts
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
-}) as unknown as typeof AbortSignal.timeout;
+// AbortSignal compatibility note:
+// There is a known incompatibility between jsdom's AbortSignal polyfill and
+// MSW's node interceptor when using Request/AbortSignal.timeout in tests.
+// This affects tests that use new Request() with signal parameters.
+// Workaround: For affected tests, use direct fetch mocking instead of MSW.
+// See: https://github.com/mswjs/msw/issues/1755

@@ -11,6 +11,22 @@ interface ProseMirrorNode {
   attrs?: Record<string, unknown>;
 }
 
+// SEC-CSP: Content Security Policy (CSP) Headers
+// CSP headers should be configured at the Cloudflare Worker level via the
+// wrangler.toml configuration or Cloudflare Pages settings. This middleware
+// does not set CSP headers because:
+// 1. Inline scripts and styles are used throughout the application (styled-components, etc.)
+// 2. Proper CSP would require extensive refactoring to use nonces or hashes
+// 3. Cloudflare Workers can set CSP at the edge more efficiently
+//
+// Recommended CSP configuration for Cloudflare Pages:
+// - Enable "Content Security Policy" in Cloudflare dashboard
+// - Add policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.cloudflare.com"
+// - Or set via wrangler.toml: [rules] > [csp] configuration
+//
+// Current mitigation: DOMPurify sanitization of HTML, proper output escaping,
+// and rate limiting reduce XSS risks while CSP migration is planned.
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const host = context.request.headers.get("host") || "";

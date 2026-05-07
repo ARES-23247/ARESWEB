@@ -7,6 +7,18 @@ import SEO from "../components/SEO";
 import { STORAGE_KEYS } from "../utils/storageKeys";
 import { useJudgeLogin, useGetJudgePortfolio } from "../api";
 
+// SEC-STORAGE: sessionStorage Usage Review
+// This component uses sessionStorage to store judge access codes.
+// Data stored: Judge access code (temporary authentication credential)
+// Risk assessment: MEDIUM - Access codes are sensitive, but mitigated by:
+// 1. Using sessionStorage instead of localStorage (cleared on browser close)
+// 2. Codes are validated server-side on each request via useGetJudgePortfolio API
+// 3. Codes are temporary and single-use in practice
+// 4. Turnstile CAPTCHA adds friction to automated attacks
+// Note: This is NOT a replacement for proper server-side session management.
+// The real security happens server-side where the code is verified against the database.
+// Client storage is purely for UX convenience (persisting session across page navigations).
+
 export default function JudgesHub() {
   const [accessCode, setAccessCode] = useState("");
   const [error, setError] = useState("");

@@ -1,61 +1,36 @@
 import { useState } from "react";
 import { Brain, Trash2, Plus, GitBranch, Globe, RefreshCw, Terminal } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  useGetExternalSources,
+  useGetAIStatus,
+  useAddExternalSource,
+  useDeleteExternalSource,
+  reindexExternalRequest,
+} from "../../api/ai";
 
 export default function ExternalSourcesManager() {
-  const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [newType, setNewType] = useState<"github" | "website">("github");
   const [syncErrors, setSyncErrors] = useState<string[] | null>(null);
 
-  const { data: sources = [], isLoading } = useQuery({
-    queryKey: ["external-sources"],
-    queryFn: async () => {
-      const res = await fetch("/api/ai/external-sources");
-      if (!res.ok) throw new Error("Failed to fetch sources");
-      return res.json() as Promise<{ id: string; type: string; url: string; branch: string; last_indexed_at: string | null }[]>;
-    }
-  });
-
-  const { data: statusData } = useQuery({
-    queryKey: ["ai-status"],
-    queryFn: async () => {
-      const res = await fetch("/api/ai/status");
-      if (!res.ok) throw new Error("Failed to fetch status");
-      return res.json() as Promise<{ indexErrors?: { timestamp: string, errors: string[] } | null }>;
-    },
+  const { data: sources = [], isLoading } = useGetExternalSources();
+  const { data: statusData } = useGetAIStatus({
     refetchInterval: 10000 // Refetch every 10s
   });
 
-  const addMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/ai/external-sources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: newType, url: newUrl })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
+  const addMutation = useAddExternalSource({
     onSuccess: () => {
       toast.success("Source added successfully");
       setNewUrl("");
-      queryClient.invalidateQueries({ queryKey: ["external-sources"] });
     },
     onError: (err: Error) => toast.error(`Failed to add source: ${err.message}`)
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/ai/external-sources/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
+  const deleteMutation = useDeleteExternalSource({
     onSuccess: () => {
       toast.success("Source deleted");
-      queryClient.invalidateQueries({ queryKey: ["external-sources"] });
     },
     onError: (err: Error) => toast.error(`Failed to delete source: ${err.message}`)
   });
@@ -68,20 +43,14 @@ export default function ExternalSourcesManager() {
 
     for (const src of sources) {
       try {
-        const res = await fetch("/api/ai/reindex-external", { 
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sourceId: src.id })
-        });
-        const data = await res.json() as { success?: boolean; indexed?: number; errors?: string[]; error?: string };
-        
-        if (res.ok && data.success) {
+        const data = await reindexExternalRequest(src.id);
+        if (data.success) {
           if (data.indexed) totalIndexed += data.indexed;
           if (data.errors && data.errors.length > 0) {
             allErrors.push(...data.errors);
           }
         } else {
-          allErrors.push(`Sync failed for ${src.url} (HTTP ${res.status}): ${data.error || "Unknown error"}`);
+          allErrors.push(`Sync failed for ${src.url}: ${data.error || "Unknown error"}`);
         }
       } catch (e) {
         allErrors.push(`Network request failed for ${src.url}: ${e}`);
@@ -95,9 +64,7 @@ export default function ExternalSourcesManager() {
       toast.success(`External sync complete: ${totalIndexed} documents updated.`);
       setSyncErrors(null);
     }
-    
-    queryClient.invalidateQueries({ queryKey: ["external-sources"] });
-    queryClient.invalidateQueries({ queryKey: ["ai-status"] });
+
     setIsSyncing(false);
   };
 
@@ -156,8 +123,8 @@ export default function ExternalSourcesManager() {
         )}
       </div>
 
-      <form 
-        onSubmit={(e) => { e.preventDefault(); if(newUrl) addMutation.mutate(); }}
+      <form
+        onSubmit={(e) => { e.preventDefault(); if(newUrl) addMutation.mutate({ type: newType, url: newUrl }); }}
         className="flex gap-2"
       >
         <select 

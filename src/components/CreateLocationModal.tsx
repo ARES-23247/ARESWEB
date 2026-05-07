@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { locationSchema } from "@shared/routes/locations";
 import { z } from "zod";
-import { useCreateLocation } from "../api";
+import { useSaveLocation } from "../api";
 
 interface CreateLocationModalProps {
   isOpen: boolean;
@@ -40,7 +40,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
     setErrorMsg("");
   }, [reset]);
 
-  const saveMutation = useCreateLocation({
+  const saveMutation = useSaveLocation({
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Venue record synchronized.");

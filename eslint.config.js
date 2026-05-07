@@ -28,6 +28,7 @@ export default ts.config(
       "migrations/**/*.sql", // Ignore SQL migration files
       "tools/ares-sim-preview/out", // Ignore compiled VSCode extension output
       ".vite/**", // Ignore Vite cache directory
+      "src/components/SimulationPlayground.refactored.tsx", // WIP refactor draft
     ],
   },
   js.configs.recommended,

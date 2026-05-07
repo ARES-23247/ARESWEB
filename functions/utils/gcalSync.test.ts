@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { server } from "../../src/test/mocks/server";
 
 // Mock jose — we don't want real crypto in unit tests
 vi.mock("jose", () => {
@@ -22,45 +21,55 @@ vi.mock("./content", () => ({
   parseAstToText: vi.fn((text: string) => text),
 }));
 
-import { http, HttpResponse } from "msw";
 import { getGcalAccessToken, pushEventToGcal, deleteEventFromGcal, pullEventsFromGcal } from "./gcalSync";
 import type { GCalConfig, ARES_Event } from "./gcalSync";
 
-// SKIP: gcalSync tests require native AbortSignal which is not compatible
-// with vitest's Request polyfill. These tests pass in real environments.
-describe.skip("gcalSync Utilities", () => {
+// NOTE: These tests use direct fetch mocking instead of MSW to avoid
+// AbortSignal compatibility issues between jsdom's AbortSignal polyfill
+// and MSW's node interceptor. The root cause is that MSW validates
+// AbortSignal using instanceof checks, and jsdom's polyfill doesn't pass.
+
+describe("gcalSync Utilities", () => {
   const config: GCalConfig = {
     email: "test@test.iam.gserviceaccount.com",
     privateKey: "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----",
     calendarId: "test-calendar-id",
   };
 
+  let fetchMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchMock = vi.fn();
+    global.fetch = fetchMock;
   });
 
   afterEach(() => {
-    server.resetHandlers();
+    vi.restoreAllMocks();
   });
 
   describe("getGcalAccessToken", () => {
     it("should return an access token on successful auth", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "gcloud-token-123" });
-        })
-      );
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "gcloud-token-123" }),
+      });
 
       const token = await getGcalAccessToken(config);
       expect(token).toBe("gcloud-token-123");
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://oauth2.googleapis.com/token",
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+        })
+      );
     });
 
     it("should throw on missing access_token", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ error: "invalid_grant" });
-        })
-      );
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ error: "invalid_grant" }),
+      });
 
       await expect(getGcalAccessToken(config)).rejects.toThrow("Failed to get Google Calendar access token");
     });
@@ -82,14 +91,15 @@ describe.skip("gcalSync Utilities", () => {
     });
 
     it("should POST a new event and return gcal_event_id", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.post("https://www.googleapis.com/calendar/v3/calendars/:calId/events", () => {
-          return HttpResponse.json({ id: "gcal-id-abc" });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
         })
-      );
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: "gcal-id-abc" }),
+        });
 
       const result = await pushEventToGcal(event, config);
       expect(result).toBe("gcal-id-abc");
@@ -97,15 +107,18 @@ describe.skip("gcalSync Utilities", () => {
 
     it("should PUT when event has existing gcal_event_id", async () => {
       let usedMethod = "";
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.put("https://www.googleapis.com/calendar/v3/calendars/:calId/events/:eventId", ({ request }) => {
-          usedMethod = request.method;
-          return HttpResponse.json({ id: "existing-gcal-id" });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
         })
-      );
+        .mockImplementationOnce((url: string, options: RequestInit) => {
+          usedMethod = options.method || "GET";
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ id: "existing-gcal-id" }),
+          });
+        });
 
       const existing = { ...event, gcal_event_id: "existing-gcal-id" };
       await pushEventToGcal(existing, config);
@@ -113,14 +126,16 @@ describe.skip("gcalSync Utilities", () => {
     });
 
     it("should throw on non-ok response", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.post("https://www.googleapis.com/calendar/v3/calendars/:calId/events", () => {
-          return HttpResponse.json({ error: "forbidden" }, { status: 403 });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
         })
-      );
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+          json: async () => ({ error: "forbidden" }),
+        });
 
       await expect(pushEventToGcal(event, config)).rejects.toThrow("Google API Error: 403");
     });
@@ -128,36 +143,34 @@ describe.skip("gcalSync Utilities", () => {
 
   describe("deleteEventFromGcal", () => {
     it("should skip delete for missing config or gcal_id", async () => {
-      // No server handlers needed — these should return early
       await deleteEventFromGcal("", config);
       await deleteEventFromGcal("some-id", { email: "", privateKey: "", calendarId: "" });
+      expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it("should send DELETE request", async () => {
       let deleteHit = false;
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.delete("https://www.googleapis.com/calendar/v3/calendars/:calId/events/:eventId", () => {
-          deleteHit = true;
-          return new HttpResponse(null, { status: 204 });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
         })
-      );
+        .mockImplementationOnce(() => {
+          deleteHit = true;
+          return Promise.resolve(new Response(null, { status: 204 }));
+        });
 
       await deleteEventFromGcal("gcal-123", config);
       expect(deleteHit).toBe(true);
     });
 
     it("should silently handle 410 responses", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.delete("https://www.googleapis.com/calendar/v3/calendars/:calId/events/:eventId", () => {
-          return new HttpResponse("Gone", { status: 410 });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
         })
-      );
+        .mockResolvedValueOnce(new Response("Gone", { status: 410 }));
 
       // Should not throw
       await deleteEventFromGcal("gcal-gone", config);
@@ -166,12 +179,14 @@ describe.skip("gcalSync Utilities", () => {
 
   describe("pullEventsFromGcal", () => {
     it("should fetch and map events from GCal", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.get("https://www.googleapis.com/calendar/v3/calendars/:calId/events", () => {
-          return HttpResponse.json({
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
             items: [
               {
                 id: "g1",
@@ -188,9 +203,8 @@ describe.skip("gcalSync Utilities", () => {
                 end: { date: "2025-04-02" },
               },
             ],
-          });
-        })
-      );
+          }),
+        });
 
       const events = await pullEventsFromGcal(config);
       expect(events).toHaveLength(2);
@@ -203,27 +217,26 @@ describe.skip("gcalSync Utilities", () => {
     });
 
     it("should throw on non-ok response", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.get("https://www.googleapis.com/calendar/v3/calendars/:calId/events", () => {
-          return new HttpResponse("Internal Server Error", { status: 500 });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
         })
-      );
+        .mockResolvedValueOnce(new Response("Internal Server Error", { status: 500 }));
 
       await expect(pullEventsFromGcal(config)).rejects.toThrow("Failed to pull from GCal (test-calendar-id): 500");
     });
 
     it("should handle empty items array", async () => {
-      server.use(
-        http.post("https://oauth2.googleapis.com/token", () => {
-          return HttpResponse.json({ access_token: "tok" });
-        }),
-        http.get("https://www.googleapis.com/calendar/v3/calendars/:calId/events", () => {
-          return HttpResponse.json({ items: [] });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: "tok" }),
         })
-      );
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ items: [] }),
+        });
 
       const events = await pullEventsFromGcal(config);
       expect(events).toHaveLength(0);

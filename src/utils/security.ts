@@ -1,8 +1,12 @@
 import DOMPurify from 'dompurify';
 
 // SEC-WR-04: HMAC secret for tutorial progress integrity validation.
-// In production, this should be server-provided or use a proper signature scheme.
-// This provides basic tamper detection for client-side stored progress.
+// IMPORTANT: This does NOT provide real security - the secret is in client-side code.
+// Any user can inspect the code and forge signatures. This only provides:
+// 1. Tamper detection for casual data corruption (storage bugs, etc.)
+// 2. A signal when localStorage data is manually modified
+// This is suitable for tutorial progress (non-critical data) but NOT for auth tokens,
+// sensitive user data, or anything that impacts security decisions.
 const TUTORIAL_SIGNATURE_SECRET = "ares-tutorial-hmac-2025";
 
 /**

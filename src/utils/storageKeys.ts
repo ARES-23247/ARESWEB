@@ -1,6 +1,27 @@
 /**
  * Centralized storage keys for localStorage and sessionStorage.
  * Prevents typos and provides single source of truth for key names.
+ *
+ * SEC-STORAGE: Security Considerations for Web Storage
+ *
+ * localStorage:
+ * - Persists indefinitely across sessions
+ * - Accessible by any JavaScript on the same domain
+ * - Vulnerable to XSS attacks (any script can read/write)
+ * - NEVER store: auth tokens, passwords, API keys, sensitive personal data
+ * - OK to store: UI preferences, non-sensitive progress data, cached non-sensitive info
+ *
+ * sessionStorage:
+ * - Cleared when browser tab/window closes
+ * - Still accessible by any JavaScript on the same domain (XSS risk remains)
+ * - Slightly better for auth-like data due to automatic cleanup
+ * - Still requires server-side validation for any security decisions
+ *
+ * General Rules:
+ * 1. Always assume stored data can be read/modified by malicious scripts
+ * 2. Never make security decisions based solely on stored data
+ * 3. Validate all stored data server-side before using it for auth/authorization
+ * 4. Consider security implications before adding new storage keys
  */
 
 export const STORAGE_KEYS = {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { compressImage } from "../utils/imageProcessor";
-import { useGetAdminMedia, useUploadMedia, useMoveMedia, type Asset, type MediaResponse } from "../api/media";
+import { useGetAdminMedia, useUploadMedia, useMoveMedia, UploadFormData, type Asset, type MediaResponse } from "../api/media";
 
 export { type Asset, type MediaResponse };
 
@@ -55,7 +55,7 @@ export function useMedia() {
         formData.append("file", compressedBlob, fileName);
         formData.append("folder", selectedFolderFilter === "All" ? "Library" : selectedFolderFilter);
 
-        await uploadMutation.mutateAsync(formData);
+        await uploadMutation.mutateAsync(new UploadFormData(formData));
         successCount++;
       } catch (err) {
         const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);

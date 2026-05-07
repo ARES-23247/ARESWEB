@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { siteConfig } from "../site.config";
-import { useGetGitHubActivity, type GithubHeatmapDay } from "../api";
+import { useGetGitHubActivity } from "../api";
 
 interface DayCell {
   date: string;

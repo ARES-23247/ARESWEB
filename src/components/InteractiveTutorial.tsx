@@ -1,8 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { sanitizeHtml, signTutorialProgress, verifyTutorialProgress } from '../utils/security';
 import { useTrackPageView } from '../api/analytics';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import './InteractiveTutorial.css';
+
+// SEC-STORAGE: localStorage Usage Review
+// This component stores tutorial progress in localStorage with HMAC signature verification.
+// Data stored: Array of completed step IDs (non-sensitive educational progress data)
+// Risk assessment: LOW - Tutorial progress is not security-critical
+// Mitigations:
+// - HMAC signature detects tampering (though not cryptographically secure in client code)
+// - Data is user-specific progress tracking, not auth/authorization data
+// - Invalid signatures cause a simple reset to initial state
+// Note: The HMAC secret is in client code (see security.ts) - this provides tamper detection
+// but not true security. A determined user could forge signatures if desired.
 
 export interface TutorialStep {
   id: string;
@@ -33,23 +44,23 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
       setShowCode(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [currentStep, steps.length]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
       setShowCode(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [currentStep]);
 
-  const handleCheckpoint = async () => {
+  const handleCheckpoint = useCallback(async () => {
     if (currentStepData.checkpoint) {
       const next = new Set(completedSteps);
       next.add(currentStepData.id);
@@ -78,15 +89,15 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
         });
       }
     }
-  };
+  }, [currentStepData, completedSteps, syncId, trackCheckpoint, title]);
 
-  const handleStepSelect = (index: number) => {
+  const handleStepSelect = useCallback((index: number) => {
     setCurrentStep(index);
     setShowCode(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
-  const handleCloudSync = async () => {
+  const handleCloudSync = useCallback(async () => {
     if (!syncId) return;
     setSyncStatus('syncing');
     try {
@@ -100,7 +111,7 @@ export default function InteractiveTutorial({ title, description, steps, onCompl
     } catch {
       setSyncStatus('error');
     }
-  };
+  }, [syncId, trackSync, title]);
 
   // Load saved progress with signature verification
   useEffect(() => {

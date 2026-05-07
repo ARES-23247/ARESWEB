@@ -9,6 +9,7 @@ import type { CancellationToken, Position } from "monaco-editor";
 import { logger } from "../utils/logger";
 import { GITHUB_REPO } from "../utils/constants";
 import { useSimulationChat } from "../hooks/useSimulationChat";
+import { useSaveSimulation, useCreateGist, type Simulation } from "../api/simulations";
 
 
 // Monaco Editor CDN Configuration
@@ -113,7 +114,6 @@ export default function SimulationPlayground() {
   const [fps, setFps] = useState<number | null>(null);
 
   // Version Snapshot state
-  // const [showHistory, setShowHistory] = useState(false); // Removed duplicate
   const [testResults, setTestResults] = useState<TestResult[]>([]);
 
   // Editor Refs - use Monaco Editor types from @monaco-editor/react
@@ -227,7 +227,7 @@ export default function SimulationPlayground() {
     try {
       const res = await fetch("/api/simulations");
       if (res.ok) {
-        const data = await res.json() as { simulations?: SavedSim[] };
+        const data = await res.json() as { simulations?: Simulation[] };
         setSavedSims(data.simulations || []);
       }
     } catch (e) {
@@ -441,7 +441,11 @@ export default function SimulationPlayground() {
 
   // ── localStorage Version Snapshots ──
   const SNAPSHOT_KEY = 'ares_sim_snapshots';
-  const MAX_SNAPSHOTS = 5;
+  const MAX_SNAPSHOTS = 5; // Maximum number of autosaved snapshots to retain
+
+  // Named constants for snapshot timing
+  const SNAPSHOT_AUTOSAVE_INTERVAL_MS = 60000; // 60 seconds - autosave interval
+  const SNAPSHOT_RESUME_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours - offer resume if snapshot is newer than this
 
   const saveSnapshot = useCallback(() => {
     try {
@@ -458,9 +462,9 @@ export default function SimulationPlayground() {
     } catch { /* localStorage full or unavailable */ }
   }, [files, simName, simId]);
 
-  // Autosave snapshot every 60s while editing
+  // Autosave snapshot periodically while editing
   useEffect(() => {
-    const interval = setInterval(saveSnapshot, 60000);
+    const interval = setInterval(saveSnapshot, SNAPSHOT_AUTOSAVE_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [saveSnapshot]);
 
@@ -486,7 +490,7 @@ export default function SimulationPlayground() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('simId')) return; // Don't offer resume if loading a specific sim
     const snapshots = getSnapshots();
-    if (snapshots.length > 0 && Date.now() - snapshots[0].timestamp < 24 * 60 * 60 * 1000) {
+    if (snapshots.length > 0 && Date.now() - snapshots[0].timestamp < SNAPSHOT_RESUME_WINDOW_MS) {
       import("sonner").then(({ toast }) => {
         toast("Resume previous session?", {
           action: {
@@ -497,7 +501,7 @@ export default function SimulationPlayground() {
         });
       });
     }
-  }, [getSnapshots, restoreSnapshot]);
+  }, [getSnapshots, restoreSnapshot, SNAPSHOT_RESUME_WINDOW_MS]);
 
 
 
@@ -728,31 +732,20 @@ export default function SimulationPlayground() {
   }, []);
 
   // ── Save ──
+  const saveSimulation = useSaveSimulation();
   const handleSave = useCallback(async () => {
     if (!simName.trim()) return;
     setIsSaving(true);
     try {
-      const res = await fetch("/api/simulations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name: simName, files: files, ...(simId ? { id: simId } : {}) }),
-      });
-      if (res.ok) {
-        const data = await res.json() as { id?: string };
-        if (data.id && !simId) {
-          setSimId(data.id);
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set("simId", data.id.toString());
-          window.history.replaceState({}, "", newUrl.toString());
-        }
-        const { toast } = await import("sonner");
-        toast.success("Saved simulation!");
-      } else {
-        const errData = await res.json().catch(() => ({})) as { error?: string };
-        const { toast } = await import("sonner");
-        toast.error(`Save failed: ${errData.error || res.statusText}`);
+      const result = await saveSimulation.mutateAsync({ name: simName, files });
+      if (result.id && !simId) {
+        setSimId(result.id);
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set("simId", result.id.toString());
+        window.history.replaceState({}, "", newUrl.toString());
       }
+      const { toast } = await import("sonner");
+      toast.success("Saved simulation!");
     } catch (e) {
       logger.error("[SimPlayground] Save failed:", e);
       const { toast } = await import("sonner");
@@ -760,30 +753,22 @@ export default function SimulationPlayground() {
     } finally {
       setIsSaving(false);
     }
-  }, [simName, files, simId]);
+  }, [simName, files, simId, saveSimulation]);
 
+  const createGist = useCreateGist();
   const handleShareGist = useCallback(async () => {
     setIsSharingGist(true);
     try {
-      const res = await fetch("/api/simulations/gist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: simName, files }),
-      });
-      if (res.ok) {
-        const data = await res.json() as { gistId: string, url: string };
-        const shareUrl = `${window.location.origin}/academy/playground?gist=${encodeURIComponent(data.gistId)}`;
-        await navigator.clipboard.writeText(shareUrl);
-        setSimId(`gist:${data.gistId}`);
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete("simId");
-        newUrl.searchParams.set("gist", data.gistId);
-        window.history.replaceState({}, "", newUrl.toString());
-        const { toast } = await import("sonner");
-        toast.success("Shareable link generated and copied!");
-      } else {
-        throw new Error("Failed to create Gist");
-      }
+      const data = await createGist.mutateAsync({ name: simName, files });
+      const shareUrl = `${window.location.origin}/academy/playground?gist=${encodeURIComponent(data.gistId)}`;
+      await navigator.clipboard.writeText(shareUrl);
+      setSimId(`gist:${data.gistId}`);
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("simId");
+      newUrl.searchParams.set("gist", data.gistId);
+      window.history.replaceState({}, "", newUrl.toString());
+      const { toast } = await import("sonner");
+      toast.success("Shareable link generated and copied!");
     } catch (e) {
       logger.error("[SimPlayground] Gist Share failed:", e);
       const { toast } = await import("sonner");
@@ -791,7 +776,7 @@ export default function SimulationPlayground() {
     } finally {
       setIsSharingGist(false);
     }
-  }, [simName, files]);
+  }, [simName, files, createGist]);
 
   // ── Keyboard Shortcuts ──
   useEffect(() => {

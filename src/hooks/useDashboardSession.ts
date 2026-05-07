@@ -31,12 +31,15 @@ export interface DashboardPermissions {
 }
 
 export function useDashboardSession() {
+  // Named constant for session cache duration
+  const SESSION_CACHE_DURATION_MS = 1000 * 60 * 5; // 5 minutes
+
   // NOTE: Session is cached for 5 minutes to reduce API calls. This means
   // permission changes (role updates, member_type changes) may not reflect
   // immediately for the user. For sensitive operations requiring immediate
   // permission validation, use server-side checks instead.
   const { data: res, isLoading: isPending } = useGetMe({
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    staleTime: SESSION_CACHE_DURATION_MS,
     retry: false,
   });
 

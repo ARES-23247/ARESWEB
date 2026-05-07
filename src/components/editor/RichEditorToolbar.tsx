@@ -11,7 +11,7 @@ import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import { toast } from "sonner";
 import mammoth from "mammoth";
-import { compressImage } from "../../utils/imageProcessor";
+import { compressImage as _compressImage } from "../../utils/imageProcessor";
 import { Maximize, Minimize } from "lucide-react";
 import AssetPickerModal from "../AssetPickerModal";
 import SimPickerModal from "../SimPickerModal";

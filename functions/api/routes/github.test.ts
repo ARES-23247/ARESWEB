@@ -142,9 +142,12 @@ describe("Hono Backend - /github Router", () => {
   });
 
   // NOTE: /activity tests skipped due to AbortSignal environment incompatibility.
-  // Hono's test Request includes signal: AbortSignal{} which is not instanceof native AbortSignal,
-  // causing "RequestInit: Expected signal to be an instance of AbortSignal" when the handler
-  // constructs new Request(url, c.req.raw). Same root cause as gcalSync.test.ts.
+  // The issue: jsdom's AbortSignal polyfill is incompatible with MSW's node interceptor.
+  // When the handler does `new Request(cacheUrl.toString(), c.req.raw)`, the
+  // c.req.raw contains a jsdom AbortSignal that fails MSW's instanceof check.
+  // This is a known limitation of the test environment; production code works fine.
+  // Workaround would require significant refactoring or switching test environments.
+  // See: https://github.com/mswjs/msw/issues/1755
   describe.skip("GET /activity", () => {
     let fetchMock: ReturnType<typeof vi.fn>;
 

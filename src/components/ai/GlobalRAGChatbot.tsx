@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import { X, Send, Bot, ShieldAlert, RefreshCw } from "lucide-react";
 import Turnstile, { TurnstileRef } from "../Turnstile";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useUIStore } from "../../store/uiStore";
 import { z } from "zod";
 import { STORAGE_KEYS } from "../../utils/storageKeys";
+import { getChatSession, ragChatbotRequest } from "../../api/ai";
 
 // SEC-WR-08: Zod schema for validating chat session API response
 const chatSessionSchema = z.object({
@@ -16,7 +17,7 @@ const chatSessionSchema = z.object({
   }))
 });
 
-export function GlobalRAGChatbot() {
+export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
   const { isChatbotOpen, setChatbotOpen } = useUIStore();
   const [messages, setMessages] = useState<{ role: "ai" | "user"; content: string }[]>([]);
   const [input, setInput] = useState("");
@@ -36,13 +37,8 @@ export function GlobalRAGChatbot() {
 
   useEffect(() => {
     if (sessionId && messages.length === 0) {
-      fetch(`/api/ai/chat-session/${sessionId}`)
-        .then(async (res) => {
-          if (!res.ok) {
-            throw new Error(`Failed to load chat history: ${res.status}`);
-          }
-          const data = await res.json();
-
+      getChatSession(sessionId)
+        .then(data => {
           // SEC-WR-08: Validate response structure before using
           const validated = chatSessionSchema.safeParse(data);
           if (validated.success) {
@@ -88,11 +84,7 @@ export function GlobalRAGChatbot() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/ai/rag-chatbot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: userMessage, turnstileToken: currentToken, sessionId }),
-      });
+      const res = await ragChatbotRequest(userMessage, currentToken, sessionId);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -117,7 +109,7 @@ export function GlobalRAGChatbot() {
           if (done) break;
           const chunk = decoder.decode(value);
           const lines = chunk.split("\n");
-          
+
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               try {
@@ -282,4 +274,4 @@ export function GlobalRAGChatbot() {
       </div>
     </>
   );
-}
+});

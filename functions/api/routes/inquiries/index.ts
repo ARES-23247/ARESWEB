@@ -28,7 +28,7 @@ inquiriesRouter.openapi(listInquiriesRoute, handleListInquiries);
 // Apply middlewares using .use() on the specific route path
 inquiriesRouter.use(
   "/",
-  persistentRateLimitMiddleware(100, 300),  // TEMP: Drastically increased for debugging
+  persistentRateLimitMiddleware(10, 60),  // SEC-RL: Production-appropriate rate limit (10 requests per 60 seconds)
   turnstileMiddleware()
 );
 inquiriesRouter.openapi(submitInquiryRoute, handleSubmitInquiry);
