@@ -68,7 +68,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const ast = JSON.parse(snippet);
             if (ast.type === "doc" && ast.content) {
               // Extract raw text from ProseMirror AST
-              snippet = (ast.content as ProseMirrorNode[]).map((n: any) => n.content?.map((c: any) => c.text).join(" ")).join(" ");
+              snippet = (ast.content as ProseMirrorNode[]).map((n) => n.content?.map((c) => c.text || "").join(" ")).join(" ");
             }
           } catch {
             // Probably raw text already
