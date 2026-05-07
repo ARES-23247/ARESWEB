@@ -1,8 +1,8 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, and, desc, asc, sql, inArray } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware, ensureAuth, originIntegrityMiddleware, logAuditAction } from "../middleware";
 import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
@@ -44,17 +44,23 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
   const db = c.get("db") as any;
 
   try {
-    const results = await db.selectFrom("comments as c")
-      .innerJoin("user_profiles as p", "c.user_id", "p.user_id")
-      .innerJoin("user as u", "c.user_id", "u.id")
-      .select([
-        "c.id", "c.user_id", "c.content", "c.created_at",
-        "p.nickname", "u.image as avatar"
-      ])
-      .where("c.target_type", "=", targetType)
-      .where("c.target_id", "=", targetId)
-      .where("c.is_deleted", "=", 0)
-      .orderBy("c.created_at", "asc")
+    const results = await db.select({
+      id: schema.comments.id,
+      user_id: schema.comments.userId,
+      content: schema.comments.content,
+      created_at: schema.comments.createdAt,
+      nickname: schema.userProfiles.nickname,
+      avatar: schema.user.image
+    })
+      .from(schema.comments)
+      .innerJoin(schema.userProfiles, eq(schema.comments.userId, schema.userProfiles.userId))
+      .innerJoin(schema.user, eq(schema.comments.userId, schema.user.id))
+      .where(and(
+        eq(schema.comments.targetType, targetType),
+        eq(schema.comments.targetId, targetId),
+        eq(schema.comments.isDeleted, 0)
+      ))
+      .orderBy(asc(schema.comments.createdAt))
       .execute();
 
     const comments = results.map((r: any) => ({
@@ -67,7 +73,7 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
       updated_at: String(r.created_at)
     }));
 
-    return c.json({ 
+    return c.json({
       comments,
       authenticated: !!user,
       role: user?.role || null
@@ -110,14 +116,14 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
 
   try {
     const id = crypto.randomUUID();
-    await db.insertInto("comments")
+    await db.insert(schema.comments)
       .values({
         id,
-        user_id: String(user.id),
-        target_type: targetType,
-        target_id: targetId,
+        userId: String(user.id),
+        targetType: targetType,
+        targetId: targetId,
         content,
-        created_at: new Date().toISOString()
+        createdAt: new Date().toISOString()
       })
       .execute();
 
@@ -126,20 +132,20 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
 
     c.executionCtx.waitUntil((async () => {
       const msgId = await sendZulipMessage(
-        social, 
-        zulipStream, 
-        `${targetType.toUpperCase()}: ${targetId}`, 
+        social,
+        zulipStream,
+        `${targetType.toUpperCase()}: ${targetId}`,
         `**${user.name || 'ARES Member'}** commented on ${targetType} \`${targetId}\`:\n\n${content}`
       );
       if (msgId) {
-        await db.updateTable("comments").set({ zulip_message_id: String(msgId) }).where("id", "=", id).execute();
+        await db.update(schema.comments).set({ zulipMessageId: String(msgId) }).where(eq(schema.comments.id, id)).execute();
       }
     })().catch((err: any) => console.error("[Comments:ZulipSync] Error", err)));
 
     if (targetType === 'post') {
-      const row = await db.selectFrom("posts").select("cf_email").where("slug", "=", targetId).executeTakeFirst();
+      const row = await db.select({ cf_email: schema.posts.cfEmail }).from(schema.posts).where(eq(schema.posts.slug, targetId)).executeTakeFirst();
       if (row?.cf_email && row.cf_email !== user.email) {
-        const author = await db.selectFrom("user").select("id").where("email", "=", row.cf_email).executeTakeFirst();
+        const author = await db.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, row.cf_email)).executeTakeFirst();
         if (author) {
           c.executionCtx.waitUntil(emitNotification(c, {
             userId: String(author.id),
@@ -181,17 +187,20 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
   }
 
   try {
-    const row = await db.selectFrom("comments").select(["user_id", "zulip_message_id"]).where("id", "=", id).executeTakeFirst();
+    const row = await db.select({
+      user_id: schema.comments.userId,
+      zulip_message_id: schema.comments.zulipMessageId
+    }).from(schema.comments).where(eq(schema.comments.id, id)).executeTakeFirst();
     if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
-    
+
     const isOwner = row.user_id === user.id;
     const isModerator = user.role === "admin" || user.member_type === "mentor" || user.member_type === "coach";
-    
+
     if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to update this comment", code: "FORBIDDEN" }, 403);
 
-    await db.updateTable("comments")
+    await db.update(schema.comments)
       .set({ content })
-      .where("id", "=", id)
+      .where(eq(schema.comments.id, id))
       .execute();
 
     // IN-08: Audit log comment updates
@@ -221,17 +230,20 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
   const db = c.get("db") as any;
 
   try {
-    const row = await db.selectFrom("comments").select(["user_id", "zulip_message_id"]).where("id", "=", id).executeTakeFirst();
+    const row = await db.select({
+      user_id: schema.comments.userId,
+      zulip_message_id: schema.comments.zulipMessageId
+    }).from(schema.comments).where(eq(schema.comments.id, id)).executeTakeFirst();
     if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
-    
+
     const isOwner = row.user_id === user.id;
     const isModerator = user.role === "admin" || user.member_type === "mentor" || user.member_type === "coach";
-    
+
     if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to delete this comment", code: "FORBIDDEN" }, 403);
 
-    await db.updateTable("comments")
-      .set({ is_deleted: 1 })
-      .where("id", "=", id)
+    await db.update(schema.comments)
+      .set({ isDeleted: 1 })
+      .where(eq(schema.comments.id, id))
       .execute();
 
     // IN-08: Audit log comment deletion
