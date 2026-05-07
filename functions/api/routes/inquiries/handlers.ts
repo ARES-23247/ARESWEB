@@ -2,7 +2,6 @@
 import { eq, desc, inArray, and, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { DB } from "../../../../shared/schemas/database";
 import { getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
 import { encrypt, decrypt } from "../../../utils/crypto";
 import { safeJSONStringify } from "../../../utils/json";
@@ -61,7 +60,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
       }
     }
 
-    let dbQuery = db.select({
+    const dbQuery = db.select({
         id: schema.inquiries.id,
         type: schema.inquiries.type,
         name: schema.inquiries.name,
