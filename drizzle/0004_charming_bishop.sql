@@ -1,4 +1,4 @@
-CREATE TABLE `usage_metrics` (
+CREATE TABLE IF NOT EXISTS `usage_metrics` (
 	`id` text PRIMARY KEY NOT NULL,
 	`timestamp` text DEFAULT CURRENT_TIMESTAMP,
 	`endpoint` text NOT NULL,
@@ -10,5 +10,5 @@ CREATE TABLE `usage_metrics` (
 	`cf_ip` text
 );
 --> statement-breakpoint
-CREATE INDEX `idx_usage_metrics_timestamp` ON `usage_metrics` (`timestamp`);--> statement-breakpoint
-CREATE INDEX `idx_usage_metrics_endpoint` ON `usage_metrics` (`endpoint`);
+CREATE INDEX IF NOT EXISTS `idx_usage_metrics_timestamp` ON `usage_metrics` (`timestamp`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `idx_usage_metrics_endpoint` ON `usage_metrics` (`endpoint`);
