@@ -15,6 +15,13 @@
       "when": 1778180893798,
       "tag": "0001_motionless_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778181681439,
+      "tag": "0002_pretty_forgotten_one",
+      "breakpoints": true
     }
   ]
 }
