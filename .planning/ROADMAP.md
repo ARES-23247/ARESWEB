@@ -1,365 +1,67 @@
-# Milestone Roadmap
+## v7.1 Drizzle ORM Migration (Phases 52-57)
 
-## Milestones
+**Goal**: Complete the migration of ARESWEB backend persistence from Kysely to Drizzle ORM to achieve full type safety and architectural stability.
 
-- v6.6 TypeScript Strictness - Phases 21-26 (shipped 2026-05-05)
-- v6.7 TypeScript Any Elimination - Phases 27-33 (shipped 2026-05-06)
-- v6.8 Hono Zod OpenAPI Migration - Phases 34-37 (shipped 2026-05-06)
-- v6.9 Type Safety Debt Elimination - Phases 38-42 (shipped 2026-05-06)
-- v6.10 Infrastructure & Polish - Phases 43-44 (shipped 2026-05-07)
-- **v7.0 Performance Optimization** - Phases 45-50 (planned)
+- [x] **Phase 52: Drizzle ORM Migration - Batch 1** - Refactored inquiries, awards, badges, locations, and analytics routes.
+- [x] **Phase 53: Drizzle ORM Migration - Batch 2** - Migrate tasks, store, sponsors, socialQueue, sitemap, and simulations.
+- [x] **Phase 54: Drizzle ORM Migration - Batch 3** - Migrate remaining backend routes (zulip, users, seasons, settings).
+- [ ] **Phase 55: Drizzle ORM Migration - Batch 4** - Migrate docs, comments, posts, media, notifications, profiles.
+- [ ] **Phase 56: Drizzle ORM Migration - Batch 5** - Migrate analytics, ai, events, finance, logistics, points, scouting.
+- [ ] **Phase 57: Drizzle Test Migration & Context Type Safety** - Update unit tests and replace `c.get("db") as any` bypass.
 
-## Phases
+### Phase Details
 
-<details>
-<summary>v6.6 TypeScript Strictness (Phases 21-26) - SHIPPED 2026-05-05</summary>
+### Phase 53: Drizzle ORM Migration - Batch 2
 
-- [x] Phase 21: Core Domain and Data Layer Strictness
-- [x] Phase 22: ARES Physics and Math Engine Validation
-- [x] Phase 23: R3F and Sim Component Typings
-- [x] Phase 24: ESLint Lockdown and CI Validation
-- [x] Phase 25: Comprehensive Security Audit
-- [x] Phase 26: Calendar and Event Editor Enhancements
-
-</details>
-
-<details>
-<summary>v6.7 TypeScript Any Elimination (Phases 27-33) - SHIPPED 2026-05-06</summary>
-
-- [x] Phase 27: Type Foundation
-- [x] Phase 28: High-Impact Handlers
-- [x] Phase 28.1: AI Simulation and Analytics Stabilization
-- [x] Phase 29: Contract Inference
-- [x] Phase 29.1: Remaining Route Contract Inference
-- [x] Phase 30: Test Types
-- [x] Phase 31: Frontend Components
-- [x] Phase 32: Final Validation
-- [x] Phase 33: Simulation Playground AI Diff View
-
-</details>
-
-<details>
-<summary>v6.8 Hono Zod OpenAPI Migration (Phases 34-37) - SHIPPED 2026-05-06</summary>
-
-- [x] Phase 34: Infrastructure and Proof of Concept
-- [x] Phase 35: Simple Route Migration
-- [x] Phase 36: Complex Route Migration
-- [x] Phase 37: Cleanup and OpenAPI Spec
-
-</details>
-
-<details>
-<summary>v6.9 Type Safety Debt Elimination (Phases 38-42) - SHIPPED 2026-05-06</summary>
-
-- [x] Phase 38: Typed Hono Handler Wrapper
-- [x] Phase 39: Frontend API Type Unification
-- [x] Phase 40: D1 Kysely Type Wrappers
-- [x] Phase 41: React Hooks Dependency Audit
-- [x] Phase 42: Final Sweep and CI Hardening
-
-</details>
-
-### v6.10 Infrastructure & Polish (Phases 43-44)
-
-**Goal**: Optimize edge-native performance and improve user engagement through automated communication workflows.
-
-- [x] **Phase 43: Edge-Native Caching Optimization** - Implement context-aware `edgeCacheMiddleware` for high-traffic routes.
-- [x] **Phase 44: Automated Inquiry Communication** - Deliver automated branded email receipts for all contact form submissions.
-
-## Phase Details
-
-### Phase 38: Typed Hono Handler Wrapper
-
-**Goal**: Create a generic `typedHandler<R>()` utility that extracts request parameter types from `createRoute()` definitions, eliminating the need for `as any` casts across all 50+ backend route files.
-
-**Depends on**: Nothing (foundation phase)
-
-**Requirements**: WRAP-01, WRAP-02, WRAP-03, VAL-01, VAL-02
-
+**Goal**: Refactor `tasks.ts`, `store.ts`, `sponsors.ts`, `socialQueue.ts`, `sitemap.ts`, and `simulations.ts` to Drizzle ORM.
+**Depends on**: Phase 52
+**Requirements**: MIGRATE-01
 **Success Criteria**:
-1. `typedHandler<typeof myRoute>()` correctly infers `json`, `params`, `query` from route schema
-2. At least 25 route files converted — `as any` count drops by 50%+
-3. File-level `eslint-disable @typescript-eslint/no-explicit-any` removed from converted files
-4. All existing tests pass without changes
-5. `tsc --noEmit` and `eslint --max-warnings 0` pass
-
-**Plans**: 0 (run /gsd-plan-phase 38 to create)
+1. All Kysely queries in these files replaced with Drizzle.
+2. `tsc --noEmit` passes.
 
 ---
 
-### Phase 39: Frontend API Type Unification
+### Phase 54: Drizzle ORM Migration - Batch 3
 
-**Goal**: Re-export `z.infer<>` types from backend route schemas into frontend hooks and components, eliminating inline `any` casts for API response data.
-
-**Depends on**: Phase 38 (typed handler pattern established)
-
-**Requirements**: FRONT-01, FRONT-02, FRONT-03, VAL-01, VAL-02
-
-**Target files**:
-- JudgesHub.tsx (6 inline disables), Events.tsx, About.tsx, Leaderboard.tsx
-- Academy.tsx, PrintPortfolio.tsx, MemberImpactOverview.tsx
-- ProfileEditor.tsx, TaskBoardPage.tsx, RevisionManager.tsx
-- useDashboardSession.ts, SEO.tsx, TiptapRenderer.tsx
-
+**Goal**: Refactor `zulip.ts`, `zulipWebhook.ts`, `users.ts`, `seasons.ts`, `settings.ts`.
+**Depends on**: Phase 53
+**Requirements**: MIGRATE-02
 **Success Criteria**:
-1. All frontend `no-explicit-any` disables removed from listed components
-2. Shared type definitions exported from `shared/routes/` or `shared/types/`
-3. JudgesHub.tsx has zero inline `eslint-disable` comments
-4. All existing tests pass
-5. `tsc --noEmit` passes
-
-**Plans**: 0 (run /gsd-plan-phase 39 to create)
+1. All Kysely queries in these files replaced with Drizzle.
+2. `tsc --noEmit` passes.
 
 ---
 
-### Phase 40: D1 Kysely Type Wrappers
+### Phase 55: Drizzle ORM Migration - Batch 4
 
-**Goal**: Replace all 17 `@ts-expect-error` directives with typed Kysely query helper functions that properly handle D1's untyped responses.
-
-**Depends on**: Nothing (independent workstream)
-
-**Requirements**: DB-01, DB-02, VAL-01, VAL-02
-
+**Goal**: Refactor `docs.ts`, `comments.ts`, `posts.ts`, `media/handlers.ts`, `notifications.ts`, `profiles.ts` to Drizzle ORM.
+**Depends on**: Phase 54
+**Requirements**: MIGRATE-03
 **Success Criteria**:
-1. Zero `@ts-expect-error` directives in production code
-2. Typed helper functions (e.g., `typedQuery<T>()`) encapsulate D1 edge cases
-3. All database queries return properly typed results
-4. All existing tests pass
-5. `tsc --noEmit` passes
-
-**Plans**: 0 (run /gsd-plan-phase 40 to create)
+1. All Kysely queries in these files replaced with Drizzle.
+2. `tsc --noEmit` passes.
 
 ---
 
-### Phase 41: React Hooks Dependency Audit
+### Phase 56: Drizzle ORM Migration - Batch 5
 
-**Goal**: Refactor components with suppressed `react-hooks/exhaustive-deps` warnings to use stable dependency patterns (refs, extracted callbacks, or `useCallback`).
-
-**Depends on**: Nothing (independent workstream)
-
-**Requirements**: HOOKS-01, HOOKS-02, VAL-01, VAL-03
-
-**Target files**:
-- SimulationPlayground.tsx (3 suppressions — animation frame lifecycle)
-- ProfileEditor.tsx (1 suppression)
-- SeasonEditor.tsx (file-level `set-state-in-effect` disable)
-- TeamAvailability.tsx, EventSelector.tsx, ScoutingTool.tsx
-
+**Goal**: Refactor `analytics/performance.ts`, `ai/index.ts`, `ai/indexer.ts`, `events/handlers.ts`, `events/index.ts`, `finance.ts`, `logistics.ts`, `points.ts`, `scouting/analyses.ts`, `scouting/analyze.ts`, `judges.ts`, `communications.ts`, `internal/gc.ts`, `outreach/handlers.ts`.
+**Depends on**: Phase 55
+**Requirements**: MIGRATE-04
 **Success Criteria**:
-1. All `react-hooks/exhaustive-deps` suppressions removed or justified with comment
-2. All `react-hooks/set-state-in-effect` suppressions refactored
-3. No new rendering bugs introduced (manual + automated verification)
-4. `eslint --max-warnings 0` passes
-
-**Plans**: 0 (run /gsd-plan-phase 41 to create)
+1. Zero `.execute()` or `.executeTakeFirst()` calls remaining in `functions/api/routes`.
+2. `tsc --noEmit` passes.
 
 ---
 
-### Phase 42: Final Sweep and CI Hardening
+### Phase 57: Drizzle Test Migration & Context Type Safety
 
-**Goal**: Remove every remaining `eslint-disable` directive from production code and lock down CI to prevent regressions.
-
-**Depends on**: Phase 38, 39, 40, 41
-
-**Requirements**: SWEEP-01, SWEEP-02, SWEEP-03, VAL-01, VAL-02, VAL-03
-
+**Goal**: Update unit tests to mock Drizzle ORM and eliminate the `c.get("db") as any` bypass in the Hono context.
+**Depends on**: Phase 56
+**Requirements**: MIGRATE-05, MIGRATE-06, MIGRATE-07
 **Success Criteria**:
-1. `as any` casts in non-test code: **0**
-2. File-level `eslint-disable` in non-test code: **0**
-3. `@ts-expect-error` in production code: **0**
-4. All CI gates pass: `tsc`, `eslint --max-warnings 0`, `npm run build`
-5. CI config updated with explicit `no-explicit-any: error` (no longer just `warn`)
-6. All 926+ tests pass
-
-**Plans**: 0 (run /gsd-plan-phase 42 to create)
-
----
-
-### Phase 43: Edge-Native Caching Optimization
-
-**Goal**: Implement a robust edge-native caching strategy using `edgeCacheMiddleware` while ensuring global middleware doesn't overwrite specific cache headers.
-
-**Requirements**: CACHE-01, CACHE-02, CACHE-03, VAL-01
-
-**Success Criteria**:
-1. `edgeCacheMiddleware` active on `/api/docs` (list, search, slug).
-2. Global `Cache-Control` middleware in `[[route]].ts` is context-aware.
-3. Admin routes (`/admin/*`) remain uncached.
-4. `tsc --noEmit` passes.
-
----
-
-### Phase 44: Automated Inquiry Communication
-
-**Goal**: Establish automated branded email receipts for all contact form submissions to improve user engagement.
-
-**Requirements**: COMM-01, COMM-02, COMM-03
-
-**Success Criteria**:
-1. `Join Team` inquiries trigger automated receipt via `dispatchReceipt`.
-2. `Support` inquiries trigger automated receipt via `dispatchReceipt`.
-3. Email templates use ARES championship-tier branding.
-
----
-
-## v7.0 Performance Optimization (Phases 45-49)
-
-**Goal**: Reduce initial bundle size by 60-70% and achieve 90+ Lighthouse score
-
-**Baseline metrics** (2026-05-06):
-- Initial bundle: ~8MB
-- Largest chunks: Monaco (2.5MB), Babel (3MB), Editor (1.5MB)
-- Lighthouse Performance: TBD
-
-**Target metrics**:
-- Initial bundle: <3MB
-- Lighthouse Performance: 90+
-- First Contentful Paint: <1s
-- Time to Interactive: <2s
-
-### [x] Phase 45: Bundle Size Optimization
-
-**Goal**: Reduce initial JavaScript bundle by 5-6MB by lazy-loading Monaco Editor (2.5MB) and Babel Standalone (3MB).
-
-**Requirements**: MON-01, MON-02, MON-03
-
-**Success Criteria**:
-1. Initial bundle (index.html + main.js + react-vendor) < 3MB
-2. Monaco chunk only loads on /sim-runner or /dashboard/simulation-playground routes
-3. Babel chunk only loads when simulation/doc preview is triggered
-4. Loading state shows ARES-red spinner matching SimLoader pattern
-5. Error states show friendly messages with retry option
-6. All existing editor functionality preserved (no regression)
-
-**Plans**: 1 plan
-- [x] 01-01-PLAN.md — Monaco and Babel lazy loading with ARES-branded loading UX
-
----
-
-### [x] Phase 46: Media Optimization
-
-**Goal**: Convert images to WebP, implement responsive images, and add font-display swap.
-
-**Plans**: 
-- [x] WebP Conversion Pipeline
-- [x] Responsive Images Implementation
-- [x] Font Loading Strategy
-
-**Success Criteria**:
-1. All images in public/ have WebP counterparts (build-generated)
-2. Responsive variants (640w, 1024w, 1920w) exist for hero images
-3. LazyImage supports srcset/sizes props (backward compatible)
-4. Fonts use font-display: swap (no FOIT, text visible immediately)
-5. League Spartan preloaded via <link> tag
-6. Lighthouse "Efficiently encode images" score: 90+
-7. Image payload reduced by 30%+ (compare before/after build output)
-
-**Plans**: 1 plan
-- [x] 02-01-PLAN.md — WebP conversion pipeline, responsive image variants, extended LazyImage with srcset, font preloading
-
----
-
-### [x] Phase 47: Loading Strategy
-
-**Goal**: Route-based chunk splitting and critical resource preloading.
-
-**Plans**:
-- [x] Route-Based Chunk Splitting
-- [x] Preload Critical Resources
-
----
-
-### [x] Phase 48: Caching Improvements
-
-**Goal**: Service worker optimization (500 entries) and HTTP caching (5-15min SWR).
-
-**Plans**: See `.planning/milestones/v7.0-phases/04-caching-improvements/PLAN.md`
-
----
-
-### [x] Phase 49: Monitoring
-
-**Goal**: Web Vitals tracking, bundle size CI/CD checks, and performance dashboard.
-
-**Plans**: 
-- [x] Web Vitals Client Implementation
-- [x] Metrics API Endpoint
-- [x] Bundle Size Check Script
-- [x] Performance Dashboard UI
-
-### ✅ Phase 51: UI fixes: Header ARES Academy and Social Media manager nesting
-
-**Goal:** Fix layout and padding hierarchies for Academy headers and the SocialHub module to match the global ares-cut design system.
-**Requirements**: 
-- Replaced basic Academy link with ARES Academy split badge.
-- Removed excessive nesting in SocialHub components.
-**Depends on:** Phase 50
-**Plans:** 1 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 51 to break down)
-
----
-
-### [x] Phase 50: Dashboard UX Flattening
-
-**Goal**: Integrate Social Media Manager directly into dashboard layout by removing redundant nesting and matching standard page patterns.
-
-**Depends on**: Nothing
-
-**Requirements**: UX-01, UX-02
-
-**Success Criteria**:
-1. `SocialHub` no longer has redundant borders/backgrounds.
-2. Dashboard header pattern applied to Social Media Manager.
-3. Tab navigation matches dashboard standard.
-
-**Plans**: 0 (Completed autonomously)
-
- # #   v 7 . 1   D r i z z l e   O R M   M i g r a t i o n   ( P h a s e s   5 2 - 5 5 ) 
- 
- * * G o a l * * :   C o m p l e t e   t h e   m i g r a t i o n   o f   A R E S W E B   b a c k e n d   p e r s i s t e n c e   f r o m   K y s e l y   t o   D r i z z l e   O R M   t o   a c h i e v e   f u l l   t y p e   s a f e t y   a n d   a r c h i t e c t u r a l   s t a b i l i t y . 
- 
- -   [ x ]   * * P h a s e   5 2 :   D r i z z l e   O R M   M i g r a t i o n   -   B a t c h   1 * *   -   R e f a c t o r e d   i n q u i r i e s ,   a w a r d s ,   b a d g e s ,   l o c a t i o n s ,   a n d   a n a l y t i c s   r o u t e s . 
- -   [   ]   * * P h a s e   5 3 :   D r i z z l e   O R M   M i g r a t i o n   -   B a t c h   2 * *   -   M i g r a t e   t a s k s ,   s t o r e ,   s p o n s o r s ,   s o c i a l Q u e u e ,   s i t e m a p ,   a n d   s i m u l a t i o n s . 
- -   [   ]   * * P h a s e   5 4 :   D r i z z l e   O R M   M i g r a t i o n   -   B a t c h   3 * *   -   M i g r a t e   r e m a i n i n g   b a c k e n d   r o u t e s   ( z u l i p ,   u s e r s ,   s e a s o n s ,   s e t t i n g s ) . 
- -   [   ]   * * P h a s e   5 5 :   D r i z z l e   T e s t   M i g r a t i o n   &   C o n t e x t   T y p e   S a f e t y * *   -   U p d a t e   u n i t   t e s t s   a n d   r e p l a c e   \ c . g e t ( \  
- d b \ )   a s   a n y \   b y p a s s . 
- 
- # # #   P h a s e   D e t a i l s 
- 
- # # #   P h a s e   5 3 :   D r i z z l e   O R M   M i g r a t i o n   -   B a t c h   2 
- 
- * * G o a l * * :   R e f a c t o r   \ 	 a s k s . t s \ ,   \ s t o r e . t s \ ,   \ s p o n s o r s . t s \ ,   \ s o c i a l Q u e u e . t s \ ,   \ s i t e m a p . t s \ ,   a n d   \ s i m u l a t i o n s . t s \   t o   D r i z z l e   O R M . 
- * * D e p e n d s   o n * * :   P h a s e   5 2 
- * * R e q u i r e m e n t s * * :   M I G R A T E - 0 1 
- * * S u c c e s s   C r i t e r i a * * : 
- 1 .   A l l   K y s e l y   q u e r i e s   i n   t h e s e   f i l e s   r e p l a c e d   w i t h   D r i z z l e . 
- 2 .   \ 	 s c   - - n o E m i t \   p a s s e s . 
- 
- - - - 
- 
- # # #   P h a s e   5 4 :   D r i z z l e   O R M   M i g r a t i o n   -   B a t c h   3 
- 
- * * G o a l * * :   R e f a c t o r   \ z u l i p . t s \ ,   \ z u l i p W e b h o o k . t s \ ,   \ u s e r s . t s \ ,   \ s e a s o n s . t s \ ,   \ s e t t i n g s . t s \ ,   a n d   a n y   r e m a i n i n g   r o u t e s   t o   D r i z z l e   O R M . 
- * * D e p e n d s   o n * * :   P h a s e   5 3 
- * * R e q u i r e m e n t s * * :   M I G R A T E - 0 2 ,   M I G R A T E - 0 3 
- * * S u c c e s s   C r i t e r i a * * : 
- 1 .   Z e r o   \ . e x e c u t e ( ) \   o r   \ . e x e c u t e T a k e F i r s t ( ) \   c a l l s   r e m a i n i n g   i n   \  u n c t i o n s / a p i / r o u t e s \ . 
- 2 .   \ 	 s c   - - n o E m i t \   p a s s e s . 
- 
- - - - 
- 
- # # #   P h a s e   5 5 :   D r i z z l e   T e s t   M i g r a t i o n   &   C o n t e x t   T y p e   S a f e t y 
- 
- * * G o a l * * :   U p d a t e   u n i t   t e s t s   t o   m o c k   D r i z z l e   O R M   a n d   e l i m i n a t e   t h e   \ c . g e t ( \ d b \ )   a s   a n y \   b y p a s s   i n   t h e   H o n o   c o n t e x t . 
- * * D e p e n d s   o n * * :   P h a s e   5 4 
- * * R e q u i r e m e n t s * * :   M I G R A T E - 0 4 ,   M I G R A T E - 0 5 ,   M I G R A T E - 0 6 
- * * S u c c e s s   C r i t e r i a * * : 
- 1 .   A l l   \ * . t e s t . t s \   f i l e s   u s e   D r i z z l e   m o c k   c h a i n s   ( \  u n \ ,   \  l l \ ,   \ g e t \ ) . 
- 2 .   G l o b a l   \ A p p E n v \   e n f o r c e s   \ D r i z z l e D 1 D a t a b a s e \   t y p e   o n   t h e   \ d b \   v a r i a b l e . 
- 3 .   \ c . g e t ( \ d b \ )   a s   a n y \   i s   f u l l y   e l i m i n a t e d . 
- 4 .   \ 
- p m   r u n   t e s t \   a n d   \ 	 s c   - - n o E m i t \   p a s s   f l a w l e s s l y . 
-  
- 
+1. All `*.test.ts` files use Drizzle mock chains (`run`, `all`, `get`).
+2. Global `AppEnv` enforces `DrizzleD1Database` type on the `db` variable.
+3. `c.get("db") as any` is fully eliminated.
+4. `npm run test` and `tsc --noEmit` pass flawlessly.
