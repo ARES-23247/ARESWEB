@@ -27,6 +27,7 @@ const TechStack = React.lazy(() => import("./pages/TechStack"));
 const Accessibility = React.lazy(() => import("./pages/Accessibility"));
 const Privacy = React.lazy(() => import("./pages/Privacy"));
 const Docs = React.lazy(() => import("./pages/Docs"));
+const DeveloperApi = React.lazy(() => import("./pages/DeveloperApi"));
 const Login = React.lazy(() => import("./pages/Login"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
 const BugReport = React.lazy(() => import("./pages/BugReport"));
@@ -93,6 +94,7 @@ export default function App() {
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/docs" element={<Docs />} />
                 <Route path="/docs/:slug" element={<Docs />} />
+                <Route path="/developers/api" element={<DeveloperApi />} />
                 <Route path="/bug-report" element={<BugReport />} />
                 <Route path="/sponsors" element={<Sponsors />} />
                 <Route path="/sponsors/roi/:tokenId" element={<SponsorROI />} />

@@ -7,8 +7,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, rateLimitMiddleware } from "../middleware";
 import { getRankingsRoute, getMatchesRoute, getFtcEventsRoute } from "../../../shared/routes/tba";
 import type { HonoContext } from "@shared/types/api";
-
-
+import { cache } from "hono/cache";
 
 export const tbaRouter = new OpenAPIHono<AppEnv>();
 
@@ -17,21 +16,13 @@ export const tbaRouter = new OpenAPIHono<AppEnv>();
 tbaRouter.use("*", ensureAuth);
 tbaRouter.use("*", rateLimitMiddleware(30, 60));
 
-const tbaCache = new Map<string, { data: unknown; expiresAt: number }>();
-
-function setTbaCache(key: string, value: { data: unknown; expiresAt: number }) {
-  if (tbaCache.size >= 100) {
-    const firstKey = tbaCache.keys().next().value;
-    if (firstKey !== undefined) tbaCache.delete(firstKey);
-  }
-  tbaCache.set(key, value);
-}
+// Apply Cloudflare Edge Caching (stale-while-revalidate)
+tbaRouter.use("*", cache({
+  cacheName: 'aresweb-tba-cache',
+  cacheControl: 'max-age=300, stale-while-revalidate=86400'
+}));
 
 async function getTBA(path: string, c: HonoContext) {
-  const now = Date.now();
-  const cached = tbaCache.get(path);
-  if (cached && cached.expiresAt > now) return cached.data;
-
   const db = c.get("db") as Kysely<DB>;
   const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "TBA_API_KEY").executeTakeFirst();
   const apiKey = settingsRow?.value;
@@ -40,17 +31,10 @@ async function getTBA(path: string, c: HonoContext) {
   const r = await fetch(`https://www.thebluealliance.com/api/v3${path}`, { headers: { "X-TBA-Auth-Key": apiKey } }).catch(() => null);
   
   if (!r || !r.ok) {
-    // ECO-TBA-01: Graceful fallback to expired cache if external API is down or rate-limited
-    if (cached) {
-      console.warn(`[TBA Fallback] External API error ${r?.status || 'network'}. Serving expired cache for ${path}`);
-      return cached.data;
-    }
-    throw new Error(`TBA API Error: ${r?.status || 'Network failure'} and no cache available`);
+    throw new Error(`TBA API Error: ${r?.status || 'Network failure'}`);
   }
 
-  const data = await r.json();
-  setTbaCache(path, { data, expiresAt: now + 300000 });
-  return data;
+  return await r.json();
 }
 
 tbaRouter.openapi(getRankingsRoute, typedHandler<typeof getRankingsRoute>(async (c) => {
@@ -86,11 +70,6 @@ tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(asyn
   try {
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;
-    
-    const now = Date.now();
-    const cacheKey = `ftc_${path}`;
-    const cached = tbaCache.get(cacheKey);
-    if (cached && cached.expiresAt > now) return c.json(cached.data, 200);
 
     const db = c.get("db") as Kysely<DB>;
     const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "FTC_EVENTS_API_KEY").executeTakeFirst();
@@ -107,7 +86,6 @@ tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(asyn
     if (!r.ok) throw new Error(`FTC API Error: ${r.status}`);
     
     const data = await r.json();
-    setTbaCache(cacheKey, { data, expiresAt: now + 300000 });
     return c.json(data, 200);
   } catch (_e) {
     return c.json({ error: "Failed to fetch official event data" }, 500);
@@ -115,5 +93,3 @@ tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(asyn
 }));
 
 export default tbaRouter;
-
-

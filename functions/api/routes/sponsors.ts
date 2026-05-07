@@ -4,6 +4,7 @@ import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
+import { edgeCacheMiddleware } from "../middleware/cache";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import {
   getSponsorsRoute,
@@ -35,6 +36,7 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 // WR-01 FIX: Standardize on /admin/* pattern (remove redundant /admin patterns)
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
+sponsorsRouter.use("/", edgeCacheMiddleware(300, 60));
 // Get all public sponsors
 sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
   try {

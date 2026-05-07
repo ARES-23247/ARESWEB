@@ -28,6 +28,7 @@ import commentsRouter from "./routes/comments";
 import inquiriesRouter from "./routes/inquiries/index";
 import { badgesRouter } from "./routes/badges";
 import locationsRouter from "./routes/locations";
+import renderRouter from "./routes/render";
 import sitemapRouter from "./routes/sitemap";
 import githubRouter from "./routes/github";
 import githubWebhookRouter from "./routes/githubWebhook";
@@ -50,6 +51,7 @@ import { sentry } from "@hono/sentry";
 import { secureHeaders } from "hono/secure-headers";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
+import { prometheus } from "@hono/prometheus";
 
 const app = new Hono<AppEnv>();
 
@@ -83,6 +85,11 @@ apiRouter.use("*", async (c, next) => {
   await next();
   c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
 });
+
+// Prometheus Metrics Endpoint
+const { printMetrics, registerMetrics } = prometheus();
+apiRouter.use('*', registerMetrics);
+apiRouter.get('/metrics', printMetrics);
 
 // Mount OpenAPI documentation
 apiRouter.doc('/openapi.json', {
@@ -177,6 +184,7 @@ apiRouter.route("/entities", entitiesRouter);
 apiRouter.route("/posts", postsRouter);
 apiRouter.route("/docs", docsRouter);
 apiRouter.route("/events", eventsRouter);
+apiRouter.route("/render", renderRouter);
 apiRouter.route("/comments", commentsRouter);
 apiRouter.route("/inquiries", inquiriesRouter);
 apiRouter.route("/locations", locationsRouter);
