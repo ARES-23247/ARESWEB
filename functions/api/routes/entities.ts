@@ -1,9 +1,9 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, and, desc, asc, sql, inArray, or } from "drizzle-orm";
+import { eq, and, inArray, or } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { AppEnv, ensureAuth, logAuditAction } from "../middleware";
+import { AppEnv, ensureAuth, logAuditAction, getDb } from "../middleware";
 import { getEntityLinksRoute, saveEntityLinkRoute, deleteEntityLinkRoute } from "../../../shared/routes/entities";
 
 
@@ -14,7 +14,7 @@ entitiesRouter.use("*", ensureAuth);
 
 entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const { type, id } = c.req.valid("query");
 
     const rawLinks = await db.select({
@@ -34,7 +34,7 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
 
     // Collect target IDs by type to resolve titles in bulk (Eliminate N+1)
     const targetMap = new Map<string, Set<string>>();
-    const links = rawLinks.map((link: any) => {
+    const links = rawLinks.map((link) => {
       const isSource = link.source_type === type && link.source_id === id;
       const targetType = isSource ? link.target_type : link.source_type;
       const targetId = isSource ? link.target_id : link.source_id;
@@ -68,7 +68,7 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
       }
     }
 
-    const enrichedLinks = links.map((link: any) => ({
+    const enrichedLinks = links.map((link) => ({
       id: link.id!,
       target_type: link.resolvedTargetType,
       target_id: link.resolvedTargetId,
@@ -85,7 +85,7 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
 
 entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const body = c.req.valid("json");
     const id = crypto.randomUUID();
 
@@ -110,7 +110,7 @@ entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRo
 
 entitiesRouter.openapi(deleteEntityLinkRoute, typedHandler<typeof deleteEntityLinkRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const { id } = c.req.valid("param");
     await db.delete(schema.entityLinks).where(eq(schema.entityLinks.id, id)).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_link", "entity_links", id));
