@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
+import { TestEnv, MockDrizzle } from "../../../src/test/types";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -19,19 +19,14 @@ vi.mock("../../utils/crypto", () => ({
 import logisticsRouter from "./logistics";
 
 describe("Hono Backend - /logistics Router", () => {
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = {
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-    } as unknown as DrizzleMock;
+    mockDb = createMockDrizzle();
 
     env = {
       ENCRYPTION_SECRET: "test-secret"
@@ -39,14 +34,14 @@ describe("Hono Backend - /logistics Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", createDrizzleProxy(mockDb));
+      c.set("db", mockDb as MockDrizzle);
       await next();
     });
     testApp.route("/", logisticsRouter);
   });
 
   it("GET /admin/summary - fetches logistics summary", async () => {
-    mockDb.execute.mockResolvedValueOnce([
+    mockDb.all.mockResolvedValueOnce([
       { dietary_restrictions: "Vegan, Nut Allergy", tshirt_size: "L", member_type: "student", name: "Alice" },
       { dietary_restrictions: "Vegan", tshirt_size: "M", member_type: "mentor", name: "Bob" },
       { dietary_restrictions: null, tshirt_size: "L", member_type: "student", name: "Charlie" }
@@ -67,10 +62,10 @@ describe("Hono Backend - /logistics Router", () => {
   });
 
   it("GET /admin/export-emails - exports emails correctly", async () => {
-    mockDb.execute.mockResolvedValueOnce([
-      { name: "Alice", email: "alice@test.com", role: "student" },
-      { name: "Bob", email: "iv:bob@test.com", role: "mentor" },
-      { name: "Charlie", email: "invalid-email", role: "admin" } // Should be skipped
+    mockDb.all.mockResolvedValueOnce([
+      { name: "Alice", email: "alice@test.com", role: "student", emergency_contact_name: null, emergency_contact_phone: null },
+      { name: "Bob", email: "iv:bob@test.com", role: "mentor", emergency_contact_name: null, emergency_contact_phone: null },
+      { name: "Charlie", email: "invalid-email", role: "admin", emergency_contact_name: null, emergency_contact_phone: null } // Should be skipped
     ]);
 
     const res = await testApp.request("/admin/export-emails", {}, env, mockExecutionContext);
