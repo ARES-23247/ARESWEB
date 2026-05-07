@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import { mockExecutionContext, createMockDrizzle, createDrizzleProxy } from "../../../src/test/utils";
 import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 import sponsorsRouter from "./sponsors";
 
@@ -39,7 +39,7 @@ describe("Hono Backend - /sponsors Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb as MockDrizzle);
+      c.set("db", createDrizzleProxy(mockDb) as MockDrizzle);
       await next();
     });
     testApp.onError((err: unknown, c) => {

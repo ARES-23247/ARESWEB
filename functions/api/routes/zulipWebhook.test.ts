@@ -295,7 +295,7 @@ describe("Zulip Webhook Router", () => {
   });
 
   it("should handle !task create with valid sender email", async () => {
-    mockDb.get.mockResolvedValueOnce({ id: "user123" });
+    mockDb.get.mockResolvedValueOnce({ id: "user123", role: "author" });
     const payload = createZulipPayload({ message: { sender_email: "a@a.com", sender_full_name: "Test User", content: '@**ARES Bot** !task new task' } });
     const res = await testApp.request(new Request("http://localhost/", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }), {}, env, mockExecutionContext);
     const json = await res.json() as Record<string, string>;

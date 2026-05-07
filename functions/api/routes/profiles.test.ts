@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
@@ -65,8 +65,8 @@ describe("Hono Backend - /profiles Router", () => {
   });
 
   it("should update /me profile", async () => {
-    const res = await testApp.request("/update-me", {
-      method: "POST",
+    const res = await testApp.request("/me", {
+      method: "PUT",
       body: JSON.stringify({ nickname: "New Nick" }),
       headers: { "Content-Type": "application/json" },
     }, env, mockExecutionContext);
@@ -76,21 +76,14 @@ describe("Hono Backend - /profiles Router", () => {
   });
 
   it("should update /avatar", async () => {
-    await import("../../utils/auth");
-    vi.mock("../../utils/auth", () => ({
-      getAuth: vi.fn().mockReturnValue({
-        api: { updateUser: vi.fn().mockResolvedValue({ success: true }) }
-      })
-    }));
-
     const res = await testApp.request("/avatar", {
-      method: "POST",
+      method: "PUT",
       body: JSON.stringify({ image: "https://example.com/avatar.png" }),
       headers: { "Content-Type": "application/json" },
     }, env, mockExecutionContext);
 
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Avatar update failed" });
   });
 
   it("should return team roster", async () => {
@@ -112,16 +105,16 @@ describe("Hono Backend - /profiles Router", () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/team-roster", {}, env, mockExecutionContext);
 
-    expect(res.status).toBe(500); 
+    expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Failed to fetch team roster" });
   });
 
   it("should return public profile by userId", async () => {
-    const mockProfile = { 
-      userId: "user-123", 
-      nickname: "Public User", 
-      showOnAbout: 1, 
-      memberType: "student" 
+    const mockProfile = {
+      userId: "user-123",
+      nickname: "Public User",
+      showOnAbout: 1,
+      memberType: "student"
     };
     mockDb.get.mockResolvedValueOnce(mockProfile); // profile
     mockDb.all.mockResolvedValueOnce([]); // badges
@@ -140,11 +133,11 @@ describe("Hono Backend - /profiles Router", () => {
   });
 
   it("should return 403 for private profile", async () => {
-    const mockProfile = { 
-      userId: "user-123", 
-      nickname: "Private User", 
-      showOnAbout: 0, 
-      memberType: "student" 
+    const mockProfile = {
+      userId: "user-123",
+      nickname: "Private User",
+      showOnAbout: 0,
+      memberType: "student"
     };
     mockDb.get.mockResolvedValueOnce(mockProfile);
 

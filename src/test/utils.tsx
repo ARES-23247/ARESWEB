@@ -130,16 +130,20 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
   if ((dbMock as DrizzleProxy).__isDrizzleProxy) return dbMock as DrizzleProxy;
 
   let isMutation = false;
+  // Track which terminal method was called (get, all, or run) to use correct execution
+  let terminalMethod: 'get' | 'all' | 'run' | null = null;
 
   const drizzleMethods: Partial<Record<string, ReturnType<typeof vi.fn>>> = {
     select: vi.fn().mockImplementation((...args: unknown[]) => {
       isMutation = false;
+      terminalMethod = null;
       if ((dbMock as DrizzleMock).selectFrom) (dbMock as DrizzleMock).selectFrom!(...args);
       else if ((dbMock as DrizzleMock).select) (dbMock as DrizzleMock).select!(...args);
       return proxy;
     }),
     from: vi.fn().mockImplementation((..._args: unknown[]) => proxy),
-    all: vi.fn().mockImplementation(async (...args: unknown[]) => {
+    all: vi.fn().mockImplementation((...args: unknown[]) => {
+      terminalMethod = 'all';
       if ('all' in dbMock && typeof dbMock.all === 'function') {
         const result = (dbMock.all as (...a: unknown[]) => unknown)(...args);
         if (result && typeof (result as Promise<unknown>).then === 'function') {
@@ -151,7 +155,8 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       }
       return Promise.resolve([]);
     }),
-    get: vi.fn().mockImplementation(async (...args: unknown[]) => {
+    get: vi.fn().mockImplementation((...args: unknown[]) => {
+      terminalMethod = 'get';
       if ('get' in dbMock && typeof dbMock.get === 'function') {
         const result = (dbMock.get as (...a: unknown[]) => unknown)(...args);
         if (result && typeof (result as Promise<unknown>).then === 'function') {
@@ -163,7 +168,8 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       }
       return Promise.resolve(null);
     }),
-    run: vi.fn().mockImplementation(async (...args: unknown[]) => {
+    run: vi.fn().mockImplementation((...args: unknown[]) => {
+      terminalMethod = 'run';
       if ('run' in dbMock && typeof dbMock.run === 'function') {
         const result = (dbMock.run as (...a: unknown[]) => unknown)(...args);
         if (result && typeof (result as Promise<unknown>).then === 'function') {
@@ -177,16 +183,19 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
     }),
     insert: vi.fn().mockImplementation((...args: unknown[]) => {
       isMutation = true;
+      terminalMethod = null;
       if ((dbMock as DrizzleMock).insertInto) (dbMock as DrizzleMock).insertInto!(...args);
       return proxy;
     }),
     update: vi.fn().mockImplementation((...args: unknown[]) => {
       isMutation = true;
+      terminalMethod = null;
       if ((dbMock as DrizzleMock).updateTable) (dbMock as DrizzleMock).updateTable!(...args);
       return proxy;
     }),
     delete: vi.fn().mockImplementation((...args: unknown[]) => {
       isMutation = true;
+      terminalMethod = null;
       if ((dbMock as DrizzleMock).deleteFrom) (dbMock as DrizzleMock).deleteFrom!(...args);
       return proxy;
     }),
@@ -217,7 +226,10 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       if ((dbMock as DrizzleMock).offset) (dbMock as DrizzleMock).offset!(...args);
       return proxy;
     }),
-    returning: vi.fn().mockImplementation((..._args: unknown[]) => proxy),
+    returning: vi.fn().mockImplementation((..._args: unknown[]) => {
+      terminalMethod = 'run';
+      return proxy;
+    }),
     execute: vi.fn().mockImplementation(async (...args: unknown[]) => {
       if ((dbMock as DrizzleProxyTarget).execute) {
         return (dbMock as DrizzleProxyTarget).execute!(...args);
@@ -250,7 +262,32 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       }
       if (prop === 'then') {
         return function(resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) {
-          if (isMutation) {
+          // If a terminal method was explicitly called, use its result
+          if (terminalMethod === 'get') {
+            if ('get' in target && typeof target.get === 'function') {
+              const result = (target.get as () => unknown)();
+              if (result && typeof (result as Promise<unknown>).then === 'function') {
+                return (result as Promise<unknown>).then(resolve, reject);
+              }
+            }
+            if ((target as DrizzleProxyTarget).executeTakeFirst) {
+              return (target as DrizzleProxyTarget).executeTakeFirst!().then(resolve, reject);
+            }
+            return Promise.resolve(null).then(resolve, reject);
+          }
+          if (terminalMethod === 'all') {
+            if ('all' in target && typeof target.all === 'function') {
+              const result = (target.all as () => unknown)();
+              if (result && typeof (result as Promise<unknown>).then === 'function') {
+                return (result as Promise<unknown>).then(resolve, reject);
+              }
+            }
+            if ((target as DrizzleProxyTarget).execute) {
+              return (target as DrizzleProxyTarget).execute!().then(resolve, reject);
+            }
+            return Promise.resolve([]).then(resolve, reject);
+          }
+          if (terminalMethod === 'run' || isMutation) {
             if ('run' in target && typeof target.run === 'function') {
               const result = (target.run as () => unknown)();
               if (result && typeof (result as Promise<unknown>).then === 'function') {
@@ -264,6 +301,7 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
             }
             return Promise.resolve({ success: true, meta: { changes: 1 } }).then(resolve, reject);
           }
+          // Default to 'all' for select queries
           if ('all' in target && typeof target.all === 'function') {
             const result = (target.all as () => unknown)();
             if (result && typeof (result as Promise<unknown>).then === 'function') {
