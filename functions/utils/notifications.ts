@@ -1,6 +1,8 @@
 import { Context } from "hono";
 import { AppEnv } from "../api/middleware/utils";
 import { sendZulipAlert } from "./zulipSync";
+import { eq, and, or, exists, inArray } from "drizzle-orm";
+import * as schema from "../../src/db/schema";
 
 
 /**
@@ -28,17 +30,17 @@ export async function emitNotification(
   try {
     // 1. Database Persistence
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Date.now()}`;
-    
-    await db.insertInto("notifications")
+
+    await db.insert(schema.notifications)
       .values({
         id,
-        user_id: userId,
+        userId,
         title,
         message,
         link: link || "",
         priority
       })
-      .execute();
+      .run();
 
     // 2. External Broadcasting (Optional)
     if (external) {
@@ -77,32 +79,34 @@ export async function notifyByRole(
     const includeAdmin = audiences.includes("admin");
     const profileTypes = audiences.filter((a: any) => a !== "admin");
 
-    let query = db.selectFrom("user as u")
-      .select("u.id");
+    let query = db.select({
+      id: schema.user.id
+    })
+      .from(schema.user);
 
     if (includeAdmin && profileTypes.length > 0) {
-      query = query.where((eb: any) => eb.or([
-        eb("u.role", "=", "admin"),
-        eb.and([
-          eb("u.role", "!=", "unverified"),
-          eb.exists(
-            db.selectFrom("user_profiles as p")
-              .select("p.user_id")
-              .whereRef("p.user_id", "=", eb.ref("u.id"))
-              .where("p.member_type", "in", profileTypes)
+      query = query.where(or(
+        eq(schema.user.role, "admin"),
+        and(
+          eq(schema.user.role, "unverified").$not(),
+          exists(
+            db.select({ userId: schema.userProfiles.userId })
+              .from(schema.userProfiles)
+              .where(eq(schema.userProfiles.userId, schema.user.id))
+              .where(inArray(schema.userProfiles.memberType, profileTypes))
           )
-        ])
-      ]));
+        )
+      ));
     } else if (includeAdmin) {
-      query = query.where("u.role", "=", "admin");
+      query = query.where(eq(schema.user.role, "admin"));
     } else {
       query = query
-        .innerJoin("user_profiles as p", "u.id", "p.user_id")
-        .where("u.role", "!=", "unverified")
-        .where("p.member_type", "in", profileTypes);
+        .innerJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+        .where(eq(schema.user.role, "unverified").$not())
+        .where(inArray(schema.userProfiles.memberType, profileTypes));
     }
 
-    const results = await query.execute();
+    const results = await query.all();
 
     if (!results || results.length === 0) return;
 
@@ -115,7 +119,7 @@ export async function notifyByRole(
         .filter((row: any) => row.id !== null)
         .map((row: any) => ({
           id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
-          user_id: row.id as string,
+          userId: row.id as string,
           title: payload.title,
           message: payload.message,
           link: payload.link || "",
@@ -123,7 +127,7 @@ export async function notifyByRole(
         }));
 
       try {
-        await db.insertInto("notifications").values(values).execute();
+        await db.insert(schema.notifications).values(values).run();
       } catch (chunkErr) {
         console.error(`[Notification] Batch chunk starting at index ${i} failed:`, chunkErr);
       }
