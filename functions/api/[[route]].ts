@@ -49,6 +49,7 @@ import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
 import { logger } from "hono/logger";
 import { sentry } from "@hono/sentry";
 import { secureHeaders } from "hono/secure-headers";
+import { etag } from "hono/etag";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
 
@@ -56,6 +57,7 @@ const app = new Hono<AppEnv>();
 
 app.use("*", logger());
 app.use("*", secureHeaders());
+app.use("*", etag());
 app.use("*", async (c, next) => {
   if (c.env.SENTRY_DSN) {
     return sentry({ dsn: c.env.SENTRY_DSN })(c, next);
