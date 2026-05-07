@@ -740,3 +740,13 @@ CREATE TABLE IF NOT EXISTS document_snapshots (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_document_snapshots_updated ON document_snapshots(updated_at);
+
+-- ── Performance Metrics ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS performance_metrics (
+    id TEXT PRIMARY KEY,
+    metric_name TEXT NOT NULL,
+    value REAL NOT NULL,
+    rating TEXT NOT NULL,
+    page TEXT NOT NULL,
+    timestamp TEXT NOT NULL
+);

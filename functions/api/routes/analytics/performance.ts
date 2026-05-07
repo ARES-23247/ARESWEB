@@ -49,7 +49,7 @@ perfRouter.openapi(createRoute({
   responses: {
     200: { 
       description: 'Summary of metrics', 
-      content: { 'application/json': { schema: z.object({ lcp: z.number().optional(), fid: z.number().optional(), cls: z.number().optional(), fcp: z.number().optional() }) } }
+      content: { 'application/json': { schema: z.object({ lcp: z.number().optional(), inp: z.number().optional(), cls: z.number().optional(), fcp: z.number().optional() }) } }
     }
   }
 }), async (c) => {
