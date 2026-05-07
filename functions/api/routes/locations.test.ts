@@ -26,11 +26,16 @@ describe("Hono Backend - /locations Router", () => {
       selectFrom: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
+      all: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(null),
+      run: vi.fn().mockResolvedValue({ success: true }),
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       onConflict: vi.fn((cb: any) => {
         if (typeof cb === "function") {
@@ -38,10 +43,13 @@ describe("Hono Backend - /locations Router", () => {
         }
         return mockDb;
       }),
+      onConflictDoUpdate: vi.fn().mockReturnThis(),
       doUpdateSet: vi.fn().mockReturnThis(),
       updateTable: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       deleteFrom: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
@@ -58,7 +66,7 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("GET / - list locations", async () => {
-    mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "Shop", address: "123 Main St", is_deleted: 0 }]);
+    mockDb.all.mockResolvedValueOnce([{ id: "1", name: "Shop", address: "123 Main St", is_deleted: 0 }]);
     const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { locations: { id: string; name: string }[] };
@@ -66,19 +74,19 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("GET / - handles db error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("GET /admin/list - list all locations", async () => {
-    mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "Shop", address: "123", is_deleted: 1 }]);
+    mockDb.all.mockResolvedValueOnce([{ id: "1", name: "Shop", address: "123", is_deleted: 1 }]);
     const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("GET /admin/list - handles db error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -102,7 +110,7 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("POST /admin/save - handles db error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ name: "Shop", address: "123 Main St" }),
@@ -121,7 +129,7 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("GET /admin/list - missing optional fields in db", async () => {
-    mockDb.execute.mockResolvedValueOnce([{ name: "Shop", address: "123" }]); // missing id, is_deleted
+    mockDb.all.mockResolvedValueOnce([{ name: "Shop", address: "123" }]); // missing id, is_deleted
     const res = await testApp.request("/admin/list", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });
@@ -145,7 +153,7 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("DELETE /admin/:id - handles db error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/123", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },

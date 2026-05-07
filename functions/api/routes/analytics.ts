@@ -335,9 +335,9 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
       db.execute(sql`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
     ]);
 
-    const postsRows = postsReq.results || postsReq.rows || postsReq;
-    const eventsRows = eventsReq.results || eventsReq.rows || eventsReq;
-    const docsRows = docsReq.results || docsReq.rows || docsReq;
+    const postsRows = postsReq.results || postsReq.rows || (Array.isArray(postsReq) ? postsReq : []);
+    const eventsRows = eventsReq.results || eventsReq.rows || (Array.isArray(eventsReq) ? eventsReq : []);
+    const docsRows = docsReq.results || docsReq.rows || (Array.isArray(docsReq) ? docsReq : []);
 
     const results = [
       ...(postsRows || []).map((r: any) => ({ type: "blog" as const, id: r.id, title: r.title })),
