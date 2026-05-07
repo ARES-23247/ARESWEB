@@ -133,7 +133,7 @@ export async function fetchProjectBoard(config: GitHubProjectsConfig): Promise<P
   const data = ProjectBoardSchema.parse(rawData);
   const project = data.node;
 
-  const items: ProjectItem[] = project.items.nodes.map((item: any) => {
+  const items: ProjectItem[] = project.items.nodes.map((item: z.infer<typeof ProjectItemNodeSchema>) => {
     let status: string | undefined;
     const assignees: string[] = [];
 
@@ -142,7 +142,7 @@ export async function fetchProjectBoard(config: GitHubProjectsConfig): Promise<P
         status = fv.name;
       }
       if (fv.users?.nodes) {
-        assignees.push(...fv.users.nodes.map((u: any) => u.login));
+        assignees.push(...fv.users.nodes.map((u: { login: string }) => u.login));
       }
     }
 
@@ -210,7 +210,7 @@ export async function fetchProjectFields(config: GitHubProjectsConfig): Promise<
   }
 
   const data = await gql<FieldsData>(config, query, { projectId: config.projectId });
-  return data.node.fields.nodes.map((f: any) => ({
+  return data.node.fields.nodes.map((f: FieldNode) => ({
     id: f.id,
     name: f.name,
     dataType: f.dataType,
@@ -332,7 +332,7 @@ export async function queryProjectItem(
   const assignees: string[] = [];
   for (const fv of item.fieldValues.nodes) {
     if (fv.field?.name === "Status" && fv.name) status = fv.name;
-    if (fv.users?.nodes) assignees.push(...fv.users.nodes.map((u: any) => u.login));
+    if (fv.users?.nodes) assignees.push(...fv.users.nodes.map((u: { login: string }) => u.login));
   }
 
   return {
