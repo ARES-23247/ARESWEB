@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv } from "../../../src/test/types";
+import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import { mockExecutionContext, flushWaitUntil, createMockDrizzle } from "../../../src/test/utils";
 import tasksRouter from "./tasks";
 
@@ -28,32 +28,6 @@ import { sendZulipMessage } from "../../utils/zulipSync";
 describe("Hono Backend - /tasks Router", () => {
   let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
-
-  function createMockDb() {
-    return {
-      selectFrom: vi.fn().mockReturnThis(),
-      leftJoin: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation((args: any) => {
-        if (Array.isArray(args)) {
-          args.forEach((arg: any) => typeof arg === "function" && arg(mockDb));
-        }
-        return mockDb;
-      }),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      offset: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      whereRef: vi.fn().mockReturnThis(),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      as: vi.fn().mockReturnThis(),
-    };
-  }
 
   beforeEach(() => {
     vi.clearAllMocks(); vi.mocked(getSessionUser).mockReset();
