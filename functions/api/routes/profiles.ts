@@ -1,5 +1,5 @@
 import { typedHandler } from "../utils/handler";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -10,6 +10,7 @@ import {
   persistentRateLimitMiddleware,
   rateLimitMiddleware,
   ensureAuth,
+  getDb,
 } from "../middleware";
 import { getAuth } from "../../utils/auth";
 import { edgeCacheMiddleware } from "../middleware/cache";
@@ -43,7 +44,7 @@ profilesRouter.use("/avatar", persistentRateLimitMiddleware(15, 60));
 // Input validation schema for profile updates
 const updateUserProfileSchema = z
   .record(z.string(), z.union([z.string(), z.boolean(), z.array(z.string()), z.null()]).optional())
-  .refine((data: any) => {
+  .refine((data) => {
       const MAX_BIO_LENGTH = 2000;
       const MAX_NAME_LENGTH = 100;
       const MAX_GENERAL_LENGTH = 500;
@@ -70,7 +71,7 @@ profilesRouter.use("/avatar", ensureAuth);
 
 profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => {
   const user = (await getSessionUser(c))!;
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   try {
     const profileRow = await db
@@ -182,7 +183,7 @@ profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (
     const validationResult = updateUserProfileSchema.safeParse(body);
     if (!validationResult.success) {
       return c.json(
-        { error: "Invalid profile data: " + validationResult.error.issues.map((i: any) => i.message).join(", ") },
+        { error: "Invalid profile data: " + validationResult.error.issues.map((i) => i.message).join(", ") },
         400
       );
     }
@@ -210,7 +211,7 @@ profilesRouter.openapi(updateAvatarRoute, typedHandler<typeof updateAvatarRoute>
 // ─── Public Routes ────────────────────────────────────────────────────────
 
 profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const results = await db
       .select({
@@ -253,7 +254,7 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
 
     const members = (
       await Promise.all(
-        (results || []).map(async (r: any) => {
+        (results || []).map(async (r) => {
           const row = r as Record<string, unknown>;
           const memberType = String(row.memberType || "student").toLowerCase();
 
@@ -297,7 +298,7 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
           };
         })
       )
-    ).filter((m: any) => !!m);
+    ).filter((m) => !!m);
 
     if (members.length === 0 && results.length > 0) {
       console.warn("[Roster] Results found but all members were filtered out or failed processing.");
@@ -312,7 +313,7 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
 
 profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfileRoute>(async (c) => {
   const { userId } = c.req.valid("param");
-  const db = c.get("db") as any;
+  const db = getDb(c);
   try {
     const profileRow = await db
       .select({
