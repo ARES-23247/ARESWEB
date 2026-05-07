@@ -101,6 +101,7 @@ describe("Hono Backend - /inquiries Router", () => {
       } as any,
       DEV_BYPASS: "true",
       TURNSTILE_SECRET: "test-secret",
+      ENCRYPTION_SECRET: "test-encryption-secret-key-for-unit-tests",
     };
 
     testApp = new Hono<TestEnv>();
