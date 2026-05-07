@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import { AppEnv, getSessionUser } from "../middleware";
+import { AppEnv, getSessionUser, getDb } from "../middleware";
 import { encrypt } from "../../utils/crypto";
 import { safeJSONStringify } from "../../utils/json";
 import { eq } from "drizzle-orm";
@@ -20,7 +20,7 @@ export async function upsertProfile(
 ) {
   const secret = c.env.ENCRYPTION_SECRET;
   const sessionUser = await getSessionUser(c);
-  const db = c.get("db") as any;
+  const db = getDb(c);
   
   const existing = await db.query.userProfiles.findFirst({
     columns: {
@@ -80,7 +80,7 @@ export async function upsertProfile(
   }
 
   // Values object needs to match database column types which are mixed (string, number, JSON columns)
-  const values: Record<string, any> = {
+  const values: Record<string, string | number> = {
     userId: userId,
     nickname: await getMergedValue("nickname") as string,
     firstName: await getMergedValue("first_name") as string,
