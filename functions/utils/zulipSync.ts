@@ -21,7 +21,7 @@ type ZulipCredentials = {
   ZULIP_API_KEY?: string;
   ZULIP_URL?: string;
   ZULIP_ADMIN_STREAM?: string;
-  DB?: import("kysely").Kysely<import("../../shared/schemas/database").DB> | D1Database;
+  DB?: D1Database;
   [key: string]: unknown;
 };
 type ZulipEnv = Bindings | ZulipCredentials;
@@ -98,7 +98,14 @@ export async function sendZulipMessage(
   } catch (err) {
     console.error("[ZulipSync] Critical failure after retries:", err);
     const db = ('DB' in env) ? env.DB : undefined;
-    if (db) await logSystemError(db, "Zulip", "Critical failure after retries", String(err));
+    if (db) {
+      // Import drizzle dynamically to convert D1Database to DrizzleDB
+      const { drizzle } = await import("drizzle-orm/d1");
+      const schema = await import("../../src/db/schema");
+      const relations = await import("../../src/db/relations");
+      const drizzleDb = drizzle(db, { schema, relations });
+      await logSystemError(drizzleDb, "Zulip", "Critical failure after retries", String(err));
+    }
     return null;
   }
 }
