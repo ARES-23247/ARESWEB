@@ -1,8 +1,6 @@
 import { Context, Next } from "hono";
 import { getAuth } from "../../utils/auth";
 import { AppEnv, UserRole, SessionUser } from "./utils";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
 export function isDevBypassEnabled(c: Context<AppEnv>): boolean {
