@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TestEnv, DrizzleMock } from "../../../src/test/types";
+import { TestEnv, MockDrizzle } from "../../../src/test/types";
 import { Hono } from "hono";
-import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
-// import type { DrizzleProxy } from "../../../src/test/mocks";
+import { mockExecutionContext, createDrizzleProxy, createMockDrizzle } from "../../../src/test/utils";
 import entitiesRouter from "./entities";
 
 
@@ -20,32 +19,12 @@ vi.mock("../middleware", async (importOriginal) => {
 import { logAuditAction } from "../middleware";
 
 describe("Hono Backend - /entities Router", () => {
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation((cb: any) => {
-        if (typeof cb === 'function') {
-          const eb = Object.assign(vi.fn().mockReturnThis(), {
-            or: vi.fn().mockReturnThis(),
-            and: vi.fn().mockReturnThis()
-          });
-          cb(eb);
-        }
-        return mockDb;
-      }),
-      and: vi.fn().mockReturnThis(),
-      or: vi.fn().mockReturnThis(),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-    };
+    mockDb = createMockDrizzle();
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
