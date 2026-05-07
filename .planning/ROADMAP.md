@@ -240,7 +240,19 @@
 
 **Goal**: Convert images to WebP, implement responsive images, and add font-display swap.
 
-**Plans**: See `.planning/milestones/v7.0-phases/02-media-optimization/PLAN.md`
+**Requirements**: IMG-01, IMG-02, IMG-03
+
+**Success Criteria**:
+1. All images in public/ have WebP counterparts (build-generated)
+2. Responsive variants (640w, 1024w, 1920w) exist for hero images
+3. LazyImage supports srcset/sizes props (backward compatible)
+4. Fonts use font-display: swap (no FOIT, text visible immediately)
+5. League Spartan preloaded via <link> tag
+6. Lighthouse "Efficiently encode images" score: 90+
+7. Image payload reduced by 30%+ (compare before/after build output)
+
+**Plans**: 1 plan
+- [ ] 02-01-PLAN.md — WebP conversion pipeline, responsive image variants, extended LazyImage with srcset, font preloading
 
 ---
 

@@ -1,230 +1,251 @@
 ---
-gsd_plan_version: 1.0
 phase: 02
-phase_name: Media Optimization
-milestone: v7.0
-status: planned
-parent_plan: null
+plan: 01
+type: execute
+wave: 1
+depends_on: []
+files_modified: [
+  "scripts/optimize-images.mjs",
+  "src/components/LazyImage.tsx",
+  "package.json"
+]
+autonomous: true
+requirements: ["IMG-01", "IMG-02", "IMG-03"]
+user_setup: []
+
+must_haves:
+  truths:
+    - "All images in public/ have WebP counterparts"
+    - "Responsive image variants exist (640w, 1024w, 1920w)"
+    - "LazyImage supports srcset for responsive loading"
+    - "Fonts use font-display: swap (no FOIT)"
+    - "League Spartan font is preloaded in index.html"
+  artifacts:
+    - path: "scripts/optimize-images.mjs"
+      provides: "Build-time WebP conversion and responsive variant generation"
+      exports: ["optimizeImages"]
+    - path: "src/components/LazyImage.tsx"
+      provides: "Extended with srcset prop for responsive images"
+      contains: "srcset, sizes props"
+    - path: "index.html"
+      provides: "Font preload for League Spartan"
+      contains: "link rel=\"preload\" as=\"font\""
+  key_links:
+    - from: "package.json scripts.prebuild"
+      to: "scripts/optimize-images.mjs"
+      via: "npm run optimize-images"
+      pattern: "prebuild.*optimize-images"
+    - from: "src/components/LazyImage.tsx"
+      to: "public/**/*.webp"
+      via: "picture element with source type=\"image/webp\""
+      pattern: "source.*type=\"image/webp\""
 ---
 
-# Phase 02: Media Optimization
-
-## Goal
-
+<objective>
 Reduce image payload by 30%+ through WebP conversion, responsive images, and improved font loading.
 
-## Context
+Purpose: Media optimization is high ROI for performance — WebP + responsive images reduce payload 30%+, faster font loading eliminates FOIT (Flash of Invisible Text).
+Output: Build pipeline that auto-converts images to WebP, generates responsive variants, extended LazyImage with srcset support, preloaded fonts.
+</objective>
 
-Current state:
-- Images are PNG/JPG format (larger than WebP)
-- No responsive image sources (single size for all screens)
-- Fonts loaded without `font-display: swap`
-- No image optimization in build pipeline
+<execution_context>
+@$HOME/.claude/get-shit-done/workflows/execute-plan.md
+@$HOME/.claude/get-shit-done/templates/summary.md
+</execution_context>
 
-## Requirements
+<context>
+@.planning/PROJECT.md
+@.planning/ROADMAP.md
+@.planning/STATE.md
 
-### IMG-01: WebP Conversion
-- All site images support WebP with PNG/JPG fallback
-- Build pipeline automatically converts to WebP
-- Existing LazyImage component updated to handle WebP
-
-### IMG-02: Responsive Images
-- Hero images have multiple sizes for different viewports
-- Use `srcset` for optimal image selection
-- LazyImage component supports responsive loading
-
-### IMG-03: Font Loading Strategy
-- All fonts use `font-display: swap`
-- Critical fonts preloaded
-- FOIT (Flash of Invisible Text) eliminated
-
-## Tasks
-
-### Plan 02-01: WebP Conversion Pipeline
-
-**Files to create/modify**:
-- `scripts/optimize-images.mjs` (new)
-- `vite.config.ts` - add image optimization plugin
-- `src/components/LazyImage.tsx` - WebP support
-- `package.json` - add sharp or vite-imagetools
-
-**Implementation options**:
-
-**Option A: Build-time conversion (recommended)**
-```bash
-# Add to package.json
-"scripts": {
-  "optimize-images": "node scripts/optimize-images.mjs",
-  "prebuild": "npm run optimize-images"
-}
-```
-
-```javascript
-// scripts/optimize-images.mjs
-import sharp from 'sharp';
-import { glob } from 'glob';
-
-const images = await glob('public/**/*.{png,jpg,jpeg}');
-
-for (const image of images) {
-  await sharp(image)
-    .webp({ quality: 85 })
-    .toFile(image.replace(/\.(png|jpg|jpeg)$/, '.webp'));
-}
-```
-
-**Option B: Runtime conversion with Vite plugin**
-```typescript
-// vite.config.ts
-import { imagetools } from 'vite-imagetools';
-
-plugins: [
-  imagetools({
-    include: ['**/*.{png,jpg,jpeg}'],
-    presets: {
-      default: {
-        formats: ['webp', 'original'],
-        preload: false,
-        enforce: 'pre'
-      }
-    }
-  })
-]
-```
-
-**Update LazyImage component**:
+# Existing contracts from src/components/LazyImage.tsx
 ```typescript
 interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;
   imgClassName?: string;
-  sizes?: string; // For responsive images
 }
+```
 
-// Add picture element for WebP fallback
-<picture>
-  <source srcSet={`${src}.webp`} type="image/webp" />
-  <img src={src} alt={alt} loading="lazy" />
+# Existing patterns
+- ARES brand colors: marble, obsidian, ares-red, ares-gold, ares-bronze
+- Motion animations: duration 0.5-0.8s, easeOut
+- Skeleton: backdrop-blur-xl, animate-pulse
+- Fonts: Inter (body), League Spartan (headings), Orbitron (tutorial)
+</context>
+
+<tasks>
+
+<task type="auto" tdd="true">
+  <name>Task 1: Create build-time image optimization script</name>
+  <files>scripts/optimize-images.mjs, package.json</files>
+  <behavior>
+    - Script finds all PNG/JPG/JPEG files in public/
+    - Generates WebP version at 85% quality alongside original
+    - Generates 3 responsive variants: 640w, 1024w, 1920w (all WebP)
+    - Preserves original images for fallback
+    - Logs conversion summary (files processed, size savings)
+  </behavior>
+  <action>
+Create scripts/optimize-images.mjs:
+
+1. Import sharp and glob (already in package.json as devDependencies)
+2. Glob all {png,jpg,jpeg} files in public/
+3. For each image:
+   - Generate WebP at 85% quality: sharp(image).webp({ quality: 85 })
+   - Generate 3 responsive sizes: 640w, 1024w, 1920w
+   - Name pattern: original-640w.webp, original-1024w.webp, original-1920w.webp
+4. Keep originals untouched (fallback support)
+5. Log: "{count} images converted, saved {total_kb}KB"
+
+Ensure package.json has:
+```json
+"scripts": {
+  "optimize-images": "node scripts/optimize-images.mjs",
+  "prebuild": "npm run optimize-images"
+}
+```
+
+Per CONTEXT.md decision: Build-time conversion (not runtime), 85% quality, convert all images, keep originals.
+  </action>
+  <verify>
+    <automated>node scripts/optimize-images.mjs && ls public/*.webp | grep -c ".webp" | grep -v "^0$"</automated>
+  </verify>
+  <done>Script runs without errors, WebP files generated alongside originals, responsive variants created with -{size}w.webp naming</done>
+</task>
+
+<task type="auto">
+  <name>Task 2: Extend LazyImage with srcset support for responsive images</name>
+  <files>src/components/LazyImage.tsx</files>
+  <action>
+Extend LazyImage component to support responsive images via optional srcset/sizes props:
+
+1. Add optional props to interface:
+```typescript
+interface LazyImageProps {
+  src: string;
+  alt: string;
+  className?: string;
+  imgClassName?: string;
+  srcset?: string;  // NEW: comma-separated srcset values
+  sizes?: string;   // NEW: media query sizes
+}
+```
+
+2. Update picture element to use srcset when provided:
+```typescript
+<picture className={`w-full h-full absolute inset-0 z-10 ${imgClassName}`}>
+  {!isError && (
+    <source
+      srcSet={srcset ?? src.replace(/\.(png|jpg|jpeg)$/i, '.webp')}
+      type="image/webp"
+      sizes={sizes}
+    />
+  )}
+  <motion.img
+    src={isError ? fallbackSrc : src}
+    srcSet={srcset}  // Pass through to img for fallback
+    sizes={sizes}
+    alt={alt}
+    // ... existing props unchanged
+  />
 </picture>
 ```
 
----
+3. Maintain existing behavior (fade-in, blur, skeleton, fallback)
+4. Backward compatible: srcset/sizes optional, existing usage unchanged
 
-### Plan 02-02: Responsive Images Implementation
+Per CONTEXT.md decision: Extend LazyImage (not new component), mobile-first breakpoints 640w/1024w/1920w, keep existing animations.
+  </action>
+  <verify>
+    <automated>grep -n "srcset\|sizes" src/components/LazyImage.tsx | grep -v "^#" | wc -l | grep -v "^0$"</automated>
+  </verify>
+  <done>LazyImage accepts optional srcset/sizes props, picture element uses srcset, existing fade-in/skeleton preserved</done>
+</task>
 
-**Target images**:
-- `public/ares_hero.png` - Hero image (needs: 192w, 512w, 1024w, 1920w)
-- Blog post thumbnails
-- Gallery images
-- Event banners
+<task type="auto">
+  <name>Task 3: Add font-display: swap and preload League Spartan font</name>
+  <files>src/index.css, index.html</files>
+  <action>
+Update font loading strategy per CONTEXT.md decisions:
 
-**Implementation**:
-```typescript
-// src/components/ResponsiveImage.tsx (new)
-interface ResponsiveImageProps {
-  src: string;
-  alt: string;
-  sizes?: {
-    mobile: string;
-    tablet: string;
-    desktop: string;
-  };
-}
-
-// Generate srcset from image variants
-const srcset = [
-  `${src}-320w.webp 320w`,
-  `${src}-640w.webp 640w`,
-  `${src}-1024w.webp 1024w`,
-  `${src}-1920w.webp 1920w`,
-].join(', ');
-```
-
-**Script to generate variants**:
-```javascript
-// scripts/generate-image-variants.mjs
-const sizes = [320, 640, 1024, 1920];
-
-for (const image of images) {
-  for (const size of sizes) {
-    await sharp(image)
-      .resize(size)
-      .webp({ quality: 85 })
-      .toFile(`${image}-${size}w.webp`);
-  }
-}
-```
-
----
-
-### Plan 02-03: Font Loading Strategy
-
-**Files to modify**:
-- `src/index.css` or global styles
-- `index.html` - add preload links
-- Font files (if self-hosted)
-
-**Implementation**:
-
-**1. Add font-display: swap**
+1. src/index.css - Add font-display: swap to @font-face:
 ```css
-/* src/index.css */
-@font-face {
-  font-family: 'League Spartan';
-  src: url('/fonts/league-spartan.woff2') format('woff2');
-  font-weight: 400 700;
-  font-display: swap; /* Add this */
-}
-
 @font-face {
   font-family: 'Inter';
-  src: url('/fonts/inter.woff2') format('woff2');
-  font-weight: 400 600;
-  font-display: swap; /* Add this */
+  src: local('Inter'), local('Inter-Regular');
+  font-display: swap;  /* ADD THIS */
+  /* rest unchanged */
+}
+
+@font-face {
+  font-family: 'League Spartan';
+  src: local('League Spartan'), local('LeagueSpartan-Regular');
+  font-display: swap;  /* ADD THIS */
+  font-weight: 100..900;
+  /* rest unchanged */
 }
 ```
+Note: Fonts are loaded via Google Fonts CSS, so font-display is controlled by their CSS. The Google Fonts URL already includes display=swap parameter:
+https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=League+Spartan:wght@100..900&display=swap
 
-**2. Preload critical fonts**
+2. index.html - Add preload for League Spartan (headings font):
 ```html
-<!-- index.html -->
-<link rel="preload" href="/fonts/league-spartan.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="https://fonts.gstatic.com/s/leaguespartan/v15/...-latin.woff2" as="font" type="font/woff2" crossorigin />
 ```
+Use the specific woff2 URL from Google Fonts for League Spartan (add after line 13, before the Google Fonts stylesheet link).
 
-**3. Consider font subsetting**
-```javascript
-// Subset fonts to only used characters
-// League Spartan: only need A-Z, a-z, 0-9, basic punctuation
-// Can reduce font size by 40-60%
-```
+Per CONTEXT.md decision: font-display: swap for all fonts, preload League Spartan only, woff2 format, use <link rel="preload">.
+  </action>
+  <verify>
+    <automated>grep -n "preload.*font" index.html | grep -v "^#" | wc -l | grep -v "^0$"</automated>
+  </verify>
+  <done>League Spartan preloaded via link tag, Google Fonts URL has display=swap, no FOIT observed on load</done>
+</task>
 
----
+</tasks>
 
-## Success Criteria
+<threat_model>
+## Trust Boundaries
 
-1. All images available in WebP format
-2. Responsive images use srcset with multiple sizes
-3. LCP (Largest Contentful Paint) < 1s on 3G
-4. No FOIT - text visible immediately with fallback font
-5. Lighthouse "Efficiently encode images" score: 100
+| Boundary | Description |
+|----------|-------------|
+| build->filesystem | Image optimization script writes to public/ |
+| user->img srcset | User-controlled srcset values could point to external resources |
 
-## Definition of Done
+## STRIDE Threat Register
 
-- [ ] Image optimization pipeline created
-- [ ] All public images converted to WebP
-- [ ] LazyImage component updated with WebP support
-- [ ] ResponsiveImage component created
-- [ ] Critical images have responsive variants
-- [ ] Fonts use `font-display: swap`
-- [ ] Critical fonts preloaded
-- [ ] Build script runs image optimization
-- [ ] Lighthouse score recorded (before/after)
+| Threat ID | Category | Component | Disposition | Mitigation Plan |
+|-----------|----------|-----------|-------------|-----------------|
+| T-02-01 | S | srcset injection | mitigate | srcset prop is typed string; component only uses it in img/picture elements (browser enforces URL validation). No arbitrary HTML injection. |
+| T-02-02 | D | Image conversion DoS | accept | Build-time script runs in CI/build, not on user requests. No DoS vector. |
+| T-02-03 | I | Path traversal in glob | mitigate | Use glob library with pattern restricted to public/**/*.{png,jpg,jpeg}. Sharp validates file types. |
+| T-02-04 | T | Font preload exposure | accept | Preloading Google Fonts URL is public CDN. No sensitive data. |
+| T-02-05 | E | Local file inclusion | accept | Images already in public/ are static assets meant to be served. |
+| T-02-06 | R | Original file deletion | mitigate | Script does NOT delete originals; creates WebP alongside. Fallback preserved. |
+</threat_model>
 
-## Estimated Effort
+<verification>
+1. Build script runs: npm run optimize-images completes without errors
+2. WebP files exist: ls public/*.webp shows converted images
+3. Responsive variants exist: ls public/*-640w.webp public/*-1024w.webp public/*-1920w.webp
+4. LazyImage types check: npx tsc --noEmit on src/components/LazyImage.tsx
+5. No regressions: npm test passes (all existing tests still passing)
+6. Visual check: Open dev server, confirm images load with fade-in animation
+7. Lighthouse: Run Lighthouse audit, verify "Efficiently encode images" score improved
+</verification>
 
-- Plan 02-01: 4 hours
-- Plan 02-02: 3 hours
-- Plan 02-03: 2 hours
-- Testing and validation: 2 hours
-- **Total: 11 hours**
+<success_criteria>
+1. All images in public/ have WebP counterparts (build-generated)
+2. Responsive variants (640w, 1024w, 1920w) exist for hero images
+3. LazyImage supports srcset/sizes props (backward compatible)
+4. Fonts use font-display: swap (no FOIT, text visible immediately)
+5. League Spartan preloaded via <link> tag
+6. Lighthouse "Efficiently encode images" score: 90+
+7. Image payload reduced by 30%+ (compare before/after build output)
+</success_criteria>
+
+<output>
+After completion, create `.planning/milestones/v7.0-phases/02-media-optimization/02-01-SUMMARY.md`
+</output>
