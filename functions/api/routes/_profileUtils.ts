@@ -1,6 +1,4 @@
 import { Context } from "hono";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
 import { AppEnv, getSessionUser } from "../middleware";
 import { encrypt } from "../../utils/crypto";
 import { safeJSONStringify } from "../../utils/json";
