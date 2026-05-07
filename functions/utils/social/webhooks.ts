@@ -42,7 +42,7 @@ export async function dispatchDiscord(payload: PostPayload, config: SocialConfig
         }
       ]
     })
-  }).catch((err: any) => console.error("Discord webhook failed:", err));
+  }).catch((err: unknown) => console.error("Discord webhook failed:", err));
 }
 
 export async function dispatchDiscordPhoto(imageUrl: string, caption: string, config: SocialConfig) {
@@ -63,7 +63,7 @@ export async function dispatchDiscordPhoto(imageUrl: string, caption: string, co
         }
       ]
     })
-  }).catch((err: any) => console.error("Discord Photo push failed:", err));
+  }).catch((err: unknown) => console.error("Discord Photo push failed:", err));
 }
 
 export async function dispatchSlack(payload: PostPayload, config: SocialConfig) {
@@ -75,7 +75,7 @@ export async function dispatchSlack(payload: PostPayload, config: SocialConfig) 
     body: JSON.stringify({
       text: `🚀 *New Web Update: ${payload.title}*\n${payload.snippet}\n<${payload.url}|Read more>`
     })
-  }).catch((err: any) => console.error("Slack webhook failed:", err));
+  }).catch((err: unknown) => console.error("Slack webhook failed:", err));
 }
 
 export async function dispatchSlackPhoto(imageUrl: string, caption: string, config: SocialConfig) {
@@ -94,7 +94,7 @@ export async function dispatchSlackPhoto(imageUrl: string, caption: string, conf
         }
       ]
     })
-  }).catch((err: any) => console.error("Slack Photo push failed:", err));
+  }).catch((err: unknown) => console.error("Slack Photo push failed:", err));
 }
 
 export async function dispatchTeams(payload: PostPayload, config: SocialConfig) {
@@ -123,7 +123,7 @@ export async function dispatchTeams(payload: PostPayload, config: SocialConfig) 
         }
       ]
     })
-  }).catch((err: any) => console.error("Teams webhook failed:", err));
+  }).catch((err: unknown) => console.error("Teams webhook failed:", err));
 }
 
 export async function dispatchTeamsPhoto(imageUrl: string, caption: string, config: SocialConfig) {
@@ -150,7 +150,7 @@ export async function dispatchTeamsPhoto(imageUrl: string, caption: string, conf
         }
       ]
     })
-  }).catch((err: any) => console.error("Teams Photo push failed:", err));
+  }).catch((err: unknown) => console.error("Teams Photo push failed:", err));
 }
 
 export async function dispatchGChat(payload: PostPayload, config: SocialConfig) {
@@ -194,7 +194,7 @@ export async function dispatchGChatPhoto(imageUrl: string, caption: string, conf
         }
       ]
     })
-  }).catch((err: any) => console.error("GChat Photo push failed:", err));
+  }).catch((err: unknown) => console.error("GChat Photo push failed:", err));
 }
 
 export async function dispatchMake(payload: PostPayload, config: SocialConfig) {
@@ -204,5 +204,5 @@ export async function dispatchMake(payload: PostPayload, config: SocialConfig) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
-  }).catch((err: any) => console.error("Make.com webhook failed:", err));
+  }).catch((err: unknown) => console.error("Make.com webhook failed:", err));
 }
