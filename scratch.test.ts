@@ -1,8 +1,6 @@
 import { Hono } from "hono";
 import { usersRouter } from "./functions/api/routes/users";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createMockDrizzle } from "./src/test/utils";
-import type { MockDrizzle } from "./src/test/types";
 
 async function run() {
   const mockDb = createMockDrizzle();
