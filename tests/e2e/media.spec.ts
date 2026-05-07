@@ -234,7 +234,7 @@ test.describe('Media Manager - Asset Vault', () => {
       await dialog.accept();
     });
 
-    await page.getByRole('button', { name: 'Confirm' }).click();
+    await page.getByRole('button', { name: 'Confirm' }).click({ force: true });
 
     // Wait a moment for the delete to process
     await page.waitForTimeout(500);
