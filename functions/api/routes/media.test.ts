@@ -48,7 +48,7 @@ vi.mock("../../utils/zulipSync", () => ({
 
 import mediaRouter from "./media/index";
 import { createDrizzleProxy } from "../../../src/test/utils";
-import type { DrizzleProxy } from "../../../src/test/mocks";
+// import type { DrizzleProxy } from "../../../src/test/mocks";
 
 interface MockR2 {
   list: ReturnType<typeof vi.fn>;
