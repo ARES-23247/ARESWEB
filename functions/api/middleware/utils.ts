@@ -192,7 +192,7 @@ export async function logAuditAction(
   resource_id: string | null,
   details?: string
 ): Promise<void> {
-  const db = c.get("db") as any;
+  const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
   try {
     const sessionUser = c.get("sessionUser") as SessionUser | undefined;
     const actor = sessionUser?.email || "unknown";
@@ -317,8 +317,8 @@ export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, 
     'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_DATABASE_ID', 'R2_ACCESS_KEY', 'R2_SECRET_KEY',
     'RESEND_API_KEY', 'RESEND_FROM_EMAIL'
   ];
-  
-  const db = c.get("db") as any;
+
+  const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
   const results = await db.query.settings.findMany({
     columns: { key: true, value: true },
     where: inArray(schema.settings.key, keys)
