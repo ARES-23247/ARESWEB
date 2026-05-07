@@ -44,6 +44,7 @@ export interface DrizzleMock {
  */
 export interface DrizzleProxy extends DrizzleMock {
   select: Mock;
+  selectDistinct: Mock;
   from: Mock;
   all: Mock;
   get: Mock;
@@ -52,6 +53,7 @@ export interface DrizzleProxy extends DrizzleMock {
   update: Mock;
   delete: Mock;
   onConflictDoUpdate: Mock;
+  onConflictDoNothing: Mock;
   leftJoin: Mock;
   innerJoin: Mock;
   values: Mock;
@@ -60,8 +62,13 @@ export interface DrizzleProxy extends DrizzleMock {
   offset: Mock;
   where: Mock;
   orderBy: Mock;
+  groupBy: Mock;
+  having: Mock;
   returning: Mock;
   transaction: Mock;
+  batch: Mock;
+  $dynamic: Mock;
+  execute: Mock;
   query: Record<string, { findFirst: Mock; findMany: Mock }>;
   then: Mock;
   __isDrizzleProxy: true;
