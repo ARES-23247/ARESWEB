@@ -1,17 +1,17 @@
 import { typedHandler } from "../utils/handler";
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware } from "../middleware";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, desc, and, count, inArray } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { 
+import {
 
-  getNotificationsRoute, 
-  markNotificationReadRoute, 
-  markAllNotificationsReadRoute, 
-  deleteNotificationRoute, 
-  getPendingCountsRoute, 
-  getDashboardActionItemsRoute 
+  getNotificationsRoute,
+  markNotificationReadRoute,
+  markAllNotificationsReadRoute,
+  deleteNotificationRoute,
+  getPendingCountsRoute,
+  getDashboardActionItemsRoute
 } from "../../../shared/routes/notifications";
 
 
@@ -27,12 +27,21 @@ notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotifi
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
-    const results = await db.selectFrom("notifications")
-      .select(["id", "title", "message", "link", "priority", "is_read", "created_at"])
-      .where("user_id", "=", user.id)
-      .orderBy("created_at", "desc")
+    const results = await db
+      .select({
+        id: schema.notifications.id,
+        title: schema.notifications.title,
+        message: schema.notifications.message,
+        link: schema.notifications.link,
+        priority: schema.notifications.priority,
+        isRead: schema.notifications.isRead,
+        createdAt: schema.notifications.createdAt
+      })
+      .from(schema.notifications)
+      .where(eq(schema.notifications.userId, user.id))
+      .orderBy(desc(schema.notifications.createdAt))
       .limit(50)
-      .execute();
+      .all();
 
     const notifications = results.map((n: any) => ({
       ...n,
@@ -41,8 +50,8 @@ notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotifi
       message: String(n.message),
       link: n.link || null,
       priority: (n.priority || "low") as string,
-      is_read: Number(n.is_read || 0),
-      created_at: String(n.created_at)
+      is_read: Number(n.isRead || 0),
+      created_at: String(n.createdAt)
     }));
 
     return c.json({ notifications }, 200);
@@ -59,11 +68,11 @@ notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markN
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     const { id } = c.req.valid("param");
-    await db.updateTable("notifications")
-      .set({ is_read: 1 })
-      .where("id", "=", id)
-      .where("user_id", "=", user.id)
-      .execute();
+    await db
+      .update(schema.notifications)
+      .set({ isRead: 1 })
+      .where(and(eq(schema.notifications.id, id), eq(schema.notifications.userId, user.id)))
+      .run();
 
     return c.json({ success: true }, 200);
   } catch {
@@ -77,10 +86,11 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof m
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
-    await db.updateTable("notifications")
-      .set({ is_read: 1 })
-      .where("user_id", "=", user.id)
-      .execute();
+    await db
+      .update(schema.notifications)
+      .set({ isRead: 1 })
+      .where(eq(schema.notifications.userId, user.id))
+      .run();
 
     return c.json({ success: true }, 200);
   } catch {
@@ -95,10 +105,10 @@ notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteN
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     const { id } = c.req.valid("param");
-    await db.deleteFrom("notifications")
-      .where("id", "=", id)
-      .where("user_id", "=", user.id)
-      .execute();
+    await db
+      .delete(schema.notifications)
+      .where(and(eq(schema.notifications.id, id), eq(schema.notifications.userId, user.id)))
+      .run();
 
     return c.json({ success: true }, 200);
   } catch {
@@ -123,13 +133,28 @@ notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendin
     // Optimized single-roundtrip query for all counts
     const [inquiries, posts, events, docs] = await Promise.all([
       (async () => {
-        let q = db.selectFrom("inquiries").select(db.fn.count("id").as("count")).where("status", "=", "pending");
-        if (filterOutreach) q = q.where("type", "in", ["outreach", "support"]);
-        return q.executeTakeFirst();
+        let q = db
+          .select({ count: count(schema.inquiries.id) })
+          .from(schema.inquiries)
+          .where(eq(schema.inquiries.status, "pending"));
+        if (filterOutreach) q = q.where(inArray(schema.inquiries.type, ["outreach", "support"]));
+        return q.get();
       })(),
-      db.selectFrom("posts").select(db.fn.count("id").as("count")).where("status", "=", "pending").where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("events").select(db.fn.count("id").as("count")).where("status", "=", "pending").where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("docs").select(db.fn.count("id").as("count")).where("status", "=", "pending").where("is_deleted", "=", 0).executeTakeFirst(),
+      db
+        .select({ count: count(schema.posts.slug) })
+        .from(schema.posts)
+        .where(and(eq(schema.posts.status, "pending"), eq(schema.posts.isDeleted, 0)))
+        .get(),
+      db
+        .select({ count: count(schema.events.id) })
+        .from(schema.events)
+        .where(and(eq(schema.events.status, "pending"), eq(schema.events.isDeleted, 0)))
+        .get(),
+      db
+        .select({ count: count(schema.docs.slug) })
+        .from(schema.docs)
+        .where(and(eq(schema.docs.status, "pending"), eq(schema.docs.isDeleted, 0)))
+        .get(),
     ]);
 
     return c.json({
@@ -160,27 +185,50 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof ge
     // Batch fetch all detailed pending items
     const [inquiries, posts, events, docs] = await Promise.all([
       (async () => {
-        let q = db.selectFrom("inquiries")
-          .select(["id", "name", "email", "type", "status", "created_at"])
-          .where("status", "=", "pending");
-        if (filterOutreach) q = q.where("type", "in", ["outreach", "support"]);
-        return q.execute();
+        let q = db
+          .select({
+            id: schema.inquiries.id,
+            name: schema.inquiries.name,
+            email: schema.inquiries.email,
+            type: schema.inquiries.type,
+            status: schema.inquiries.status,
+            createdAt: schema.inquiries.createdAt
+          })
+          .from(schema.inquiries)
+          .where(eq(schema.inquiries.status, "pending"));
+        if (filterOutreach) q = q.where(inArray(schema.inquiries.type, ["outreach", "support"]));
+        return q.all();
       })(),
-      db.selectFrom("posts")
-        .select(["title", "slug", "status", "is_deleted"])
-        .where("status", "=", "pending")
-        .where("is_deleted", "=", 0)
-        .execute(),
-      db.selectFrom("events")
-        .select(["id", "title", "status", "is_deleted"])
-        .where("status", "=", "pending")
-        .where("is_deleted", "=", 0)
-        .execute(),
-      db.selectFrom("docs")
-        .select(["title", "slug", "status", "is_deleted"])
-        .where("status", "=", "pending")
-        .where("is_deleted", "=", 0)
-        .execute(),
+      db
+        .select({
+          title: schema.posts.title,
+          slug: schema.posts.slug,
+          status: schema.posts.status,
+          isDeleted: schema.posts.isDeleted
+        })
+        .from(schema.posts)
+        .where(and(eq(schema.posts.status, "pending"), eq(schema.posts.isDeleted, 0)))
+        .all(),
+      db
+        .select({
+          id: schema.events.id,
+          title: schema.events.title,
+          status: schema.events.status,
+          isDeleted: schema.events.isDeleted
+        })
+        .from(schema.events)
+        .where(and(eq(schema.events.status, "pending"), eq(schema.events.isDeleted, 0)))
+        .all(),
+      db
+        .select({
+          title: schema.docs.title,
+          slug: schema.docs.slug,
+          status: schema.docs.status,
+          isDeleted: schema.docs.isDeleted
+        })
+        .from(schema.docs)
+        .where(and(eq(schema.docs.status, "pending"), eq(schema.docs.isDeleted, 0)))
+        .all(),
     ]);
 
     return c.json({
