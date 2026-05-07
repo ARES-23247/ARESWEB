@@ -167,11 +167,18 @@ export const eventHandlers = {
 
       const events = results.map((e: any) => ({
         ...e,
-        season_id: e.seasonId ? Number(e.seasonId) : null,
-        is_deleted: Number(e.isDeleted || 0),
+        // Map Drizzle camelCase back to snake_case for API consumers
+        date_start: e.dateStart ?? e.date_start ?? null,
+        date_end: e.dateEnd ?? e.date_end ?? null,
+        cover_image: e.coverImage ?? e.cover_image ?? null,
+        tba_event_key: e.tbaEventKey ?? e.tba_event_key ?? null,
+        season_id: e.seasonId ? Number(e.seasonId) : (e.season_id ? Number(e.season_id) : null),
+        is_deleted: Number(e.isDeleted ?? e.is_deleted ?? 0),
+        is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
+        is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
         category: e.category ?? "internal",
-        meeting_notes: e.meetingNotes ?? null,
+        meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null,
         location_address: e.location ? (locationMap[e.location] || null) : null
       }));
 
@@ -257,8 +264,14 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
+            date_start: row.dateStart ?? null,
+            date_end: row.dateEnd ?? null,
+            cover_image: row.coverImage ?? null,
+            tba_event_key: row.tbaEventKey ?? null,
             season_id: row.seasonId ? Number(row.seasonId) : null,
             is_deleted: Number(row.isDeleted || 0),
+            is_potluck: row.isPotluck ?? 0,
+            is_volunteer: row.isVolunteer ?? 0,
             meeting_notes: (user && user.role !== "unverified") ? row.meetingNotes : null,
             location_address: locationAddress
           },
@@ -330,11 +343,17 @@ export const eventHandlers = {
 
       const events = results.map((e: any) => ({
         ...e,
-        season_id: e.seasonId ? Number(e.seasonId) : null,
-        is_deleted: Number(e.isDeleted || 0),
+        date_start: e.dateStart ?? e.date_start ?? null,
+        date_end: e.dateEnd ?? e.date_end ?? null,
+        cover_image: e.coverImage ?? e.cover_image ?? null,
+        tba_event_key: e.tbaEventKey ?? e.tba_event_key ?? null,
+        season_id: e.seasonId ? Number(e.seasonId) : (e.season_id ? Number(e.season_id) : null),
+        is_deleted: Number(e.isDeleted ?? e.is_deleted ?? 0),
+        is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
+        is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
         category: e.category ?? "internal",
-        meeting_notes: e.meetingNotes ?? null
+        meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null
       }));
 
       const nextCursor = results.length === (Number(limit) || 100) ? (results[results.length - 1] as any).dateStart : null;
@@ -395,8 +414,14 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
+            date_start: (row as any).dateStart ?? (row as any).date_start ?? null,
+            date_end: (row as any).dateEnd ?? (row as any).date_end ?? null,
+            cover_image: (row as any).coverImage ?? (row as any).cover_image ?? null,
+            tba_event_key: (row as any).tbaEventKey ?? (row as any).tba_event_key ?? null,
             season_id: (row as any).seasonId ? Number((row as any).seasonId) : null,
             is_deleted: Number((row as any).isDeleted || 0),
+            is_potluck: (row as any).isPotluck ?? 0,
+            is_volunteer: (row as any).isVolunteer ?? 0,
             status: (row as any).status ?? "published",
             category: (row as any).category ?? "internal",
             meeting_notes: (row as any).meetingNotes ?? null
