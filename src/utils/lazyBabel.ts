@@ -69,19 +69,6 @@ export async function transformCode(
 }
 
 /**
- * Type definition for Babel Standalone (minimal subset we use).
- */
-interface Babel {
-  transform: (
-    code: string,
-    opts: {
-      presets: readonly string[];
-      filename?: string;
-    }
-  ) => { code: string };
-}
-
-/**
  * Retry wrapper for transformCode with exponential backoff.
  * Used for transient network errors during initial Babel load.
  *
