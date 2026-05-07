@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { AppEnv, getDb } from "../api/middleware/utils";
 import { sendZulipAlert } from "./zulipSync";
-import { eq, and, or, exists, inArray } from "drizzle-orm";
+import { eq, and, or, exists, inArray, not } from "drizzle-orm";
 import * as schema from "../../src/db/schema";
 
 
@@ -82,18 +82,21 @@ export async function notifyByRole(
     let query = db.select({
       id: schema.user.id
     })
-      .from(schema.user);
+      .from(schema.user)
+      .$dynamic();
 
     if (includeAdmin && profileTypes.length > 0) {
       query = query.where(or(
         eq(schema.user.role, "admin"),
         and(
-          eq(schema.user.role, "unverified").$not(),
+          not(eq(schema.user.role, "unverified")),
           exists(
             db.select({ userId: schema.userProfiles.userId })
               .from(schema.userProfiles)
-              .where(eq(schema.userProfiles.userId, schema.user.id))
-              .where(inArray(schema.userProfiles.memberType, profileTypes))
+              .where(and(
+                eq(schema.userProfiles.userId, schema.user.id),
+                inArray(schema.userProfiles.memberType, profileTypes)
+              ))
           )
         )
       ));
@@ -102,8 +105,10 @@ export async function notifyByRole(
     } else {
       query = query
         .innerJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
-        .where(eq(schema.user.role, "unverified").$not())
-        .where(inArray(schema.userProfiles.memberType, profileTypes));
+        .where(and(
+          not(eq(schema.user.role, "unverified")),
+          inArray(schema.userProfiles.memberType, profileTypes)
+        ));
     }
 
     const results = await query.all();
@@ -116,8 +121,8 @@ export async function notifyByRole(
       const chunk = results.slice(i, i + MAX_BATCH_SIZE);
       
       const values = chunk
-        .filter((row) => row.id !== null)
-        .map((row) => ({
+        .filter((row: { id: string | null }) => row.id !== null)
+        .map((row: { id: string | null }) => ({
           id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
           userId: row.id as string,
           title: payload.title,
