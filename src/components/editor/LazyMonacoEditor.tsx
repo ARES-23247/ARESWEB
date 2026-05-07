@@ -133,9 +133,8 @@ export default function LazyMonacoEditor({ onMount: originalOnMount, ...restProp
             originalOnMount?.(editor, monaco);
           }}
           // Handle Monaco worker initialization failures
-          beforeMount={(monaco) => {
-            // Configure Monaco to handle worker errors gracefully
-            monaco?.IKeyboardLayout?.forEach?.(() => {});
+          beforeMount={(_monaco) => {
+            // Monaco pre-mount hook — reserved for future worker config
           }}
         />
       </LoadingWrapper>

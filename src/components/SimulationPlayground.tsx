@@ -647,7 +647,8 @@ export default function SimulationPlayground() {
         } catch {
           return { items: [] };
         }
-      }
+      },
+      disposeInlineCompletions: () => { /* no-op cleanup */ }
     });
   }, []);
 
