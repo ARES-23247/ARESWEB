@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
  
-import { Kysely, ExpressionBuilder } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, desc, inArray, sum } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser } from "../middleware";
@@ -24,8 +24,8 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
 
     let latestSeasonId: number | undefined | null = season_id;
     if (!latestSeasonId) {
-      const latest = await db.selectFrom("seasons").selectAll().orderBy("start_year", "desc").executeTakeFirst();
-      latestSeasonId = latest?.start_year;
+      const latest = await db.select().from(schema.seasons).orderBy(desc(schema.seasons.startYear)).get();
+      latestSeasonId = latest?.startYear;
     }
 
     if (!latestSeasonId) {
@@ -38,18 +38,18 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
     }
 
     const summary = await db
-      .selectFrom("finance_transactions")
-      .select([
-        "type",
-        (eb: ExpressionBuilder<DB, "finance_transactions">) => eb.fn.sum("amount").as("total")
-      ])
-      .where("season_id", "=", Number(latestSeasonId))
-      .groupBy("type")
-      .execute();
+      .select({
+        type: schema.financeTransactions.type,
+        total: sum(schema.financeTransactions.amount).mapWith(Number).as("total")
+      })
+      .from(schema.financeTransactions)
+      .where(eq(schema.financeTransactions.seasonId, Number(latestSeasonId)))
+      .groupBy(schema.financeTransactions.type)
+      .all();
 
     const totals = {
-      income: Number(summary.find((s: any) => s.type === "income")?.total || 0),
-      expense: Number(summary.find((s: any) => s.type === "expense")?.total || 0),
+      income: summary.find((s: any) => s.type === "income")?.total || 0,
+      expense: summary.find((s: any) => s.type === "expense")?.total || 0,
     };
 
     return c.json({
@@ -69,24 +69,24 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
   try {
     const { season_id } = c.req.valid("query");
     const db = c.get("db") as any;
-    let queryBuilder = db.selectFrom("sponsorship_pipeline").selectAll();
+    let queryBuilder = db.select().from(schema.sponsorshipPipeline).$dynamic();
     if (season_id) {
-      queryBuilder = queryBuilder.where("season_id", "=", Number(season_id));
+      queryBuilder = queryBuilder.where(eq(schema.sponsorshipPipeline.seasonId, Number(season_id)));
     }
-    const pipeline = await queryBuilder.orderBy("created_at", "desc").execute();
+    const pipeline = await queryBuilder.orderBy(desc(schema.sponsorshipPipeline.createdAt)).all();
     const pipelineIds = pipeline.map((p: any) => p.id).filter(Boolean);
 
-    let assignments: Array<{ sponsorship_id: string; user_id: string }> = [];
+    let assignments: Array<{ sponsorshipId: string; userId: string }> = [];
     if (pipelineIds.length > 0) {
-      assignments = await db.selectFrom("sponsorship_assignments").selectAll().where("sponsorship_id", "in", pipelineIds).execute();
+      assignments = await db.select().from(schema.sponsorshipAssignments).where(inArray(schema.sponsorshipAssignments.sponsorshipId, pipelineIds)).all();
     }
 
     const result = pipeline.map((p: any) => ({
       ...p,
-      season_id: p.season_id ? Number(p.season_id) : null,
-      estimated_value: Number(p.estimated_value || 0),
+      season_id: p.seasonId ? Number(p.seasonId) : null,
+      estimated_value: Number(p.estimatedValue || 0),
       status: (p.status || "potential").toLowerCase(),
-      assignees: assignments.filter((a: any) => a.sponsorship_id === p.id).map((a: any) => a.user_id)
+      assignees: assignments.filter((a: any) => a.sponsorshipId === p.id).map((a: any) => a.userId)
     }));
 
     return c.json({ pipeline: result } as any, 200 as any);
@@ -115,67 +115,68 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
     let currentStatus = null;
     if (!isNew) {
       const existing = await db
-        .selectFrom("sponsorship_pipeline")
-        .select("status")
-        .where("id", "=", id)
-        .executeTakeFirst();
+        .select({ status: schema.sponsorshipPipeline.status })
+        .from(schema.sponsorshipPipeline)
+        .where(eq(schema.sponsorshipPipeline.id, id))
+        .get();
       currentStatus = existing?.status?.toLowerCase();
     }
 
     const data = {
       id,
-      company_name: body.company_name,
-      contact_person: body.contact_person || null,
+      companyName: body.company_name,
+      contactPerson: body.contact_person || null,
       status: body.status,
-      estimated_value: body.estimated_value ?? 0,
-      season_id: body.season_id ? Number(body.season_id) : null,
+      estimatedValue: body.estimated_value ?? 0,
+      seasonId: body.season_id ? Number(body.season_id) : null,
       notes: body.notes || null,
-      zulip_message_id: body.zulip_message_id || null,
+      zulipMessageId: body.zulip_message_id || null,
     };
 
     if (isNew) {
-      await db.insertInto("sponsorship_pipeline").values(data).execute();
+      await db.insert(schema.sponsorshipPipeline).values(data).run();
     } else {
-      await db.updateTable("sponsorship_pipeline").set(data).where("id", "=", id).execute();
+      await db.update(schema.sponsorshipPipeline).set(data).where(eq(schema.sponsorshipPipeline.id, id)).run();
     }
 
     if (body.assignees) {
-      await db.deleteFrom("sponsorship_assignments").where("sponsorship_id", "=", id).execute();
+      await db.delete(schema.sponsorshipAssignments).where(eq(schema.sponsorshipAssignments.sponsorshipId, id)).run();
       if (body.assignees.length > 0) {
         const insertData = body.assignees.map((userId: string) => ({
-          sponsorship_id: id,
-          user_id: userId
+          sponsorshipId: id,
+          userId: userId
         }));
-        await db.insertInto("sponsorship_assignments").values(insertData).execute();
+        await db.insert(schema.sponsorshipAssignments).values(insertData).run();
       }
     }
 
     if (body.status === "secured" && currentStatus !== "secured") {
       let existingTxQuery = db
-        .selectFrom("finance_transactions")
-        .select("id")
-        .where("description", "=", `Sponsorship from ${body.company_name}`)
-        .where("amount", "=", body.estimated_value || 0);
+        .select({ id: schema.financeTransactions.id })
+        .from(schema.financeTransactions)
+        .where(eq(schema.financeTransactions.description, `Sponsorship from ${body.company_name}`))
+        .where(eq(schema.financeTransactions.amount, body.estimated_value || 0))
+        .$dynamic();
 
       if (body.season_id) {
-        existingTxQuery = existingTxQuery.where("season_id", "=", Number(body.season_id));
+        existingTxQuery = existingTxQuery.where(eq(schema.financeTransactions.seasonId, Number(body.season_id)));
       }
 
-      const existingTx = await existingTxQuery.executeTakeFirst();
+      const existingTx = await existingTxQuery.get();
 
       if (!existingTx) {
         await db
-          .insertInto("sponsors")
+          .insert(schema.sponsors)
           .values({
             id: crypto.randomUUID(),
             name: body.company_name,
             tier: "Bronze",
-            is_active: 1,
+            isActive: 1,
           })
-          .execute();
+          .run();
 
         await db
-          .insertInto("finance_transactions")
+          .insert(schema.financeTransactions)
           .values({
             id: crypto.randomUUID(),
             amount: body.estimated_value || 0,
@@ -183,10 +184,10 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
             category: "Sponsorship",
             date: new Date().toISOString().split("T")[0],
             description: `Sponsorship from ${body.company_name}`,
-            season_id: body.season_id ? Number(body.season_id) : null,
-            logged_by: user?.id || "system",
+            seasonId: body.season_id ? Number(body.season_id) : null,
+            loggedBy: user?.id || "system",
           })
-          .execute();
+          .run();
       }
     }
 
@@ -203,7 +204,7 @@ financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof fin
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as any;
-    await db.deleteFrom("sponsorship_pipeline").where("id", "=", id).execute();
+    await db.delete(schema.sponsorshipPipeline).where(eq(schema.sponsorshipPipeline.id, id)).run();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -217,14 +218,14 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
   try {
     const { season_id, type } = c.req.valid("query");
     const db = c.get("db") as any;
-    let queryBuilder = db.selectFrom("finance_transactions").selectAll();
+    let queryBuilder = db.select().from(schema.financeTransactions).$dynamic();
     if (season_id) {
-      queryBuilder = queryBuilder.where("season_id", "=", season_id);
+      queryBuilder = queryBuilder.where(eq(schema.financeTransactions.seasonId, season_id));
     }
     if (type) {
-      queryBuilder = queryBuilder.where("type", "=", type);
+      queryBuilder = queryBuilder.where(eq(schema.financeTransactions.type, type));
     }
-    const transactions = await queryBuilder.orderBy("date", "desc").execute();
+    const transactions = await queryBuilder.orderBy(desc(schema.financeTransactions.date)).all();
 
     return c.json({
       transactions: transactions.map((t: any) => ({
@@ -273,15 +274,15 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
       category: body.category,
       date: body.date,
       description: body.description || null,
-      receipt_url: body.receipt_url || null,
-      season_id: body.season_id ? Number(body.season_id) : null,
-      logged_by: user?.id || "system",
+      receiptUrl: body.receipt_url || null,
+      seasonId: body.season_id ? Number(body.season_id) : null,
+      loggedBy: user?.id || "system",
     };
 
     if (isNew) {
-      await db.insertInto("finance_transactions").values(data).execute();
+      await db.insert(schema.financeTransactions).values(data).run();
     } else {
-      await db.updateTable("finance_transactions").set(data).where("id", "=", id).execute();
+      await db.update(schema.financeTransactions).set(data).where(eq(schema.financeTransactions.id, id)).run();
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
@@ -298,17 +299,17 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
     const { id } = c.req.valid("param");
     const db = c.get("db") as any;
     const tx = await db
-      .selectFrom("finance_transactions")
-      .select("receipt_url")
-      .where("id", "=", id)
-      .executeTakeFirst();
+      .select({ receiptUrl: schema.financeTransactions.receiptUrl })
+      .from(schema.financeTransactions)
+      .where(eq(schema.financeTransactions.id, id))
+      .get();
 
     if (!tx) return c.json({ error: "Transaction not found" } as any, 404 as any);
 
-    await db.deleteFrom("finance_transactions").where("id", "=", id).execute();
+    await db.delete(schema.financeTransactions).where(eq(schema.financeTransactions.id, id)).run();
 
-    if (tx.receipt_url && tx.receipt_url.includes("receipts/")) {
-      const key = tx.receipt_url.split("receipts/")[1];
+    if (tx.receiptUrl && tx.receiptUrl.includes("receipts/")) {
+      const key = tx.receiptUrl.split("receipts/")[1];
       try {
         if (c.executionCtx?.waitUntil && c.env?.ARES_STORAGE) {
           c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(`receipts/${key}`));
