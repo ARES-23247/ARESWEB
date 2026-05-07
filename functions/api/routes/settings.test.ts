@@ -105,7 +105,8 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("POST / - handles update error", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    // Handler uses insert().values().onConflictDoUpdate().run()
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     const payload = { site_name: "New Name" };
     const res = await testApp.request("/admin/settings", {
       method: "POST",

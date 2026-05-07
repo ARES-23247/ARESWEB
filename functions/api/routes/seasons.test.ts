@@ -5,6 +5,10 @@ import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 import seasonsRouter from "./seasons";
 
+vi.mock("../middleware/cache", () => ({
+  edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+}));
+
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -14,6 +18,10 @@ vi.mock("../middleware", async (importOriginal) => {
     rateLimitMiddleware: () => (c: Context<TestEnv>, next: () => Promise<void>) => next(),
   };
 });
+
+vi.mock("./ai/autoReindex", () => ({
+  triggerBackgroundReindex: vi.fn(),
+}));
 
 describe("Seasons Router", () => {
   let app: Hono<TestEnv>;
@@ -42,6 +50,7 @@ describe("Seasons Router", () => {
   });
 
   it("GET / - handles database error", async () => {
+    // Handler uses .select().from().where().orderBy().all() — mock .all to reject
     mockDb.all.mockRejectedValueOnce(new Error("DB Fail"));
     const res = await app.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -54,14 +63,19 @@ describe("Seasons Router", () => {
   });
 
   it("GET /:year - returns season details with relations", async () => {
+    // Handler does Promise.all([...get(), ...all(), ...all(), ...all(), ...all()])
     mockDb.get.mockResolvedValueOnce({ start_year: 2023, end_year: 2024, challenge_name: "Centerstage", status: "published" });
-    mockDb.all.mockResolvedValue([]); // for awards, events, posts, outreach
+    // Reset all to return [] for each of the 4 relation queries
+    mockDb.all.mockResolvedValue([]);
     const res = await app.request("/2023", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
   });
 
   it("GET /:year - handles error", async () => {
+    // Handler uses .get() for season lookup — reject it
     mockDb.get.mockRejectedValueOnce(new Error("Detail fail"));
+    // Also need all() to reject since Promise.all will call it too
+    mockDb.all.mockRejectedValue(new Error("Detail fail"));
     const res = await app.request("/2023", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -73,6 +87,7 @@ describe("Seasons Router", () => {
   });
 
   it("GET /admin/:id - handles error", async () => {
+    // Handler uses .select().from().where().get() — mock .get to reject
     mockDb.get.mockRejectedValueOnce(new Error("Admin Detail fail"));
     const res = await app.request("/admin/2023", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -90,6 +105,7 @@ describe("Seasons Router", () => {
   });
 
   it("POST /admin/save - handles error", async () => {
+    // Handler uses .select().from().where().get() for collision check — mock .get to reject
     mockDb.get.mockRejectedValueOnce(new Error("Save check fail"));
     const res = await app.request("/admin/save", {
       method: "POST",
@@ -106,7 +122,8 @@ describe("Seasons Router", () => {
   });
 
   it("DELETE /admin/:id - handles error", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("Delete fail"));
+    // Handler uses db.update().set().where() which is a mutation — mock update to throw
+    mockDb.update.mockImplementationOnce(() => { throw new Error("Delete fail"); });
     const res = await app.request("/admin/2023", { method: "DELETE" }, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -121,7 +138,8 @@ describe("Seasons Router", () => {
   });
 
   it("POST /admin/:id/undelete - handles error", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("Undelete fail"));
+    // Handler uses db.update().set().where() — mock update to throw
+    mockDb.update.mockImplementationOnce(() => { throw new Error("Undelete fail"); });
     const res = await app.request("/admin/2023/undelete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -137,7 +155,8 @@ describe("Seasons Router", () => {
   });
 
   it("DELETE /admin/:id/purge - handles error", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("Purge fail"));
+    // Handler uses db.delete().where() — mock delete to throw
+    mockDb.delete.mockImplementationOnce(() => { throw new Error("Purge fail"); });
     const res = await app.request("/admin/2023/purge", { method: "DELETE" }, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });

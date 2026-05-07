@@ -133,6 +133,12 @@
       "requiresContext": false
     },
     {
+      "id": "risk",
+      "name": "Risk",
+      "path": "./risk",
+      "requiresContext": false
+    },
+    {
       "id": "sotm",
       "name": "Shoot-on-the-Move Analytics",
       "path": "./sotm",
@@ -181,5 +187,5 @@
       "requiresContext": true
     }
   ],
-  "_generated": "2026-05-07T02:27:01.981Z"
+  "_generated": "2026-05-07T17:28:48.794Z"
 }

@@ -59,7 +59,9 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("POST /admin/save - create", async () => {
-    mockDb.all.mockResolvedValue([{ id: 123 }]);
+    // Handler does: db.insert().values().returning({id: ...})
+    // Proxy sets terminalMethod='run' for returning(), then 'then' calls target.run()
+    mockDb.run.mockResolvedValueOnce([{ id: 123 }]);
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ title: "New", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
@@ -80,7 +82,8 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("POST /admin/save - handles save failure", async () => {
-    mockDb.all.mockRejectedValue(new Error("DB Error"));
+    // Handler does insert().values().returning() — proxy calls target.run() for returning chains
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -176,7 +179,7 @@ describe("Hono Backend - /outreach Router", () => {
   });
 
   it("POST /admin/save - create with mentoring", async () => {
-    mockDb.all.mockResolvedValue([{ id: 123 }]);
+    mockDb.run.mockResolvedValueOnce([{ id: 123 }]);
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ title: "New", is_mentoring: true, mentored_team_number: "1234", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),

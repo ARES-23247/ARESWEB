@@ -49,6 +49,12 @@ describe("Hono Backend - /sponsors Router", () => {
     testApp.route("/", sponsorsRouter);
   });
 
+  it("GET / - list sponsors error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    const res = await testApp.request("/", {}, env, mockExecutionContext);
+    expect(res.status).toBe(500);
+  });
+
   it("GET / - list sponsors", async () => {
     mockDb.all.mockResolvedValueOnce([{ id: "1", name: "Google", tier: "Gold", logo_url: null, website_url: null, is_active: 1 }]);
     const res = await testApp.request("/", {}, env, mockExecutionContext);
@@ -83,12 +89,6 @@ describe("Hono Backend - /sponsors Router", () => {
       headers: { "Content-Type": "application/json" }
     }, env, mockExecutionContext);
     expect(res.status).toBe(200);
-  });
-
-  it("GET / - list sponsors error", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
-    const res = await testApp.request("/", {}, env, mockExecutionContext);
-    expect(res.status).toBe(500);
   });
 
   it("GET /roi/:token - invalid token", async () => {

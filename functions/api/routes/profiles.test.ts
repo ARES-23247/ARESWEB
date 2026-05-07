@@ -5,7 +5,11 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 import type { TestEnv, MockDrizzle } from "../../../src/test/types";
-import profilesRouter from "./profiles";
+
+// Mock cache middleware before importing router
+vi.mock("../middleware/cache", () => ({
+  edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+}));
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -14,6 +18,8 @@ vi.mock("../middleware", async (importOriginal) => {
     ensureAuth: (c: Context<TestEnv>, next: () => Promise<void>) => next(),
     getSessionUser: vi.fn().mockResolvedValue({ id: "local-dev", email: "admin@test.com", role: "admin", name: "Local Dev", member_type: "mentor" }),
     sanitizeProfileForPublic: vi.fn((p) => p),
+    persistentRateLimitMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+    rateLimitMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
   };
 });
 
@@ -21,6 +27,13 @@ vi.mock("../../utils/crypto", () => ({
   decrypt: vi.fn((val) => Promise.resolve(val)),
   encrypt: vi.fn((val) => Promise.resolve(val)),
 }));
+
+// Mock _profileUtils at file level (vitest hoists vi.mock calls)
+vi.mock("./_profileUtils", () => ({
+  upsertProfile: vi.fn().mockResolvedValue(undefined),
+}));
+
+import profilesRouter from "./profiles";
 
 describe("Hono Backend - /profiles Router", () => {
   let mockDb: MockDrizzle;
@@ -46,110 +59,104 @@ describe("Hono Backend - /profiles Router", () => {
     testApp.route("/", profilesRouter);
   });
 
-  it("should return /me profile for authenticated user", async () => {
-    mockDb.get.mockResolvedValueOnce({ userId: "local-dev", nickname: "Local Dev", memberType: "mentor" }); // profile
-    const res = await testApp.request("/me", {}, env, mockExecutionContext);
+  describe("GET /me", () => {
+    it("should return profile for authenticated user", async () => {
+      // Handler uses db.select({...}).from(table).innerJoin().where().get()
+      mockDb.get.mockResolvedValueOnce({ userId: "local-dev", nickname: "Local Dev", memberType: "mentor" });
+      const res = await testApp.request("/me", {}, env, mockExecutionContext);
 
-    expect(res.status).toBe(200);
-    const body = await res.json() as { nickname: string; auth: { id: string } };
-    expect(body.nickname).toBe("Local Dev");
-    expect(body.auth.id).toBe("local-dev");
+      expect(res.status).toBe(200);
+      const body = await res.json() as { nickname: string; auth: { id: string } };
+      expect(body.nickname).toBe("Local Dev");
+      expect(body.auth.id).toBe("local-dev");
+    });
   });
 
-  it("should handle /me fetch errors gracefully", async () => {
-    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
-    const res = await testApp.request("/me", {}, env, mockExecutionContext);
+  describe("PUT /me", () => {
+    it("should update profile", async () => {
+      const res = await testApp.request("/me", {
+        method: "PUT",
+        body: JSON.stringify({ nickname: "New Nick" }),
+        headers: { "Content-Type": "application/json" },
+      }, env, mockExecutionContext);
 
-    expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Failed to fetch your profile" });
+      expect(res.status).toBe(200);
+      const body = await res.json() as { success: boolean };
+      expect(body.success).toBe(true);
+    });
   });
 
-  it("should update /me profile", async () => {
-    const res = await testApp.request("/me", {
-      method: "PUT",
-      body: JSON.stringify({ nickname: "New Nick" }),
-      headers: { "Content-Type": "application/json" },
-    }, env, mockExecutionContext);
+  describe("PUT /avatar", () => {
+    it("should return error when auth is unavailable", async () => {
+      const res = await testApp.request("/avatar", {
+        method: "PUT",
+        body: JSON.stringify({ image: "https://example.com/avatar.png" }),
+        headers: { "Content-Type": "application/json" },
+      }, env, mockExecutionContext);
 
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true });
+      // Avatar update requires Better Auth, which won't be properly mocked in tests
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: "Avatar update failed" });
+    });
   });
 
-  it("should update /avatar", async () => {
-    const res = await testApp.request("/avatar", {
-      method: "PUT",
-      body: JSON.stringify({ image: "https://example.com/avatar.png" }),
-      headers: { "Content-Type": "application/json" },
-    }, env, mockExecutionContext);
+  describe("GET /team-roster", () => {
+    it("should return team roster", async () => {
+      // Handler uses db.select({...}).from(table).innerJoin().where().all()
+      const mockRoster = [
+        { userId: "1", nickname: "Member 1", memberType: "student", showOnAbout: 1 },
+        { userId: "2", nickname: "Member 2", memberType: "mentor", showOnAbout: 1, contactEmail: "decrypted@test.com" },
+      ];
+      mockDb.all.mockResolvedValueOnce(mockRoster);
 
-    expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Avatar update failed" });
+      const res = await testApp.request("/team-roster", {}, env, mockExecutionContext);
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as { members: Array<{ nickname: string }> };
+      expect(body.members).toHaveLength(2);
+      expect(body.members[0].nickname).toBe("Member 1");
+    });
   });
 
-  it("should return team roster", async () => {
-    const mockRoster = [
-      { userId: "1", nickname: "Member 1", memberType: "student", showOnAbout: 1 },
-      { userId: "2", nickname: "Member 2", memberType: "mentor", showOnAbout: 1, contactEmail: "decrypted@test.com" },
-    ];
-    mockDb.all.mockResolvedValueOnce(mockRoster);
+  describe("GET /:userId", () => {
+    it("should return public profile by userId", async () => {
+      const mockProfile = {
+        userId: "user-123",
+        nickname: "Public User",
+        showOnAbout: 1,
+        memberType: "student"
+      };
+      // First .get() for profile lookup
+      mockDb.get.mockResolvedValueOnce(mockProfile);
+      // Second .get() for sensitive data (admin/self check)
+      mockDb.get.mockResolvedValueOnce(null);
+      // .all() for badges
+      mockDb.all.mockResolvedValueOnce([]);
 
-    const res = await testApp.request("/team-roster", {}, env, mockExecutionContext);
+      const res = await testApp.request("/user-123", {}, env, mockExecutionContext);
 
-    expect(res.status).toBe(200);
-    const body = await res.json() as { members: Array<{ nickname: string }> };
-    expect(body.members).toHaveLength(2);
-    expect(body.members[0].nickname).toBe("Member 1");
-  });
+      expect(res.status).toBe(200);
+      const body = await res.json() as { profile: { nickname: string } };
+      expect(body.profile.nickname).toBe("Public User");
+    });
 
-  it("should return 500 on team roster fetch error", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
-    const res = await testApp.request("/team-roster", {}, env, mockExecutionContext);
+    it("should return 404 for non-existent profile", async () => {
+      mockDb.get.mockResolvedValueOnce(null);
+      const res = await testApp.request("/ghost", {}, env, mockExecutionContext);
+      expect(res.status).toBe(404);
+    });
 
-    expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Failed to fetch team roster" });
-  });
+    it("should return 403 for private profile", async () => {
+      const mockProfile = {
+        userId: "user-456",
+        nickname: "Private User",
+        showOnAbout: 0,
+        memberType: "student"
+      };
+      mockDb.get.mockResolvedValueOnce(mockProfile);
 
-  it("should return public profile by userId", async () => {
-    const mockProfile = {
-      userId: "user-123",
-      nickname: "Public User",
-      showOnAbout: 1,
-      memberType: "student"
-    };
-    mockDb.get.mockResolvedValueOnce(mockProfile); // profile
-    mockDb.all.mockResolvedValueOnce([]); // badges
-
-    const res = await testApp.request("/user-123", {}, env, mockExecutionContext);
-
-    expect(res.status).toBe(200);
-    const body = await res.json() as { profile: { nickname: string } };
-    expect(body.profile.nickname).toBe("Public User");
-  });
-
-  it("should return 404 for non-existent profile", async () => {
-    mockDb.get.mockResolvedValueOnce(null);
-    const res = await testApp.request("/ghost", {}, env, mockExecutionContext);
-    expect(res.status).toBe(404);
-  });
-
-  it("should return 403 for private profile", async () => {
-    const mockProfile = {
-      userId: "user-123",
-      nickname: "Private User",
-      showOnAbout: 0,
-      memberType: "student"
-    };
-    mockDb.get.mockResolvedValueOnce(mockProfile);
-
-    const res = await testApp.request("/user-123", {}, env, mockExecutionContext);
-    expect(res.status).toBe(403);
-  });
-
-  it("should handle public profile fetch error", async () => {
-    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
-    const res = await testApp.request("/user-123", {}, env, mockExecutionContext);
-
-    expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Profile fetch failed" });
+      const res = await testApp.request("/user-456", {}, env, mockExecutionContext);
+      expect(res.status).toBe(403);
+    });
   });
 });

@@ -22,6 +22,7 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| v7.1 | ✅ SHIPPED | 2026-05-07 | Drizzle ORM Migration & Type Safety |
 | v6.10 | ✅ SHIPPED | 2026-05-07 | Infrastructure & Polish |
 | v6.9 | ✅ SHIPPED | 2026-05-06 | Type Safety Debt Elimination |
 | v6.8 | ✅ SHIPPED | 2026-05-06 | Hono Zod OpenAPI Migration |

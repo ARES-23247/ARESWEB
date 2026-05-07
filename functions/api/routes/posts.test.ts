@@ -7,6 +7,9 @@ import { TestEnv, MockDrizzle } from "../../../src/test/types";
 import postsRouter from "./posts";
 
 // Mock utilities used by posts router
+vi.mock("../middleware/cache", () => ({
+  edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+}));
 vi.mock("../../utils/postHistory", () => ({
   getPostHistory: vi.fn(),
   approvePost: vi.fn(),

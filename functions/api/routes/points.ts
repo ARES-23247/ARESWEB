@@ -44,7 +44,7 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
   }
 }));
 
-pointsRouter.openapi(getPointsHistoryRoute, (async (c: any) => {
+pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c) => {
   const { user_id } = c.req.valid("param");
   try {
     const sessionUser = c.get("sessionUser");
@@ -64,7 +64,8 @@ pointsRouter.openapi(getPointsHistoryRoute, (async (c: any) => {
       .orderBy(desc(schema.pointsLedger.createdAt))
       .all();
 
-    return c.json(history.map((tx: any) => ({
+    type PointsLedgerRow = typeof schema.pointsLedger.$inferSelect;
+    return c.json(history.map((tx: PointsLedgerRow) => ({
       ...tx,
       points_delta: tx.pointsDelta,
       user_id: tx.userId,
@@ -76,7 +77,7 @@ pointsRouter.openapi(getPointsHistoryRoute, (async (c: any) => {
     console.error("[Points] Get history failed:", err);
     return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
-}) as any);
+}));
 
 pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(async (c) => {
   const { user_id, points_delta, reason } = c.req.valid("json");

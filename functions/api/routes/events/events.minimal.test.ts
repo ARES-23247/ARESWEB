@@ -6,7 +6,6 @@ import { mockExecutionContext, createMockDrizzle, createDrizzleProxy } from "../
 import { TestEnv, MockDrizzle } from "../../../../src/test/types";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
-import { eventHandlers } from "./handlers";
 
 vi.mock("../../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../middleware")>();

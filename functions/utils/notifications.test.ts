@@ -149,7 +149,7 @@ describe('notifications utility', () => {
     });
 
     it('queries admin users when audience includes admin', async () => {
-      const { mockCtx, mockDb, mockAll } = createMockContext({
+      const { mockCtx, mockAll } = createMockContext({
         dbResults: [{ id: 'admin-1' }],
       });
 

@@ -14,6 +14,10 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
+vi.mock("../middleware/cache", () => ({
+  edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+}));
+
 import awardsRouter from "./awards";
 import { createDrizzleProxy, createMockDrizzle } from "../../../src/test/utils";
 import type { MockDrizzle } from "../../../src/test/types";

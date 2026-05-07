@@ -196,7 +196,7 @@ describe("useMedia hook", () => {
 
     expect(toast.success).toHaveBeenCalledWith("Uploaded 2 assets");
 
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should handle bulkUpload errors gracefully", async () => {
@@ -228,7 +228,7 @@ describe("useMedia hook", () => {
     // Verbose error toast should include error name and message
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Network Error"));
 
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should filter assets by selectedFolderFilter", async () => {

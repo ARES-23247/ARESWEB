@@ -81,7 +81,7 @@ export type DrizzleMock = MockDrizzle;
  */
 export type TestEnv = {
   Variables: {
-    db: any;
+    db: Record<string, unknown>;
     sessionUser: {
       id: string;
       email: string;
@@ -90,7 +90,7 @@ export type TestEnv = {
       image?: string | null;
       role: string;
       member_type: string;
-    } | any;
+    } | Record<string, unknown>;
     socialConfig?: Record<string, string | undefined>;
     requestId?: string;
   };

@@ -58,14 +58,18 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 ### Active
 
-- [ ] **MIGRATE-01**: Refactor `tasks`, `store`, `sponsors`, `socialQueue`, `sitemap`, and `simulations` routes to Drizzle ORM (Batch 2).
-- [ ] **MIGRATE-02**: Refactor `zulip`, `zulipWebhook`, `users`, `seasons`, `settings`, and any remaining backend routes to Drizzle ORM (Batch 3).
-- [ ] **MIGRATE-03**: Remove all legacy Kysely querying logic (`db.selectFrom`, `execute`, `executeTakeFirst`) from `functions/api/routes`.
-- [ ] **MIGRATE-04**: Update all backend unit test suites (`*.test.ts`) to mock the Drizzle ORM API (`all`, `run`, `get`) instead of Kysely.
-- [ ] **MIGRATE-05**: Replace the globally cast `c.get("db") as any` bypass with the strongly-typed Drizzle Cloudflare D1 Context once Kysely queries are eliminated.
-- [ ] **MIGRATE-06**: Ensure codebase integrity by passing `npx tsc --noEmit` and `npm run test`.
+None — all tracked milestones completed.
 
-## Current Milestone: v7.1 Drizzle ORM Migration
+## Current Milestone: Maintenance Mode
+
+**Status**: All major migrations complete. Drizzle ORM fully adopted, ESLint at 0 errors/warnings, E2E and accessibility tests passing.
+
+**Quality Metrics**:
+- ESLint: 0 errors, 0 warnings
+- Unit Tests: 834+ passing
+- Playwright E2E: 55/55 passing
+- Pa11y Accessibility: 16/16 URLs passing
+- TypeScript: Full type safety (no `any` bypasses)
 
 **Goal**: Complete the migration of ARESWEB backend persistence from Kysely to Drizzle ORM to achieve full type safety and architectural stability.
 

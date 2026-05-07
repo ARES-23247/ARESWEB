@@ -221,6 +221,14 @@ apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
 apiRouter.route("/communications", communicationsRouter);
 
 // ── Global Search ───
+// D1 FTS result shape from raw SQL queries
+interface FTSResult {
+  type: string;
+  id: string;
+  title: string;
+  snippet: string;
+}
+
 apiRouter.openapi(searchRoute, async (c) => {
   const { q } = c.req.valid("query");
   const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
@@ -228,31 +236,31 @@ apiRouter.openapi(searchRoute, async (c) => {
   const ftsQ = qClean.replace(/\*/g, '') + '*';
   const db = c.get("db");
   const [postsReq, eventsReq, docsReq] = await Promise.all([
-    db.all(sql`
+    db.all(sql<FTSResult>`
       SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet
       FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.isDeleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`),
-    db.all(sql`
+    db.all(sql<FTSResult>`
       SELECT 'event' as type, f.id, highlight(events_fts, 1, '<b>', '</b>') as title, snippet(events_fts, 2, '...', '...', '...', 15) as snippet
       FROM events_fts f JOIN events e ON f.id = e.id WHERE e.isDeleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`),
-    db.all(sql`
+    db.all(sql<FTSResult>`
       SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet
       FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.isDeleted = 0 AND f.docs_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`)
   ]);
   return c.json({
     results: [
-      ...((postsReq as any[] || []).map((r: any) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
-      ...((eventsReq as any[] || []).map((r: any) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
-      ...((docsReq as any[] || []).map((r: any) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })))
+      ...((postsReq.results || []).map((r) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
+      ...((eventsReq.results || []).map((r) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))),
+      ...((docsReq.results || []).map((r) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })))
     ]
   }, 200);
 });
 
 // ── Audit Log ────────────────────────────
-apiRouter.openapi(auditLogRoute, (async (c: any) => {
+apiRouter.openapi(auditLogRoute, async (c) => {
   const { limit: l, offset: o } = c.req.valid("query");
   const limit = l ? parseInt(l, 10) : 50;
   const offset = o ? parseInt(o, 10) : 0;
-  
+
   const db = c.get("db");
   const results = await db.select({
       id: schema.auditLog.id,
@@ -268,7 +276,7 @@ apiRouter.openapi(auditLogRoute, (async (c: any) => {
     .limit(limit)
     .offset(offset)
     .all();
-  
+
   const logs = results.map((r: { id?: string; created_at?: string | null; details?: string | null }) => ({
     ...r,
     id: r.id || crypto.randomUUID(),
@@ -277,7 +285,7 @@ apiRouter.openapi(auditLogRoute, (async (c: any) => {
   }));
 
   return c.json({ logs }, 200);
-}) as any);
+});
 
 app.onError(async (err, c) => {
   console.error("Global API Error:", err);

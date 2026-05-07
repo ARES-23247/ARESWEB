@@ -133,10 +133,11 @@ notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendin
     // Optimized single-roundtrip query for all counts
     const [inquiries, posts, events, docs] = await Promise.all([
       (async () => {
-        let q: any = db
+        let q = db
           .select({ count: count(schema.inquiries.id) })
           .from(schema.inquiries)
-          .where(eq(schema.inquiries.status, "pending"));
+          .where(eq(schema.inquiries.status, "pending"))
+          .$dynamic();
         if (filterOutreach) q = q.where(inArray(schema.inquiries.type, ["outreach", "support"]));
         return q.get();
       })(),
@@ -185,7 +186,7 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof ge
     // Batch fetch all detailed pending items
     const [inquiries, posts, events, docs] = await Promise.all([
       (async () => {
-        let q: any = db
+        let q = db
           .select({
             id: schema.inquiries.id,
             name: schema.inquiries.name,
@@ -195,7 +196,8 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof ge
             createdAt: schema.inquiries.createdAt
           })
           .from(schema.inquiries)
-          .where(eq(schema.inquiries.status, "pending"));
+          .where(eq(schema.inquiries.status, "pending"))
+          .$dynamic();
         if (filterOutreach) q = q.where(inArray(schema.inquiries.type, ["outreach", "support"]));
         return q.all();
       })(),

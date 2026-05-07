@@ -92,7 +92,7 @@ export async function dispatchSocials(
           ZULIP_BOT_EMAIL: config.ZULIP_BOT_EMAIL,
           ZULIP_API_KEY: config.ZULIP_API_KEY,
           ZULIP_URL: config.ZULIP_URL,
-          DB: db as any,
+          DB: db as unknown as Record<string, unknown>,
         },
         "announcements",
         "Website Updates",

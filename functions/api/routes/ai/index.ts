@@ -234,26 +234,21 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
 
 // ── Simulator Playground AI Route ──────────────────────────────────────────
 aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(async (c) => {
-  const body = c.req.valid("json") as any;
-  const { messages, userCode } = body;
+  const body = c.req.valid("json");
+  const { messages, systemPrompt: customSystemPrompt } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
     return c.json({ error: "AI service not configured." }, 500);
   }
 
-  const systemPrompt = `You are an expert FIRST Tech Challenge (FTC) robot programmer. 
+  const systemPrompt = customSystemPrompt || `You are an expert FIRST Tech Challenge (FTC) robot programmer.
 You help users write robot logic for a 2D canvas simulator.
 The simulator provides a 'robot' object with:
 - robot.moveForward(power)
 - robot.turn(angle)
 - robot.getDistance()
 - robot.getAngle()
-
-Current code being edited:
-\`\`\`javascript
-${userCode || "// No code yet"}
-\`\`\`
 
 Provide helpful, technical advice. Be concise.`;
 
@@ -348,19 +343,19 @@ Provide helpful, technical advice. Be concise.`;
 
 // ── Documentation Editor Chat Route ────────────────────────────────────────
 aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c) => {
-  const body = c.req.valid("json") as any;
-  const { messages, documentContext } = body;
+  const body = c.req.valid("json");
+  const { messages, systemPrompt: customSystemPrompt, editorContent } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
     return c.json({ error: "AI service not configured." }, 500);
   }
 
-  const systemPrompt = `You are an AI documentation assistant for ARES 23247. 
+  const systemPrompt = customSystemPrompt || `You are an AI documentation assistant for ARES 23247.
 You help technical writers improve and create content.
 
 Context of the current document:
-${documentContext || "New document"}
+${editorContent || "New document"}
 
 Be technical, helpful, and follow FIRST Core Values.`;
 
@@ -795,7 +790,7 @@ async function saveHistory(db: DrizzleDB, sessionId: string | undefined, history
 
 // ── Manual Reindexing ──────────────────────────────────────────────────────
 aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) => {
-  const { type, content } = c.req.valid("json") as any;
+  const { context } = c.req.valid("json");
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
@@ -803,9 +798,7 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
   }
 
   try {
-    let systemPrompt = "You are an AI assistant for ARES 23247. Provide a short, helpful suggestion.";
-    if (type === "title") systemPrompt = "Generate a short, punchy title for this blog post. Output ONLY the title.";
-    if (type === "summary") systemPrompt = "Generate a 1-sentence summary for this content. Output ONLY the summary.";
+    const systemPrompt = "You are an AI assistant for ARES 23247. Provide a short, helpful suggestion.";
 
     if (hasZai) {
       const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
@@ -818,7 +811,7 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
           model: "GLM-5.1",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: content.substring(0, 5000) }
+            { role: "user", content: context.substring(0, 5000) }
           ],
           max_tokens: 100
         })
@@ -829,7 +822,7 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
       const result = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: content.substring(0, 2000) }
+          { role: "user", content: context.substring(0, 2000) }
         ],
         max_tokens: 100
       }) as { response?: string };
@@ -898,18 +891,18 @@ aiRouter.post("/external-sources", ensureAdmin, async (c) => {
     branch: body.branch || "main",
     status: "active",
     createdAt: new Date().toISOString()
-  } as any).execute();
+  }).execute();
 
   return c.json({ id, success: true });
 });
 
-aiRouter.delete("/external-sources/:id", ensureAdmin, (async (c: any) => {
+aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
   const id = c.req.param("id");
   const db = getDb(c);
-  
+
   await db.delete(schema.externalKnowledgeSources).where(eq(schema.externalKnowledgeSources.id, id)).execute();
   return c.json({ success: true });
-}) as any);
+});
 
 aiRouter.get("/chat-session/:id", async (c) => {
   const id = c.req.param("id");

@@ -100,6 +100,10 @@ vi.mock("../../middleware", async (importOriginal) => {
   };
 });
 
+vi.mock("../../middleware/cache", () => ({
+  edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+}));
+
 vi.mock("../../../utils/socialSync", () => ({
   dispatchSocials: vi.fn().mockResolvedValue(true),
 }));
@@ -463,7 +467,10 @@ describe("Hono Backend - Events Router", () => {
   // Error Paths and Edge Cases
 
   it("GET / - db error", async () => {
-    mockDb.execute = vi.fn().mockRejectedValue(new Error("DB error"));
+    // The route calls .select().from().where().all() which uses execute() via the proxy
+    // Replace both execute() and all() to reject since the proxy checks both
+    mockDb.execute = vi.fn().mockRejectedValueOnce(new Error("DB error"));
+    mockDb.all = vi.fn().mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -476,6 +483,9 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /:id - db error", async () => {
+    // The route calls .select().from().where().get() which uses get() via the proxy
+    // Replace both get() and executeTakeFirst() to reject since proxy checks both
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/1", {}, env, mockExecutionContext);
     expect(res.status).toBe(404); // Database error returns 404 per code

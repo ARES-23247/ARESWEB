@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
+import { createDrizzleProxy } from "../../../src/test/utils";
 import pointsRouter from "./points";
 
 vi.mock("../middleware", async (importOriginal) => {

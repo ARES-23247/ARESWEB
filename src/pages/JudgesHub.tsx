@@ -55,17 +55,17 @@ export default function JudgesHub() {
         <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-ares-cyan/10 blur-[150px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-ares-red/5 blur-[120px] rounded-full" />
         
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-obsidian/40 backdrop-blur-2xl border border-white/5 p-10 ares-cut shadow-2xl relative z-10"
+          className="w-full max-w-md bg-black border border-ares-cyan/20 p-10 ares-cut shadow-[0_0_40px_rgba(0,183,235,0.15)] relative z-10"
         >
           <div className="flex flex-col items-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-ares-cyan to-ares-blue ares-cut-lg flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,183,235,0.3)]">
               <ShieldCheck className="text-white w-10 h-10" />
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight text-center">Judge&apos;s Hub</h1>
-            <p className="text-marble text-center text-sm mt-3 leading-relaxed">
+            <p className="text-gray-300 text-center text-sm mt-3 leading-relaxed">
               Secure, rapid-review portal for competition judges. <br/>
               Enter your unique access code below.
             </p>

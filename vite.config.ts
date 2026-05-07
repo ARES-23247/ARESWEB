@@ -3,7 +3,31 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
 import { imagetools } from "vite-imagetools";
+import type { Plugin } from "vite";
 import path from "path";
+import history from "connect-history-api-fallback";
+
+// SPA fallback plugin for vite preview
+function spaFallbackPlugin(): Plugin {
+  return {
+    name: 'spa-fallback',
+    configurePreviewServer(server) {
+      return () => {
+        server.middlewares.use(
+          history({
+            // Disable index.html rewrite for API routes
+            rewrites: [
+              {
+                from: /^\/api\/.*$/,
+                to: (context) => context.parsedUrl.pathname
+              }
+            ]
+          })
+        );
+      };
+    },
+  };
+}
 
 export default defineConfig({
   test: {
@@ -32,6 +56,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    spaFallbackPlugin(),
     react(),
     imagetools({
       include: ['**/*.{png,jpg,jpeg}'],

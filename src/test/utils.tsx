@@ -45,55 +45,85 @@ export async function flushWaitUntil() {
  * which avoids coverage drops from missing internal builder methods.
  */
 export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDrizzle & DrizzleProxy {
-  // Create the mock functions without initial implementations to allow mockRejectedValueOnce
-  const allMock = vi.fn();
-  const executeMock = vi.fn();
-  const runMock = vi.fn();
-  const getMock = vi.fn();
-  const executeTakeFirstMock = vi.fn();
+  // Track which terminal method was called
+  let terminalMethod: 'get' | 'all' | 'run' | null = null;
+  let isMutation = false;
 
-  // Set default implementations
-  allMock.mockImplementation((...args: unknown[]) => {
-    // Handle Drizzle sql template strings
-    if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
-      return Promise.resolve(defaultResolve);
-    }
-    return Promise.resolve(defaultResolve);
-  });
+  // Create the mock functions with default implementations
+  const allMock = vi.fn(() => { terminalMethod = 'all'; return Promise.resolve(defaultResolve); });
+  const executeMock = vi.fn(() => { terminalMethod = 'all'; return Promise.resolve(defaultResolve); });
+  const runMock = vi.fn(() => { terminalMethod = 'run'; return Promise.resolve({ success: true, meta: { changes: 1 } }); });
+  const getMock = vi.fn(() => { terminalMethod = 'get'; return Promise.resolve(defaultResolve[0] || null); });
+  const executeTakeFirstMock = vi.fn(() => { terminalMethod = 'get'; return Promise.resolve(defaultResolve[0] || null); });
 
-  executeMock.mockImplementation((...args: unknown[]) => {
-    // Handle Drizzle sql template strings
-    if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'getSQL' in args[0]) {
-      return Promise.resolve(defaultResolve);
-    }
-    return Promise.resolve(defaultResolve);
-  });
-
-  runMock.mockResolvedValue({ success: true });
-  getMock.mockResolvedValue(defaultResolve[0] || null);
-  executeTakeFirstMock.mockResolvedValue(defaultResolve[0] || null);
+  const resetTerminalState = () => {
+    const method = terminalMethod;
+    terminalMethod = null;
+    const mutation = isMutation;
+    isMutation = false;
+    return { method, isMutation: mutation };
+  };
 
   const mockDb = {
-    select: vi.fn().mockReturnThis(),
-    selectDistinct: vi.fn().mockReturnThis(),
+    select: vi.fn().mockImplementation(function(this: typeof mockDb) {
+      isMutation = false;
+      terminalMethod = null;
+      return this;
+    }),
+    selectDistinct: vi.fn().mockImplementation(function(this: typeof mockDb) {
+      isMutation = false;
+      terminalMethod = null;
+      return this;
+    }),
     from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
+    where: vi.fn().mockImplementation(function(this: typeof mockDb, cb: (eb: Record<string, ReturnType<typeof vi.fn>>) => void) {
+      if (typeof cb === 'function') {
+        const ebMock = Object.assign(vi.fn().mockReturnThis(), { or: vi.fn().mockReturnThis(), and: vi.fn().mockReturnThis(), not: vi.fn().mockReturnThis() }) as unknown as Record<string, ReturnType<typeof vi.fn>>;
+        cb(ebMock);
+      }
+      return this;
+    }),
     limit: vi.fn().mockReturnThis(),
     offset: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockImplementation(function(this: typeof mockDb) {
+      isMutation = true;
+      terminalMethod = null;
+      return this;
+    }),
     values: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
+    update: vi.fn().mockImplementation(function(this: typeof mockDb) {
+      isMutation = true;
+      terminalMethod = null;
+      return this;
+    }),
     set: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockImplementation(function(this: typeof mockDb) {
+      isMutation = true;
+      terminalMethod = null;
+      return this;
+    }),
+    returning: vi.fn().mockImplementation(function(this: typeof mockDb) {
+      terminalMethod = 'run';
+      return this;
+    }),
     leftJoin: vi.fn().mockReturnThis(),
     innerJoin: vi.fn().mockReturnThis(),
     onConflictDoUpdate: vi.fn().mockReturnThis(),
     onConflictDoNothing: vi.fn().mockReturnThis(),
     groupBy: vi.fn().mockReturnThis(),
     having: vi.fn().mockReturnThis(),
-    then: vi.fn().mockImplementation((resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) => allMock().then(resolve, reject)),
+    then: vi.fn().mockImplementation(function(this: typeof mockDb, resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) {
+      const state = resetTerminalState();
+      if (state.method === 'get') {
+        return getMock().then(resolve, reject);
+      }
+      if (state.method === 'run' || state.isMutation) {
+        return runMock().then(resolve, reject);
+      }
+      // Default to 'all' or execute
+      return allMock().then(resolve, reject);
+    }),
     transaction: vi.fn().mockImplementation(async (cb: (db: typeof mockDb) => Promise<unknown>) => cb(mockDb)),
     batch: vi.fn().mockResolvedValue([]),
     all: allMock,
@@ -144,11 +174,9 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
     from: vi.fn().mockImplementation((..._args: unknown[]) => proxy),
     all: vi.fn().mockImplementation((...args: unknown[]) => {
       terminalMethod = 'all';
+      // Directly call through to the underlying mock's all method
       if ('all' in dbMock && typeof dbMock.all === 'function') {
-        const result = (dbMock.all as (...a: unknown[]) => unknown)(...args);
-        if (result && typeof (result as Promise<unknown>).then === 'function') {
-          return result;
-        }
+        return (dbMock.all as (...a: unknown[]) => unknown)(...args);
       }
       if ((dbMock as DrizzleProxyTarget).execute) {
         return (dbMock as DrizzleProxyTarget).execute!(...args);
@@ -157,11 +185,10 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
     }),
     get: vi.fn().mockImplementation((...args: unknown[]) => {
       terminalMethod = 'get';
+      // Directly call through to the underlying mock's get method
+      // Don't wrap or intercept - just return the result
       if ('get' in dbMock && typeof dbMock.get === 'function') {
-        const result = (dbMock.get as (...a: unknown[]) => unknown)(...args);
-        if (result && typeof (result as Promise<unknown>).then === 'function') {
-          return result;
-        }
+        return (dbMock.get as (...a: unknown[]) => unknown)(...args);
       }
       if ((dbMock as DrizzleProxyTarget).executeTakeFirst) {
         return (dbMock as DrizzleProxyTarget).executeTakeFirst!(...args);
@@ -170,11 +197,9 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
     }),
     run: vi.fn().mockImplementation((...args: unknown[]) => {
       terminalMethod = 'run';
+      // Directly call through to the underlying mock's run method
       if ('run' in dbMock && typeof dbMock.run === 'function') {
-        const result = (dbMock.run as (...a: unknown[]) => unknown)(...args);
-        if (result && typeof (result as Promise<unknown>).then === 'function') {
-          return result;
-        }
+        return (dbMock.run as (...a: unknown[]) => unknown)(...args);
       }
       if ((dbMock as DrizzleProxyTarget).execute) {
         return (dbMock as DrizzleProxyTarget).execute!(...args).then(() => ({ success: true, meta: { changes: 1 } }));
@@ -317,7 +342,11 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       if (prop in drizzleMethods) {
         return drizzleMethods[prop as string];
       }
-      return (target as DrizzleProxyTarget)[prop as string];
+      // For chainable Drizzle methods not explicitly listed ($dynamic, groupBy, etc.)
+      // return a function that returns the proxy itself
+      const targetProp = (target as DrizzleProxyTarget)[prop as string];
+      if (targetProp !== undefined) return targetProp;
+      return (..._args: unknown[]) => proxy;
     }
   }) as unknown as DrizzleProxy;
 
