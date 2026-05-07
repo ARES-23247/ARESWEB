@@ -1,10 +1,14 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, and } from "drizzle-orm";
+import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
+import * as relations from "../../../src/db/relations";
 import { AppEnv } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
 import { getSitemapRoute } from "../../../shared/routes/sitemap";
+
+type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
 
 export const sitemapRouter = new OpenAPIHono<AppEnv>();
 
@@ -12,7 +16,7 @@ export const sitemapRouter = new OpenAPIHono<AppEnv>();
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
 
 sitemapRouter.openapi(getSitemapRoute, typedHandler<typeof getSitemapRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = c.get("db") as DrizzleDb;
   try {
     const now = Date.now();
     if (sitemapCache && sitemapCache.expiresAt > now) {
