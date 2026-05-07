@@ -80,10 +80,12 @@ const apiRouter = new OpenAPIHono<AppEnv>({
   }
 });
 
-// SCA-P01: Prevent CDN Cache Poisoning
+// SCA-P01: Prevent CDN Cache Poisoning (Context-Aware Default)
 apiRouter.use("*", async (c, next) => {
   await next();
-  c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  if (!c.res.headers.has("Cache-Control")) {
+    c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  }
 });
 
 // Prometheus Metrics Endpoint

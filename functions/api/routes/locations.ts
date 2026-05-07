@@ -12,12 +12,16 @@ import {
   deleteLocationRoute
 } from "../../../shared/routes/locations";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
+import { edgeCacheMiddleware } from "../middleware/cache";
 
 
 
 type LocationInput = z.infer<typeof locationSchema>;
 
 export const locationsRouter = new OpenAPIHono<AppEnv>();
+
+// Apply caching to public locations list
+locationsRouter.use("/", edgeCacheMiddleware(300, 60));
 
 locationsRouter.use("/admin/*", ensureAdmin);
 

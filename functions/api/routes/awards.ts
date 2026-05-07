@@ -4,11 +4,15 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { Kysely } from "kysely";
 import { DB } from "../../../shared/schemas/database";
 import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
+import { edgeCacheMiddleware } from "../middleware/cache";
 import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../shared/routes/awards";
 
 
 
 export const awardsRouter = new OpenAPIHono<AppEnv>();
+
+// Apply caching to public awards list
+awardsRouter.use("/", edgeCacheMiddleware(300, 60));
 
 awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (c) => {
   try {

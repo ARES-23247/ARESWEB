@@ -12,6 +12,7 @@ import {
   ensureAuth,
 } from "../middleware";
 import { getAuth } from "../../utils/auth";
+import { edgeCacheMiddleware } from "../middleware/cache";
 import { decrypt } from "../../utils/crypto";
 import { upsertProfile } from "./_profileUtils";
 import { z } from "zod";
@@ -32,7 +33,9 @@ const profilesRouter = new OpenAPIHono<AppEnv>();
 // ─── Middleware Configuration ─────────────────────────────────────────────
 // Apply rate limiting to public routes
 profilesRouter.use("/team-roster", rateLimitMiddleware(100, 60));
+profilesRouter.use("/team-roster", edgeCacheMiddleware(300, 60));
 profilesRouter.use("/:userId", rateLimitMiddleware(100, 60));
+profilesRouter.use("/:userId", edgeCacheMiddleware(300, 60));
 // Apply persistent rate limiting to write routes
 profilesRouter.use("/update-me", persistentRateLimitMiddleware(10, 60));
 profilesRouter.use("/avatar", persistentRateLimitMiddleware(15, 60));

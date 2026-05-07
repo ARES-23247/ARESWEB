@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom";
 import { server } from "./mocks/server";
+import { beforeEach } from "vitest";
 
 // Start MSW Server
 server.listen({ onUnhandledRequest: "warn" });
@@ -14,24 +15,52 @@ const scrollTo = () => {};
 window.scrollTo = scrollTo;
 
 // Mock Cloudflare-specific globals
-// Full Cache API mock for Hono cache middleware
+// Full Cache API mock for Hono cache middleware - functional implementation
+const cacheStores = new Map<string, Map<string, Response>>();
+
+// Helper to reset cache between tests if needed
+export const clearTestCache = () => cacheStores.clear();
+
 (globalThis as unknown as { caches: unknown }).caches = {
   // caches.match() - direct matching across all caches
-  match: () => Promise.resolve(undefined),
-  // caches.open() - returns a Cache object
-  open: () => Promise.resolve({
-    match: () => Promise.resolve(undefined),
-    put: () => Promise.resolve(undefined),
-    delete: () => Promise.resolve(undefined),
-    keys: () => Promise.resolve([]),
-  }),
-  // caches.default - Cloudflare-style default cache
-  default: {
-    match: () => Promise.resolve(undefined),
-    put: () => Promise.resolve(undefined),
-    delete: () => Promise.resolve(undefined),
+  match: async (key: string) => {
+    for (const store of cacheStores.values()) {
+      const response = store.get(key);
+      if (response) return response;
+    }
+    return undefined;
+  },
+  // caches.open() - returns a Cache object that actually stores responses
+  open: async (cacheName: string) => {
+    if (!cacheStores.has(cacheName)) {
+      cacheStores.set(cacheName, new Map());
+    }
+    const store = cacheStores.get(cacheName)!;
+    return {
+      match: async (key: string) => store.get(key),
+      put: async (key: string, response: Response) => {
+        store.set(key, response);
+      },
+      delete: async (key: string) => store.delete(key),
+      keys: async () => Array.from(store.keys()),
+    };
+  },
+  // caches.default - Cloudflare-style default cache (alias to first store)
+  get default() {
+    const defaultStore = cacheStores.get("default") || new Map();
+    if (!cacheStores.has("default")) cacheStores.set("default", defaultStore);
+    return {
+      match: async (key: string) => defaultStore.get(key),
+      put: async (key: string, response: Response) => defaultStore.set(key, response),
+      delete: async (key: string) => defaultStore.delete(key),
+    };
   },
 };
+
+// Clear cache before each test to prevent cached responses from interfering with error tests
+beforeEach(() => {
+  clearTestCache();
+});
 
 // Mock ExecutionContext for Hono request testing
 export const mockExecutionContext = {

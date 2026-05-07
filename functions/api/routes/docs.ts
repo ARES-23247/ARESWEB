@@ -6,6 +6,7 @@ import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, checkPersistentRateLimit, verifyTurnstile, emitNotification, notifyByRole, getSocialConfig, logAuditAction } from "../middleware";
+import { edgeCacheMiddleware } from "../middleware/cache";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
@@ -16,6 +17,15 @@ import * as docsRoutes from "../../../shared/routes/docs";
 
 
 export const docsRouter = new OpenAPIHono<AppEnv>();
+
+// Apply edge caching to public documentation routes (GET only, non-admin)
+docsRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.endsWith("/feedback")) {
+    return next();
+  }
+  return edgeCacheMiddleware(300, 60)(c, next);
+});
 
 // SEC-F01: Authenticated users can submit revisions via /admin/save
 docsRouter.use("/admin/save", ensureAuth);
