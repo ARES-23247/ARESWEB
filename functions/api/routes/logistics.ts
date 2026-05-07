@@ -1,5 +1,5 @@
 import { typedHandler } from "../utils/handler";
-import { AppEnv, ensureAdmin } from "../middleware";
+import { AppEnv, ensureAdmin, getDb } from "../middleware";
 import { eq, ne } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -14,7 +14,7 @@ export const logisticsRouter = new OpenAPIHono<AppEnv>();
 logisticsRouter.use("/admin/*", ensureAdmin);
 
 logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisticsSummaryRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
 
   try {
     const results = await db.select({
@@ -42,7 +42,7 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisti
       }
 
       if (r.dietary_restrictions) {
-        const restrictions = r.dietary_restrictions.split(",").map((st: any) => st.trim());
+        const restrictions = r.dietary_restrictions.split(",").map((st: string) => st.trim());
         for (const dr of restrictions) {
           if (dr) summary[dr] = (summary[dr] || 0) + 1;
         }
@@ -61,7 +61,7 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisti
 }));
 
 logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLogisticsEmailsRoute>(async (c) => {
-  const db = c.get("db") as any;
+  const db = getDb(c);
   const secret = c.env.ENCRYPTION_SECRET;
 
   try {
