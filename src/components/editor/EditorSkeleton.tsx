@@ -6,6 +6,12 @@
  * Uses shimmer animation matching ARES brand colors.
  */
 
+// Pre-generate deterministic widths for skeleton lines to avoid impure Math.random() calls during render
+const SKELETON_WIDTHS = Array.from({ length: 15 }, (_, i) => {
+  // Use a simple hash of index to generate deterministic pseudo-random widths
+  return 60 + ((i * 37) % 40);
+});
+
 export default function EditorSkeleton() {
   return (
     <div className="flex flex-col h-full w-full bg-[#1e1e1e] animate-pulse" role="status" aria-label="Loading code editor">
@@ -27,11 +33,11 @@ export default function EditorSkeleton() {
 
         {/* Code area placeholder */}
         <div className="flex-1 p-4 space-y-2">
-          {Array.from({ length: 15 }).map((_, i) => (
+          {SKELETON_WIDTHS.map((width, i) => (
             <div
               key={i}
               className="h-4 bg-white/5 rounded"
-              style={{ width: `${60 + Math.random() * 40}%` }}
+              style={{ width: `${width}%` }}
             />
           ))}
         </div>
