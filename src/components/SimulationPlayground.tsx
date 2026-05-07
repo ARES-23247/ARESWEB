@@ -35,7 +35,8 @@ if (import.meta.env.PROD) {
 // CSP headers for worker scripts should be configured in index.html:
 // Content-Security-Policy: script-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:
 
-const MonacoEditor = lazy(() => import("@monaco-editor/react"));
+// Lazy-loaded Monaco Editor with ARES-branded loading UX
+const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then(mod => ({ default: mod.default })));
 const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then(mod => ({ default: mod.DiffEditor })));
 const SimPreviewFrame = lazy(() => import("./editor/SimPreviewFrame"));
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -55,18 +56,8 @@ import prettierPluginTs from "prettier/plugins/typescript";
 import ArmKgSimRaw from "../sims/armkg/index.tsx?raw";
 import ElevatorPidSimRaw from "../sims/elevatorpid/index.tsx?raw";
 
-// Babel standalone for JSX/TSX transpilation
-let Babel: { transform: (code: string, opts: Record<string, unknown>) => { code: string } } | null = null;
-const loadBabel = async () => {
-  if (!Babel) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore - no types available
-    const mod = (await import("@babel/standalone")) as { default?: { transform: (code: string, opts: Record<string, unknown>) => { code: string } } };
-    Babel = mod.default || (mod as unknown as { transform: (code: string, opts: Record<string, unknown>) => { code: string } });
-  }
-  return Babel!;
-};
-
+// Lazy-loaded Babel for JSX/TSX transpilation
+import { transformCode } from "../utils/lazyBabel";
 
 
 interface SavedSim {
@@ -144,15 +135,12 @@ export default function SimulationPlayground() {
     setCompileError(null);
     setTestResults([]); // Clear tests on compile
     try {
-      const babel = await loadBabel();
       const compiled: Record<string, string> = {};
       for (const [filename, content] of Object.entries(sourceFiles)) {
         if (filename.match(/\.(tsx?|jsx?)$/)) {
-          const result = babel.transform(content, {
-            presets: ["env", "react", ["typescript", { isTSX: true, allExtensions: true }]],
-            filename: filename,
-          });
-          compiled[filename] = result.code || "";
+          // Use lazy-loaded Babel transform
+          const result = await transformCode(content, ["env", "react", ["typescript", { isTSX: true, allExtensions: true }]] as unknown as string[]);
+          compiled[filename] = result || "";
         } else {
           compiled[filename] = content;
         }
@@ -1211,7 +1199,7 @@ export default function SimulationPlayground() {
                   )}
                   {/* Monaco Editor */}
                   <div className="flex-1 min-h-0 min-w-0 relative">
-                    <Suspense fallback={<textarea className="w-full h-full bg-[#1e1e1e] text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly placeholder="Loading code editor..." />}>
+                    <Suspense fallback={<textarea className="w-full h-full bg-[#1e1e1e] text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly placeholder="Loading code editor..." aria-label="Loading code editor" />}>
                       {pendingAiChanges && pendingAiChanges[activeFile] ? (
                         <MonacoDiffEditor
                           height="100%"
