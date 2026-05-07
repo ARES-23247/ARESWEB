@@ -54,21 +54,20 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 6.5 (Zulip Sync & Social Media)** — Resolved `aresfirst.org` Google Workspace dot-mismatches and created architectural documentation for the Social Media Manager.
 
 - ✓ **Milestone 6.7 (TypeScript Any Elimination)** — Created shared type infrastructure, migrated all route handlers to contract inference, typed test mocks, and eliminated explicit any violations.
+- ✓ **Milestone 6.9 (Type Safety Debt Elimination)** — Achieved 100% compile-time type safety by creating `typedHandler` wrappers, unifying frontend API types, and eliminating all `as any` and `eslint-disable` bypasses.
 
 ### Active
 
 (None currently active)
 
-## Current Milestone: v6.8 Hono Zod OpenAPI Migration
+## Current Milestone: v6.10 Infrastructure & Polish
 
-**Goal:** Replace ts-rest with `@hono/zod-openapi` to achieve full compile-time type safety, eliminate all `s.router(contract, handlers as any)` casts, and gain auto-generated OpenAPI documentation.
+**Goal:** Optimize platform performance through edge-native caching and enhance user communication resilience.
 
 **Target features:**
-- Convert 27 `initContract().router()` contract definitions to `createRoute()` format
-- Replace 27 `createHonoEndpoints()` handler mounts with native `app.openapi()` routing
-- Remove `@ts-rest/core`, `@ts-rest/open-api`, `ts-rest-hono` dependencies
-- Add `/api/docs` endpoint serving auto-generated OpenAPI spec
-- Maintain identical public API URLs and behavior
+- Edge-native caching (300s TTL) for all high-traffic public API routes.
+- Automated email receipts for Join and Support inquiry forms.
+- Global middleware audit to ensure header consistency.
 
 ## Current State
 

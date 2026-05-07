@@ -22,7 +22,9 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
-| v6.8 | ACTIVE | 2026-05-06 | Hono Zod OpenAPI Migration |
+| v6.10 | ✅ SHIPPED | 2026-05-07 | Infrastructure & Polish |
+| v6.9 | ✅ SHIPPED | 2026-05-06 | Type Safety Debt Elimination |
+| v6.8 | ✅ SHIPPED | 2026-05-06 | Hono Zod OpenAPI Migration |
 | v6.7 | ✅ SHIPPED | 2026-05-06 | TypeScript Any Elimination |
 | [v6.5](milestones/v6.5-ROADMAP.md) | ✅ SHIPPED | 2026-05-04 | Zulip Sync & Social Media Formalization |
 | [v6.4](milestones/v6.4-ROADMAP.md) | ✅ SHIPPED | 2026-05-04 | Science & Math Corner Expansion |

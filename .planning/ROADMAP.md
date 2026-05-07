@@ -5,7 +5,9 @@
 - v6.6 TypeScript Strictness - Phases 21-26 (shipped 2026-05-05)
 - v6.7 TypeScript Any Elimination - Phases 27-33 (shipped 2026-05-06)
 - v6.8 Hono Zod OpenAPI Migration - Phases 34-37 (shipped 2026-05-06)
-- **v6.9 Type Safety Debt Elimination** - Phases 38-42 (active)
+- v6.9 Type Safety Debt Elimination - Phases 38-42 (shipped 2026-05-06)
+- v6.10 Infrastructure & Polish - Phases 43-44 (shipped 2026-05-07)
+- **v7.0 Performance Optimization** - Phases 45-49 (planned)
 
 ## Phases
 
@@ -46,29 +48,23 @@
 
 </details>
 
-### v6.9 Type Safety Debt Elimination (Phases 38-42)
+<details>
+<summary>v6.9 Type Safety Debt Elimination (Phases 38-42) - SHIPPED 2026-05-06</summary>
 
-**Goal**: Eliminate all `as any` casts, `eslint-disable` directives, and `@ts-expect-error` suppressions from production code to achieve true compile-time type safety.
+- [x] Phase 38: Typed Hono Handler Wrapper
+- [x] Phase 39: Frontend API Type Unification
+- [x] Phase 40: D1 Kysely Type Wrappers
+- [x] Phase 41: React Hooks Dependency Audit
+- [x] Phase 42: Final Sweep and CI Hardening
 
-**Baseline metrics** (2026-05-06):
-- `as any` casts (non-test): 91
-- File-level `eslint-disable`: 70
-- Inline `eslint-disable-next-line`: 58
-- `@ts-expect-error`: 17
+</details>
 
-- [x] **Phase 38: Typed Hono Handler Wrapper** - Create generic `typedHandler<R>()` that infers `c.req.valid()` types from route schema
- (completed 2026-05-06)
-  - **Plans**: 0
-- [x] **Phase 39: Frontend API Type Unification** - Re-export `z.infer<>` types from shared/routes/ into frontend hooks and components
-  - **Plans**: 0
-  - **Depends on**: Phase 38
-- [x] **Phase 40: D1 Kysely Type Wrappers** - Replace `@ts-expect-error` with typed query helper functions
-  - **Plans**: 0
-- [x] **Phase 41: React Hooks Dependency Audit** - Refactor suppressed `exhaustive-deps` in SimulationPlayground, ProfileEditor
-  - **Plans**: 1
-- [x] **Phase 42: Final Sweep and CI Hardening** - Remove all remaining `eslint-disable` directives, verify zero bypasses
-  - **Plans**: 0
-  - **Depends on**: Phase 38, 39, 40, 41
+### v6.10 Infrastructure & Polish (Phases 43-44)
+
+**Goal**: Optimize edge-native performance and improve user engagement through automated communication workflows.
+
+- [x] **Phase 43: Edge-Native Caching Optimization** - Implement context-aware `edgeCacheMiddleware` for high-traffic routes.
+- [x] **Phase 44: Automated Inquiry Communication** - Deliver automated branded email receipts for all contact form submissions.
 
 ## Phase Details
 
@@ -176,3 +172,54 @@
 6. All 926+ tests pass
 
 **Plans**: 0 (run /gsd-plan-phase 42 to create)
+
+---
+
+### Phase 43: Edge-Native Caching Optimization
+
+**Goal**: Implement a robust edge-native caching strategy using `edgeCacheMiddleware` while ensuring global middleware doesn't overwrite specific cache headers.
+
+**Requirements**: CACHE-01, CACHE-02, CACHE-03, VAL-01
+
+**Success Criteria**:
+1. `edgeCacheMiddleware` active on `/api/docs` (list, search, slug).
+2. Global `Cache-Control` middleware in `[[route]].ts` is context-aware.
+3. Admin routes (`/admin/*`) remain uncached.
+4. `tsc --noEmit` passes.
+
+---
+
+### Phase 44: Automated Inquiry Communication
+
+**Goal**: Establish automated branded email receipts for all contact form submissions to improve user engagement.
+
+**Requirements**: COMM-01, COMM-02, COMM-03
+
+**Success Criteria**:
+1. `Join Team` inquiries trigger automated receipt via `dispatchReceipt`.
+2. `Support` inquiries trigger automated receipt via `dispatchReceipt`.
+3. Email templates use ARES championship-tier branding.
+
+### v7.0 Performance Optimization (Phases 45-49)
+
+**Goal**: Reduce initial bundle size by 60-70% and achieve 90+ Lighthouse score
+
+**Baseline metrics** (2026-05-06):
+- Initial bundle: ~8MB
+- Largest chunks: Monaco (2.5MB), Babel (3MB), Editor (1.5MB)
+- Lighthouse Performance: TBD
+
+- [ ] **Phase 45: Bundle Size Optimization** - Monaco lazy loading, Babel splitting (~5-6MB savings)
+- [ ] **Phase 46: Media Optimization** - WebP conversion, responsive images, font-display swap
+- [ ] **Phase 47: Loading Strategy** - Route-based chunk splitting, critical resource preloading
+- [ ] **Phase 48: Caching Improvements** - Service worker optimization (500 entries), HTTP caching (5-15min SWR)
+- [ ] **Phase 49: Monitoring** - Web Vitals tracking, bundle size CI/CD checks, performance dashboard
+
+**Target metrics**:
+- Initial bundle: <3MB
+- Lighthouse Performance: 90+
+- First Contentful Paint: <1s
+- Time to Interactive: <2s
+
+**Plans**: See `.planning/milestones/v7.0-ROADMAP.md`
+
