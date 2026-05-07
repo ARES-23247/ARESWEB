@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
- 
+
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, ensureAuth } from "../../middleware";
 import { eventHandlers } from "./handlers";
-import { Kysely } from "kysely";
-import { DB } from "../../../../shared/schemas/database";
+import { eq, desc, sql } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import {
   getEventsRoute,
   getAdminEventsRoute,
@@ -174,18 +174,24 @@ eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRo
   try {
     const { id } = c.req.valid("param");
     const db = c.get("db") as any;
-    const results = await db.selectFrom("document_history")
-      .select(["id", "room_id", "content", "created_by", "created_at"])
-      .where("room_id", "=", `event_${id}`)
-      .orderBy("created_at", "desc")
+    const results = await db.select({
+      id: schema.documentHistory.id,
+      roomId: schema.documentHistory.roomId,
+      content: schema.documentHistory.content,
+      createdBy: schema.documentHistory.createdBy,
+      createdAt: schema.documentHistory.createdAt,
+    })
+      .from(schema.documentHistory)
+      .where(eq(schema.documentHistory.roomId, `event_${id}`))
+      .orderBy(desc(schema.documentHistory.createdAt))
       .limit(50)
-      .execute();
+      .all();
 
     const history = results.map((h: any) => ({
       id: Number(h.id),
       title: `Revision ${h.id}`,
-      author_email: h.created_by,
-      created_at: h.created_at,
+      author_email: h.createdBy,
+      created_at: h.createdAt,
     }));
 
     return c.json({ history } as any, 200 as any);
@@ -200,33 +206,35 @@ eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventH
     const { id, historyId } = c.req.valid("param");
     const db = c.get("db") as any;
 
-    const row = await db.selectFrom("document_history")
-      .select(["content"])
-      .where("id", "=", Number(historyId))
-      .where("room_id", "=", `event_${id}`)
-      .executeTakeFirst();
+    const row = await db.select({
+      content: schema.documentHistory.content,
+    })
+      .from(schema.documentHistory)
+      .where(eq(schema.documentHistory.id, Number(historyId)))
+      .where(eq(schema.documentHistory.roomId, `event_${id}`))
+      .get();
 
     if (!row) {
       return c.json({ error: "Version not found" }, 404);
     }
 
     // Update the event description with the restored content
-    await db.updateTable("events")
+    await db.update(schema.events)
       .set({ description: row.content })
-      .where("id", "=", id as string)
-      .execute();
+      .where(eq(schema.events.id, id as string))
+      .run();
 
     // Save a new history entry for the restore action
     const { getSessionUser } = await import("../../middleware");
     const user = await getSessionUser(c);
-    await db.insertInto("document_history")
+    await db.insert(schema.documentHistory)
       .values({
-        room_id: `event_${id}`,
+        roomId: `event_${id}`,
         content: row.content,
-        created_by: user?.email || "admin",
-        created_at: new Date().toISOString(),
+        createdBy: user?.email || "admin",
+        createdAt: sql`CURRENT_TIMESTAMP`,
       })
-      .execute();
+      .run();
 
     return c.json({ success: true }, 200);
   } catch (e) {
