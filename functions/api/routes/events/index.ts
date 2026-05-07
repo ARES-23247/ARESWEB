@@ -38,8 +38,8 @@ import { edgeCacheMiddleware } from "../../middleware/cache";
 const eventsRouter = new OpenAPIHono<AppEnv>();
 
 // ─── Middleware ───────────────────────────────────────────────────────────
-eventsRouter.use("/", edgeCacheMiddleware(300, 60)); // Cache list
-eventsRouter.use("/:id", edgeCacheMiddleware(300, 60)); // Cache single
+eventsRouter.use("/", edgeCacheMiddleware(180, 60, 300)); // Cache list
+eventsRouter.use("/:id", edgeCacheMiddleware(180, 60, 300)); // Cache single
 eventsRouter.use("/admin/*", ensureAdmin);
 eventsRouter.use("/:id/signups", ensureAuth);
 

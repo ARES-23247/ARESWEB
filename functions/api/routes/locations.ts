@@ -21,7 +21,7 @@ type LocationInput = z.infer<typeof locationSchema>;
 export const locationsRouter = new OpenAPIHono<AppEnv>();
 
 // Apply caching to public locations list
-locationsRouter.use("/", edgeCacheMiddleware(300, 60));
+locationsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 
 locationsRouter.use("/admin/*", ensureAdmin);
 

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Calendar, BarChart3, Plus } from "lucide-react";
 import { SocialComposer, SocialCalendar, SocialAnalytics } from "./social";
-import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import type { SocialQueuePost } from "@shared/routes/socialQueue";
 
 type Tab = "compose" | "calendar" | "analytics";
@@ -23,31 +22,19 @@ export default function SocialHub() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Tab Navigation */}
-      <div className="flex bg-black/40 p-1 ares-cut-sm border border-white/5 w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ares-cut-sm flex items-center gap-2 ${
-              activeTab === tab.id
-                ? "bg-ares-red text-white"
-                : "text-marble/60 hover:text-white"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <DashboardPageHeader
-        title="Social Media Manager"
-        subtitle="Schedule, analyze, and manage posts across all platforms"
-        icon={<Sparkles className="text-ares-gold" />}
-        action={
-          activeTab !== "compose" && (
+    <div className="flex-1 w-full flex flex-col min-h-0">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-tighter flex items-center gap-2">
+             <Sparkles className="text-ares-gold" size={24} />
+             Social Media Manager
+          </h2>
+          <p className="text-marble/60 text-sm mt-1">
+            Schedule, analyze, and manage posts across all platforms
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {activeTab !== "compose" && (
             <button
               onClick={() => {
                 setEditingPost(null);
@@ -58,12 +45,28 @@ export default function SocialHub() {
               <Plus size={18} />
               New Post
             </button>
-          )
-        }
-      />
+          )}
+        </div>
+      </div>
 
-      {/* Content */}
-      <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden">
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${
+              activeTab === tab.id
+                ? "bg-ares-gold text-black"
+                : "bg-white/5 text-marble/90 border border-white/5 hover:bg-white/10"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 min-h-0">
         <AnimatePresence mode="wait">
           {activeTab === "compose" && (
             <motion.div
@@ -72,7 +75,6 @@ export default function SocialHub() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="p-6"
             >
               <SocialComposer
                 onClose={() => {
@@ -92,7 +94,6 @@ export default function SocialHub() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="p-6"
             >
               <SocialCalendar onEditPost={handleEditPost} />
             </motion.div>
@@ -105,7 +106,6 @@ export default function SocialHub() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="p-6"
             >
               <SocialAnalytics />
             </motion.div>

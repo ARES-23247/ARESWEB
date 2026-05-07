@@ -36,7 +36,7 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 // WR-01 FIX: Standardize on /admin/* pattern (remove redundant /admin patterns)
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
-sponsorsRouter.use("/", edgeCacheMiddleware(300, 60));
+sponsorsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 // Get all public sponsors
 sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
   try {

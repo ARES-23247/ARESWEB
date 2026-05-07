@@ -232,7 +232,7 @@
 6. All existing editor functionality preserved (no regression)
 
 **Plans**: 1 plan
-- [ ] 01-01-PLAN.md — Monaco and Babel lazy loading with ARES-branded loading UX
+- [x] 01-01-PLAN.md — Monaco and Babel lazy loading with ARES-branded loading UX
 
 ---
 
@@ -240,7 +240,10 @@
 
 **Goal**: Convert images to WebP, implement responsive images, and add font-display swap.
 
-**Requirements**: IMG-01, IMG-02, IMG-03
+**Plans**: 
+- [x] WebP Conversion Pipeline
+- [x] Responsive Images Implementation
+- [x] Font Loading Strategy
 
 **Success Criteria**:
 1. All images in public/ have WebP counterparts (build-generated)
@@ -260,7 +263,9 @@
 
 **Goal**: Route-based chunk splitting and critical resource preloading.
 
-**Plans**: See `.planning/milestones/v7.0-phases/03-loading-strategy/PLAN.md`
+**Plans**:
+- [x] Route-Based Chunk Splitting
+- [x] Preload Critical Resources
 
 ---
 
@@ -277,6 +282,16 @@
 **Goal**: Web Vitals tracking, bundle size CI/CD checks, and performance dashboard.
 
 **Plans**: See `.planning/milestones/v7.0-phases/05-monitoring/PLAN.md`
+
+### Phase 51: UI fixes: Header ARES Academy and Social Media manager nesting
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 50
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 51 to break down)
 
 ---
 

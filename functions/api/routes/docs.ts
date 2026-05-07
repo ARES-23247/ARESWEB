@@ -24,7 +24,7 @@ docsRouter.use("*", async (c, next) => {
   if (c.req.method !== "GET" || path.includes("/admin/") || path.endsWith("/feedback")) {
     return next();
   }
-  return edgeCacheMiddleware(300, 60)(c, next);
+  return edgeCacheMiddleware(180, 60, 300)(c, next);
 });
 
 // SEC-F01: Authenticated users can submit revisions via /admin/save

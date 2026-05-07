@@ -58,13 +58,14 @@ postsRouter.use("*", async (c, next) => {
   if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/internal/")) {
     return next();
   }
-  return edgeCacheMiddleware(300, 60)(c, next);
+  return edgeCacheMiddleware(300, 60, 600)(c, next);
 });
 
 // ─── Middleware Configuration ─────────────────────────────────────────────
-// Apply edge caching to public read-only routes
-postsRouter.use("/", edgeCacheMiddleware(300, 60));
-postsRouter.use("/:slug", edgeCacheMiddleware(300, 60));
+// Cache public GET requests at the edge
+// Using aggressive caching (5 min edge, 1 min browser, 10 min SWR) for public blog content
+postsRouter.use("/", edgeCacheMiddleware(300, 60, 600));
+postsRouter.use("/:slug", edgeCacheMiddleware(300, 60, 600));
 // Admin routes require authentication
 postsRouter.use("/admin/:slug/history", ensureAdmin);
 postsRouter.use("/admin/:slug/history/*", ensureAdmin);

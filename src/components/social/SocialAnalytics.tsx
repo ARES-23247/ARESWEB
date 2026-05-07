@@ -75,16 +75,7 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="text-ares-red" size={24} />
-            Social Analytics
-          </h2>
-          <p className="text-marble/60 text-sm mt-1">
-            Track engagement across all platforms
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2 bg-white/5 ares-cut-sm p-1">
           {(["7d", "30d", "90d", "all"] as const).map((range) => (
             <button

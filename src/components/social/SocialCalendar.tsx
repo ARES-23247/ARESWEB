@@ -79,16 +79,7 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <CalendarIcon className="text-ares-gold" size={24} />
-            Social Calendar
-          </h2>
-          <p className="text-marble/60 text-sm mt-1">
-            View and manage scheduled social media posts
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           <button
             onClick={handlePreviousMonth}

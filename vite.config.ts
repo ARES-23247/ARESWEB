@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
+import { imagetools } from "vite-imagetools";
 import path from "path";
 
 export default defineConfig({
@@ -33,6 +34,13 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    imagetools({
+      include: ['**/*.{png,jpg,jpeg}'],
+      defaultDirectives: new URLSearchParams({
+        format: 'webp',
+        quality: '85',
+      }),
+    }),
     visualizer({ emitFile: true, filename: "stats.html" }),
     VitePWA({
       registerType: 'autoUpdate',
@@ -67,27 +75,88 @@ export default defineConfig({
         navigateFallback: null,
         navigateFallbackDenylist: [/^\/api\//, /\/[^/]+\.[^/]+$/],
         runtimeCaching: [
+          // ── API Caching ────────────────────────────────────────────────────────
           {
             urlPattern: /^https:\/\/aresfirst\.org\/api\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'ares-api-cache-v2',
+              cacheName: 'ares-api-cache-v3',
+              networkTimeoutSeconds: 10, // Fall back to cache after 10s
+              expiration: {
+                maxEntries: 500, // Increase from 100
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days (up from 1)
+              },
+              cacheableResponse: {
+                statuses: [0, 200, 304] // Add 304 for Not Modified
+              }
+            }
+          },
+
+          // ── Static Assets ───────────────────────────────────────────────────────
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif|ico)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ares-images-cache',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+
+          // ── JavaScript/CSS ─────────────────────────────────────────────────────
+          {
+            urlPattern: /\.(?:js|css)$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'ares-static-resources',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 1 day
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              }
+            }
+          },
+
+          // ── Fonts ───────────────────────────────────────────────────────────────
+          {
+            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ares-fonts-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+
+          // ── Google Fonts ────────────────────────────────────────────────────────
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
           },
+
+          // ── Google Fonts Static ────────────────────────────────────────────────
           {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts-cache',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] }
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
             }
           }
         ]
@@ -123,6 +192,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks(id) {
           // Normalize path separators for cross-platform consistency (Windows \ vs Linux /)
           const normalizedId = id.replace(/\\/g, '/');
@@ -202,6 +274,54 @@ export default defineConfig({
           // DOMPurify + markdown rendering + syntax highlighting (unified to prevent circular chunks)
           if (normalizedId.includes("node_modules/dompurify") || normalizedId.includes("node_modules/react-markdown") || normalizedId.includes("node_modules/remark-") || normalizedId.includes("node_modules/rehype-")) {
             return "markdown";
+          }
+
+          // ── Application-specific chunks ─────────────────────────────────
+
+          // Simulation-heavy code (R3F, Matter.js, physics)
+          if (normalizedId.includes("src/sims/") ||
+              normalizedId.includes("src/components/SimulationPlayground") ||
+              normalizedId.includes("src/components/SimManager") ||
+              normalizedId.includes("src/components/editor/Sim")) {
+            return "simulation";
+          }
+
+          // Dashboard-specific components (charts, tables, admin)
+          if (normalizedId.includes("src/components/dashboard/") &&
+              !normalizedId.includes("src/components/dashboard/DashboardSidebar") &&
+              !normalizedId.includes("src/components/dashboard/DashboardRoutes")) {
+            return "dashboard-features";
+          }
+
+          // Editor components (BlogEditor, EventEditor, DocsEditor)
+          if (normalizedId.includes("src/components/BlogEditor") ||
+              normalizedId.includes("src/components/EventEditor") ||
+              normalizedId.includes("src/components/DocsEditor") ||
+              normalizedId.includes("src/components/ContentManager")) {
+            return "content-editors";
+          }
+
+          // Forms and input-heavy components
+          if (normalizedId.includes("src/components/ProfileEditor") ||
+              normalizedId.includes("src/components/SeasonEditor") ||
+              normalizedId.includes("src/components/SponsorEditor") ||
+              normalizedId.includes("src/components/FinanceManager")) {
+            return "forms";
+          }
+
+          // Analytics and charts (Tremor)
+          if (normalizedId.includes("src/components/AnalyticsDashboard") ||
+              normalizedId.includes("src/components/DietarySummary") ||
+              normalizedId.includes("src/components/MemberImpactOverview") ||
+              normalizedId.includes("node_modules/@tremor/")) {
+            return "analytics";
+          }
+
+          // Keep shared components in main chunk
+          if (normalizedId.includes("src/components/Navbar") ||
+              normalizedId.includes("src/components/Footer") ||
+              normalizedId.includes("src/components/ErrorBoundary")) {
+            return "layout";
           }
 
           // React core (shared across all chunks)

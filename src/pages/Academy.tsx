@@ -1,6 +1,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "../components/SEO";
 import { useSession } from "../utils/auth-client";
@@ -135,9 +135,8 @@ export default function Academy() {
             >
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2 text-xs text-white/60">
-                  <Link to="/academy" className="flex items-center shadow-lg ares-cut-sm overflow-hidden group">
-                    <span className="bg-ares-red px-2 py-0.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10">ARES</span>
-                    <span className="bg-white/10 text-white font-heading font-medium px-2 py-0.5 text-xs uppercase tracking-widest group-hover:bg-white/20 transition-colors">Academy</span>
+                  <Link to="/academy" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors font-bold uppercase tracking-widest">
+                    <GraduationCap size={14} /> Academy
                   </Link>
                   <ChevronRight size={12} />
                   <span className="text-ares-gold/60">{currentDoc.category}</span>

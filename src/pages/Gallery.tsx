@@ -1,5 +1,5 @@
 import SEO from "../components/SEO";
-import LazyImage from "../components/LazyImage";
+import ResponsiveImage from "../components/ResponsiveImage";
 import { useGetMedia, useGetPublicSettings, type R2MediaItem } from "../api";
 
 export default function Gallery() {
@@ -68,7 +68,7 @@ export default function Gallery() {
                 key={photo.key}
                 className={`relative w-full overflow-hidden ares-cut glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect}`}
               >
-                <LazyImage 
+                <ResponsiveImage 
                    src={`/api/media/${photo.key}`} 
                    alt={photo.key} 
                    className="absolute inset-0 w-full h-full"

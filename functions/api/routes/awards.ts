@@ -12,7 +12,7 @@ import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../share
 export const awardsRouter = new OpenAPIHono<AppEnv>();
 
 // Apply caching to public awards list
-awardsRouter.use("/", edgeCacheMiddleware(300, 60));
+awardsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 
 awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (c) => {
   try {

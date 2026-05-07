@@ -6,10 +6,15 @@ import { cache } from "hono/cache";
  * This ensures responses are actively cached by the Worker.
  * @param sMaxAge Seconds to cache on the Cloudflare Edge (CDN).
  * @param maxAge Seconds to cache in the user's browser.
+ * @param staleWhileRevalidate Seconds to serve stale content while revalidating in background.
  */
-export const edgeCacheMiddleware = (sMaxAge = 300, maxAge = 60) => {
+export const edgeCacheMiddleware = (
+  sMaxAge = 300,
+  maxAge = 60,
+  staleWhileRevalidate = 300
+) => {
   return cache({
     cacheName: 'aresweb-global-cache',
-    cacheControl: `public, max-age=${maxAge}, s-maxage=${sMaxAge}, stale-while-revalidate=60`,
+    cacheControl: `public, max-age=${maxAge}, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
   });
 };
