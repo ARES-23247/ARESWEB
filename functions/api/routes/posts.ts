@@ -14,6 +14,7 @@ import {
   MAX_INPUT_LENGTHS,
   logAuditAction,
   getSocialConfig,
+  edgeCacheMiddleware,
 } from "../middleware";
 import { getStandardDate } from "../../utils/content";
 import { dispatchSocials } from "../../utils/socialSync";
@@ -46,11 +47,19 @@ import {
   postSchema as _postSchema,
 } from "../../../shared/routes/posts";
 import { siteConfig } from "../../utils/site.config";
-import { edgeCacheMiddleware } from "../middleware/cache";
 
 
 
-const postsRouter = new OpenAPIHono<AppEnv>();
+export const postsRouter = new OpenAPIHono<AppEnv>();
+ 
+// Apply edge caching to public blog routes (GET only, non-admin)
+postsRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/internal/")) {
+    return next();
+  }
+  return edgeCacheMiddleware(300, 60)(c, next);
+});
 
 // ─── Middleware Configuration ─────────────────────────────────────────────
 // Apply edge caching to public read-only routes

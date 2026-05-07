@@ -200,7 +200,9 @@
 2. `Support` inquiries trigger automated receipt via `dispatchReceipt`.
 3. Email templates use ARES championship-tier branding.
 
-### v7.0 Performance Optimization (Phases 45-49)
+---
+
+## v7.0 Performance Optimization (Phases 45-49)
 
 **Goal**: Reduce initial bundle size by 60-70% and achieve 90+ Lighthouse score
 
@@ -209,17 +211,59 @@
 - Largest chunks: Monaco (2.5MB), Babel (3MB), Editor (1.5MB)
 - Lighthouse Performance: TBD
 
-- [ ] **Phase 45: Bundle Size Optimization** - Monaco lazy loading, Babel splitting (~5-6MB savings)
-- [ ] **Phase 46: Media Optimization** - WebP conversion, responsive images, font-display swap
-- [ ] **Phase 47: Loading Strategy** - Route-based chunk splitting, critical resource preloading
-- [ ] **Phase 48: Caching Improvements** - Service worker optimization (500 entries), HTTP caching (5-15min SWR)
-- [ ] **Phase 49: Monitoring** - Web Vitals tracking, bundle size CI/CD checks, performance dashboard
-
 **Target metrics**:
 - Initial bundle: <3MB
 - Lighthouse Performance: 90+
 - First Contentful Paint: <1s
 - Time to Interactive: <2s
 
-**Plans**: See `.planning/milestones/v7.0-ROADMAP.md`
+### Phase 45: Bundle Size Optimization
 
+**Goal**: Reduce initial JavaScript bundle by 5-6MB by lazy-loading Monaco Editor (2.5MB) and Babel Standalone (3MB).
+
+**Requirements**: MON-01, MON-02, MON-03
+
+**Success Criteria**:
+1. Initial bundle (index.html + main.js + react-vendor) < 3MB
+2. Monaco chunk only loads on /sim-runner or /dashboard/simulation-playground routes
+3. Babel chunk only loads when simulation/doc preview is triggered
+4. Loading state shows ARES-red spinner matching SimLoader pattern
+5. Error states show friendly messages with retry option
+6. All existing editor functionality preserved (no regression)
+
+**Plans**: 1 plan
+- [ ] 01-01-PLAN.md — Monaco and Babel lazy loading with ARES-branded loading UX
+
+---
+
+### Phase 46: Media Optimization
+
+**Goal**: Convert images to WebP, implement responsive images, and add font-display swap.
+
+**Plans**: See `.planning/milestones/v7.0-phases/02-media-optimization/PLAN.md`
+
+---
+
+### Phase 47: Loading Strategy
+
+**Goal**: Route-based chunk splitting and critical resource preloading.
+
+**Plans**: See `.planning/milestones/v7.0-phases/03-loading-strategy/PLAN.md`
+
+---
+
+### Phase 48: Caching Improvements
+
+**Goal**: Service worker optimization (500 entries) and HTTP caching (5-15min SWR).
+
+**Plans**: See `.planning/milestones/v7.0-phases/04-caching-improvements/PLAN.md`
+
+---
+
+### Phase 49: Monitoring
+
+**Goal**: Web Vitals tracking, bundle size CI/CD checks, and performance dashboard.
+
+**Plans**: See `.planning/milestones/v7.0-phases/05-monitoring/PLAN.md`
+
+---

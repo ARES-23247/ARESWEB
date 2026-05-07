@@ -51,7 +51,6 @@ import { sentry } from "@hono/sentry";
 import { secureHeaders } from "hono/secure-headers";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
-import { prometheus } from "@hono/prometheus";
 
 const app = new Hono<AppEnv>();
 
@@ -87,11 +86,6 @@ apiRouter.use("*", async (c, next) => {
     c.res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   }
 });
-
-// Prometheus Metrics Endpoint
-const { printMetrics, registerMetrics } = prometheus();
-apiRouter.use('*', registerMetrics);
-apiRouter.get('/metrics', printMetrics);
 
 // Mount OpenAPI documentation
 apiRouter.doc('/openapi.json', {
