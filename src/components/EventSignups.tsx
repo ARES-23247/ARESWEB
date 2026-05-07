@@ -36,7 +36,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
     fetchJson<{
       signups?: SignupEntry[];
       authenticated: boolean;
-      role: string;
+      role?: string;
       can_manage: boolean;
       dietary_summary?: Record<string, number>;
       team_dietary_summary?: Record<string, number>;
@@ -44,7 +44,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
       .then((data) => {
         setSignups(data.signups || []);
         setIsAuthenticated(data.authenticated);
-        setUserRole(data.role);
+        setUserRole(data.role || "unverified");
         setCanManage(data.can_manage);
         setDietarySummary(data.dietary_summary || null);
         setTeamDietarySummary(data.team_dietary_summary || null);

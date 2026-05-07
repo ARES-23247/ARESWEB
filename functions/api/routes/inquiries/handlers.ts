@@ -48,7 +48,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
     const user = c.get("sessionUser");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
-    const secret = c.env.ENCRYPTION_SECRET;
+    const secret = c.get("env")?.ENCRYPTION_SECRET || c.env.ENCRYPTION_SECRET;
     let maskPII = false;
     let filterOutreach = false;
 
@@ -138,7 +138,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
   try {
     const { type, name, email, metadata } = c.req.valid("json");
     const db = getDb(c);
-    const secret = c.env.ENCRYPTION_SECRET;
+    const secret = c.get("env")?.ENCRYPTION_SECRET || c.env.ENCRYPTION_SECRET;
     if (!secret) {
       console.error("[Inquiry:Submit] ENCRYPTION_SECRET is not configured!");
       return c.json({ error: "Server configuration error: encryption key missing. Please contact the team." }, 500);
