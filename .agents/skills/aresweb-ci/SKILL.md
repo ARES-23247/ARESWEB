@@ -25,9 +25,33 @@ Cloudflare Pages runs an automatic build on every push to `master`. The GitHub A
 2. `npm run lint` — ESLint with `--max-warnings 0` (hard gate)
 3. `npm run test` — Vitest unit/integration tests
 4. `npm run build` — Vite production build
-5. Playwright E2E + pa11y accessibility tests
+5. `node scripts/check-bundle-size.mjs` — Bundle size regression check (10% threshold)
+6. Playwright E2E + pa11y accessibility tests
 
 If any gate fails, the PR cannot be merged.
+
+### Performance Monitoring (v7.0)
+The `.github/workflows/performance.yml` workflow runs on PRs affecting `src/`, `vite.config.ts`, or `package.json`:
+- Builds the project
+- Runs `scripts/check-bundle-size.mjs` against `.planning/codebase/BUNDLE-BASELINE.json`
+- Fails if any bundle exceeds the baseline by >10%
+
+**Baseline (2026-05-06):**
+- `index`: 600KB raw / 180KB gzipped
+- `vendor`: 1.5MB raw / 400KB gzipped
+- Threshold: 10% maximum deviation
+
+To update the baseline after legitimate bundle increases:
+```json
+{
+  "timestamp": "2026-05-07T20:00:00Z",
+  "bundles": {
+    "index": { "size": <new_bytes>, "gzip": <new_gzip> },
+    "vendor": { "size": <new_bytes>, "gzip": <new_gzip> }
+  },
+  "threshold": 0.1
+}
+```
 
 ## 2. Mandatory Rules
 

@@ -66,10 +66,45 @@ This bypasses any edge compilation cache by deploying the full bundle directly.
 ### Route Shadowing Prevention
 - **Hono Routing Order**: Ensure dynamic wildcard routes (`/:slug`) are registered correctly relative to static routes in the Hono router to prevent unexpected 404s for offline-first endpoints.
 
-## 4. Rules
+## 4. Caching Strategy (v7.0 Performance Optimization)
+
+### Service Worker Configuration
+The PWA service worker (`vite.config.ts` VitePWA) uses the following caching strategy:
+
+| Cache Type | Strategy | Entries | Duration | Purpose |
+|------------|----------|----------|----------|---------|
+| API Routes | NetworkFirst | 500 | 7 days | Backend data with stale fallback |
+| Static Assets | CacheFirst | 200 | 30 days | Images, fonts, icons |
+| JavaScript/CSS | StaleWhileRevalidate | 100 | 7 days | Code chunks |
+| Fonts | CacheFirst | 20 | 1 year | Google Fonts, self-hosted |
+
+### Edge Caching (Cloudflare Workers)
+API routes use `edgeCacheMiddleware()` with stale-while-revalidate:
+- **Posts**: 300s edge, 60s browser, 600s SWR
+- **Events**: 180s edge, 60s browser, 300s SWR
+- **Profiles/Seasons/Locations**: 180s edge, 60s browser, 300s SWR
+
+### Prefetch Strategy
+Dashboard navigation uses React Router v7's `prefetch="intent"`:
+- Chunks preload on hover/focus before navigation
+- Zero overhead for non-hovered routes
+- Works with existing lazy-loaded code-splitting
+
+### Bundle Splitting
+Route-based chunks are isolated in `vite.config.ts`:
+- `simulation`: R3F, Matter.js, physics code
+- `dashboard-features`: Charts, tables, admin components
+- `content-editors`: BlogEditor, EventEditor, DocsEditor
+- `forms`: ProfileEditor, SeasonEditor, FinanceManager
+- `analytics`: Tremor charts and analytics
+- `layout`: Navbar, Footer, ErrorBoundary (always loaded)
+
+## 5. Rules
 
 - ❌ **BANNED**: Removing or weakening the stale chunk detection in `ErrorBoundary.tsx`.
 - ❌ **BANNED**: Using `localStorage` for the reload throttle key — it must remain `sessionStorage`.
 - ❌ **BANNED**: Deploying frontend-only changes without verifying that lazy-loaded routes still resolve correctly.
 - ✅ **REQUIRED**: After any deployment that changes chunk hashes, verify at least one lazy-loaded route (e.g., `/dashboard/manage_docs`) loads without errors.
 - ✅ **REQUIRED**: If adding new `React.lazy()` code-split points, ensure the ErrorBoundary wraps the `<Suspense>` boundary.
+- ✅ **REQUIRED**: For dashboard navigation links, include `prefetch="intent"` to enable chunk preloading on hover.
+- ✅ **REQUIRED**: Bundle size changes >10% from baseline will trigger CI/CD failure — run `npm run build` locally to check before pushing.
