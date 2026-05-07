@@ -1,12 +1,11 @@
 import { typedHandler } from "../utils/handler";
 /* TBA API route handlers */
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
-
-import { AppEnv, ensureAuth, rateLimitMiddleware } from "../middleware";
+import { AppEnv, ensureAuth, rateLimitMiddleware, getDb } from "../middleware";
 import { getRankingsRoute, getMatchesRoute, getFtcEventsRoute } from "../../../shared/routes/tba";
 import type { HonoContext } from "@shared/types/api";
+import * as schema from "../../../src/db/schema";
+import { eq } from "drizzle-orm";
 import { cache } from "hono/cache";
 
 export const tbaRouter = new OpenAPIHono<AppEnv>();
@@ -23,8 +22,11 @@ tbaRouter.use("*", cache({
 }));
 
 async function getTBA(path: string, c: HonoContext) {
-  const db = c.get("db") as any;
-  const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "TBA_API_KEY").executeTakeFirst();
+  const db = getDb(c);
+  const settingsRow = await db.select({ value: schema.settings.value })
+    .from(schema.settings)
+    .where(eq(schema.settings.key, "TBA_API_KEY"))
+    .executeTakeFirst();
   const apiKey = settingsRow?.value;
   if (!apiKey) throw new Error("TBA_API_KEY missing");
 
@@ -71,8 +73,11 @@ tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(asyn
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;
 
-    const db = c.get("db") as any;
-    const settingsRow = await db.selectFrom("settings").select("value").where("key", "=", "FTC_EVENTS_API_KEY").executeTakeFirst();
+    const db = getDb(c);
+    const settingsRow = await db.select({ value: schema.settings.value })
+      .from(schema.settings)
+      .where(eq(schema.settings.key, "FTC_EVENTS_API_KEY"))
+      .executeTakeFirst();
     const apiKey = settingsRow?.value;
     if (!apiKey) throw new Error("FTC_EVENTS_API_KEY missing");
 
