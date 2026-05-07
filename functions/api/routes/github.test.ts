@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv } from "../../../src/test/types";
+import { mockExecutionContext, createDrizzleProxy, createMockDrizzle } from "../../../src/test/utils";
+import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 import githubRouter from "./github";
 
 interface GitHubResponse {
@@ -46,24 +46,12 @@ vi.mock("../../utils/githubProjects", () => ({
 
 describe("Hono Backend - /github Router", () => {
   let testApp: Hono<TestEnv>;
-  let mockDb: DrizzleMock;
+  let mockDb: MockDrizzle;
   let env: TestEnv["Bindings"];
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockDb = {
-      execute: vi.fn(),
-      executeTakeFirst: vi.fn(),
-      selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-    };
+    mockDb = createMockDrizzle();
 
     env = {
       DB: {} as unknown as D1Database,
@@ -74,12 +62,12 @@ describe("Hono Backend - /github Router", () => {
       c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
-    
+
     testApp.onError((err: any, c: any) => {
       console.error("Test App Error:", err);
       return c.json({ error: err.message }, 500);
     });
-    
+
     testApp.route("/", githubRouter);
   });
 
