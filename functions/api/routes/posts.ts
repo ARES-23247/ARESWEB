@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
- 
-import { sql, Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+
+import { sql } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
+
+import { eq, or, desc, isNull, lte } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 
 import {
   AppEnv,
@@ -15,6 +17,7 @@ import {
   logAuditAction,
   getSocialConfig,
   edgeCacheMiddleware,
+  getDb,
 } from "../middleware";
 import { getStandardDate } from "../../utils/content";
 import { dispatchSocials } from "../../utils/socialSync";
@@ -85,14 +88,14 @@ const sanitizeFtsQuery = (query: string): string => {
 
 postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const { limit = 10, offset = 0, q } = c.req.valid("query");
 
     if (q) {
       const cleanQ = sanitizeFtsQuery(String(q || ""));
       if (!cleanQ) return c.json({ posts: [] } as any, 200 as any);
 
-      const results = await sql<{
+      const results = await db.execute(sql<{
         slug: string;
         title: string;
         date: string | null;
@@ -114,9 +117,10 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
          WHERE p.is_deleted = 0 AND p.status = 'published' AND (p.published_at IS NULL OR datetime(p.published_at) <= datetime('now'))
          AND f.posts_fts MATCH ${cleanQ}
          ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
-      `.execute(db);
+      `);
 
-      const posts = results.rows.map((p: any) => ({
+      const rows = results.results || results.rows || (Array.isArray(results) ? results : []);
+      const posts = rows.map((p: any) => ({
         ...p,
         season_id: p.season_id ? Number(p.season_id) : null,
         is_deleted: 0,
@@ -127,34 +131,34 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
     }
 
     const results = await db
-      .selectFrom("posts")
-      .leftJoin("user as u", "posts.cf_email", "u.email")
-      .leftJoin("user_profiles as uP", "u.id", "uP.user_id")
-      .select([
-        "posts.slug",
-        "posts.title",
-        "posts.date",
-        "posts.snippet",
-        "posts.thumbnail",
-        "posts.status",
-        "posts.author",
-        "posts.season_id",
-        "posts.published_at",
-        "uP.nickname as author_nickname",
-        "u.image as author_avatar",
-      ])
-      .where("posts.is_deleted", "=", 0)
-      .where("posts.status", "=", "published")
-      .where((eb: any) =>
-        eb.or([
-          eb("published_at", "is", null),
-          eb("published_at", "<=", new Date().toISOString()),
-        ])
+      .select({
+        slug: schema.posts.slug,
+        title: schema.posts.title,
+        date: schema.posts.date,
+        snippet: schema.posts.snippet,
+        thumbnail: schema.posts.thumbnail,
+        status: schema.posts.status,
+        author: schema.posts.author,
+        season_id: schema.posts.seasonId,
+        published_at: schema.posts.publishedAt,
+        author_nickname: schema.userProfiles.nickname,
+        author_avatar: schema.user.image,
+      })
+      .from(schema.posts)
+      .leftJoin(schema.user, eq(schema.posts.cfEmail, schema.user.email))
+      .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+      .where(eq(schema.posts.isDeleted, 0))
+      .where(eq(schema.posts.status, "published"))
+      .where(
+        or(
+          isNull(schema.posts.publishedAt),
+          lte(schema.posts.publishedAt, new Date().toISOString())
+        )
       )
-      .orderBy("posts.date", "desc")
+      .orderBy(desc(schema.posts.date))
       .limit(Number(limit) || 10)
       .offset(Number(offset) || 0)
-      .execute();
+      .all();
 
     const posts = results.map((p: any) => ({
       ...p,
@@ -174,38 +178,39 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
 postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
 
     const row = await db
-      .selectFrom("posts")
-      .leftJoin("user as u", "posts.cf_email", "u.email")
-      .leftJoin("user_profiles as uP", "u.id", "uP.user_id")
-      .select([
-        "posts.slug",
-        "posts.title",
-        "posts.date",
-        "posts.ast",
-        "posts.thumbnail",
-        "posts.status",
-        "posts.author",
-        "posts.season_id",
-        "posts.published_at",
-        "posts.zulip_stream",
-        "posts.zulip_topic",
-        "uP.nickname as author_nickname",
-        "u.image as author_avatar",
-      ])
-      .where("posts.slug", "=", slug)
-      .where("posts.is_deleted", "=", 0)
-      .where("posts.status", "=", "published")
-      .where((eb: any) =>
-        eb.or([
-          eb("published_at", "is", null),
-          eb("published_at", "<=", new Date().toISOString()),
-        ])
+      .select({
+        slug: schema.posts.slug,
+        title: schema.posts.title,
+        date: schema.posts.date,
+        ast: schema.posts.ast,
+        thumbnail: schema.posts.thumbnail,
+        status: schema.posts.status,
+        author: schema.posts.author,
+        season_id: schema.posts.seasonId,
+        published_at: schema.posts.publishedAt,
+        zulip_stream: schema.posts.zulipStream,
+        zulip_topic: schema.posts.zulipTopic,
+        author_nickname: schema.userProfiles.nickname,
+        author_avatar: schema.user.image,
+      })
+      .from(schema.posts)
+      .leftJoin(schema.user, eq(schema.posts.cfEmail, schema.user.email))
+      .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+      .where(eq(schema.posts.slug, slug))
+      .where(eq(schema.posts.isDeleted, 0))
+      .where(eq(schema.posts.status, "published"))
+      .where(
+        or(
+          isNull(schema.posts.publishedAt),
+          lte(schema.posts.publishedAt, new Date().toISOString())
+        )
       )
-      .executeTakeFirst();
+      .limit(1)
+      .get();
 
     if (!row) return c.json({ error: "Post not found" } as any, 404 as any);
 
@@ -236,40 +241,49 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
 
 postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const { limit = 50, offset = 0 } = c.req.valid("query");
 
     let results;
     try {
       results = await db
-        .selectFrom("posts")
-        .select([
-          "slug",
-          "title",
-          "date",
-          "snippet",
-          "thumbnail",
-          "cf_email",
-          "is_deleted",
-          "status",
-          "revision_of",
-          "published_at",
-          "season_id",
-          "author",
-        ])
-        .orderBy("date", "desc")
+        .select({
+          slug: schema.posts.slug,
+          title: schema.posts.title,
+          date: schema.posts.date,
+          snippet: schema.posts.snippet,
+          thumbnail: schema.posts.thumbnail,
+          cf_email: schema.posts.cfEmail,
+          is_deleted: schema.posts.isDeleted,
+          status: schema.posts.status,
+          revision_of: schema.posts.revisionOf,
+          published_at: schema.posts.publishedAt,
+          season_id: schema.posts.seasonId,
+          author: schema.posts.author,
+        })
+        .from(schema.posts)
+        .orderBy(desc(schema.posts.date))
         .limit(Number(limit) || 50)
         .offset(Number(offset) || 0)
-        .execute();
+        .all();
     } catch (primaryError) {
       console.error("[Posts:AdminList] Primary query failed, trying fallback:", primaryError);
       results = await db
-        .selectFrom("posts")
-        .select(["slug", "title", "date", "snippet", "thumbnail", "cf_email", "is_deleted", "author"])
-        .orderBy("date", "desc")
+        .select({
+          slug: schema.posts.slug,
+          title: schema.posts.title,
+          date: schema.posts.date,
+          snippet: schema.posts.snippet,
+          thumbnail: schema.posts.thumbnail,
+          cf_email: schema.posts.cfEmail,
+          is_deleted: schema.posts.isDeleted,
+          author: schema.posts.author,
+        })
+        .from(schema.posts)
+        .orderBy(desc(schema.posts.date))
         .limit(Number(limit) || 50)
         .offset(Number(offset) || 0)
-        .execute();
+        .all();
     }
 
     const posts = results.map((p: any) => {
@@ -292,27 +306,28 @@ postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(
 postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const row = await db
-      .selectFrom("posts")
-      .select([
-        "slug",
-        "title",
-        "date",
-        "snippet",
-        "thumbnail",
-        "ast",
-        "is_deleted",
-        "status",
-        "revision_of",
-        "published_at",
-        "season_id",
-        "author",
-        "zulip_stream",
-        "zulip_topic",
-      ])
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+      .select({
+        slug: schema.posts.slug,
+        title: schema.posts.title,
+        date: schema.posts.date,
+        snippet: schema.posts.snippet,
+        thumbnail: schema.posts.thumbnail,
+        ast: schema.posts.ast,
+        is_deleted: schema.posts.isDeleted,
+        status: schema.posts.status,
+        revision_of: schema.posts.revisionOf,
+        published_at: schema.posts.publishedAt,
+        season_id: schema.posts.seasonId,
+        author: schema.posts.author,
+        zulip_stream: schema.posts.zulipStream,
+        zulip_topic: schema.posts.zulipTopic,
+      })
+      .from(schema.posts)
+      .where(eq(schema.posts.slug, slug))
+      .limit(1)
+      .get();
 
     if (!row) return c.json({ error: "Post not found" } as any, 404 as any);
 
@@ -334,15 +349,21 @@ postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(as
 
 postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const body = c.req.valid("json");
 
     // If slug is provided, update existing post
     if (body.slug) {
-      const existing = await db.selectFrom("posts")
-        .select(["slug", "title", "ast"] as any)
-        .where("slug", "=", body.slug)
-        .executeTakeFirst();
+      const existing = await db
+        .select({
+          slug: schema.posts.slug,
+          title: schema.posts.title,
+          ast: schema.posts.ast,
+        })
+        .from(schema.posts)
+        .where(eq(schema.posts.slug, body.slug))
+        .limit(1)
+        .get();
 
       if (!existing) {
         return c.json({ error: "Post not found" } as any, 404 as any);
@@ -354,17 +375,17 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
       // Create shadow revision for history
       await captureHistory(c, body.slug, existing as any);
 
-      await db.updateTable("posts")
+      await db
+        .update(schema.posts)
         .set({
           title: body.title,
           ast: body.ast as string,
-          content: typeof body.content === "string" ? body.content : null,
-          category: body.category,
-          is_portfolio: body.isPortfolio ? 1 : 0,
-          updated_at: new Date().toISOString()
-        } as any)
-        .where("slug", "=", body.slug)
-        .execute();
+          contentDraft: typeof body.content === "string" ? body.content : null,
+          isPortfolio: body.isPortfolio ? 1 : 0,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(schema.posts.slug, body.slug))
+        .run();
 
       return c.json({ success: true, slug: body.slug });
     }
@@ -377,12 +398,13 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
     const dateStr = getStandardDate();
 
     const recent = await db
-      .selectFrom("posts")
-      .select("slug")
-      .where("title", "=", body.title)
-      .where("cf_email", "=", email)
-      .where("date", "=", dateStr)
-      .executeTakeFirst();
+      .select({ slug: schema.posts.slug })
+      .from(schema.posts)
+      .where(eq(schema.posts.title, body.title))
+      .where(eq(schema.posts.cfEmail, email))
+      .where(eq(schema.posts.date, dateStr))
+      .limit(1)
+      .get();
 
     if (recent) {
       return c.json({ error: "A post with this title already exists for today" } as any, 409 as any);
@@ -393,7 +415,12 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || `untitled-${Date.now()}`;
 
-    const existing = await db.selectFrom("posts").select("slug").where("slug", "=", slug).executeTakeFirst();
+    const existing = await db
+      .select({ slug: schema.posts.slug })
+      .from(schema.posts)
+      .where(eq(schema.posts.slug, slug))
+      .limit(1)
+      .get();
     if (existing) {
       const suffix = Math.random().toString(36).substring(2, 6);
       slug = `${slug}-${suffix}`;
@@ -405,7 +432,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
     const status = body.isDraft ? "pending" : user?.role === "admin" ? "published" : "pending";
 
     await db
-      .insertInto("posts")
+      .insert(schema.posts)
       .values({
         slug,
         title: body.title,
@@ -414,32 +441,32 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
         thumbnail: body.thumbnail || "",
         snippet,
         ast: astStr,
-        cf_email: email,
+        cfEmail: email,
         status,
-        published_at: body.publishedAt || null,
-        season_id: body.seasonId ? Number(body.seasonId) : null,
-        zulip_stream: "blog",
-        zulip_topic: `Blog: ${body.title}`,
+        publishedAt: body.publishedAt || null,
+        seasonId: body.seasonId ? Number(body.seasonId) : null,
+        zulipStream: "blog",
+        zulipTopic: `Blog: ${body.title}`,
       })
-      .execute();
+      .run();
 
     c.executionCtx.waitUntil(
       db
-        .insertInto("document_history")
+        .insert(schema.documentHistory)
         .values({
-          room_id: `post_${slug}`,
+          roomId: `post_${slug}`,
           content: astStr,
-          created_by: email,
-          created_at: new Date().toISOString(),
+          createdBy: email,
+          createdAt: new Date().toISOString(),
         })
-        .execute()
+        .run()
     );
 
     c.executionCtx.waitUntil(pruneHistory(c, slug, 10));
     c.executionCtx.waitUntil(
       logAuditAction(c, "CREATE_POST", "posts", slug, `Created post: ${body.title} (${status})`)
     );
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
 
     const warnings: string[] = [];
 
@@ -452,7 +479,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
         (async () => {
           try {
             await dispatchSocials(
-              c.get("db") as any,
+              db,
               {
                 title: body.title,
                 url: `${baseUrl}/blog/${slug}`,
@@ -513,7 +540,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
 postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const body = c.req.valid("json");
     const astStr = JSON.stringify(body.ast);
     const snippet = extractAstText(body.ast).substring(0, 200);
@@ -535,47 +562,56 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
     const status = body.isDraft ? "pending" : "published";
 
     const current = await db
-      .selectFrom("posts")
-      .select(["title", "author", "thumbnail", "snippet", "ast", "cf_email", "season_id"])
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+      .select({
+        title: schema.posts.title,
+        author: schema.posts.author,
+        thumbnail: schema.posts.thumbnail,
+        snippet: schema.posts.snippet,
+        ast: schema.posts.ast,
+        cf_email: schema.posts.cfEmail,
+        season_id: schema.posts.seasonId,
+      })
+      .from(schema.posts)
+      .where(eq(schema.posts.slug, slug))
+      .limit(1)
+      .get();
 
     if (current) {
       await captureHistory(c, slug, current);
     }
 
     await db
-      .updateTable("posts")
+      .update(schema.posts)
       .set({
         title: body.title,
         thumbnail: body.thumbnail || "",
         snippet,
         ast: astStr,
         status,
-        content_draft: null,
-        published_at: body.publishedAt || null,
-        season_id: body.seasonId ? Number(body.seasonId) : null,
-        updated_at: new Date().toISOString(),
+        contentDraft: null,
+        publishedAt: body.publishedAt || null,
+        seasonId: body.seasonId ? Number(body.seasonId) : null,
+        updatedAt: new Date().toISOString(),
       })
-      .where("slug", "=", slug)
-      .execute();
+      .where(eq(schema.posts.slug, slug))
+      .run();
 
     c.executionCtx.waitUntil(
       db
-        .insertInto("document_history")
+        .insert(schema.documentHistory)
         .values({
-          room_id: `post_${slug}`,
+          roomId: `post_${slug}`,
           content: astStr,
-          created_by: user?.email || "anonymous",
-          created_at: new Date().toISOString(),
+          createdBy: user?.email || "anonymous",
+          createdAt: new Date().toISOString(),
         })
-        .execute()
+        .run()
     );
 
     c.executionCtx.waitUntil(
       logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`)
     );
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug } as any, 200 as any);
   } catch (e) {
     console.error("[Posts:Update] Error", e);
@@ -586,15 +622,15 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
 postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     await db
-      .updateTable("posts")
-      .set({ is_deleted: 1, status: "draft", updated_at: new Date().toISOString() })
-      .where("slug", "=", slug)
-      .execute();
+      .update(schema.posts)
+      .set({ isDeleted: 1, status: "draft", updatedAt: new Date().toISOString() })
+      .where(eq(schema.posts.slug, slug))
+      .run();
     c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
 
-    triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
     console.error("[Posts:Delete] Error", e);
@@ -605,12 +641,12 @@ postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async 
 postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     await db
-      .updateTable("posts")
-      .set({ is_deleted: 0, status: "draft", updated_at: new Date().toISOString() })
-      .where("slug", "=", slug)
-      .execute();
+      .update(schema.posts)
+      .set({ isDeleted: 0, status: "draft", updatedAt: new Date().toISOString() })
+      .where(eq(schema.posts.slug, slug))
+      .run();
     c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -622,13 +658,14 @@ postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(as
 postsRouter.openapi(purgePostRoute, typedHandler<typeof purgePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
 
     const post = await db
-      .selectFrom("posts")
-      .select("thumbnail")
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+      .select({ thumbnail: schema.posts.thumbnail })
+      .from(schema.posts)
+      .where(eq(schema.posts.slug, slug))
+      .limit(1)
+      .get();
 
     if (post?.thumbnail && c.env.ARES_STORAGE) {
       try {
@@ -640,7 +677,7 @@ postsRouter.openapi(purgePostRoute, typedHandler<typeof purgePostRoute>(async (c
       }
     }
 
-    await db.deleteFrom("posts").where("slug", "=", slug).execute();
+    await db.delete(schema.posts).where(eq(schema.posts.slug, slug)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
     return c.json({ success: true } as any, 200 as any);
   } catch (e) {
@@ -666,25 +703,30 @@ postsRouter.openapi(rejectPostRoute, typedHandler<typeof rejectPostRoute>(async 
   const _body = c.req.valid("json");
   const { reason } = c.req.valid("json");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const row = await db
-      .selectFrom("posts")
-      .select(["title", "cf_email"])
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+      .select({
+        title: schema.posts.title,
+        cf_email: schema.posts.cfEmail,
+      })
+      .from(schema.posts)
+      .where(eq(schema.posts.slug, slug))
+      .limit(1)
+      .get();
 
     await db
-      .updateTable("posts")
-      .set({ status: "rejected", updated_at: new Date().toISOString() })
-      .where("slug", "=", slug)
-      .execute();
+      .update(schema.posts)
+      .set({ status: "rejected", updatedAt: new Date().toISOString() })
+      .where(eq(schema.posts.slug, slug))
+      .run();
 
     if (row?.cf_email) {
       const author = await db
-        .selectFrom("user")
-        .select("id")
-        .where("email", "=", row.cf_email)
-        .executeTakeFirst();
+        .select({ id: schema.user.id })
+        .from(schema.user)
+        .where(eq(schema.user.email, row.cf_email))
+        .limit(1)
+        .get();
       if (author) {
         c.executionCtx.waitUntil(
           emitNotification(c, {
@@ -733,12 +775,17 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
   const _body = c.req.valid("json");
   const { socials } = c.req.valid("json");
   try {
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const post = await db
-      .selectFrom("posts")
-      .select(["title", "snippet", "thumbnail"])
-      .where("slug", "=", slug)
-      .executeTakeFirst();
+      .select({
+        title: schema.posts.title,
+        snippet: schema.posts.snippet,
+        thumbnail: schema.posts.thumbnail,
+      })
+      .from(schema.posts)
+      .where(eq(schema.posts.slug, slug))
+      .limit(1)
+      .get();
     if (!post) return c.json({ error: "Post not found" } as any, 404 as any);
 
     const socialConfig = await getSocialConfig(c);
@@ -746,7 +793,7 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
 
     c.executionCtx.waitUntil(
       dispatchSocials(
-        c.get("db") as any,
+        db,
         {
           title: String(post.title),
           url: `${baseUrl}/blog/${slug}`,
