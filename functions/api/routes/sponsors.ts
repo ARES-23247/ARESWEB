@@ -39,7 +39,7 @@ sponsorsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 // Get all public sponsors
 sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const results = await db
       .select({
         id: schema.sponsors.id,
@@ -55,7 +55,7 @@ sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(a
       .orderBy(sql<number>`CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END`)
       .all();
 
-    const sponsors = (results as SponsorSelectedRow[] & { created_at: string | null }[]).map((s: any) => ({
+    const sponsors = (results as SponsorSelectedRow[] & { created_at: string | null }[]).map((s) => ({
       id: s.id ?? "",
       name: s.name,
       tier: (s.tier || "In-Kind") as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
@@ -76,7 +76,7 @@ sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(a
 sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) => {
   try {
     const { token } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const tokens = await db
       .select({ sponsorId: schema.sponsorTokens.sponsorId })
       .from(schema.sponsorTokens)
@@ -129,7 +129,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       created_at: sponsorRow.created_at ?? null,
     };
 
-    const metrics = metricsRow.map((m: any) => ({
+    const metrics = metricsRow.map((m) => ({
       id: m.id ?? "",
       sponsor_id: m.sponsor_id,
       clicks: m.clicks ?? 0,
@@ -147,7 +147,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
 // Admin list all sponsors
 sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSponsorsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const sponsors = await db.select({
         id: schema.sponsors.id,
         name: schema.sponsors.name,
@@ -160,7 +160,7 @@ sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSpon
 
     return c.json(
       {
-        sponsors: sponsors.map((s: any) => ({
+        sponsors: sponsors.map((s) => ({
           id: s.id ?? "",
           name: s.name,
           tier: (s.tier || "In-Kind") as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
@@ -182,7 +182,7 @@ sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSpon
 sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const id = body.id || crypto.randomUUID();
 
     if (body.id) {
@@ -226,7 +226,7 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
 sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", id));
@@ -240,7 +240,7 @@ sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRout
 // Get admin tokens
 sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRoute>(async (c) => {
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const results = await db
       .select({
         token: schema.sponsorTokens.token,
@@ -253,7 +253,7 @@ sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRo
       .orderBy(desc(schema.sponsorTokens.createdAt))
       .all();
 
-    const tokens = results.map((t: any) => ({
+    const tokens = results.map((t) => ({
       token: t.token ?? "",
       sponsor_id: t.sponsor_id,
       sponsor_name: t.sponsor_name,
@@ -272,7 +272,7 @@ sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRo
 sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRoute>(async (c) => {
   try {
     const { sponsor_id } = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = c.get("db");
 
     const token = crypto.randomUUID();
     await db.insert(schema.sponsorTokens).values({ token, sponsorId: sponsor_id }).run();
