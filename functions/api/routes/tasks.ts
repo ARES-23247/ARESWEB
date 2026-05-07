@@ -1,9 +1,9 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, asc, desc, and, inArray } from "drizzle-orm";
+import { eq, asc, desc, and, inArray, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { AppEnv, getSocialConfig, getSessionUser, originIntegrityMiddleware } from "../middleware";
+import { AppEnv, getSocialConfig, getSessionUser, originIntegrityMiddleware, getDb } from "../middleware";
 import { parsePagination } from "../middleware/utils";
 import {
   listTasksRoute,
@@ -23,7 +23,7 @@ tasksRouter.use("*", originIntegrityMiddleware());
 tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c) => {
   try {
     const query = c.req.valid("query") || {};
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const { limit, offset } = parsePagination(c, 50, 200);
 
     const conditions = [];
@@ -53,6 +53,17 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
         updatedAt: schema.tasks.updatedAt,
         assignee_name: schema.userProfiles.nickname,
         assigned_to: schema.userProfiles.userId,
+        assignees_json: sql<string>`(
+          SELECT json_group_array(
+            json_object(
+              'id', ta.user_id,
+              'nickname', up.nickname
+            )
+          )
+          FROM ${schema.taskAssignments} ta
+          LEFT JOIN ${schema.userProfiles} up ON ta.user_id = up.user_id
+          WHERE ta.task_id = ${schema.tasks.id}
+        )`,
       })
       .from(schema.tasks)
       .leftJoin(schema.userProfiles, eq(schema.tasks.assignedTo, schema.userProfiles.userId));
@@ -65,8 +76,7 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
       .offset(Number(offset))
       .all();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const formattedTasks = tasks.map((t: any) => {
+    const formattedTasks = tasks.map((t) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let assignees: any[] = [];
       if (t.assignees_json) {
@@ -91,18 +101,14 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
         priority: t.priority || "normal",
         assigned_to: t.assigned_to ?? null,
         assignee_name: t.assignee_name ?? null,
-        assignees
+        assignees,
+        zulip_stream: null,
+        zulip_topic: null,
       };
     });
 
     return c.json({
-      success: true,
       tasks: formattedTasks,
-      pagination: {
-        total: tasks.length, // Simplified
-        limit,
-        offset,
-      },
     }, 200);
   } catch (err) {
     console.error("[Tasks] List error:", err);
@@ -113,7 +119,7 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
 tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -141,7 +147,7 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
       taskData.assignedTo = body.assigned_to;
     }
 
-    await db.insert(schema.tasks).values(taskData).run();
+    await db.insert(schema.tasks).values(taskData as typeof schema.tasks.$inferInsert).run();
 
     if (body.assignees && body.assignees.length > 0) {
       const assignments = body.assignees.map((userId: string) => ({
@@ -204,7 +210,7 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
 tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(async (c) => {
   try {
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -228,7 +234,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
   try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -284,7 +290,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
             .where(inArray(schema.userProfiles.userId, body.assignees))
             .all();
 
-          const hasMismatchedSubteam = assigneeSubteams.some((p: any) => p.subteams && p.subteams !== existing.subteam);
+          const hasMismatchedSubteam = assigneeSubteams.some((p) => p.subteams && p.subteams !== existing.subteam);
           if (hasMismatchedSubteam) {
             return c.json({ error: "Cannot assign users from different subteams to this task" }, 403);
           }
@@ -303,7 +309,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
         // Notify new assignees
         try {
           const users = await db.select({ email: schema.user.email }).from(schema.user).where(inArray(schema.user.id, body.assignees)).all();
-          const emails = users.map((u: any) => u.email).filter(Boolean);
+          const emails = users.map((u) => u.email).filter(Boolean);
           if (emails.length > 0) {
             const env = await getSocialConfig(c);
             for (const email of emails) {
@@ -336,7 +342,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
 tasksRouter.openapi(deleteTaskRoute, typedHandler<typeof deleteTaskRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as any;
+    const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
