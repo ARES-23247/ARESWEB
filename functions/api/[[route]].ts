@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { Kysely } from "kysely";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
@@ -107,7 +106,7 @@ apiRouter.use("*", async (c, next) => {
 
   if (!c.req.path.includes("polling") && c.req.method !== "OPTIONS" && !c.req.path.startsWith("/assets")) {
     const user = c.get("sessionUser") as SessionUser | undefined;
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     if (db) {
       c.executionCtx.waitUntil(
         (async () => {
@@ -225,7 +224,7 @@ apiRouter.openapi(searchRoute, async (c) => {
   const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
   if (!qClean || qClean.length > 100) return c.json({ results: [] }, 200);
   const ftsQ = qClean.replace(/\*/g, '') + '*';
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const [postsReq, eventsReq, docsReq] = await Promise.all([
     sql<Record<string, unknown>>`
       SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet
@@ -239,9 +238,9 @@ apiRouter.openapi(searchRoute, async (c) => {
   ]);
   return c.json({ 
     results: [
-      ...(postsReq.rows || []).map(r => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
-      ...(eventsReq.rows || []).map(r => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
-      ...(docsReq.rows || []).map(r => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
+      ...(postsReq.rows || []).map((r: any) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
+      ...(eventsReq.rows || []).map((r: any) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
+      ...(docsReq.rows || []).map((r: any) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
     ] 
   }, 200);
 });
@@ -252,12 +251,12 @@ apiRouter.openapi(auditLogRoute, async (c) => {
   const limit = l ? parseInt(l, 10) : 50;
   const offset = o ? parseInt(o, 10) : 0;
   
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   const results = await db.selectFrom("audit_log")
     .select(["id", "actor", "action", "resource_type", "resource_id", "created_at", sql<string>`substr(details, 1, 500)`.as("details")])
     .orderBy("created_at", "desc").limit(limit).offset(offset).execute();
   
-  const logs = results.map(r => ({
+  const logs = results.map((r: any) => ({
     ...r,
     id: r.id || crypto.randomUUID(),
     created_at: r.created_at || new Date().toISOString(),
@@ -269,7 +268,7 @@ apiRouter.openapi(auditLogRoute, async (c) => {
 
 app.onError(async (err, c) => {
   console.error("Global API Error:", err);
-  const db = c.get("db") as Kysely<DB>;
+  const db = c.get("db") as any;
   if (c.env?.DB && db) {
     c.executionCtx.waitUntil(logSystemError(db, "GlobalErrorHandler", err.message || "Unknown error", err.stack));
   }
@@ -283,40 +282,41 @@ app.route("/dashboard/api", apiRouter);
 export const onRequest = handle(app);
 import { purgeOldInquiries } from "./routes/inquiries/index";
 export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
-  const { D1Dialect } = await import("kysely-d1");
-  const { Kysely } = await import("kysely");
-  const db = new Kysely<DB>({ dialect: new D1Dialect({ database: env.DB }) });
-  await purgeOldInquiries(db, 30);
+  await purgeOldInquiries(env.DB, 30);
   const auditRetentionDays = parseInt(env.AUDIT_LOG_RETENTION_DAYS || "90", 10);
-  await db.deleteFrom("audit_log").where("id", "in", (eb) => eb.selectFrom("audit_log").select("id").where("created_at", "<", sql<string>`datetime('now', '-${sql.raw(String(auditRetentionDays))} days')`).limit(100)).execute();
+  await env.DB.prepare(`DELETE FROM audit_log WHERE id IN (SELECT id FROM audit_log WHERE created_at < datetime('now', '-' || ? || ' days') LIMIT 100)`).bind(auditRetentionDays).run();
+  
   const now = new Date().toISOString();
-  const pendingPosts = await db.selectFrom("social_queue").selectAll().where("status", "=", "pending").where("scheduled_for", "<=", now).execute();
+  const pendingPostsRes = await env.DB.prepare(`SELECT * FROM social_queue WHERE status = 'pending' AND scheduled_for <= ?`).bind(now).all();
+  const pendingPosts = pendingPostsRes.results || [];
+  
   if (pendingPosts.length > 0) {
-    const settings = await db.selectFrom("settings").selectAll().execute();
-    const settingsMap = settings.reduce((acc, s) => { if (s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+    const settingsRes = await env.DB.prepare(`SELECT * FROM settings`).all();
+    const settings = settingsRes.results || [];
+    const settingsMap = settings.reduce((acc: any, s: any) => { if (s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
     const socialConfig = { DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"], MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"], BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"], BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"], SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"], TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"], GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"], FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"], FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"], TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"], TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"], TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"], TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"] };
     const { dispatchSocials } = await import("../utils/socialSync");
     for (const post of pendingPosts) {
       try {
-        await db.updateTable("social_queue").set({ status: "processing" }).where("id", "=", post.id).execute();
-        const platforms = JSON.parse(post.platforms);
-        await dispatchSocials(db, { title: post.linked_type ? "ARES Content Update" : "ARES Social Post", url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", snippet: post.content, thumbnail: post.media_urls ? JSON.parse(post.media_urls)?.[0] : undefined }, socialConfig, platforms);
-        await db.updateTable("social_queue").set({ status: "sent", sent_at: now }).where("id", "=", post.id).execute();
+        await env.DB.prepare(`UPDATE social_queue SET status = 'processing' WHERE id = ?`).bind(post.id).run();
+        const platforms = JSON.parse(post.platforms as string);
+        await dispatchSocials(env.DB, { title: post.linked_type ? "ARES Content Update" : "ARES Social Post", url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", snippet: post.content as string, thumbnail: post.media_urls ? JSON.parse(post.media_urls as string)?.[0] : undefined }, socialConfig, platforms);
+        await env.DB.prepare(`UPDATE social_queue SET status = 'sent', sent_at = ? WHERE id = ?`).bind(now, post.id).run();
       } catch (error) {
         console.error(`[Cron] Failed to send social post ${post.id}:`, error);
-        await db.updateTable("social_queue").set({ status: "failed", error_message: String(error) }).where("id", "=", post.id).execute();
+        await env.DB.prepare(`UPDATE social_queue SET status = 'failed', error_message = ? WHERE id = ?`).bind(String(error), post.id).run();
       }
     }
   }
   if (env.AI && env.VECTORIZE_DB) {
     try {
       const { indexSiteContent } = await import("./routes/ai/indexer");
-      await indexSiteContent(db, env.AI, env.VECTORIZE_DB);
+      await indexSiteContent(env.DB as any, env.AI, env.VECTORIZE_DB);
     } catch (e) { console.error("[Cron] Vectorize indexing failed:", e); }
   }
   try {
     const nowIso = new Date().toISOString();
-    await db.insertInto("settings").values({ key: "cron_last_run", value: nowIso, updated_at: nowIso }).onConflict((oc) => oc.column("key").doUpdateSet({ value: nowIso, updated_at: nowIso })).execute();
+    await env.DB.prepare(`INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).bind("cron_last_run", nowIso, nowIso).run();
   } catch (err) { console.error("[Cron] Failed to update heartbeat in D1", err); }
 };
 

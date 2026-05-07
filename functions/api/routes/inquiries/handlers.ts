@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Kysely, sql } from "kysely";
+import { sql } from "kysely";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { DB } from "../../../../shared/schemas/database";
 import { getSocialConfig, logAuditAction, SocialConfig } from "../../middleware";
@@ -25,23 +25,18 @@ import { AppEnv } from "../../middleware";
 /**
  * Deletes old inquiries that have been resolved or rejected.
  */
-export async function purgeOldInquiries(db: Kysely<DB>, days: number) {
+export async function purgeOldInquiries(db: any, days: number) {
   if (days <= 0) return { deleted: 0 };
-  const res = await db.deleteFrom("inquiries")
-    .where("id", "in", (eb) => eb.selectFrom("inquiries")
-      .select("id")
-      .where("status", "in", ["resolved", "rejected"])
-      .where("created_at", "<", sql<string>`datetime('now', '-' || ${days} || ' days')`)
-      .limit(100)
-    )
-    .execute();
-  return { deleted: res.length };
+  const res = await db.prepare(
+    `DELETE FROM inquiries WHERE id IN (SELECT id FROM inquiries WHERE status IN ('resolved', 'rejected') AND created_at < datetime('now', '-' || ? || ' days') LIMIT 100)`
+  ).bind(days).run();
+  return { deleted: res.meta?.changes ?? 0 };
 }
 
 export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv> = async (c: any) => {
   try {
     const { limit = 50, offset = 0 } = c.req.valid("query");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const user = c.get("sessionUser");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
@@ -70,7 +65,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
     const results = await dbQuery.execute();
     const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
 
-    const inquiries = await Promise.all(results.map(async (r) => {
+    const inquiries = await Promise.all(results.map(async (r: any) => {
       let name = String(r.name);
       let email = String(r.email);
       
@@ -124,7 +119,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
 export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv> = async (c: any) => {
   try {
     const { type, name, email, metadata } = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     const secret = c.env.ENCRYPTION_SECRET;
 
     // Prevents double submissions
@@ -252,7 +247,7 @@ export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, A
   try {
     const { id } = c.req.valid("param");
     const { status } = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.updateTable("inquiries")
       .set({ status })
       .where("id", "=", id)
@@ -270,7 +265,7 @@ export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, App
   try {
     const { id } = c.req.valid("param");
     const { notes } = c.req.valid("json");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.updateTable("inquiries")
       .set({ notes })
       .where("id", "=", id)
@@ -287,7 +282,7 @@ export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, App
 export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv> = async (c: any) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db") as any;
     await db.deleteFrom("inquiries").where("id", "=", id).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry deleted"));
     return c.json({ success: true }, 200);
