@@ -42,7 +42,7 @@ describe('analytics utility', () => {
     await trackPageView('/events', 'event');
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/analytics/track-page-view', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/analytics/track', expect.objectContaining({
       method: 'POST',
       credentials: 'include',
       headers: {
