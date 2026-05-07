@@ -72,6 +72,7 @@ export function createMockDrizzle<T = unknown>(defaultResolve: T[] = []): MockDr
     execute: vi.fn().mockResolvedValue(defaultResolve),
     run: vi.fn().mockResolvedValue({ success: true }),
     get: vi.fn().mockResolvedValue(defaultResolve[0] || null),
+    $dynamic: vi.fn().mockReturnThis(),
     query: new Proxy({}, {
       get: (_target: unknown, prop: string) => {
         return {
@@ -106,19 +107,19 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       return proxy;
     }),
     from: vi.fn().mockImplementation((..._args: unknown[]) => proxy),
-    all: vi.fn().mockImplementation(async (..._args: unknown[]) => {
+    all: vi.fn().mockImplementation(async (...args: unknown[]) => {
       if ((dbMock as DrizzleProxyTarget).execute) {
         return (dbMock as DrizzleProxyTarget).execute!(...args);
       }
       return Promise.resolve([]);
     }),
-    get: vi.fn().mockImplementation(async (..._args: unknown[]) => {
+    get: vi.fn().mockImplementation(async (...args: unknown[]) => {
       if ((dbMock as DrizzleProxyTarget).executeTakeFirst) {
         return (dbMock as DrizzleProxyTarget).executeTakeFirst!(...args);
       }
       return Promise.resolve(null);
     }),
-    run: vi.fn().mockImplementation(async (..._args: unknown[]) => {
+    run: vi.fn().mockImplementation(async (...args: unknown[]) => {
       if ((dbMock as DrizzleProxyTarget).execute) {
         return (dbMock as DrizzleProxyTarget).execute!(...args).then(() => ({ success: true, meta: { changes: 1 } }));
       }
@@ -196,7 +197,7 @@ export function createDrizzleProxy(dbMock: DrizzleMock | DrizzleProxy | null): D
       if (prop in drizzleMethods) {
         return drizzleMethods[prop as string];
       }
-      return target[prop as string];
+      return (target as any)[prop as string];
     }
   }) as unknown as DrizzleProxy;
 
