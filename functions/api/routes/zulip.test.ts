@@ -43,6 +43,17 @@ vi.mock("../../utils/zulipSync", () => ({
 import { getSocialConfig } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 describe("Hono Backend - /zulip Router", () => {
   let testApp: Hono<TestEnv>;
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -53,7 +64,7 @@ describe("Hono Backend - /zulip Router", () => {
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
       if (c.env && (c.env).DB) {
-        c.set("db", (c.env).DB as unknown as MockKysely);
+        c.set("db", createDrizzleProxy((c.env).DB as unknown as MockKysely));
       }
       await next();
     });

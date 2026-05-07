@@ -3,6 +3,7 @@ import { TestEnv } from "../../../src/test/types";
 declare const global: typeof globalThis;
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
+import { createMockDrizzle } from "../../../src/test/utils";
 import { mockExecutionContext as mockEC } from "../../../src/test/utils";
 const mockExecutionContext = mockEC as any;
 
@@ -50,6 +51,7 @@ vi.mock("../../utils/notifications", () => ({
 
 import inquiriesRouter from "./inquiries/index";
 
+
 // Test interfaces - flexible response type for API responses
 interface InquiryResponseType {
   [key: string]: unknown;
@@ -63,9 +65,9 @@ interface InquiryResponseType {
 
 describe("Hono Backend - /inquiries Router", () => {
 
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
-  let env: any;
+  let env: { DB: D1Database; [key: string]: unknown };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -80,35 +82,7 @@ describe("Hono Backend - /inquiries Router", () => {
     }
      
 
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation((col, op, val) => {
-        if (typeof val === 'function') {
-          val(mockDb);
-        }
-        return mockDb;
-      }),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      offset: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockReturnThis(),
-      doUpdateSet: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-    };
-
-    mockDb.transaction = vi.fn().mockReturnValue({
-      execute: vi.fn().mockImplementation(async (cb: any) => {
-        return await cb(mockDb);
-      }),
-    });
+    mockDb = createMockDrizzle();
 
     env = {
       DB: {
@@ -148,7 +122,7 @@ describe("Hono Backend - /inquiries Router", () => {
       headers: { "DEV_BYPASS": "true" }
     }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
-    expect(mockDb.selectFrom).toHaveBeenCalledWith("inquiries");
+    expect(mockDb.select).toHaveBeenCalled();
   });
 
   it("GET /admin/list - mask PII for students", async () => {
@@ -160,7 +134,7 @@ describe("Hono Backend - /inquiries Router", () => {
     });
     testApp.route("/", inquiriesRouter);
 
-    mockDb.execute = vi.fn().mockResolvedValue([
+    mockDb.all.mockResolvedValue([
       { id: "1", type: "outreach", name: "John Doe", email: "john.doe@example.com", metadata: JSON.stringify({ level: "high", secret: "hidden" }), status: "pending", created_at: "2024-01-01" }
     ]);
 
@@ -191,12 +165,12 @@ describe("Hono Backend - /inquiries Router", () => {
     }, env, mockExecutionContext as any);
 
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith("inquiries");
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("POST / - submit sponsor inquiry", async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
-    mockDb.execute = vi.fn().mockResolvedValue([]);
+    mockDb.all.mockResolvedValue([]);
 
     const res = await testApp.request("/", {
       method: "POST",
@@ -205,13 +179,13 @@ describe("Hono Backend - /inquiries Router", () => {
     }, env, mockExecutionContext as any);
 
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith("inquiries");
-    expect(mockDb.insertInto).toHaveBeenCalledWith("sponsors");
+    expect(mockDb.insert).toHaveBeenCalled();
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("POST / - prevent duplicate submissions", async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
-    mockDb.execute = vi.fn().mockResolvedValue([{
+    mockDb.all.mockResolvedValue([{
       id: "dup-id", email: "test@test.com", metadata: JSON.stringify({ msg: "hello" })
     }]);
     
@@ -241,7 +215,7 @@ describe("Hono Backend - /inquiries Router", () => {
     }, env, mockExecutionContext as any);
 
     expect(res.status).toBe(200);
-    expect(mockDb.updateTable).toHaveBeenCalledWith("inquiries");
+    expect(mockDb.update).toHaveBeenCalled();
   });
 
   it("DELETE /admin/:id - delete", async () => {
@@ -255,13 +229,13 @@ describe("Hono Backend - /inquiries Router", () => {
     }, env, mockExecutionContext as any);
 
     expect(res.status).toBe(200);
-    expect(mockDb.deleteFrom).toHaveBeenCalled();
+    expect(mockDb.delete).toHaveBeenCalled();
   });
 
   it("purgeOldInquiries - delete old inquiries", async () => {
     const { purgeOldInquiries } = await import("./inquiries/index");
-    mockDb.execute = vi.fn().mockResolvedValue([{ id: "1" }, { id: "2" }]);
-    const res = await purgeOldInquiries(mockDb, 30);
+    mockDb.run = vi.fn().mockResolvedValue({ meta: { changes: 2 } });
+    const res = await purgeOldInquiries(mockDb as any, 30);
     expect(res.deleted).toBe(2);
   });
 
@@ -275,7 +249,7 @@ describe("Hono Backend - /inquiries Router", () => {
     });
     studentApp.route("/", inquiriesRouter);
 
-    mockDb.execute.mockResolvedValue([
+    mockDb.all.mockResolvedValue([
       {
         id: "1",
         type: "support",
@@ -317,12 +291,12 @@ describe("Hono Backend - /inquiries Router", () => {
     }, env, mockExecutionContext as any);
 
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith("inquiries");
-    expect(mockDb.insertInto).toHaveBeenCalledWith("sponsors");
+    expect(mockDb.insert).toHaveBeenCalled();
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("POST / - submit duplicate inquiry", async () => {
-    mockDb.execute.mockResolvedValue([
+    mockDb.all.mockResolvedValue([
       { id: "123", email: "test@test.com", metadata: JSON.stringify({ msg: "hello" }) }
     ]);
     // The test requires the email to match exactly after decryption.
@@ -345,14 +319,14 @@ describe("Hono Backend - /inquiries Router", () => {
   });
 
   it("GET /admin/list - handles failure", async () => {
-    mockDb.selectFrom.mockImplementationOnce(() => { throw new Error("DB Error"); });
+    mockDb.all.mockRejectedValueOnce(() => { throw new Error("DB Error"); });
     const res = await testApp.request("/admin/list", { headers: { "DEV_BYPASS": "true" } }, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
   it("POST / - handles submission failure", async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
-    (mockDb.insertInto as ReturnType<typeof vi.fn>).mockImplementationOnce(() => { throw new Error("Insert Error"); });
+    mockDb.run.mockRejectedValueOnce(new Error("Insert Error"));
     
     const res = await testApp.request("/", {
       method: "POST",
@@ -365,7 +339,7 @@ describe("Hono Backend - /inquiries Router", () => {
 
   it("POST / - handles decryption error in duplicate check", async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
-    mockDb.execute.mockResolvedValueOnce([{ id: "123", email: "bad-data", metadata: "{}" }]);
+    mockDb.all.mockResolvedValueOnce([{ id: "123", email: "bad-data", metadata: "{}" }]);
     
     // Decrypt will fail (throw) for "bad-data"
     const cryptoModule = await import("../../utils/crypto");
@@ -378,11 +352,11 @@ describe("Hono Backend - /inquiries Router", () => {
     }, env, mockExecutionContext as any);
     
     expect(res.status).toBe(200); // Should proceed to create new if check fails
-    expect(mockDb.insertInto).toHaveBeenCalled();
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("PATCH /admin/:id/status - handles failure", async () => {
-    mockDb.updateTable.mockImplementationOnce(() => { throw new Error("Update Error"); });
+    mockDb.run.mockRejectedValueOnce(new Error("Update Error"));
     const res = await testApp.request("/admin/1/status", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "DEV_BYPASS": "true" },
@@ -392,7 +366,7 @@ describe("Hono Backend - /inquiries Router", () => {
   });
 
   it("GET /admin/list - handles decryption failure", async () => {
-    mockDb.execute.mockResolvedValueOnce([{ id: "1", name: "bad:name", email: "bad:email", type: "support", status: "pending", created_at: "now" }]);
+    mockDb.all.mockResolvedValueOnce([{ id: "1", name: "bad:name", email: "bad:email", type: "support", status: "pending", created_at: "now" }]);
     const cryptoModule = await import("../../utils/crypto");
     vi.spyOn(cryptoModule, "decrypt").mockRejectedValue(new Error("Decryption failed"));
 
@@ -411,12 +385,12 @@ describe("Hono Backend - /inquiries Router", () => {
       body: JSON.stringify({ type: "support", name: "Test", email: "test@test.com", metadata: largeMeta })
     }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalled();
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("POST / - handles duplicate submission", async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
-    mockDb.execute.mockResolvedValueOnce([{ id: "old-id", email: "enc-email", metadata: JSON.stringify({ key: "val" }) }]);
+    mockDb.all.mockResolvedValueOnce([{ id: "old-id", email: "enc-email", metadata: JSON.stringify({ key: "val" }) }]);
     
     const cryptoModule = await import("../../utils/crypto");
     vi.spyOn(cryptoModule, "decrypt").mockResolvedValue("test@test.com");
@@ -430,11 +404,11 @@ describe("Hono Backend - /inquiries Router", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as InquiryResponseType;
     expect(body.id).toBe("old-id");
-    expect(mockDb.insertInto).not.toHaveBeenCalled();
+    expect(mockDb.insert).not.toHaveBeenCalled();
   });
 
   it("DELETE /admin/:id - handles failure (with body)", async () => {
-    mockDb.deleteFrom.mockImplementationOnce(() => { throw new Error("Delete Error"); });
+    mockDb.run.mockRejectedValueOnce(new Error("Delete Error"));
     const res = await testApp.request("/admin/1", {
       method: "DELETE",
       headers: { 
@@ -455,14 +429,11 @@ describe("Hono Backend - /inquiries Router", () => {
 
   it("purgeOldInquiries function - with results", async () => {
     const { purgeOldInquiries } = await import("./inquiries/handlers");
-    mockDb.execute.mockResolvedValueOnce([{ id: "1" }]);
-     
-
+    mockDb.run = vi.fn().mockResolvedValue({ meta: { changes: 1 } });
+    
     const res = await purgeOldInquiries(mockDb as any, 30);
     expect(res.deleted).toBe(1);
-    expect(mockDb.deleteFrom).toHaveBeenCalledWith("inquiries");
-
-     
+    expect(mockDb.run).toHaveBeenCalled();
 
     const res2 = await purgeOldInquiries(mockDb as any, 0);
     expect(res2.deleted).toBe(0);

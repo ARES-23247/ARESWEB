@@ -28,9 +28,17 @@ import { AppEnv } from "../../middleware";
  */
 export async function purgeOldInquiries(db: any, days: number) {
   if (days <= 0) return { deleted: 0 };
-  const res = await db.prepare(
-    `DELETE FROM inquiries WHERE id IN (SELECT id FROM inquiries WHERE status IN ('resolved', 'rejected') AND created_at < datetime('now', '-' || ? || ' days') LIMIT 100)`
-  ).bind(days).run();
+  
+  const res = await db.run(sql`
+    DELETE FROM inquiries
+    WHERE id IN (
+      SELECT id FROM inquiries
+      WHERE status IN ('resolved', 'rejected')
+      AND created_at < datetime('now', '-' || ${days} || ' days')
+      LIMIT 100
+    )
+  `);
+  
   return { deleted: res.meta?.changes ?? 0 };
 }
 

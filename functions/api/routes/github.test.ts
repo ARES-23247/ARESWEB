@@ -6,6 +6,17 @@ import { mockExecutionContext } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 import githubRouter from "./github";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 interface GitHubResponse {
   success?: boolean;
   data?: unknown;
@@ -46,7 +57,7 @@ vi.mock("../../utils/githubProjects", () => ({
 
 describe("Hono Backend - /github Router", () => {
   let testApp: Hono<TestEnv>;
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let env: TestEnv["Bindings"];
 
   beforeEach(() => {
@@ -71,7 +82,7 @@ describe("Hono Backend - /github Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
     

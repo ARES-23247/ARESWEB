@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import type { TestEnv } from "../../../src/test/types";
+import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import profilesRouter from "./profiles";
 import { createMockProfile } from "../../../src/test/factories/userFactory";
 
@@ -25,6 +25,17 @@ vi.mock("../../utils/auth", () => ({
 import * as shared from "../middleware";
 import * as cryptoUtils from "../../utils/crypto";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -39,7 +50,7 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 describe("Hono Backend - /profiles Router", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
   let env: TestEnv["Bindings"];
 
@@ -67,7 +78,7 @@ describe("Hono Backend - /profiles Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: any) => q),
+        transformQuery: vi.fn((q: unknown) => q),
       }),
     };
 
@@ -84,7 +95,7 @@ describe("Hono Backend - /profiles Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       c.set("sessionUser", { id: "local-dev", email: "admin@test.com", role: "admin", name: "Local Dev", member_type: "mentor" });
       await next();
     });

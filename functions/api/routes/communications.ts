@@ -3,12 +3,16 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, logSystemError } from "../middleware";
 
+import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
+import * as relations from "../../../src/db/relations";
 import {
 
   sendMassEmailRoute,
   getStatsRoute,
 } from "../../../shared/routes/communications";
+
+type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
 
 
 export const communicationsRouter = new OpenAPIHono<AppEnv>();
@@ -20,14 +24,14 @@ communicationsRouter.use("/stats", ensureAdmin);
 // Get stats
 communicationsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   try {
-    const db = c.get("db") as any | null;
+    const db = c.get("db") as DrizzleDb | null;
     if (!db) {
       console.error("[Communications] db context is null/undefined");
       return c.json({ success: false, error: "Database not initialized" }, 500);
     }
     const users = await db.select({ email: schema.user.email }).from(schema.user);
 
-    const activeMembers = users.filter((m: any) => m.email);
+    const activeMembers = users.filter((m) => m.email);
     return c.json({ activeUsers: activeMembers.length }, 200);
 
   } catch (err: unknown) {
@@ -50,10 +54,10 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
     const fromEmail = socialConfig.RESEND_FROM_EMAIL || "team@aresfirst.org";
 
     // Fetch users from database
-    const db = c.get("db") as any;
+    const db = c.get("db") as DrizzleDb;
     const users = await db.select({ email: schema.user.email }).from(schema.user);
 
-    const activeMembers = users.filter((m: any) => m.email);
+    const activeMembers = users.filter((m) => m.email);
 
     if (activeMembers.length === 0) {
       return c.json({ success: false, error: "No active users found to send emails to." }, 400);
@@ -117,7 +121,7 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
       : errMsg;
     console.error("[Communications] Send mass email failed:", sanitizedErrMsg);
     try {
-      const db = c.get("db") as any;
+      const db = c.get("db") as DrizzleDb;
       await logSystemError(db, "Communications", "Failed to send mass email", errMsg);
     } catch { /* don't let logging failure mask the real error */ }
     return c.json({ success: false, error: errMsg || "Failed to dispatch emails" }, 500);

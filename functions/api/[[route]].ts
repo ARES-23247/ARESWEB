@@ -3,8 +3,8 @@ import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMiddleware, envMiddleware, originIntegrityMiddleware } from "./middleware";
-import { sql } from "kysely";
-import { DB } from "../../shared/schemas/database";
+import { sql, desc } from "drizzle-orm";
+import * as schema from "../../src/db/schema";
 
 // ── Domain Routers ───────────────────────────────────────────────────
 import authRouter from "./routes/auth";
@@ -111,18 +111,19 @@ apiRouter.use("*", async (c, next) => {
       c.executionCtx.waitUntil(
         (async () => {
           try {
-            await db.insertInto("usage_metrics")
-              .values({
-                id: crypto.randomUUID(),
-                endpoint: c.req.path,
-                method: c.req.method,
-                status_code: c.res.status,
-                latency_ms: latency,
-                user_id: user?.id || null,
-                cf_ray: c.req.header("cf-ray") || null,
-                cf_ip: c.req.header("cf-connecting-ip") || null
-              })
-              .execute();
+            await c.env.DB.prepare(`
+              INSERT INTO usage_metrics (id, endpoint, method, status_code, latency_ms, user_id, cf_ray, cf_ip)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+              crypto.randomUUID(),
+              c.req.path,
+              c.req.method,
+              c.res.status,
+              latency,
+              user?.id || null,
+              c.req.header("cf-ray") || null,
+              c.req.header("cf-connecting-ip") || null
+            ).run();
           } catch (err) {
             const errorMsg = err instanceof Error ? err.message : String(err);
             if (!errorMsg.includes("no such table") && !errorMsg.includes("does not exist")) {
@@ -226,21 +227,21 @@ apiRouter.openapi(searchRoute, async (c) => {
   const ftsQ = qClean.replace(/\*/g, '') + '*';
   const db = c.get("db") as any;
   const [postsReq, eventsReq, docsReq] = await Promise.all([
-    sql<Record<string, unknown>>`
+    db.all(sql`
       SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet
-      FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`.execute(db),
-    sql<Record<string, unknown>>`
+      FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.isDeleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`),
+    db.all(sql`
       SELECT 'event' as type, f.id, highlight(events_fts, 1, '<b>', '</b>') as title, snippet(events_fts, 2, '...', '...', '...', 15) as snippet
-      FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`.execute(db),
-    sql<Record<string, unknown>>`
+      FROM events_fts f JOIN events e ON f.id = e.id WHERE e.isDeleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`),
+    db.all(sql`
       SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet
-      FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`.execute(db)
+      FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.isDeleted = 0 AND f.docs_fts MATCH ${ftsQ} ORDER BY rank LIMIT 5`)
   ]);
   return c.json({ 
     results: [
-      ...(postsReq.rows || []).map((r: any) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
-      ...(eventsReq.rows || []).map((r: any) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
-      ...(docsReq.rows || []).map((r: any) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
+      ...(postsReq || []).map((r: any) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
+      ...(eventsReq || []).map((r: any) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })), 
+      ...(docsReq || []).map((r: any) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
     ] 
   }, 200);
 });
@@ -252,9 +253,20 @@ apiRouter.openapi(auditLogRoute, async (c) => {
   const offset = o ? parseInt(o, 10) : 0;
   
   const db = c.get("db") as any;
-  const results = await db.selectFrom("audit_log")
-    .select(["id", "actor", "action", "resource_type", "resource_id", "created_at", sql<string>`substr(details, 1, 500)`.as("details")])
-    .orderBy("created_at", "desc").limit(limit).offset(offset).execute();
+  const results = await db.select({
+      id: schema.auditLog.id,
+      actor: schema.auditLog.actor,
+      action: schema.auditLog.action,
+      resource_type: schema.auditLog.resourceType,
+      resource_id: schema.auditLog.resourceId,
+      created_at: schema.auditLog.createdAt,
+      details: sql<string>`substr(${schema.auditLog.details}, 1, 500)`
+    })
+    .from(schema.auditLog)
+    .orderBy(desc(schema.auditLog.createdAt))
+    .limit(limit)
+    .offset(offset)
+    .all();
   
   const logs = results.map((r: any) => ({
     ...r,

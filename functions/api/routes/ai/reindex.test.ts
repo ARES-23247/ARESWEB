@@ -21,6 +21,17 @@ vi.mock("./indexer", () => ({
 // Import after mocks
 import aiRouter from "./index";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 interface MockDB {
   selectFrom: ReturnType<typeof vi.fn>;
   select: ReturnType<typeof vi.fn>;
@@ -73,7 +84,7 @@ describe("AI Router - /reindex endpoint", () => {
     vi.clearAllMocks();
     app = new Hono();
     app.use("*", async (c: Context, next: Next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
     app.route("/", aiRouter);

@@ -51,11 +51,11 @@ async function canModifySimulation(
   if (sessionUser.role === "admin") return true;
 
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
 
-    const patSetting = config.find((s: any) => s.key === "GITHUB_PAT");
+    const patSetting = config.find((s) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
     if (!pat) return false;
 
@@ -104,7 +104,7 @@ simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulati
     let pat = c.env.GITHUB_PAT;
 
     try {
-      const db = c.get("db") as any;
+      const db = c.get("db");
       const config = await db.select().from(schema.settings).all();
       const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
@@ -164,7 +164,7 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
   const filePath = `src/sims/${simId}/index.tsx`;
 
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -239,7 +239,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
       }
     }
 
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -362,7 +362,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 
     const filename = `${simIdStr}.tsx`;
 
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -439,7 +439,7 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
       return c.json({ error: "No files provided" }, 400);
     }
 
-    const db = c.get("db") as any;
+    const db = c.get("db");
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
@@ -489,7 +489,7 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
   const { id } = c.req.valid("param");
 
   try {
-    const db = c.get("db") as any;
+    const db = c.get("db");
     let pat = c.env.GITHUB_PAT;
     try {
       const config = await db.select().from(schema.settings).all();

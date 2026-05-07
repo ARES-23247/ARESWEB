@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv } from "../../../src/test/types";
+import { TestEnv, DrizzleMock } from "../../../src/test/types";
 import { createMockUser } from "../../../src/test/factories/userFactory";
 
 const mockUser = createMockUser({ id: "1", email: "admin@test.com", role: "admin" });
@@ -44,11 +44,22 @@ vi.mock("../../utils/zulipSync", () => ({
 
 import docsRouter from "./docs";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 describe("Hono Backend - /docs Router", () => {
 
 
 
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -66,7 +77,7 @@ describe("Hono Backend - /docs Router", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((cb: any) => {
+      onConflict: vi.fn().mockImplementation((cb: unknown) => {
         if (typeof cb === 'function') {
           const ocMock = { column: vi.fn().mockReturnValue({ doUpdateSet: vi.fn().mockReturnThis() }) };
           cb(ocMock);
@@ -82,13 +93,13 @@ describe("Hono Backend - /docs Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: any) => q),
+        transformQuery: vi.fn((q: unknown) => q),
       }),
     };
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
     testApp.route("/", docsRouter);
@@ -207,7 +218,7 @@ describe("Hono Backend - /docs Router", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as DocsResponse;
     expect(body.results).toHaveLength(2);
-    expect((body.results as any)[1].description).toBeNull();
+    expect((body.results as Array<{ description: string | null }>)[1].description).toBeNull();
   });
 
   it("GET /search - ignores short queries", async () => {
@@ -360,7 +371,7 @@ describe("Hono Backend - /docs Router", () => {
     const waitUntils: Promise<any>[] = [];
     const mockCtx = {
       ...mockExecutionContext,
-      waitUntil: vi.fn((p: any) => {
+      waitUntil: vi.fn((p: Promise<unknown>) => {
         waitUntils.push(p);
       })
     };
@@ -414,7 +425,7 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("GET /search - search error", async () => {
-    (mockDb.getExecutor() as any).executeQuery.mockRejectedValueOnce(new Error("DB Error"));
+    (mockDb.getExecutor() as { executeQuery: ReturnType<typeof vi.fn> }).executeQuery.mockRejectedValueOnce(new Error("DB Error"));
     const res2 = await testApp.request("/search?q=newquery", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res2.status).toBe(500);
   });
@@ -554,7 +565,7 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("POST /admin/:slug/undelete - handles error", async () => {
-    (mockDb.updateTable as any).mockImplementationOnce(() => { throw new Error("DB fail") });
+    (mockDb.updateTable as ReturnType<typeof vi.fn>).mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await testApp.request("/admin/test-doc/undelete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

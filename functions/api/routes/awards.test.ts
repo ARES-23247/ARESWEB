@@ -16,11 +16,22 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import awardsRouter from "./awards";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 describe("Hono Backend - /awards Router", () => {
   
   
    
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -43,13 +54,13 @@ describe("Hono Backend - /awards Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: any) => q),
+        transformQuery: vi.fn((q: unknown) => q),
       }),
     };
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
     testApp.route("/", awardsRouter);

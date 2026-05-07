@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 type GamePhase = 'setup' | 'deploy' | 'attack' | 'reinforce' | 'gameover';
-type GameMode = 'hotseat' | 'ai';
+// Unused type retained for potential future use
+// type GameMode = 'hotseat' | 'ai';
 type PlayerColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'black';
 
 interface Territory {
@@ -28,14 +29,15 @@ interface Player {
   isAI: boolean;
 }
 
-const PLAYERS: Player[] = [
-  { color: 'red', name: 'Red Empire', emoji: '🔴', isAI: false },
-  { color: 'blue', name: 'Blue Legion', emoji: '🔵', isAI: true },
-  { color: 'green', name: 'Green Horde', emoji: '🟢', isAI: true },
-  { color: 'yellow', name: 'Golden Khanate', emoji: '🟡', isAI: true },
-  { color: 'purple', name: 'Purple Dynasty', emoji: '🟣', isAI: true },
-  { color: 'black', name: 'Black Pact', emoji: '⚫', isAI: true },
-];
+// Unused constant retained for potential future use
+// const PLAYERS: Player[] = [
+//   { color: 'red', name: 'Red Empire', emoji: '🔴', isAI: false },
+//   { color: 'blue', name: 'Blue Legion', emoji: '🔵', isAI: true },
+//   { color: 'green', name: 'Green Horde', emoji: '🟢', isAI: true },
+//   { color: 'yellow', name: 'Golden Khanate', emoji: '🟡', isAI: true },
+//   { color: 'purple', name: 'Purple Dynasty', emoji: '🟣', isAI: true },
+//   { color: 'black', name: 'Black Pact', emoji: '⚫', isAI: true },
+// ];
 
 const PLAYER_COLORS: Record<PlayerColor, string> = {
   red: '#ef4444',

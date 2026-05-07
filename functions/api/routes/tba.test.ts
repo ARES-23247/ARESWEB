@@ -5,6 +5,17 @@ import { mockExecutionContext } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 import tbaRouter from "./tba";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 interface TBAResponse {
   success?: boolean;
   data?: unknown;
@@ -24,7 +35,7 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 describe("Hono Backend - /tba Router", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
   let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -46,7 +57,7 @@ describe("Hono Backend - /tba Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       c.env.DEV_BYPASS = "true";
       await next();
     });

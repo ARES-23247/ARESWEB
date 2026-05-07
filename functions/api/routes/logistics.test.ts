@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { TestEnv } from "../../../src/test/types";
+import { TestEnv, DrizzleMock } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -18,8 +18,19 @@ vi.mock("../../utils/crypto", () => ({
 
 import logisticsRouter from "./logistics";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 describe("Hono Backend - /logistics Router", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 
@@ -42,7 +53,7 @@ describe("Hono Backend - /logistics Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
     testApp.route("/", logisticsRouter);

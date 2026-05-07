@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import { mockExecutionContext, createMockDrizzle, createDrizzleProxy } from "../../../src/test/utils";
 import type { TestEnv, MockDrizzle } from "../../../src/test/types";
+import type { DrizzleProxy } from "../../../src/test/mocks";
 import authRouter from "./auth";
 import * as shared from "../middleware";
 import * as authUtils from "../../utils/auth";
@@ -31,7 +32,7 @@ describe("Auth Router", () => {
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb) as DrizzleProxy);
       await next();
     });
     app.route("/", authRouter);
@@ -39,18 +40,18 @@ describe("Auth Router", () => {
 
   describe("GET /auth-check", () => {
     it("should return 200 and user data when authenticated", async () => {
-      const mockUser = { 
-        id: "u1", 
-        email: "test@example.com", 
-        name: "Test User", 
-        image: null, 
+      const mockUser = {
+        id: "u1",
+        email: "test@example.com",
+        name: "Test User",
+        image: null,
         role: "admin"
       };
       vi.mocked(shared.getSessionUser).mockResolvedValue({
         ...mockUser,
         nickname: "Test",
         member_type: "mentor"
-      } as any);
+      } as TestEnv["Variables"]["sessionUser"]);
 
       const res = await app.request("/auth-check", {
         headers: { "ENVIRONMENT": "development" }
@@ -82,7 +83,7 @@ describe("Auth Router", () => {
         handler: mockHandler,
       } as any);
 
-      const res = await app.request("/signin", { 
+      const res = await app.request("/signin", {
         method: "POST",
         headers: { "BETTER_AUTH_SECRET": "test" }
       }, { DB: {} as unknown as D1Database }, mockExecutionContext);
@@ -100,7 +101,7 @@ describe("Auth Router", () => {
 
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const res = await app.request("/error", {
-        headers: { 
+        headers: {
           "Host": "localhost:8080",
           "ENVIRONMENT": "development"
         }
@@ -140,7 +141,7 @@ describe("Auth Router", () => {
 
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const res = await app.request("/error", {
-        headers: { 
+        headers: {
           "ENVIRONMENT": "development"
         }
       }, { DB: {} as unknown as D1Database, DEV_BYPASS: "true" }, mockExecutionContext);
@@ -153,4 +154,3 @@ describe("Auth Router", () => {
     });
   });
 });
-

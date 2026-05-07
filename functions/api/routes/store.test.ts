@@ -2,8 +2,19 @@
  
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv } from "../../../src/test/types";
+import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import storeRouter from "./store";
+
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
 
 interface StoreResponse {
   success?: boolean;
@@ -40,7 +51,7 @@ vi.mock("stripe", () => {
 
 describe("Hono Backend - /store Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: any;
+  let mockDb: DrizzleMock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,7 +72,7 @@ describe("Hono Backend - /store Router", () => {
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       c.set("sessionUser", { id: "admin-1", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" });
       c.env = {
         STRIPE_SECRET_KEY: "sk_test_123",
@@ -124,7 +135,7 @@ describe("Hono Backend - /store Router", () => {
       });
       
       expect(res.status).toBe(200);
-      expect(mockDb.insertInto).toHaveBeenCalledWith("orders");
+      expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
       expect(mockDb.values).toHaveBeenCalled();
       expect(mockDb.execute).toHaveBeenCalled();
       

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv } from "../../../src/test/types";
+import type { TestEnv, DrizzleMock } from "../../../src/test/types";
 import { mockExecutionContext } from "../../../src/test/utils";
 import { getSessionUser } from "../middleware";
 
@@ -16,8 +16,19 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import notificationsRouter from "./notifications";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 describe("Hono Backend - /notifications Router", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -43,13 +54,13 @@ describe("Hono Backend - /notifications Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: any) => q),
+        transformQuery: vi.fn((q: unknown) => q),
       }),
     } as unknown as any;
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
     testApp.route("/", notificationsRouter);

@@ -7,6 +7,17 @@ import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
 import { TestEnv } from "../../../src/test/types";
 
 
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
+
 vi.mock("../../utils/zulipSync", () => ({
   sendZulipMessage: vi.fn().mockResolvedValue(1),
 }));
@@ -40,7 +51,7 @@ describe("Zulip Webhook Router", () => {
   };
 
   let testApp: Hono<TestEnv>;
-  let mockDb: any;
+  let mockDb: DrizzleMock;
 
   type ZulipPayloadOverrides = {
     token?: string;
@@ -103,7 +114,7 @@ describe("Zulip Webhook Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       // Ensure ZULIP_WEBHOOK_TOKEN is in env for getSocialConfig
       (c.env as any).ZULIP_WEBHOOK_TOKEN = "test-token";
       await next();

@@ -5,13 +5,24 @@ import type { VectorizeIndex, Ai } from "@cloudflare/workers-types";
 import { Kysely } from "kysely";
 import { DB } from "../../../../shared/schemas/database";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 // Mock Cloudflare Worker bindings for AI tests
 type MockAI = { run: ReturnType<typeof vi.fn> };
 type MockVectorize = { upsert: ReturnType<typeof vi.fn> };
 
 describe("triggerBackgroundReindex", () => {
   let mockExecutionCtx: MockExecutionContext;
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let mockAi: MockAI;
   let mockVectorize: MockVectorize;
 

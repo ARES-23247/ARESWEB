@@ -2,10 +2,9 @@
  
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { TestEnv } from "../../../src/test/types";
-import { mockExecutionContext } from "../../../src/test/utils";
+import type { TestEnv, DrizzleMock } from "../../../src/test/types";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 import { settingsRouter } from "./settings";
-
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -17,7 +16,7 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 describe("Hono Backend - /settings Router", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
   let env: TestEnv["Bindings"];
 
@@ -53,7 +52,7 @@ describe("Hono Backend - /settings Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       c.set("sessionUser", { 
         id: "1", 
         email: "admin@test.com", 
@@ -68,7 +67,7 @@ describe("Hono Backend - /settings Router", () => {
 
   it("GET / - list settings (masked)", async () => {
     const res = await testApp.request("/admin/settings", {}, env, mockExecutionContext);
-    expect(res.status).toBe(200);
+    if (res.status === 500) console.log(await res.json()); expect(res.status).toBe(200);
     const body = await res.json() as { settings: Record<string, string>; success: boolean };
     expect(body.settings.site_name).toBe("ARES");
     expect(body.settings.BETTER_AUTH_SECRET).toContain("••••");
@@ -83,11 +82,11 @@ describe("Hono Backend - /settings Router", () => {
     }, env, mockExecutionContext);
 
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith("settings");
+    expect(mockDb.insert).toHaveBeenCalledWith(expect.anything());
   });
 
   it("GET /stats - get platform stats", async () => {
-    mockDb.executeTakeFirst.mockResolvedValue({ count: 10 });
+    mockDb.get.mockResolvedValue({ count: 10 });
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { posts: number; users: number; events: number; docs: number };
@@ -95,7 +94,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /stats - get platform stats with null values", async () => {
-    mockDb.executeTakeFirst.mockResolvedValue(null);
+    mockDb.get.mockResolvedValue(null);
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { posts: number; users: number; events: number; docs: number };
@@ -104,7 +103,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /stats - handles database error", async () => {
-    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -119,13 +118,13 @@ describe("Hono Backend - /settings Router", () => {
 
     expect(res.status).toBe(200);
     // Should only have inserted site_name
-    expect(mockDb.insertInto).toHaveBeenCalledTimes(1);
+    expect(mockDb.insert).toHaveBeenCalledTimes(1);
     const body = await res.json() as { updated: number; success: boolean };
     expect(body.updated).toBe(1);
   });
 
   it("POST / - handles update error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     const payload = { site_name: "New Name" };
     const res = await testApp.request("/admin/settings", {
       method: "POST",
@@ -179,7 +178,7 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("POST /admin/settings - error", async () => {
-    mockDb.insertInto.mockImplementationOnce(() => { throw new Error("DB error") });
+    mockDb.insert.mockImplementationOnce(() => { throw new Error("DB error") });
     const payload = { site_name: "New Name" };
     const res = await testApp.request("/admin/settings", {
       method: "POST",

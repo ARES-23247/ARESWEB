@@ -18,10 +18,21 @@ vi.mock("../middleware", async (importOriginal) => {
 
 import { getSocialConfig, logAuditAction, logSystemError } from "../middleware";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 const globalFetch = globalThis.fetch;
 
 describe("Hono Backend - /communications Router", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
@@ -36,7 +47,7 @@ describe("Hono Backend - /communications Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       await next();
     });
     testApp.route("/", communicationsRouter);
@@ -62,7 +73,7 @@ describe("Hono Backend - /communications Router", () => {
   it("GET /stats - returns 500 when DB is null", async () => {
     const errorApp = new Hono<TestEnv>();
     errorApp.use("*", async (c, next) => {
-      c.set("db", null as any);
+      c.set("db", createDrizzleProxy(null as any));
       await next();
     });
     errorApp.route("/", communicationsRouter);

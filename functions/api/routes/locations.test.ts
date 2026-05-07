@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { TestEnv } from "../../../src/test/types";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
@@ -14,48 +14,21 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
+vi.mock("../middleware/cache", async () => {
+  return {
+    edgeCacheMiddleware: () => async (_c: any, next: any) => next()
+  };
+});
+
 import locationsRouter from "./locations";
 
 describe("Hono Backend - /locations Router", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      all: vi.fn().mockResolvedValue([]),
-      get: vi.fn().mockResolvedValue(null),
-      run: vi.fn().mockResolvedValue({ success: true }),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn((cb: any) => {
-        if (typeof cb === "function") {
-          cb({ column: vi.fn().mockReturnValue({ doUpdateSet: vi.fn() }) });
-        }
-        return mockDb;
-      }),
-      onConflictDoUpdate: vi.fn().mockReturnThis(),
-      doUpdateSet: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      getExecutor: vi.fn().mockReturnValue({
-        compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
-        executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: any) => q),
-      }),
-    };
+    mockDb = createMockDrizzle();
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {

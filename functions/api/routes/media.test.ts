@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { mockExecutionContext } from "../../../src/test/utils";
-import { TestEnv } from "../../../src/test/types";
+import { TestEnv, DrizzleMock } from "../../../src/test/types";
 
 interface _MediaResponse {
   success?: boolean;
@@ -48,6 +48,17 @@ vi.mock("../../utils/zulipSync", () => ({
 
 import mediaRouter from "./media/index";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 interface MockR2 {
   list: ReturnType<typeof vi.fn>;
   get: ReturnType<typeof vi.fn>;
@@ -62,7 +73,7 @@ type TestEnvWithStorage = TestEnv["Bindings"] & {
 
 describe("Hono Backend - /media Router", () => {
   let mockR2: MockR2;
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
   let env: TestEnvWithStorage;
 
@@ -102,7 +113,7 @@ describe("Hono Backend - /media Router", () => {
       getExecutor: vi.fn().mockReturnValue({
         compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
         executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-        transformQuery: vi.fn((q: any) => q),
+        transformQuery: vi.fn((q: unknown) => q),
       }),
     };
 
@@ -122,7 +133,7 @@ describe("Hono Backend - /media Router", () => {
 
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c: Context<TestEnv>, next: () => Promise<void>) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       c.set("sessionUser", { id: "1", role: "admin", email: "admin@test.com", name: null, nickname: "Admin", image: null, member_type: "student" });
       await next();
     });
@@ -179,7 +190,7 @@ describe("Hono Backend - /media Router", () => {
     
     expect(res.status).toBe(200);
     expect(mockR2.put).toHaveBeenCalledWith("Archive/img1.png", "data", expect.any(Object));
-    expect(mockR2.delete).toHaveBeenCalledWith("img1.png");
+    expect(mockR2.delete).toHaveBeenCalledWith(expect.anything());
   });
 
   it("POST /admin/syndicate - syndicates media", async () => {

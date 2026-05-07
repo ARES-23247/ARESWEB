@@ -5,9 +5,20 @@ import { Hono } from "hono";
 import { TestEnv } from "../../../src/test/types";
 import pointsRouter from "./points";
 
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
+
 describe("Hono Backend - /points Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let sessionUser: { id: string; role: string } | null;
 
   beforeEach(() => {
@@ -27,7 +38,7 @@ describe("Hono Backend - /points Router", () => {
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", mockDb);
+      c.set("db", createDrizzleProxy(mockDb));
       if (sessionUser) {
         c.set("sessionUser", sessionUser as any);
       }

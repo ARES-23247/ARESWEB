@@ -2,7 +2,7 @@
 import { TestEnv } from "../../../src/test/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
 import judgesRouter from "./judges";
 
 interface JudgesResponse {
@@ -31,41 +31,14 @@ describe("Hono Backend - /judges Router", () => {
   
   
    
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let testApp: Hono<TestEnv>;
   let env: Record<string, unknown>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = {
-      selectFrom: vi.fn().mockReturnThis(),
-      selectAll: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn((key: any) => {
-        if (typeof key === "function") {
-          key(Object.assign(vi.fn(), {
-            or: vi.fn(),
-            and: vi.fn(),
-            is: vi.fn(),
-            ">": vi.fn()
-          }));
-        }
-        return mockDb;
-      }),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      offset: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockReturnThis(),
-      doUpdateSet: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-    };
+    mockDb = createMockDrizzle();
 
     env = {
       DB: {
@@ -89,7 +62,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("POST /login - valid code", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ code: "VALID", label: "Judge" });
+    mockDb.all.mockResolvedValueOnce([{ code: "VALID", label: "Judge" }]);
     
     const res = await testApp.request("/login", {
       method: "POST",
@@ -105,15 +78,14 @@ describe("Hono Backend - /judges Router", () => {
   it("GET /portfolio - fetch and sanitize data", async () => {
     // 1st call: rate limit check
     // 2nd call: judge code check
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0, expires_at: 9999999999 })
-                          .mockResolvedValueOnce({ code: "VALID" }); 
+    mockDb.all.mockResolvedValueOnce([{ code: "VALID" }]); 
     
     // Mock documents with internal notes
     const mockDocs = [
       { slug: "test", title: "Test Doc", content: "Championship info. TODO: check intake physics. FIXME: robot image missing.", category: "Build", description: "TODO: fix" }
     ];
     // Mock records without optional fields
-    mockDb.execute.mockResolvedValueOnce(mockDocs) // docs
+    mockDb.all.mockResolvedValueOnce(mockDocs) // docs
                  .mockResolvedValueOnce([{ id: "1", title: "Outreach 1", students_count: "5", hours_logged: "10", reach_count: "100" }]) // outreach (no description)
                  .mockResolvedValueOnce([{ id: "1", title: "Award 1", date: "2024" }]) // awards (no description)
                  .mockResolvedValueOnce([{ name: "Sponsor 1", tier: "Gold" }]); // sponsors (no id)
@@ -133,8 +105,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("GET /portfolio - returns cached data on second call", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0, expires_at: 9999999999 })
-                          .mockResolvedValueOnce({ code: "VALID" }); 
+    mockDb.all.mockResolvedValueOnce([{ code: "VALID" }]); 
     const res = await testApp.request("/portfolio", {
       headers: { "x-judge-code": "VALID" }
     }, env, mockExecutionContext);
@@ -173,7 +144,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("POST /login - handles invalid code", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce(null);
+    mockDb.all.mockResolvedValueOnce([]);
     const res = await testApp.request("/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -183,7 +154,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("POST /login - handles db error", async () => {
-    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -193,7 +164,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("GET /portfolio - rejects missing code header", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0, expires_at: 9999999999 });
+    
 
     const res = await testApp.request("/portfolio", {}, env, mockExecutionContext);
     expect(res.status).toBe(401);
@@ -202,7 +173,7 @@ describe("Hono Backend - /judges Router", () => {
 
 
   it("GET /admin/codes - list codes", async () => {
-    mockDb.execute.mockResolvedValueOnce([
+    mockDb.all.mockResolvedValueOnce([
       { id: "1", code: "ABC", expires_at: null, label: "Test", created_at: "2024" },
       { id: "2", code: "DEF", expires_at: "2025", label: "Test2", created_at: "2024" }
     ]);
@@ -211,13 +182,13 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("GET /admin/codes - handles db error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/codes", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/codes - create code with optional fields", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ insertId: 123 });
+    mockDb.all.mockResolvedValueOnce([{ insertId: 123 }]);
     const res = await testApp.request("/admin/codes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -227,7 +198,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("POST /admin/codes - create code without optional fields", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ insertId: 123 });
+    mockDb.all.mockResolvedValueOnce([{ insertId: 123 }]);
     const res = await testApp.request("/admin/codes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -237,7 +208,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("POST /admin/codes - handles db error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/codes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -247,7 +218,7 @@ describe("Hono Backend - /judges Router", () => {
   });
 
   it("DELETE /admin/codes/:id - handles error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
     const res = await testApp.request("/admin/codes/bad-id", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -269,8 +240,8 @@ describe("Hono Backend - /judges Router", () => {
     const originalDateNow = Date.now;
     Date.now = vi.fn(() => originalDateNow() + 400000);
     try {
-      mockDb.executeTakeFirst.mockResolvedValueOnce({ code: "VALID" });
-      mockDb.execute.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockResolvedValueOnce([{ code: "VALID" }]);
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
       const res = await testApp.request("/portfolio", {
         headers: { "x-judge-code": "VALID" }
       }, env, mockExecutionContext);

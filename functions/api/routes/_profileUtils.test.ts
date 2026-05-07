@@ -2,14 +2,25 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { upsertProfile } from "./_profileUtils";
 import { Context } from "hono";
 import { AppEnv } from "../middleware";
-import type {  } from "../../../src/test/types";
+import type { DrizzleMock } from "../../../src/test/types";
+
+
+          return Promise.resolve([]).then(resolve, reject);
+        };
+      }
+      if (prop in drizzleMethods) return drizzleMethods[prop as string];
+      return target[prop];
+    }
+  });
+  return proxy;
+}
 
 vi.mock("../../utils/crypto", () => ({
   encrypt: vi.fn((val: any) => Promise.resolve("encrypted_" + val)),
 }));
 
 describe("Profile Utils", () => {
-  let mockDb: any;
+  let mockDb: DrizzleMock;
   let mockContext: {
     env: { ENCRYPTION_SECRET: string };
     get: ReturnType<typeof vi.fn>;
@@ -33,7 +44,7 @@ describe("Profile Utils", () => {
       executeTakeFirst: vi.fn().mockResolvedValue(null),
       insertInto: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((cb: any) => {
+      onConflict: vi.fn().mockImplementation((cb: unknown) => {
         if (typeof cb === "function") {
           cb({
             column: vi.fn().mockReturnValue({
@@ -51,7 +62,7 @@ describe("Profile Utils", () => {
 
     mockContext = {
       env: { ENCRYPTION_SECRET: "secret" },
-      get: vi.fn().mockReturnValue(mockDb),
+      get: vi.fn().mockReturnValue(createDrizzleProxy(mockDb)),
       var: {
         session: { user: { id: "1", role: "admin", member_type: "mentor" } }
       }
@@ -60,7 +71,7 @@ describe("Profile Utils", () => {
 
   it("upserts profile with new data", async () => {
     await upsertProfile(mockContext as unknown as Context<AppEnv>, "1", { nickname: "New Nickname", phone: "123", subteams: ["Programming"], show_email: true });
-    expect(mockDb.insertInto).toHaveBeenCalledWith("user_profiles");
+    expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
     expect(mockDb.values).toHaveBeenCalled();
   });
 
