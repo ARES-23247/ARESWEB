@@ -57,7 +57,7 @@ export async function fetchGithubRepoFiles(
     const treeData = await treeRes.json() as { tree: Array<{ type: string; path: string; sha: string }> };
 
     // 3. Filter files by extension
-    const targetFiles = treeData.tree.filter((node: any) => {
+    const targetFiles = treeData.tree.filter((node) => {
       if (node.type !== "blob") return false;
       if (!allowedExtensions || allowedExtensions.length === 0) return true;
       const ext = node.path.substring(node.path.lastIndexOf("."));
