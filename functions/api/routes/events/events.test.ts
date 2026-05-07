@@ -136,7 +136,9 @@ describe("Hono Backend - Events Router", () => {
 
     mockDb = {
       select: vi.fn().mockReturnThis(),
+      selectDistinct: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
       where: vi.fn().mockImplementation((cb: any) => {
         if (typeof cb === 'function') {
           const ebMock = Object.assign(vi.fn().mockReturnThis(), { or: vi.fn().mockReturnThis(), and: vi.fn().mockReturnThis(), not: vi.fn().mockReturnThis() }) as any;
@@ -149,22 +151,27 @@ describe("Hono Backend - Events Router", () => {
       offset: vi.fn().mockReturnThis(),
       leftJoin: vi.fn().mockReturnThis(),
       innerJoin: vi.fn().mockReturnThis(),
-      join: vi.fn().mockReturnThis(),
+      returning: vi.fn().mockReturnThis(),
+      groupBy: vi.fn().mockReturnThis(),
+      having: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),
       executeTakeFirst: vi.fn().mockResolvedValue({ id: "1", title: "Test" }),
       insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
-      onConflict: vi.fn().mockImplementation((cb: any) => {
-      if (typeof cb === "function") cb(mockDb);
-      return mockDb;
-    }),
-    doUpdateSet: vi.fn().mockReturnThis(),
-    columns: vi.fn().mockReturnThis(),
-    column: vi.fn().mockReturnThis(),
+      onConflictDoUpdate: vi.fn().mockReturnThis(),
+      onConflictDoNothing: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
-    };
+      then: vi.fn().mockResolvedValue([]),
+      batch: vi.fn().mockResolvedValue([]),
+      transaction: vi.fn().mockImplementation(async (cb: any) => cb(mockDb)),
+      all: vi.fn().mockResolvedValue([]),
+      run: vi.fn().mockResolvedValue({ success: true }),
+      get: vi.fn().mockResolvedValue(null),
+      $dynamic: vi.fn().mockReturnThis(),
+      query: new Proxy({}, { get: () => ({ findFirst: vi.fn().mockResolvedValue(null), findMany: vi.fn().mockResolvedValue([]) }) }),
+    } as unknown as DrizzleMock;
 
     env = {
       DB: {},
@@ -967,7 +974,7 @@ describe("Hono Backend - Events Router", () => {
         isDraft: false,
         id: "new-evt-1"
       })
-    }, testEnv as Partial<TestEnv["Bindings"]>, mockExecutionContext);
+    }, testEnv as unknown as Partial<TestEnv["Bindings"]>, mockExecutionContext);
     expect(res.status).toBe(200);
     
     console.log("WAIT_UNTIL_CALLS", vi.mocked(mockExecutionContext.waitUntil).mock.calls.length);

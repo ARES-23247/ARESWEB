@@ -2,8 +2,19 @@
  
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { TestEnv } from "../../../src/test/types";
+import { TestEnv, DrizzleMock } from "../../../src/test/types";
+import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
 import pointsRouter from "./points";
+
+vi.mock("../middleware", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware")>();
+  return {
+    ...actual,
+    ensureAuth: async (_c: unknown, next: () => Promise<void>) => next(),
+    ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
+    getSessionUser: vi.fn().mockResolvedValue({ id: "user-1", email: "test@test.com", role: "user", member_type: "student" }),
+  };
+});
 
 describe("Hono Backend - /points Router", () => {
   let app: Hono<TestEnv>;
@@ -13,7 +24,6 @@ describe("Hono Backend - /points Router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = {
-      select: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       selectAll: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),

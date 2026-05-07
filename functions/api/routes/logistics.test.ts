@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { TestEnv, DrizzleMock } from "../../../src/test/types";
-import { mockExecutionContext } from "../../../src/test/utils";
+import { mockExecutionContext, createDrizzleProxy } from "../../../src/test/utils";
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
@@ -27,9 +27,6 @@ describe("Hono Backend - /logistics Router", () => {
     vi.clearAllMocks();
 
     mockDb = {
-      select: vi.fn().mockReturnThis(),
-      innerJoin: vi.fn().mockReturnThis(),
-      leftJoin: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue([]),

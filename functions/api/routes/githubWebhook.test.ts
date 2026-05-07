@@ -2,7 +2,14 @@
  
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import githubWebhookRouter from "./githubWebhook";
+import { mockExecutionContext, flushWaitUntil } from "../../../src/test/utils";
+import type { MockExecutionContext } from "../../../src/test/types";
 
+// Mock zulip sync
+vi.mock("../../utils/zulipSync", () => ({
+  sendZulipMessage: vi.fn().mockResolvedValue(undefined),
+}));
+import * as zulipSync from "../../utils/zulipSync";
 
 describe("GitHub Webhook Router", () => {
   const env = {

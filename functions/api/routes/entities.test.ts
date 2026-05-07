@@ -92,7 +92,7 @@ describe("Hono Backend - /entities Router", () => {
     }, {}, mockExecutionContext);
     
     expect(res.status).toBe(200);
-    expect(mockDb.insertInto).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.insert).toHaveBeenCalledWith(expect.anything());
     expect(logAuditAction).toHaveBeenCalled();
   });
 
@@ -109,7 +109,7 @@ describe("Hono Backend - /entities Router", () => {
   it("DELETE /links/:id - deletes link and logs audit", async () => {
     const res = await testApp.request("/links/link123", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }, {}, mockExecutionContext);
     expect(res.status).toBe(200);
-    expect(mockDb.deleteFrom).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.delete).toHaveBeenCalledWith(expect.anything());
     expect(logAuditAction).toHaveBeenCalled();
   });
 

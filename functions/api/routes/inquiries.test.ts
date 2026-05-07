@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
-import { TestEnv } from "../../../src/test/types";
+import { TestEnv, DrizzleMock } from "../../../src/test/types";
 declare const global: typeof globalThis;
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";

@@ -37,7 +37,7 @@ describe("Hono Backend - /finance Router", () => {
     testApp = new Hono<TestEnv>();
     testApp.use("*", async (c, next) => {
       c.set("db", mockDb);
-      c.set("executionCtx", mockExecutionContext);
+      (c as any).set("executionCtx", mockExecutionContext);
       c.set("sessionUser", { id: "admin-123", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" });
       await next();
     });
