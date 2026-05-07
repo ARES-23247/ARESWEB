@@ -1,6 +1,8 @@
 import { typedHandler } from "../utils/handler";
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { eq, desc, and } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware } from "../middleware";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
@@ -16,8 +18,6 @@ import {
 } from "../../../shared/routes/seasons";
 import { edgeCacheMiddleware } from "../middleware/cache";
 
-
-
 export const seasonsRouter = new OpenAPIHono<AppEnv>();
 
 // Apply caching to public routes
@@ -32,25 +32,29 @@ seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(as
   try {
     const db = c.get("db") as any;
     const results = await db
-      .selectFrom("seasons")
-      .select([
-        "start_year",
-        "end_year",
-        "challenge_name",
-        "robot_name",
-        "robot_image",
-        "robot_description",
-        "robot_cad_url",
-        "summary",
-        "album_url",
-        "album_cover",
-        "status",
-        "is_deleted",
-      ])
-      .where("is_deleted", "=", 0)
-      .where("status", "=", "published")
-      .orderBy("start_year", "desc")
-      .execute();
+      .select({
+        start_year: schema.seasons.startYear,
+        end_year: schema.seasons.endYear,
+        challenge_name: schema.seasons.challengeName,
+        robot_name: schema.seasons.robotName,
+        robot_image: schema.seasons.robotImage,
+        robot_description: schema.seasons.robotDescription,
+        robot_cad_url: schema.seasons.robotCadUrl,
+        summary: schema.seasons.summary,
+        album_url: schema.seasons.albumUrl,
+        album_cover: schema.seasons.albumCover,
+        status: schema.seasons.status,
+        is_deleted: schema.seasons.isDeleted,
+      })
+      .from(schema.seasons)
+      .where(
+        and(
+          eq(schema.seasons.isDeleted, 0),
+          eq(schema.seasons.status, "published")
+        )
+      )
+      .orderBy(desc(schema.seasons.startYear))
+      .all();
 
     const seasons = results.map((r: any) => ({
       ...r,
@@ -71,23 +75,23 @@ seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeason
   try {
     const db = c.get("db") as any;
     const results = await db
-      .selectFrom("seasons")
-      .select([
-        "start_year",
-        "end_year",
-        "challenge_name",
-        "robot_name",
-        "robot_image",
-        "robot_description",
-        "robot_cad_url",
-        "summary",
-        "album_url",
-        "album_cover",
-        "status",
-        "is_deleted",
-      ])
-      .orderBy("start_year", "desc")
-      .execute();
+      .select({
+        start_year: schema.seasons.startYear,
+        end_year: schema.seasons.endYear,
+        challenge_name: schema.seasons.challengeName,
+        robot_name: schema.seasons.robotName,
+        robot_image: schema.seasons.robotImage,
+        robot_description: schema.seasons.robotDescription,
+        robot_cad_url: schema.seasons.robotCadUrl,
+        summary: schema.seasons.summary,
+        album_url: schema.seasons.albumUrl,
+        album_cover: schema.seasons.albumCover,
+        status: schema.seasons.status,
+        is_deleted: schema.seasons.isDeleted,
+      })
+      .from(schema.seasons)
+      .orderBy(desc(schema.seasons.startYear))
+      .all();
 
     const seasons = results.map((r: any) => ({
       ...r,
@@ -110,23 +114,23 @@ seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSea
     const db = c.get("db") as any;
     const year = parseInt(id);
     const row = await db
-      .selectFrom("seasons")
-      .select([
-        "start_year",
-        "end_year",
-        "challenge_name",
-        "robot_name",
-        "robot_image",
-        "robot_description",
-        "robot_cad_url",
-        "summary",
-        "album_url",
-        "album_cover",
-        "status",
-        "is_deleted",
-      ])
-      .where("start_year", "=", year)
-      .executeTakeFirst();
+      .select({
+        start_year: schema.seasons.startYear,
+        end_year: schema.seasons.endYear,
+        challenge_name: schema.seasons.challengeName,
+        robot_name: schema.seasons.robotName,
+        robot_image: schema.seasons.robotImage,
+        robot_description: schema.seasons.robotDescription,
+        robot_cad_url: schema.seasons.robotCadUrl,
+        summary: schema.seasons.summary,
+        album_url: schema.seasons.albumUrl,
+        album_cover: schema.seasons.albumCover,
+        status: schema.seasons.status,
+        is_deleted: schema.seasons.isDeleted,
+      })
+      .from(schema.seasons)
+      .where(eq(schema.seasons.startYear, year))
+      .get();
 
     if (!row) return c.json({ error: "Season not found" }, 404);
 
@@ -157,80 +161,103 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
 
     const [seasonRow, awards, events, posts, outreach] = await Promise.all([
       db
-        .selectFrom("seasons")
-        .select([
-          "start_year",
-          "end_year",
-          "challenge_name",
-          "robot_name",
-          "robot_image",
-          "robot_description",
-          "robot_cad_url",
-          "summary",
-          "album_url",
-          "album_cover",
-          "status",
-          "is_deleted",
-        ])
-        .where("start_year", "=", yearNum)
-        .executeTakeFirst(),
+        .select({
+          start_year: schema.seasons.startYear,
+          end_year: schema.seasons.endYear,
+          challenge_name: schema.seasons.challengeName,
+          robot_name: schema.seasons.robotName,
+          robot_image: schema.seasons.robotImage,
+          robot_description: schema.seasons.robotDescription,
+          robot_cad_url: schema.seasons.robotCadUrl,
+          summary: schema.seasons.summary,
+          album_url: schema.seasons.albumUrl,
+          album_cover: schema.seasons.albumCover,
+          status: schema.seasons.status,
+          is_deleted: schema.seasons.isDeleted,
+        })
+        .from(schema.seasons)
+        .where(eq(schema.seasons.startYear, yearNum))
+        .get(),
       db
-        .selectFrom("awards")
-        .select(["id", "title", "event_name", "date", "season_id", "is_deleted"])
-        .where("season_id", "=", yearNum)
-        .where("is_deleted", "=", 0)
-        .execute(),
+        .select({
+          id: schema.awards.id,
+          title: schema.awards.title,
+          event_name: schema.awards.eventName,
+          date: schema.awards.date,
+          season_id: schema.awards.seasonId,
+          is_deleted: schema.awards.isDeleted
+        })
+        .from(schema.awards)
+        .where(
+          and(
+            eq(schema.awards.seasonId, yearNum),
+            eq(schema.awards.isDeleted, 0)
+          )
+        )
+        .all(),
       db
-        .selectFrom("events")
-        .select([
-          "id",
-          "title",
-          "category",
-          "date_start",
-          "date_end",
-          "location",
-          "cover_image",
-          "status",
-          "is_deleted",
-          "season_id",
-        ])
-        .where("season_id", "=", yearNum)
-        .where("is_deleted", "=", 0)
-        .where("status", "=", "published")
-        .execute(),
+        .select({
+          id: schema.events.id,
+          title: schema.events.title,
+          category: schema.events.category,
+          date_start: schema.events.dateStart,
+          date_end: schema.events.dateEnd,
+          location: schema.events.location,
+          cover_image: schema.events.coverImage,
+          status: schema.events.status,
+          is_deleted: schema.events.isDeleted,
+          season_id: schema.events.seasonId,
+        })
+        .from(schema.events)
+        .where(
+          and(
+            eq(schema.events.seasonId, yearNum),
+            eq(schema.events.isDeleted, 0),
+            eq(schema.events.status, "published")
+          )
+        )
+        .all(),
       db
-        .selectFrom("posts")
-        .select([
-          "slug",
-          "title",
-          "snippet",
-          "thumbnail",
-          "status",
-          "is_deleted",
-          "season_id",
-          "date",
-        ])
-        .where("season_id", "=", yearNum)
-        .where("is_deleted", "=", 0)
-        .where("status", "=", "published")
-        .execute(),
+        .select({
+          slug: schema.posts.slug,
+          title: schema.posts.title,
+          snippet: schema.posts.snippet,
+          thumbnail: schema.posts.thumbnail,
+          status: schema.posts.status,
+          is_deleted: schema.posts.isDeleted,
+          season_id: schema.posts.seasonId,
+          date: schema.posts.date,
+        })
+        .from(schema.posts)
+        .where(
+          and(
+            eq(schema.posts.seasonId, yearNum),
+            eq(schema.posts.isDeleted, 0),
+            eq(schema.posts.status, "published")
+          )
+        )
+        .all(),
       db
-        .selectFrom("outreach_logs")
-        .select([
-          "id",
-          "title",
-          "date",
-          "location",
-          "hours",
-          "students_count",
-          "people_reached",
-          "impact_summary",
-          "season_id",
-          "is_deleted",
-        ])
-        .where("season_id", "=", yearNum)
-        .where("is_deleted", "=", 0)
-        .execute(),
+        .select({
+          id: schema.outreachLogs.id,
+          title: schema.outreachLogs.title,
+          date: schema.outreachLogs.date,
+          location: schema.outreachLogs.location,
+          hours: schema.outreachLogs.hours,
+          students_count: schema.outreachLogs.studentsCount,
+          people_reached: schema.outreachLogs.peopleReached,
+          impact_summary: schema.outreachLogs.impactSummary,
+          season_id: schema.outreachLogs.seasonId,
+          is_deleted: schema.outreachLogs.isDeleted,
+        })
+        .from(schema.outreachLogs)
+        .where(
+          and(
+            eq(schema.outreachLogs.seasonId, yearNum),
+            eq(schema.outreachLogs.isDeleted, 0)
+          )
+        )
+        .all(),
     ]);
 
     if (!seasonRow) return c.json({ error: "Season not found" }, 404);
@@ -262,57 +289,54 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
     const body = c.req.valid("json");
     const db = c.get("db") as any;
 
-    // Type assertion for the body
     const seasonData = body;
-
     const targetYear = seasonData.original_year || seasonData.start_year;
 
     if (seasonData.original_year && seasonData.original_year !== seasonData.start_year) {
       const collision = await db
-        .selectFrom("seasons")
-        .select("start_year")
-        .where("start_year", "=", seasonData.start_year)
-        .executeTakeFirst();
+        .select({ start_year: schema.seasons.startYear })
+        .from(schema.seasons)
+        .where(eq(schema.seasons.startYear, seasonData.start_year))
+        .get();
       if (collision) {
         return c.json({ error: `Season ${seasonData.start_year} already exists.` }, 500);
       }
     }
 
     const existing = await db
-      .selectFrom("seasons")
-      .select("start_year")
-      .where("start_year", "=", targetYear)
-      .executeTakeFirst();
+      .select({ start_year: schema.seasons.startYear })
+      .from(schema.seasons)
+      .where(eq(schema.seasons.startYear, targetYear))
+      .get();
 
     const values = {
-      start_year: seasonData.start_year,
-      end_year: seasonData.end_year,
-      challenge_name: seasonData.challenge_name,
-      robot_name: seasonData.robot_name || null,
-      robot_image: seasonData.robot_image || null,
-      robot_description: seasonData.robot_description || null,
-      robot_cad_url: seasonData.robot_cad_url || null,
+      startYear: seasonData.start_year,
+      endYear: seasonData.end_year,
+      challengeName: seasonData.challenge_name,
+      robotName: seasonData.robot_name || null,
+      robotImage: seasonData.robot_image || null,
+      robotDescription: seasonData.robot_description || null,
+      robotCadUrl: seasonData.robot_cad_url || null,
       summary: seasonData.summary || null,
-      album_url: seasonData.album_url || null,
-      album_cover: seasonData.album_cover || null,
+      albumUrl: seasonData.album_url || null,
+      albumCover: seasonData.album_cover || null,
       status: seasonData.status || "draft",
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     if (existing) {
       await db
-        .updateTable("seasons")
+        .update(schema.seasons)
         .set(values)
-        .where("start_year", "=", targetYear)
-        .execute();
+        .where(eq(schema.seasons.startYear, targetYear));
 
       if (seasonData.original_year && seasonData.original_year !== seasonData.start_year) {
         const oldId = targetYear;
         const newId = seasonData.start_year;
-        await db.updateTable("events").set({ season_id: newId }).where("season_id", "=", oldId).execute();
-        await db.updateTable("posts").set({ season_id: newId }).where("season_id", "=", oldId).execute();
-        await db.updateTable("awards").set({ season_id: newId }).where("season_id", "=", oldId).execute();
-        await db.updateTable("outreach_logs").set({ season_id: newId }).where("season_id", "=", oldId).execute();
+        await db.update(schema.events).set({ seasonId: newId }).where(eq(schema.events.seasonId, oldId));
+        await db.update(schema.posts).set({ seasonId: newId }).where(eq(schema.posts.seasonId, oldId));
+        await db.update(schema.awards).set({ seasonId: newId }).where(eq(schema.awards.seasonId, oldId));
+        await db.update(schema.outreachLogs).set({ seasonId: newId }).where(eq(schema.outreachLogs.seasonId, oldId));
 
         c.executionCtx.waitUntil(
           logAuditAction(
@@ -329,7 +353,7 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
         );
       }
     } else {
-      await db.insertInto("seasons").values({ ...values, is_deleted: 0 }).execute();
+      await db.insert(schema.seasons).values({ ...values, isDeleted: 0 });
       c.executionCtx.waitUntil(
         logAuditAction(c, "season_created", "seasons", seasonData.start_year.toString(), `Season "${seasonData.start_year}" created`)
       );
@@ -348,10 +372,9 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
     const db = c.get("db") as any;
     const year = parseInt(id);
     await db
-      .updateTable("seasons")
-      .set({ is_deleted: 1 })
-      .where("start_year", "=", year)
-      .execute();
+      .update(schema.seasons)
+      .set({ isDeleted: 1 })
+      .where(eq(schema.seasons.startYear, year));
     c.executionCtx.waitUntil(logAuditAction(c, "season_deleted", "seasons", id, `Season "${id}" soft-deleted`));
 
     triggerBackgroundReindex(c.executionCtx, c.get("db") as any, c.env.AI, c.env.VECTORIZE_DB);
@@ -368,10 +391,9 @@ seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRou
     const db = c.get("db") as any;
     const year = parseInt(id);
     await db
-      .updateTable("seasons")
-      .set({ is_deleted: 0 })
-      .where("start_year", "=", year)
-      .execute();
+      .update(schema.seasons)
+      .set({ isDeleted: 0 })
+      .where(eq(schema.seasons.startYear, year));
     c.executionCtx.waitUntil(logAuditAction(c, "season_restored", "seasons", id, `Season "${id}" restored`));
     return c.json({ success: true }, 200);
   } catch (e) {
@@ -386,9 +408,8 @@ seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(as
     const db = c.get("db") as any;
     const year = parseInt(id);
     await db
-      .deleteFrom("seasons")
-      .where("start_year", "=", year)
-      .execute();
+      .delete(schema.seasons)
+      .where(eq(schema.seasons.startYear, year));
     c.executionCtx.waitUntil(logAuditAction(c, "season_purged", "seasons", id, `Season "${id}" permanently deleted`));
     return c.json({ success: true }, 200);
   } catch (e) {

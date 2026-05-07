@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { eq, count } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 
 import {
   AppEnv,
@@ -21,8 +21,6 @@ import {
   getBackupRoute as _getBackupRoute,
 } from "../../../shared/routes/settings";
 import { z } from "zod";
-
-
 
 export const settingsRouter = new OpenAPIHono<AppEnv>();
 
@@ -80,10 +78,12 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
       if (error) return c.json({ success: false, updated: 0 } as any, 400 as any);
 
       await db
-        .insertInto("settings")
-        .values({ key, value, updated_at: new Date().toISOString() })
-        .onConflict((oc: any) => oc.column("key").doUpdateSet({ value, updated_at: new Date().toISOString() }))
-        .execute();
+        .insert(schema.settings)
+        .values({ key, value, updatedAt: new Date().toISOString() })
+        .onConflictDoUpdate({
+          target: schema.settings.key,
+          set: { value, updatedAt: new Date().toISOString() }
+        });
 
       updatedCount++;
       if (SENSITIVE_KEYS.has(key)) sensitiveKeysUpdated.push(key);
@@ -105,11 +105,11 @@ settingsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (
   const db = c.get("db") as any;
   try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
-      db.selectFrom("posts").select(db.fn.count("slug").as("count")).where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("events").select(db.fn.count("id").as("count")).where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("docs").select(db.fn.count("slug").as("count")).where("is_deleted", "=", 0).executeTakeFirst(),
-      db.selectFrom("inquiries").select(db.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst(),
-      db.selectFrom("user").select(db.fn.count("id").as("count")).executeTakeFirst(),
+      db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
+      db.select({ count: count(schema.events.id) }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
+      db.select({ count: count(schema.docs.slug) }).from(schema.docs).where(eq(schema.docs.isDeleted, 0)).get(),
+      db.select({ count: count(schema.inquiries.id) }).from(schema.inquiries).where(eq(schema.inquiries.status, "pending")).get(),
+      db.select({ count: count(schema.user.id) }).from(schema.user).get(),
     ]);
     return c.json({
       posts: Number(posts?.count || 0),
@@ -139,6 +139,29 @@ settingsRouter.openapi(getPublicSettingsRoute, typedHandler<typeof getPublicSett
   }
 }));
 
+const SCHEMA_MAP: Record<string, any> = {
+  posts: schema.posts,
+  events: schema.events,
+  docs: schema.docs,
+  docs_history: schema.docsHistory,
+  docs_feedback: schema.docsFeedback,
+  media_tags: schema.mediaTags,
+  user_profiles: schema.userProfiles,
+  event_signups: schema.eventSignups,
+  badges: schema.badges,
+  user_badges: schema.userBadges,
+  inquiries: schema.inquiries,
+  locations: schema.locations,
+  sponsor_metrics: schema.sponsorMetrics,
+  sponsor_tokens: schema.sponsorTokens,
+  notifications: schema.notifications,
+  sponsors: schema.sponsors,
+  comments: schema.comments,
+  awards: schema.awards,
+  page_analytics: schema.pageAnalytics,
+  audit_log: schema.auditLog,
+};
+
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
 settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
   const db = c.get("db") as any;
@@ -151,26 +174,43 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
       "awards", "page_analytics", "audit_log",
     ] as const;
 
-    const TABLE_COLUMNS: Record<string, string[]> = {
+    const TABLE_COLUMNS: Record<string, any[]> = {
       user_profiles: [
-        "user_id", "nickname", "pronouns", "subteams", "member_type",
-        "bio", "favorite_first_thing", "fun_fact", "show_on_about",
-        "favorite_robot_mechanism", "pre_match_superstition",
-        "leadership_role", "rookie_year", "updated_at",
+        schema.userProfiles.userId, schema.userProfiles.nickname, schema.userProfiles.pronouns, 
+        schema.userProfiles.subteams, schema.userProfiles.memberType, schema.userProfiles.bio, 
+        schema.userProfiles.favoriteFirstThing, schema.userProfiles.funFact, schema.userProfiles.showOnAbout,
+        schema.userProfiles.favoriteRobotMechanism, schema.userProfiles.preMatchSuperstition,
+        schema.userProfiles.leadershipRole, schema.userProfiles.rookieYear, schema.userProfiles.updatedAt,
       ],
-      inquiries: ["id", "type", "name", "email", "status", "created_at"],
-      audit_log: ["id", "action", "resource_type", "resource_id", "actor", "created_at"],
+      inquiries: [
+        schema.inquiries.id, schema.inquiries.type, schema.inquiries.name, 
+        schema.inquiries.email, schema.inquiries.status, schema.inquiries.createdAt
+      ],
+      audit_log: [
+        schema.auditLog.id, schema.auditLog.action, schema.auditLog.resourceType, 
+        schema.auditLog.resourceId, schema.auditLog.actor, schema.auditLog.createdAt
+      ],
     };
 
     const backup: Record<string, unknown[]> = {};
     const backupPromises = SAFE_TABLES.map(async (tableName) => {
       try {
+        const tableSchema = SCHEMA_MAP[tableName];
+        if (!tableSchema) return { tableName, data: [] };
+        
         const cols = TABLE_COLUMNS[tableName];
-        const anyDb = db as unknown as Kysely<Record<string, Record<string, unknown>>>;
-        const q = cols
-          ? anyDb.selectFrom(tableName).select(cols)
-          : anyDb.selectFrom(tableName).selectAll();
-        const data = (await q.limit(1000).execute()) as unknown[];
+        let query;
+        if (cols && cols.length > 0) {
+          const selectObj: Record<string, any> = {};
+          cols.forEach(col => {
+            selectObj[col.name] = col;
+          });
+          query = db.select(selectObj).from(tableSchema);
+        } else {
+          query = db.select().from(tableSchema);
+        }
+        
+        const data = (await query.limit(1000).all()) as unknown[];
 
         if (tableName === "inquiries") {
           return {
@@ -182,7 +222,8 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
           };
         }
         return { tableName, data };
-      } catch {
+      } catch (e) {
+        console.error(`Backup error for table ${tableName}:`, e);
         return { tableName, data: [] };
       }
     });
@@ -192,7 +233,8 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
 
     c.executionCtx.waitUntil(logAuditAction(c, "database_export", "system", null, "Exported full D1 database backup as JSON."));
     return c.json({ success: true, timestamp: new Date().toISOString(), backup } as any, 200 as any);
-  } catch {
+  } catch (e) {
+    console.error("BACKUP ERROR", e);
     return c.json({ success: false, error: "Backup failed" } as any, 500 as any);
   }
 });

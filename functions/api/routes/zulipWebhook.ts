@@ -1,15 +1,12 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, ne, inArray, desc, asc, count } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { siteConfig } from "../../utils/site.config";
 import { AppEnv, getSocialConfig } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { calculateIRV } from "../../utils/irvCalculator";
 import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
-
-
 
 export const zulipWebhookRouter = new OpenAPIHono<AppEnv>();
 
@@ -62,12 +59,15 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
   if (PRIVILEGED_COMMANDS.includes(command || "")) {
     const senderEmail = body.message?.sender_email;
     if (senderEmail) {
-      const user = await db.selectFrom("user as u")
-        .select("u.role")
-        .where("u.email", "=", senderEmail)
-        .where("u.role", "in", ["admin", "author"])
-        .executeTakeFirst();
-      if (!user) {
+      const userResult = await db
+        .select({ role: schema.user.role })
+        .from(schema.user)
+        .where(
+          eq(schema.user.email, senderEmail)
+        )
+        .get();
+
+      if (!userResult || !["admin", "author"].includes(userResult.role || "")) {
         return c.json({ content: `🔒 Permission denied. \`${command}\` requires admin or author privileges. Your Zulip email (${senderEmail}) is not linked to an authorized ARESWEB account.` }, 200);
       }
     }
@@ -95,14 +95,19 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         }, 200);
 
       case "!tasks": {
-        const taskResults = await db.selectFrom("tasks")
-          .leftJoin("user_profiles as ap", "tasks.assigned_to", "ap.user_id")
-          .select(["tasks.id", "tasks.title", "tasks.status", "ap.nickname as assignee_name"])
-          .where("tasks.status", "!=", "done")
-          .orderBy("tasks.sort_order", "asc")
-          .orderBy("tasks.created_at", "desc")
+        const taskResults = await db
+          .select({
+            id: schema.tasks.id,
+            title: schema.tasks.title,
+            status: schema.tasks.status,
+            assignee_name: schema.userProfiles.nickname,
+          })
+          .from(schema.tasks)
+          .leftJoin(schema.userProfiles, eq(schema.tasks.assignedTo, schema.userProfiles.userId))
+          .where(ne(schema.tasks.status, "done"))
+          .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
           .limit(15)
-          .execute();
+          .all();
 
         if (taskResults.length === 0) {
           return c.json({ content: "📋 **Task Board** — No open tasks." }, 200);
@@ -113,9 +118,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           return `${i + 1}. **${item.title}** ${status} ${assignee}`;
         });
 
-        const totalRes = await db.selectFrom("tasks")
-          .select((eb: any) => eb.fn.count("id").as("count"))
-          .executeTakeFirst() ;
+        const totalRes = await db.select({ count: count(schema.tasks.id) }).from(schema.tasks).get();
         const total = Number(totalRes?.count || taskResults.length);
 
         return c.json({
@@ -131,20 +134,20 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
         const indexArg = parseInt(taskArgs[0]);
         if (!isNaN(indexArg) && taskArgs[1]?.toLowerCase() === "done") {
-          const openTasks = await db.selectFrom("tasks")
-            .select(["id", "title"])
-            .where("status", "!=", "done")
-            .orderBy("sort_order", "asc")
-            .orderBy("created_at", "desc")
+          const openTasks = await db
+            .select({ id: schema.tasks.id, title: schema.tasks.title })
+            .from(schema.tasks)
+            .where(ne(schema.tasks.status, "done"))
+            .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
             .limit(15)
-            .execute();
+            .all();
           const target = openTasks[indexArg - 1];
           if (!target) return c.json({ content: `❌ No task at index ${indexArg}.` }, 200);
 
-          await db.updateTable("tasks")
-            .set({ status: "done", updated_at: new Date().toISOString() })
-            .where("id", "=", target.id)
-            .execute();
+          await db
+            .update(schema.tasks)
+            .set({ status: "done", updatedAt: new Date().toISOString() })
+            .where(eq(schema.tasks.id, target.id));
 
           return c.json({ content: `✅ **${target.title}** marked as Done!` }, 200);
         }
@@ -153,38 +156,39 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         const senderEmail = body.message?.sender_email;
         let creatorId = "system";
         if (senderEmail) {
-          const senderUser = await db.selectFrom("user")
-            .select("id")
-            .where("email", "=", senderEmail)
-            .executeTakeFirst();
+          const senderUser = await db
+            .select({ id: schema.user.id })
+            .from(schema.user)
+            .where(eq(schema.user.email, senderEmail))
+            .get();
           if (senderUser?.id) creatorId = senderUser.id;
         }
 
         const taskId = crypto.randomUUID();
         const now = new Date().toISOString();
-        await db.insertInto("tasks")
+        await db
+          .insert(schema.tasks)
           .values({
             id: taskId,
             title,
             description: `Created via Zulip by ${body.message.sender_full_name}`,
             status: "todo",
             priority: "normal",
-            sort_order: 0,
-            created_by: creatorId,
-            created_at: now,
-            updated_at: now,
-          })
-          .execute();
+            sortOrder: 0,
+            createdBy: creatorId,
+            createdAt: now,
+            updatedAt: now,
+          });
 
         return c.json({ content: `✅ Created task: **${title}**` }, 200);
       }
 
       case "!stats": {
         const [postsRes, eventsRes, usersRes, inquiriesRes] = await Promise.all([
-          db.selectFrom("posts").select((eb: any) => eb.fn.count("slug").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
-          db.selectFrom("events").select((eb: any) => eb.fn.count("id").as("count")).where("is_deleted", "=", 0).where("status", "=", "published").executeTakeFirst() ,
-          db.selectFrom("user_profiles").select((eb: any) => eb.fn.count("user_id").as("count")).executeTakeFirst() ,
-          db.selectFrom("inquiries").select((eb: any) => eb.fn.count("id").as("count")).where("status", "=", "pending").executeTakeFirst() ,
+          db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
+          db.select({ count: count(schema.events.id) }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
+          db.select({ count: count(schema.userProfiles.userId) }).from(schema.userProfiles).get(),
+          db.select({ count: count(schema.inquiries.id) }).from(schema.inquiries).where(eq(schema.inquiries.status, "pending")).get(),
         ]);
 
         return c.json({
@@ -202,27 +206,40 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
       }
 
       case "!inquiries": {
-        const result = await db.selectFrom("inquiries")
-          .select((eb: any) => eb.fn.count("id").as("count"))
-          .where("status", "=", "pending")
-          .executeTakeFirst() ;
-        const count = Number(result?.count || 0);
+        const result = await db.select({ count: count(schema.inquiries.id) }).from(schema.inquiries).where(eq(schema.inquiries.status, "pending")).get();
+        const countValue = Number(result?.count || 0);
         return c.json({
-          content: count > 0
-            ? `🔔 **${count} pending inquir${count === 1 ? "y" : "ies"}** — [Review in Dashboard](${siteConfig.urls.base}/dashboard?tab=inquiries)`
+          content: countValue > 0
+            ? `🔔 **${countValue} pending inquir${countValue === 1 ? "y" : "ies"}** — [Review in Dashboard](${siteConfig.urls.base}/dashboard?tab=inquiries)`
             : "✅ No pending inquiries! All caught up.",
         }, 200);
       }
 
       case "!events": {
-        const results = await db.selectFrom("events")
-          .select(["title", "date_start", "date_end", "location"])
-          .where("is_deleted", "=", 0)
-          .where("status", "=", "published")
-          .where("date_start", ">=", new Date().toISOString().split('T')[0])
-          .orderBy("date_start", "asc")
+        // We use greater than or equal to today using standard string comparison
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Use a SQL template string for the where clause since it's cleaner than building the operator for dates sometimes
+        // Wait, Drizzle natively supports greater than or equal with `gte`
+        const { gte, and } = await import("drizzle-orm");
+        const results = await db
+          .select({
+            title: schema.events.title,
+            date_start: schema.events.dateStart,
+            date_end: schema.events.dateEnd,
+            location: schema.events.location,
+          })
+          .from(schema.events)
+          .where(
+            and(
+              eq(schema.events.isDeleted, 0),
+              eq(schema.events.status, "published"),
+              gte(schema.events.dateStart, today)
+            )
+          )
+          .orderBy(asc(schema.events.dateStart))
           .limit(10)
-          .execute();
+          .all();
 
         if (!results || results.length === 0) {
           return c.json({ content: "📅 No upcoming events scheduled." }, 200);
@@ -277,18 +294,18 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         const senderEmail = body.message?.sender_email;
 
         // Helper to check admin
-        const ensureAdmin = async () => {
+        const checkAdmin = async () => {
           if (!senderEmail) return false;
-          const user = await db.selectFrom("user as u")
-            .select("u.role")
-            .where("u.email", "=", senderEmail)
-            .where("u.role", "in", ["admin", "author"])
-            .executeTakeFirst();
-          return !!user;
+          const userRecord = await db
+            .select({ role: schema.user.role })
+            .from(schema.user)
+            .where(eq(schema.user.email, senderEmail))
+            .get();
+          return !!userRecord && ["admin", "author"].includes(userRecord.role || "");
         };
 
         if (rcvSubcommand === "create") {
-          if (!(await ensureAdmin())) {
+          if (!(await checkAdmin())) {
             return c.json({ content: "🔒 Permission denied. `!rcv create` requires admin privileges." }, 200);
           }
           const title = args[2];
@@ -305,9 +322,9 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
             active: true
           };
 
-          await db.insertInto("settings")
-            .values({ key: `rcv_poll_${pollId}`, value: JSON.stringify(pollData) })
-            .execute();
+          await db
+            .insert(schema.settings)
+            .values({ key: `rcv_poll_${pollId}`, value: JSON.stringify(pollData) });
 
           const optionsList = options.map((opt: string, i: number) => `${i + 1}️⃣ **${opt}**`).join("\n");
           return c.json({
@@ -320,7 +337,12 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           return c.json({ content: "⚠️ Please specify a poll ID." }, 200);
         }
         
-        const pollRecord = await db.selectFrom("settings").select("value").where("key", "=", `rcv_poll_${pollId}`).executeTakeFirst();
+        const pollRecord = await db
+          .select({ value: schema.settings.value })
+          .from(schema.settings)
+          .where(eq(schema.settings.key, `rcv_poll_${pollId}`))
+          .get();
+
         if (!pollRecord) {
           return c.json({ content: `❌ Poll \`${pollId}\` not found.` }, 200);
         }
@@ -353,16 +375,16 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
           poll.votes[senderEmail] = rankings;
           
-          await db.updateTable("settings")
-            .set({ value: JSON.stringify(poll), updated_at: new Date().toISOString() })
-            .where("key", "=", `rcv_poll_${pollId}`)
-            .execute();
+          await db
+            .update(schema.settings)
+            .set({ value: JSON.stringify(poll), updatedAt: new Date().toISOString() })
+            .where(eq(schema.settings.key, `rcv_poll_${pollId}`));
 
           return c.json({ content: `✅ Your vote for \`${pollId}\` has been recorded! (You ranked ${rankings.length} option(s))` }, 200);
         }
 
         if (rcvSubcommand === "tally") {
-           if (!(await ensureAdmin())) {
+           if (!(await checkAdmin())) {
             return c.json({ content: "🔒 Permission denied. `!rcv tally` requires admin privileges." }, 200);
           }
           if (!poll.active) {
@@ -370,10 +392,10 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
           }
 
           poll.active = false;
-          await db.updateTable("settings")
-            .set({ value: JSON.stringify(poll), updated_at: new Date().toISOString() })
-            .where("key", "=", `rcv_poll_${pollId}`)
-            .execute();
+          await db
+            .update(schema.settings)
+            .set({ value: JSON.stringify(poll), updatedAt: new Date().toISOString() })
+            .where(eq(schema.settings.key, `rcv_poll_${pollId}`));
 
           const ballots = Object.values(poll.votes) as number[][];
           if (ballots.length === 0) {
@@ -417,10 +439,11 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
             const targetType = topicParts[0];
             const targetId = topicParts.slice(1).join("/");
 
-            const existingUser = await db.selectFrom("user")
-              .select(["id", "role"])
-              .where("email", "=", body.message.sender_email || "")
-              .executeTakeFirst();
+            const existingUser = await db
+              .select({ id: schema.user.id, role: schema.user.role })
+              .from(schema.user)
+              .where(eq(schema.user.email, body.message.sender_email || ""))
+              .get();
 
             if (!existingUser || existingUser.role === "unverified" || !existingUser.id) {
               return c.json({ content: "" }, 200);
@@ -429,16 +452,16 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
             const userId = existingUser.id;
 
             try {
-              await db.insertInto("comments")
+              await db
+                .insert(schema.comments)
                 .values({
-                  target_type: targetType,
-                  target_id: targetId,
-                  user_id: userId ,
+                  targetType: targetType,
+                  targetId: targetId,
+                  userId: userId,
                   content: rawContent,
-                  zulip_message_id: String(body.trigger === "message" ? body.message.id : 0),
-                  created_at: new Date().toISOString()
-                })
-                .execute();
+                  zulipMessageId: String(body.trigger === "message" ? body.message.id : 0),
+                  createdAt: new Date().toISOString()
+                });
               return c.json({ content: "" }, 200);
             } catch {
               /* ignore sync error */

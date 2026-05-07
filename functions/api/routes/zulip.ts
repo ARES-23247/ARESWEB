@@ -13,6 +13,8 @@ import {
   zulipPresenceSchema,
 } from "../../../shared/routes/zulip";
 import { z } from "zod";
+import { ne } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 
 
 
@@ -261,10 +263,10 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
 
     const db = c.get("db") as any;
     const aresUsers = await db
-      .selectFrom("user")
-      .select("email")
-      .where("role", "!=", "unverified")
-      .execute();
+      .select({ email: schema.user.email })
+      .from(schema.user)
+      .where(ne(schema.user.role, "unverified"))
+      .all();
 
     const missingEmails = aresUsers
       .map((u: any) => u.email)
