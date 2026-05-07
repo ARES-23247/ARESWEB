@@ -50,7 +50,7 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
       },
       orderBy: [desc(schema.user.createdAt)],
       limit: limit,
-      where: cursor ? lt(schema.user.createdAt, Number(cursor)) : undefined
+      where: cursor ? lt(schema.user.createdAt, new Date(Number(cursor))) : undefined
     });
 
     const users = results.map((u: any) => {
@@ -63,13 +63,17 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
         image: u.image || null,
         role: String(u.role || "user"),
         createdAt:
-          typeof u.createdAt === "number"
+          u.createdAt instanceof Date
+            ? u.createdAt.getTime()
+            : typeof u.createdAt === "number"
             ? u.createdAt
-            : new Date(u.createdAt as string).getTime() || 0,
+            : new Date(u.createdAt as unknown as string).getTime() || 0,
         updatedAt:
-          typeof u.updatedAt === "number"
+          u.updatedAt instanceof Date
+            ? u.updatedAt.getTime()
+            : typeof u.updatedAt === "number"
             ? u.updatedAt
-            : new Date(u.updatedAt as string).getTime() || 0,
+            : new Date(u.updatedAt as unknown as string).getTime() || 0,
         nickname: profile?.nickname || null,
         member_type:
           (profile?.memberType as
@@ -86,7 +90,7 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
 
     const nextCursor =
       results.length === limit
-        ? String(results[results.length - 1].createdAt)
+        ? String(results[results.length - 1].createdAt instanceof Date ? results[results.length - 1].createdAt.getTime() : results[results.length - 1].createdAt)
         : null;
 
     return c.json({ users, nextCursor }, 200);
@@ -137,13 +141,17 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
           image: row.image || null,
           role: String(row.role || "user"),
           createdAt:
-            typeof row.createdAt === "number"
+            row.createdAt instanceof Date
+              ? row.createdAt.getTime()
+              : typeof row.createdAt === "number"
               ? row.createdAt
-              : new Date(row.createdAt as string).getTime(),
+              : new Date(row.createdAt as unknown as string).getTime(),
           updatedAt:
-            typeof row.updatedAt === "number"
+            row.updatedAt instanceof Date
+              ? row.updatedAt.getTime()
+              : typeof row.updatedAt === "number"
               ? row.updatedAt
-              : new Date(row.updatedAt as string).getTime(),
+              : new Date(row.updatedAt as unknown as string).getTime(),
           nickname: (profile?.nickname as string | null) || null,
           member_type: profile?.memberType as any,
         },

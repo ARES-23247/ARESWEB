@@ -77,6 +77,7 @@ export const posts = sqliteTable("posts", {
 	publishedAt: text("published_at"),
 	isPortfolio: integer("is_portfolio").default(0),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	createdAt: text("created_at").default(sql`(datetime('now'))`),
 	updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 },
 (table) => [
