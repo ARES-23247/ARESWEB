@@ -15,27 +15,27 @@ function createDrizzleProxy(dbMock: any): any {
   let isMutation = false;
 
   const drizzleMethods: any = {
-    select: vi.fn().mockImplementation((...args: any[]) => { isMutation = false; if (dbMock.selectFrom) dbMock.selectFrom(...args); else if (dbMock.select) dbMock.select(...args); return proxy; }),
-    from: vi.fn().mockImplementation((...args: any[]) => { return proxy; }),
-    all: vi.fn().mockImplementation((...args: any[]) => { return dbMock.execute ? dbMock.execute(...args) : Promise.resolve([]); }),
-    get: vi.fn().mockImplementation((...args: any[]) => { return dbMock.executeTakeFirst ? dbMock.executeTakeFirst(...args) : Promise.resolve(null); }),
-    run: vi.fn().mockImplementation((...args: any[]) => { 
-      if (dbMock.execute) return dbMock.execute(...args).then(() => ({ success: true, meta: { changes: 1 } }));
+    select: vi.fn().mockImplementation((..._args: any[]) => { isMutation = false; if (dbMock.selectFrom) dbMock.selectFrom(..._args); else if (dbMock.select) dbMock.select(..._args); return proxy; }),
+    from: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
+    all: vi.fn().mockImplementation((..._args: any[]) => { return dbMock.execute ? dbMock.execute(..._args) : Promise.resolve([]); }),
+    get: vi.fn().mockImplementation((..._args: any[]) => { return dbMock.executeTakeFirst ? dbMock.executeTakeFirst(..._args) : Promise.resolve(null); }),
+    run: vi.fn().mockImplementation((..._args: any[]) => {
+      if (dbMock.execute) return dbMock.execute(..._args).then(() => ({ success: true, meta: { changes: 1 } }));
       return Promise.resolve({ success: true, meta: { changes: 1 } });
     }),
-    insert: vi.fn().mockImplementation((...args: any[]) => { isMutation = true; if (dbMock.insertInto) dbMock.insertInto(...args); return proxy; }),
-    update: vi.fn().mockImplementation((...args: any[]) => { isMutation = true; if (dbMock.updateTable) dbMock.updateTable(...args); return proxy; }),
-    delete: vi.fn().mockImplementation((...args: any[]) => { isMutation = true; if (dbMock.deleteFrom) dbMock.deleteFrom(...args); return proxy; }),
-    onConflictDoUpdate: vi.fn().mockImplementation((...args: any[]) => { return proxy; }),
-    leftJoin: vi.fn().mockImplementation((...args: any[]) => { return proxy; }),
-    innerJoin: vi.fn().mockImplementation((...args: any[]) => { return proxy; }),
-    values: vi.fn().mockImplementation((...args: any[]) => { if (dbMock.values) dbMock.values(...args); return proxy; }),
-    set: vi.fn().mockImplementation((...args: any[]) => { if (dbMock.set) dbMock.set(...args); return proxy; }),
-    limit: vi.fn().mockImplementation((...args: any[]) => { if (dbMock.limit) dbMock.limit(...args); return proxy; }),
-    where: vi.fn().mockImplementation((...args: any[]) => { if (dbMock.where) dbMock.where(...args); return proxy; }),
-    orderBy: vi.fn().mockImplementation((...args: any[]) => { if (dbMock.orderBy) dbMock.orderBy(...args); return proxy; }),
-    offset: vi.fn().mockImplementation((...args: any[]) => { if (dbMock.offset) dbMock.offset(...args); return proxy; }),
-    returning: vi.fn().mockImplementation((...args: any[]) => { return proxy; }),
+    insert: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.insertInto) dbMock.insertInto(..._args); return proxy; }),
+    update: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.updateTable) dbMock.updateTable(..._args); return proxy; }),
+    delete: vi.fn().mockImplementation((..._args: any[]) => { isMutation = true; if (dbMock.deleteFrom) dbMock.deleteFrom(..._args); return proxy; }),
+    onConflictDoUpdate: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
+    leftJoin: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
+    innerJoin: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
+    values: vi.fn().mockImplementation((..._args: any[]) => { if (dbMock.values) dbMock.values(..._args); return proxy; }),
+    set: vi.fn().mockImplementation((..._args: any[]) => { if (dbMock.set) dbMock.set(..._args); return proxy; }),
+    limit: vi.fn().mockImplementation((..._args: any[]) => { if (dbMock.limit) dbMock.limit(..._args); return proxy; }),
+    where: vi.fn().mockImplementation((..._args: any[]) => { if (dbMock.where) dbMock.where(..._args); return proxy; }),
+    orderBy: vi.fn().mockImplementation((..._args: any[]) => { if (dbMock.orderBy) dbMock.orderBy(..._args); return proxy; }),
+    offset: vi.fn().mockImplementation((..._args: any[]) => { if (dbMock.offset) dbMock.offset(..._args); return proxy; }),
+    returning: vi.fn().mockImplementation((..._args: any[]) => { return proxy; }),
     __isDrizzleProxy: true
   };
 
