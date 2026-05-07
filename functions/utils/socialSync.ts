@@ -109,9 +109,10 @@ export async function dispatchSocials(
   const results = await Promise.allSettled(promises);
   const failures: string[] = [];
   
-  results.forEach((result: any) => {
+  results.forEach((result) => {
     if (result.status === 'rejected') {
-      failures.push(String(result.reason?.message || result.reason));
+      const rejected = result as PromiseRejectedResult;
+      failures.push(String(rejected.reason?.message || rejected.reason));
     }
   });
 
@@ -156,7 +157,7 @@ export async function dispatchPhotoSocials(imageUrl: string, caption: string, co
  * Orchestrates the dispatch of a queued social post, resolving linked metadata if necessary.
  */
 export async function dispatchQueuePost(
-  db: any,
+  db: DrizzleDB,
   post: SocialQueuePost,
   config: SocialConfig
 ) {
