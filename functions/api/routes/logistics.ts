@@ -1,7 +1,7 @@
 import { typedHandler } from "../utils/handler";
 import { AppEnv, ensureAdmin } from "../middleware";
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { eq, ne } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { getLogisticsSummaryRoute, exportLogisticsEmailsRoute } from "../../../shared/routes/logistics";
@@ -17,11 +17,16 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisti
   const db = c.get("db") as any;
 
   try {
-    const results = await db.selectFrom("user_profiles as p")
-      .innerJoin("user as u", "p.user_id", "u.id")
-      .select(["p.dietary_restrictions", "p.tshirt_size", "p.member_type", "u.name"])
-      .where("u.role", "!=", "unverified")
-      .execute();
+    const results = await db.select({
+      dietary_restrictions: schema.userProfiles.dietaryRestrictions,
+      tshirt_size: schema.userProfiles.tshirtSize,
+      member_type: schema.userProfiles.memberType,
+      name: schema.user.name
+    })
+    .from(schema.userProfiles)
+    .innerJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
+    .where(ne(schema.user.role, "unverified"))
+    .all();
 
     const summary: Record<string, number> = {};
     const tshirtSummary: Record<string, number> = {};
@@ -60,17 +65,17 @@ logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLo
   const secret = c.env.ENCRYPTION_SECRET;
 
   try {
-    const results = await db.selectFrom("user as u")
-      .leftJoin("user_profiles as p", "u.id", "p.user_id")
-      .select([
-        "u.name", 
-        "u.email", 
-        "u.role",
-        "p.emergency_contact_name",
-        "p.emergency_contact_phone"
-      ])
-      .where("u.role", "!=", "unverified")
-      .execute();
+    const results = await db.select({
+      name: schema.user.name,
+      email: schema.user.email,
+      role: schema.user.role,
+      emergency_contact_name: schema.userProfiles.emergencyContactName,
+      emergency_contact_phone: schema.userProfiles.emergencyContactPhone
+    })
+    .from(schema.user)
+    .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+    .where(ne(schema.user.role, "unverified"))
+    .all();
 
     const users: Array<{ name: string; email: string; role: string; emergencyName: string; emergencyPhone: string }> = [];
     for (const r of results) {
