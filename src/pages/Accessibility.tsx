@@ -109,8 +109,8 @@ export default function Accessibility() {
           className="text-center p-8 hero-card border border-dashed border-white/10"
         >
           <div className="flex gap-6 justify-center items-center mb-6 border-b border-white/5 pb-4 max-w-sm mx-auto">
-            <span className="font-mono text-sm tracking-widest text-marble mr-2">SCANNED BY</span>
-            <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="text-marble hover:text-white transition-colors flex items-center font-bold text-sm gap-1.5" title="pa11y CI Integrated">
+            <span className="font-mono text-sm tracking-widest text-white mr-2">SCANNED BY</span>
+            <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-cyan transition-colors flex items-center font-bold text-sm gap-1.5" title="pa11y CI Integrated">
               <svg className="w-5 h-5 text-ares-cyan" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
               </svg>
@@ -120,7 +120,7 @@ export default function Accessibility() {
               <img src="https://wave.webaim.org/img/wavelogo.svg" alt="WAVE Logo" className="h-4" />
             </a>
           </div>
-          <p className="text-marble text-sm max-w-lg mx-auto">
+          <p className="text-white text-sm max-w-lg mx-auto">
             If you encounter an accessibility hurdle on the ARES Web Portal, please contact us immediately on GitHub or via our Mentors. We treat accessibility defect patches with identical severity to hard system crashes.
           </p>
         </motion.div>
