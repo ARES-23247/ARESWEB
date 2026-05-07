@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { getDbSettings, checkPersistentRateLimit, logAuditAction } from "../../middleware";
-import { Kysely } from "kysely";
-import { DB } from "../../../../shared/schemas/database";
+import { eq } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 
 
 
@@ -128,7 +128,14 @@ export const mediaHandlers = {
       const db = c.get("db") as any;
       const [objects, results] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
-        db.selectFrom("media_tags").select(["key", "folder", "tags"]).where("folder", "=", "Gallery").execute()
+        db.select({
+          key: schema.mediaTags.key,
+          folder: schema.mediaTags.folder,
+          tags: schema.mediaTags.tags
+        })
+        .from(schema.mediaTags)
+        .where(eq(schema.mediaTags.folder, "Gallery"))
+        .execute()
       ]);
 
       const metaMap = new Map<string, { tags: string }>();
@@ -169,7 +176,13 @@ export const mediaHandlers = {
       const db = c.get("db") as any;
       const [objects, results] = await Promise.all([
         listAllObjects(c.env.ARES_STORAGE),
-        db.selectFrom("media_tags").select(["key", "folder", "tags"]).execute()
+        db.select({
+          key: schema.mediaTags.key,
+          folder: schema.mediaTags.folder,
+          tags: schema.mediaTags.tags
+        })
+        .from(schema.mediaTags)
+        .execute()
       ]);
 
       const metaMap = new Map<string, { folder: string, tags: string }>();
@@ -259,9 +272,12 @@ export const mediaHandlers = {
       }
 
       const db = c.get("db") as any;
-      await db.insertInto("media_tags")
+      await db.insert(schema.mediaTags)
         .values({ key, folder: finalFolder, tags: altText })
-        .onConflict((oc: any) => oc.column("key").doUpdateSet({ folder: finalFolder, tags: altText }))
+        .onConflictDoUpdate({
+          target: schema.mediaTags.key,
+          set: { folder: finalFolder, tags: altText }
+        })
         .execute();
 
       if (c.executionCtx) {
@@ -294,15 +310,15 @@ export const mediaHandlers = {
         await c.env.ARES_STORAGE.delete(key);
 
         const db = c.get("db") as any;
-        await db.updateTable("media_tags")
+        await db.update(schema.mediaTags)
           .set({ key: newKey, folder })
-          .where("key", "=", key)
+          .where(eq(schema.mediaTags.key, key))
           .execute();
       } else {
         const db = c.get("db") as any;
-        await db.updateTable("media_tags")
+        await db.update(schema.mediaTags)
           .set({ key: newKey, folder })
-          .where("key", "=", key)
+          .where(eq(schema.mediaTags.key, key))
           .execute();
       }
 
@@ -320,7 +336,7 @@ export const mediaHandlers = {
         await c.env.ARES_STORAGE.delete(key);
       }
       const db = c.get("db") as any;
-      await db.deleteFrom("media_tags").where("key", "=", key).execute();
+      await db.delete(schema.mediaTags).where(eq(schema.mediaTags.key, key)).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
       return { status: 200, body: { success: true } };
     } catch (e) {
