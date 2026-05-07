@@ -1,7 +1,8 @@
 import { Hono, Context } from "hono";
 import { AppEnv, logAuditAction } from "./utils";
 import { ensureAdmin } from "./auth";
-import { sql } from "kysely";
+import { Kysely, sql } from "kysely";
+import type { DB } from "../../../shared/schemas/database";
 
 // ── Generic Content Management Factory ────────────────────────────────
 
@@ -42,7 +43,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     }
 
     if (!handled) {
-      const db = c.get("db") as any;
+      const db = c.get("db") as Kysely<DB>;
       await sql`UPDATE ${sql.table(tableName)} SET status = 'published' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
     }
 
@@ -62,7 +63,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     if (hooks?.onReject) handled = (await hooks.onReject(c, id, body.reason)) === true;
 
     if (!handled) {
-      const db = c.get("db") as any;
+      const db = c.get("db") as Kysely<DB>;
       await sql`UPDATE ${sql.table(tableName)} SET status = 'rejected' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
     }
 
@@ -78,7 +79,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     if (hooks?.onRestore) handled = (await hooks.onRestore(c, id)) === true;
 
     if (!handled) {
-      const db = c.get("db") as any;
+      const db = c.get("db") as Kysely<DB>;
       await sql`UPDATE ${sql.table(tableName)} SET is_deleted = 0, status = 'draft' WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
     }
 
@@ -95,7 +96,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
       if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "trashed")) === true;
 
       if (!handled) {
-        const db = c.get("db") as any;
+        const db = c.get("db") as Kysely<DB>;
         await sql`UPDATE ${sql.table(tableName)} SET is_deleted = 1 WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
       }
       
@@ -116,7 +117,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
       if (hooks?.onDelete) handled = (await hooks.onDelete(c, id, "purged")) === true;
 
       if (!handled) {
-        const db = c.get("db") as any;
+        const db = c.get("db") as Kysely<DB>;
         await sql`DELETE FROM ${sql.table(tableName)} WHERE ${sql.raw(idColumn)} = ${id}`.execute(db);
       }
       
