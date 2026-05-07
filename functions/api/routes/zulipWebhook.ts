@@ -1,9 +1,9 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq, ne, inArray, desc, asc, count } from "drizzle-orm";
+import { eq, ne, desc, asc, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { siteConfig } from "../../utils/site.config";
-import { AppEnv, getSocialConfig } from "../middleware";
+import { AppEnv, getSocialConfig, getDb } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { calculateIRV } from "../../utils/irvCalculator";
 import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
@@ -54,7 +54,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
   const command = args[0]?.toLowerCase();
 
   const PRIVILEGED_COMMANDS = ["!task", "!broadcast"];
-  const db = c.get("db");
+  const db = getDb(c);
 
   if (PRIVILEGED_COMMANDS.includes(command || "")) {
     const senderEmail = body.message?.sender_email;
@@ -455,6 +455,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
               await db
                 .insert(schema.comments)
                 .values({
+                  id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `cmt-${Date.now()}-${Math.random()}`,
                   targetType: targetType,
                   targetId: targetId,
                   userId: userId,
