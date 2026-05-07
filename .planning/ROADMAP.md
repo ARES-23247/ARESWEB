@@ -255,7 +255,7 @@
 7. Image payload reduced by 30%+ (compare before/after build output)
 
 **Plans**: 1 plan
-- [ ] 02-01-PLAN.md — WebP conversion pipeline, responsive image variants, extended LazyImage with srcset, font preloading
+- [x] 02-01-PLAN.md — WebP conversion pipeline, responsive image variants, extended LazyImage with srcset, font preloading
 
 ---
 
