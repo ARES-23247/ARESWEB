@@ -60,16 +60,25 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 
 (None currently active)
 
-## Current Milestone: v6.10 Infrastructure & Polish
+## Current Milestone: None
 
-**Goal:** Optimize platform performance through edge-native caching and enhance user communication resilience.
+**Goal:** Pending next milestone planning.
 
 **Target features:**
-- Edge-native caching (300s TTL) for all high-traffic public API routes.
-- Automated email receipts for Join and Support inquiry forms.
-- Global middleware audit to ensure header consistency.
+- N/A
 
 ## Current State
+
+<details>
+<summary>v7.0 Shipped Features</summary>
+
+- Bundle Size Optimization: Lazy loading Monaco editor and Babel to reduce initial payload by ~5MB.
+- Media Optimization: Automated WebP conversion pipeline and responsive image variants.
+- Loading Strategy: Route-based chunk splitting and critical resource preloading.
+- Caching Improvements: HTTP caching strategies (SWR) and edge caching middleware.
+- Monitoring: Web Vitals tracking and bundle size CI/CD gating.
+- UX Flattening: Aligned Academy headers and Social Media Manager UI to the ARES-cut design system.
+</details>
 
 <details>
 <summary>v6.4 Shipped Features</summary>
