@@ -392,6 +392,15 @@ export interface OutreachLogs {
   title: string;
 }
 
+export interface PerformanceMetrics {
+  id: string;
+  metric_name: string;
+  value: number;
+  rating: string;
+  page: string;
+  timestamp: Generated<string | null>;
+}
+
 export interface PageAnalytics {
   category: Generated<string | null>;
   id: Generated<number | null>;
@@ -798,6 +807,7 @@ export interface DB {
   orders: Orders;
   outreach_logs: OutreachLogs;
   page_analytics: PageAnalytics;
+  performance_metrics: PerformanceMetrics;
   points_ledger: PointsLedger;
   posts: Posts;
   posts_fts: PostsFts;

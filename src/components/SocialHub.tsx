@@ -23,13 +23,15 @@ export default function SocialHub() {
 
   return (
     <div className="flex-1 w-full flex flex-col min-h-0">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex justify-between items-start mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tighter flex items-center gap-2">
-             <Sparkles className="text-ares-gold" size={24} />
-             Social Media Manager
+          <h2 className="text-3xl font-black text-white flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-ares-red/20 to-red-900/20 ares-cut-sm border border-ares-red/20">
+              <Sparkles className="text-ares-red" size={28} />
+            </div>
+            Social Media Manager
           </h2>
-          <p className="text-marble/60 text-sm mt-1">
+          <p className="text-marble/60 text-sm mt-2">
             Schedule, analyze, and manage posts across all platforms
           </p>
         </div>
@@ -40,24 +42,23 @@ export default function SocialHub() {
                 setEditingPost(null);
                 setActiveTab("compose");
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 ares-cut-sm text-xs font-bold uppercase tracking-widest text-marble hover:bg-white/10 transition-all"
             >
-              <Plus size={18} />
-              New Post
+              <Plus size={16} /> New Post
             </button>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+      <div className="flex bg-obsidian/50 p-1 ares-cut-sm border border-white/10 self-start w-full md:w-auto overflow-x-auto custom-scrollbar shadow-inner gap-1 mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${
+            className={`px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === tab.id
-                ? "bg-ares-gold text-black"
-                : "bg-white/5 text-marble/90 border border-white/5 hover:bg-white/10"
+                ? "bg-white/10 text-ares-cyan border border-white/20 shadow-sm"
+                : "text-marble/50 hover:text-marble border border-transparent"
             }`}
           >
             {tab.icon}

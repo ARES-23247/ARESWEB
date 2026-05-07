@@ -4,7 +4,7 @@ import { renderHook, RenderHookOptions } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ModalProvider } from "../contexts/ModalContext";
 import { vi } from "vitest";
-import type { MockExecutionContext, MockExpressionBuilder } from "./types";
+import type { MockExecutionContext } from "./types";
 
 // We mock the confirm globally for tests that use the provider to avoid blocking
 vi.mock("../contexts/ModalContext", async (importOriginal) => {
@@ -40,46 +40,49 @@ export async function flushWaitUntil() {
 }
 
 /**
- * Creates a unified, chainable Kysely ExpressionBuilder mock
+ * Creates a unified, chainable Drizzle ORM mock
  * which avoids coverage drops from missing internal builder methods.
  */
-export function createMockExpressionBuilder(): MockExpressionBuilder {
-  const fnAs = vi.fn().mockReturnThis();
-  // Create function mocks with .as chaining
-  const createFnWithAs = () => {
-    const fn = vi.fn().mockReturnThis();
-    (fn as ReturnType<typeof vi.fn> & { as: ReturnType<typeof vi.fn> }).as = fnAs;
-    return fn;
-  };
-  const ebMock = Object.assign(vi.fn().mockReturnThis(), {
-    or: vi.fn().mockReturnThis(),
-    and: vi.fn().mockReturnThis(),
-    val: vi.fn().mockReturnThis(),
-    fn: {
-      count: createFnWithAs(),
-      sum: createFnWithAs(),
-      max: createFnWithAs(),
-      min: createFnWithAs(),
-      coalesce: createFnWithAs(),
-      as: fnAs,
-    },
-    case: Object.assign(
-      vi.fn().mockReturnThis(),
-      {
-        when: vi.fn().mockReturnThis(),
-        and: vi.fn().mockReturnThis(),
-        then: vi.fn().mockReturnThis(),
-        else: vi.fn().mockReturnThis(),
-        end: vi.fn().mockReturnThis(),
-      }
-    ),
-    selectFrom: vi.fn().mockReturnThis(),
+export function createMockDrizzle(defaultResolve: any = []) {
+  const mockDb: any = {
     select: vi.fn().mockReturnThis(),
+    selectDistinct: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
-    execute: vi.fn().mockResolvedValue([]),
-  }) as unknown as MockExpressionBuilder;
-
-  return ebMock;
+    limit: vi.fn().mockReturnThis(),
+    offset: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    returning: vi.fn().mockReturnThis(),
+    leftJoin: vi.fn().mockReturnThis(),
+    innerJoin: vi.fn().mockReturnThis(),
+    onConflictDoUpdate: vi.fn().mockReturnThis(),
+    onConflictDoNothing: vi.fn().mockReturnThis(),
+    groupBy: vi.fn().mockReturnThis(),
+    having: vi.fn().mockReturnThis(),
+    then: vi.fn((resolve) => resolve(defaultResolve)),
+    transaction: vi.fn().mockImplementation(async (cb: any) => cb(mockDb)),
+    batch: vi.fn().mockResolvedValue([]),
+    all: vi.fn().mockResolvedValue(defaultResolve),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    get: vi.fn().mockResolvedValue(defaultResolve[0] || null),
+    query: new Proxy({}, {
+      get: (target: any, prop: string) => {
+        if (!target[prop]) {
+          target[prop] = {
+            findFirst: vi.fn().mockResolvedValue(null),
+            findMany: vi.fn().mockResolvedValue([]),
+          };
+        }
+        return target[prop];
+      }
+    })
+  };
+  return mockDb;
 }
 
 const createTestQueryClient = () =>

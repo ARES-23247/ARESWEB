@@ -2,8 +2,8 @@
  
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { mockExecutionContext } from "../../../src/test/utils";
-import type { TestEnv, MockKysely } from "../../../src/test/types";
+import { mockExecutionContext, createMockDrizzle } from "../../../src/test/utils";
+import type { TestEnv, MockDrizzle } from "../../../src/test/types";
 import authRouter from "./auth";
 import * as shared from "../middleware";
 import * as authUtils from "../../utils/auth";
@@ -22,23 +22,12 @@ vi.mock("../../utils/auth", () => ({
 
 describe("Auth Router", () => {
   let app: Hono<TestEnv>;
-  let mockDb: MockKysely;
+  let mockDb: MockDrizzle;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockDb = {
-      execute: vi.fn(),
-      executeTakeFirst: vi.fn(),
-      selectFrom: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      insertInto: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      updateTable: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      deleteFrom: vi.fn().mockReturnThis(),
-    };
+    mockDb = createMockDrizzle();
 
     app = new Hono<TestEnv>();
     app.use("*", async (c, next) => {

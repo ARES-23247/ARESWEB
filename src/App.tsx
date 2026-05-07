@@ -44,10 +44,15 @@ const SimRunner = React.lazy(() => import("./pages/SimRunner"));
 
 import { useModal } from "./contexts/ModalContext";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { initWebVitals } from "./utils/webVitals";
 
 export default function App() {
   const location = useLocation();
   const modal = useModal();
+
+  React.useEffect(() => {
+    initWebVitals();
+  }, []);
 
   useRegisterSW({
     onNeedRefresh() {

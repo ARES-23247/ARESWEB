@@ -277,25 +277,31 @@
 
 ---
 
-### Phase 49: Monitoring
+### [x] Phase 49: Monitoring
 
 **Goal**: Web Vitals tracking, bundle size CI/CD checks, and performance dashboard.
 
-**Plans**: See `.planning/milestones/v7.0-phases/05-monitoring/PLAN.md`
+**Plans**: 
+- [x] Web Vitals Client Implementation
+- [x] Metrics API Endpoint
+- [x] Bundle Size Check Script
+- [x] Performance Dashboard UI
 
-### Phase 51: UI fixes: Header ARES Academy and Social Media manager nesting
+### ✅ Phase 51: UI fixes: Header ARES Academy and Social Media manager nesting
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Fix layout and padding hierarchies for Academy headers and the SocialHub module to match the global ares-cut design system.
+**Requirements**: 
+- Replaced basic Academy link with ARES Academy split badge.
+- Removed excessive nesting in SocialHub components.
 **Depends on:** Phase 50
-**Plans:** 0 plans
+**Plans:** 1 plans
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 51 to break down)
 
 ---
 
-### Phase 50: Dashboard UX Flattening
+### [x] Phase 50: Dashboard UX Flattening
 
 **Goal**: Integrate Social Media Manager directly into dashboard layout by removing redundant nesting and matching standard page patterns.
 
@@ -308,4 +314,4 @@ Plans:
 2. Dashboard header pattern applied to Social Media Manager.
 3. Tab navigation matches dashboard standard.
 
-**Plans**: 0 (run /gsd-plan-phase 50 to create)
+**Plans**: 0 (Completed autonomously)

@@ -1,18 +1,14 @@
 import { betterAuth } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
-import { kyselyAdapter } from "@better-auth/kysely-adapter";
-import { Kysely } from "kysely";
-import { D1Dialect } from "kysely-d1";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { drizzle } from "drizzle-orm/d1";
+import { eq, and } from "drizzle-orm";
+import * as schema from "../../src/db/schema";
 import { siteConfig } from "./site.config";
-import { DB } from "../../shared/schemas/database";
 import type { D1Database } from "@cloudflare/workers-types";
 
 export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl?: string) => {
-    const kyselyDb = new Kysely<DB>({
-        dialect: new D1Dialect({
-            database: db,
-        }),
-    });
+    const drizzleDb = drizzle(db, { schema });
 
     let baseURL = env.BETTER_AUTH_URL as string | undefined;
     
@@ -56,7 +52,8 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                 ] : []
             }),
         ],
-        database: kyselyAdapter(kyselyDb, {
+        database: drizzleAdapter(drizzleDb, {
+            provider: "sqlite",
         }),
         onAPIError: {
             throw: true,
@@ -122,22 +119,24 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                 create: {
                     after: async (session) => {
                         try {
-                            const currentUser = await kyselyDb.selectFrom("user")
-                                .select("role")
-                                .where("id", "=", session.userId)
-                                .executeTakeFirst();
+                            const currentUser = await drizzleDb.query.user.findFirst({
+                                columns: { role: true },
+                                where: eq(schema.user.id, session.userId)
+                            });
 
                             if (currentUser && currentUser.role !== "admin") {
-                                const account = await kyselyDb.selectFrom("account")
-                                    .select("accessToken")
-                                    .where("userId", "=", session.userId)
-                                    .where("providerId", "=", "github")
-                                    .executeTakeFirst();
+                                const userAccount = await drizzleDb.query.account.findFirst({
+                                    columns: { accessToken: true },
+                                    where: and(
+                                        eq(schema.account.userId, session.userId),
+                                        eq(schema.account.providerId, "github")
+                                    )
+                                });
 
-                                if (account && account.accessToken) {
+                                if (userAccount && userAccount.accessToken) {
                                     const res = await fetch("https://api.github.com/user/memberships/orgs/ARES-23247", { signal: AbortSignal.timeout(5000),
                                         headers: {
-                                            "Authorization": `Bearer ${account.accessToken}`,
+                                            "Authorization": `Bearer ${userAccount.accessToken}`,
                                             "Accept": "application/vnd.github.v3+json",
                                             "User-Agent": "ARES-23247-Auth"
                                         }
@@ -146,15 +145,13 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                         const membership = await res.json() as { state: string, role: string };
                                         if (membership.state === "active") {
                                             if (membership.role === "admin") {
-                                                await kyselyDb.updateTable("user")
+                                                await drizzleDb.update(schema.user)
                                                     .set({ role: 'admin' })
-                                                    .where("id", "=", session.userId)
-                                                    .execute();
+                                                    .where(eq(schema.user.id, session.userId));
                                             } else {
-                                                await kyselyDb.updateTable("user")
+                                                await drizzleDb.update(schema.user)
                                                     .set({ role: 'user' })
-                                                    .where("id", "=", session.userId)
-                                                    .execute();
+                                                    .where(eq(schema.user.id, session.userId));
                                             }
                                         }
                                     } else {
@@ -174,30 +171,29 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                         // SEC-01: Bootstrap admin from env var, not hardcoded email
                         const initialAdmin = env.INITIAL_ADMIN_EMAIL as string | undefined;
                         if (initialAdmin && user.email === initialAdmin) {
-                            await kyselyDb.updateTable("user")
+                            await drizzleDb.update(schema.user)
                                 .set({ role: 'admin' })
-                                .where("email", "=", user.email)
-                                .execute();
+                                .where(eq(schema.user.email, user.email));
                         } else {
                             try {
-                                const admins = await kyselyDb.selectFrom("user")
-                                    .select("id")
-                                    .where("role", "=", "admin")
-                                    .execute();
+                                const admins = await drizzleDb.query.user.findMany({
+                                    columns: { id: true },
+                                    where: eq(schema.user.role, "admin")
+                                });
                                 
                                 if (admins.length > 0) {
                                     const values = admins
                                         .filter(admin => admin.id !== null)
                                         .map(admin => ({
                                             id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
-                                            user_id: admin.id as string,
+                                            userId: admin.id as string,
                                             title: "New User Registration",
                                             message: `A new user (${user.name || user.email}) has registered and is pending verification.`,
                                             link: "/dashboard/users",
                                             priority: "medium" as const
                                         }));
                                     
-                                    await kyselyDb.insertInto("notifications").values(values).execute();
+                                    await drizzleDb.insert(schema.notifications).values(values);
                                 }
                             } catch (err) {
                                 console.error("[Auth] Failed to notify admins of new user:", err);

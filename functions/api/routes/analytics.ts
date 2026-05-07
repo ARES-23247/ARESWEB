@@ -20,6 +20,9 @@ import {
 
 export const analyticsRouter = new OpenAPIHono<AppEnv>();
 
+import perfRouter from "./analytics/performance";
+analyticsRouter.route("/performance", perfRouter);
+
 // CR-01 FIX: Apply authentication to all analytics routes
 // Public routes (page view tracking, search) have rate limiting only
 analyticsRouter.use("/stats", ensureAuth);

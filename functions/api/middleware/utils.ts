@@ -1,9 +1,12 @@
 import { Context } from "hono";
 import { siteConfig } from "../../utils/site.config";
 import { parseAstToText } from "../../utils/content";
-import { Kysely } from "kysely";
+import { DrizzleD1Database } from "drizzle-orm/d1";
+import * as schema from "../../../src/db/schema";
+import * as relations from "../../../src/db/relations";
 import { DB } from "../../../shared/schemas/database";
 import { safeJSONParse } from "../../utils/json";
+import { eq, inArray } from "drizzle-orm";
 import type { D1Database, R2Bucket, VectorizeIndex, Ai } from "@cloudflare/workers-types";
 
 // ── Cloudflare Bindings ──────────────────────────────────────────────
@@ -62,7 +65,7 @@ export type Bindings = {
 export type Variables = {
   sessionUser: SessionUser;
   socialConfig?: SocialConfig;
-  db: Kysely<DB>;
+  db: DrizzleD1Database<typeof schema & typeof relations>;
   env: Bindings;
   requestId?: string;
 };
@@ -180,23 +183,22 @@ export async function logAuditAction(
     
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `log-${Date.now()}`;
     
-    await db.insertInto("audit_log")
+    await db.insert(schema.auditLog)
       .values({
         id,
         actor,
         action,
-        resource_type,
-        resource_id: resource_id || null,
+        resourceType: resource_type,
+        resourceId: resource_id || null,
         details: scrubPii(details || null)
-      })
-      .execute();
+      });
   } catch (err) {
     console.error("[AuditLog] Failed to record action:", action, err);
   }
 }
 
 export async function logSystemError(
-  db: Kysely<DB>,
+  db: DrizzleD1Database<typeof schema & typeof relations>,
   service: string,
   error: string,
   details?: string
@@ -204,16 +206,15 @@ export async function logSystemError(
   try {
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `err-${Date.now()}`;
     
-    await db.insertInto("audit_log")
+    await db.insert(schema.auditLog)
       .values({
         id,
         actor: "system",
         action: "INTEGRATION_FAILURE",
-        resource_type: service,
-        resource_id: null,
+        resourceType: service,
+        resourceId: null,
         details: JSON.stringify({ error, details, timestamp: new Date().toISOString() })
-      })
-      .execute();
+      });
   } catch (err) {
     console.error("[AuditLog] Failed to log system error:", err);
   }
@@ -302,10 +303,10 @@ export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, 
   ];
   
   const db = c.get("db");
-  const results = await db.selectFrom("settings")
-    .select(["key", "value"])
-    .where("key", "in", keys)
-    .execute();
+  const results = await db.query.settings.findMany({
+    columns: { key: true, value: true },
+    where: inArray(schema.settings.key, keys)
+  });
   const settings: Record<string, string> = {};
   for (const row of results) {
     if (row.key) {

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 /* User management route handlers */
-import { Kysely } from "kysely";
-import { DB } from "../../../shared/schemas/database";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { eq, desc, lt } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 
 import { AppEnv, ensureAdmin, logAuditAction, parsePagination } from "../middleware";
 import { upsertProfile } from "./_profileUtils";
@@ -19,8 +19,6 @@ import {
   MemberTypeEnum,
 } from "../../../shared/routes/users";
 
-
-
 export const usersRouter = new OpenAPIHono<AppEnv>();
 
 // CR-07 FIX: Apply authentication to all admin routes
@@ -28,34 +26,35 @@ usersRouter.use("/admin/*", ensureAdmin);
 
 usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) => {
   try {
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
     const { limit, cursor } = parsePagination(c, 50, 100);
 
-    let dbQuery = db
-      .selectFrom("user as u")
-      .leftJoin("user_profiles as p", "u.id", "p.user_id")
-      .select([
-        "u.id",
-        "u.name",
-        "u.email",
-        "u.emailVerified",
-        "u.image",
-        "u.role",
-        "u.createdAt",
-        "u.updatedAt",
-        "p.nickname",
-        "p.member_type",
-      ])
-      .orderBy("u.createdAt", "desc")
-      .limit(limit);
-
-    if (cursor) {
-      dbQuery = dbQuery.where("u.createdAt", "<", Number(cursor));
-    }
-
-    const results = await dbQuery.execute();
+    const results = await db.query.user.findMany({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        emailVerified: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      with: {
+        userProfiles: {
+          columns: {
+            nickname: true,
+            memberType: true,
+          }
+        }
+      },
+      orderBy: [desc(schema.user.createdAt)],
+      limit: limit,
+      where: cursor ? lt(schema.user.createdAt, Number(cursor)) : undefined
+    });
 
     const users = results.map((u) => {
+      const profile = u.userProfiles?.[0];
       return {
         id: String(u.id),
         name: u.name || null,
@@ -71,9 +70,9 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
           typeof u.updatedAt === "number"
             ? u.updatedAt
             : new Date(u.updatedAt as string).getTime() || 0,
-        nickname: u.nickname || null,
+        nickname: profile?.nickname || null,
         member_type:
-          (u.member_type as
+          (profile?.memberType as
             | "student"
             | "mentor"
             | "coach"
@@ -91,7 +90,8 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
         : null;
 
     return c.json({ users, nextCursor }, 200);
-  } catch {
+  } catch (e) {
+    console.error("getUsers failed:", e);
     return c.json({ error: "Database error" }, 500);
   }
 }));
@@ -99,26 +99,33 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
 usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
-    const row = await db
-      .selectFrom("user as u")
-      .leftJoin("user_profiles as p", "u.id", "p.user_id")
-      .select([
-        "u.id",
-        "u.name",
-        "u.email",
-        "u.emailVerified",
-        "u.image",
-        "u.role",
-        "u.createdAt",
-        "u.updatedAt",
-        "p.nickname",
-        "p.member_type",
-      ])
-      .where("u.id", "=", id)
-      .executeTakeFirst();
+    const db = c.get("db");
+    
+    const row = await db.query.user.findFirst({
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        emailVerified: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      with: {
+        userProfiles: {
+          columns: {
+            nickname: true,
+            memberType: true,
+          }
+        }
+      },
+      where: eq(schema.user.id, id)
+    });
 
     if (!row) return c.json({ error: "User not found" }, 404);
+
+    const profile = row.userProfiles?.[0];
 
     return c.json(
       {
@@ -137,13 +144,14 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
             typeof row.updatedAt === "number"
               ? row.updatedAt
               : new Date(row.updatedAt as string).getTime(),
-          nickname: (row.nickname as string | null) || null,
-          member_type: row.member_type as any,
+          nickname: (profile?.nickname as string | null) || null,
+          member_type: profile?.memberType as any,
         },
       },
       200
     );
-  } catch {
+  } catch (e) {
+    console.error("adminDetail failed:", e);
     return c.json({ error: "Database error" }, 500);
   }
 }));
@@ -175,16 +183,15 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
       return c.json({ error: "Invalid member_type value" }, 400);
     }
 
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
 
     if (role) {
       await db
-        .updateTable("user")
+        .update(schema.user)
         .set({ role })
-        .where("id", "=", id)
-        .execute();
+        .where(eq(schema.user.id, id));
       // Invalidate all sessions for the user to force re-auth with new role
-      await db.deleteFrom("session").where("userId", "=", id).execute();
+      await db.delete(schema.session).where(eq(schema.session.userId, id));
       // IN-08: Audit log role changes
       c.executionCtx.waitUntil(
         logAuditAction(c, "UPDATE_ROLE", "user", id, `Changed role to ${role}`)
@@ -195,23 +202,20 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
     // This is intentional as member_type is less security-critical than role.
     // If this changes, add session deletion here similar to role changes above.
     if (member_type) {
-      const existing = await db
-        .selectFrom("user_profiles")
-        .select("user_id")
-        .where("user_id", "=", id)
-        .executeTakeFirst();
+      const existing = await db.query.userProfiles.findFirst({
+        columns: { userId: true },
+        where: eq(schema.userProfiles.userId, id)
+      });
 
       if (existing) {
         await db
-          .updateTable("user_profiles")
-          .set({ member_type })
-          .where("user_id", "=", id)
-          .execute();
+          .update(schema.userProfiles)
+          .set({ memberType: member_type })
+          .where(eq(schema.userProfiles.userId, id));
       } else {
         await db
-          .insertInto("user_profiles")
-          .values({ user_id: id, member_type })
-          .execute();
+          .insert(schema.userProfiles)
+          .values({ userId: id, memberType: member_type });
       }
     }
 
@@ -249,59 +253,59 @@ usersRouter.openapi(updateUserProfileRoute, typedHandler<typeof updateUserProfil
 usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
-    const user = await db
-      .selectFrom("user")
-      .select(["id", "name", "email", "image", "role"])
-      .where("id", "=", id)
-      .executeTakeFirst();
+    const db = c.get("db");
+    
+    const user = await db.query.user.findFirst({
+      columns: { id: true, name: true, email: true, image: true, role: true },
+      where: eq(schema.user.id, id)
+    });
+    
     if (!user) return c.json({ error: "User not found" }, 404);
 
-    const profileRow = await db
-      .selectFrom("user_profiles as p")
-      .select([
-        "p.user_id",
-        "p.nickname",
-        "p.first_name",
-        "p.last_name",
-        "p.bio",
-        "p.pronouns",
-        "p.subteams",
-        "p.member_type",
-        "p.grade_year",
-        "p.favorite_food",
-        "p.dietary_restrictions",
-        "p.favorite_first_thing",
-        "p.fun_fact",
-        "p.show_email",
-        "p.contact_email",
-        "p.show_phone",
-        "p.phone",
-        "p.show_on_about",
-        "p.favorite_robot_mechanism",
-        "p.pre_match_superstition",
-        "p.leadership_role",
-        "p.rookie_year",
-        "p.colleges",
-        "p.employers",
-        "p.tshirt_size",
-        "p.emergency_contact_name",
-        "p.emergency_contact_phone",
-        "p.parents_name",
-        "p.parents_email",
-        "p.students_name",
-        "p.students_email",
-      ])
-      .where("p.user_id", "=", id)
-      .executeTakeFirst();
+    const profileRow = await db.query.userProfiles.findFirst({
+      columns: {
+        userId: true,
+        nickname: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        pronouns: true,
+        subteams: true,
+        memberType: true,
+        gradeYear: true,
+        favoriteFood: true,
+        dietaryRestrictions: true,
+        favoriteFirstThing: true,
+        funFact: true,
+        showEmail: true,
+        contactEmail: true,
+        showPhone: true,
+        phone: true,
+        showOnAbout: true,
+        favoriteRobotMechanism: true,
+        preMatchSuperstition: true,
+        leadershipRole: true,
+        rookieYear: true,
+        colleges: true,
+        employers: true,
+        tshirtSize: true,
+        emergencyContactName: true,
+        emergencyContactPhone: true,
+        parentsName: true,
+        parentsEmail: true,
+        studentsName: true,
+        studentsEmail: true,
+      },
+      where: eq(schema.userProfiles.userId, id)
+    });
 
     const p = {
       ...(profileRow || {
-        user_id: user.id,
+        userId: user.id,
         nickname: user.name || "",
-        first_name: "",
-        last_name: "",
-        member_type: "student",
+        firstName: "",
+        lastName: "",
+        memberType: "student",
       }),
     } as Record<string, unknown>;
 
@@ -318,42 +322,42 @@ usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRou
       };
 
       const [
-        emergency_contact_name,
-        emergency_contact_phone,
+        emergencyContactName,
+        emergencyContactPhone,
         phone,
-        contact_email,
-        parents_name,
-        parents_email,
-        students_name,
-        students_email,
+        contactEmail,
+        parentsName,
+        parentsEmail,
+        studentsName,
+        studentsEmail,
       ] = await Promise.all([
-        safeDecrypt(p.emergency_contact_name),
-        safeDecrypt(p.emergency_contact_phone),
+        safeDecrypt(p.emergencyContactName),
+        safeDecrypt(p.emergencyContactPhone),
         safeDecrypt(p.phone),
-        safeDecrypt(p.contact_email),
-        safeDecrypt(p.parents_name),
-        safeDecrypt(p.parents_email),
-        safeDecrypt(p.students_name),
-        safeDecrypt(p.students_email),
+        safeDecrypt(p.contactEmail),
+        safeDecrypt(p.parentsName),
+        safeDecrypt(p.parentsEmail),
+        safeDecrypt(p.studentsName),
+        safeDecrypt(p.studentsEmail),
       ]);
 
-      p.emergency_contact_name = emergency_contact_name;
-      p.emergency_contact_phone = emergency_contact_phone;
+      p.emergencyContactName = emergencyContactName;
+      p.emergencyContactPhone = emergencyContactPhone;
       p.phone = phone;
-      p.contact_email = contact_email;
-      p.parents_name = parents_name;
-      p.parents_email = parents_email;
-      p.students_name = students_name;
-      p.students_email = students_email;
+      p.contactEmail = contactEmail;
+      p.parentsName = parentsName;
+      p.parentsEmail = parentsEmail;
+      p.studentsName = studentsName;
+      p.studentsEmail = studentsEmail;
     }
 
     return c.json(
       {
         profile: {
           ...p,
-          member_type: String(p.member_type || "student"),
-          first_name: String(p.first_name || ""),
-          last_name: String(p.last_name || ""),
+          member_type: String(p.memberType || "student"),
+          first_name: String(p.firstName || ""),
+          last_name: String(p.lastName || ""),
           nickname: String(p.nickname || ""),
           auth: {
             id: user.id,
@@ -375,19 +379,19 @@ usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRou
 usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async (c) => {
   try {
     const { id } = c.req.valid("param");
-    const db = c.get("db") as Kysely<DB>;
+    const db = c.get("db");
 
     // Atomicity Fix: Delete all related records in parallel, then the user
     await Promise.all([
-      db.deleteFrom("comments").where("user_id", "=", id).execute(),
-      db.deleteFrom("event_signups").where("user_id", "=", id).execute(),
-      db.deleteFrom("user_badges").where("user_id", "=", id).execute(),
-      db.deleteFrom("user_profiles").where("user_id", "=", id).execute(),
-      db.deleteFrom("session").where("userId", "=", id).execute(),
-      db.deleteFrom("account").where("userId", "=", id).execute(),
+      db.delete(schema.comments).where(eq(schema.comments.userId, id)),
+      db.delete(schema.eventSignups).where(eq(schema.eventSignups.userId, id)),
+      db.delete(schema.userBadges).where(eq(schema.userBadges.userId, id)),
+      db.delete(schema.userProfiles).where(eq(schema.userProfiles.userId, id)),
+      db.delete(schema.session).where(eq(schema.session.userId, id)),
+      db.delete(schema.account).where(eq(schema.account.userId, id)),
     ]);
 
-    await db.deleteFrom("user").where("id", "=", id).execute();
+    await db.delete(schema.user).where(eq(schema.user.id, id));
 
     c.executionCtx.waitUntil(
       logAuditAction(c, "DELETE_USER", "user", id, `Deleted user ${id}`)

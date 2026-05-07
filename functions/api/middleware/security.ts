@@ -1,7 +1,11 @@
 import { Context, Next } from "hono";
 import { AppEnv } from "./utils";
-import { Kysely, sql } from "kysely";
-import { DB } from "../../../shared/schemas/database";
+import { DrizzleD1Database } from "drizzle-orm/d1";
+import { sql } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
+import * as relations from "../../../src/db/relations";
+
+type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
 
 // ── Global KV Rate limiting removed. Use D1 persistent checks instead. ────────────────────────
 
@@ -10,7 +14,7 @@ import { DB } from "../../../shared/schemas/database";
 /**
  * Enhanced Persistent Rate Limit Check
  */
-export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userAgent: string, limit: number, windowSeconds: number, path: string = ""): Promise<boolean> {
+export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAgent: string, limit: number, windowSeconds: number, path: string = ""): Promise<boolean> {
   if (!db) return true; // Fall open if middleware wasn't attached
 
   const now = Math.floor(Date.now() / 1000);
@@ -20,20 +24,22 @@ export async function checkPersistentRateLimit(db: Kysely<DB>, ip: string, userA
   try {
     // Cleanup old records occasionally to avoid table bloat
     if (Math.random() < 0.05) {
-      db.deleteFrom("rate_limits").where("expires_at", "<", now).execute().catch(console.error);
+      db.delete(schema.rateLimits).where(sql`expires_at < ${now}`).execute().catch(console.error);
     }
 
-    const result = await db.insertInto("rate_limits")
-      .values({ ip: compositeKey, count: 1, expires_at: now + windowSeconds })
-      .onConflict(oc => oc.column("ip").doUpdateSet({
-        count: sql`CASE WHEN expires_at < ${now} THEN 1 ELSE count + 1 END`,
-        expires_at: sql`CASE WHEN expires_at < ${now} THEN ${now + windowSeconds} ELSE expires_at END`
-      }))
-      .returning(["count", "expires_at"])
-      .executeTakeFirst();
+    const result = await db.insert(schema.rateLimits)
+      .values({ ip: compositeKey, count: 1, expiresAt: now + windowSeconds })
+      .onConflictDoUpdate({
+        target: schema.rateLimits.ip,
+        set: {
+          count: sql`CASE WHEN expires_at < ${now} THEN 1 ELSE count + 1 END`,
+          expiresAt: sql`CASE WHEN expires_at < ${now} THEN ${now + windowSeconds} ELSE expires_at END`
+        }
+      })
+      .returning({ count: schema.rateLimits.count, expiresAt: schema.rateLimits.expiresAt });
 
-    const count = result?.count ?? 0;
-    const expires = result?.expires_at ?? 0;
+    const count = result[0]?.count ?? 0;
+    const expires = result[0]?.expiresAt ?? 0;
     const allowed = count <= limit;
 
     // Log rate limit checks for debugging
@@ -124,11 +130,11 @@ export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) =>
     if (!allowed) {
       if (db) {
         c.executionCtx.waitUntil(
-          db.insertInto("audit_log").values({
+          db.insert(schema.auditLog).values({
             id: crypto.randomUUID(),
             action: "SECURITY_BLOCK",
             actor: ip,
-            resource_type: "persistent_rate_limit",
+            resourceType: "persistent_rate_limit",
             details: JSON.stringify({ reason: "D1 rate limit exceeded", path: c.req.path, ua, limit, windowSeconds })
           }).execute().catch(console.error)
         );
@@ -231,14 +237,14 @@ export const turnstileMiddleware = () => {
 
     const valid = await verifyTurnstile(token, c.env.TURNSTILE_SECRET_KEY, ip);
     if (!valid) {
-      const db = c.get("db") as Kysely<DB>;
+      const db = c.get("db");
       if (db) {
         c.executionCtx.waitUntil(
-          db.insertInto("audit_log").values({
+          db.insert(schema.auditLog).values({
             id: crypto.randomUUID(),
             action: "SECURITY_BLOCK",
             actor: ip,
-            resource_type: "turnstile",
+            resourceType: "turnstile",
             details: JSON.stringify({ reason: "Invalid token or CAPTCHA failed", path: c.req.path })
           }).execute().catch(console.error)
         );

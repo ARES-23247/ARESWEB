@@ -16,6 +16,7 @@ const ProfileEditor = lazy(() => import("@/components/ProfileEditor"));
 const AdminUsers = lazy(() => import("@/components/AdminUsers"));
 const DietarySummary = lazy(() => import("@/components/DietarySummary"));
 const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"));
+const PerformanceDashboard = lazy(() => import("@/components/dashboard/PerformanceDashboard"));
 
 const SponsorEditor = lazy(() => import("@/components/SponsorEditor"));
 const OutreachTracker = lazy(() => import("@/components/OutreachTracker"));
@@ -93,6 +94,7 @@ export default function DashboardRoutes({
       <Route path="badges" element={isAdmin ? <ContentManager mode="badges" /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="logistics" element={canSeeLogistics ? <DietarySummary /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="analytics" element={<AnalyticsDashboard />} />
+      <Route path="performance" element={isAdmin ? <PerformanceDashboard /> : <div className="text-center py-20">Access Denied</div>} />
 
       <Route path="finance" element={isAdmin ? <FinanceManager /> : <div className="text-center py-20">Access Denied</div>} />
       <Route path="sponsors" element={<SponsorEditor />} />
