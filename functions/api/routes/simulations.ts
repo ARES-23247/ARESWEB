@@ -1,7 +1,7 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAuth } from "../middleware";
+import { AppEnv, ensureAuth, getDb, DrizzleDB } from "../middleware";
 import type { SessionUser } from "../middleware/utils";
 import * as schema from "../../../src/db/schema";
 import {
@@ -43,7 +43,7 @@ simulationsRouter.use("/", (c, next) => {
 
 // Helper: Check if user owns a simulation or is admin
 async function canModifySimulation(
-  c: { get: (key: "db") => AppEnv["Variables"]["db"]; env: AppEnv["Bindings"]; sessionUser?: SessionUser },
+  c: { db: DrizzleDB; env: AppEnv["Bindings"]; sessionUser?: SessionUser },
   simId: string
 ): Promise<boolean> {
   const sessionUser = c.sessionUser;
@@ -51,7 +51,7 @@ async function canModifySimulation(
   if (sessionUser.role === "admin") return true;
 
   try {
-    const db = c.get("db");
+    const db = c.db;
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
 
@@ -104,7 +104,7 @@ simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulati
     let pat = c.env.GITHUB_PAT;
 
     try {
-      const db = c.get("db");
+      const db = getDb(c);
       const config = await db.select().from(schema.settings).all();
       const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
@@ -164,7 +164,7 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
   const filePath = `src/sims/${simId}/index.tsx`;
 
   try {
-    const db = c.get("db");
+    const db = getDb(c);
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -239,7 +239,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
       }
     }
 
-    const db = c.get("db");
+    const db = getDb(c);
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -276,7 +276,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
     if (getRes.ok) {
       const getJson = (await getRes.json()) as { sha: string };
       sha = getJson.sha;
-      if (!(await canModifySimulation({ get: c.get, env: c.env, sessionUser }, simIdStr))) {
+      if (!(await canModifySimulation({ db: getDb(c), env: c.env, sessionUser }, simIdStr))) {
         return c.json({ error: "You can only modify your own simulations" }, 403);
       }
     }
@@ -362,7 +362,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 
     const filename = `${simIdStr}.tsx`;
 
-    const db = c.get("db");
+    const db = getDb(c);
     const ghConfig = getGitHubConfig(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
@@ -390,7 +390,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
     }
 
     if (sha) {
-      if (!(await canModifySimulation({ get: c.get, env: c.env, sessionUser }, simIdStr))) {
+      if (!(await canModifySimulation({ db: getDb(c), env: c.env, sessionUser }, simIdStr))) {
         return c.json({ error: "You can only delete your own simulations" }, 403);
       }
       await fetch(url, {
@@ -439,7 +439,7 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
       return c.json({ error: "No files provided" }, 400);
     }
 
-    const db = c.get("db");
+    const db = getDb(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
@@ -489,7 +489,7 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
   const { id } = c.req.valid("param");
 
   try {
-    const db = c.get("db");
+    const db = getDb(c);
     let pat = c.env.GITHUB_PAT;
     try {
       const config = await db.select().from(schema.settings).all();
