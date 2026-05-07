@@ -2,6 +2,7 @@
 import { typedHandler } from "../../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
+import * as schema from "../../../../src/db/schema";
 import { AppEnv } from "../../middleware";
 import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
 
@@ -117,17 +118,17 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
       const user = c.get("sessionUser");
       const id = crypto.randomUUID();
       
-      await db.insertInto("scouting_analyses").values({
+      await db.insert(schema.scoutingAnalyses).values({
         id,
         mode,
-        team_number: teamNumber || null,
-        event_key: eventKey || null,
-        season_key: seasonKey,
+        teamNumber: teamNumber || null,
+        eventKey: eventKey || null,
+        seasonKey: seasonKey,
         markdown,
         model: "GLM-5.1",
-        tokens_used: tokensUsed || 0,
-        created_by: user?.id || "system"
-      }).execute();
+        tokensUsed: tokensUsed || 0,
+        createdBy: user?.id || "system"
+      }).run();
     } catch (dbErr) {
       console.error("[Scouting Analyze] Failed to persist analysis:", dbErr);
     }

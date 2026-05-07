@@ -2,6 +2,8 @@
 import { typedHandler } from "../../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
+import { eq, desc } from "drizzle-orm";
+import * as schema from "../../../../src/db/schema";
 import { AppEnv } from "../../middleware";
 import { listScoutingAnalysesRoute } from "../../../../shared/routes/scouting";
 
@@ -14,20 +16,20 @@ analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScouti
   const db = c.get("db") as any;
 
   try {
-    let query = db.selectFrom("scouting_analyses").selectAll();
+    let query = db.select().from(schema.scoutingAnalyses).$dynamic();
 
     if (teamNumberStr) {
       const teamNumber = parseInt(teamNumberStr, 10);
       if (!isNaN(teamNumber)) {
-        query = query.where("team_number", "=", teamNumber);
+        query = query.where(eq(schema.scoutingAnalyses.teamNumber, teamNumber));
       }
     }
 
     if (eventKey) {
-      query = query.where("event_key", "=", eventKey);
+      query = query.where(eq(schema.scoutingAnalyses.eventKey, eventKey));
     }
 
-    const results = await query.orderBy("created_at", "desc").execute();
+    const results = await query.orderBy(desc(schema.scoutingAnalyses.createdAt)).all();
     return c.json(results as any, 200 as any);
   } catch (err) {
     console.error("[Scouting Analyses] Database error:", err);
