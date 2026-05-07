@@ -60,7 +60,7 @@ tbaRouter.openapi(getMatchesRoute, typedHandler<typeof getMatchesRoute>(async (c
       return c.json({ error: "Invalid eventKey" }, 400);
     }
     const data = await getTBA(`/event/${eventKey}/matches/simple`, c) as Array<{ time?: number }>;
-    const sorted = (data || []).sort((a: any, b: any) => (a.time || 0) - (b.time || 0));
+    const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
     return c.json({ matches: sorted as unknown[] }, 200);
   } catch (e) {
     console.error("GET_TBA_MATCHES ERROR", e);
