@@ -29,7 +29,7 @@ analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScouti
     }
 
     const results = await query.orderBy(desc(schema.scoutingAnalyses.createdAt)).all();
-    return c.json(results, 200);
+    return c.json(results as any, 200);
 }));
 
 export default analysesRouter;

@@ -96,7 +96,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
     const results = await dbQuery.all();
     const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
 
-    const inquiries = await Promise.all(results.map(async (r: InquiryQueryResult) => {
+    const inquiries = await Promise.all(results.map(async (r: any) => {
       let name = String(r.name);
       let email = String(r.email);
       

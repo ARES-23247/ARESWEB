@@ -87,7 +87,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
-  return c.json({ logs: combined }, 200);
+  return c.json({ logs: combined } as any, 200);
 };
 
 export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute, AppEnv> = async (c) => {
@@ -135,5 +135,5 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
-  return c.json({ logs: combined }, 200);
+  return c.json({ logs: combined } as any, 200);
 };

@@ -158,7 +158,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
   if (!allowed) {
-    return errorResponses.tooManyRequests(c);
+    throw new ApiError("Too many requests", 429, "RATE_LIMIT_EXCEEDED");
   }
 
     const { code, turnstileToken } = c.req.valid("json");
@@ -204,7 +204,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     const ua = c.req.header("User-Agent") || "unknown";
     const allowed = await checkPersistentRateLimit(db, `judge-portfolio:${ip}`, ua, 20, 60);
     if (!allowed) {
-      return errorResponses.tooManyRequests(c);
+      throw new ApiError("Too many requests", 429, "RATE_LIMIT_EXCEEDED");
     }
 
     const [valid] = await db.select({

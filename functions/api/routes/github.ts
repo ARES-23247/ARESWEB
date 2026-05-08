@@ -34,7 +34,7 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
 
   const cachedResponse = await cache.match(cacheKey);
   if (cachedResponse) {
-    const data = await cachedResponse.json();
+    const data = await cachedResponse.json() as any;
     return c.json(data, 200);
   }
 

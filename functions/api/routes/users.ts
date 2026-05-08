@@ -149,7 +149,7 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
           nickname: (profile?.nickname as string | null) || null,
           member_type: (profile?.memberType as string | null) || null,
         },
-      },
+      } as any,
       200
     );
 }));

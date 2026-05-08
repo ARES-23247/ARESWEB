@@ -67,7 +67,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       created_by: tx.createdBy,
       id: tx.id || "",
       created_at: tx.createdAt || null
-    })), 200);
+    })) as any, 200);
 }));
 
 pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(async (c) => {
