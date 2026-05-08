@@ -20,8 +20,18 @@ type LocationInput = z.infer<typeof locationSchema>;
 
 export const locationsRouter = new OpenAPIHono<AppEnv>();
 
+
+// Apply edge caching to public GET routes (non-admin, non-signups)
+locationsRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+    return next();
+  }
+  return edgeCacheMiddleware(180, 60, 300)(c, next);
+});
+
 // Apply caching to public locations list
-locationsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
+
 
 locationsRouter.use("/admin/*", ensureAdmin);
 

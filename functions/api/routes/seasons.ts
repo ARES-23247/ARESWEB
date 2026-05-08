@@ -20,9 +20,19 @@ import { edgeCacheMiddleware } from "../middleware/cache";
 
 export const seasonsRouter = new OpenAPIHono<AppEnv>();
 
+
+// Apply edge caching to public GET routes (non-admin, non-signups)
+seasonsRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+    return next();
+  }
+  return edgeCacheMiddleware(180, 60, 300)(c, next);
+});
+
 // Apply caching to public routes
-seasonsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
-seasonsRouter.use("/:year", edgeCacheMiddleware(180, 60, 300));
+
+
 
 // Apply admin protection and rate limiting to admin routes
 seasonsRouter.use("/admin/*", ensureAdmin);

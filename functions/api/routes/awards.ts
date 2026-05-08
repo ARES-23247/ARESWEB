@@ -13,8 +13,18 @@ import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../share
 
 export const awardsRouter = new OpenAPIHono<AppEnv>();
 
+
+// Apply edge caching to public GET routes (non-admin, non-signups)
+awardsRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+    return next();
+  }
+  return edgeCacheMiddleware(180, 60, 300)(c, next);
+});
+
 // Apply caching to public awards list
-awardsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
+
 
 awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (c) => {
     const db = getDb(c);

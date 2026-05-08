@@ -63,8 +63,8 @@ postsRouter.use("*", async (c, next) => {
 // ─── Middleware Configuration ─────────────────────────────────────────────
 // Cache public GET requests at the edge
 // Using aggressive caching (5 min edge, 1 min browser, 10 min SWR) for public blog content
-postsRouter.use("/", edgeCacheMiddleware(300, 60, 600));
-postsRouter.use("/:slug", edgeCacheMiddleware(300, 60, 600));
+
+
 // Admin routes require authentication
 postsRouter.use("/admin/:slug/history", ensureAdmin);
 postsRouter.use("/admin/:slug/history/*", ensureAdmin);

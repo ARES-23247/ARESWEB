@@ -25,6 +25,16 @@ import {
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
 
+
+// Apply edge caching to public GET routes (non-admin, non-signups)
+sponsorsRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+    return next();
+  }
+  return edgeCacheMiddleware(180, 60, 300)(c, next);
+});
+
 // Response type inference helpers
 type GetSponsorsResponse = z.infer<typeof getSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
@@ -39,7 +49,7 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 // WR-01 FIX: Standardize on /admin/* pattern (remove redundant /admin patterns)
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
-sponsorsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
+
 // Get all public sponsors
 sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
     const db = getDb(c);

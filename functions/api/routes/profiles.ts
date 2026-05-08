@@ -32,12 +32,22 @@ import {
 
 const profilesRouter = new OpenAPIHono<AppEnv>();
 
+
+// Apply edge caching to public GET routes (non-admin, non-signups)
+profilesRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+    return next();
+  }
+  return edgeCacheMiddleware(180, 60, 300)(c, next);
+});
+
 // ─── Middleware Configuration ─────────────────────────────────────────────
 // Apply rate limiting to public routes
 profilesRouter.use("/team-roster", rateLimitMiddleware(100, 60));
-profilesRouter.use("/team-roster", edgeCacheMiddleware(180, 60, 300));
+
 profilesRouter.use("/:userId", rateLimitMiddleware(100, 60));
-profilesRouter.use("/:userId", edgeCacheMiddleware(180, 60, 300));
+
 // Apply persistent rate limiting to write routes
 profilesRouter.use("/update-me", persistentRateLimitMiddleware(10, 60));
 profilesRouter.use("/avatar", persistentRateLimitMiddleware(15, 60));

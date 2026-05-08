@@ -93,9 +93,19 @@ type RestoreEventHistorySuccess = z.infer<typeof restoreEventHistoryRoute.respon
 
 const eventsRouter = new OpenAPIHono<AppEnv>();
 
+
+// Apply edge caching to public GET routes (non-admin, non-signups)
+eventsRouter.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+    return next();
+  }
+  return edgeCacheMiddleware(180, 60, 300)(c, next);
+});
+
 // ─── Middleware ───────────────────────────────────────────────────────────
-eventsRouter.use("/", edgeCacheMiddleware(180, 60, 300)); // Cache list
-eventsRouter.use("/:id", edgeCacheMiddleware(180, 60, 300)); // Cache single
+
+
 eventsRouter.use("/admin/*", ensureAdmin);
 eventsRouter.use("/:id/signups", ensureAuth);
 
