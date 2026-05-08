@@ -46,131 +46,182 @@ eventsRouter.use("/:id/signups", ensureAuth);
 
 
 // ─── Public Routes ───────────────────────────────────────────────────────
-eventsRouter.openapi(getEventsRoute, typedHandler<typeof getEventsRoute>(async (c) => {
+eventsRouter.openapi(getEventsRoute, async (c) => {
   const query = c.req.valid("query");
   const result = await eventHandlers.getEvents({ query, params: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSettingsRoute>(async (c) => {
+eventsRouter.openapi(getCalendarSettingsRoute, async (c) => {
   const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c) => {
+eventsRouter.openapi(getEventRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 404) return c.json(result.body, 404);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(getSignupsRoute, typedHandler<typeof getSignupsRoute>(async (c) => {
+eventsRouter.openapi(getSignupsRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.getSignups({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(submitSignupRoute, typedHandler<typeof submitSignupRoute>(async (c) => {
+eventsRouter.openapi(submitSignupRoute, async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.submitSignup({ params, body, query: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 403) return c.json(result.body, 403);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(deleteMySignupRoute, typedHandler<typeof deleteMySignupRoute>(async (c) => {
+eventsRouter.openapi(deleteMySignupRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.deleteMySignup({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 401) return c.json(result.body, 401);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(updateMyAttendanceRoute, typedHandler<typeof updateMyAttendanceRoute>(async (c) => {
+eventsRouter.openapi(updateMyAttendanceRoute, async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.updateMyAttendance({ params, body, query: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 401) return c.json(result.body, 401);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
 // ─── Admin Routes ────────────────────────────────────────────────────────
-eventsRouter.openapi(getAdminEventsRoute, typedHandler<typeof getAdminEventsRoute>(async (c) => {
+eventsRouter.openapi(getAdminEventsRoute, async (c) => {
   const query = c.req.valid("query");
   const result = await eventHandlers.getAdminEvents({ query, params: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(getAdminEventRoute, typedHandler<typeof getAdminEventRoute>(async (c) => {
+eventsRouter.openapi(getAdminEventRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.adminDetail({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 404) return c.json(result.body, 404);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(saveEventRoute, typedHandler<typeof saveEventRoute>(async (c) => {
+eventsRouter.openapi(saveEventRoute, async (c) => {
   const body = c.req.valid("json");
   const result = await eventHandlers.saveEvent({ body, params: {}, query: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 400) return c.json(result.body, 400);
+  if (result.status === 401) return c.json(result.body, 401);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(updateEventRoute, typedHandler<typeof updateEventRoute>(async (c) => {
+eventsRouter.openapi(updateEventRoute, async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.updateEvent({ params, body, query: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 400) return c.json(result.body, 400);
+  if (result.status === 404) return c.json(result.body, 404);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(deleteEventRoute, typedHandler<typeof deleteEventRoute>(async (c) => {
+eventsRouter.openapi(deleteEventRoute, async (c) => {
   const params = c.req.valid("param");
-  const result = await eventHandlers.deleteEvent({ params, body: {} as any, query: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  const result = await eventHandlers.deleteEvent({ params, body: {} , query: {} }, c);
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(syncEventsRoute, typedHandler<typeof syncEventsRoute>(async (c) => {
+eventsRouter.openapi(syncEventsRoute, async (c) => {
   const result = await eventHandlers.syncEvents({ params: {}, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(repairCalendarRoute, typedHandler<typeof repairCalendarRoute>(async (c) => {
+eventsRouter.openapi(repairCalendarRoute, async (c) => {
   const result = await eventHandlers.repairCalendar({ params: {}, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(approveEventRoute, typedHandler<typeof approveEventRoute>(async (c) => {
+eventsRouter.openapi(approveEventRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.approveEvent({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(rejectEventRoute, typedHandler<typeof rejectEventRoute>(async (c) => {
+eventsRouter.openapi(rejectEventRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.rejectEvent({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(undeleteEventRoute, typedHandler<typeof undeleteEventRoute>(async (c) => {
+eventsRouter.openapi(undeleteEventRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.undeleteEvent({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(purgeEventRoute, typedHandler<typeof purgeEventRoute>(async (c) => {
+eventsRouter.openapi(purgeEventRoute, async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.purgeEvent({ params, query: {}, body: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(repushEventRoute, typedHandler<typeof repushEventRoute>(async (c) => {
+eventsRouter.openapi(repushEventRoute, async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.repushEvent({ params, body, query: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 401) return c.json(result.body, 401);
+  if (result.status === 404) return c.json(result.body, 404);
+  if (result.status === 502) return c.json(result.body, 502);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
-eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAttendanceRoute>(async (c) => {
+eventsRouter.openapi(updateUserAttendanceRoute, async (c) => {
   const params = c.req.valid("param");
   const body = c.req.valid("json");
   const result = await eventHandlers.updateUserAttendance({ params, body, query: {} }, c);
-  return c.json(result.body as any, result.status as any);
-}));
+  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 401) return c.json(result.body, 401);
+  if (result.status === 500) return c.json(result.body, 500);
+  return c.json({ error: "Unknown status code" } as any, 500 as any);
+});
 
 // ─── Event Version History ──────────────────────────────────────────────
-eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRoute>(async (c) => {
+eventsRouter.openapi(getEventHistoryRoute, async (c) => {
   try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
@@ -194,14 +245,14 @@ eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRo
       created_at: h.createdAt,
     }));
 
-    return c.json({ history } as any, 200 as any);
+    return c.json({ history } , 200 );
   } catch (e) {
     console.error("[Events:History] Error", e);
     return c.json({ error: "Failed to fetch history" }, 500);
   }
-}));
+});
 
-eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventHistoryRoute>(async (c) => {
+eventsRouter.openapi(restoreEventHistoryRoute, async (c) => {
   try {
     const { id, historyId } = c.req.valid("param");
     const db = getDb(c);
@@ -240,6 +291,6 @@ eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventH
     console.error("[Events:RestoreHistory] Error", e);
     return c.json({ error: "Restore failed" }, 500);
   }
-}));
+});
 
 export default eventsRouter;

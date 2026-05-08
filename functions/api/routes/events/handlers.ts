@@ -11,7 +11,6 @@ import { eq, or, and, ne, isNull, inArray, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
 import type { SocialConfig } from "../../middleware";
-import type { DrizzleDB } from "../../../../src/db/types";
 
 // Drizzle ORM type inference for events table
 type EventRow = typeof schema.events.$inferSelect;
@@ -74,16 +73,6 @@ type PartialEvent = Pick<EventRow, "id" | "title" | "category" | "dateStart" | "
   zulipTopic?: string | null;
 };
 
-// Type for Gcal event data
-type GcalEvent = {
-  title: string;
-  date_start: string;
-  date_end?: string | null;
-  location?: string;
-  description?: string;
-  gcal_event_id: string;
-};
-
 // Type for FTS (Full-Text Search) results from events_fts table
 type FtsEventResult = {
   id: string;
@@ -114,24 +103,7 @@ type SignupRecord = {
   attended: number | null;
   dietaryRestrictions: string | null;
 };
-type FtsEventResult = {
-  id: string;
-  title: string;
-  category: string;
-  date_start: string;
-  date_end: string | null;
-  location: string | null;
-  description: string | null;
-  cover_image: string | null;
-  status: string | null;
-  is_deleted: number;
-  season_id: number | null;
-  meeting_notes: string | null;
-  tba_event_key: string | null;
-  recurring_exception: string | null;
-  is_potluck: number;
-  is_volunteer: number;
-};
+
 
 // Type for event list results with camelCase fields (from Drizzle selects)
 // This is a union type to handle both full and fallback query results
@@ -164,70 +136,10 @@ type EventListResult = {
 };
 
 // Type for formatted event response (snake_case for API consumers)
-type FormattedEvent = {
-  id: string;
-  title: string;
-  category: string;
-  date_start: string;
-  date_end: string | null;
-  cover_image: string | null;
-  tba_event_key: string | null;
-  season_id: number | null;
-  is_deleted: number;
-  is_potluck: number;
-  is_volunteer: number;
-  status: string | null;
-  meeting_notes: string | null;
-  location: string | null;
-  location_address?: string | null;
-  description?: string | null;
-};
+import { eventResponseSchema } from "../../../../shared/routes/events";
+import { z } from "zod";
 
-// Type for location registry records
-type LocationRecord = {
-  name: string;
-  address: string | null;
-};
-
-// Type for settings row
-type SettingsRow = {
-  key: string;
-  value: string | null;
-};
-
-// Type for GCal event instances
-type GcalEventInstance = {
-  id: string;
-  title: string;
-  date_start: string;
-  date_end: string | null;
-  location: string;
-  description: string;
-  gcal_event_id?: string | null;
-};
-
-// Type for signup results
-type SignupResult = {
-  userId: string;
-  nickname: string | null;
-  bringing: string | null;
-  notes: string | null;
-  prepHours: number | null;
-  attended: number | null;
-  dietaryRestrictions: string | null;
-  avatar: string | null;
-};
-
-// Type for formatted signup response
-type FormattedSignup = {
-  user_id: string;
-  nickname: string | null;
-  bringing: string | null;
-  notes: string | null;
-  prep_hours: number;
-  attended: number;
-  is_own: boolean;
-};
+type FormattedEvent = z.infer<typeof eventResponseSchema>;
 
 export const eventHandlers = {
   getEvents: async (input: HandlerInput, c: AresContext) => {
@@ -250,8 +162,10 @@ export const eventHandlers = {
 
         const events: FormattedEvent[] = results.map((e) => ({
           ...e,
+          category: (e.category ?? "internal") as any,
           season_id: e.season_id ? Number(e.season_id) : null,
-          is_deleted: Number(e.is_deleted || 0)
+          is_deleted: Number(e.is_deleted || 0),
+          recurring_exception: e.recurring_exception ? Number(e.recurring_exception) : null
         }));
 
         return { status: 200 as const, body: { events } };
@@ -337,7 +251,7 @@ export const eventHandlers = {
         is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
         is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
-        category: e.category ?? "internal",
+        category: (e.category ?? "internal") as any,
         meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null,
         location_address: e.location ? (locationMap[e.location] || null) : null
       }));
@@ -512,7 +426,7 @@ export const eventHandlers = {
         is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
         is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
-        category: e.category ?? "internal",
+        category: (e.category ?? "internal") as any,
         meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null
       }));
 
