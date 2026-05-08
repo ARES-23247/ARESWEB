@@ -5,6 +5,11 @@ import { AppEnv } from "../../middleware";
 import eventsRouter from "./index";
 import * as shared from "../../middleware";
 import { eventHandlers } from "./handlers";
+import type {
+  DbRows,
+  MockFn,
+  QueryBuilderProxy,
+} from "../../../test/testTypes";
 
 vi.mock("../../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../middleware")>();
@@ -64,13 +69,13 @@ const mockExecutionContext = {
 describe("Hono Backend - Events Router", () => {
   let app: Hono<AppEnv>;
 
-  // Simple inline mock database using Proxy pattern
-  const createMockDb = () => {
-      const allFn = vi.fn().mockResolvedValue([]);
+  // Simple inline mock database using Proxy pattern with proper types
+  const createMockDb = (): QueryBuilderProxy => {
+      const allFn = vi.fn().mockResolvedValue<DbRows>([]);
       const getFn = vi.fn().mockResolvedValue(null);
       const runFn = vi.fn().mockResolvedValue({ success: true });
 
-      const fns: Record<string, any> = {
+      const fns: Record<string, MockFn> = {
         all: allFn,
         get: getFn,
         run: runFn,
@@ -79,21 +84,22 @@ describe("Hono Backend - Events Router", () => {
         first: getFn
       };
 
-      const chainable: any = new Proxy(fns, {
+      const chainable = new Proxy(fns, {
         get: (target, prop) => {
           if (prop === 'then') {
-            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+            return (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) =>
+              Promise.resolve(fns.all()).then(resolve).catch(reject);
           }
           if (prop === 'catch') {
-            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+            return (reject: (reason: unknown) => unknown) => Promise.resolve(fns.all()).catch(reject);
           }
           if (prop === 'finally') {
-            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+            return (cb: () => void) => Promise.resolve(fns.all()).finally(cb);
           }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
-                   get: (tTarget, tProp) => {
+                   get: (_tTarget, tProp) => {
                       if (tProp === 'findFirst') return fns.get;
                       if (tProp === 'findMany') return fns.all;
                       return vi.fn().mockReturnValue(chainable);
@@ -101,15 +107,15 @@ describe("Hono Backend - Events Router", () => {
                 })
              });
           }
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (prop in target) return target[prop as string];
+          if (prop === 'transaction') return vi.fn(async (cb: (tx: typeof chainable) => Promise<unknown>) => cb(chainable));
           if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
-      });
+      }) as QueryBuilderProxy;
       return chainable;
-    };;;
+    };
 
   let mockDb: ReturnType<typeof createMockDb>;
 
@@ -490,7 +496,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("DELETE /admin/:id - db error", async () => {
-    mockDb.update.mockImplementationOnce(() => { throw new Error("DB error") });
+    (mockDb.update as MockFn).mockImplementationOnce(() => { throw new Error("DB error") });
     const res = await app.request("/admin/1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -679,7 +685,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/repush - handles top level error", async () => {
-    mockDb.select.mockImplementationOnce(() => { throw new Error("Fatal") });
+    (mockDb.select as MockFn).mockImplementationOnce(() => { throw new Error("Fatal") });
     const res = await app.request("/admin/1/repush", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -689,7 +695,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("PATCH /:id/signups/me/attendance - handles db error", async () => {
-    mockDb.insert.mockImplementationOnce(() => { throw new Error("DB fail") });
+    (mockDb.insert as MockFn).mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await app.request("/1/signups/me/attendance", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -699,7 +705,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("DELETE /:id/signups - handles db error", async () => {
-    mockDb.delete.mockImplementationOnce(() => { throw new Error("DB fail") });
+    (mockDb.delete as MockFn).mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await app.request("/1/signups", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -773,7 +779,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/reject - handles db error", async () => {
-    mockDb.update.mockImplementationOnce(() => { throw new Error("DB fail") });
+    (mockDb.update as MockFn).mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await app.request("/admin/1/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -783,7 +789,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("POST /admin/:id/restore - handles db error", async () => {
-    mockDb.update.mockImplementationOnce(() => { throw new Error("DB fail") });
+    (mockDb.update as MockFn).mockImplementationOnce(() => { throw new Error("DB fail") });
     const res = await app.request("/admin/1/restore", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -912,8 +918,8 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /admin/:id - handles fatal error", async () => {
-    mockDb.select.mockImplementationOnce(() => { throw new Error("Fatal 1") });
-    mockDb.select.mockImplementationOnce(() => { throw new Error("Fatal 2") });
+    (mockDb.select as MockFn).mockImplementationOnce(() => { throw new Error("Fatal 1") });
+    (mockDb.select as MockFn).mockImplementationOnce(() => { throw new Error("Fatal 2") });
     const res = await app.request("/admin/1", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(500);
   });
