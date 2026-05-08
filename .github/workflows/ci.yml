@@ -104,12 +104,12 @@ jobs:
       - name: Build with Vite
         run: npm run build
 
-      - name: Apply D1 Migrations to Preview DB
+      - name: Apply D1 Migrations
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 migrations apply ares-db-preview --remote
+          command: d1 migrations apply ares-db --remote
           packageManager: npm
 
       # Use different branch names for PR vs master to avoid conflicts
