@@ -1,14 +1,16 @@
 /**
  * Pa11y CI Configuration
  * Uses PREVIEW_URL environment variable for CI testing against deployed previews
+ *
+ * Note: Only tests public pages. Authenticated routes like /dashboard are excluded.
  */
 
 const baseUrl = process.env.PREVIEW_URL || 'http://localhost:4173';
 
+// Only public pages - dashboard and other authenticated routes require login
 const urls = [
   '/',
   '/about',
-  '/dashboard',
   '/sponsors',
   '/seasons',
   '/outreach',

@@ -132,6 +132,11 @@ describe('security middleware', () => {
             }),
           }),
         }),
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            execute: vi.fn().mockResolvedValue(undefined),
+          }),
+        }),
       } as unknown as Parameters<typeof checkPersistentRateLimit>[0];
 
       const result = await checkPersistentRateLimit(mockDbOverLimit, '127.0.0.1', 'test-agent', 10, 60);

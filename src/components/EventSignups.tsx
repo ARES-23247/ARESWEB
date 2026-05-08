@@ -12,6 +12,7 @@ interface EventSignupsProps {
 export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventSignupsProps) {
   const [mySignup, setMySignup] = useState<{ bringing: string; notes: string; prep_hours?: number } | null>(null);
   const [_isPending, startTransition] = useTransition();
+  const [signupError, setSignupError] = useState<string | null>(null);
 
   const { data: signupsData, isLoading } = useGetEventSignups(eventId);
   const submitSignup = useSubmitEventSignup();
@@ -40,36 +41,54 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
   }, [signups]);
 
   const handleSignUp = async () => {
+    setSignupError(null);
     try {
       await submitSignup.mutateAsync({
         eventId,
         body: mySignup || { bringing: "", notes: "", prep_hours: 0 }
       });
     } catch (e) {
-      console.error(e);
+      console.error("[RSVP Error]", e);
+      setSignupError(e instanceof Error ? e.message : "Failed to RSVP. Please try again.");
     }
   };
 
   const handleRemove = async () => {
-    await deleteSignup.mutateAsync(eventId);
-    setMySignup(null);
+    setSignupError(null);
+    try {
+      await deleteSignup.mutateAsync(eventId);
+      setMySignup(null);
+    } catch (e) {
+      console.error("[Remove RSVP Error]", e);
+      setSignupError(e instanceof Error ? e.message : "Failed to remove RSVP. Please try again.");
+    }
   };
 
   const toggleAttendance = async (userId: string, currentStatus: number | undefined) => {
-    await updateUserAttendance.mutateAsync({
-      eventId,
-      userId,
-      attended: !currentStatus
-    });
+    try {
+      await updateUserAttendance.mutateAsync({
+        eventId,
+        userId,
+        attended: !currentStatus
+      });
+    } catch (e) {
+      console.error("[Toggle Attendance Error]", e);
+    }
   };
 
   const selfCheckIn = async () => {
+    setSignupError(null);
     const myEntry = signups.find(s => s.is_own);
     const isCurrentlyAttended = !!myEntry?.attended;
-    await updateMyAttendance.mutateAsync({
-      eventId,
-      attended: !isCurrentlyAttended
-    });
+    try {
+      await updateMyAttendance.mutateAsync({
+        eventId,
+        attended: !isCurrentlyAttended
+      });
+    } catch (e) {
+      console.error("[Check-in Error]", e);
+      setSignupError(e instanceof Error ? e.message : "Failed to update attendance. Please try again.");
+    }
   };
 
   if (isLoading) return null;
@@ -216,6 +235,16 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
               </p>
               <span className="text-xs text-marble/20 font-bold uppercase tracking-widest">ARES Event Protocol v3.0</span>
             </div>
+
+            {/* Error display */}
+            {signupError && (
+              <div className="bg-ares-red/10 border border-ares-red/30 p-3 ares-cut-sm">
+                <p className="text-xs text-ares-red font-bold flex items-center gap-2">
+                  <AlertCircle size={14} />
+                  {signupError}
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {isPotluck && (
                 <input
