@@ -2,60 +2,66 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import githubRouter from "./github";
 import { AppEnv } from "../middleware";
+import type {
+  ApiResponse,
+  ChainableQuery,
+  DbRows,
+  GitHubProjectBoard,
+  MockFn,
+} from "../../test/testTypes";
 
-interface GitHubResponse {
-  success?: boolean;
-  data?: unknown;
-  error?: string;
-  board?: unknown[];
-  [key: string]: any;
+interface GitHubResponse extends ApiResponse {
+  board?: GitHubProjectBoard["items"];
+  repoCount?: number;
+  totalCommits?: number;
+  grid?: number[];
 }
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
-    let chainable: any;
+    let chainable: ChainableQuery;
   const resetDbMock = () => {
     const fns = {
-      all: vi.fn().mockResolvedValue([]),
-      get: vi.fn().mockResolvedValue(null),
+      all: vi.fn().mockResolvedValue<DbRows>([]),
+      get: vi.fn().mockResolvedValue<unknown>(null),
       run: vi.fn().mockResolvedValue({ success: true }),
-      execute: vi.fn().mockResolvedValue([]),
-      executeTakeFirst: vi.fn().mockResolvedValue(null),
-      first: vi.fn().mockResolvedValue(null)
+      execute: vi.fn().mockResolvedValue<DbRows>([]),
+      executeTakeFirst: vi.fn().mockResolvedValue<unknown>(null),
+      first: vi.fn().mockResolvedValue<unknown>(null)
     };
-    const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
-    const orig = {} as any;
+    const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'] as const;
+    const orig: Record<string, Record<string, MockFn>> = {};
     for (const m of methods) {
       orig[m] = {
-        all: fns.all[m as keyof typeof fns.all].bind(fns.all),
-        get: fns.get[m as keyof typeof fns.get].bind(fns.get),
-        run: fns.run[m as keyof typeof fns.run].bind(fns.run),
-        execute: fns.execute[m as keyof typeof fns.execute].bind(fns.execute),
-        executeTakeFirst: fns.executeTakeFirst[m as keyof typeof fns.executeTakeFirst].bind(fns.executeTakeFirst),
-        first: fns.first[m as keyof typeof fns.first].bind(fns.first)
+        all: (fns.all as MockFn)[m].bind(fns.all),
+        get: (fns.get as MockFn)[m].bind(fns.get),
+        run: (fns.run as MockFn)[m].bind(fns.run),
+        execute: (fns.execute as MockFn)[m].bind(fns.execute),
+        executeTakeFirst: (fns.executeTakeFirst as MockFn)[m].bind(fns.executeTakeFirst),
+        first: (fns.first as MockFn)[m].bind(fns.first)
       };
     }
-    const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+    const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'] as const;
     for (const key of terminalsList) {
       for (const m of methods) {
-        (fns as any)[key][m] = (...args: any[]) => {
-          const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+        (fns as Record<string, MockFn>)[key][m] = (...args: unknown[]) => {
+          const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'] as const;
           for (const k of terminals) {
             if (orig[m][k]) orig[m][k](...args);
           }
-          return (fns as any)[key];
+          return (fns as Record<string, MockFn>)[key];
         };
       }
     }
     chainable = new Proxy(fns, {
-      get: (target: any, prop: string | symbol) => {
+      get: (target: Record<string, MockFn>, prop: string | symbol) => {
         if (prop === 'then') return undefined;
-        if (prop in target) return target[prop];
+        if (prop in target) return target[prop as string];
         if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
-        target[prop] = vi.fn().mockReturnValue(chainable);
-        return target[prop];
+        target[prop as string] = vi.fn().mockReturnValue(chainable);
+        return target[prop as string];
       }
-    });
+    }) as ChainableQuery;
   };
   resetDbMock();
 
