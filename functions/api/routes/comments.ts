@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, and, asc } from "drizzle-orm";
@@ -82,10 +83,10 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
 commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRoute>(async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
+    throw new ApiError("Unauthorized", 401, "UNAUTHORIZED");
   }
   if (user.role === "unverified") {
-    return c.json({ error: "Verify your email to comment", code: "FORBIDDEN" }, 403);
+    throw new ApiError("Verify your email to comment", 403, "FORBIDDEN");
   }
 
   const { targetType, targetId } = c.req.valid("param");
@@ -93,12 +94,12 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
   const body = c.req.valid("json");
   const rawContent = body.content;
   if (!rawContent) {
-    return c.json({ error: "Comment content is required", code: "BAD_REQUEST" }, 400);
+    throw new ApiError("Comment content is required", 400, "BAD_REQUEST");
   }
   const content = rawContent.trim();
 
   if (!content) {
-    return c.json({ error: "Comment content is required", code: "BAD_REQUEST" }, 400);
+    throw new ApiError("Comment content is required", 400, "BAD_REQUEST");
   }
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
@@ -157,8 +158,8 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
 
 commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRoute>(async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
-  if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
+  if (!user) throw new ApiError("Unauthorized", 401, "UNAUTHORIZED");
+  if (user.role === "unverified") throw new ApiError("Unverified", 403, "FORBIDDEN");
 
   const { id } = c.req.valid("param");
   const db = getDb(c);
@@ -166,7 +167,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
   const rawContent = body.content;
   const content = rawContent?.trim();
 
-  if (!content) return c.json({ error: "Content is required", code: "BAD_REQUEST" }, 400);
+  if (!content) throw new ApiError("Content is required", 400, "BAD_REQUEST");
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
   if (rawContent && rawContent.length > MAX_INPUT_LENGTHS.comment) {
@@ -180,12 +181,12 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
       user_id: schema.comments.userId,
       zulip_message_id: schema.comments.zulipMessageId
     }).from(schema.comments).where(eq(schema.comments.id, id)).get();
-    if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
+    if (!row) throw new ApiError("Comment not found", 404, "NOT_FOUND");
 
     const isOwner = row.user_id === user.id;
     const isModerator = user.role === "admin" || user.member_type === "mentor" || user.member_type === "coach";
 
-    if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to update this comment", code: "FORBIDDEN" }, 403);
+    if (!isOwner && !isModerator) throw new ApiError("Unauthorized to update this comment", 403, "FORBIDDEN");
 
     await db.update(schema.comments)
       .set({ content })
@@ -208,8 +209,8 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
 
 commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRoute>(async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401);
-  if (user.role === "unverified") return c.json({ error: "Unverified", code: "FORBIDDEN" }, 403);
+  if (!user) throw new ApiError("Unauthorized", 401, "UNAUTHORIZED");
+  if (user.role === "unverified") throw new ApiError("Unverified", 403, "FORBIDDEN");
 
   const { id } = c.req.valid("param");
   const db = getDb(c);
@@ -218,12 +219,12 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
       user_id: schema.comments.userId,
       zulip_message_id: schema.comments.zulipMessageId
     }).from(schema.comments).where(eq(schema.comments.id, id)).get();
-    if (!row) return c.json({ error: "Comment not found", code: "NOT_FOUND" }, 404);
+    if (!row) throw new ApiError("Comment not found", 404, "NOT_FOUND");
 
     const isOwner = row.user_id === user.id;
     const isModerator = user.role === "admin" || user.member_type === "mentor" || user.member_type === "coach";
 
-    if (!isOwner && !isModerator) return c.json({ error: "Unauthorized to delete this comment", code: "FORBIDDEN" }, 403);
+    if (!isOwner && !isModerator) throw new ApiError("Unauthorized to delete this comment", 403, "FORBIDDEN");
 
     await db.update(schema.comments)
       .set({ isDeleted: 1 })

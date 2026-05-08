@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -239,7 +240,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
 
   // WR-18: Limit query length to prevent ReDoS via complex regex patterns
   if (q.length > 50) {
-    return errorResponses.badRequest(c, "Query too long (max 50 characters)");
+    throw new ApiError("Query too long (max 50 characters)", 400, "VALIDATION_ERROR");
   }
 
     const now = Date.now();
@@ -391,7 +392,7 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.a
     }
 
     if (!row) {
-      return errorResponses.notFound(c, "Doc");
+      throw new ApiError("Doc", 404, "NOT_FOUND");
     }
 
     const doc = {
@@ -476,7 +477,7 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
     }
 
     if (!row) {
-      return errorResponses.notFound(c, "Doc");
+      throw new ApiError("Doc", 404, "NOT_FOUND");
     }
 
     const contributorRows = await db.select({
@@ -529,7 +530,7 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.del
     const db = getDb(c);
     const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
     if (!existing) {
-      return errorResponses.notFound(c, "Doc");
+      throw new ApiError("Doc", 404, "NOT_FOUND");
     }
 
     await db.update(schema.docs).set({ isDeleted: 1 }).where(eq(schema.docs.slug, slug)).run();
@@ -547,7 +548,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
     const email = user?.email || "anonymous_admin";
 
     if (!slug) {
-      return errorResponses.badRequest(c, "slug is required");
+      throw new ApiError("slug is required", 400, "VALIDATION_ERROR");
     }
 
     const existing = await db.select({
@@ -718,7 +719,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   }
 
   if (comment && comment.length > 2000) {
-    return errorResponses.badRequest(c, "Comment too long");
+    throw new ApiError("Comment too long", 400, "VALIDATION_ERROR");
   }
 
     await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment ?? null }).run();
@@ -762,7 +763,7 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoute
     ).get();
 
     if (!row) {
-      return errorResponses.notFound(c, "Version");
+      throw new ApiError("Version", 404, "NOT_FOUND");
     }
 
     // Get current doc for reference
@@ -797,11 +798,11 @@ docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.ap
     const doc = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
     if (!doc) {
-      return errorResponses.notFound(c, "Document");
+      throw new ApiError("Document", 404, "NOT_FOUND");
     }
 
     if (doc.status !== "pending") {
-      return errorResponses.badRequest(c, "Document is not pending approval");
+      throw new ApiError("Document is not pending approval", 400, "VALIDATION_ERROR");
     }
 
     // If this is a revision of an existing doc, we need to merge the changes
@@ -908,7 +909,7 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
 
     return c.json({ success: true }, 200);
   } catch (_e) {
-    return errorResponses.internalError(c, "Purge failed");
+    throw new ApiError("Purge failed", 500, "INTERNAL_SERVER_ERROR");
   }
 }));
 

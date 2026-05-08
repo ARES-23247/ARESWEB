@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 
 import { eq, desc, and, inArray, isNotNull, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -25,7 +26,7 @@ storeRouter.post("/webhook", async (c) => {
       const signature = c.req.header("stripe-signature");
 
       if (!stripeKey || !endpointSecret || !signature) {
-        return c.json({ error: "Missing stripe signature" }, 400);
+        throw new ApiError("Missing stripe signature", 400);
       }
 
       const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
@@ -41,7 +42,7 @@ storeRouter.post("/webhook", async (c) => {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Unknown error";
         console.error(`[Webhook] Signature verification failed: ${message}`);
-        return c.json({ error: `Invalid signature` }, 400);
+        throw new ApiError(`Invalid signature`, 400);
       }
 
       if (event.type === "checkout.session.completed") {
@@ -91,7 +92,7 @@ storeRouter.post("/webhook", async (c) => {
       return c.json({ success: true }, 200);
     } catch (err: unknown) {
       logSystemError(getDb(c), "webhook_error", String(err));
-      return c.json({ error: "Webhook fulfillment failed" }, 500);
+      throw new ApiError("Webhook fulfillment failed", 500);
     }
   }
 );

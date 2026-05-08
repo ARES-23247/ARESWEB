@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, logSystemError, getDb } from "../middleware";
@@ -33,7 +34,7 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
     const socialConfig = await getSocialConfig(c);
 
     if (!socialConfig.RESEND_API_KEY) {
-      return c.json({ success: false, error: "Resend API key is not configured." }, 400);
+      throw new ApiError("Resend API key is not configured.", 400);
     }
 
     const fromEmail = socialConfig.RESEND_FROM_EMAIL || "team@aresfirst.org";
@@ -45,7 +46,7 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
     const activeMembers = users.filter((m) => m.email);
 
     if (activeMembers.length === 0) {
-      return c.json({ success: false, error: "No active users found to send emails to." }, 400);
+      throw new ApiError("No active users found to send emails to.", 400);
     }
 
     const BATCH_LIMIT = 50;

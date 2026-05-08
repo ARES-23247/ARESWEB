@@ -1,4 +1,5 @@
 import { typedHandler } from "../../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { z } from "zod";
 
@@ -121,14 +122,14 @@ eventsRouter.openapi(getEventsRoute, typedHandler<typeof getEventsRoute>(async (
   const result = await eventHandlers.getEvents({ query, params: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetEventsSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSettingsRoute>(async (c) => {
   const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetCalendarSettingsSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c) => {
@@ -136,7 +137,7 @@ eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c)
   const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body, 200);
   if (result.status === 404) return c.json(result.body, 404);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(getSignupsRoute, typedHandler<typeof getSignupsRoute>(async (c) => {
@@ -144,7 +145,7 @@ eventsRouter.openapi(getSignupsRoute, typedHandler<typeof getSignupsRoute>(async
   const result = await eventHandlers.getSignups({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetSignupsSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(submitSignupRoute, typedHandler<typeof submitSignupRoute>(async (c) => {
@@ -154,7 +155,7 @@ eventsRouter.openapi(submitSignupRoute, typedHandler<typeof submitSignupRoute>(a
   if (result.status === 200) return c.json(result.body satisfies SubmitSignupSuccess, 200);
   if (result.status === 403) return c.json(result.body, 403);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(deleteMySignupRoute, typedHandler<typeof deleteMySignupRoute>(async (c) => {
@@ -163,7 +164,7 @@ eventsRouter.openapi(deleteMySignupRoute, typedHandler<typeof deleteMySignupRout
   if (result.status === 200) return c.json(result.body satisfies DeleteMySignupSuccess, 200);
   if (result.status === 401) return c.json(result.body, 401);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(updateMyAttendanceRoute, typedHandler<typeof updateMyAttendanceRoute>(async (c) => {
@@ -173,7 +174,7 @@ eventsRouter.openapi(updateMyAttendanceRoute, typedHandler<typeof updateMyAttend
   if (result.status === 200) return c.json(result.body satisfies UpdateMyAttendanceSuccess, 200);
   if (result.status === 401) return c.json(result.body, 401);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 // ─── Admin Routes ────────────────────────────────────────────────────────
@@ -182,7 +183,7 @@ eventsRouter.openapi(getAdminEventsRoute, typedHandler<typeof getAdminEventsRout
   const result = await eventHandlers.getAdminEvents({ query, params: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetAdminEventsSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(getAdminEventRoute, typedHandler<typeof getAdminEventRoute>(async (c) => {
@@ -191,7 +192,7 @@ eventsRouter.openapi(getAdminEventRoute, typedHandler<typeof getAdminEventRoute>
   if (result.status === 200) return c.json(result.body, 200);
   if (result.status === 404) return c.json(result.body, 404);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(saveEventRoute, typedHandler<typeof saveEventRoute>(async (c) => {
@@ -201,7 +202,7 @@ eventsRouter.openapi(saveEventRoute, typedHandler<typeof saveEventRoute>(async (
   if (result.status === 400) return c.json(result.body, 400);
   if (result.status === 401) return c.json(result.body, 401);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(updateEventRoute, typedHandler<typeof updateEventRoute>(async (c) => {
@@ -212,7 +213,7 @@ eventsRouter.openapi(updateEventRoute, typedHandler<typeof updateEventRoute>(asy
   if (result.status === 400) return c.json(result.body, 400);
   if (result.status === 404) return c.json(result.body, 404);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(deleteEventRoute, typedHandler<typeof deleteEventRoute>(async (c) => {
@@ -220,21 +221,21 @@ eventsRouter.openapi(deleteEventRoute, typedHandler<typeof deleteEventRoute>(asy
   const result = await eventHandlers.deleteEvent({ params, body: {} , query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies DeleteEventSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(syncEventsRoute, typedHandler<typeof syncEventsRoute>(async (c) => {
   const result = await eventHandlers.syncEvents({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies SyncEventsSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(repairCalendarRoute, typedHandler<typeof repairCalendarRoute>(async (c) => {
   const result = await eventHandlers.repairCalendar({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RepairCalendarSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(approveEventRoute, typedHandler<typeof approveEventRoute>(async (c) => {
@@ -242,7 +243,7 @@ eventsRouter.openapi(approveEventRoute, typedHandler<typeof approveEventRoute>(a
   const result = await eventHandlers.approveEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies ApproveEventSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(rejectEventRoute, typedHandler<typeof rejectEventRoute>(async (c) => {
@@ -250,7 +251,7 @@ eventsRouter.openapi(rejectEventRoute, typedHandler<typeof rejectEventRoute>(asy
   const result = await eventHandlers.rejectEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RejectEventSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(undeleteEventRoute, typedHandler<typeof undeleteEventRoute>(async (c) => {
@@ -258,7 +259,7 @@ eventsRouter.openapi(undeleteEventRoute, typedHandler<typeof undeleteEventRoute>
   const result = await eventHandlers.undeleteEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UndeleteEventSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(purgeEventRoute, typedHandler<typeof purgeEventRoute>(async (c) => {
@@ -266,7 +267,7 @@ eventsRouter.openapi(purgeEventRoute, typedHandler<typeof purgeEventRoute>(async
   const result = await eventHandlers.purgeEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies PurgeEventSuccess, 200);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(repushEventRoute, typedHandler<typeof repushEventRoute>(async (c) => {
@@ -277,7 +278,7 @@ eventsRouter.openapi(repushEventRoute, typedHandler<typeof repushEventRoute>(asy
   if (result.status === 401) return c.json(result.body, 401);
   if (result.status === 404) return c.json(result.body, 404);
   if (result.status === 502) return c.json(result.body, 502);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAttendanceRoute>(async (c) => {
@@ -287,7 +288,7 @@ eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAt
   if (result.status === 200) return c.json(result.body satisfies UpdateUserAttendanceSuccess, 200);
   if (result.status === 401) return c.json(result.body, 401);
   if (result.status === 500) return c.json(result.body, 500);
-  return errorResponses.internalError(c, "Unknown status code");
+  throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 // ─── Event Version History ──────────────────────────────────────────────
@@ -334,7 +335,7 @@ eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventH
       .get();
 
     if (!row) {
-      return errorResponses.notFound(c, "Version");
+      throw new ApiError("Version", 404, "NOT_FOUND");
     }
 
     // Update the event description with the restored content

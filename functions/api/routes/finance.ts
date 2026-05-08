@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 
 import { eq, desc, inArray, sum, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -290,12 +291,12 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     // WR-15: Validate transaction amount and type
     const amount = Number(body.amount);
     if (Number.isNaN(amount) || amount < 0 || amount > 1000000) {
-      return errorResponses.badRequest(c, "Invalid amount: must be between 0 and 1,000,000");
+      throw new ApiError("Invalid amount: must be between 0 and 1,000,000", 400, "VALIDATION_ERROR");
     }
 
     const validTypes: readonly ["income", "expense"] = ["income", "expense"] as const;
     if (!body.type || !validTypes.includes(body.type)) {
-      return errorResponses.badRequest(c, "Invalid transaction type: must be 'income' or 'expense'");
+      throw new ApiError("Invalid transaction type: must be 'income' or 'expense'", 400, "VALIDATION_ERROR");
     }
 
     const data = {
@@ -332,7 +333,7 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
       .get();
 
     if (!tx) {
-      return errorResponses.notFound(c, "Transaction");
+      throw new ApiError("Transaction", 404, "NOT_FOUND");
     }
 
     await db.delete(schema.financeTransactions).where(eq(schema.financeTransactions.id, id)).run();

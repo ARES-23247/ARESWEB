@@ -292,6 +292,15 @@ apiRouter.openapi(auditLogRoute, (async (c: any) => {
 }) as any);
 
 app.onError(async (err, c) => {
+  // Import ApiError dynamically to avoid circular deps
+  const { ApiError } = await import("./middleware/errorHandler");
+  
+  // Handle ApiError with correct status code (400, 404, 429, etc.)
+  if (err instanceof ApiError) {
+    return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
+  }
+
+  // Generic errors — log and return 500
   console.error("Global API Error:", err);
   const db = c.get("db");
   if (c.env?.DB && db) {

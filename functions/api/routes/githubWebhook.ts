@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -129,7 +130,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
   const valid = await verifyGitHubSignature(secret, rawBody, sig);
   if (!valid) {
     console.warn("[GitHubWebhook] Invalid signature");
-    return c.json({ error: "Invalid signature" }, 401);
+    throw new ApiError("Invalid signature", 401);
   }
 
   const event = c.req.header("X-GitHub-Event") || "unknown";
@@ -137,7 +138,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
   try {
     payload = JSON.parse(rawBody);
   } catch {
-    return c.json({ error: "Invalid JSON" }, 400);
+    throw new ApiError("Invalid JSON", 400);
   }
 
   const engineeringStream = "engineering";

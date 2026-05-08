@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, desc, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -122,7 +123,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSea
       .get();
 
     if (!row) {
-      return errorResponses.notFound(c, "Season");
+      throw new ApiError("Season", 404, "NOT_FOUND");
     }
 
     const season = {
@@ -141,7 +142,7 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
     const db = getDb(c);
     const yearNum = parseInt(year, 10);
     if (Number.isNaN(yearNum)) {
-      return errorResponses.notFound(c, "Season");
+      throw new ApiError("Season", 404, "NOT_FOUND");
     }
 
     const [seasonRow, awards, events, posts, outreach] = await Promise.all([
@@ -246,7 +247,7 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
     ]);
 
     if (!seasonRow) {
-      return errorResponses.notFound(c, "Season");
+      throw new ApiError("Season", 404, "NOT_FOUND");
     }
 
     const season = {

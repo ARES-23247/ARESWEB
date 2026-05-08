@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -216,7 +217,7 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
     return c.json({ success: true, timestamp: new Date().toISOString(), backup }, 200);
   } catch (e) {
     console.error("BACKUP ERROR", e);
-    return c.json({ success: false, error: "Backup failed" }, 500);
+    throw new ApiError("Backup failed", 500);
   }
 });
 

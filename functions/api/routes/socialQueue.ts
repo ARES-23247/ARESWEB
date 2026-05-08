@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, asc, and, gte, lte, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -42,7 +43,7 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
 socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQueueRoute>(async (c) => {
     const user = await getSessionUser(c);
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
@@ -89,7 +90,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
 socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendarSocialQueueRoute>(async (c) => {
     const user = await getSessionUser(c);
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { start, end } = c.req.valid("query");
@@ -120,7 +121,7 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendar
 socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSocialQueueRoute>(async (c) => {
     const user = await getSessionUser(c);
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const body = c.req.valid("json");
@@ -164,7 +165,7 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
 socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSocialQueueRoute>(async (c) => {
     const user = await getSessionUser(c);
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { id } = c.req.valid("param");
@@ -178,10 +179,10 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
       .get();
 
     if (!existing) {
-      return c.json({ error: "Post not found" }, 500);
+      throw new ApiError("Post not found", 500);
     }
     if (user.role !== "admin" && existing.createdBy !== user.id) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const updates: Record<string, unknown> = {};
@@ -213,7 +214,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
 socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSocialQueueRoute>(async (c) => {
     const user = await getSessionUser(c);
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { id } = c.req.valid("param");
@@ -226,10 +227,10 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
       .get();
 
     if (!existing) {
-      return c.json({ error: "Post not found" }, 500);
+      throw new ApiError("Post not found", 500);
     }
     if (user.role !== "admin" && existing.createdBy !== user.id) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     await db.delete(schema.socialQueue).where(eq(schema.socialQueue.id, id)).run();
@@ -241,7 +242,7 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
 socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSocialQueueRoute>(async (c) => {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { id } = c.req.valid("param");
@@ -254,7 +255,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
       .get();
 
     if (!record) {
-      return c.json({ error: "Post not found" }, 500);
+      throw new ApiError("Post not found", 500);
     }
 
     const post = toSocialQueuePost(record);
@@ -278,7 +279,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
 socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyticsSocialQueueRoute>(async (c) => {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { start, end } = c.req.valid("query");

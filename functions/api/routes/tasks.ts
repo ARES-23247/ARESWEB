@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, asc, desc, and, inArray, sql, aliasedTable } from "drizzle-orm";
@@ -121,7 +122,7 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
     const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -223,7 +224,7 @@ tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(as
     const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     // Batch update sort orders
     await Promise.all(body.items.map((o: { id: string; sort_order: number }) =>
@@ -241,7 +242,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
     const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const existing = await db.select({
         id: schema.tasks.id,
@@ -253,7 +254,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
       .where(eq(schema.tasks.id, id))
       .get();
 
-    if (!existing) return c.json({ error: "Task not found" }, 404);
+    if (!existing) throw new ApiError("Task not found", 404);
 
     const isAdmin = user.role === "admin";
     const isMentor = user.role === "mentor" || user.role === "coach";
@@ -295,7 +296,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
     // Only admins, mentors/coaches, and the task creator can change assignments
     if (body.assignees !== undefined) {
       if (!canAssign) {
-        return c.json({ error: "Only mentors, coaches, admins, or the task creator can change assignments" }, 403);
+        throw new ApiError("Only mentors, coaches, admins, or the task creator can change assignments", 403);
       }
 
       // WR-12: Additional validation - prevent assigning users from different subteams
@@ -310,7 +311,7 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
 
           const hasMismatchedSubteam = assigneeSubteams.some((p) => p.subteams && p.subteams !== existing.subteam);
           if (hasMismatchedSubteam) {
-            return c.json({ error: "Cannot assign users from different subteams to this task" }, 403);
+            throw new ApiError("Cannot assign users from different subteams to this task", 403);
           }
         }
       }
@@ -357,20 +358,20 @@ tasksRouter.openapi(deleteTaskRoute, typedHandler<typeof deleteTaskRoute>(async 
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const existing = await db.select({ createdBy: schema.tasks.createdBy })
       .from(schema.tasks)
       .where(eq(schema.tasks.id, id))
       .get();
 
-    if (!existing) return c.json({ error: "Task not found" }, 404);
+    if (!existing) throw new ApiError("Task not found", 404);
 
     const isAdmin = user.role === "admin";
     const isOwner = existing.createdBy === user.id;
 
     if (!isAdmin && !isOwner) {
-      return c.json({ error: "You are not authorized to delete this task" }, 403);
+      throw new ApiError("You are not authorized to delete this task", 403);
     }
 
     await db.delete(schema.tasks)

@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv } from "../middleware";
@@ -20,11 +21,11 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
   const { user_id } = c.req.valid("param");
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
-      return c.json({ error: "Forbidden" }, 403);
+      throw new ApiError("Forbidden", 403);
     }
 
     const db = getDb(c);
@@ -43,11 +44,11 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
   const { user_id } = c.req.valid("param");
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
-      return c.json({ error: "Forbidden" }, 403);
+      throw new ApiError("Forbidden", 403);
     }
 
     const db = getDb(c);
@@ -73,7 +74,7 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
   const { user_id, points_delta, reason } = c.req.valid("json");
     const sessionUser = c.get("sessionUser");
     if (!sessionUser || sessionUser.role !== "admin") {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const db = getDb(c);

@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 
 import { sql } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -238,7 +239,7 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
       .limit(1)
       .get();
 
-    if (!row) return errorResponses.notFound(c, "Post");
+    if (!row) throw new ApiError("Post", 404, "NOT_FOUND");
 
     return c.json(
       {
@@ -375,7 +376,7 @@ postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(as
       .limit(1)
       .get();
 
-    if (!row) return errorResponses.notFound(c, "Post");
+    if (!row) throw new ApiError("Post", 404, "NOT_FOUND");
 
     return c.json(
       {
@@ -426,7 +427,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
         .get();
 
       if (!existing) {
-        return errorResponses.notFound(c, "Post");
+        throw new ApiError("Post", 404, "NOT_FOUND");
       }
 
       const user = await getSessionUser(c);
@@ -863,7 +864,7 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
       .limit(1)
       .get();
 
-    if (!post) return errorResponses.notFound(c, "Post");
+    if (!post) throw new ApiError("Post", 404, "NOT_FOUND");
 
     const socialConfig = await getSocialConfig(c);
     const baseUrl = new URL(c.req.url).origin;

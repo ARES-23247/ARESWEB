@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, verifyTurnstile, getDb } from "../../middleware";
 import type { DrizzleDB } from "../../middleware/utils";
@@ -74,7 +75,7 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
-    return c.json({ error: "AI service not configured." }, 500);
+    throw new ApiError("AI service not configured.", 500);
   }
 
   const safeContext = scrubPII(documentContext || "");
@@ -240,7 +241,7 @@ aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(asy
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
-    return c.json({ error: "AI service not configured." }, 500);
+    throw new ApiError("AI service not configured.", 500);
   }
 
   const systemPrompt = customSystemPrompt || `You are an expert FIRST Tech Challenge (FTC) robot programmer.
@@ -349,7 +350,7 @@ aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c)
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
-    return c.json({ error: "AI service not configured." }, 500);
+    throw new ApiError("AI service not configured.", 500);
   }
 
   const systemPrompt = customSystemPrompt || `You are an AI documentation assistant for ARES 23247.
@@ -454,13 +455,13 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
   const { query, turnstileToken, sessionId } = c.req.valid("json");
 
   if (!query || !turnstileToken) {
-    return c.json({ error: "Missing required fields" }, 400);
+    throw new ApiError("Missing required fields", 400);
   }
 
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
-    return c.json({ error: "AI service not configured" }, 500);
+    throw new ApiError("AI service not configured", 500);
   }
 
   // Validate Turnstile
@@ -468,7 +469,7 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const validTurnstile = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
     if (!validTurnstile) {
-      return c.json({ error: "Turnstile validation failed" }, 403);
+      throw new ApiError("Turnstile validation failed", 403);
     }
   }
 
@@ -838,7 +839,7 @@ aiRouter.post("/reindex", ensureAdmin, async (c) => {
   const db = getDb(c);
   
   if (!c.env.AI || !c.env.VECTORIZE_DB) {
-    return c.json({ error: "AI or Vectorize not configured" }, 500);
+    throw new ApiError("AI or Vectorize not configured", 500);
   }
 
   const { indexSiteContent } = await import("./indexer");
@@ -852,7 +853,7 @@ aiRouter.post("/reindex-external", ensureAdmin, async (c) => {
   const db = getDb(c);
   
   if (!c.env.VECTORIZE_DB) {
-    return c.json({ error: "Vectorize not configured" }, 500);
+    throw new ApiError("Vectorize not configured", 500);
   }
 
   const { indexExternalResources } = await import("./indexer");
@@ -908,6 +909,6 @@ aiRouter.get("/chat-session/:id", async (c) => {
     where: eq(schema.chatSessions.id, id)
   });
   
-  if (!session) return c.json({ error: "Not found" }, 404);
+  if (!session) throw new ApiError("Not found", 404);
   return c.json(session);
 });

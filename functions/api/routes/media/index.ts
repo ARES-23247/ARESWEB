@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { ApiError } from "../middleware/errorHandler";
 import {
   getMediaRoute,
   getAdminMediaRoute,
@@ -228,7 +229,7 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
     const folder = formData["folder"] as string | undefined;
 
     if (!file || !(file instanceof File)) {
-      return errorResponses.badRequest(c, "No valid file uploaded");
+      throw new ApiError("No valid file uploaded", 400, "VALIDATION_ERROR");
     }
 
     if (file.size > MAX_FILE_SIZE) {
@@ -247,7 +248,7 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
     }
 
     if (!isValidImage(headerBuffer)) {
-      return errorResponses.badRequest(c, "Invalid file type. Only standard images are supported.");
+      throw new ApiError("Invalid file type. Only standard images are supported.", 400, "VALIDATION_ERROR");
     }
 
     const canonicalExtension = getExtensionForMimeType(file.type);
@@ -311,13 +312,13 @@ mediaRouter.openapi(moveMediaRoute, typedHandler<typeof moveMediaRoute>(async (c
 
     const fileName = key.split("/").pop();
     if (!fileName) {
-      return errorResponses.badRequest(c, "Invalid key format");
+      throw new ApiError("Invalid key format", 400, "VALIDATION_ERROR");
     }
     const newKey = `${folder}/${fileName}`;
 
     if (c.env.ARES_STORAGE) {
       const object = await c.env.ARES_STORAGE.get(key);
-      if (!object) return errorResponses.notFound(c, "Source file");
+      if (!object) throw new ApiError("Source file", 404, "NOT_FOUND");
 
       await c.env.ARES_STORAGE.put(newKey, object.body, { httpMetadata: { contentType: object.httpMetadata?.contentType } });
       await c.env.ARES_STORAGE.delete(key);

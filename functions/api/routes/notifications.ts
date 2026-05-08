@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware, getDb } from "../middleware";
 import { eq, desc, and, count, inArray } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -24,7 +25,7 @@ notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotificationsRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const results = await db
       .select({
@@ -59,7 +60,7 @@ notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotifi
 notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markNotificationReadRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const { id } = c.req.valid("param");
     await db
@@ -74,7 +75,7 @@ notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markN
 notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof markAllNotificationsReadRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     await db
       .update(schema.notifications)
@@ -88,7 +89,7 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof m
 notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteNotificationRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const { id } = c.req.valid("param");
     await db
@@ -102,7 +103,7 @@ notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteN
 notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendingCountsRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {
@@ -151,7 +152,7 @@ notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendin
 notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof getDashboardActionItemsRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {

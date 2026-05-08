@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, sql, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -327,8 +328,8 @@ profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfi
       .where(eq(schema.userProfiles.userId, userId))
       .get();
 
-    if (!profileRow) return c.json({ error: "Profile not found" }, 404);
-    if (Number(profileRow.showOnAbout || 0) !== 1) return c.json({ error: "This profile is private." }, 403);
+    if (!profileRow) throw new ApiError("Profile not found", 404);
+    if (Number(profileRow.showOnAbout || 0) !== 1) throw new ApiError("This profile is private.", 403);
 
     const memberType = String(profileRow.memberType || "student");
     // Convert camelCase to snake_case for the sanitizer function

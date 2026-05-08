@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, getSocialConfig, checkPersistentRateLimit, getDb } from "../middleware";
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem } from "../../utils/githubProjects";
@@ -23,7 +24,7 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
   const ua = c.req.header("User-Agent") || "unknown";
   const db = getDb(c);
   if (!(await checkPersistentRateLimit(db, `github-activity:${ip}`, ua, 10, 60))) {
-    return c.json({ error: "Rate limit exceeded" }, 429);
+    throw new ApiError("Rate limit exceeded", 429);
   }
 
   const org = siteConfig.urls.githubOrg;
@@ -157,7 +158,7 @@ githubRouter.openapi(createItemRoute, typedHandler<typeof createItemRoute>(async
     const ghConfig = buildGitHubConfig(config);
     if (!ghConfig) {
       console.error("[GitHub:Create] Configuration missing");
-      return c.json({ error: "GitHub configuration missing" }, 500);
+      throw new ApiError("GitHub configuration missing", 500);
     }
 
     await createProjectItem(ghConfig, title);

@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -44,7 +45,7 @@ zulipRouter.use("/invites/*", ensureAdmin);
 zulipRouter.openapi(getPresenceRoute, typedHandler<typeof getPresenceRoute>(async (c) => {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
-      return c.json({ success: false, error: "Zulip not configured." }, 500);
+      throw new ApiError("Zulip not configured.", 500);
     }
 
     const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
@@ -94,7 +95,7 @@ zulipRouter.openapi(sendMessageRoute, typedHandler<typeof sendMessageRoute>(asyn
     const config = await getSocialConfig(c);
 
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
-      return c.json({ success: false, error: "Zulip not configured." }, 500);
+      throw new ApiError("Zulip not configured.", 500);
     }
 
     const sessionUser = c.get("sessionUser") as
@@ -116,7 +117,7 @@ zulipRouter.openapi(sendMessageRoute, typedHandler<typeof sendMessageRoute>(asyn
     );
 
     if (!res) {
-      return c.json({ success: false, error: "Failed to send message" }, 500);
+      throw new ApiError("Failed to send message", 500);
     }
 
     return c.json({ success: true }, 200);
@@ -126,7 +127,7 @@ zulipRouter.openapi(getTopicMessagesRoute, typedHandler<typeof getTopicMessagesR
     const query = c.req.valid("query");
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
-      return c.json({ success: false, error: "Zulip not configured." }, 500);
+      throw new ApiError("Zulip not configured.", 500);
     }
 
     const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
@@ -281,7 +282,7 @@ zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(asyn
     const body = c.req.valid("json");
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
-      return c.json({ success: false, error: "Zulip not configured." }, 500);
+      throw new ApiError("Zulip not configured.", 500);
     }
 
     const { emails } = body;

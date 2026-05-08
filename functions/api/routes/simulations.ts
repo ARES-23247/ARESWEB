@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAuth, getDb, DrizzleDB } from "../middleware";
@@ -143,17 +144,17 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
   const { id } = c.req.valid("param");
 
   if (!id || !id.startsWith("github:")) {
-    return c.json({ error: "Simulation not found" }, 404);
+    throw new ApiError("Simulation not found", 404);
   }
 
   const simId = id.replace("github:", "");
 
   if (!SIM_ID_PATTERN.test(simId)) {
-    return c.json({ error: "Invalid simulation ID" }, 400);
+    throw new ApiError("Invalid simulation ID", 400);
   }
 
   if (simId.includes('..') || simId.includes('/') || simId.includes('\\')) {
-    return c.json({ error: "Invalid simulation ID" }, 400);
+    throw new ApiError("Invalid simulation ID", 400);
   }
 
   const filePath = `src/sims/${simId}/index.tsx`;
@@ -176,7 +177,7 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
       const legacyPath = `src/sims/${simId}.tsx`;
       const legacyRes = await fetch(`${ghConfig.apiBase}/contents/${legacyPath}`, { headers });
       if (!legacyRes.ok) {
-        return c.json({ error: "Simulation not found in GitHub" }, 404);
+        throw new ApiError("Simulation not found in GitHub", 404);
       }
       const code = await legacyRes.text();
       return c.json({
@@ -202,7 +203,7 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
     }, 200);
   } catch (ghErr) {
     console.error("[Simulations] GitHub get error:", ghErr);
-    return c.json({ error: "Failed to get simulation from GitHub" }, 500);
+    throw new ApiError("Failed to get simulation from GitHub", 500);
   }
 }));
 
@@ -210,13 +211,13 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
 simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulationRoute>(async (c) => {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { name, files } = c.req.valid("json");
 
     if (Object.keys(files).length === 0) {
-      return c.json({ error: "No files provided" }, 400);
+      throw new ApiError("No files provided", 400);
     }
 
     const fileCount = Object.keys(files).length;
@@ -240,7 +241,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
     if (!pat) {
-      return c.json({ error: "GitHub PAT not configured" }, 500);
+      throw new ApiError("GitHub PAT not configured", 500);
     }
 
     const headers: Record<string, string> = {
@@ -271,7 +272,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
       const getJson = (await getRes.json()) as { sha: string };
       sha = getJson.sha;
       if (!(await canModifySimulation({ db: getDb(c), env: c.env, sessionUser }, simIdStr))) {
-        return c.json({ error: "You can only modify your own simulations" }, 403);
+        throw new ApiError("You can only modify your own simulations", 403);
       }
     }
 
@@ -282,7 +283,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
     });
 
     if (!putRes.ok) {
-      return c.json({ error: "Failed to upload to GitHub" }, 500);
+      throw new ApiError("Failed to upload to GitHub", 500);
     }
 
     if (!sha) {
@@ -332,22 +333,22 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const { id } = c.req.valid("param");
     if (!id || !id.startsWith("github:")) {
-      return c.json({ error: "Not found" }, 404);
+      throw new ApiError("Not found", 404);
     }
 
     const simIdStr = id.replace("github:", "");
 
     if (!SIM_ID_PATTERN.test(simIdStr)) {
-      return c.json({ error: "Invalid simulation ID" }, 400);
+      throw new ApiError("Invalid simulation ID", 400);
     }
 
     if (simIdStr.includes('..') || simIdStr.includes('/') || simIdStr.includes('\\')) {
-      return c.json({ error: "Invalid simulation ID" }, 400);
+      throw new ApiError("Invalid simulation ID", 400);
     }
 
     const filename = `${simIdStr}.tsx`;
@@ -359,7 +360,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
     if (!pat) {
-      return c.json({ error: "GitHub PAT not configured" }, 500);
+      throw new ApiError("GitHub PAT not configured", 500);
     }
 
     const headers: Record<string, string> = {
@@ -381,7 +382,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 
     if (sha) {
       if (!(await canModifySimulation({ db: getDb(c), env: c.env, sessionUser }, simIdStr))) {
-        return c.json({ error: "You can only delete your own simulations" }, 403);
+        throw new ApiError("You can only delete your own simulations", 403);
       }
       await fetch(url, {
         method: "DELETE",
@@ -417,7 +418,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Simulations] Delete error:", e);
-    return c.json({ error: "Failed to delete simulation" }, 500);
+    throw new ApiError("Failed to delete simulation", 500);
   }
 }));
 
@@ -425,7 +426,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(async (c) => {
     const { name, files } = c.req.valid("json");
     if (Object.keys(files).length === 0) {
-      return c.json({ error: "No files provided" }, 400);
+      throw new ApiError("No files provided", 400);
     }
 
     const db = getDb(c);
@@ -434,7 +435,7 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
     if (!pat) {
-      return c.json({ error: "GitHub PAT not configured" }, 500);
+      throw new ApiError("GitHub PAT not configured", 500);
     }
 
     const headers: Record<string, string> = {
@@ -462,7 +463,7 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
     });
 
     if (!res.ok) {
-      return c.json({ error: "Failed to create GitHub Gist" }, 500);
+      throw new ApiError("Failed to create GitHub Gist", 500);
     }
 
     const gistResponse = await res.json() as { id: string; html_url: string };
@@ -492,8 +493,8 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
     const res = await fetch(`https://api.github.com/gists/${id}`, { headers });
 
     if (!res.ok) {
-      if (res.status === 404) return c.json({ error: "Gist not found" }, 404);
-      return c.json({ error: "Failed to fetch from GitHub API" }, 500);
+      if (res.status === 404) throw new ApiError("Gist not found", 404);
+      throw new ApiError("Failed to fetch from GitHub API", 500);
     }
 
     const gist = await res.json() as {

@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
 
@@ -126,7 +127,7 @@ analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRou
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(db, `track:${ip}`, ua, 20, 600))) {
-    return c.json({ error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" }, 429);
+    throw new ApiError("Rate limit exceeded", 429, "RATE_LIMIT_EXCEEDED");
   }
     const body = c.req.valid("json") as TrackPageViewBody;
     const { path, category, referrer } = body;
@@ -152,14 +153,14 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(db, `click:${ip}`, ua, 10, 600))) {
-    return c.json({ error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" }, 429);
+    throw new ApiError("Rate limit exceeded", 429, "RATE_LIMIT_EXCEEDED");
   }
     const body = c.req.valid("json") as TrackSponsorClickBody;
     const { sponsor_id } = body;
 
     // WR-04: Validate sponsor exists to prevent database pollution
     if (!sponsor_id || typeof sponsor_id !== 'string') {
-      return c.json({ error: "Invalid sponsor ID", code: "VALIDATION_ERROR" }, 400);
+      throw new ApiError("Invalid sponsor ID", 400, "VALIDATION_ERROR");
     }
 
     const sponsor = await db.select({ id: schema.sponsors.id })
@@ -168,7 +169,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
       .get();
 
     if (!sponsor) {
-      return c.json({ error: "Invalid sponsor", code: "VALIDATION_ERROR" }, 400);
+      throw new ApiError("Invalid sponsor", 400, "VALIDATION_ERROR");
     }
 
     const yearMonth = new Date().toISOString().slice(0, 7);

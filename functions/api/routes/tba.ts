@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 /* TBA API route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAuth, rateLimitMiddleware, getDb } from "../middleware";
@@ -42,7 +43,7 @@ async function getTBA(path: string, c: HonoContext) {
 tbaRouter.openapi(getRankingsRoute, typedHandler<typeof getRankingsRoute>(async (c) => {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
-      return c.json({ error: "Invalid eventKey" }, 400);
+      throw new ApiError("Invalid eventKey", 400);
     }
     const data = await getTBA(`/event/${eventKey}/rankings`, c);
     return c.json({ rankings: (data as { rankings?: unknown[] })?.rankings || [] }, 200);
@@ -51,7 +52,7 @@ tbaRouter.openapi(getRankingsRoute, typedHandler<typeof getRankingsRoute>(async 
 tbaRouter.openapi(getMatchesRoute, typedHandler<typeof getMatchesRoute>(async (c) => {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
-      return c.json({ error: "Invalid eventKey" }, 400);
+      throw new ApiError("Invalid eventKey", 400);
     }
     const data = await getTBA(`/event/${eventKey}/matches/simple`, c) as Array<{ time?: number }>;
     const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));

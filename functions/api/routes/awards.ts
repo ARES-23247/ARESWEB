@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, desc, asc, and } from "drizzle-orm";
@@ -62,7 +63,7 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
     if (id) {
       const numericId = Number(id);
       if (isNaN(numericId) || numericId <= 0) {
-        return c.json({ error: "Invalid award ID", code: "BAD_REQUEST" }, 400);
+        throw new ApiError("Invalid award ID", 400, "BAD_REQUEST");
       }
       const row = await db.select({ id: schema.awards.id }).from(schema.awards).where(eq(schema.awards.id, numericId)).get();
       if (row) {
@@ -100,7 +101,7 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
     if (exists && finalId) {
       const updateId = Number(finalId);
       if (isNaN(updateId) || updateId <= 0) {
-        return c.json({ error: "Invalid award ID for update", code: "BAD_REQUEST" }, 400);
+        throw new ApiError("Invalid award ID for update", 400, "BAD_REQUEST");
       }
       await db.update(schema.awards).set(values).where(eq(schema.awards.id, updateId)).run();
       c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", finalId, `Award "${title}" (${year}) updated`));
@@ -142,7 +143,7 @@ awardsRouter.openapi(deleteAwardRoute, typedHandler<typeof deleteAwardRoute>(asy
     const params = c.req.valid('param');
     const numericId = Number(params.id);
     if (isNaN(numericId) || numericId <= 0) {
-      return c.json({ error: "Invalid award ID", code: "BAD_REQUEST" }, 400);
+      throw new ApiError("Invalid award ID", 400, "BAD_REQUEST");
     }
     await db.update(schema.awards).set({ isDeleted: 1 }).where(eq(schema.awards.id, numericId)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));

@@ -1,4 +1,5 @@
 import { typedHandler } from "../../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, and, lt } from "drizzle-orm";
@@ -16,7 +17,7 @@ gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
     const providedSecret = c.req.header("x-cron-secret");
 
     if (!cronSecret || providedSecret !== cronSecret) {
-      return c.json({ error: "Unauthorized" }, 401);
+      throw new ApiError("Unauthorized", 401);
     }
 
     const db = getDb(c);

@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 /* User management route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, desc, lt } from "drizzle-orm";
@@ -120,7 +121,7 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
       where: eq(schema.user.id, id)
     });
 
-    if (!row) return c.json({ error: "User not found" }, 404);
+    if (!row) throw new ApiError("User not found", 404);
 
     const profile = row.userProfiles?.[0];
 
@@ -159,7 +160,7 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
       | { id: string; role: string }
       | undefined;
     if (!sessionUser || sessionUser.role !== "admin") {
-      return c.json({ error: "Forbidden: Admin required" }, 403);
+      throw new ApiError("Forbidden: Admin required", 403);
     }
 
     const { id } = c.req.valid("param");
@@ -172,11 +173,11 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
     };
 
     if (role && !UserRoleEnum.safeParse(role).success) {
-      return c.json({ error: "Invalid role value" }, 400);
+      throw new ApiError("Invalid role value", 400);
     }
 
     if (member_type && !MemberTypeEnum.safeParse(member_type).success) {
-      return c.json({ error: "Invalid member_type value" }, 400);
+      throw new ApiError("Invalid member_type value", 400);
     }
 
     const db = getDb(c);
@@ -244,7 +245,7 @@ usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRou
       where: eq(schema.user.id, id)
     });
     
-    if (!user) return c.json({ error: "User not found" }, 404);
+    if (!user) throw new ApiError("User not found", 404);
 
     const profileRow = await db.query.userProfiles.findFirst({
       columns: {

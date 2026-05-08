@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { ApiError } from "../middleware/errorHandler";
 import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -162,7 +163,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
 
     const { code, turnstileToken } = c.req.valid("json");
     if (!code) {
-      return errorResponses.badRequest(c, "Code required");
+      throw new ApiError("Code required", 400, "VALIDATION_ERROR");
     }
 
     const validToken = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
