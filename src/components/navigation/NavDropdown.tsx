@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { ChevronDown, Users, Trophy, BookOpen } from "lucide-react";
-import { useState } from "react";
 
 interface NavDropdownProps {
   name: string;

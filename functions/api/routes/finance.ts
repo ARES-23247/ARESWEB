@@ -5,76 +5,44 @@ import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser, getDb } from "../middleware";
+import { errorResponses } from "../../../shared/errors/api";
 import * as financeRoutes from "../../../shared/routes/finance";
+import type { z } from "zod";
 
-// Type definitions for finance data structures
-type FinanceTransactionType = "income" | "expense";
+// ─── Type Inference Helpers ─────────────────────────────────────────────────────
+// Infer types from route schemas for proper type safety
 
-interface FinanceSummaryResponse {
-  total_income: number;
-  total_expenses: number;
-  balance: number;
-  season_id: number | null;
-}
+type GetSummaryQuery = z.infer<typeof financeRoutes.getSummaryRoute.request.query>;
+type GetSummaryResponse = z.infer<typeof financeRoutes.FinanceSummarySchema>;
 
+type ListPipelineQuery = z.infer<typeof financeRoutes.listPipelineRoute.request.query>;
+type ListPipelineResponse = z.infer<typeof financeRoutes.listPipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+type SavePipelineBody = z.infer<typeof financeRoutes.SavePipelineSchema>;
+type SavePipelineResponse = z.infer<typeof financeRoutes.savePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+type DeletePipelineParams = z.infer<typeof financeRoutes.deletePipelineRoute.request.params>;
+type DeletePipelineResponse = z.infer<typeof financeRoutes.deletePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+type ListTransactionsQuery = z.infer<typeof financeRoutes.listTransactionsRoute.request.query>;
+type ListTransactionsResponse = z.infer<typeof financeRoutes.listTransactionsRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+type SaveTransactionBody = z.infer<typeof financeRoutes.SaveTransactionSchema>;
+type SaveTransactionResponse = z.infer<typeof financeRoutes.saveTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+type DeleteTransactionParams = z.infer<typeof financeRoutes.deleteTransactionRoute.request.params>;
+type DeleteTransactionResponse = z.infer<typeof financeRoutes.deleteTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+// Database query result types
 interface FinanceSummaryItem {
-  type: FinanceTransactionType;
+  type: "income" | "expense";
   total: number;
-}
-
-interface SponsorshipPipelineItem {
-  id: string;
-  companyName: string;
-  contactPerson: string | null;
-  status: string;
-  estimatedValue: number | null;
-  seasonId: number | null;
-  notes: string | null;
-  zulipMessageId: string | null;
-  createdAt: string;
-  // Computed fields
-  season_id: number | null;
-  estimated_value: number;
-  assignees: string[];
 }
 
 interface SponsorshipAssignment {
   sponsorshipId: string;
   userId: string;
 }
-
-interface TransactionListItem {
-  id: string;
-  amount: number;
-  type: FinanceTransactionType;
-  category: string;
-  date: string;
-  description: string | null;
-  receiptUrl: string | null;
-  seasonId: number | null;
-  loggedBy: string | null;
-  // Computed fields
-  season_id: number | null;
-}
-
-interface ApiErrorResponse {
-  error: string;
-}
-
-interface ApiSuccessResponse {
-  success: true;
-  id?: string;
-}
-
-interface PipelineListResponse {
-  pipeline: SponsorshipPipelineItem[];
-}
-
-interface TransactionListResponse {
-  transactions: TransactionListItem[];
-}
-
-
 
 export const financeRouter = new OpenAPIHono<AppEnv>();
 
@@ -95,13 +63,13 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
     }
 
     if (!latestSeasonId) {
-      const response: FinanceSummaryResponse = {
+      const response: GetSummaryResponse = {
         total_income: 0,
         total_expenses: 0,
         balance: 0,
         season_id: null
       };
-      return c.json(response, 200);
+      return c.json(response satisfies GetSummaryResponse, 200);
     }
 
     const summary = await db
@@ -115,21 +83,20 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
       .all();
 
     const totals = {
-      income: summary.find((s: FinanceSummaryItem) => s.type === "income")?.total || 0,
-      expense: summary.find((s: FinanceSummaryItem) => s.type === "expense")?.total || 0,
+      income: summary.find((s) => s.type === "income")?.total ?? 0,
+      expense: summary.find((s) => s.type === "expense")?.total ?? 0,
     };
 
-    const response: FinanceSummaryResponse = {
+    const response: GetSummaryResponse = {
       total_income: totals.income,
       total_expenses: totals.expense,
       balance: totals.income - totals.expense,
       season_id: Number(latestSeasonId),
     };
-    return c.json(response, 200);
+    return c.json(response satisfies GetSummaryResponse, 200);
   } catch (e) {
     console.error("[Finance:Summary] Error", e);
-    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to fetch summary" };
-    return c.json(errorResponse, 500);
+    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to fetch summary");
   }
 }));
 
@@ -150,20 +117,24 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
       assignments = await db.select().from(schema.sponsorshipAssignments).where(inArray(schema.sponsorshipAssignments.sponsorshipId, pipelineIds)).all();
     }
 
-    const result: SponsorshipPipelineItem[] = pipeline.map((p) => ({
-      ...p,
+    const result = pipeline.map((p) => ({
+      id: p.id,
+      company_name: p.companyName,
+      sponsor_id: p.sponsorId,
+      status: (p.status ?? "potential").toLowerCase() satisfies "potential" | "contacted" | "pledged" | "secured" | "lost",
+      estimated_value: Number(p.estimatedValue ?? 0),
+      notes: p.notes,
+      contact_person: p.contactPerson,
       season_id: p.seasonId ? Number(p.seasonId) : null,
-      estimated_value: Number(p.estimatedValue || 0),
-      status: (p.status || "potential").toLowerCase(),
-      assignees: assignments.filter((a: SponsorshipAssignment) => a.sponsorshipId === p.id).map((a: SponsorshipAssignment) => a.userId)
+      zulip_message_id: p.zulipMessageId,
+      assignees: assignments.filter((a) => a.sponsorshipId === p.id).map((a) => a.userId)
     }));
 
-    const response: PipelineListResponse = { pipeline: result };
-    return c.json(response, 200);
+    const response: ListPipelineResponse = { pipeline: result };
+    return c.json(response satisfies ListPipelineResponse, 200);
   } catch (e) {
     console.error("[Finance:ListPipeline] Error", e);
-    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to fetch pipeline" };
-    return c.json(errorResponse, 500);
+    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to fetch pipeline");
   }
 }));
 
@@ -176,36 +147,34 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
 
     // CR-05 FIX: Require proper authorization for pipeline modifications
     if (!user) {
-      const errorResponse: ApiErrorResponse = { error: "Unauthorized" };
-      return c.json(errorResponse, 401);
+      return errorResponses.unauthorized(c);
     }
     if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      const errorResponse: ApiErrorResponse = { error: "Insufficient permissions" };
-      return c.json(errorResponse, 403);
+      return errorResponses.forbidden(c);
     }
 
     const id = body.id || crypto.randomUUID();
     const isNew = !body.id;
 
-    let currentStatus = null;
+    let currentStatus: string | null = null;
     if (!isNew) {
       const existing = await db
         .select({ status: schema.sponsorshipPipeline.status })
         .from(schema.sponsorshipPipeline)
         .where(eq(schema.sponsorshipPipeline.id, id))
         .get();
-      currentStatus = existing?.status?.toLowerCase();
+      currentStatus = existing?.status?.toLowerCase() ?? null;
     }
 
     const data = {
       id,
       companyName: body.company_name,
-      contactPerson: body.contact_person || null,
+      contactPerson: body.contact_person ?? null,
       status: body.status,
       estimatedValue: body.estimated_value ?? 0,
       seasonId: body.season_id ? Number(body.season_id) : null,
-      notes: body.notes || null,
-      zulipMessageId: body.zulip_message_id || null,
+      notes: body.notes ?? null,
+      zulipMessageId: body.zulip_message_id ?? null,
     };
 
     if (isNew) {
@@ -217,7 +186,7 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
     if (body.assignees) {
       await db.delete(schema.sponsorshipAssignments).where(eq(schema.sponsorshipAssignments.sponsorshipId, id)).run();
       if (body.assignees.length > 0) {
-        const insertData = body.assignees.map((userId: string) => ({
+        const insertData = body.assignees.map((userId) => ({
           sponsorshipId: id,
           userId: userId
         }));
@@ -231,7 +200,7 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
         .from(schema.financeTransactions)
         .where(and(
           eq(schema.financeTransactions.description, `Sponsorship from ${body.company_name}`),
-          eq(schema.financeTransactions.amount, body.estimated_value || 0)
+          eq(schema.financeTransactions.amount, body.estimated_value ?? 0)
         ))
         .$dynamic();
 
@@ -256,25 +225,24 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
           .insert(schema.financeTransactions)
           .values({
             id: crypto.randomUUID(),
-            amount: body.estimated_value || 0,
+            amount: body.estimated_value ?? 0,
             type: "income",
             category: "Sponsorship",
             date: new Date().toISOString().split("T")[0],
             description: `Sponsorship from ${body.company_name}`,
             seasonId: body.season_id ? Number(body.season_id) : null,
-            loggedBy: user?.id || "system",
+            loggedBy: user?.id ?? "system",
           })
           .run();
       }
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "sponsorship_pipeline", id);
-    const successResponse: ApiSuccessResponse = { success: true, id };
-    return c.json(successResponse, 200);
+    const response: SavePipelineResponse = { success: true, id };
+    return c.json(response satisfies SavePipelineResponse, 200);
   } catch (e) {
     console.error("[Finance:SavePipeline] Error", e);
-    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to save pipeline" };
-    return c.json(errorResponse, 500);
+    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to save pipeline");
   }
 }));
 
@@ -285,12 +253,11 @@ financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof fin
     const db = getDb(c);
     await db.delete(schema.sponsorshipPipeline).where(eq(schema.sponsorshipPipeline.id, id)).run();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
-    const successResponse: ApiSuccessResponse = { success: true };
-    return c.json(successResponse, 200);
+    const response: DeletePipelineResponse = { success: true };
+    return c.json(response satisfies DeletePipelineResponse, 200);
   } catch (e) {
     console.error("[Finance:DeletePipeline] Error", e);
-    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to delete pipeline" };
-    return c.json(errorResponse, 500);
+    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to delete pipeline");
   }
 }));
 
@@ -308,18 +275,23 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
     }
     const transactions = await queryBuilder.orderBy(desc(schema.financeTransactions.date)).all();
 
-    const result: TransactionListItem[] = transactions.map((t) => ({
-      ...t,
+    const result = transactions.map((t) => ({
+      id: t.id,
+      type: t.type satisfies "income" | "expense",
+      amount: Number(t.amount),
+      category: t.category,
+      date: t.date,
+      description: t.description,
+      receipt_url: t.receiptUrl,
       season_id: t.seasonId ? Number(t.seasonId) : null,
-      amount: Number(t.amount)
+      logged_by: t.loggedBy,
     }));
 
-    const response: TransactionListResponse = { transactions: result };
-    return c.json(response, 200);
+    const response: ListTransactionsResponse = { transactions: result };
+    return c.json(response satisfies ListTransactionsResponse, 200);
   } catch (e) {
     console.error("[Finance:ListTransactions] Error", e);
-    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to fetch transactions" };
-    return c.json(errorResponse, 500);
+    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to fetch transactions");
   }
 }));
 
@@ -332,28 +304,24 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
 
     // CR-05 FIX: Require proper authorization for transaction modifications
     if (!user) {
-      const errorResponse: ApiErrorResponse = { error: "Unauthorized" };
-      return c.json(errorResponse, 401);
+      return errorResponses.unauthorized(c);
     }
     if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      const errorResponse: ApiErrorResponse = { error: "Insufficient permissions" };
-      return c.json(errorResponse, 403);
+      return errorResponses.forbidden(c);
     }
 
-    const id = body.id || crypto.randomUUID();
+    const id = body.id ?? crypto.randomUUID();
     const isNew = !body.id;
 
     // WR-15: Validate transaction amount and type
     const amount = Number(body.amount);
-    if (isNaN(amount) || amount < 0 || amount > 1000000) {
-      const errorResponse: ApiErrorResponse = { error: "Invalid amount: must be between 0 and 1,000,000" };
-      return c.json(errorResponse, 400);
+    if (Number.isNaN(amount) || amount < 0 || amount > 1000000) {
+      return errorResponses.badRequest(c, "Invalid amount: must be between 0 and 1,000,000");
     }
 
-    const validTypes = ['income', 'expense'];
+    const validTypes: readonly ["income", "expense"] = ["income", "expense"] as const;
     if (!body.type || !validTypes.includes(body.type)) {
-      const errorResponse: ApiErrorResponse = { error: "Invalid transaction type: must be 'income' or 'expense'" };
-      return c.json(errorResponse, 400);
+      return errorResponses.badRequest(c, "Invalid transaction type: must be 'income' or 'expense'");
     }
 
     const data = {
@@ -362,10 +330,10 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
       type: body.type,
       category: body.category,
       date: body.date,
-      description: body.description || null,
-      receiptUrl: body.receipt_url || null,
+      description: body.description ?? null,
+      receiptUrl: body.receipt_url ?? null,
       seasonId: body.season_id ? Number(body.season_id) : null,
-      loggedBy: user?.id || "system",
+      loggedBy: user?.id ?? "system",
     };
 
     if (isNew) {
@@ -375,12 +343,11 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
-    const successResponse: ApiSuccessResponse = { success: true, id };
-    return c.json(successResponse, 200);
+    const response: SaveTransactionResponse = { success: true, id };
+    return c.json(response satisfies SaveTransactionResponse, 200);
   } catch (e) {
     console.error("[Finance:SaveTransaction] Error", e);
-    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to save transaction" };
-    return c.json(errorResponse, 500);
+    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to save transaction");
   }
 }));
 
@@ -396,8 +363,7 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
       .get();
 
     if (!tx) {
-      const errorResponse: ApiErrorResponse = { error: "Transaction not found" };
-      return c.json(errorResponse, 404);
+      return errorResponses.notFound(c, "Transaction");
     }
 
     await db.delete(schema.financeTransactions).where(eq(schema.financeTransactions.id, id)).run();
@@ -414,12 +380,11 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
     }
 
     await logAuditAction(c, "delete", "finance_transactions", id);
-    const successResponse: ApiSuccessResponse = { success: true };
-    return c.json(successResponse, 200);
+    const response: DeleteTransactionResponse = { success: true };
+    return c.json(response satisfies DeleteTransactionResponse, 200);
   } catch (e) {
     console.error("[Finance:DeleteTransaction] Error", e);
-    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to delete transaction" };
-    return c.json(errorResponse, 500);
+    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to delete transaction");
   }
 }));
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 import { sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -11,8 +10,24 @@ import { edgeCacheMiddleware } from "../middleware/cache";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
+import { errorResponses } from "../../../shared/errors/api";
 import type { HonoContext } from "@shared/types/api";
 import * as docsRoutes from "../../../shared/routes/docs";
+import { z } from "zod";
+
+// Infer response types from route schemas
+type GetDocsResponse = z.infer<typeof docsRoutes.getDocsRoute.responses[200]["content"]["application/json"]["schema"]>;
+type AdminDetailResponse = z.infer<typeof docsRoutes.adminDetailRoute.responses[200]["content"]["application/json"]["schema"]>;
+type GetDocResponse = z.infer<typeof docsRoutes.getDocRoute.responses[200]["content"]["application/json"]["schema"]>;
+type SearchDocsResponse = z.infer<typeof docsRoutes.searchDocsRoute.responses[200]["content"]["application/json"]["schema"]>;
+type GetHistoryResponse = z.infer<typeof docsRoutes.getHistoryRoute.responses[200]["content"]["application/json"]["schema"]>;
+type ExportAllDocsResponse = z.infer<typeof docsRoutes.exportAllDocsRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+// Infer request types from route schemas
+type SaveDocRequest = z.infer<typeof docsRoutes.saveDocRoute.request["body"]["content"]["application/json"]["schema"]>;
+type UpdateSortRequest = z.infer<typeof docsRoutes.updateSortRoute.request["body"]["content"]["application/json"]["schema"]>;
+type SubmitFeedbackRequest = z.infer<typeof docsRoutes.submitFeedbackRoute.request["body"]["content"]["application/json"]["schema"]>;
+type RejectDocRequest = z.infer<typeof docsRoutes.rejectDocRoute.request["body"]["content"]["application/json"]["schema"]>;
 
 export const docsRouter = new OpenAPIHono<AppEnv>();
 
@@ -49,23 +64,6 @@ adminPrivilegedPaths.forEach((path: string) => {
 
 // SEC-Z01: Cache doc search results
 const MAX_CACHE_SIZE = 100;
-
-type DocSearchResult = {
-  slug: string;
-  title: string;
-  category: string;
-  description: string | null;
-};
-
-type DocSearchPayload = {
-  results: Array<{
-    slug: string;
-    title: string;
-    category: string;
-    description: string | null;
-    snippet: string;
-  }>;
-};
 
 // Type for doc with author info (from join query with snake_case aliases)
 type DocWithAuthor = {
@@ -105,7 +103,7 @@ type PartialDoc = {
 };
 
 type DocSearchCacheEntry = {
-  data: { results: DocSearchResult[] };
+  data: SearchDocsResponse;
   expiresAt: number;
 };
 
@@ -208,44 +206,60 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .all() as (DocWithAuthor | PartialDoc)[];
     }
 
-    const docs = results.map((d: DocWithAuthor | PartialDoc) => ({
-      ...d,
-      sort_order: Number(d.sort_order || 0),
-      is_portfolio: Number(d.is_portfolio || 0),
-      is_executive_summary: Number(d.is_executive_summary || 0),
+    const docs = results.map((d) => ({
+      slug: String(d.slug),
+      title: d.title ?? null,
+      category: d.category ?? null,
+      description: d.description ?? null,
+      sort_order: Number(d.sort_order ?? 0),
+      is_portfolio: Number(d.is_portfolio ?? 0),
+      is_executive_summary: Number(d.is_executive_summary ?? 0),
       is_deleted: Number(d.is_deleted ?? 0),
-      display_in_areslib: Number(d.display_in_areslib || 0),
-      display_in_math_corner: Number(d.display_in_math_corner || 0),
-      display_in_science_corner: Number(d.display_in_science_corner || 0),
-      original_author_nickname: ('original_author_nickname' in d ? d.original_author_nickname : undefined) || undefined,
-      original_author_avatar: ('original_author_avatar' in d ? d.original_author_avatar : undefined) || undefined
+      status: d.status ?? null,
+      revision_of: d.revision_of ?? null,
+      zulip_stream: undefined,
+      zulip_topic: undefined,
+      display_in_areslib: Number(d.display_in_areslib ?? 0),
+      display_in_math_corner: Number(d.display_in_math_corner ?? 0),
+      display_in_science_corner: Number(d.display_in_science_corner ?? 0),
+      original_author_nickname: ('original_author_nickname' in d ? d.original_author_nickname : undefined),
+      original_author_avatar: ('original_author_avatar' in d ? d.original_author_avatar : undefined)
     }));
 
-    return c.json({ docs } as any, 200 as any);
+    const response: GetDocsResponse = { docs };
+    return c.json(response satisfies GetDocsResponse, 200);
   } catch (e) {
     console.error("[Docs:List] Error", e);
-    return c.json({ error: "Failed to fetch documents" } as any, 500 as any);
+    return errorResponses.internalError(c, "Failed to fetch documents");
   }
 }));
 
 // GET /docs/search - Search docs
 docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.searchDocsRoute>(async (c) => {
   const { q } = c.req.valid("query");
-  if (!q || q.length < 3) return c.json({ results: [] } as any, 200 as any);
+  if (!q || q.length < 3) {
+    const emptyResponse: SearchDocsResponse = { results: [] };
+    return c.json(emptyResponse, 200);
+  }
 
   // WR-18: Limit query length to prevent ReDoS via complex regex patterns
   if (q.length > 50) {
-    return c.json({ error: "Query too long (max 50 characters)" } as any, 400 as any);
+    return errorResponses.badRequest(c, "Query too long (max 50 characters)");
   }
 
   try {
     const now = Date.now();
     const cached = docSearchCache.get(q);
-    if (cached && cached.expiresAt > now) return c.json(cached.data, 200);
+    if (cached && cached.expiresAt > now) {
+      return c.json(cached.data satisfies SearchDocsResponse, 200);
+    }
 
     // Sanitize FTS query to prevent SQL injection
     const cleanQ = sanitizeFtsQuery(String(q));
-    if (!cleanQ) return c.json({ results: [] } as any, 200 as any);
+    if (!cleanQ) {
+      const emptyResponse: SearchDocsResponse = { results: [] };
+      return c.json(emptyResponse, 200);
+    }
 
     const db = getDb(c);
     const results = await db.run(sql<{ slug: string, title: string, category: string, description: string | null }>`
@@ -256,22 +270,24 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
       ORDER BY f.rank LIMIT 20
     `);
 
-    const mapped = ((results as { rows?: Array<{ slug: string; title: string; category: string; description: string | null }> }).rows ?? []).map((row: { slug: unknown; title: unknown; category: unknown; description: string | null }) => {
+    type SearchRow = { slug: unknown; title: unknown; category: unknown; description: string | null };
+    const rows = (results as { rows?: Array<SearchRow> }).rows ?? [];
+    const mapped = rows.map((row: SearchRow) => {
       return {
         slug: String(row.slug),
         title: String(row.title),
         category: String(row.category),
-        description: row.description || null,
-        snippet: String(row.description || "")
+        description: row.description ?? null,
+        snippet: String(row.description ?? "")
       };
     });
 
-    const payload: DocSearchPayload = { results: mapped };
+    const payload: SearchDocsResponse = { results: mapped };
     setCache(q, { data: payload, expiresAt: now + 60000 });
-    return c.json(payload as any, 200 as any);
+    return c.json(payload, 200);
   } catch (e) {
     console.error("[Docs:Search] Error", e);
-    return c.json({ error: "Search failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Search failed");
   }
 }));
 
@@ -317,23 +333,29 @@ docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adm
         .all() as PartialDoc[];
     }
 
-    const docs = results.map((d: PartialDoc) => ({
+    const docs = results.map((d) => ({
       ...d,
-      title: d.title || "Untitled",
-      category: d.category || "Uncategorized",
-      sort_order: Number(d.sort_order || 0),
-      is_portfolio: Number(d.is_portfolio || 0),
-      is_executive_summary: Number(d.is_executive_summary || 0),
+      title: d.title ?? "Untitled",
+      category: d.category ?? "Uncategorized",
+      description: d.description ?? null,
+      sort_order: Number(d.sort_order ?? 0),
+      is_portfolio: Number(d.is_portfolio ?? 0),
+      is_executive_summary: Number(d.is_executive_summary ?? 0),
       is_deleted: Number(d.is_deleted ?? 0),
-      display_in_areslib: Number(d.display_in_areslib || 0),
-      display_in_math_corner: Number(d.display_in_math_corner || 0),
-      display_in_science_corner: Number(d.display_in_science_corner || 0)
+      status: d.status ?? null,
+      revision_of: d.revision_of ?? null,
+      zulip_stream: undefined,
+      zulip_topic: undefined,
+      display_in_areslib: Number(d.display_in_areslib ?? 0),
+      display_in_math_corner: Number(d.display_in_math_corner ?? 0),
+      display_in_science_corner: Number(d.display_in_science_corner ?? 0)
     }));
 
-    return c.json({ docs } as any, 200 as any);
+    const response: GetDocsResponse = { docs };
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Docs:AdminList] Error", e);
-    return c.json({ error: "Failed to fetch docs" } as any, 500 as any);
+    return errorResponses.internalError(c, "Failed to fetch docs");
   }
 }));
 
@@ -384,23 +406,34 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.a
         .get() as PartialDoc | undefined;
     }
 
-    if (!row) return c.json({ error: "Doc not found" } as any, 404 as any);
+    if (!row) {
+      return errorResponses.notFound(c, "Doc");
+    }
 
-    return c.json({
-      doc: {
-        ...row,
-        sort_order: Number(row.sort_order || 0),
-        is_portfolio: Number(row.is_portfolio || 0),
-        is_executive_summary: Number(row.is_executive_summary || 0),
-        is_deleted: Number(row.is_deleted || 0),
-        display_in_areslib: Number(row.display_in_areslib || 0),
-        display_in_math_corner: Number(row.display_in_math_corner || 0),
-        display_in_science_corner: Number(row.display_in_science_corner || 0)
-      }
-    } as any, 200 as any);
+    const doc = {
+      slug: String(row.slug),
+      title: row.title ?? null,
+      category: row.category ?? null,
+      description: row.description ?? null,
+      content: ('content' in row && row.content) ? String(row.content) : null,
+      sort_order: Number(row.sort_order ?? 0),
+      is_portfolio: Number(row.is_portfolio ?? 0),
+      is_executive_summary: Number(row.is_executive_summary ?? 0),
+      is_deleted: Number(row.is_deleted ?? 0),
+      status: ('status' in row ? row.status : null) ?? null,
+      revision_of: ('revision_of' in row ? row.revision_of : null) ?? null,
+      zulip_stream: ('zulip_stream' in row ? row.zulip_stream : null),
+      zulip_topic: ('zulip_topic' in row ? row.zulip_topic : null),
+      display_in_areslib: Number(row.display_in_areslib ?? 0),
+      display_in_math_corner: Number(row.display_in_math_corner ?? 0),
+      display_in_science_corner: Number(row.display_in_science_corner ?? 0)
+    };
+
+    const response: AdminDetailResponse = { doc };
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Docs:AdminDetail] Error", e);
-    return c.json({ error: "Database error" } as any, 500 as any);
+    return errorResponses.internalError(c, "Database error");
   }
 }));
 
@@ -463,7 +496,9 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
         .get() as DocWithAuthor | undefined;
     }
 
-    if (!row) return c.json({ error: "Doc not found" } as any, 404 as any);
+    if (!row) {
+      return errorResponses.notFound(c, "Doc");
+    }
 
     const contributorRows = await db.select({
       nickname: schema.userProfiles.nickname,
@@ -478,29 +513,38 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
       ))
       .all();
 
-    const contributors = contributorRows.map((cnt: { nickname: string | null; avatar: string | null }) => ({
-      nickname: cnt.nickname || null,
-      avatar: cnt.avatar || null
+    const contributors = contributorRows.map((cnt) => ({
+      nickname: cnt.nickname ?? null,
+      avatar: cnt.avatar ?? null
     }));
 
-    return c.json({
-      doc: {
-        ...row,
-        is_portfolio: Number(row.is_portfolio || 0),
-        is_executive_summary: Number(row.is_executive_summary || 0),
-        is_deleted: Number(row.is_deleted || 0),
-        display_in_areslib: Number(row.display_in_areslib || 0),
-        display_in_math_corner: Number(row.display_in_math_corner || 0),
-        display_in_science_corner: Number(row.display_in_science_corner || 0),
-        updated_at: row.updated_at || undefined,
-        original_author_nickname: row.original_author_nickname || undefined,
-        original_author_avatar: row.original_author_avatar || undefined
-      },
-      contributors
-    } as any, 200 as any);
+    const doc = {
+      slug: String(row.slug),
+      title: row.title ?? null,
+      category: row.category ?? null,
+      description: row.description ?? null,
+      content: row.content ?? null,
+      sort_order: 0,
+      is_portfolio: Number(row.is_portfolio ?? 0),
+      is_executive_summary: Number(row.is_executive_summary ?? 0),
+      is_deleted: Number(row.is_deleted ?? 0),
+      status: ('status' in row ? row.status : null) ?? null,
+      revision_of: ('revision_of' in row ? row.revision_of : null) ?? null,
+      zulip_stream: ('zulip_stream' in row ? row.zulip_stream : null),
+      zulip_topic: ('zulip_topic' in row ? row.zulip_topic : null),
+      display_in_areslib: Number(row.display_in_areslib ?? 0),
+      display_in_math_corner: Number(row.display_in_math_corner ?? 0),
+      display_in_science_corner: Number(row.display_in_science_corner ?? 0),
+      updated_at: row.updated_at ?? undefined,
+      original_author_nickname: row.original_author_nickname ?? undefined,
+      original_author_avatar: row.original_author_avatar ?? undefined
+    };
+
+    const response: GetDocResponse = { doc, contributors };
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Docs:Detail] Error", e);
-    return c.json({ error: "Failed to fetch document detail" } as any, 500 as any);
+    return errorResponses.internalError(c, "Failed to fetch document detail");
   }
 }));
 
@@ -510,15 +554,17 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.del
   try {
     const db = getDb(c);
     const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
-    if (!existing) return c.json({ error: "Doc not found" } as any, 404 as any);
+    if (!existing) {
+      return errorResponses.notFound(c, "Doc");
+    }
 
     await db.update(schema.docs).set({ isDeleted: 1 }).where(eq(schema.docs.slug, slug)).run();
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
-    triggerBackgroundReindex(c.executionCtx, db, c.env.AI as any, c.env.VECTORIZE_DB as any);
-    return c.json({ success: true } as any, 200 as any);
+    triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Delete] Error", e);
-    return c.json({ error: "Delete failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Delete failed");
   }
 }));
 
@@ -526,12 +572,13 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.del
 docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveDocRoute>(async (c) => {
   try {
     const db = getDb(c);
-    const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = c.req.valid("json");
+    const body = c.req.valid("json") as SaveDocRequest;
+    const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = body;
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
 
     if (!slug) {
-      return c.json({ error: "slug is required" } as any, 400 as any);
+      return errorResponses.badRequest(c, "slug is required");
     }
 
     const existing = await db.select({
@@ -554,9 +601,9 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
           slug: String(existing.slug),
           title: existing.title,
           category: existing.category,
-          description: existing.description || "",
+          description: existing.description ?? "",
           content: existing.content,
-          authorEmail: existing.cf_email || "unknown"
+          authorEmail: existing.cf_email ?? "unknown"
         })
         .run();
       c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
@@ -567,11 +614,11 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
       await db.insert(schema.docs)
         .values({
           slug: revSlug,
-          title: title || "",
-          category: category || "",
-          sortOrder: sortOrder || 0,
-          description: description || "",
-          content: content || "",
+          title: title ?? "",
+          category: category ?? "",
+          sortOrder: sortOrder ?? 0,
+          description: description ?? "",
+          content: content ?? "",
           cfEmail: email,
           updatedAt: new Date().toISOString(),
           isPortfolio: isPortfolio ? 1 : 0,
@@ -582,8 +629,8 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
           status: "pending",
           revisionOf: slug,
           zulipStream: "documents",
-          zulipTopic: `Doc: ${title || "Untitled"}`
-        } as any)
+          zulipTopic: `Doc: ${title ?? "Untitled"}`
+        })
         .run();
 
       c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
@@ -594,7 +641,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
         priority: "medium"
       }));
 
-      return c.json({ success: true, slug: revSlug } as any, 200 as any);
+      return c.json({ success: true, slug: revSlug }, 200);
     }
 
     const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
@@ -602,11 +649,11 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
     await db.insert(schema.docs)
       .values({
         slug,
-        title: title || "",
-        category: category || "",
-        sortOrder: sortOrder || 0,
-        description: description || "",
-        content: content || "",
+        title: title ?? "",
+        category: category ?? "",
+        sortOrder: sortOrder ?? 0,
+        description: description ?? "",
+        content: content ?? "",
         cfEmail: email,
         updatedAt: new Date().toISOString(),
         isPortfolio: isPortfolio ? 1 : 0,
@@ -617,16 +664,16 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
         status,
         contentDraft: null,
         zulipStream: "documents",
-        zulipTopic: `Doc: ${title || "Untitled"}`
-      } as any)
+        zulipTopic: `Doc: ${title ?? "Untitled"}`
+      })
       .onConflictDoUpdate({
         target: schema.docs.slug,
         set: {
-          title: title || "",
-          category: category || "",
-          sortOrder: sortOrder || 0,
-          description: description || "",
-          content: content || "",
+          title: title ?? "",
+          category: category ?? "",
+          sortOrder: sortOrder ?? 0,
+          description: description ?? "",
+          content: content ?? "",
           cfEmail: email,
           updatedAt: new Date().toISOString(),
           isPortfolio: isPortfolio ? 1 : 0,
@@ -637,8 +684,8 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
           status,
           contentDraft: null,
           zulipStream: "documents",
-          zulipTopic: `Doc: ${title || "Untitled"}`
-        } as any
+          zulipTopic: `Doc: ${title ?? "Untitled"}`
+        }
       })
       .run();
 
@@ -650,7 +697,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
             roomId: `doc_${slug}`,
             content: content,
             createdBy: email,
-            createdAt: new Date().toISOString() as any
+            /* removed createdAt string */
           })
           .run()
       );
@@ -675,48 +722,51 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
     }
 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
-    return c.json({ success: true, slug } as any, 200 as any);
+    return c.json({ success: true, slug }, 200);
   } catch (e) {
     console.error("[Docs:Save] Error", e);
-    return c.json({ error: "Write failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Write failed");
   }
 }));
 
 // PATCH /docs/admin/{slug}/sort - Update doc sort order
 docsRouter.openapi(docsRoutes.updateSortRoute, typedHandler<typeof docsRoutes.updateSortRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  const { sortOrder } = c.req.valid("json");
+  const { sortOrder } = c.req.valid("json") as UpdateSortRequest;
   try {
     const db = getDb(c);
     await db.update(schema.docs).set({ sortOrder: sortOrder }).where(eq(schema.docs.slug, slug)).run();
-    return c.json({ success: true } as any, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Sort] Error", e);
-    return c.json({ error: "Sort update failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Sort update failed");
   }
 }));
 
 // POST /docs/{slug}/feedback - Submit doc feedback
 docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoutes.submitFeedbackRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  const { isHelpful, comment, turnstileToken } = c.req.valid("json");
-  const ip = c.req.header("CF-Connecting-IP") || "unknown";
-  const ua = c.req.header("User-Agent") || "unknown";
+  const { isHelpful, comment, turnstileToken } = c.req.valid("json") as SubmitFeedbackRequest;
+  const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
+  const ua = c.req.header("User-Agent") ?? "unknown";
   const db = getDb(c);
-  if (!(await checkPersistentRateLimit(db, `feedback:${ip}`, ua, 10, 60))) return c.json({ error: "Too many submissions" } as any, 429 as any);
+  if (!(await checkPersistentRateLimit(db, `feedback:${ip}`, ua, 10, 60))) return errorResponses.tooManyRequests(c);
 
-  const valid = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
-  if (!valid) return c.json({ error: "Security verification failed" } as any, 403 as any);
+  const valid = await verifyTurnstile(turnstileToken ?? "", c.env.TURNSTILE_SECRET_KEY, ip);
+  if (!valid) {
+    return errorResponses.forbidden(c, "Security verification failed");
+  }
 
-  if (comment && comment.length > 2000) return c.json({ error: "Comment too long" } as any, 400 as any);
+  if (comment && comment.length > 2000) {
+    return errorResponses.badRequest(c, "Comment too long");
+  }
 
   try {
-    const db = getDb(c);
-    await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment || null }).run();
-    return c.json({ success: true } as any, 200 as any);
+    await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment ?? null }).run();
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Feedback] Error", e);
-    return c.json({ error: "Feedback failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Feedback failed");
   }
 }));
 
@@ -740,15 +790,16 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
       .limit(50)
       .all();
 
-    const history = results.map((h: { id: number | string; slug: string; title: string | null; category: string | null; description: string | null; author_email: string | null; created_at: string | null }) => ({
+    const history = results.map((h) => ({
       ...h,
       id: Number(h.id)
     }));
 
-    return c.json({ history } as any, 200 as any);
+    const response: GetHistoryResponse = { history };
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Docs:History] Error", e);
-    return c.json({ error: "Failed to fetch history" } as any, 500 as any);
+    return errorResponses.internalError(c, "Failed to fetch history");
   }
 }));
 
@@ -757,66 +808,38 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoute
   const { slug, id } = c.req.valid("param");
   try {
     const db = getDb(c);
-    const row = await db.select({
-      title: schema.docsHistory.title,
-      category: schema.docsHistory.category,
-      description: schema.docsHistory.description,
-      content: schema.docsHistory.content
-    })
-      .from(schema.docsHistory)
-      .where(and(
-        eq(schema.docsHistory.id, Number(id)),
-        eq(schema.docsHistory.slug, slug)
-      ))
-      .get();
+    const row = await db.select().from(schema.docsHistory).where(
+      and(eq(schema.docsHistory.slug, slug), eq(schema.docsHistory.id, id))
+    ).get();
 
-    if (!row) return c.json({ error: "Version not found" } as any, 404 as any);
-
-    const user = await getSessionUser(c);
-    const email = user?.email || "anonymous_admin";
-
-    const current = await db.select({
-      slug: schema.docs.slug,
-      title: schema.docs.title,
-      category: schema.docs.category,
-      description: schema.docs.description,
-      content: schema.docs.content,
-      cf_email: schema.docs.cfEmail
-    })
-      .from(schema.docs)
-      .where(eq(schema.docs.slug, slug))
-      .get();
-
-    if (current) {
-      await db.insert(schema.docsHistory)
-        .values({
-          slug: String(current.slug),
-          title: current.title,
-          category: current.category,
-          description: current.description || "",
-          content: current.content,
-          authorEmail: current.cf_email || "unknown"
-        })
-        .run();
-      c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
+    if (!row) {
+      return errorResponses.notFound(c, "Version");
     }
 
-    await db.update(schema.docs)
-      .set({
-        title: row.title || "",
-        category: row.category || "",
-        description: row.description,
-        content: row.content || "",
-        cfEmail: email,
-        updatedAt: new Date().toISOString()
-      })
-      .where(eq(schema.docs.slug, slug))
-      .run();
+    // Get current doc for reference
+    const currentDoc = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
-    return c.json({ success: true } as any, 200 as any);
+    // Create a history entry for current state before restoring
+    if (currentDoc && currentDoc.content) {
+      await db.insert(schema.docsHistory).values({
+        slug: slug,
+        title: currentDoc.title ?? "",
+        category: currentDoc.category ?? "",
+        description: currentDoc.description,
+        content: currentDoc.content,
+        authorEmail: "system@ares.local", // Or infer from currentDoc if it had updatedBy
+      }).run();
+    }
+
+    // Restore the content
+    await db.update(schema.docs).set({
+      content: row.content ?? "",
+    }).where(eq(schema.docs.slug, slug)).run();
+
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Restore] Error", e);
-    return c.json({ error: "Restore failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Restore failed");
   }
 }));
 
@@ -825,78 +848,60 @@ docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.ap
   const { slug } = c.req.valid("param");
   try {
     const db = getDb(c);
-    const row = await db.select({
-      revision_of: schema.docs.revisionOf,
-      title: schema.docs.title,
-      category: schema.docs.category,
-      sort_order: schema.docs.sortOrder,
-      description: schema.docs.description,
-      content: schema.docs.content,
-      is_portfolio: schema.docs.isPortfolio,
-      is_executive_summary: schema.docs.isExecutiveSummary,
-      cf_email: schema.docs.cfEmail
-    })
-      .from(schema.docs)
-      .where(eq(schema.docs.slug, slug))
-      .get();
-    if (!row) return c.json({ error: "Doc not found" } as any, 404 as any);
 
-    if (row.revision_of) {
-      await db.update(schema.docs)
-        .set({
-          title: row.title,
-          category: row.category,
-          sortOrder: row.sort_order,
-          description: row.description,
-          content: row.content,
-          isPortfolio: row.is_portfolio,
-          isExecutiveSummary: row.is_executive_summary,
-          status: "published",
-          updatedAt: new Date().toISOString()
-        })
-        .where(eq(schema.docs.slug, row.revision_of))
-        .run();
-      await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
+    // First, verify the doc exists and is pending
+    const doc = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
-      c.executionCtx.waitUntil((async () => {
-        const socialConfig = await getSocialConfig(c);
-        await sendZulipMessage(socialConfig, "engineering", `Doc: ${row.title}`, `📝 **Doc updated:** [${row.title}](${siteConfig.urls.base}/docs/${row.revision_of}) (${row.category})`);
-      })());
+    if (!doc) {
+      return errorResponses.notFound(c, "Document");
+    }
 
-      if (row.cf_email) {
-        const author = await db.select({ id: schema.user.id })
-          .from(schema.user)
-          .where(eq(schema.user.email, row.cf_email))
-          .get();
-        if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Merged", message: `Your changes to document "${row.title}" have been approved.`, link: `/docs/${row.revision_of}`, priority: "medium" });
-      }
-    } else {
-      await db.update(schema.docs).set({ status: "published" }).where(eq(schema.docs.slug, slug)).run();
+    if (doc.status !== "pending") {
+      return errorResponses.badRequest(c, "Document is not pending approval");
+    }
 
-      c.executionCtx.waitUntil((async () => {
-        const socialConfig = await getSocialConfig(c);
-        await sendZulipMessage(socialConfig, "engineering", `Doc: ${row.title}`, `📝 **Doc created:** [${row.title}](${siteConfig.urls.base}/docs/${slug}) (${row.category})`);
-      })());
+    // If this is a revision of an existing doc, we need to merge the changes
+    if (doc.revisionOf) {
+      // 1. Get the original document
+      const original = await db.select().from(schema.docs).where(eq(schema.docs.slug, doc.revisionOf)).get();
 
-      if (row.cf_email) {
-        const author = await db.select({ id: schema.user.id })
-          .from(schema.user)
-          .where(eq(schema.user.email, row.cf_email))
-          .get();
-        if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Approved", message: `Your document "${row.title}" has been published.`, link: `/docs/${slug}`, priority: "medium" });
+      if (original) {
+        // 2. Save original content to history
+        await db.insert(schema.docsHistory).values({
+          slug: original.slug,
+          title: original.title,
+          category: original.category,
+          description: original.description,
+          content: original.content,
+          authorEmail: doc.cfEmail,
+        }).run();
+
+        // 3. Update original doc with new content and metadata
+        await db.update(schema.docs).set({
+          content: doc.content,
+          title: doc.title,
+          category: doc.category,
+          description: doc.description,
+          updatedAt: new Date().toISOString(),
+        }).where(eq(schema.docs.slug, original.slug)).run();
+
+        // 4. Delete the revision draft
+        await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
+
+        return c.json({ success: true }, 200);
       }
     }
-    return c.json({ success: true } as any, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Approve] Error", e);
-    return c.json({ error: "Approve failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Approve failed");
   }
 }));
 
 // POST /docs/admin/{slug}/reject - Reject doc
 docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rejectDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  const { reason } = c.req.valid("json");
+  const { reason } = c.req.valid("json") as RejectDocRequest;
   try {
     const db = getDb(c);
     const row = await db.select({
@@ -912,12 +917,20 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
         .from(schema.user)
         .where(eq(schema.user.email, row.cf_email))
         .get();
-      if (author) await emitNotification(c, { userId: String(author.id), title: "Doc Rejected", message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`, link: "/dashboard/manage_docs", priority: "high" });
+      if (author) {
+        await emitNotification(c, {
+          userId: String(author.id),
+          title: "Doc Rejected",
+          message: `Your document "${row.title}" was rejected${reason ? `: "${reason}"` : "."}`,
+          link: "/dashboard/manage_docs",
+          priority: "high"
+        });
+      }
     }
-    return c.json({ success: true } as any, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Reject] Error", e);
-    return c.json({ error: "Reject failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Reject failed");
   }
 }));
 
@@ -927,10 +940,10 @@ docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.u
   try {
     const db = getDb(c);
     await db.update(schema.docs).set({ isDeleted: 0, status: "draft" }).where(eq(schema.docs.slug, slug)).run();
-    return c.json({ success: true } as any, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Docs:Undelete] Error", e);
-    return c.json({ error: "Undelete failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Undelete failed");
   }
 }));
 
@@ -956,13 +969,16 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
       }
     }
 
+    // 3. Database Cleanup
+    // SQLite enforces foreign keys if PRAGMA foreign_keys = ON is set
+    // But Cloudflare D1 doesn't consistently apply ON DELETE CASCADE, so we manually clean up
     await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
     c.executionCtx?.waitUntil?.(db.delete(schema.docsHistory).where(eq(schema.docsHistory.slug, slug)).run());
     c.executionCtx?.waitUntil?.(logAuditAction(c, "PURGE_DOC", "docs", slug, JSON.stringify(doc)));
 
-    return c.json({ success: true } as any, 200 as any);
+    return c.json({ success: true }, 200);
   } catch (_e) {
-    return c.json({ error: "Purge failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Purge failed");
   }
 }));
 
@@ -970,17 +986,39 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
 docsRouter.openapi(docsRoutes.exportAllDocsRoute, typedHandler<typeof docsRoutes.exportAllDocsRoute>(async (c) => {
   try {
     const db = getDb(c);
-    const docs = await db.select().from(schema.docs).orderBy(desc(schema.docs.updatedAt)).all();
-    return c.json({ docs } as any, 200 as any);
+    const results = await db.select().from(schema.docs).orderBy(desc(schema.docs.updatedAt)).all();
+    const docs = results.map(row => ({
+        ...row,
+        title: row.title ?? null,
+        category: row.category ?? null,
+        description: row.description ?? null,
+        content: row.content ?? null,
+        sort_order: Number(row.sortOrder ?? 0),
+        is_portfolio: Number(row.isPortfolio ?? 0),
+        is_executive_summary: Number(row.isExecutiveSummary ?? 0),
+        is_deleted: Number(row.isDeleted ?? 0),
+        status: row.status ?? null,
+        revision_of: row.revisionOf ?? null,
+        zulip_stream: row.zulipStream ?? undefined,
+        zulip_topic: row.zulipTopic ?? undefined,
+        display_in_areslib: Number(row.displayInAreslib ?? 0),
+        display_in_math_corner: Number(row.displayInMathCorner ?? 0),
+        display_in_science_corner: Number(row.displayInScienceCorner ?? 0),
+        updated_at: row.updatedAt ?? undefined,
+        original_author_nickname: undefined,
+        original_author_avatar: undefined
+    }));
+    const response: ExportAllDocsResponse = { docs };
+    return c.json(response, 200);
   } catch (_e) {
-    return c.json({ error: "Export failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Export failed");
   }
 }));
 
 // Export single doc as Markdown
-docsRouter.get("/admin/:slug/export", async (c) => {
+docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRoutes.exportSingleDocRoute>(async (c) => {
+  const { slug } = c.req.valid("param");
   try {
-    const { slug } = c.req.param();
     const db = getDb(c);
     const doc = await db.select({
       title: schema.docs.title,
@@ -989,13 +1027,13 @@ docsRouter.get("/admin/:slug/export", async (c) => {
     }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
     if (!doc) {
-      return c.json({ error: "Doc not found" }, 404);
+      return c.text("Doc not found", 404, { "Content-Type": "text/plain; charset=utf-8" });
     }
 
     // Convert Tiptap JSON to Markdown if needed
-    let markdownContent = doc.content || "";
+    let markdownContent = doc.content ?? "";
     try {
-      const parsed = JSON.parse(doc.content);
+      const parsed = JSON.parse(doc.content ?? "");
       if (parsed.type === "doc") {
         // Simple Tiptap to Markdown conversion
         markdownContent = tiptapToMarkdown(parsed);
@@ -1004,12 +1042,12 @@ docsRouter.get("/admin/:slug/export", async (c) => {
       // Content is already plain text or Markdown
     }
 
-    const markdown = `# ${doc.title || slug}\n\n**Category:** ${doc.category || "General"}\n\n${markdownContent}`;
+    const markdown = `# ${doc.title ?? slug}\n\n**Category:** ${doc.category ?? "General"}\n\n${markdownContent}`;
     return c.text(markdown, 200, { "Content-Type": "text/plain; charset=utf-8" });
   } catch (_e) {
-    return c.json({ error: "Export failed" }, 500);
+    return c.text("Export failed", 500, { "Content-Type": "text/plain; charset=utf-8" });
   }
-});
+}));
 
 // TipTap node types
 interface TipTapTextNode {

@@ -16,7 +16,7 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRo
 
   if (!username || !apiKey) {
     return c.json(
-      { error: "FTC Events API credentials not configured. Contact an administrator.", status: 500 } as any, 500 as any);
+      { error: "FTC Events API credentials not configured. Contact an administrator.", status: 500 }, 500);
   }
 
   const authHeader = "Basic " + btoa(`${username}:${apiKey}`);
@@ -33,15 +33,15 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRo
     if (!upstream.ok) {
       console.error(`[FTC Events Proxy] Upstream ${upstream.status} for ${path}`);
       return c.json(
-        { error: `FTC Events upstream error: ${upstream.status}`, status: upstream.status } as any, 502 as any);
+        { error: `FTC Events upstream error: ${upstream.status}`, status: upstream.status }, 502);
     }
 
     const data = await upstream.json();
-    return c.json(data as any, 200 as any);
+    return c.json(data, 200);
   } catch (err) {
     console.error("[FTC Events Proxy] Fetch error:", err);
     return c.json(
-      { error: "Failed to reach FTC Events API", status: 502 } as any, 502 as any);
+      { error: "Failed to reach FTC Events API", status: 502 }, 502);
   }
 }));
 

@@ -116,7 +116,7 @@ async function verifyGitHubSignature(
 }
 
 // ── POST /webhooks/github — Receive GitHub webhook events ────────────
-githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhookRoute>(async (c) => {
+githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
   const secret = c.env.GITHUB_WEBHOOK_SECRET;
   const rawBody = await c.req.text();
 
@@ -133,9 +133,9 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
   }
 
   const event = c.req.header("X-GitHub-Event") || "unknown";
-  let payload: GitHubWebhookPayload;
+  let payload: any;
   try {
-    payload = JSON.parse(rawBody) as GitHubWebhookPayload;
+    payload = JSON.parse(rawBody);
   } catch {
     return c.json({ error: "Invalid JSON" }, 400);
   }
@@ -158,7 +158,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
           ).catch((err: unknown) => console.error(err)));
         } else if (action === "edited" && changes) {
           const fieldChanges = Object.entries(changes)
-            .map(([key, val]: [string, GitHubChangeValue]) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
+            .map(([key, val]: any) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
             .join("\n");
 
           if (fieldChanges) {

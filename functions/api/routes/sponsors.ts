@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { typedHandler } from "../utils/handler";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -15,18 +16,28 @@ import {
   getAdminTokensRoute,
   generateTokenRoute,
 } from "../../../shared/routes/sponsors";
+import {
+  sponsorResponseSchema,
+  sponsorRoiMetricSchema,
+  sponsorTokenSchema,
+} from "../../../shared/routes/sponsors";
+import { errorResponses } from "../../../shared/errors/api";
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
 
-type SponsorSelectedRow = {
-  id: string | null;
-  name: string;
-  tier: string;
-  logo_url: string | null;
-  website_url: string | null;
-  is_active: number | null;
-  created_at: string | null;
-};
+// Response type inference helpers
+type GetSponsorsResponse = z.infer<typeof getSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
+type GetRoiResponse = z.infer<typeof getRoiRoute.responses[200]["content"]["application/json"]["schema"]>;
+type AdminListSponsorsResponse = z.infer<typeof adminListSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
+type SaveSponsorResponse = z.infer<typeof saveSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
+type DeleteSponsorResponse = z.infer<typeof deleteSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
+type GetAdminTokensResponse = z.infer<typeof getAdminTokensRoute.responses[200]["content"]["application/json"]["schema"]>;
+type GenerateTokenResponse = z.infer<typeof generateTokenRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+// Infer individual types from schemas
+type SponsorResponse = z.infer<typeof sponsorResponseSchema>;
+type SponsorRoiMetric = z.infer<typeof sponsorRoiMetricSchema>;
+type SponsorToken = z.infer<typeof sponsorTokenSchema>;
 
 // WR-12: Add rate limiting to public sponsor endpoint to prevent scraping
 sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
@@ -54,20 +65,21 @@ sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(a
       .orderBy(sql<number>`CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END`)
       .all();
 
-    const sponsors = (results as SponsorSelectedRow[] & { created_at: string | null }[]).map((s) => ({
+    const sponsors: SponsorResponse[] = results.map((s): SponsorResponse => ({
       id: s.id ?? "",
       name: s.name,
-      tier: (s.tier || "In-Kind") as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
-      logo_url: s.logo_url || null,
-      website_url: s.website_url || null,
+      tier: (s.tier || "In-Kind") as SponsorResponse["tier"],
+      logo_url: s.logo_url ?? null,
+      website_url: s.website_url ?? null,
       is_active: s.is_active ? 1 : 0,
       created_at: s.created_at ?? null,
     }));
 
-    return c.json({ sponsors }, 200);
+    const response: GetSponsorsResponse = { sponsors };
+    return c.json(response satisfies GetSponsorsResponse, 200);
   } catch (e) {
     console.error("[Sponsors:List] Error", e);
-    return c.json({ error: "Failed to fetch sponsors" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch sponsors");
   }
 }));
 
@@ -83,7 +95,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       .all();
 
     if (!tokens || tokens.length === 0) {
-      return c.json({ error: "Invalid token" }, 403);
+      return errorResponses.forbidden(c, "Invalid token");
     }
     const sponsor_id = tokens[0].sponsorId;
 
@@ -102,7 +114,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       .get();
 
     if (!sponsorRow) {
-      return c.json({ error: "Sponsor not found" }, 403);
+      return errorResponses.forbidden(c, "Sponsor not found");
     }
 
     const metricsRow = await db
@@ -118,17 +130,17 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       .orderBy(asc(schema.sponsorMetrics.createdAt))
       .all();
 
-    const sponsor = {
+    const sponsor: SponsorResponse = {
       id: sponsorRow.id ?? "",
       name: sponsorRow.name,
-      tier: (sponsorRow.tier || "In-Kind") as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
-      logo_url: sponsorRow.logo_url || null,
-      website_url: sponsorRow.website_url || null,
+      tier: (sponsorRow.tier || "In-Kind") as SponsorResponse["tier"],
+      logo_url: sponsorRow.logo_url ?? null,
+      website_url: sponsorRow.website_url ?? null,
       is_active: sponsorRow.is_active ? 1 : 0,
       created_at: sponsorRow.created_at ?? null,
     };
 
-    const metrics = metricsRow.map((m) => ({
+    const metrics: SponsorRoiMetric[] = metricsRow.map((m): SponsorRoiMetric => ({
       id: m.id ?? "",
       sponsor_id: m.sponsor_id,
       clicks: m.clicks ?? 0,
@@ -136,10 +148,11 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       year_month: m.year_month,
     }));
 
-    return c.json({ sponsor, metrics }, 200);
+    const response = { sponsor, metrics } satisfies z.infer<typeof getRoiRoute.responses[200]["content"]["application/json"]["schema"]>;
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Sponsors:Roi] Error", e);
-    return c.json({ error: "Failed to fetch ROI" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch ROI");
   }
 }));
 
@@ -157,23 +170,21 @@ sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSpon
         created_at: schema.sponsors.createdAt,
       }).from(schema.sponsors).all();
 
-    return c.json(
-      {
-        sponsors: sponsors.map((s) => ({
-          id: s.id ?? "",
-          name: s.name,
-          tier: (s.tier || "In-Kind") as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
-          logo_url: s.logo_url || null,
-          website_url: s.website_url || null,
-          is_active: s.is_active ? 1 : 0,
-          created_at: s.created_at ?? null,
-        })),
-      },
-      200
-    );
+    const mappedSponsors: SponsorResponse[] = sponsors.map((s): SponsorResponse => ({
+      id: s.id ?? "",
+      name: s.name,
+      tier: (s.tier || "In-Kind") as SponsorResponse["tier"],
+      logo_url: s.logo_url ?? null,
+      website_url: s.website_url ?? null,
+      is_active: s.is_active ? 1 : 0,
+      created_at: s.created_at ?? null,
+    }));
+
+    const response = { sponsors: mappedSponsors } satisfies z.infer<typeof adminListSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Sponsors:AdminList] Error", e);
-    return c.json({ error: "Admin access required" }, 500);
+    return errorResponses.internalError(c, "Admin access required");
   }
 }));
 
@@ -190,8 +201,8 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
         .set({
           name: body.name,
           tier: body.tier,
-          logoUrl: body.logo_url || null,
-          websiteUrl: body.website_url || null,
+          logoUrl: body.logo_url ?? null,
+          websiteUrl: body.website_url ?? null,
           isActive: body.is_active ? 1 : 0,
         })
         .where(eq(schema.sponsors.id, body.id))
@@ -204,8 +215,8 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
           id,
           name: body.name,
           tier: body.tier,
-          logoUrl: body.logo_url || null,
-          websiteUrl: body.website_url || null,
+          logoUrl: body.logo_url ?? null,
+          websiteUrl: body.website_url ?? null,
           isActive: body.is_active ? 1 : 0,
         })
         .run();
@@ -214,10 +225,11 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
       );
     }
 
-    return c.json({ success: true, id }, 200);
+    const response = { success: true, id } satisfies z.infer<typeof saveSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Sponsors:Save] Error", e);
-    return c.json({ error: "Failed to save sponsor" }, 500);
+    return errorResponses.internalError(c, "Failed to save sponsor");
   }
 }));
 
@@ -229,10 +241,12 @@ sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRout
 
     await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", id));
-    return c.json({ success: true }, 200);
+
+    const response = { success: true } satisfies z.infer<typeof deleteSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Sponsors:Delete] Error", e);
-    return c.json({ error: "Failed to delete sponsor" }, 500);
+    return errorResponses.internalError(c, "Failed to delete sponsor");
   }
 }));
 
@@ -252,18 +266,19 @@ sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRo
       .orderBy(desc(schema.sponsorTokens.createdAt))
       .all();
 
-    const tokens = results.map((t) => ({
+    const tokens: SponsorToken[] = results.map((t): SponsorToken => ({
       token: t.token ?? "",
       sponsor_id: t.sponsor_id,
-      sponsor_name: t.sponsor_name,
+      sponsor_name: t.sponsor_name ?? undefined,
       created_at: t.created_at ?? "",
       last_used: null,
     }));
 
-    return c.json({ tokens }, 200);
+    const response = { tokens } satisfies z.infer<typeof getAdminTokensRoute.responses[200]["content"]["application/json"]["schema"]>;
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Sponsors:Tokens] Error", e);
-    return c.json({ error: "Failed to fetch tokens" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch tokens");
   }
 }));
 
@@ -285,10 +300,11 @@ sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRout
       .get();
     if (sRes) await sendZulipAlert(c.env, "Sponsor", "ROI Token Generated", `ROI token for **${sRes.name}**.`);
 
-    return c.json({ success: true, token }, 200);
+    const response = { success: true, token } satisfies z.infer<typeof generateTokenRoute.responses[200]["content"]["application/json"]["schema"]>;
+    return c.json(response, 200);
   } catch (error) {
     console.error("[Sponsors:GenerateToken] Error:", error);
-    return c.json({ error: "Failed to generate token" }, 500);
+    return errorResponses.internalError(c, "Failed to generate token");
   }
 }));
 

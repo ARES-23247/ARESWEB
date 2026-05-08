@@ -1,5 +1,4 @@
 import { typedHandler } from "../utils/handler";
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, desc, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -17,6 +16,7 @@ import {
   purgeSeasonRoute,
 } from "../../../shared/routes/seasons";
 import { edgeCacheMiddleware } from "../middleware/cache";
+import { errorResponses } from "../../../shared/errors/api";
 
 export const seasonsRouter = new OpenAPIHono<AppEnv>();
 
@@ -59,15 +59,15 @@ seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(as
     const seasons = results.map((r) => ({
       ...r,
       start_year: Number(r.start_year),
-      end_year: Number(r.end_year || Number(r.start_year) + 1),
-      is_deleted: Number(r.is_deleted || 0),
+      end_year: Number(r.end_year ?? Number(r.start_year) + 1),
+      is_deleted: Number(r.is_deleted ?? 0),
       status: r.status as string | null | undefined,
     }));
 
     return c.json({ seasons }, 200);
   } catch (e) {
     console.error("[Seasons:List] Error", e);
-    return c.json({ error: "Failed to fetch seasons" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch seasons");
   }
 }));
 
@@ -96,15 +96,15 @@ seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeason
     const seasons = results.map((r) => ({
       ...r,
       start_year: Number(r.start_year),
-      end_year: Number(r.end_year || Number(r.start_year) + 1),
-      is_deleted: Number(r.is_deleted || 0),
+      end_year: Number(r.end_year ?? Number(r.start_year) + 1),
+      is_deleted: Number(r.is_deleted ?? 0),
       status: r.status as string | null | undefined,
     }));
 
     return c.json({ seasons }, 200);
   } catch (e) {
     console.error("[Seasons:AdminList] Error", e);
-    return c.json({ error: "Failed to list seasons" }, 500);
+    return errorResponses.internalError(c, "Failed to list seasons");
   }
 }));
 
@@ -112,7 +112,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSea
   try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
-    const year = parseInt(id);
+    const year = parseInt(id, 10);
     const row = await db
       .select({
         start_year: schema.seasons.startYear,
@@ -132,23 +132,22 @@ seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSea
       .where(eq(schema.seasons.startYear, year))
       .get();
 
-    if (!row) return c.json({ error: "Season not found" }, 404);
+    if (!row) {
+      return errorResponses.notFound(c, "Season");
+    }
 
-    return c.json(
-      {
-        season: {
-          ...row,
-          start_year: Number(row.start_year),
-          end_year: Number(row.end_year || Number(row.start_year) + 1),
-          is_deleted: Number(row.is_deleted || 0),
-          status: row.status as string | null | undefined,
-        },
-      },
-      200
-    );
+    const season = {
+      ...row,
+      start_year: Number(row.start_year),
+      end_year: Number(row.end_year ?? Number(row.start_year) + 1),
+      is_deleted: Number(row.is_deleted ?? 0),
+      status: row.status as string | null | undefined,
+    };
+
+    return c.json({ season }, 200);
   } catch (e) {
     console.error("[Seasons:AdminDetail] Error", e);
-    return c.json({ error: "Failed to fetch season" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch season");
   }
 }));
 
@@ -156,8 +155,10 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
   try {
     const { year } = c.req.valid("param");
     const db = getDb(c);
-    const yearNum = parseInt(year);
-    if (isNaN(yearNum)) return c.json({ error: "Invalid year" }, 404);
+    const yearNum = parseInt(year, 10);
+    if (Number.isNaN(yearNum)) {
+      return errorResponses.notFound(c, "Season");
+    }
 
     const [seasonRow, awards, events, posts, outreach] = await Promise.all([
       db
@@ -260,27 +261,22 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
         .all(),
     ]);
 
-    if (!seasonRow) return c.json({ error: "Season not found" }, 404);
+    if (!seasonRow) {
+      return errorResponses.notFound(c, "Season");
+    }
 
-    return c.json(
-      {
-        season: {
-          ...seasonRow,
-          start_year: Number(seasonRow.start_year),
-          end_year: Number(seasonRow.end_year || Number(seasonRow.start_year) + 1),
-          is_deleted: Number(seasonRow.is_deleted || 0),
-          status: seasonRow.status as string | null | undefined,
-        },
-        awards,
-        events,
-        posts,
-        outreach,
-      },
-      200
-    );
+    const season = {
+      ...seasonRow,
+      start_year: Number(seasonRow.start_year),
+      end_year: Number(seasonRow.end_year ?? Number(seasonRow.start_year) + 1),
+      is_deleted: Number(seasonRow.is_deleted ?? 0),
+      status: seasonRow.status as string | null | undefined,
+    };
+
+    return c.json({ season, awards, events, posts, outreach }, 200);
   } catch (e) {
     console.error("[Seasons:Detail] Error", e);
-    return c.json({ error: "Failed to fetch season details" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch season details");
   }
 }));
 
@@ -289,17 +285,16 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
     const body = c.req.valid("json");
     const db = getDb(c);
 
-    const seasonData = body;
-    const targetYear = seasonData.original_year || seasonData.start_year;
+    const targetYear = body.original_year ?? body.start_year;
 
-    if (seasonData.original_year && seasonData.original_year !== seasonData.start_year) {
+    if (body.original_year && body.original_year !== body.start_year) {
       const collision = await db
         .select({ start_year: schema.seasons.startYear })
         .from(schema.seasons)
-        .where(eq(schema.seasons.startYear, seasonData.start_year))
+        .where(eq(schema.seasons.startYear, body.start_year))
         .get();
       if (collision) {
-        return c.json({ error: `Season ${seasonData.start_year} already exists.` }, 500);
+        return errorResponses.conflict(c, `Season ${body.start_year} already exists.`);
       }
     }
 
@@ -310,17 +305,17 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
       .get();
 
     const values = {
-      startYear: seasonData.start_year,
-      endYear: seasonData.end_year,
-      challengeName: seasonData.challenge_name,
-      robotName: seasonData.robot_name || null,
-      robotImage: seasonData.robot_image || null,
-      robotDescription: seasonData.robot_description || null,
-      robotCadUrl: seasonData.robot_cad_url || null,
-      summary: seasonData.summary || null,
-      albumUrl: seasonData.album_url || null,
-      albumCover: seasonData.album_cover || null,
-      status: seasonData.status || "draft",
+      startYear: body.start_year,
+      endYear: body.end_year,
+      challengeName: body.challenge_name,
+      robotName: body.robot_name ?? null,
+      robotImage: body.robot_image ?? null,
+      robotDescription: body.robot_description ?? null,
+      robotCadUrl: body.robot_cad_url ?? null,
+      summary: body.summary ?? null,
+      albumUrl: body.album_url ?? null,
+      albumCover: body.album_cover ?? null,
+      status: body.status ?? "draft",
       updatedAt: new Date().toISOString(),
     };
 
@@ -330,9 +325,9 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
         .set(values)
         .where(eq(schema.seasons.startYear, targetYear));
 
-      if (seasonData.original_year && seasonData.original_year !== seasonData.start_year) {
+      if (body.original_year && body.original_year !== body.start_year) {
         const oldId = targetYear;
-        const newId = seasonData.start_year;
+        const newId = body.start_year;
         await db.update(schema.events).set({ seasonId: newId }).where(eq(schema.events.seasonId, oldId));
         await db.update(schema.posts).set({ seasonId: newId }).where(eq(schema.posts.seasonId, oldId));
         await db.update(schema.awards).set({ seasonId: newId }).where(eq(schema.awards.seasonId, oldId));
@@ -343,26 +338,26 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
             c,
             "season_year_updated",
             "seasons",
-            seasonData.start_year.toString(),
-            `Season ID changed from ${targetYear} to ${seasonData.start_year}`
+            body.start_year.toString(),
+            `Season ID changed from ${targetYear} to ${body.start_year}`
           )
         );
       } else {
         c.executionCtx.waitUntil(
-          logAuditAction(c, "season_updated", "seasons", seasonData.start_year.toString(), `Season "${seasonData.start_year}" updated`)
+          logAuditAction(c, "season_updated", "seasons", body.start_year.toString(), `Season "${body.start_year}" updated`)
         );
       }
     } else {
       await db.insert(schema.seasons).values({ ...values, isDeleted: 0 });
       c.executionCtx.waitUntil(
-        logAuditAction(c, "season_created", "seasons", seasonData.start_year.toString(), `Season "${seasonData.start_year}" created`)
+        logAuditAction(c, "season_created", "seasons", body.start_year.toString(), `Season "${body.start_year}" created`)
       );
     }
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Save] Error", e);
-    return c.json({ error: "Save failed" }, 500);
+    return errorResponses.internalError(c, "Save failed");
   }
 }));
 
@@ -370,7 +365,7 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
   try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
-    const year = parseInt(id);
+    const year = parseInt(id, 10);
     await db
       .update(schema.seasons)
       .set({ isDeleted: 1 })
@@ -381,7 +376,7 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Delete] Error", e);
-    return c.json({ error: "Delete failed" }, 500);
+    return errorResponses.internalError(c, "Delete failed");
   }
 }));
 
@@ -389,7 +384,7 @@ seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRou
   try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
-    const year = parseInt(id);
+    const year = parseInt(id, 10);
     await db
       .update(schema.seasons)
       .set({ isDeleted: 0 })
@@ -398,7 +393,7 @@ seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRou
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Undelete] Error", e);
-    return c.json({ error: "Restore failed" }, 500);
+    return errorResponses.internalError(c, "Restore failed");
   }
 }));
 
@@ -406,7 +401,7 @@ seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(as
   try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
-    const year = parseInt(id);
+    const year = parseInt(id, 10);
     await db
       .delete(schema.seasons)
       .where(eq(schema.seasons.startYear, year));
@@ -414,7 +409,7 @@ seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(as
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Seasons:Purge] Error", e);
-    return c.json({ error: "Purge failed" }, 500);
+    return errorResponses.internalError(c, "Purge failed");
   }
 }));
 

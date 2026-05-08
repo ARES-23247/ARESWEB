@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { Search, LayoutDashboard, LogIn, ShoppingBag, Calendar as CalendarIcon, GraduationCap } from "lucide-react";
+import { Search, LogIn, ShoppingBag, Calendar as CalendarIcon, GraduationCap } from "lucide-react";
 
 import { GreekMeander } from "./GreekMeander";
 import { useDashboardSession } from "../hooks/useDashboardSession";

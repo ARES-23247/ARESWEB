@@ -50,7 +50,8 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
           eq(schema.events.status, "published")
         )
       )
-      .orderBy(desc(schema.events.dateStart));
+      .orderBy(desc(schema.events.dateStart))
+      .all();
       
     const filteredResults = results.filter((r: VolunteerEventDbResult) => !existingEventIds.includes(String(r.id)));
 

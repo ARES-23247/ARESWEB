@@ -13,22 +13,27 @@ Before writing code or answering questions, you must review the relevant SKILL.m
 - **When to read:** Editing `functions/api/`, modifying D1 Database queries, or changing Authentication flows.
 - **Summary:** Expressly forbids relying on spoofable headers (`Referer`, `Host`) for authentication. Strict enforcement of `cf-access-authenticated-user-email` via Cloudflare Zero Trust.
 
-### 1. Championship-Tier Accessibility
+### 2. Championship-Tier Accessibility
 **Directory:** `.agents/skills/aresweb-web-accessibility/SKILL.md`
 - **When to read:** Building or updating React components (`.tsx`), UI layouts, HTML, or CSS.
 - **Summary:** Enforces WCAG 2.1 AA compliance, specifically a 4.5:1 text contrast ratio and keyboard navigability bounds.
 
-### 2. ARES Brand Consistency
+### 3. ARES Brand Consistency
 **Directory:** `.agents/skills/aresweb-brand-enforcement/SKILL.md`
 - **When to read:** Designing UI components, adding Tailwind utilities, or making styling decisions.
 - **Summary:** Mandates strict usage of the ARES 23247 color palette (`ares-red`, `ares-gold`, `ares-bronze`, `obsidian`, etc.) and typography (`League Spartan` / `Inter`). Forbids generic hex codes and default tailwind themes.
 
-### 3. 8th-Grade Readability Standard
+### 4. 8th-Grade Readability Standard
 **Directory:** `.agents/skills/aresweb-documentation-readability/SKILL.md`
 - **When to read:** Writing, editing, or generating text, documentation, markdown, or frontend copy.
 - **Summary:** All informational content must score below an 8th-grade reading level via the Flesch-Kincaid scale. Sentences must be short; jargon must be minimized.
 
-### 4. FIRST Cultural Legacy
+### 5. TypeScript Type Safety
+**Directory:** `.agents/skills/aresweb-typescript-safety/SKILL.md`
+- **When to read:** Editing any TypeScript file (`.ts`, `.tsx`), writing API routes, defining zod schemas, or using type assertions.
+- **Summary:** FORBIDS `as any`, `@ts-ignore`, and `any` types. Requires proper zod schema inference, `typedHandler` for Hono routes, and discriminated unions for variants.
+
+### 6. FIRST Cultural Legacy
 **Directory:** `.agents/skills/aresweb-cultural-legacy/SKILL.md`
 - **When to read:** Generating pages related to the team, 'About Us', outreach, or general content layout.
 - **Summary:** Ensures that the FIRST Core Values (Gracious Professionalism, Coopertition) and ARES legacy are heavily emphasized in the platform architecture and content.

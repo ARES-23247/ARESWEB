@@ -2,6 +2,7 @@ import { eq, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getDb, type AppEnv } from "../../middleware";
+import { errorResponses } from "../../../../shared/errors/api";
 import { SNIPPET_LENGTH, fetchVolunteerEvents } from "./utils";
 import type { listOutreachRoute, adminListOutreachRoute } from "../../../../shared/routes/outreach";
 
@@ -62,12 +63,13 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
         mentor_hours: schema.outreachLogs.mentorHours,
     }).from(schema.outreachLogs)
       .where(eq(schema.outreachLogs.isDeleted, 0))
-      .orderBy(desc(schema.outreachLogs.date));
+      .orderBy(desc(schema.outreachLogs.date))
+      .all();
     
-    const existingEventIds = results.filter((r: OutreachQueryResult) => r.event_id).map((r: OutreachQueryResult) => String(r.event_id));
+    const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
     
-    const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
+    const logs = results.map((r: any): OutreachLog => ({
       id: String(r.id),
       title: r.title,
       date: r.date,
@@ -90,7 +92,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
     return c.json({ logs: combined }, 200);
   } catch (err) {
     console.error("[Outreach:List] Error", err);
-    return c.json({ error: "Failed to fetch outreach logs" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch outreach logs");
   }
 };
 
@@ -114,12 +116,13 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
         mentor_hours: schema.outreachLogs.mentorHours,
     }).from(schema.outreachLogs)
       .where(eq(schema.outreachLogs.isDeleted, 0))
-      .orderBy(desc(schema.outreachLogs.date));
+      .orderBy(desc(schema.outreachLogs.date))
+      .all();
     
-    const existingEventIds = results.filter((r: OutreachQueryResult) => r.event_id).map((r: OutreachQueryResult) => String(r.event_id));
+    const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
     
-    const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
+    const logs = results.map((r: any): OutreachLog => ({
       id: String(r.id),
       title: r.title,
       date: r.date,

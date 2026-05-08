@@ -3,7 +3,15 @@ import { getAuth } from "../../utils/auth";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, UserRole, SessionUser, DrizzleDB } from "./utils";
-import { sql } from "drizzle-orm";
+
+// Extended user type from Lucia with custom role property
+interface LuciaUserWithRole {
+  id: string;
+  email: string;
+  name: string;
+  image?: string | null;
+  role?: string;
+}
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
 /**
@@ -60,7 +68,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   // RBAC: Granular path-based role checks
   const url = new URL(c.req.url);
   // WR-03: Normalize role to lowercase for consistent comparison
-  const rawRole = (session.user as { role?: string }).role || UserRole.UNVERIFIED;
+  const rawRole = (session.user as LuciaUserWithRole).role || UserRole.UNVERIFIED;
   const role = rawRole.toLowerCase() as string;
 
   // EFF-05: Store session in context so handlers don't need to re-fetch
@@ -165,7 +173,7 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
         nickname: profile?.nickname || "ARES Member",
         image: session.user.image,
         // WR-03: Normalize role to lowercase for consistent comparison
-        role: ((session.user as { role?: string }).role || UserRole.UNVERIFIED).toLowerCase() as string,
+        role: ((session.user as LuciaUserWithRole).role || UserRole.UNVERIFIED).toLowerCase() as string,
         member_type: profile?.member_type || "student",
       };
       // WR-02: Cache sessionUser in context so subsequent getSessionUser calls don't re-fetch

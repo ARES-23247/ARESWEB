@@ -70,12 +70,12 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
   const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
   if (!SYSTEM_PROMPTS[mode]) {
-    return c.json({ error: `Invalid analysis mode: ${mode}.` } as any, 400 as any);
+    return c.json({ error: `Invalid analysis mode: ${mode}.` }, 400);
   }
 
   const zaiKey = c.env.Z_AI_API_KEY;
   if (!zaiKey) {
-    return c.json({ error: "AI service (Z_AI_API_KEY) not configured." } as any, 500 as any);
+    return errorResponses.internalError(c);
   }
 
   const systemPrompt = SYSTEM_PROMPTS[mode];
@@ -101,12 +101,12 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
     if (!zaiRes.ok) {
       const errText = await zaiRes.text();
       console.error(`[Scouting Analyze] Z.ai error ${zaiRes.status}:`, errText);
-      return c.json({ error: `AI analysis failed (${zaiRes.status})` } as any, 502 as any);
+      return c.json({ error: `AI analysis failed (${zaiRes.status})` }, 502);
     }
 
     const data = (await zaiRes.json()) as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string }; usage?: { total_tokens?: number } };
     if (data.error) {
-      return c.json({ error: data.error.message || "AI returned an error" } as any, 502 as any);
+      return c.json({ error: data.error.message || "AI returned an error" }, 502);
     }
 
     const markdown = data.choices?.[0]?.message?.content || "";
@@ -137,10 +137,10 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
       markdown,
       model: "GLM-5.1",
       tokensUsed,
-    } as any, 200 as any);
+    }, 200);
   } catch (err) {
     console.error("[Scouting Analyze] Error:", err);
-    return c.json({ error: "AI analysis request failed" } as any, 500 as any);
+    return errorResponses.internalError(c);
   }
 }));
 

@@ -15,7 +15,7 @@ toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => 
 
   if (!toaKey) {
     return c.json(
-      { error: "TOA_API_KEY not configured. Contact an administrator.", status: 500 } as any, 500 as any);
+      { error: "TOA_API_KEY not configured. Contact an administrator.", status: 500 }, 500);
   }
 
   const url = `https://theorangealliance.org/api/${path}`;
@@ -32,15 +32,15 @@ toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => 
     if (!upstream.ok) {
       console.error(`[TOA Proxy] Upstream ${upstream.status} for ${path}`);
       return c.json(
-        { error: `TOA upstream error: ${upstream.status}`, status: upstream.status } as any, 502 as any);
+        { error: `TOA upstream error: ${upstream.status}`, status: upstream.status }, 502);
     }
 
     const data = await upstream.json();
-    return c.json(data as any, 200 as any);
+    return c.json(data, 200);
   } catch (err) {
     console.error("[TOA Proxy] Fetch error:", err);
     return c.json(
-      { error: "Failed to reach The Orange Alliance API", status: 502 } as any, 502 as any);
+      { error: "Failed to reach The Orange Alliance API", status: 502 }, 502);
   }
 }));
 

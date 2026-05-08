@@ -4,6 +4,7 @@ import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit, getDb } from "../middleware";
+import { errorResponses, ErrorCode } from "../../../shared/errors/api";
 import {
   judgeLoginRoute,
   judgePortfolioRoute,
@@ -14,11 +15,6 @@ import {
 import type { HonoContext as _HonoContext } from "@shared/types/api";
 
 // Types for database query results
-interface JudgeAccessCodeResult {
-  code: string;
-  label: string;
-  expires_at: string | null;
-}
 
 interface PortfolioDocResult {
   slug: string;
@@ -161,18 +157,18 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
   if (!allowed) {
-    return c.json<ErrorResponse>({ error: "Too many attempts. Please try again later." }, 429);
+    return errorResponses.tooManyRequests(c);
   }
 
   try {
     const { code, turnstileToken } = c.req.valid("json");
     if (!code) {
-      return c.json<ErrorResponse>({ error: "Code required" }, 400);
+      return errorResponses.badRequest(c, "Code required");
     }
 
     const validToken = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
     if (!validToken) {
-      return c.json<ErrorResponse>({ error: "Security verification failed." }, 403);
+      return errorResponses.forbidden(c, "Security verification failed");
     }
 
     const [row] = await db.select({
@@ -191,12 +187,12 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
       ).limit(1);
 
     if (!row) {
-      return c.json<ErrorResponse>({ error: "Invalid or expired access code" }, 403);
+      return errorResponses.forbidden(c, "Invalid or expired access code");
     }
 
-    return c.json<JudgeLoginSuccessResponse>({ success: true, label: row.label }, 200);
+    return c.json({ success: true, label: row.label }, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Login failed" }, 500);
+    return errorResponses.internalError(c, "Login failed");
   }
 }));
 
@@ -205,14 +201,14 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
   try {
     const { "x-judge-code": code } = c.req.valid("header");
     if (!code) {
-      return c.json<ErrorResponse>({ error: "Access code required" }, 401);
+      return errorResponses.unauthorized(c, "Access code required");
     }
 
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const allowed = await checkPersistentRateLimit(db, `judge-portfolio:${ip}`, ua, 20, 60);
     if (!allowed) {
-      return c.json<ErrorResponse>({ error: "Too many requests" }, 429);
+      return errorResponses.tooManyRequests(c);
     }
 
     const [valid] = await db.select({
@@ -228,7 +224,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         )
       ).limit(1);
     if (!valid) {
-      return c.json<ErrorResponse>({ error: "Invalid or expired access code" }, 403);
+      return errorResponses.forbidden(c, "Invalid or expired access code");
     }
 
     // WR-10: Audit log judge portfolio access for security monitoring
@@ -301,7 +297,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         hours_logged: Number(o.hours_logged),
         reach_count: Number(o.reach_count)
       })),
-      awards: awards.map((a: AwardResult) => ({
+      awards: awards.map((a: any) => ({
         ...a,
         description: sanitizeJudgeContent(a.description || ""),
         year: Number(a.date)
@@ -311,10 +307,10 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
 
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 
-    return c.json<PortfolioResponse>(payload, 200);
+    return c.json(payload, 200);
   } catch (err) {
     console.error("[Judges] Portfolio failed:", err);
-    return c.json<ErrorResponse>({ error: "Portfolio fetch failed" }, 500);
+    return errorResponses.internalError(c, "Portfolio fetch failed");
   }
 }));
 
@@ -333,15 +329,15 @@ judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRout
     }).from(schema.judgeAccessCodes)
       .orderBy(desc(schema.judgeAccessCodes.createdAt));
 
-    const codes: JudgeCodeListResult[] = results.map((r: JudgeCodeListResult) => ({
+    const codes: JudgeCodeListResult[] = results.map((r: any) => ({
       ...r,
       created_at: String(r.created_at),
       expires_at: r.expires_at || null
     }));
 
-    return c.json<JudgeCodesResponse>({ codes }, 200);
+    return c.json({ codes }, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Failed to fetch codes" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch codes");
   }
 }));
 
@@ -366,9 +362,9 @@ judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRo
     portfolioCache.clear();
 
     c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
-    return c.json<CreateJudgeCodeResponse>({ success: true, code, id }, 200);
+    return c.json({ success: true, code, id }, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Create failed" }, 500);
+    return errorResponses.internalError(c, "Create failed");
   }
 }));
 
@@ -382,9 +378,9 @@ judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRo
     portfolioCacheVersion++;
     portfolioCache.clear();
 
-    return c.json<SuccessResponse>({ success: true }, 200);
+    return c.json({ success: true }, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Delete failed" }, 500);
+    return errorResponses.internalError(c, "Delete failed");
   }
 }));
 

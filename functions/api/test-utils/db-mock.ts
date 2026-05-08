@@ -73,11 +73,17 @@ export const createDbMock = () => {
         };
       }
     }
+
     chainable = new Proxy(fns, {
       get: (target, prop) => {
         if (prop === 'then') return undefined;
-        if (prop in target) return target[prop as keyof MockDbFunctions];
+        if (prop in target) {
+          const fn = target[prop as keyof MockDbFunctions] as MockFn;
+          // For terminal methods, return them as-is so they work correctly
+          return fn;
+        }
         if (prop === 'transaction') return vi.fn(async (cb: (tx: MockDb) => Promise<unknown>) => cb(chainable));
+        // For chain methods, create mocks that return the chainable object
         (target[prop as string] as MockFn) = vi.fn().mockReturnValue(chainable);
         return target[prop as string];
       }

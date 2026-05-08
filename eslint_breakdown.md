@@ -1,0 +1,44 @@
+# ESLint Breakdown by File
+
+| File | Errors | Warnings | Total |
+|------|--------|----------|-------|
+| `src/components/SimulationPlayground.tsx` | 0 | 54 | 54 |
+| `functions/api/routes/events/handlers.ts` | 0 | 7 | 7 |
+| `functions/api/routes/finance.test.ts` | 3 | 3 | 6 |
+| `functions/api/routes/posts.test.ts` | 5 | 0 | 5 |
+| `functions/api/routes/socialQueue.test.ts` | 5 | 0 | 5 |
+| `debug4.test.ts` | 0 | 4 | 4 |
+| `functions/api/routes/comments.test.ts` | 3 | 1 | 4 |
+| `functions/api/routes/github.test.ts` | 0 | 3 | 3 |
+| `functions/api/routes/store.test.ts` | 0 | 3 | 3 |
+| `functions/api/routes/zulip.test.ts` | 1 | 2 | 3 |
+| `functions/api/routes/media/handlers.ts` | 0 | 2 | 2 |
+| `debug.test.ts` | 0 | 1 | 1 |
+| `debug2.test.ts` | 0 | 1 | 1 |
+| `debug3.test.ts` | 0 | 1 | 1 |
+| `debug5.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/_profileUtils.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/ai/reindex.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/analytics.test.ts` | 1 | 0 | 1 |
+| `functions/api/routes/auth.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/awards.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/entities.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/github.ts` | 0 | 1 | 1 |
+| `functions/api/routes/judges.ts` | 0 | 1 | 1 |
+| `functions/api/routes/outreach/delete.ts` | 0 | 1 | 1 |
+| `functions/api/routes/outreach/save.ts` | 0 | 1 | 1 |
+| `functions/api/routes/points.ts` | 0 | 1 | 1 |
+| `functions/api/routes/profiles.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/scouting/analyze.test.ts` | 1 | 0 | 1 |
+| `functions/api/routes/seasons.ts` | 0 | 1 | 1 |
+| `functions/api/routes/settings.ts` | 0 | 1 | 1 |
+| `functions/api/routes/store.ts` | 0 | 1 | 1 |
+| `functions/api/routes/tba.test.ts` | 1 | 0 | 1 |
+| `functions/api/routes/users.test.ts` | 0 | 1 | 1 |
+| `functions/api/routes/users.ts` | 0 | 1 | 1 |
+| `functions/api/routes/zulip.ts` | 0 | 1 | 1 |
+| `src/components/AvatarEditor.test.tsx` | 0 | 1 | 1 |
+| `src/components/Navbar.tsx` | 0 | 1 | 1 |
+| `src/components/navigation/NavDropdown.tsx` | 0 | 1 | 1 |
+| `src/utils/lazyBabel.ts` | 0 | 1 | 1 |
+| **TOTAL** | **20** | **104** | **124** |

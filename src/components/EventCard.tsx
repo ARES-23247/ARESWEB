@@ -24,10 +24,10 @@ export const EventCard = React.memo(function EventCard({
   isLoading = false,
   className = "",
 }: EventCardProps) {
-  const startDate = new Date(event.start_time);
-  const endDate = new Date(event.end_time);
+  const startDate = new Date(event.date_start);
+  const endDate = event.date_end ? new Date(event.date_end) : null;
   const isPast = startDate < new Date();
-  const isFull = event.max_attendees !== null && event.attendee_count >= event.max_attendees;
+  const isFull = false;
 
   return (
     <article
@@ -46,16 +46,16 @@ export const EventCard = React.memo(function EventCard({
           <div className="flex flex-wrap gap-4 mt-3 text-sm text-marble">
             <time
               className="flex items-center gap-1.5"
-              dateTime={event.start_time}
+              dateTime={event.date_start}
               aria-label={`Starts ${format(startDate, "MMMM d, yyyy 'at' h:mm a")}`}
             >
               <Calendar size={14} aria-hidden="true" />
               <span>
                 {format(startDate, "MMM d, yyyy")}
-                {format(endDate, "yyyy") !== format(startDate, "yyyy") && format(startDate, ", yyyy")}
+                {endDate && format(endDate, "yyyy") !== format(startDate, "yyyy") && format(startDate, ", yyyy")}
               </span>
               <span className="text-marble/60">
-                {format(startDate, "h:mm a")} – {format(endDate, "h:mm a")}
+                {format(startDate, "h:mm a")} {endDate && `– ${format(endDate, "h:mm a")}`}
               </span>
             </time>
             {event.location && (
@@ -64,13 +64,6 @@ export const EventCard = React.memo(function EventCard({
                 <span>{event.location}</span>
               </span>
             )}
-            <span className="flex items-center gap-1.5" aria-live="polite">
-              <Users size={14} aria-hidden="true" />
-              <span>
-                {event.attendee_count}
-                {event.max_attendees !== null && ` / ${event.max_attendees}`}
-              </span>
-            </span>
           </div>
           {event.description && (
             <p className="mt-3 text-sm text-marble/80 line-clamp-2">{event.description}</p>

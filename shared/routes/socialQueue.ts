@@ -58,10 +58,10 @@ export const socialQueueSchema = z.object({
   status: z.enum(["pending", "processing", "sent", "failed", "cancelled"]),
   created_at: z.string(),
   sent_at: z.string().nullable(),
-  error_message: z.string().nullable(),
-  created_by: z.string().nullable(),
-  linked_type: z.enum(["blog", "event", "document", "asset"]).nullable(),
-  linked_id: z.string().nullable(),
+  error_message: z.string().nullish(),
+  created_by: z.string().nullish(),
+  linked_type: z.enum(["blog", "event", "document", "asset"]).nullish(),
+  linked_id: z.string().nullish(),
   analytics: analyticsSchema.nullable(),
 });
 
@@ -134,6 +134,7 @@ export const createSocialQueueRoute = createRoute({
             sent_at: true,
             error_message: true,
             analytics: true,
+            created_by: true,
           }),
         },
       },

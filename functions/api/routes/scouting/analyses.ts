@@ -30,10 +30,10 @@ analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScouti
     }
 
     const results = await query.orderBy(desc(schema.scoutingAnalyses.createdAt)).all();
-    return c.json(results as any, 200 as any);
+    return c.json(results, 200);
   } catch (err) {
     console.error("[Scouting Analyses] Database error:", err);
-    return c.json({ error: "Failed to fetch saved analyses" } as any, 500 as any);
+    return errorResponses.internalError(c);
   }
 }));
 

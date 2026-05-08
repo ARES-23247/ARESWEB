@@ -7,6 +7,20 @@ import * as relations from "../../../src/db/relations";
 
 type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
 
+// Node.js process environment type
+interface NodeProcessEnv {
+  ENVIRONMENT?: string;
+  NODE_ENV?: string;
+}
+
+interface NodeProcess {
+  env?: NodeProcessEnv;
+}
+
+interface GlobalThisWithProcess {
+  process?: NodeProcess;
+}
+
 // SEC-RL-01: Circuit breaker state for rate limiting
 // Track consecutive failures to implement circuit breaker pattern
 let rateLimitFailureCount = 0;
@@ -41,7 +55,7 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
 
   if (!db) {
     // SEC-RL-03: No database available - fail closed in production
-    const isProd = globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production";
+    const isProd = (globalThis as unknown as GlobalThisWithProcess).process?.env?.ENVIRONMENT === "production" || (globalThis as unknown as GlobalThisWithProcess).process?.env?.NODE_ENV === "production";
     if (!isProd) {
       console.warn("[RateLimit] No database attached, allowing in non-production");
       return true;
@@ -92,7 +106,7 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
     }
 
     // SEC-RL-04: Fail closed in production on error
-    const isProd = globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production";
+    const isProd = (globalThis as unknown as GlobalThisWithProcess).process?.env?.ENVIRONMENT === "production" || (globalThis as unknown as GlobalThisWithProcess).process?.env?.NODE_ENV === "production";
     if (!isProd) {
       console.warn("[RateLimit] DB error in non-production, allowing request");
       return true;
@@ -111,7 +125,7 @@ export async function verifyTurnstile(
 ): Promise<boolean> {
   if (!secretKey) {
     // SEC-F01: Harden Turnstile. Fail closed in production.
-    if (globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production") {
+    if ((globalThis as unknown as GlobalThisWithProcess).process?.env?.ENVIRONMENT === "production" || (globalThis as unknown as GlobalThisWithProcess).process?.env?.NODE_ENV === "production") {
       console.error("[Turnstile] CRITICAL: TURNSTILE_SECRET_KEY is missing in production! Failing closed.");
       return false;
     }
@@ -122,8 +136,8 @@ export async function verifyTurnstile(
 
   // SEC-03: Allow E2E / local development bypass token
   // Fail-closed: only allow bypass token in known non-production environments
-  const isProd = globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production";
-  const isDevOrTest = globalThis.process?.env?.ENVIRONMENT === "development" || globalThis.process?.env?.NODE_ENV === "development" || globalThis.process?.env?.NODE_ENV === "test";
+  const isProd = (globalThis as unknown as GlobalThisWithProcess).process?.env?.ENVIRONMENT === "production" || (globalThis as unknown as GlobalThisWithProcess).process?.env?.NODE_ENV === "production";
+  const isDevOrTest = (globalThis as unknown as GlobalThisWithProcess).process?.env?.ENVIRONMENT === "development" || (globalThis as unknown as GlobalThisWithProcess).process?.env?.NODE_ENV === "development" || (globalThis as unknown as GlobalThisWithProcess).process?.env?.NODE_ENV === "test";
   // Only accept bypass token in dev/test, never in production or preview
   if (token === "test-bypass-token" && !isProd && isDevOrTest) {
     console.warn("[Turnstile] Accepted test-bypass-token in development environment.");
@@ -279,7 +293,7 @@ export const turnstileMiddleware = () => {
       } else if (contentType.includes("multipart/form-data")) {
         const clonedReq = c.req.raw.clone();
         const formData = await clonedReq.formData();
-        token = formData.get("turnstileToken") as string;
+        token = formData.get("turnstileToken") as string | undefined;
       }
     } catch (err) {
       console.error("[Turnstile] Token extraction failed:", err);

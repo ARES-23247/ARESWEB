@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 
 import { sql } from "drizzle-orm";
@@ -26,7 +25,6 @@ import { emitNotification, notifyByRole } from "../../utils/notifications";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import {
   approvePost,
-  getPostHistory,
   restorePostFromHistory,
   createShadowRevision,
   captureHistory,
@@ -47,14 +45,12 @@ import {
   getPostHistoryRoute,
   restorePostHistoryRoute,
   repushSocialsRoute,
-  postSchema as _postSchema,
 } from "../../../shared/routes/posts";
 import { siteConfig } from "../../utils/site.config";
-
-
+import { errorResponses } from "../../../shared/errors/api";
 
 export const postsRouter = new OpenAPIHono<AppEnv>();
- 
+
 // Apply edge caching to public blog routes (GET only, non-admin)
 postsRouter.use("*", async (c, next) => {
   const path = c.req.path;
@@ -87,9 +83,10 @@ const sanitizeFtsQuery = (query: string): string => {
 // ─── Public Routes ───────────────────────────────────────────────────────
 
 postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) => {
+  const { limit = 10, offset = 0, q } = c.req.valid("query");
+
   try {
     const db = getDb(c);
-    const { limit = 10, offset = 0, q } = c.req.valid("query");
 
     if (q) {
       const cleanQ = sanitizeFtsQuery(String(q || ""));
@@ -135,9 +132,18 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
         published_at: string | null;
       };
 
-      const rows = (results as { rows: FtsPostRow[] }).rows || [];
+      const rows = (results as unknown as { rows: FtsPostRow[] }).rows || [];
       const posts = rows.map((p: FtsPostRow) => ({
-        ...p,
+        slug: p.slug,
+        title: p.title,
+        date: p.date,
+        snippet: p.snippet,
+        thumbnail: p.thumbnail,
+        status: p.status,
+        author: p.author,
+        author_nickname: p.author_nickname,
+        author_avatar: p.author_avatar,
+        published_at: p.published_at,
         season_id: p.season_id ? Number(p.season_id) : null,
         is_deleted: 0,
         is_portfolio: 0,
@@ -177,7 +183,16 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       .all();
 
     const posts = results.map((p) => ({
-      ...p,
+      slug: p.slug,
+      title: p.title,
+      date: p.date,
+      snippet: p.snippet,
+      thumbnail: p.thumbnail,
+      status: p.status,
+      author: p.author,
+      author_nickname: p.author_nickname,
+      author_avatar: p.author_avatar,
+      published_at: p.published_at,
       season_id: p.season_id ? Number(p.season_id) : null,
       is_deleted: 0,
       is_portfolio: 0,
@@ -187,12 +202,13 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
     return c.json({ posts }, 200);
   } catch (e) {
     console.error("[Posts:List] Error", e);
-    return c.json({ error: "Failed to fetch posts" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch posts");
   }
 }));
 
 postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+
   try {
     const db = getDb(c);
     const user = await getSessionUser(c);
@@ -228,15 +244,26 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
       .limit(1)
       .get();
 
-    if (!row) return c.json({ error: "Post not found" } as any, 404 as any);
+    if (!row) return errorResponses.notFound(c, "Post");
 
     return c.json(
       {
         post: {
-          ...row,
+          slug: row.slug,
+          title: row.title,
+          date: row.date,
+          snippet: null,
+          thumbnail: row.thumbnail,
+          status: row.status,
+          author: row.author,
+          author_nickname: row.author_nickname,
+          author_avatar: row.author_avatar,
+          published_at: row.published_at,
           season_id: row.season_id ? Number(row.season_id) : null,
           is_deleted: 0,
           is_portfolio: 0,
+          zulip_stream: row.zulip_stream,
+          zulip_topic: row.zulip_topic,
           ast: row.ast || "{}",
         },
         is_editor: user?.role === "admin" || user?.role === "author",
@@ -246,19 +273,22 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
           image: row.author_avatar || null,
           role: "author",
         },
-      } as any, 200 as any);
+      },
+      200
+    );
   } catch (e) {
     console.error("[Posts:Detail] Error", e);
-    return c.json({ error: "Failed to fetch post" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 // ─── Admin Routes ────────────────────────────────────────────────────────
 
 postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(async (c) => {
+  const { limit = 50, offset = 0 } = c.req.valid("query");
+
   try {
     const db = getDb(c);
-    const { limit = 50, offset = 0 } = c.req.valid("query");
 
     let results;
     try {
@@ -305,23 +335,38 @@ postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(
     type AdminPostResult = typeof results extends (infer T)[] ? T : never;
 
     const posts = results.map((p: AdminPostResult) => {
+      const hasSeasonId = "season_id" in p;
+      const hasPublishedAt = "published_at" in p;
+      const hasStatus = "status" in p;
       return {
-        ...p,
-        season_id: p.season_id ? Number(p.season_id) : null,
+        slug: p.slug,
+        title: p.title,
+        date: p.date,
+        snippet: p.snippet,
+        thumbnail: p.thumbnail,
+        status: hasStatus && p.status ? (p.status as string) : null,
+        author: p.author ?? null,
+        author_nickname: null,
+        author_avatar: null,
+        published_at: hasPublishedAt ? (p.published_at as string | null | undefined) ?? null : null,
+        season_id: hasSeasonId && p.season_id ? Number(p.season_id as number | string) : null,
         is_deleted: Number(p.is_deleted ?? 0),
         is_portfolio: 0,
+        zulip_stream: null,
+        zulip_topic: null,
       };
     });
 
-    return c.json({ posts } as any, 200 as any);
+    return c.json({ posts }, 200);
   } catch (e) {
     console.error("[Posts:AdminList] Error", e);
-    return c.json({ error: "Failed to fetch posts" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+
   try {
     const db = getDb(c);
     const row = await db
@@ -346,28 +391,42 @@ postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(as
       .limit(1)
       .get();
 
-    if (!row) return c.json({ error: "Post not found" } as any, 404 as any);
+    if (!row) return errorResponses.notFound(c, "Post");
 
     return c.json(
       {
         post: {
-          ...row,
+          slug: row.slug,
+          title: row.title,
+          date: row.date,
+          snippet: row.snippet ?? null,
+          thumbnail: row.thumbnail ?? null,
+          status: row.status ?? null,
+          author: row.author ?? null,
+          author_nickname: null,
+          author_avatar: null,
+          published_at: row.published_at ?? null,
           season_id: row.season_id ? Number(row.season_id) : null,
           is_deleted: Number(row.is_deleted),
           is_portfolio: 0,
+          zulip_stream: row.zulip_stream ?? null,
+          zulip_topic: row.zulip_topic ?? null,
           ast: row.ast || "{}",
         },
-      } as any, 200 as any);
+      },
+      200
+    );
   } catch (e) {
     console.error("[Posts:AdminDetail] Error", e);
-    return c.json({ error: "Failed to fetch post" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) => {
+  const body = c.req.valid("json");
+
   try {
     const db = getDb(c);
-    const body = c.req.valid("json");
 
     // If slug is provided, update existing post
     if (body.slug) {
@@ -376,6 +435,11 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
           slug: schema.posts.slug,
           title: schema.posts.title,
           ast: schema.posts.ast,
+          author: schema.posts.author,
+          thumbnail: schema.posts.thumbnail,
+          snippet: schema.posts.snippet,
+          cfEmail: schema.posts.cfEmail,
+          seasonId: schema.posts.seasonId,
         })
         .from(schema.posts)
         .where(eq(schema.posts.slug, body.slug))
@@ -383,20 +447,20 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
         .get();
 
       if (!existing) {
-        return c.json({ error: "Post not found" } as any, 404 as any);
+        return errorResponses.notFound(c, "Post");
       }
 
       const user = await getSessionUser(c);
       const _email = user?.email || "anonymous_dashboard_user";
 
       // Create shadow revision for history
-      await captureHistory(c, body.slug, existing as any);
+      await captureHistory(c, body.slug, existing);
 
       await db
         .update(schema.posts)
         .set({
           title: body.title,
-          ast: body.ast as string,
+          ast: JSON.stringify(body.ast),
           contentDraft: typeof body.content === "string" ? body.content : null,
           isPortfolio: body.isPortfolio ? 1 : 0,
           updatedAt: new Date().toISOString()
@@ -404,11 +468,11 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
         .where(eq(schema.posts.slug, body.slug))
         .run();
 
-      return c.json({ success: true, slug: body.slug });
+      return c.json({ success: true, slug: body.slug }, 200);
     }
 
     const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
-    if (titleError) return c.json({ error: titleError } as any, 400 as any);
+    if (titleError) return errorResponses.badRequest(c, titleError);
 
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_dashboard_user";
@@ -426,7 +490,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
       .get();
 
     if (recent) {
-      return c.json({ error: "A post with this title already exists for today" } as any, 409 as any);
+      return errorResponses.conflict(c, "A post with this title already exists for today");
     }
 
     let slug = body.title
@@ -477,7 +541,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
           content: astStr,
           createdBy: email,
           createdAt: new Date().toISOString(),
-        } as any)
+        })
         .run()
     );
 
@@ -549,24 +613,29 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
       );
     }
 
-    return c.json({ success: true, slug, warning: warnings.join(" | ") } as any, 200 as any);
+    const warning = warnings.length > 0 ? warnings.join(" | ") : undefined;
+    return c.json({ success: true, slug, warning }, 200);
   } catch (e) {
     console.error("[Posts:Save] Error", e);
-    return c.json({ error: "Database write failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+  const body = c.req.valid("json");
+
   try {
     const db = getDb(c);
-    const body = c.req.valid("json");
     const astStr = JSON.stringify(body.ast);
     const snippet = extractAstText(body.ast).substring(0, 200);
     const user = await getSessionUser(c);
 
     if (user?.role !== "admin") {
-      const revSlug = await createShadowRevision(c, slug, user!, {
+      if (!user) {
+        return errorResponses.unauthorized(c);
+      }
+      const revSlug = await createShadowRevision(c, slug, user, {
         title: body.title,
         author: "ARES Team",
         thumbnail: body.thumbnail,
@@ -575,7 +644,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
         publishedAt: body.publishedAt,
         seasonId: body.seasonId,
       });
-      return c.json({ success: true, slug: revSlug } as any, 200 as any);
+      return c.json({ success: true, slug: revSlug }, 200);
     }
 
     const status = body.isDraft ? "pending" : "published";
@@ -596,7 +665,15 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
       .get();
 
     if (current) {
-      await captureHistory(c, slug, current as any);
+      await captureHistory(c, slug, {
+        title: current.title,
+        author: current.author,
+        thumbnail: current.thumbnail,
+        snippet: current.snippet,
+        ast: current.ast,
+        cfEmail: current.cf_email,
+        seasonId: current.season_id,
+      });
     }
 
     await db
@@ -623,7 +700,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
           content: astStr,
           createdBy: user?.email || "anonymous",
           createdAt: new Date().toISOString(),
-        } as any)
+        })
         .run()
     );
 
@@ -631,15 +708,17 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
       logAuditAction(c, "UPDATE_POST", "posts", slug, `Updated post: ${body.title} (${status})`)
     );
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
-    return c.json({ success: true, slug } as any, 200 as any);
+
+    return c.json({ success: true, slug }, 200);
   } catch (e) {
     console.error("[Posts:Update] Error", e);
-    return c.json({ error: "Database write failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+
   try {
     const db = getDb(c);
     await db
@@ -650,15 +729,17 @@ postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async 
     c.executionCtx.waitUntil(logAuditAction(c, "DELETE_POST", "posts", slug));
 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
-    return c.json({ success: true } as any, 200 as any);
+
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Posts:Delete] Error", e);
-    return c.json({ error: "Delete failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+
   try {
     const db = getDb(c);
     await db
@@ -667,15 +748,17 @@ postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(as
       .where(eq(schema.posts.slug, slug))
       .run();
     c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
-    return c.json({ success: true } as any, 200 as any);
+
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Posts:Undelete] Error", e);
-    return c.json({ error: "Undelete failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(purgePostRoute, typedHandler<typeof purgePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+
   try {
     const db = getDb(c);
 
@@ -698,29 +781,34 @@ postsRouter.openapi(purgePostRoute, typedHandler<typeof purgePostRoute>(async (c
 
     await db.delete(schema.posts).where(eq(schema.posts.slug, slug)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
-    return c.json({ success: true } as any, 200 as any);
+
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Posts:Purge] Error", e);
-    return c.json({ error: "Purge failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(approvePostRoute, typedHandler<typeof approvePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+
   try {
     const result = await approvePost(c, slug);
-    if (!result.success) return c.json({ error: result.error || "Approval failed" } as any, 404 as any);
-    return c.json({ success: true, warnings: result.warnings } as any, 200 as any);
+    if (!result.success) {
+      return errorResponses.notFound(c, result.error || "Post");
+    }
+
+    return c.json({ success: true, warnings: result.warnings }, 200);
   } catch (e) {
     console.error("[Posts:Approve] Error", e);
-    return c.json({ error: "Approval failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(rejectPostRoute, typedHandler<typeof rejectPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  const _body = c.req.valid("json");
   const { reason } = c.req.valid("json");
+
   try {
     const db = getDb(c);
     const row = await db
@@ -759,25 +847,51 @@ postsRouter.openapi(rejectPostRoute, typedHandler<typeof rejectPostRoute>(async 
       }
     }
     c.executionCtx.waitUntil(logAuditAction(c, "REJECT_POST", "posts", slug));
-    return c.json({ success: true } as any, 200 as any);
+
+    return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Posts:Reject] Error", e);
-    return c.json({ error: "Reject failed" } as any, 500 as any);
+    return errorResponses.internalError(c, "Internal server error");
   }
 }));
 
 postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute>(async (c) => {
   const { slug } = c.req.valid("param");
+
   try {
-    const historyRows = await getPostHistory(c, slug);
+    const db = getDb(c);
+    const historyRows = await db
+      .select({
+        id: schema.postsHistory.id,
+        slug: schema.postsHistory.slug,
+        title: schema.postsHistory.title,
+        author: schema.postsHistory.author,
+        thumbnail: schema.postsHistory.thumbnail,
+        snippet: schema.postsHistory.snippet,
+        ast: schema.postsHistory.ast,
+        created_at: schema.postsHistory.createdAt,
+      })
+      .from(schema.postsHistory)
+      .where(eq(schema.postsHistory.slug, slug))
+      .orderBy(desc(schema.postsHistory.createdAt))
+      .limit(50)
+      .all();
+
     const history = historyRows.map((h) => ({
-      ...h,
       id: Number(h.id),
+      slug: h.slug,
+      title: h.title,
+      author: h.author ?? null,
+      thumbnail: h.thumbnail ?? null,
+      snippet: h.snippet ?? null,
+      ast: h.ast,
+      created_at: h.created_at,
     }));
+
     return c.json({ history }, 200);
   } catch (e) {
     console.error("[Posts:History] Error", e);
-    return c.json({ error: "Failed to fetch history" }, 500);
+    return errorResponses.internalError(c, "Failed to fetch history");
   }
 }));
 
@@ -785,14 +899,18 @@ postsRouter.openapi(restorePostHistoryRoute, typedHandler<typeof restorePostHist
   const { slug, id } = c.req.valid("param");
   const user = await getSessionUser(c);
   const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
-  if (!result.success) return c.json({ error: result.error || "Restore failed" } as any, 404 as any);
-  return c.json({ success: true } as any, 200 as any);
+
+  if (!result.success) {
+    return errorResponses.notFound(c, result.error || "History entry");
+  }
+
+  return c.json({ success: true }, 200);
 }));
 
 postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  const _body = c.req.valid("json");
   const { socials } = c.req.valid("json");
+
   try {
     const db = getDb(c);
     const post = await db
@@ -805,7 +923,8 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
       .where(eq(schema.posts.slug, slug))
       .limit(1)
       .get();
-    if (!post) return c.json({ error: "Post not found" } as any, 404 as any);
+
+    if (!post) return errorResponses.notFound(c, "Post");
 
     const socialConfig = await getSocialConfig(c);
     const baseUrl = new URL(c.req.url).origin;
@@ -829,10 +948,11 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
           : null
       ).catch((err: unknown) => console.error("[Repush] Social dispatch failed:", err))
     );
-    return c.json({ success: true } as any, 200 as any);
+
+    return c.json({ success: true }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return c.json({ error: message } as any, 502 as any);
+    return errorResponses.internalError(c, message);
   }
 }));
 

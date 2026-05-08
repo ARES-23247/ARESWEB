@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 /* User management route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";

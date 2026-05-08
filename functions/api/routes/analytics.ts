@@ -1,12 +1,11 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { Context } from "hono";
+import { z } from "zod";
 
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit, getDb } from "../middleware";
 import { eq, and, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import {
-
   trackPageViewRoute,
   trackSponsorClickRoute,
   getRosterStatsRoute,
@@ -16,124 +15,26 @@ import {
   searchRoute,
 } from "../../../shared/routes/analytics";
 
-// ── Type Definitions ──────────────────────────────────────────────────────
+// ── Type Inference from Schemas ───────────────────────────────────────────────
 
-interface ErrorResponse {
-  error: string;
-  details?: string;
-}
+type TrackPageViewBody = z.infer<typeof trackPageViewRoute.request.body.content["application/json"]["schema"]>;
+type TrackPageViewSuccess = z.infer<typeof trackPageViewRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-interface SuccessResponse {
-  success: true;
-}
+type TrackSponsorClickBody = z.infer<typeof trackSponsorClickRoute.request.body.content["application/json"]["schema"]>;
+type TrackSponsorClickSuccess = z.infer<typeof trackSponsorClickRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-interface TopPage {
-  path: string;
-  category: string;
-  views: number;
-}
+type RosterStatsSuccess = z.infer<typeof getRosterStatsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-interface TopReferrer {
-  referrer: string;
-  visits: number;
-}
+type LeaderboardSuccess = z.infer<typeof getLeaderboardRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-interface RecentView {
-  path: string;
-  category: string;
-  user_agent: string;
-  referrer: string;
-  timestamp: string;
-}
+type StatsSuccess = z.infer<typeof getStatsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-interface CategoryTotal {
-  category: string;
-  total: number;
-}
+type PlatformAnalyticsSuccess = z.infer<typeof getPlatformAnalyticsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-interface UserActivity {
-  date: string;
-  pageViews: number;
-}
+type SearchQuery = z.infer<typeof searchRoute.request.query>;
+type SearchSuccess = z.infer<typeof searchRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-interface LatencyData {
-  date: string;
-  avg_latency: number;
-}
-
-interface ResourceUsage {
-  totalAssets: number;
-  totalStorage: number;
-  apiCalls: number;
-}
-
-interface PlatformAnalyticsResponse {
-  totalPageViews: number;
-  uniqueVisitors: number;
-  topPages: TopPage[];
-  topReferrers: TopReferrer[];
-  recentViews: RecentView[];
-  totals: CategoryTotal[];
-  userActivity: UserActivity[];
-  latency: LatencyData[];
-  resourceUsage: ResourceUsage;
-}
-
-interface RosterMember {
-  user_id: string;
-  nickname: string | null;
-  member_type: string | null;
-  attended_events: number;
-  manual_prep_hours: number;
-  event_volunteer_hours: number;
-  avatar: string | null;
-}
-
-interface RosterStatsResponse {
-  roster: RosterMember[];
-}
-
-interface LeaderboardEntry {
-  user_id: string;
-  first_name: string;
-  last_name: string | null;
-  nickname: string | null;
-  member_type: string;
-  badge_count: number;
-  avatar: string | null;
-}
-
-interface LeaderboardResponse {
-  leaderboard: LeaderboardEntry[];
-}
-
-interface StatsResponse {
-  posts: number;
-  events: number;
-  docs: number;
-  integrations: {
-    zulip: boolean;
-    github: boolean;
-    discord: boolean;
-    bluesky: boolean;
-    band: boolean;
-    slack: boolean;
-    gcal: boolean;
-  };
-  securityBlocks: number;
-}
-
-interface SearchResult {
-  type: "blog" | "event" | "doc";
-  id: string;
-  title: string;
-}
-
-interface SearchResponse {
-  results: SearchResult[];
-}
-
-// ── SQL Result Types ───────────────────────────────────────────────────────
+// ── Database Result Types ───────────────────────────────────────────────────────
 
 interface SqlUniqueCountResult {
   unique_count: number;
@@ -143,10 +44,64 @@ interface SqlTotalResult {
   total: number;
 }
 
-interface SqlRowsResult<T> {
-  rows: T[];
+interface PlatformViewRow {
+  path: string;
+  category: string;
+  views: number;
 }
 
+interface ReferrerRow {
+  referrer: string;
+  visits: number;
+}
+
+interface RecentViewRow {
+  path: string;
+  category: string;
+  user_agent: string;
+  referrer: string;
+  timestamp: string;
+}
+
+interface CategoryTotalRow {
+  category: string;
+  total: number;
+}
+
+interface UserActivityRow {
+  date: string;
+  pageViews: number;
+}
+
+interface LatencyRow {
+  date: string;
+  avg_latency: number;
+}
+
+interface RosterMemberRow {
+  user_id: string;
+  nickname: string | null;
+  member_type: string | null;
+  avatar: string | null;
+  attended_events: number;
+  manual_prep_hours: number;
+  event_volunteer_hours: number;
+}
+
+interface LeaderboardRow {
+  user_id: string;
+  first_name: string;
+  last_name: string | null;
+  nickname: string | null;
+  member_type: string;
+  avatar: string | null;
+  badge_count: number;
+}
+
+interface SearchResultRow {
+  id: string;
+  title: string;
+}
 
 export const analyticsRouter = new OpenAPIHono<AppEnv>();
 
@@ -166,15 +121,16 @@ analyticsRouter.use("/sponsor-click", turnstileMiddleware());
 analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 
 // Track page view
-analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRoute>(async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRoute>(async (c) => {
   const db = getDb(c);
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(db, `track:${ip}`, ua, 20, 600))) {
-    return c.json<ErrorResponse>({ error: "Rate limit exceeded" }, 429);
+    return c.json({ error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" }, 429);
   }
   try {
-    const { path, category, referrer } = c.req.valid("json");
+    const body = c.req.valid("json") as TrackPageViewBody;
+    const { path, category, referrer } = body;
     const userAgent = c.req.header("user-agent") || ua;
 
     await db.insert(schema.pageAnalytics)
@@ -187,26 +143,28 @@ analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRou
       })
       .run();
 
-    return c.json<SuccessResponse>({ success: true }, 200);
+    const response: TrackPageViewSuccess = { success: true };
+    return c.json(response satisfies TrackPageViewSuccess, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Internal Server Error" }, 500);
+    return c.json({ error: "Internal Server Error", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 }));
 
 // Track sponsor click
-analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsorClickRoute>(async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsorClickRoute>(async (c) => {
   const db = getDb(c);
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(db, `click:${ip}`, ua, 10, 600))) {
-    return c.json<ErrorResponse>({ error: "Rate limit exceeded" }, 429);
+    return c.json({ error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" }, 429);
   }
   try {
-    const { sponsor_id } = c.req.valid("json");
+    const body = c.req.valid("json") as TrackSponsorClickBody;
+    const { sponsor_id } = body;
 
     // WR-04: Validate sponsor exists to prevent database pollution
     if (!sponsor_id || typeof sponsor_id !== 'string') {
-      return c.json<ErrorResponse>({ error: "Invalid sponsor ID" }, 400);
+      return c.json({ error: "Invalid sponsor ID", code: "VALIDATION_ERROR" }, 400);
     }
 
     const sponsor = await db.select({ id: schema.sponsors.id })
@@ -215,25 +173,26 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
       .get();
 
     if (!sponsor) {
-      return c.json<ErrorResponse>({ error: "Invalid sponsor" }, 400);
+      return c.json({ error: "Invalid sponsor", code: "VALIDATION_ERROR" }, 400);
     }
 
     const yearMonth = new Date().toISOString().slice(0, 7);
 
-    await db.run(sql`
+    await db.all(sql`
       INSERT INTO sponsor_metrics (id, sponsor_id, year_month, clicks, impressions)
       VALUES (${crypto.randomUUID()}, ${sponsor_id}, ${yearMonth}, 1, 0)
       ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = sponsor_metrics.clicks + 1
     `);
 
-    return c.json<SuccessResponse>({ success: true }, 200);
+    const response: TrackSponsorClickSuccess = { success: true };
+    return c.json(response satisfies TrackSponsorClickSuccess, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Internal Server Error" }, 500);
+    return c.json({ error: "Internal Server Error", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 }));
 
 // Get platform analytics (admin)
-analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c) => {
   const db = getDb(c);
   console.log("[Analytics] Fetching platform analytics...");
   try {
@@ -247,12 +206,12 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       activityData,
     ] = await Promise.all([
       db.select({ total: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).get().catch(() => ({ total: 0 })),
-      db.run(sql<{ unique_count: number }>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: SqlRowsResult<SqlUniqueCountResult>) => r.rows?.[0] || { unique_count: 0 }).catch(() => ({ unique_count: 0 })),
+      db.all(sql<SqlUniqueCountResult>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((results) => results?.[0] || { unique_count: 0 }).catch(() => ({ unique_count: 0 })),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all().catch(() => []),
       db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` }).from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all().catch(() => []),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, user_agent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp }).from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all().catch(() => []),
       db.select({ category: schema.pageAnalytics.category, total: sql<number>`count(${schema.pageAnalytics.category})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.category).all().catch(() => []),
-      db.run(sql<{ date: string; pageViews: number }>`
+      db.all(sql<UserActivityRow>`
         SELECT
           date(timestamp, 'localtime') as date,
           COUNT(*) as pageViews
@@ -260,19 +219,18 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         WHERE timestamp >= datetime('now', '-30 days')
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
-      `).catch(() => ({ rows: [] }))
+      `).catch(() => [])
     ]);
 
     const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get().catch(() => ({ total: 0 }));
 
     // usage_metrics table may not exist in all environments (needs migration)
-    let apiCount = { total: 0 };
-    let latencyData: SqlRowsResult<{ date: string; avg_latency: number }> = { rows: [] };
+    let apiCount: SqlTotalResult = { total: 0 };
+    let latencyData: LatencyRow[] = [];
     try {
-      apiCount = await db.run(sql<{ total: number }>`SELECT COUNT(id) as total FROM usage_metrics`)
-        .then((r: SqlRowsResult<SqlTotalResult>) => r.rows?.[0] || { total: 0 })
-        .catch(() => ({ total: 0 }));
-      const res = await db.run(sql<{ date: string; avg_latency: number }>`
+      const apiResults = await db.all(sql<SqlTotalResult>`SELECT COUNT(id) as total FROM usage_metrics`);
+      apiCount = (apiResults?.[0] as SqlTotalResult) || { total: 0 };
+      const res = await db.all(sql<LatencyRow>`
         SELECT
           date(timestamp, 'localtime') as date,
           AVG(latency_ms) as avg_latency
@@ -281,25 +239,25 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
       `);
-      latencyData = { rows: res.rows || [] };
+      latencyData = (res || []) as LatencyRow[];
     } catch {
       // Table doesn't exist or other error - use defaults
       apiCount = { total: 0 };
-      latencyData = { rows: [] };
+      latencyData = [];
     }
 
-    const topPages = topPagesDataRow.map((p) => ({
+    const topPages = (topPagesDataRow as PlatformViewRow[]).map((p) => ({
       path: String(p.path),
       category: String(p.category),
       views: Number(p.views)
     }));
 
-    const topReferrers = referrersDataRow.map((r) => ({
+    const topReferrers = (referrersDataRow as ReferrerRow[]).map((r) => ({
       referrer: String(r.referrer),
       visits: Number(r.visits),
     }));
 
-    const recentViews = recentViewsDataRow.map((v) => ({
+    const recentViews = (recentViewsDataRow as RecentViewRow[]).map((v) => ({
       path: String(v.path),
       category: String(v.category),
       user_agent: String(v.user_agent || ""),
@@ -307,24 +265,24 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       timestamp: String(v.timestamp)
     }));
 
-    const totals = totalsDataRow.map((t) => ({
+    const totals = (totalsDataRow as CategoryTotalRow[]).map((t) => ({
       category: String(t.category),
       total: Number(t.total)
     }));
 
-    const userActivity = (activityData.rows || []).map((a) => ({
+    const userActivity = (activityData as UserActivityRow[]).map((a) => ({
       date: String(a.date),
       pageViews: Number(a.pageViews),
     }));
 
-    const latency = (latencyData.rows || []).map((l) => ({
+    const latency = (latencyData || []).map((l: LatencyRow) => ({
       date: String(l.date),
       avg_latency: Number(l.avg_latency)
     }));
 
-    return c.json<PlatformAnalyticsResponse>({
+    const response: PlatformAnalyticsSuccess = {
       totalPageViews: Number(totalViewsData?.total || 0),
-      uniqueVisitors: Number(uniqueVisitorsData?.unique_count || 0),
+      uniqueVisitors: Number((uniqueVisitorsData as SqlUniqueCountResult)?.unique_count || 0),
       topPages,
       topReferrers,
       recentViews,
@@ -336,30 +294,23 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         totalStorage: 0,
         apiCalls: Number(apiCount?.total || 0),
       }
-    }, 200);
+    };
+    return c.json(response satisfies PlatformAnalyticsSuccess, 200);
   } catch (err) {
     console.error("[Analytics] Platform metrics error:", err);
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return c.json<ErrorResponse>({
-      error: "Failed to fetch platform metrics",
-      details: errorMsg.includes("no such table") ? "Required database table missing. Run migrations." : errorMsg
+    return c.json({
+      error: errorMsg.includes("no such table") ? "Required database table missing. Run migrations." : "Failed to fetch platform metrics",
+      code: "INTERNAL_SERVER_ERROR"
     }, 500);
   }
 }));
 
 // Get roster stats (admin)
-analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
   const db = getDb(c);
   try {
-    const results = await db.run(sql<{
-      user_id: string;
-      nickname: string | null;
-      member_type: string | null;
-      avatar: string | null;
-      attended_events: number;
-      manual_prep_hours: number;
-      event_volunteer_hours: number;
-    }>`
+    const results = await db.all(sql<RosterMemberRow>`
       SELECT
         u.user_id,
         u.nickname,
@@ -376,7 +327,7 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
       ORDER BY u.nickname ASC
     `);
 
-    const rows = results.rows || [];
+    const rows = (results || []) as RosterMemberRow[];
     const roster = rows.map((r) => ({
       user_id: String(r.user_id),
       nickname: r.nickname || null,
@@ -387,25 +338,18 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
       avatar: r.avatar ? String(r.avatar) : null
     }));
 
-    return c.json<RosterStatsResponse>({ roster }, 200);
+    const response: RosterStatsSuccess = { roster };
+    return c.json(response satisfies RosterStatsSuccess, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Failed to fetch roster stats" }, 500);
+    return c.json({ error: "Failed to fetch roster stats", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 }));
 
 // Get leaderboard
-analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
   const db = getDb(c);
   try {
-    const results = await db.run(sql<{
-      user_id: string;
-      first_name: string;
-      last_name: string | null;
-      nickname: string | null;
-      member_type: string;
-      avatar: string | null;
-      badge_count: number;
-    }>`
+    const results = await db.all(sql<LeaderboardRow>`
       SELECT
         u.id as user_id,
         u.name as first_name,
@@ -423,7 +367,7 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
       LIMIT 50
     `);
 
-    const rows = results.rows || [];
+    const rows = (results || []) as LeaderboardRow[];
     const leaderboard = rows.map((r) => {
       const isMinor = r.member_type === "student";
       return {
@@ -437,14 +381,15 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
       };
     });
 
-    return c.json<LeaderboardResponse>({ leaderboard }, 200);
+    const response: LeaderboardSuccess = { leaderboard };
+    return c.json(response satisfies LeaderboardSuccess, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Failed to fetch leaderboard" }, 500);
+    return c.json({ error: "Failed to fetch leaderboard", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 }));
 
 // Get stats (admin)
-analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   const db = getDb(c);
   try {
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
@@ -455,7 +400,7 @@ analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async 
       getDbSettings(c)
     ]);
 
-    return c.json<StatsResponse>({
+    const response: StatsSuccess = {
       posts: Number(postsCount?.total || 0),
       events: Number(eventsCount?.total || 0),
       docs: Number(docsCount?.total || 0),
@@ -464,46 +409,51 @@ analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async 
         github: !!dbSettings["GITHUB_PAT"],
         discord: !!dbSettings["DISCORD_WEBHOOK_URL"],
         bluesky: !!dbSettings["BLUESKY_APP_PASSWORD"],
-        band: !!dbSettings["BAND_ACCESS_TOKEN"],
         slack: !!dbSettings["SLACK_WEBHOOK_URL"],
         gcal: !!dbSettings["GCAL_PRIVATE_KEY"]
       },
       securityBlocks: Number(securityBlocksRow?.total || 0)
-    }, 200);
+    };
+    return c.json(response satisfies StatsSuccess, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Failed to fetch stats" }, 500);
+    return c.json({ error: "Failed to fetch stats", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 }));
 
 // Search
-analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c: Context<AppEnv>) => {
+analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) => {
   const db = getDb(c);
-  const { q } = c.req.valid("query");
+  const query = c.req.valid("query") as SearchQuery;
+  const { q } = query;
   try {
     // SCA-FTS-01: Sanitize FTS5 query
     const qClean = (q || "").replace(/[^a-zA-Z0-9\s]/g, "").trim();
-    if (!qClean) return c.json<SearchResponse>({ results: [] }, 200);
+    if (!qClean) {
+      const emptyResponse: SearchSuccess = { results: [] };
+      return c.json(emptyResponse satisfies SearchSuccess, 200);
+    }
     const ftsQ = `"${qClean}"*`;
 
     const [postsReq, eventsReq, docsReq] = await Promise.all([
-      db.run(sql<{ id: string; title: string }>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
-      db.run(sql<{ id: string; title: string }>`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
-      db.run(sql<{ id: string; title: string }>`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
+      db.all(sql<SearchResultRow>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
+      db.all(sql<SearchResultRow>`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
+      db.all(sql<SearchResultRow>`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
     ]);
 
-    const postsRows = postsReq.rows || [];
-    const eventsRows = eventsReq.rows || [];
-    const docsRows = docsReq.rows || [];
+    const postsRows = postsReq || [];
+    const eventsRows = eventsReq || [];
+    const docsRows = docsReq || [];
 
-    const results: SearchResult[] = [
-      ...(postsRows || []).map((r) => ({ type: "blog" as const, id: r.id, title: r.title })),
-      ...(eventsRows || []).map((r) => ({ type: "event" as const, id: r.id, title: r.title })),
-      ...(docsRows || []).map((r) => ({ type: "doc" as const, id: r.id, title: r.title }))
+    const results = [
+      ...(postsRows as SearchResultRow[]).map((r) => ({ type: "blog" as const, id: r.id, title: r.title })),
+      ...(eventsRows as SearchResultRow[]).map((r) => ({ type: "event" as const, id: r.id, title: r.title })),
+      ...(docsRows as SearchResultRow[]).map((r) => ({ type: "doc" as const, id: r.id, title: r.title }))
     ];
 
-    return c.json<SearchResponse>({ results }, 200);
+    const response: SearchSuccess = { results };
+    return c.json(response satisfies SearchSuccess, 200);
   } catch {
-    return c.json<ErrorResponse>({ error: "Search failed" }, 500);
+    return c.json({ error: "Search failed", code: "INTERNAL_SERVER_ERROR" }, 500);
   }
 }));
 

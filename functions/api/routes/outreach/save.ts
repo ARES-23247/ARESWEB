@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
@@ -51,7 +50,8 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> 
           mentorCount: validatedData.mentor_count || 0,
           mentorHours: validatedData.mentor_hours || 0,
         })
-        .returning({ id: schema.outreachLogs.id });
+        .returning({ id: schema.outreachLogs.id })
+        .all();
       result = inserted[0]?.id?.toString() || "new";
     }
 

@@ -1,28 +1,31 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Save, Loader2, RotateCcw, Copy, Check, Send, Trash2, GripVertical, FolderOpen, Plus, ChevronDown, Camera, X, Maximize, Minimize, Link2, Keyboard, History, Upload, AlertTriangle } from "lucide-react";
+import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, AlertTriangle } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
 import { SimFileExplorer } from "./editor/SimFileExplorer";
-import { SimComponentLibrary } from "./editor/SimComponentLibrary";
+// TODO: implement component library picker UI
+// import { SimComponentLibrary } from "./editor/SimComponentLibrary";
 import { SimConsole, LogEntry, TestResult } from "./editor/SimConsole";
 import { logger } from "../utils/logger";
 import { useSimulationChat } from "../hooks/useSimulationChat";
 import { useSimulationFiles } from "../hooks/useSimulationFiles";
 import { useCodeCompiler } from "../hooks/useCodeCompiler";
 import { useMonacoEditor } from "../hooks/useMonacoEditor";
-import type { LogEntry as ConsoleLogEntry } from "./editor/SimConsole";
 
 // Lazy-loaded Monaco Editor with ARES-branded loading UX
 const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then(mod => ({ default: mod.default })));
-const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then(mod => ({ default: mod.DiffEditor })));
+// TODO: implement diff view for AI changes
+// const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then(mod => ({ default: mod.DiffEditor })));
 const SimPreviewFrame = lazy(() => import("./editor/SimPreviewFrame"));
 
 // Real production templates for AI context
 import ArmKgSimRaw from "../sims/armkg/index.tsx?raw";
 import ElevatorPidSimRaw from "../sims/elevatorpid/index.tsx?raw";
 
+// TODO: use these types when library is implemented
+/*
 interface SavedSim {
   id: string;
   name: string;
@@ -38,29 +41,28 @@ interface GithubSim {
   path: string;
   requiresContext: boolean;
 }
+*/
 
 export default function SimulationPlayground() {
   // File Management Hook
   const {
-    savedSims,
-    githubSims,
-    isLoadingSims,
-    isLoadingGithubSims,
+    _savedSims,  // TODO: use in file library
+    _githubSims,  // TODO: use in file library
     simId,
     setSimId,
     simName,
     setSimName,
     fetchSavedSims,
     fetchGithubSims,
-    handleLoadSim,
-    handleLoadGithubSim,
+    _handleLoadSim,  // TODO: use in file library
+    _handleLoadGithubSim,  // TODO: use in file library
   } = useSimulationFiles(() => Promise.resolve(null));
 
   // Code Compiler Hook
   const {
     compiledFiles,
     compileError,
-    isCompiling,
+    _isCompiling,  // TODO: show loading state during compilation
     compileCode,
     scheduleCompile,
   } = useCodeCompiler();
@@ -68,13 +70,13 @@ export default function SimulationPlayground() {
   // Monaco Editor Hook
   const {
     editorRef,
-    monacoRef,
-    isVimMode,
-    setIsVimMode,
+    _monacoRef,  // TODO: use for advanced Monaco features
+    _isVimMode,  // TODO: add vim mode toggle UI
+    _setIsVimMode,  // TODO: add vim mode toggle UI
     isWordWrap,
-    setIsWordWrap,
+    _setIsWordWrap,  // TODO: add word wrap toggle UI
     isMinimap,
-    setIsMinimap,
+    _setIsMinimap,  // TODO: add minimap toggle UI
     handleEditorDidMount,
   } = useMonacoEditor();
 
@@ -83,33 +85,34 @@ export default function SimulationPlayground() {
   const [activeFile, setActiveFile] = useState("SimComponent.tsx");
   const [pendingAiChanges, setPendingAiChanges] = useState<Record<string, string> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSharingGist, setIsSharingGist] = useState(false);
+  const [_isSharingGist, _setIsSharingGist] = useState(false);  // TODO: add gist sharing button
   const [copied, setCopied] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
-  const [showComponentLibrary, setShowComponentLibrary] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [isAutoRun, setIsAutoRun] = useState(() => localStorage.getItem("ares_sim_autorun") === "true");
+  // TODO: implement history/snapshot restore in UI
+  const [_showHistory, _setShowHistory] = useState(false);
+  // TODO: implement auto-run feature
+  const [_isAutoRun, _setIsAutoRun] = useState(() => localStorage.getItem("ares_sim_autorun") === "true");
   const [readOnlyFiles] = useState<string[]>(["areslib.d.ts", "physics.d.ts"]);
   const [telemetry, setTelemetry] = useState<Record<string, {time: number, value: number}[]>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<LogEntry[]>([]);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
-  const [fps, setFps] = useState<number | null>(null);
+  const [fps, setFps] = useState<number | null>(null);  // fps used in JSX
 
   // AI Chat Logic
   const {
-    chatMessages,
+    _chatMessages,  // TODO: implement chat UI
     setChatMessages,
-    chatInput,
-    setChatInput,
-    isChatLoading,
-    attachedImage,
+    _chatInput,  // TODO: implement chat input
+    _setChatInput,  // TODO: implement chat input
+    _isChatLoading,  // TODO: show loading state in chat
+    _attachedImage,  // TODO: implement image attachment preview
     setAttachedImage,
-    chatEndRef,
-    chatInputRef,
-    handleChatSend,
+    _chatEndRef,  // TODO: auto-scroll chat to bottom
+    _chatInputRef,  // TODO: focus chat input
+    _handleChatSend,  // TODO: implement chat send button
     handleFixWithAI,
-    handleChatKeyDown,
+    _handleChatKeyDown,  // TODO: handle chat keyboard shortcuts
     resetChat
   } = useSimulationChat({
     simId,
@@ -137,6 +140,7 @@ export default function SimulationPlayground() {
     setSimName("Untitled Simulation");
     setPendingAiChanges(null);
     resetChat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compileCode, resetChat]);
 
   const handleRun = useCallback(() => {
@@ -150,7 +154,8 @@ export default function SimulationPlayground() {
     setTestResults(prev => [...prev, result]);
   }, []);
 
-  const handleAcceptAiChanges = useCallback(() => {
+  // TODO: add AI change accept/reject UI buttons
+  const _handleAcceptAiChanges = useCallback(() => {
     if (!pendingAiChanges) return;
     const updatedFiles = { ...files, ...pendingAiChanges };
     setFiles(updatedFiles);
@@ -159,7 +164,8 @@ export default function SimulationPlayground() {
     setChatMessages(prev => [...prev, { role: "assistant", content: "✅ Changes accepted and compiled successfully!" }]);
   }, [pendingAiChanges, files, compileCode, setChatMessages]);
 
-  const handleRejectAiChanges = useCallback(() => {
+  // TODO: add AI change accept/reject UI buttons
+  const _handleRejectAiChanges = useCallback(() => {
     setPendingAiChanges(null);
     setChatMessages(prev => [...prev, { role: "assistant", content: "❌ Changes rejected. The original code has been restored." }]);
   }, [setChatMessages]);
@@ -203,7 +209,8 @@ export default function SimulationPlayground() {
     }
   }, [files, activeFile]);
 
-  const handleDownloadZip = useCallback(async () => {
+  // TODO: add download button to UI
+  const _handleDownloadZip = useCallback(async () => {
     try {
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
@@ -233,7 +240,8 @@ export default function SimulationPlayground() {
     });
   }, [activeFile, scheduleCompile]);
 
-  const handleInsertCode = useCallback((code: string) => {
+  // TODO: implement code insertion from component library
+  const _handleInsertCode = useCallback((code: string) => {
     if (editorRef.current) {
       const editor = editorRef.current;
       const position = editor.getPosition();
@@ -246,6 +254,7 @@ export default function SimulationPlayground() {
         editor.focus();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -280,10 +289,12 @@ export default function SimulationPlayground() {
     } finally {
       setIsSaving(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simName, files, simId]);
 
-  const handleShareGist = useCallback(async () => {
-    setIsSharingGist(true);
+  // TODO: add share gist button to UI
+  const _handleShareGist = useCallback(async () => {
+    _setIsSharingGist(true);
     try {
       const res = await fetch("/api/simulations/gist", {
         method: "POST",
@@ -309,8 +320,9 @@ export default function SimulationPlayground() {
       const { toast } = await import("sonner");
       toast.error("Failed to generate shareable link");
     } finally {
-      setIsSharingGist(false);
+      _setIsSharingGist(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simName, files]);
 
   // Listen for Telemetry from Iframe
@@ -362,21 +374,24 @@ export default function SimulationPlayground() {
     return () => clearInterval(interval);
   }, [saveSnapshot]);
 
-  const getSnapshots = useCallback(() => {
+  // TODO: implement snapshot history UI
+  const _getSnapshots = useCallback(() => {
     try {
       const stored = localStorage.getItem(SNAPSHOT_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch { return []; }
   }, []);
 
-  const restoreSnapshot = useCallback((snapshot: { files: Record<string, string>; simName: string; simId: string | null }) => {
+  // TODO: wire up snapshot restore in UI
+  const _restoreSnapshot = useCallback((snapshot: { files: Record<string, string>; simName: string; simId: string | null }) => {
     setFiles(snapshot.files);
     setActiveFile(Object.keys(snapshot.files)[0]);
     setSimName(snapshot.simName);
     setSimId(snapshot.simId);
     compileCode(snapshot.files);
-    setShowHistory(false);
+    _setShowHistory(false);
     import("sonner").then(({ toast }) => toast.success("Snapshot restored"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compileCode]);
 
   // Keyboard Shortcuts

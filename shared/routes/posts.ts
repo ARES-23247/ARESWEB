@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
+import { titleField, slugField, descriptionField, MAX_INPUT_LENGTHS } from "../validation/constants";
 
 // Define a more specific schema for Tiptap AST nodes
 const tiptapNodeSchema: z.ZodType<{
@@ -18,18 +19,24 @@ const tiptapNodeSchema: z.ZodType<{
 });
 
 export const postSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255).openapi({ example: "Match Preview" }),
-  slug: z.string().max(255).optional().openapi({ example: "match-preview" }),
+  title: titleField.openapi({ example: "Match Preview" }),
+  slug: slugField.openapi({ example: "match-preview" }),
   thumbnail: z.string().max(255).optional().or(z.literal("")).openapi({ example: "/images/match.jpg" }),
   ast: tiptapNodeSchema.openapi({ description: "JSON AST from Tiptap editor" }),
-  content: z.string().optional().openapi({ description: "Plain text content for legacy support" }),
+  content: descriptionField.openapi({ description: "Plain text content for legacy support" }),
   category: z.string().max(100).optional().openapi({ example: "engineering" }),
   isPortfolio: z.boolean().optional().openapi({ example: false }),
   socials: z.record(z.string().max(255), z.boolean()).optional().openapi({ example: { twitter: true, bluesky: false } }),
   isDraft: z.boolean().optional().openapi({ example: false }),
   publishedAt: z.string().max(255).optional().openapi({ example: "2025-01-15T10:00:00Z" }),
   seasonId: z.union([z.string(), z.number()]).transform(v => v === "" ? undefined : Number(v)).optional().openapi({ example: 1 }),
-});
+}).refine(
+  (data) => !data.content || data.content.length <= MAX_INPUT_LENGTHS.content,
+  {
+    message: `Content cannot exceed ${MAX_INPUT_LENGTHS.content} characters`,
+    path: ["content"],
+  }
+);
 
 export const postResponseSchema = z.object({
   slug: z.string().openapi({ example: "match-preview" }),
