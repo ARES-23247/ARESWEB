@@ -50,6 +50,14 @@ jobs:
           command: d1 migrations apply ares-db --remote
           packageManager: npm
 
+      - name: Seed Test Data
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 execute ares-db --remote --file=scripts/seed-test-data.sql
+          packageManager: npm
+
       # Use different branch names for PR vs master to avoid conflicts
       - name: Deploy Preview to Cloudflare Pages
         id: deploy
