@@ -41,7 +41,15 @@ authRouter.get("/emergency-clear", (c) => {
 
 // ── Better Auth Routes ────────────────────────────────────────────────
 // Catch-all for Better Auth internal routes
-authRouter.on(["POST", "GET"], "/*", persistentRateLimitMiddleware(20, 60), async (c) => {
+authRouter.on(["POST", "GET"], "/*", async (c, next) => {
+  const path = c.req.path;
+  // SEC-RL: Strict rate limiting for sensitive authentication endpoints
+  if (c.req.method === "POST" && (path.includes("/sign-in") || path.includes("/sign-up") || path.includes("/forget-password") || path.includes("/reset-password") || path.includes("/verify-email"))) {
+    return persistentRateLimitMiddleware(10, 60)(c, next);
+  }
+  // Generous rate limit for standard session checks
+  return persistentRateLimitMiddleware(150, 60)(c, next);
+}, async (c) => {
   try {
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     const response = await auth.handler(c.req.raw);
