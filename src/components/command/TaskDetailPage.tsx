@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -32,7 +32,6 @@ export default function TaskDetailPage() {
   const _queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const isNavigatingAway = useRef(false);
 
   // Fetch all tasks and find the one we need
   const { data: tasksData, isLoading } = useGetTasks();
@@ -83,8 +82,6 @@ export default function TaskDetailPage() {
 
   const handleDelete = async () => {
     if (!taskId) return;
-    // Mark that we're navigating away to prevent "task not found" flash
-    isNavigatingAway.current = true;
     // Update cache immediately to remove the task
     _queryClient.setQueryData(['tasks'], (oldData: { tasks: TaskItem[] } | undefined) => {
       if (!oldData) return oldData;
@@ -106,8 +103,8 @@ export default function TaskDetailPage() {
     );
   }
 
-  // Only show "task not found" on initial load (not during deletion navigation)
-  if (!task && !isLoading && !isNavigatingAway.current) {
+  // Only show "task not found" on initial load
+  if (!task && !isLoading) {
     return (
       <div className="text-center py-32">
         <Layers size={48} className="mx-auto text-ares-gray mb-4" />

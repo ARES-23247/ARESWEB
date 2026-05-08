@@ -211,7 +211,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           {errors.title && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.title.message}</p>}
         </div>
         <div className="flex-1">
-          <CoverAssetPicker 
+          <CoverAssetPicker
+            label="Cover Image"
             coverImage={thumbnail || DEFAULT_COVER_IMAGE}
             isUploading={isUploadingCover}
             onLibraryClick={() => setIsCoverPickerOpen(true)}
