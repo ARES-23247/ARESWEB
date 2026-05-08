@@ -123,6 +123,7 @@ describe('security middleware', () => {
     });
 
     it('denies requests over the limit', async () => {
+      // CI debug: verify mock chain structure matches drizzle ORM
       const mockDbOverLimit = {
         insert: vi.fn().mockReturnValue({
           values: vi.fn().mockReturnValue({
