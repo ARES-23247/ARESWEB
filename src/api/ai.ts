@@ -176,7 +176,7 @@ export function useAddExternalSource(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
       queryClient.invalidateQueries({ queryKey: ["ai", "status"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -200,7 +200,7 @@ export function useDeleteExternalSource(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

@@ -85,7 +85,7 @@ export function useUploadMedia(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -109,7 +109,7 @@ export function useMoveMedia(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -130,7 +130,7 @@ export function useDeleteMedia(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

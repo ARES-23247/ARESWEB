@@ -151,6 +151,210 @@ export function createMinimalPngBuffer(): Buffer {
 }
 
 /**
+ * Badge item interface matching badgeSchema from badges route.
+ */
+export interface MockBadgeItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color_theme: string;
+  created_at: string;
+}
+
+/**
+ * Sponsor item interface matching sponsorResponseSchema from sponsors route.
+ */
+export interface MockSponsorItem {
+  id: string;
+  name: string;
+  tier: 'Titanium' | 'Gold' | 'Silver' | 'Bronze' | 'In-Kind';
+  logo_url: string | null;
+  website_url: string | null;
+  is_active: number;
+  created_at?: string;
+}
+
+/**
+ * User record interface for badge assignment tests.
+ */
+export interface MockUserItem {
+  id: string;
+  name: string | null;
+  nickname: string | null;
+  email: string;
+}
+
+/**
+ * Creates a mock badge item.
+ */
+export function createMockBadge(overrides: Partial<MockBadgeItem> = {}): MockBadgeItem {
+  const now = new Date().toISOString();
+  return {
+    id: 'test-badge',
+    name: 'Test Badge',
+    description: 'A test badge for E2E testing.',
+    icon: 'Award',
+    color_theme: 'text-ares-gold',
+    created_at: now,
+    ...overrides,
+  };
+}
+
+/**
+ * Creates a mock user item for badge assignment tests.
+ */
+export function createMockUser(overrides: Partial<MockUserItem> = {}): MockUserItem {
+  return {
+    id: 'test-user',
+    name: 'Test User',
+    nickname: 'Testy',
+    email: 'test@ares.org',
+    ...overrides,
+  };
+}
+
+/**
+ * Creates multiple mock badges for testing badge management.
+ */
+export function createMockBadges(): MockBadgeItem[] {
+  return [
+    createMockBadge({
+      id: 'outreach-mvp',
+      name: 'Outreach MVP',
+      description: 'Awarded to members who attain top 3 in outreach hours.',
+      icon: 'Award',
+      color_theme: 'text-ares-gold',
+    }),
+    createMockBadge({
+      id: 'safety-certified',
+      name: 'Safety Certified',
+      description: 'Completed all safety training modules.',
+      icon: 'Shield',
+      color_theme: 'text-green-500',
+    }),
+    createMockBadge({
+      id: 'programming-excellence',
+      name: 'Programming Excellence',
+      description: 'Awarded for outstanding code contributions.',
+      icon: 'Code',
+      color_theme: 'text-blue-500',
+    }),
+  ];
+}
+
+/**
+ * Creates a mock sponsor item.
+ */
+export function createMockSponsor(overrides: Partial<MockSponsorItem> = {}): MockSponsorItem {
+  const now = new Date().toISOString();
+  return {
+    id: 'test-sponsor',
+    name: 'Test Sponsor',
+    tier: 'Gold',
+    logo_url: null,
+    website_url: null,
+    is_active: 1,
+    created_at: now,
+    ...overrides,
+  };
+}
+
+/**
+ * Creates multiple mock sponsors for testing sponsor management.
+ */
+export function createMockSponsors(): MockSponsorItem[] {
+  return [
+    createMockSponsor({
+      id: 'nasa',
+      name: 'NASA',
+      tier: 'Titanium',
+      logo_url: 'https://example.com/nasa-logo.png',
+      website_url: 'https://nasa.gov',
+      is_active: 1,
+    }),
+    createMockSponsor({
+      id: 'google',
+      name: 'Google',
+      tier: 'Gold',
+      logo_url: 'https://example.com/google-logo.png',
+      website_url: 'https://google.com',
+      is_active: 1,
+    }),
+    createMockSponsor({
+      id: 'local-business',
+      name: 'Local Hardware Store',
+      tier: 'Bronze',
+      logo_url: null,
+      website_url: 'https://localhardware.com',
+      is_active: 1,
+    }),
+    createMockSponsor({
+      id: 'software-donation',
+      name: 'Software Company',
+      tier: 'In-Kind',
+      logo_url: null,
+      website_url: 'https://softwareco.com',
+      is_active: 1,
+    }),
+  ];
+}
+
+/**
+ * Location item interface matching locationSchema from locations route.
+ */
+export interface MockLocationItem {
+  id: string;
+  name: string;
+  address: string;
+  maps_url: string | null;
+  is_deleted: number;
+}
+
+/**
+ * Creates a mock location item.
+ */
+export function createMockLocation(overrides: Partial<MockLocationItem> = {}): MockLocationItem {
+  return {
+    id: 'test-location',
+    name: 'Test Location',
+    address: '123 Test Street, Test City, TX 75001',
+    maps_url: 'https://www.google.com/maps/search/?api=1&query=123%20Test%20Street%2C%20Test%20City%2C%20TX%2075001',
+    is_deleted: 0,
+    ...overrides,
+  };
+}
+
+/**
+ * Creates multiple mock locations for testing location management.
+ */
+export function createMockLocations(): MockLocationItem[] {
+  return [
+    createMockLocation({
+      id: 'mars-workspace',
+      name: 'Mars Workspace',
+      address: '123 Robotics Lane, Plano, TX 75074',
+      maps_url: 'https://www.google.com/maps/search/?api=1&query=123%20Robotics%20Lane%2C%20Plano%2C%20TX%2075074',
+      is_deleted: 0,
+    }),
+    createMockLocation({
+      id: 'competition-arena',
+      name: 'Competition Arena',
+      address: '4500 W. Illinois St, Midland, TX 79703',
+      maps_url: 'https://www.google.com/maps/search/?api=1&query=4500%20W.%20Illinois%20St%2C%20Midland%2C%20TX%2079703',
+      is_deleted: 0,
+    }),
+    createMockLocation({
+      id: 'community-center',
+      name: 'Community Center',
+      address: '1500 Avenue J, Huntsville, TX 77320',
+      maps_url: 'https://www.google.com/maps/search/?api=1&query=1500%20Avenue%20J%2C%20Huntsville%2C%20TX%2077320',
+      is_deleted: 0,
+    }),
+  ];
+}
+
+/**
  * Common timeout values for E2E tests.
  * Centralized to avoid magic numbers.
  */

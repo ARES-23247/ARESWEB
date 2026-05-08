@@ -144,7 +144,7 @@ export function useSubmitEventSignup(
     ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-      options?.onSuccess?.(_data, variables);
+      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }
@@ -164,7 +164,7 @@ export function useDeleteMyEventSignup(
     ...options,
     onSuccess: (_data, eventId) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", eventId] });
-      options?.onSuccess?.(_data, eventId);
+      (options?.onSuccess as any)?.(_data, eventId);
     }
   });
 }
@@ -184,7 +184,7 @@ export function useUpdateMyEventAttendance(
     ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-      options?.onSuccess?.(_data, variables);
+      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }
@@ -244,7 +244,7 @@ export function useSaveEvent(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -269,7 +269,7 @@ export function useUpdateEvent(
         queryClient.invalidateQueries({ queryKey: ["event", variables.id] });
         queryClient.invalidateQueries({ queryKey: ["admin_event_detail", variables.id] });
       }
-      options?.onSuccess?.(_data, variables);
+      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }
@@ -290,7 +290,7 @@ export function useDeleteEvent(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -311,7 +311,7 @@ export function useSyncEvents(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -346,7 +346,7 @@ export function useApproveEvent(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -366,7 +366,7 @@ export function useRejectEvent(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -386,7 +386,7 @@ export function useUndeleteEvent(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -406,7 +406,7 @@ export function usePurgeEvent(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -441,7 +441,7 @@ export function useUpdateUserEventAttendance(
     ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-      options?.onSuccess?.(_data, variables);
+      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }

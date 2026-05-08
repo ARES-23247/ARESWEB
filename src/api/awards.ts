@@ -62,7 +62,7 @@ export function useSaveAward(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["awards"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -82,7 +82,7 @@ export function useDeleteAward(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["awards"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

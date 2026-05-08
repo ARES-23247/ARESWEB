@@ -30,7 +30,7 @@ export const CalendarSubscriptionBanner = () => {
           href={googleCalLink}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#A30000] hover:bg-[#8B0000] text-white font-bold uppercase tracking-widest ares-cut-sm transition-all whitespace-nowrap"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-ares-red hover:bg-ares-red-dark text-white font-bold uppercase tracking-widest ares-cut-sm transition-all whitespace-nowrap"
         >
           <CalendarPlus size={18} />
           Google Cal

@@ -101,7 +101,7 @@ export function useUpdateOrderStatus(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store", "orders"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

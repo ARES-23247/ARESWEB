@@ -71,7 +71,7 @@ export function useJudgeLogin(
       return unwrapResponse<JudgeLoginResponse>(response);
     },
     onSuccess: (...args) => {
-      options?.onSuccess?.(...args);
+      (options?.onSuccess as any)?.(...args);
     },
   });
 }

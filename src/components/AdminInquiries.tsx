@@ -117,11 +117,13 @@ export default function AdminInquiries() {
   }, [inquiries, statusFilter, globalFilter]); // Dependencies are stable: inquiries is memoized, statusFilter and globalFilter are from state
 
   const updateStatusMutation = useUpdateInquiryStatus({
-    onSuccess: () => toast.success("Inquiry status updated.")
+    onSuccess: () => toast.success("Inquiry status updated."),
+    onError: (err) => toast.error(`Failed to update status: ${err.message}`),
   });
 
   const deleteInquiryMutation = useDeleteInquiry({
-    onSuccess: () => toast.success("Inquiry deleted.")
+    onSuccess: () => toast.success("Inquiry deleted."),
+    onError: (err) => toast.error(`Failed to delete inquiry: ${err.message}`),
   });
 
   const updateNotesMutation = useUpdateInquiryNotes({

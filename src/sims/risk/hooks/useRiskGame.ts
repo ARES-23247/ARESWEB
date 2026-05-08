@@ -135,7 +135,7 @@ export function useRiskGame() {
     let nextIdx = (currentPlayerIdx + 1) % activePlayers.length;
     let loopCount = 0;
     while (loopCount < activePlayers.length) {
-      if (remainingPlayers.has(activePlayers[nextIdx].color)) break;
+      if (remainingPlayers.has(activePlayers[nextIdx]?.color)) break;
       nextIdx = (nextIdx + 1) % activePlayers.length;
       loopCount++;
     }
@@ -148,9 +148,18 @@ export function useRiskGame() {
       return;
     }
 
+    // Safety check: if we couldn't find a valid next player, game over
+    const nextPlayer = activePlayers[nextIdx];
+    if (!nextPlayer || !remainingPlayers.has(nextPlayer.color)) {
+      setWinner([...remainingPlayers][0] ?? null);
+      setPhase('gameover');
+      setMessage('Game Over - No valid players remaining!');
+      return;
+    }
+
     setCurrentPlayerIdx(nextIdx);
     setPhase('deploy');
-    const bonus = calculateDeployCount(territories, activePlayers[nextIdx].color);
+    const bonus = calculateDeployCount(territories, nextPlayer.color);
     setDeployRemaining(bonus);
     setSelectedTerritory(null);
     setTargetTerritory(null);
@@ -159,7 +168,7 @@ export function useRiskGame() {
     setBattleResult(null);
     setReinforceAmount(0);
 
-    setMessage(`${activePlayers[nextIdx].emoji} ${activePlayers[nextIdx].name}'s turn - Deploy ${bonus} armies!`);
+    setMessage(`${nextPlayer.emoji} ${nextPlayer.name}'s turn - Deploy ${bonus} armies!`);
   }, [currentPlayerIdx, territories, activePlayers]);
 
   const handleReset = useCallback(() => {

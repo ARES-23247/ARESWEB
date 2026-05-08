@@ -100,7 +100,7 @@ export const MonthViewGrid = ({ currentDate, events }: MonthViewGridProps) => {
                 <span
                   className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full ${
                     isCurrentDay
-                      ? "bg-[#A30000] text-white"
+                      ? "bg-ares-red text-white"
                       : !isCurrentMonth
                       ? "text-zinc-300"
                       : "text-marble"

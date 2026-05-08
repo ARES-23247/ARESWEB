@@ -61,7 +61,7 @@ export function useSubmitInquiry(
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
-      options?.onSuccess?.(...args);
+      (options?.onSuccess as any)?.(...args);
     },
   });
 }
@@ -85,7 +85,7 @@ export function useUpdateInquiryStatus(
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
-      options?.onSuccess?.(...args);
+      (options?.onSuccess as any)?.(...args);
     },
   });
 }
@@ -108,7 +108,7 @@ export function useUpdateInquiryNotes(
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
-      options?.onSuccess?.(...args);
+      (options?.onSuccess as any)?.(...args);
     },
   });
 }
@@ -129,7 +129,7 @@ export function useDeleteInquiry(
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
-      options?.onSuccess?.(...args);
+      (options?.onSuccess as any)?.(...args);
     },
   });
 }

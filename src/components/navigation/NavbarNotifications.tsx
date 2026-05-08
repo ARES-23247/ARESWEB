@@ -101,7 +101,7 @@ export function NavbarNotifications({ session, permissions }: NavbarNotification
                         e.stopPropagation();
                         deleteNotif.mutate(n.id);
                       }}
-                      className="absolute top-2 right-2 p-1 text-marble/60 hover:text-ares-red opacity-0 group-hover/notif:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:text-ares-red"
+                      className="absolute top-2 right-2 p-1 text-marble/60 hover:text-ares-red transition-opacity focus:outline-none focus:text-ares-red"
                       aria-label="Delete notification"
                     >
                       <X size={14} />

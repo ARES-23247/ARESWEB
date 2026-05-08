@@ -14,7 +14,7 @@
  * Convert a single camelCase string to snake_case.
  * e.g. "dateStart" → "date_start", "isPotluck" → "is_potluck"
  */
-function camelToSnake(str: string): string {
+export function camelToSnake(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 

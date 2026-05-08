@@ -91,7 +91,7 @@ export function useSaveSimulation(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -111,7 +111,7 @@ export function useDeleteSimulation(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

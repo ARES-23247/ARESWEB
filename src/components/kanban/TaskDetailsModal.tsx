@@ -293,16 +293,20 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                     className="flex-1 bg-black/40 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
                     onKeyDown={async (e) => {
                       if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                        const title = e.currentTarget.value.trim();
-                        e.currentTarget.value = "";
-                        e.currentTarget.disabled = true;
+                        const target = e.currentTarget;
+                        const title = target.value.trim();
+                        target.value = "";
+                        target.disabled = true;
                         try {
                           await createSubtaskMutation.mutateAsync({ title, parent_id: task.id });
                         } catch (err) {
                           console.error("Failed to create subtask:", err);
                         } finally {
-                          e.currentTarget.disabled = false;
-                          e.currentTarget.focus();
+                          // Check if element still exists before accessing it
+                          if (target) {
+                            target.disabled = false;
+                            target.focus();
+                          }
                         }
                       }
                     }}

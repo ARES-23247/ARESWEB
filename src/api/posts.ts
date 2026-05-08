@@ -137,7 +137,7 @@ export function useSavePost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -162,7 +162,7 @@ export function useUpdatePost(
         queryClient.invalidateQueries({ queryKey: ["post", variables.slug] });
         queryClient.invalidateQueries({ queryKey: ["admin_post_detail", variables.slug] });
       }
-      options?.onSuccess?.(_data, variables);
+      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }
@@ -183,7 +183,7 @@ export function useDeletePost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -204,7 +204,7 @@ export function useUndeletePost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -225,7 +225,7 @@ export function usePurgePost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -246,7 +246,7 @@ export function useApprovePost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -267,7 +267,7 @@ export function useRejectPost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -306,7 +306,7 @@ export function useRestorePostHistory(
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["post", variables.slug] });
       queryClient.invalidateQueries({ queryKey: ["posts", "history", variables.slug] });
-      options?.onSuccess?.(_data, variables);
+      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }

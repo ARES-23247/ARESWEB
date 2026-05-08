@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Test mocks require any type */
+ 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import AdminInquiries from "./AdminInquiries";
@@ -48,15 +48,15 @@ describe("AdminInquiries component", () => {
       }
     ];
 
-    (inquiriesApi.useGetAdminInquiries as any).mockReturnValue({
+    vi.mocked(inquiriesApi.useGetAdminInquiries).mockReturnValue({
       data: { inquiries: mockInquiries },
       isLoading: false,
       isError: false,
-    });
+    } as any);
 
-    (inquiriesApi.useUpdateInquiryStatus as any).mockReturnValue({ mutate: vi.fn(), isPending: false });
-    (inquiriesApi.useDeleteInquiry as any).mockReturnValue({ mutate: vi.fn(), isPending: false });
-    (inquiriesApi.useUpdateInquiryNotes as any).mockReturnValue({ mutate: vi.fn(), isPending: false });
+    vi.mocked(inquiriesApi.useUpdateInquiryStatus).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
+    vi.mocked(inquiriesApi.useDeleteInquiry).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
+    vi.mocked(inquiriesApi.useUpdateInquiryNotes).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -65,7 +65,7 @@ describe("AdminInquiries component", () => {
 
   it("should send the inquiry id when deleting an inquiry", () => {
     const mutate = vi.fn();
-    (inquiriesApi.useDeleteInquiry as any).mockReturnValue({ mutate, isPending: false });
+    vi.mocked(inquiriesApi.useDeleteInquiry).mockReturnValue({ mutate, isPending: false } as any);
 
     render(<AdminInquiries />, { wrapper });
 
@@ -83,7 +83,7 @@ describe("AdminInquiries component", () => {
 
   it("should call updateStatus mutation to resolve inquiry", () => {
     const mutate = vi.fn();
-    (inquiriesApi.useUpdateInquiryStatus as any).mockReturnValue({ mutate, isPending: false });
+    vi.mocked(inquiriesApi.useUpdateInquiryStatus).mockReturnValue({ mutate, isPending: false } as any);
 
     render(<AdminInquiries />, { wrapper });
 

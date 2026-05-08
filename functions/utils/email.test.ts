@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { sendEmail } from './email';
 import { Context } from 'hono';
+import { getSocialConfig } from '../api/middleware';
+
+vi.mock('../api/middleware', async () => {
+  const actual = await vi.importActual<typeof import('../api/middleware')>('../api/middleware');
+  return {
+    ...actual,
+    getSocialConfig: vi.fn(),
+  };
+});
 
 describe('email utility', () => {
   const mockFetch = vi.fn();
@@ -9,11 +18,20 @@ describe('email utility', () => {
       RESEND_API_KEY: 'test-resend-key',
       RESEND_FROM_EMAIL: 'noreply@aresfirst.org',
     },
+    get: vi.fn().mockReturnValue({}),
   } as unknown as Context;
+
+  const mockedGetSocialConfig = getSocialConfig as ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = mockFetch;
+
+    // Default mock: return values from env
+    mockedGetSocialConfig.mockResolvedValue({
+      RESEND_API_KEY: mockContext.env.RESEND_API_KEY,
+      RESEND_FROM_EMAIL: mockContext.env.RESEND_FROM_EMAIL,
+    });
   });
 
   it('sends email successfully with all options', async () => {
@@ -67,7 +85,13 @@ describe('email utility', () => {
       env: {
         RESEND_API_KEY: 'test-resend-key',
       },
+      get: vi.fn().mockReturnValue({}),
     } as unknown as Context;
+
+    mockedGetSocialConfig.mockResolvedValueOnce({
+      RESEND_API_KEY: 'test-resend-key',
+      RESEND_FROM_EMAIL: undefined,
+    });
 
     await sendEmail(contextWithoutFromEmail, {
       to: 'user@example.com',
@@ -76,13 +100,18 @@ describe('email utility', () => {
     });
 
     const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(requestBody.from).toContain('team@ares.org');
+    expect(requestBody.from).toContain('team@aresfirst.org');
   });
 
   it('returns false when API key is missing', async () => {
     const contextWithoutKey = {
       env: {},
+      get: vi.fn().mockReturnValue({}),
     } as unknown as Context;
+
+    mockedGetSocialConfig.mockResolvedValueOnce({
+      RESEND_API_KEY: undefined,
+    });
 
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { Context } from "hono";
 import type { AppEnv, SessionUser } from "../api/middleware/utils";
 import {
@@ -51,10 +51,10 @@ function createMockContext(overrides?: {
 }): {
   mockCtx: Context<AppEnv>;
   mockDb: any;
-  mockRun: vi.Mock;
-  mockExecute: vi.Mock;
-  mockAll: vi.Mock;
-  mockGet: vi.Mock;
+  mockRun: Mock;
+  mockExecute: Mock;
+  mockAll: Mock;
+  mockGet: Mock;
 } {
   const mockAll = vi.fn().mockResolvedValue(overrides?.selectResults ?? []);
   const mockGet = vi.fn().mockResolvedValue((overrides?.selectResults ?? [])[0]);
@@ -103,8 +103,9 @@ function createMockContext(overrides?: {
       onConflictDoNothing: mockOnConflictDoNothing,
     }),
     update: vi.fn().mockReturnValue({
-      set: createValuesMock(),
-      where: mockWhereForUpdate,
+      set: vi.fn().mockReturnValue({
+        where: mockWhereForUpdate,
+      }),
     }),
     delete: vi.fn().mockReturnValue({
       where: mockWhereForDelete,

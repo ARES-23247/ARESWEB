@@ -60,12 +60,12 @@ describe('caseMapper utility', () => {
     });
 
     it('handles null input', () => {
-      expect(toSnakeCase(null)).toBe(null);
+      expect(toSnakeCase(null as any)).toBe(null);
     });
 
     it('handles non-object input', () => {
-      expect(toSnakeCase('string')).toBe('string');
-      expect(toSnakeCase(123)).toBe(123);
+      expect(toSnakeCase('string' as any)).toBe('string');
+      expect(toSnakeCase(123 as any)).toBe(123);
     });
 
     it('handles empty object', () => {

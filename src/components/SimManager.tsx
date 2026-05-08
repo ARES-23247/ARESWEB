@@ -204,7 +204,7 @@ export default function SimManager() {
       <Dialog.Root open={activeSim !== null} onOpenChange={(open) => !open && setActiveSim(null)}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/80 z-50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-[95vw] max-w-6xl translate-x-[-50%] translate-y-[-50%] gap-4 border border-ares-gold/20 bg-obsidian-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-xl flex flex-col max-h-[90vh]">
+          <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-[95vw] max-w-6xl translate-x-[-50%] translate-y-[-50%] gap-4 border border-ares-gold/20 bg-obsidian-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-xl flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center mb-2">
               <Dialog.Title className="text-xl font-bold text-white flex items-center gap-2">
                 <Play className="w-5 h-5 text-ares-red" />

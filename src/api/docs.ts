@@ -215,7 +215,7 @@ export function useSaveDoc(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -236,7 +236,7 @@ export function useUpdateDocSort(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -290,7 +290,7 @@ export function useRestoreDocHistory(
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["docs", variables.slug] });
       queryClient.invalidateQueries({ queryKey: ["docs", "history", variables.slug] });
-      options?.onSuccess?.(_data, variables);
+      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }
@@ -311,7 +311,7 @@ export function useApproveDoc(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -332,7 +332,7 @@ export function useRejectDoc(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -353,7 +353,7 @@ export function useDeleteDoc(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -374,7 +374,7 @@ export function useUndeleteDoc(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -395,7 +395,7 @@ export function usePurgeDoc(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

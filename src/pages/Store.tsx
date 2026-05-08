@@ -21,7 +21,7 @@ export const Store: React.FC = () => {
   }, [success, clearCart]);
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-slate-300 pt-24 pb-12">
+    <div className="min-h-screen bg-ares-gray-deep text-slate-300 pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}

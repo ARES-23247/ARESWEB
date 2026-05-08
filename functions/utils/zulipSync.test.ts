@@ -81,7 +81,8 @@ describe("zulipSync", () => {
         })
       );
 
-      const authHeader = vi.mocked(fetch).mock.calls[0]?.[1]?.headers?.Authorization as string;
+      const headers = vi.mocked(fetch).mock.calls[0]?.[1]?.headers as Record<string, string>;
+      const authHeader = headers?.Authorization as string;
       expect(authHeader).toBeTruthy();
 
       // Decode and verify the auth header contains bot email
@@ -105,7 +106,8 @@ describe("zulipSync", () => {
 
       await sendZulipMessage(envWithRegularEmail, "general", "test topic", "Hello!");
 
-      const authHeader = vi.mocked(fetch).mock.calls[0]?.[1]?.headers?.Authorization as string;
+      const headers = vi.mocked(fetch).mock.calls[0]?.[1]?.headers as Record<string, string>;
+      const authHeader = headers?.Authorization as string;
       const decoded = atob(authHeader.replace("Basic ", ""));
       expect(decoded).toContain("regular@aresfirst.org");
     });

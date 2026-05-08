@@ -10,12 +10,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useDocs } from "./useDocs";
 import { useNavigate } from "react-router-dom";
 import { trackPageView } from "../utils/analytics";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import React from "react";
+import * as React from "react";
 import * as docsApi from "../api/docs";
 import type { DocRecord, DocDetail, Contributor } from "../api/docs";
 
@@ -38,9 +38,8 @@ describe("useDocs hook", () => {
   let mockNavigate: ReturnType<typeof vi.fn>;
   let queryClient: QueryClient;
 
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
 
   const mockDoc = {
     slug: "getting-started",
@@ -67,7 +66,7 @@ describe("useDocs hook", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate = vi.fn();
-    vi.mocked(useNavigate).mockReturnValue(mockNavigate as any);
+    vi.mocked(useNavigate).mockReturnValue(mockNavigate as unknown as ReturnType<typeof useNavigate>);
 
     queryClient = new QueryClient({
       defaultOptions: {
@@ -76,12 +75,12 @@ describe("useDocs hook", () => {
     });
 
     // Default mock implementations
-    vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as any);
+    vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
     vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
       data: undefined,
       isLoading: false,
-    } as any);
-    vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: { results: [] } } as any);
+    } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
+    vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: { results: [] } } as unknown as ReturnType<typeof docsApi.useSearchDocs>);
   });
 
   afterEach(() => {
@@ -122,7 +121,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "doc4", display_in_areslib: undefined },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -131,7 +130,7 @@ describe("useDocs hook", () => {
     });
 
     it("should return empty array when allDocsData is undefined", () => {
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: undefined } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -139,7 +138,7 @@ describe("useDocs hook", () => {
     });
 
     it("should return empty array when docs array is missing", () => {
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: {} } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: {} } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -152,7 +151,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: { doc: mockDocDetail, contributors: [mockContributor] },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -168,7 +167,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: { doc: mockDocDetail, contributors },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -179,7 +178,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -190,7 +189,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: { doc: mockDocDetail },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -201,7 +200,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: undefined,
         isLoading: true,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -230,7 +229,7 @@ describe("useDocs hook", () => {
 
       vi.mocked(docsApi.useSearchDocs).mockReturnValue({
         data: { results: mockResults },
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useSearchDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -238,7 +237,7 @@ describe("useDocs hook", () => {
     });
 
     it("should return empty array when searchRes is undefined", () => {
-      vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: undefined } as any);
+      vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof docsApi.useSearchDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -246,7 +245,7 @@ describe("useDocs hook", () => {
     });
 
     it("should return empty array when results field is missing", () => {
-      vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: {} } as any);
+      vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: {} } as unknown as ReturnType<typeof docsApi.useSearchDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -262,7 +261,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "doc3", category: "Reference" },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -280,7 +279,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "community", category: "Community" },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -302,7 +301,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "reference", category: "Reference" },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -313,7 +312,7 @@ describe("useDocs hook", () => {
     });
 
     it("should return empty array when no docs available", () => {
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -327,7 +326,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "doc3", category: "Test", sort_order: 3 },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -485,7 +484,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "second-doc" },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       renderHook(() => useDocs(undefined), { wrapper });
 
@@ -495,7 +494,7 @@ describe("useDocs hook", () => {
     it("should not navigate when slug is provided", () => {
       const mockDocs = [{ ...mockDoc, slug: "first-doc" }] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       renderHook(() => useDocs("specific-doc"), { wrapper });
 
@@ -503,7 +502,7 @@ describe("useDocs hook", () => {
     });
 
     it("should not navigate when no docs are available", () => {
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       renderHook(() => useDocs(undefined), { wrapper });
 
@@ -511,7 +510,7 @@ describe("useDocs hook", () => {
     });
 
     it("should not navigate when slug is undefined but docs are loading", () => {
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: undefined } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       renderHook(() => useDocs(undefined), { wrapper });
 
@@ -521,10 +520,11 @@ describe("useDocs hook", () => {
 
   describe("analytics tracking", () => {
     it("should track page view when currentDoc changes", () => {
+      const testDocDetail = { ...mockDocDetail, slug: "test-slug" };
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
-        data: { doc: mockDocDetail, contributors: [] },
+        data: { doc: testDocDetail, contributors: [] },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -535,7 +535,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       renderHook(() => useDocs("test-slug"), { wrapper });
 
@@ -548,7 +548,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: { doc: customDoc, contributors: [] },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       renderHook(() => useDocs("custom-slug"), { wrapper });
 
@@ -559,7 +559,7 @@ describe("useDocs hook", () => {
       vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({
         data: { doc: mockDocDetail, contributors: [] },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
 
       renderHook(() => useDocs("any-slug"), { wrapper });
 
@@ -569,9 +569,9 @@ describe("useDocs hook", () => {
 
   describe("edge cases and error handling", () => {
     it("should handle all API responses being undefined", () => {
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: undefined } as any);
-      vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({ data: undefined } as any);
-      vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: undefined } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
+      vi.mocked(docsApi.useGetDocWithContributors).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof docsApi.useGetDocWithContributors>);
+      vi.mocked(docsApi.useSearchDocs).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof docsApi.useSearchDocs>);
 
       const { result } = renderHook(() => useDocs("test"), { wrapper });
 
@@ -582,7 +582,7 @@ describe("useDocs hook", () => {
     });
 
     it("should handle empty docs array", () => {
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: [] } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test"), { wrapper });
 
@@ -597,7 +597,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "doc3", display_in_areslib: 1 },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test"), { wrapper });
 
@@ -611,7 +611,7 @@ describe("useDocs hook", () => {
         { ...mockDoc, slug: "doc2", display_in_areslib: 0 },
       ] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("test"), { wrapper });
 
@@ -622,7 +622,7 @@ describe("useDocs hook", () => {
     it("should handle single document", () => {
       const mockDocs = [{ ...mockDoc, slug: "only-doc" }] as DocRecord[];
 
-      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as any);
+      vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
 
       const { result } = renderHook(() => useDocs("only-doc"), { wrapper });
 
@@ -635,13 +635,13 @@ describe("useDocs hook", () => {
     it("should pass slug to useGetDocWithContributors", () => {
       renderHook(() => useDocs("my-doc-slug"), { wrapper });
 
-      expect(docsApi.useGetDocWithContributors).toHaveBeenCalledWith("my-doc-slug", undefined);
+      expect(docsApi.useGetDocWithContributors).toHaveBeenCalledWith("my-doc-slug");
     });
 
     it("should pass empty string when slug is undefined", () => {
       renderHook(() => useDocs(undefined), { wrapper });
 
-      expect(docsApi.useGetDocWithContributors).toHaveBeenCalledWith("", undefined);
+      expect(docsApi.useGetDocWithContributors).toHaveBeenCalledWith("");
     });
 
     it("should pass searchQuery to useSearchDocs", () => {
@@ -675,9 +675,8 @@ describe("useDocs hook", () => {
         },
       });
 
-      const customWrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
-      );
+      const customWrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(QueryClientProvider, { client: testQueryClient }, children);
 
       const { result } = renderHook(() => useDocs("test"), { wrapper: customWrapper });
 

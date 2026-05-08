@@ -49,6 +49,7 @@ export function PointsManager({ isOpen, userId, isPending, onSubmit, onClose }: 
           <div>
             <label htmlFor="pointsDeltaInput" className="text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block">Points Delta (+ / -)</label>
             <input
+              id="pointsDeltaInput"
               type="number"
               value={pointsDelta}
               onChange={(e) => setPointsDelta(e.target.value)}
@@ -60,6 +61,7 @@ export function PointsManager({ isOpen, userId, isPending, onSubmit, onClose }: 
           <div>
             <label htmlFor="pointsReasonInput" className="text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block">Reason</label>
             <input
+              id="pointsReasonInput"
               type="text"
               value={pointsReason}
               onChange={(e) => setPointsReason(e.target.value)}

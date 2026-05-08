@@ -78,7 +78,7 @@ export function usePatchUser(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -116,7 +116,7 @@ export function useUpdateUserProfile(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -136,7 +136,7 @@ export function useDeleteUser(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

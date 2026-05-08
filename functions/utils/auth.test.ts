@@ -40,7 +40,7 @@ describe('auth configuration utility', () => {
       BETTER_AUTH_URL: 'http://localhost:5173/api/auth',
     };
 
-    const auth = getAuth(mockDb as never, env);
+    const auth = getAuth(mockDb as unknown as Parameters<typeof getAuth>[0], env);
 
     expect(auth).toBeDefined();
   });
@@ -53,7 +53,7 @@ describe('auth configuration utility', () => {
 
     // Should not throw in localhost mode
     expect(() => {
-      getAuth(mockDb as never, env, requestUrl);
+      getAuth(mockDb as unknown as Parameters<typeof getAuth>[0], env, requestUrl);
     }).not.toThrow();
   });
 
@@ -64,7 +64,7 @@ describe('auth configuration utility', () => {
     const requestUrl = 'https://aresweb.org/api/auth/test';
 
     expect(() => {
-      getAuth(mockDb as never, env, requestUrl);
+      getAuth(mockDb as unknown as Parameters<typeof getAuth>[0], env, requestUrl);
     }).toThrow('[FATAL] BETTER_AUTH_SECRET is not set');
   });
 
@@ -77,7 +77,7 @@ describe('auth configuration utility', () => {
       GITHUB_CLIENT_SECRET: 'test-github-secret',
     };
 
-    const auth = getAuth(mockDb as never, env);
+    const auth = getAuth(mockDb as unknown as Parameters<typeof getAuth>[0], env);
     expect(auth).toBeDefined();
   });
 
@@ -90,7 +90,7 @@ describe('auth configuration utility', () => {
       GOOGLE_CLIENT_SECRET: 'test-google-secret',
     };
 
-    const auth = getAuth(mockDb as never, env);
+    const auth = getAuth(mockDb as unknown as Parameters<typeof getAuth>[0], env);
     expect(auth).toBeDefined();
   });
 
@@ -104,7 +104,7 @@ describe('auth configuration utility', () => {
       ZULIP_URL: 'https://aresfirst.zulipchat.com',
     };
 
-    const auth = getAuth(mockDb as never, env);
+    const auth = getAuth(mockDb as unknown as Parameters<typeof getAuth>[0], env);
     expect(auth).toBeDefined();
   });
 
@@ -115,7 +115,7 @@ describe('auth configuration utility', () => {
       BETTER_AUTH_SECRET: 'test-secret',
     };
 
-    const auth = getAuth(mockDb as never, env);
+    const auth = getAuth(mockDb as unknown as Parameters<typeof getAuth>[0], env);
     expect(auth).toBeDefined();
   });
 });

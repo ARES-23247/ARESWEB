@@ -104,7 +104,7 @@ export function useSaveSponsor(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sponsors"] });
       queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -125,7 +125,7 @@ export function useDeleteSponsor(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sponsors"] });
       queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -161,7 +161,7 @@ export function useGenerateSponsorToken(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sponsor_tokens"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }

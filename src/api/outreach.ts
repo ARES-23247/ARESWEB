@@ -73,7 +73,7 @@ export function useSaveOutreach(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
       queryClient.invalidateQueries({ queryKey: ["public-outreach"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -94,7 +94,7 @@ export function useDeleteOutreach(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
       queryClient.invalidateQueries({ queryKey: ["public-outreach"] });
-      options?.onSuccess?.();
+      (options?.onSuccess as any)?.();
     }
   });
 }
