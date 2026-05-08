@@ -44,8 +44,8 @@ test.describe('Task Detail Page', () => {
     await setupMockAuth(page);
 
     // Mock tasks list API (required by TaskDetailPage to find the task)
-    await page.route('**/api/tasks*', async (route, _request) => {
-      if (_request.resourceType() !== 'fetch' && _request.resourceType() !== 'xhr') {
+    await page.route('**/api/tasks*', async (route, request) => {
+      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
         return route.fallback();
       }
       const method = request.method();
