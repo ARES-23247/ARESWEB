@@ -417,6 +417,16 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 
+CREATE TABLE IF NOT EXISTS points_ledger (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+    points_delta INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    created_by TEXT REFERENCES user(id) ON DELETE SET NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_points_ledger_user ON points_ledger(user_id);
+
 
 -- â”€â”€ Analytics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -700,6 +710,17 @@ CREATE TABLE IF NOT EXISTS entity_links (
 );
 CREATE INDEX IF NOT EXISTS idx_entity_links_source ON entity_links(source_type, source_id);
 CREATE INDEX IF NOT EXISTS idx_entity_links_target ON entity_links(target_type, target_id);
+
+CREATE TABLE IF NOT EXISTS external_knowledge_sources (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    url TEXT NOT NULL,
+    branch TEXT,
+    status TEXT DEFAULT 'active',
+    last_indexed_sha TEXT,
+    last_indexed_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
 
 CREATE TABLE IF NOT EXISTS finance_transactions (
     id TEXT PRIMARY KEY,

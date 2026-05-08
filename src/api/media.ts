@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, wrapOnSuccess } from "./honoClient";
 import { r2ObjectSchema, assetSchema } from "@shared/routes/media";
 
 // Infer TypeScript types from Zod schemas
@@ -81,11 +81,10 @@ export function useUploadMedia(
       });
       return unwrapResponse<{ success: boolean; key: string; url: string; altText?: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-    }
+    }),
   });
 }
 
@@ -104,11 +103,10 @@ export function useMoveMedia(
       });
       return unwrapResponse<{ success: boolean; newKey?: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-    }
+    }),
   });
 }
 
@@ -124,11 +122,10 @@ export function useDeleteMedia(
       const response = await client.media.admin[":key"].$delete({ param: { key } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-    }
+    }),
   });
 }
 

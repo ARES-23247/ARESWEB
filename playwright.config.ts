@@ -2,7 +2,42 @@ import { defineConfig, devices } from '@playwright/test';
 
 const WRANGLER_COMMAND = 'cross-env DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist -b SKIP_ENV_VALIDATION=true --env-file .env.test';
 
+// Define test suites for batch running
+const testSuites = {
+  // Core dashboard functionality
+  dashboard: {
+    name: '@dashboard',
+    testMatch: '**/admin-*.spec.ts',
+  },
+  // Analytics and stats
+  analytics: {
+    name: '@analytics',
+    testMatch: '**/analytics*.spec.ts',
+  },
+  // Public pages (blog, events, docs, etc.)
+  public: {
+    name: '@public',
+    testMatch: '**/*-post.spec.ts',
+  },
+  // Content detail pages
+  details: {
+    name: '@details',
+    testMatch: '**/*-detail.spec.ts',
+  },
+  // Editors and admin forms
+  editors: {
+    name: '@editors',
+    testMatch: '**/*-editor.spec.ts',
+  },
+  // Feature-specific tests (simulations, store, etc.)
+  features: {
+    name: '@features',
+    testMatch: '**/{sim,store,social}*.spec.ts',
+  },
+};
+
 export default defineConfig({
+  globalSetup: './tests/global-setup.ts',
   testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -12,20 +47,129 @@ export default defineConfig({
   workers: 1,
   reporter: 'html',
   timeout: 60000,
+  maxFailures: 10,
   use: {
     baseURL: process.env.CI ? 'http://127.0.0.1:8788' : 'http://localhost:5173',
     trace: 'on-first-retry',
-    // Force cleanup after each test to prevent memory buildup
     actionTimeout: 10000,
     navigationTimeout: 30000,
+    contextOptions: {
+      serviceWorkers: 'block',
+      permissions: [],
+      storageState: undefined,
+    },
   },
   projects: [
+    // Default project - runs all tests (useful for CI with splitting)
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-extensions',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+          ],
+        },
+      },
+    },
+    // Dashboard suite - admin panels and management
+    {
+      name: 'dashboard',
+      testMatch: testSuites.dashboard.testMatch,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-sandbox',
+          ],
+        },
+      },
+    },
+    // Analytics suite
+    {
+      name: 'analytics',
+      testMatch: testSuites.analytics.testMatch,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-sandbox',
+          ],
+        },
+      },
+    },
+    // Public pages suite
+    {
+      name: 'public',
+      testMatch: testSuites.public.testMatch,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-sandbox',
+          ],
+        },
+      },
+    },
+    // Detail pages suite
+    {
+      name: 'details',
+      testMatch: testSuites.details.testMatch,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-sandbox',
+          ],
+        },
+      },
+    },
+    // Editors suite
+    {
+      name: 'editors',
+      testMatch: testSuites.editors.testMatch,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-sandbox',
+          ],
+        },
+      },
+    },
+    // Features suite
+    {
+      name: 'features',
+      testMatch: testSuites.features.testMatch,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-sandbox',
+          ],
+        },
+      },
     },
   ],
-  webServer: process.env.CI 
+  webServer: process.env.CI
     ? {
         command: WRANGLER_COMMAND,
         url: 'http://127.0.0.1:8788',
