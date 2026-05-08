@@ -54,7 +54,7 @@ profilesRouter.use("/avatar", persistentRateLimitMiddleware(15, 60));
 
 // Input validation schema for profile updates
 const updateUserProfileSchema = z
-  .record(z.string(), z.union([z.string(), z.boolean(), z.number(), z.array(z.string()), z.null()]).optional())
+  .record(z.string(), z.any())
   .refine((data) => {
       const MAX_BIO_LENGTH = 2000;
       const MAX_NAME_LENGTH = 100;
