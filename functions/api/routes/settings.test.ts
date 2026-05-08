@@ -3,8 +3,48 @@ import { Hono } from "hono";
 import { settingsRouter } from "./settings";
 import { AppEnv } from "../middleware";
 
+// Proper mock types for test infrastructure
+interface MockExecutionContext {
+  waitUntil: ReturnType<typeof vi.fn>;
+  passThroughOnException: ReturnType<typeof vi.fn>;
+  props?: Record<string, unknown>;
+}
+
+interface MockQueryMethods {
+  findFirst: ReturnType<typeof vi.fn>;
+  findMany: ReturnType<typeof vi.fn>;
+}
+
+interface MockDbMethods {
+  all: ReturnType<typeof vi.fn>;
+  get: ReturnType<typeof vi.fn>;
+  run: ReturnType<typeof vi.fn>;
+  execute: ReturnType<typeof vi.fn>;
+  executeTakeFirst: ReturnType<typeof vi.fn>;
+  first: ReturnType<typeof vi.fn>;
+  insert?: unknown;
+  select?: unknown;
+  from?: unknown;
+  where?: unknown;
+  values?: unknown;
+  update?: unknown;
+  set?: unknown;
+  onConflictDoUpdate?: unknown;
+  onConflictDoNothing?: unknown;
+  delete?: unknown;
+  transaction?: unknown;
+  query?: {
+    user: MockQueryMethods;
+    userProfiles: MockQueryMethods;
+    settings?: MockQueryMethods;
+  };
+  [key: string]: ReturnType<typeof vi.fn> | MockQueryMethods | unknown;
+}
+
+type ChainableDb = MockDbMethods & PromiseLike<unknown>;
+
 // Simple inline mock execution context
-function createMockExecutionContext(): any {
+function createMockExecutionContext(): MockExecutionContext {
   return {
     waitUntil: vi.fn((promise: Promise<unknown>) => promise),
     passThroughOnException: vi.fn(),
@@ -23,12 +63,12 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 // Simple inline mock database
-const createMockDb = () => {
+const createMockDb = (): ChainableDb => {
       const allFn = vi.fn().mockResolvedValue([]);
       const getFn = vi.fn().mockResolvedValue(null);
       const runFn = vi.fn().mockResolvedValue({ success: true });
 
-      const fns: Record<string, any> = {
+      const fns: MockDbMethods = {
         all: allFn,
         get: getFn,
         run: runFn,
@@ -37,21 +77,21 @@ const createMockDb = () => {
         first: getFn
       };
 
-      const chainable: any = new Proxy(fns, {
+      const chainable: ChainableDb = new Proxy(fns, {
         get: (target, prop) => {
           if (prop === 'then') {
-            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+            return (resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => Promise.resolve(fns.all()).then(resolve).catch(reject);
           }
           if (prop === 'catch') {
-            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+            return (reject: (reason?: unknown) => void) => Promise.resolve(fns.all()).catch(reject);
           }
           if (prop === 'finally') {
-            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+            return (cb: () => void) => Promise.resolve(fns.all()).finally(cb);
           }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
-                   get: (tTarget, tProp) => {
+                   get: (_tTarget, tProp) => {
                       if (tProp === 'findFirst') return fns.get;
                       if (tProp === 'findMany') return fns.all;
                       return vi.fn().mockReturnValue(chainable);
@@ -59,26 +99,27 @@ const createMockDb = () => {
                 })
              });
           }
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (prop in target) return target[prop as keyof MockDbMethods];
+          if (prop === 'transaction') return vi.fn(async (cb: (tx: ChainableDb) => Promise<unknown>) => cb(chainable));
           if (typeof prop === 'symbol') return chainable;
-          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          (target[prop as string] as ReturnType<typeof vi.fn>) = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
-      });
+      }) as ChainableDb;
       return chainable;
-    };;
+    };
 
 describe("Hono Backend - /settings Router", () => {
-  let mockDb: ReturnType<typeof createMockDb>;
+  let mockDb: ChainableDb;
   let testApp: Hono<AppEnv>;
   let env: AppEnv["Bindings"];
-  const mockExecutionContext = createMockExecutionContext();
+  let mockExecutionContext: MockExecutionContext;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     mockDb = createMockDb();
+    mockExecutionContext = createMockExecutionContext();
 
     env = {
       DB: {} as unknown as D1Database,
@@ -88,14 +129,14 @@ describe("Hono Backend - /settings Router", () => {
 
     testApp = new Hono<AppEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb as any);
+      c.set("db", mockDb);
       c.set("sessionUser", {
         id: "1",
         email: "admin@test.com",
         name: "Admin User",
         role: "admin",
         member_type: "mentor"
-      } as any);
+      });
       await next();
     });
     testApp.route("/", settingsRouter);
@@ -212,7 +253,9 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("POST /admin/settings - error", async () => {
-    mockDb.insert.mockImplementationOnce(() => { throw new Error("DB error") });
+    if (mockDb.insert) {
+      (mockDb.insert as ReturnType<typeof vi.fn>).mockImplementationOnce(() => { throw new Error("DB error") });
+    }
     const payload = { site_name: "New Name" };
     const res = await testApp.request("/admin/settings", {
       method: "POST",
