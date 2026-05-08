@@ -401,6 +401,15 @@ test.describe('Docs Editor E2E', () => {
         });
       });
 
+      // Mock the doc detail endpoint for the editor
+      await page.route('**/api/docs/admin/*/detail', async (route) => {
+        const targetDoc = mockDocs.find(d => d.slug === 'getting-started');
+        await route.fulfill({
+          status: 200,
+          json: { doc: targetDoc },
+        });
+      });
+
       await page.goto('/dashboard/manage_docs');
 
       // Wait for the docs list to load

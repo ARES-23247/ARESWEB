@@ -225,7 +225,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
 
   const deleteMutation = useDeleteEvent({
     onSuccess: () => {
-      navigate("/dashboard");
+      navigate("/dashboard/manage_event");
     },
     onError: () => {
       setErrorMsg("Failed to delete the event.");

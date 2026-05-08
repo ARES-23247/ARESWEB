@@ -52,17 +52,26 @@ export const createMockProfile = (userId: string = MOCK_ADMIN_USER.id) => ({
   },
 });
 
+interface SetupMockAuthOptions {
+  userId?: string;
+  skipProfileMock?: boolean;
+}
+
 /**
  * Sets up mocked authentication for a Playwright page.
  * This eliminates the ~60 lines of duplicated auth mocking across test files.
  *
  * @param page - Playwright page object
- * @param userId - Optional user ID override (defaults to admin-user)
+ * @param options - Configuration options
  */
 export async function setupMockAuth(
   page: Page,
-  userId: string = MOCK_ADMIN_USER.id,
+  options: string | SetupMockAuthOptions = {},
 ): Promise<void> {
+  // Support legacy signature where second arg was userId string
+  const userId = typeof options === 'string' ? options : options.userId ?? MOCK_ADMIN_USER.id;
+  const skipProfileMock = typeof options === 'string' ? false : options.skipProfileMock ?? false;
+
   // Mock /api/auth/get-session endpoint
   await page.route('**/api/auth/get-session', async (route) => {
     await route.fulfill({
@@ -71,13 +80,15 @@ export async function setupMockAuth(
     });
   });
 
-  // Mock /profile/me endpoint
-  await page.route('**/profile/me', async (route) => {
-    await route.fulfill({
-      status: 200,
-      json: createMockProfile(userId),
+  // Mock /profile/me endpoint (unless skipped)
+  if (!skipProfileMock) {
+    await page.route('**/profile/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: createMockProfile(userId),
+      });
     });
-  });
+  }
 
   // Set auth cookie
   await page.context().addCookies([

@@ -177,7 +177,7 @@ export default defineConfig({
         timeout: 120 * 1000,
       }
     : {
-        command: 'MODE=test npm run dev',
+        command: 'cross-env MODE=test npm run dev',
         url: 'http://localhost:5173',
         reuseExistingServer: true,
       },

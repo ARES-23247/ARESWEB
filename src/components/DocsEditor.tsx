@@ -123,7 +123,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
   const deleteMutation = useDeleteDoc({
     onSuccess: () => {
-      navigate("/dashboard");
+      navigate("/dashboard/manage_docs");
     },
     onError: () => {
       setErrorMsg("Failed to delete the document.");

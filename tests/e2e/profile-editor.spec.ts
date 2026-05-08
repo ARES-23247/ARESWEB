@@ -508,6 +508,9 @@ test.describe('Profile Editor Dashboard', () => {
   });
 
   test('Profile editor handles error state', async ({ page }) => {
+    // Remove the default profile mock set up in beforeEach
+    await page.unroute('**/profile/me');
+
     // Mock GET /profile/me endpoint to return error
     await page.route('**/profile/me', async (route) => {
       await route.fulfill({

@@ -48,8 +48,6 @@ export default function TaskDetailPage() {
   const updateMutation = useUpdateTask();
   const deleteMutation = useDeleteTask();
 
-  if (!task) return <div className="p-8 text-white/50 text-center">Task not found.</div>;
-  
   const getValue = <K extends keyof UpdateTaskRequest>(field: K) => {
     if (field in edits) return edits[field];
     return task[field as keyof TaskItem];
@@ -83,7 +81,10 @@ export default function TaskDetailPage() {
   const handleDelete = async () => {
     if (!taskId) return;
     await deleteMutation.mutateAsync(taskId);
-    navigate("/dashboard/command_center");
+    // Invalidate tasks query to ensure fresh data after navigation
+    _queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    // Use setTimeout to ensure React has processed state changes before navigation
+    setTimeout(() => navigate("/dashboard/command_center"), 0);
   };
 
   if (isLoading) {
@@ -247,7 +248,7 @@ export default function TaskDetailPage() {
               <Calendar size={10} />
               Due Date
               {isOverdue && (
-                <span className="ml-1.5 text-ares-red text-[9px] uppercase font-black animate-pulse">Overdue</span>
+                <span className="ml-1.5 text-ares-red text-[9px] uppercase font-black animate-pulse">OVERDUE</span>
               )}
             </label>
             <input
@@ -269,7 +270,7 @@ export default function TaskDetailPage() {
         {/* Description */}
         <div className="p-6 border-b border-white/5">
           <label htmlFor="task-description" className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-2 block">
-            Description
+            Task Description
           </label>
           <textarea
             id="task-description"

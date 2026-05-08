@@ -88,9 +88,9 @@ export function useCreateBadge(
       const response = await client.badges.admin.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["badges"] });
+    onSuccess: async (...args) => {
+      await queryClient.invalidateQueries({ queryKey: ["badges"] });
+      await options?.onSuccess?.(...args);
     }
   });
 }
@@ -107,10 +107,10 @@ export function useGrantBadge(
       const response = await client.badges.admin.grant.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["badges"] });
-      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+    onSuccess: async (...args) => {
+      await queryClient.invalidateQueries({ queryKey: ["badges"] });
+      await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      await options?.onSuccess?.(...args);
     }
   });
 }
@@ -129,10 +129,10 @@ export function useRevokeBadge(
       });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["badges"] });
-      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+    onSuccess: async (...args) => {
+      await queryClient.invalidateQueries({ queryKey: ["badges"] });
+      await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      await options?.onSuccess?.(...args);
     }
   });
 }
@@ -149,9 +149,9 @@ export function useDeleteBadge(
       const response = await client.badges.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["badges"] });
+    onSuccess: async (...args) => {
+      await queryClient.invalidateQueries({ queryKey: ["badges"] });
+      await options?.onSuccess?.(...args);
     }
   });
 }

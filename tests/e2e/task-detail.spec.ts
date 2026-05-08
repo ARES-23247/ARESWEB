@@ -295,8 +295,8 @@ test.describe('Task Detail Page', () => {
 
     await page.goto(`/dashboard/tasks/overdue-task`);
 
-    // Verify overdue warning is displayed
-    await expect(page.getByText('OVERDUE')).toBeVisible();
+    // Verify overdue warning is displayed (use exact match to avoid collision with task ID)
+    await expect(page.getByText('OVERDUE', { exact: true })).toBeVisible();
   });
 
   test('should handle missing task gracefully', async ({ page }) => {
@@ -416,8 +416,8 @@ test.describe('Task Detail Page', () => {
     await expect(page.getByRole('textbox', { name: 'Due Date' })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Task Description' })).toBeVisible();
 
-    // Verify screen reader only labels are present
-    await expect(page.locator('.sr-only')).toContainText('Task Title');
+    // Verify screen reader only labels are present (use label selector to avoid skip link matches)
+    await expect(page.locator('label.sr-only')).toContainText('Task Title');
   });
 
   test('should show correct number of status and priority options', async ({ page }) => {

@@ -142,7 +142,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      navigate("/dashboard");
+      navigate("/dashboard/manage_blog");
     },
     onError: () => {
       setErrorMsg("Failed to delete the post. Please try again.");

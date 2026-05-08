@@ -339,8 +339,9 @@ export function CollaborativeEditorRoom({
 }) {
   const [ydoc] = useState<Y.Doc>(() => new Y.Doc());
   const host = useMemo(() => {
+    // In Playwright tests, force standalone mode by returning empty string
     if (typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__) {
-      return "dummy-host-for-playwright";
+      return "";
     }
     const hostValue = import.meta.env.VITE_PARTYKIT_HOST || "";
     console.log("[CollaborativeEditor] PartyKit host:", hostValue || "(NOT SET - using standalone mode)");

@@ -86,10 +86,10 @@ test.describe('Badges Manager', () => {
     await expect(page.getByText('Badge Index')).toBeVisible();
     await expect(page.getByText('Define platform-wide awards and training certifications.')).toBeVisible();
 
-    // Verify existing badges are displayed
-    await expect(page.getByText('Outreach MVP')).toBeVisible();
-    await expect(page.getByText('Safety Certified')).toBeVisible();
-    await expect(page.getByText('Programming Excellence')).toBeVisible();
+    // Verify existing badges are displayed (use specific role to avoid strict mode violation with select options)
+    await expect(page.getByRole('heading', { name: 'Outreach MVP' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Safety Certified' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Programming Excellence' })).toBeVisible();
 
     // Verify badge descriptions
     await expect(page.getByText('Awarded to members who attain top 3 in outreach hours.')).toBeVisible();
@@ -125,10 +125,9 @@ test.describe('Badges Manager', () => {
     // Submit the form
     await page.getByRole('button', { name: 'Save Badge Definition' }).click();
 
-    // Verify success toast is shown (the mutation completes, but we need to wait briefly)
-    await page.waitForTimeout(500);
-
-    // Verify the form was closed (Cancel button should be visible again, not the form inputs)
+    // Verify the form was closed by waiting for the form inputs to be hidden
+    // and the "New Badge Type" button to be visible again
+    await expect(page.getByLabel('Badge ID (slug)')).not.toBeVisible();
     await expect(page.getByRole('button', { name: /New Badge Type/i })).toBeVisible();
   });
 
@@ -157,11 +156,9 @@ test.describe('Badges Manager', () => {
     // Click the grant button
     await grantButton.click();
 
-    // Wait for mutation to complete
-    await page.waitForTimeout(500);
-
     // Verify the selections were reset after successful grant
-    await expect(page.getByLabel('Target Member')).toHaveValue('');
+    // Wait for the values to be reset (form should clear after successful grant)
+    await expect.poll(async () => await page.getByLabel('Target Member').inputValue(), { timeout: 5000 }).toBe('');
     await expect(page.getByLabel('Select Badge')).toHaveValue('');
   });
 
@@ -169,10 +166,10 @@ test.describe('Badges Manager', () => {
     await page.goto('/dashboard/badges');
 
     // Wait for badges to load
-    await expect(page.getByText('Outreach MVP')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Outreach MVP' })).toBeVisible();
 
     // Find the first badge card and locate its delete button
-    const badgeCard = page.getByText('Outreach MVP').locator('../..').locator('../..');
+    const badgeCard = page.getByRole('heading', { name: 'Outreach MVP' }).locator('../..').locator('../..');
     const deleteButton = badgeCard.getByRole('button', { name: '' }); // Click-to-delete button has no visible text initially
 
     // First click shows confirmation state
@@ -267,7 +264,7 @@ test.describe('Badges Manager', () => {
     await page.goto('/dashboard/badges');
 
     // Wait for badges to load
-    await expect(page.getByText('Outreach MVP')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Outreach MVP' })).toBeVisible();
 
     // Verify badge technical ID is displayed in monospace font
     await expect(page.getByText('ID: outreach-mvp')).toBeVisible();

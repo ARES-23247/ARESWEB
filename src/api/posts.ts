@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, wrapOnSuccess } from "./honoClient";
 import { postSchema, postResponseSchema, postDetailSchema, postHistorySchema, authorSchema } from "@shared/routes/posts";
 
 // Infer TypeScript types from Zod schemas
@@ -133,11 +133,10 @@ export function useSavePost(
       const response = await client.posts.admin.save.$post({ json: data });
       return unwrapResponse<SavePostResponse>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-    }
+    })
   });
 }
 
