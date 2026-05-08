@@ -5,7 +5,7 @@ description: Enforces strict TypeScript type safety patterns across the ARESWEB 
 
 # ARESWEB TypeScript Safety Standards
 
-You are the TypeScript Type Safety Enforcer for Team ARES 23247. Your role is to ensure the codebase maintains strict type safety without relying on `any`, `unknown`, or unsafe type assertions.
+You are the TypeScript Type Safety Enforcer for Team ARES 23247. Your role is to ensure the codebase maintains strict type safety while acknowledging the practical reality of Drizzle ORM and Hono OpenAPI boundary typing limitations.
 
 ## When to Read This Skill
 
@@ -16,58 +16,73 @@ You are the TypeScript Type Safety Enforcer for Team ARES 23247. Your role is to
 - Using type assertions (`as`)
 - Working with generic types
 
-## Core Principle: Type Safety is Non-Negotiable
+## Core Principle: Type Safety with Pragmatic Boundaries
 
-TypeScript exists to catch errors at compile time, not runtime. Every `any` or `as` is a potential bug that could have been prevented.
+TypeScript exists to catch errors at compile time, not runtime. However, the ARESWEB codebase uses Drizzle ORM + Hono OpenAPI (`@hono/zod-openapi`) where the ORM's inferred return types frequently diverge from the Zod schemas that define OpenAPI response contracts. In these specific boundary zones, `as any` is the **accepted bridge pattern** — not a shortcut.
 
 ---
 
-## 1. FORBIDDEN PATTERNS
+## 1. TYPE ASSERTION RULES
 
-### 1.1 Type Assertions (`as any`, `as unknown`)
+### 1.1 `as any` — Forbidden in General Code, PERMITTED at Boundaries
 
-**ABSOLUTELY FORBIDDEN:**
+**FORBIDDEN in general business logic:**
 ```typescript
-// ❌ NEVER do this
-return c.json({ error: "Not found" } as any, 404);
+// ❌ NEVER in domain logic, utilities, or hooks
 const data = response.data as any;
 const user = result as unknown as User;
+function processData(data: any): any { }
 ```
 
-**WHY:** Type assertions bypass TypeScript's type checking, defeating its purpose.
+**PERMITTED at Drizzle ↔ OpenAPI Response Boundaries:**
+```typescript
+// ✅ Cast Drizzle query results at route handler return
+const rows = await db.select().from(schema.posts).all();
+return c.json(rows.map((r: any) => ({ ...r })) as any, 200);
+
+// ✅ Cast complex response objects when Zod schema diverges from Drizzle types
+return c.json({ post, history: rows } as any, 200);
+
+// ✅ Cast Drizzle insert/update values when schema types are overly strict
+await db.insert(schema.documentHistory).values({ roomId, content, createdBy } as any).run();
+```
+
+**RULES for boundary `as any`:**
+1. ONLY at the `c.json(...)` return or `.values(...)` / `.set(...)` call site
+2. NEVER propagate `any` into variables, helper functions, or shared types
+3. ALWAYS add a comment if the cast is not obvious: `// Drizzle return type diverges from Zod schema`
 
 ### 1.2 `any` Type Annotations
 
-**FORBIDDEN:**
+**FORBIDDEN in general code. PERMITTED in specific infrastructure:**
 ```typescript
-// ❌ NEVER annotate with any
+// ❌ NEVER in domain logic
 function processData(data: any): any { }
 const items: any[] = [];
-```
 
-**USE INSTEAD:**
-```typescript
-// ✅ Use proper types or generics
-function processData<T>(data: T): Processed<T> { }
-const items: unknown[] = [];
+// ✅ PERMITTED for Hono client export (OpenAPIHono ↔ hc() type incompatibility)
+export const client: any = hc<AppType>("/api", { ... });
+
+// ✅ PERMITTED for shared response utility return types
+export function errorResponse<T extends Context>(...): any { ... }
+export function successResponse<T extends Context, D>(...): any { ... }
 ```
 
 ### 1.3 `@ts-ignore` and `@ts-expect-error`
 
-**FORBIDDEN:**
+**FORBIDDEN in general code. PERMITTED when:**
+1. Drizzle `.delete()` / `.update()` chains produce irresolvable type narrowing errors
+2. Third-party modules lack type declarations (e.g., `@babel/standalone`)
+3. A comment MUST explain WHY and reference the specific library/version
+
 ```typescript
-// ❌ NEVER suppress TypeScript errors
-// @ts-ignore
-const value = unsafeOperation();
+// ✅ Acceptable @ts-ignore
+// @ts-ignore - Drizzle delete type narrowing incompatible with eq() column inference
+await (db as any).delete(schema.table).where(eq(schema.table.id, id)).execute();
 
-// @ts-expect-error
-function broken() { }
+// @ts-ignore - no type declarations for @babel/standalone
+const mod = await import("@babel/standalone");
 ```
-
-**EXCEPTION:** Only allowed when:
-1. Documenting a known TypeScript compiler bug
-2. Working around a third-party library type bug
-3. A comment MUST explain WHY it's needed and when it can be removed
 
 ---
 
@@ -293,51 +308,59 @@ router.openapi(myRoute, typedHandler<typeof myRoute>(async (c) => {
 }));
 ```
 
-### 4.2 Never Use `as any` for Error Responses
+### 4.2 Throw-Only Error Policy (MANDATORY)
 
-**FORBIDDEN:**
+**FORBIDDEN — error returns:**
 ```typescript
-// ❌ This bypasses all type checking
-return c.json({ error: "Not found" } as any, 404);
+// ❌ NEVER return error responses from handlers
+return c.json({ error: "Not found" }, 404);
+return errorResponses.notFound(c, "Post not found");
 ```
 
-**REQUIRED:**
+**REQUIRED — throw ApiError:**
 ```typescript
-// ✅ Use typed handler - it validates responses
+import { ApiError } from "../../shared/errors/api";
+
+// ✅ ALL errors MUST be thrown, NEVER returned
 router.openapi(myRoute, typedHandler<typeof myRoute>(async (c) => {
-  // If this doesn't match ResponseSchema, TypeScript will error
-  return c.json({ error: "Not found" }, 404);
+  const post = await db.select().from(schema.posts).where(eq(schema.posts.slug, slug)).get();
+  if (!post) throw new ApiError(404, "Post not found");
+  
+  // Handler only returns success objects
+  return c.json({ post } as any, 200);
 }));
 ```
 
-### 4.3 Use Proper Error Types
+**WHY:** Returning error responses pollutes the handler's return type with union types (`SuccessResponse | ErrorResponse`), which causes `TS2769` overload mismatches with Hono's `c.json()`. The global error handler middleware catches thrown `ApiError` instances and formats them consistently.
+
+### 4.3 Response Boundary Casting
+
+**REQUIRED pattern for Drizzle → Hono responses:**
+```typescript
+// ✅ Cast at the c.json() boundary when Drizzle types diverge from Zod schema
+return c.json(rows.map((r: any) => ({
+  id: r.id,
+  title: r.title,
+  created_at: r.createdAt,  // camelCase → snake_case
+})) as any, 200);
+
+// ✅ For simple responses, cast the entire body
+return c.json({ success: true, label: row.label } as any, 200);
+
+// ✅ For status codes derived from logic, cast the status
+return c.json(response, status as any);
+```
+
+### 4.4 Hono Client Type Strategy
 
 **REQUIRED:**
 ```typescript
-// ✅ Define a standard error type
-export interface ApiError {
-  error: string;
-  code?: string;
-  details?: unknown;
-}
-
-// Use in route responses
-export const standardErrors = {
-  400: {
-    content: {
-      "application/json": {
-        schema: z.object({
-          error: z.string(),
-          code: z.string().optional(),
-        }),
-      },
-    },
-  },
-  401: { /* ... */ },
-  404: { /* ... */ },
-  500: { /* ... */ },
-} as const;
+// ✅ The Hono client MUST be typed as `any` because OpenAPIHono extends Hono
+// with metadata incompatible with hc()'s type inference
+export const client: any = hc<AppType>("/api", { ... });
 ```
+
+**WHY:** `hc<AppType>` infers as `unknown` because `AppType` from OpenAPIHono has structural incompatibilities with hc's expected type. Individual `src/api/*.ts` wrapper functions provide their own type safety through Zod schemas and explicit annotations.
 
 ---
 
@@ -457,14 +480,16 @@ type ApiRoute = `/api/${string}`;
 
 When updating existing code to follow type safety standards:
 
-- [ ] Remove all `as any` assertions
-- [ ] Replace `any` types with proper types or generics
-- [ ] Remove `@ts-ignore` and `@ts-expect-error` (unless documented)
-- [ ] Infer types from zod schemas instead of duplicating
-- [ ] Use `typedHandler<typeof route>` for Hono routes
+- [ ] Replace ALL `return errorResponses.*()` with `throw new ApiError(...)`
+- [ ] Use `typedHandler<typeof route>` for ALL Hono route handlers
+- [ ] Cast Drizzle results to `as any` at the `c.json()` boundary (NOT in business logic)
+- [ ] Cast `.values()` and `.set()` to `as any` when Drizzle schema diverges
+- [ ] Remove `as any` from ALL non-boundary code
+- [ ] Remove `@ts-ignore` unless documenting Drizzle/third-party bugs
+- [ ] Infer types from Zod schemas instead of duplicating
 - [ ] Define explicit interfaces for component props
 - [ ] Use discriminated unions for variant types
-- [ ] Add proper error response types
+- [ ] Verify with `npx tsc --noEmit` — ZERO errors required
 
 ---
 
