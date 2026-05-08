@@ -35,3 +35,22 @@ Before writing code or answering questions, you must review the relevant SKILL.m
 
 ## ⚠️ Mandatory AI Execution Rule
 When a user asks you to perform a task, **you must identify which of the 4 domains your task falls into, and read the corresponding `.agents/skills/.../SKILL.md` file BEFORE writing code.** If you do not have a tool to read files, assume the constraints detailed in the Summary of each skill above.
+
+## 🧪 E2E Testing Workflow
+
+**IMPORTANT: When debugging or fixing E2E tests, ALWAYS use remote testing mode.**
+
+E2E tests require building the entire app and running a local server, which is resource-intensive. Instead:
+
+```bash
+# Run tests against deployed preview (no local build/server)
+PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:remote
+
+# For specific test suites
+PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:remote tests/e2e/task-detail.spec.ts
+
+# Debug mode with inspector
+PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:debug:remote
+```
+
+**Never run `npm run test:e2e` locally** unless you specifically need to test local development changes. The remote mode is faster, lighter, and tests the actual deployed environment.

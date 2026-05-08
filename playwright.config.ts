@@ -1,3 +1,14 @@
+/**
+ * Playwright E2E Test Configuration
+ *
+ * ⚡ DEBUGGING TIP: Use remote testing mode to avoid heavy local builds
+ *
+ *   PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:remote
+ *
+ * This runs tests against the deployed site without building/running locally.
+ * See playwright.remote.config.ts for the remote configuration.
+ */
+
 import { defineConfig, devices } from '@playwright/test';
 
 const WRANGLER_COMMAND = 'DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist -b SKIP_ENV_VALIDATION=true --env-file .env.test';
