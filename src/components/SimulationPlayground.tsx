@@ -46,23 +46,18 @@ interface GithubSim {
 export default function SimulationPlayground() {
   // File Management Hook
   const {
-    _savedSims,  // TODO: use in file library
-    _githubSims,  // TODO: use in file library
     simId,
     setSimId,
     simName,
     setSimName,
     fetchSavedSims,
     fetchGithubSims,
-    _handleLoadSim,  // TODO: use in file library
-    _handleLoadGithubSim,  // TODO: use in file library
   } = useSimulationFiles(() => Promise.resolve(null));
 
   // Code Compiler Hook
   const {
     compiledFiles,
     compileError,
-    _isCompiling,  // TODO: show loading state during compilation
     compileCode,
     scheduleCompile,
   } = useCodeCompiler();
@@ -70,13 +65,8 @@ export default function SimulationPlayground() {
   // Monaco Editor Hook
   const {
     editorRef,
-    _monacoRef,  // TODO: use for advanced Monaco features
-    _isVimMode,  // TODO: add vim mode toggle UI
-    _setIsVimMode,  // TODO: add vim mode toggle UI
     isWordWrap,
-    _setIsWordWrap,  // TODO: add word wrap toggle UI
     isMinimap,
-    _setIsMinimap,  // TODO: add minimap toggle UI
     handleEditorDidMount,
   } = useMonacoEditor();
 
@@ -101,18 +91,9 @@ export default function SimulationPlayground() {
 
   // AI Chat Logic
   const {
-    _chatMessages,  // TODO: implement chat UI
     setChatMessages,
-    _chatInput,  // TODO: implement chat input
-    _setChatInput,  // TODO: implement chat input
-    _isChatLoading,  // TODO: show loading state in chat
-    _attachedImage,  // TODO: implement image attachment preview
     setAttachedImage,
-    _chatEndRef,  // TODO: auto-scroll chat to bottom
-    _chatInputRef,  // TODO: focus chat input
-    _handleChatSend,  // TODO: implement chat send button
     handleFixWithAI,
-    _handleChatKeyDown,  // TODO: handle chat keyboard shortcuts
     resetChat
   } = useSimulationChat({
     simId,
