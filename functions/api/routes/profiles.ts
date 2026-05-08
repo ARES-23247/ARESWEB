@@ -54,7 +54,7 @@ profilesRouter.use("/avatar", persistentRateLimitMiddleware(15, 60));
 
 // Input validation schema for profile updates
 const updateUserProfileSchema = z
-  .record(z.string(), z.union([z.string(), z.boolean(), z.array(z.string()), z.null()]).optional())
+  .record(z.string(), z.union([z.string(), z.boolean(), z.number(), z.array(z.string()), z.null()]).optional())
   .refine((data) => {
       const MAX_BIO_LENGTH = 2000;
       const MAX_NAME_LENGTH = 100;
@@ -187,7 +187,7 @@ profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (
     const body = c.req.valid("json");
     const validationResult = updateUserProfileSchema.safeParse(body);
     if (!validationResult.success) {
-      throw new ApiError("Invalid profile data: ", 400);
+      throw new ApiError(`Invalid profile data: ${validationResult.error.message}`, 400);
     }
 
     await upsertProfile(c, user.id, validationResult.data);
