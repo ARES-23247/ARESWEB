@@ -69,7 +69,7 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
       }
 
       const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);
-      if (error) return c.json({ success: false, updated: 0 }, 400);
+      if (error) throw new ApiError(error, 400);
 
       await db
         .insert(schema.settings)
@@ -187,9 +187,9 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
               selectObj[col.name as string] = col;
             }
           });
-          query = db.select(selectObj).from(tableSchema as never);
+          query = db.select(selectObj as any).from(tableSchema as never);
         } else {
-          query = db.select().from(tableSchema);
+          query = db.select().from(tableSchema as never);
         }
         
         const data = (await query.limit(1000).all()) as unknown[];

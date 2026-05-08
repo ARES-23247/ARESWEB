@@ -76,7 +76,7 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
 
   const zaiKey = c.env.Z_AI_API_KEY;
   if (!zaiKey) {
-    return errorResponses.internalError(c);
+    throw new ApiError("Z.ai API key not configured", 500);
   }
 
   const systemPrompt = SYSTEM_PROMPTS[mode];
