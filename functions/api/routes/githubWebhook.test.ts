@@ -18,7 +18,7 @@ describe("GitHub Webhook Router", () => {
   };
 
   const mockExecutionContext = {
-    waitUntil: vi.fn((p) => { if (p && p.catch) p.catch(() => {}); }),
+    waitUntil: vi.fn((p: Promise<unknown>) => { if (p && p.catch) p.catch(() => {}); }),
     passThroughOnException: vi.fn(),
     props: {},
   };
