@@ -136,11 +136,11 @@ mediaRouter.openapi(getMediaRoute, typedHandler<typeof getMediaRoute>(async (c) 
   const ua = c.req.header("user-agent") || "unknown";
   const rl = await checkPersistentRateLimit(getDb(c), `media_list_${ip}`, ua, 30, 60);
   if (!rl) {
-    return errorResponses.tooManyRequests(c);
+    throw new ApiError("Too many requests", 429, "RATE_LIMIT_EXCEEDED");
   }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
-    const cache = typeof caches !== 'undefined' ? (caches).default : null;
+    const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
     const url = new URL(c.req.url);
     url.search = "";
     const cacheKey = new Request(url.toString(), { method: "GET" });
@@ -262,7 +262,7 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
 
     if (c.env.ARES_STORAGE) {
       if (isLarge) {
-        await c.env.ARES_STORAGE.put(key, file.stream() as ReadableStream, { httpMetadata: { contentType: file.type } });
+        await c.env.ARES_STORAGE.put(key, file.stream() as any, { httpMetadata: { contentType: file.type } });
       } else {
         await c.env.ARES_STORAGE.put(key, buffer!, { httpMetadata: { contentType: file.type } });
       }
@@ -299,7 +299,7 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
 
       if (typeof caches !== 'undefined') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
-        c.executionCtx.waitUntil((caches).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+        c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
       }
     }
 
@@ -386,7 +386,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
-    const cache = typeof caches !== 'undefined' ? (caches).default : null;
+    const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
     const url = new URL(c.req.url);
     url.search = "";
     const cacheKey = new Request(url.toString(), { method: "GET" });
@@ -403,13 +403,13 @@ mediaRouter.get("/:key{.+$}", async (c) => {
 
     const headers = new Headers();
 
-    object.writeHttpMetadata(headers);
+    object.writeHttpMetadata(headers as any);
     headers.set("etag", object.httpEtag);
     if (publicFolders.includes(folder)) headers.set("Cache-Control", "public, max-age=2592000, stale-while-revalidate=86400");
     else headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
 
 
-    const response = new Response(object.body, { headers });
+    const response = new Response(object.body as any, { headers });
     if (cache && publicFolders.includes(folder) && c.executionCtx) {
       c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
     }

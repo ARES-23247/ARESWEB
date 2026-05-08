@@ -29,7 +29,7 @@ storeRouter.post("/webhook", async (c) => {
         throw new ApiError("Missing stripe signature", 400);
       }
 
-      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as Stripe.LatestApiVersion });
+      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
       let event: Stripe.Event;
 
       try {
@@ -133,7 +133,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       throw new Error("STRIPE_SECRET_KEY is not configured.");
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as Stripe.LatestApiVersion });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
     const db = getDb(c);
 
     // Fetch product details
