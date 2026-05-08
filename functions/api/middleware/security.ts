@@ -27,6 +27,12 @@ let rateLimitFailureCount = 0;
 const CIRCUIT_BREAKER_THRESHOLD = 5;
 let circuitBreakerOpenUntil = 0;
 
+// Test-only export for resetting state between tests
+export function _resetCircuitBreakerStateForTest() {
+  rateLimitFailureCount = 0;
+  circuitBreakerOpenUntil = 0;
+}
+
 // ── Write-Endpoint Rate Limiting (Persistent D1) ────────────────────────────
 
 /**

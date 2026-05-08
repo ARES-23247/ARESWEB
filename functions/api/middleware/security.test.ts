@@ -8,6 +8,7 @@ import {
   originIntegrityMiddleware,
   turnstileMiddleware,
   contentTypeValidationMiddleware,
+  _resetCircuitBreakerStateForTest,
 } from './security';
 import type { AppEnv } from './utils';
 
@@ -39,6 +40,7 @@ describe('security middleware', () => {
   };
 
   beforeEach(() => {
+    _resetCircuitBreakerStateForTest();
     vi.clearAllMocks();
     vi.useFakeTimers();
 
@@ -183,6 +185,9 @@ describe('security middleware', () => {
     });
 
     it('blocks requests over the rate limit', async () => {
+      // Ensure DEV_BYPASS is not interfering
+      mockContext.env.DEV_BYPASS = 'false';
+
       // Mock the db to return a count over the limit for rateLimits insert
       // and provide execute for the auditLog insert
       // We need to distinguish between the two inserts by checking the call chain
