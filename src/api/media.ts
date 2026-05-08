@@ -81,11 +81,12 @@ export function useUploadMedia(
       });
       return unwrapResponse<{ success: boolean; key: string; url: string; altText?: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -104,11 +105,12 @@ export function useMoveMedia(
       });
       return unwrapResponse<{ success: boolean; newKey?: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -124,11 +126,12 @@ export function useDeleteMedia(
       const response = await client.media.admin[":key"].$delete({ param: { key } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       queryClient.invalidateQueries({ queryKey: ["public-media"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 

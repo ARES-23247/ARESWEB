@@ -141,10 +141,11 @@ export function useSubmitEventSignup(
       const response = await client.events[":id"].signups.$post({ param: { id: eventId }, json: body });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-    },
-    ...options,
+      options?.onSuccess?.(_data, variables);
+    }
   });
 }
 
@@ -160,10 +161,11 @@ export function useDeleteMyEventSignup(
       const response = await client.events[":id"].signups.$delete({ param: { id: eventId } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: (_data, eventId) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", eventId] });
-    },
-    ...options,
+      options?.onSuccess?.(_data, eventId);
+    }
   });
 }
 
@@ -179,10 +181,11 @@ export function useUpdateMyEventAttendance(
       const response = await client.events[":id"].signups.me.attendance.$patch({ param: { id: eventId }, json: { attended } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-    },
-    ...options,
+      options?.onSuccess?.(_data, variables);
+    }
   });
 }
 
@@ -237,11 +240,12 @@ export function useSaveEvent(
       const response = await client.events.admin.save.$post({ json: body });
       return unwrapResponse<{ success: boolean; id?: string; warning?: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -257,6 +261,7 @@ export function useUpdateEvent(
       const response = await client.events.admin[":id"].$patch({ param: { id }, json: body });
       return unwrapResponse<{ success: boolean; id?: string; error?: string; warning?: string }>(response);
     },
+    ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
@@ -264,8 +269,8 @@ export function useUpdateEvent(
         queryClient.invalidateQueries({ queryKey: ["event", variables.id] });
         queryClient.invalidateQueries({ queryKey: ["admin_event_detail", variables.id] });
       }
-    },
-    ...options,
+      options?.onSuccess?.(_data, variables);
+    }
   });
 }
 
@@ -281,11 +286,12 @@ export function useDeleteEvent(
       const response = await client.events.admin[":id"].$delete({ param: { id }, json: { deleteMode } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -301,11 +307,12 @@ export function useSyncEvents(
       const response = await client.events.admin.sync.$post();
       return unwrapResponse<{ success: boolean; count?: number }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -336,10 +343,11 @@ export function useApproveEvent(
       const response = await client.events.admin[":id"].approve.$post({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -355,10 +363,11 @@ export function useRejectEvent(
       const response = await client.events.admin[":id"].reject.$post({ param: { id }, json: { reason } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -374,10 +383,11 @@ export function useUndeleteEvent(
       const response = await client.events.admin[":id"].restore.$post({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -393,10 +403,11 @@ export function usePurgeEvent(
       const response = await client.events.admin[":id"].purge.$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -427,9 +438,10 @@ export function useUpdateUserEventAttendance(
       const response = await client.events.admin[":id"].signups[":userId"].attendance.$patch({ param: { id: eventId, userId }, json: { attended } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-    },
-    ...options,
+      options?.onSuccess?.(_data, variables);
+    }
   });
 }

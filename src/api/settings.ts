@@ -81,11 +81,12 @@ export function useUpdateSettings(
       const response = await client.settings.admin.settings.$post({ json: settings });
       return unwrapResponse<UpdateSettingsResponse>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       queryClient.invalidateQueries({ queryKey: ["public-settings"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 

@@ -69,11 +69,12 @@ export function useSaveOutreach(
       const response = await client.outreach.admin.save.$post({ json: payload });
       return unwrapResponse<{ success: boolean; id?: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
       queryClient.invalidateQueries({ queryKey: ["public-outreach"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -89,10 +90,11 @@ export function useDeleteOutreach(
       const response = await client.outreach.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
       queryClient.invalidateQueries({ queryKey: ["public-outreach"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

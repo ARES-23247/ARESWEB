@@ -75,10 +75,11 @@ export function usePatchUser(
       const response = await client.users.admin[":id"].$patch({ param: { id }, json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -112,10 +113,11 @@ export function useUpdateUserProfile(
       const response = await client.users.admin[":id"].profile.$put({ param: { id }, json: profile });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -131,9 +133,10 @@ export function useDeleteUser(
       const response = await client.users.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

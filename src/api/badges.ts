@@ -88,10 +88,11 @@ export function useCreateBadge(
       const response = await client.badges.admin.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -107,11 +108,12 @@ export function useGrantBadge(
       const response = await client.badges.admin.grant.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -129,11 +131,12 @@ export function useRevokeBadge(
       });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -149,10 +152,11 @@ export function useDeleteBadge(
       const response = await client.badges.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 

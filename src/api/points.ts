@@ -72,12 +72,13 @@ export function useAwardPoints(
       const response = await client.points.transaction.$post({ json: data });
       return unwrapResponse<{ success: boolean; transaction_id: string }>(response);
     },
+    ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["points", "balance", variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ["points", "history", variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-    },
-    ...options,
+      options?.onSuccess?.(_data, variables);
+    }
   });
 }
 

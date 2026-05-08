@@ -89,11 +89,12 @@ export function useSaveSponsorshipPipeline(
       const response = await client.finance.sponsorship.$post({ json: payload });
       return unwrapResponse<{ success: boolean; id: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -109,11 +110,12 @@ export function useDeleteSponsorshipPipeline(
       const response = await client.finance.sponsorship[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -152,11 +154,12 @@ export function useSaveFinanceTransaction(
       const response = await client.finance.transactions.$post({ json: payload });
       return unwrapResponse<{ success: boolean; id: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "transactions"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -172,10 +175,11 @@ export function useDeleteFinanceTransaction(
       const response = await client.finance.transactions[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "transactions"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

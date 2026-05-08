@@ -77,11 +77,12 @@ export function useSaveLocation(
       const response = await client.locations.admin.save.$post({ json: payload });
       return unwrapResponse<SaveLocationResponse>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["locations"] });
       queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -97,10 +98,11 @@ export function useDeleteLocation(
       const response = await client.locations.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<SuccessResponse>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["locations"] });
       queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

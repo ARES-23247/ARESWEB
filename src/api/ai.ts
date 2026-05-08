@@ -172,11 +172,12 @@ export function useAddExternalSource(
       }
       return response.json() as Promise<{ id: string; success: boolean }>;
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
       queryClient.invalidateQueries({ queryKey: ["ai", "status"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -196,10 +197,11 @@ export function useDeleteExternalSource(
       }
       return { success: true };
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 

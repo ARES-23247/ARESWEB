@@ -70,10 +70,11 @@ export function useCreateTask(
       const response = await client.tasks.$post({ json: data });
       return unwrapResponse<{ success: boolean; task: Task }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -89,10 +90,11 @@ export function useUpdateTask(
       const response = await client.tasks[":id"].$patch({ param: { id }, json: updates });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -108,10 +110,11 @@ export function useDeleteTask(
       const response = await client.tasks[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -127,9 +130,10 @@ export function useReorderTasks(
       const response = await client.tasks.reorder.$patch({ json: items });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

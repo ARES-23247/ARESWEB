@@ -211,11 +211,12 @@ export function useSaveDoc(
       const response = await client.docs.admin.save.$post({ json: data });
       return unwrapResponse<{ success: boolean; slug?: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -231,11 +232,12 @@ export function useUpdateDocSort(
       const response = await client.docs.admin[":slug"].sort.$patch({ param: { slug }, json: { sortOrder } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -284,11 +286,12 @@ export function useRestoreDocHistory(
       const response = await client.docs.admin[":slug"].history[":id"].restore.$patch({ param: { slug, id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["docs", variables.slug] });
       queryClient.invalidateQueries({ queryKey: ["docs", "history", variables.slug] });
-    },
-    ...options,
+      options?.onSuccess?.(_data, variables);
+    }
   });
 }
 
@@ -304,11 +307,12 @@ export function useApproveDoc(
       const response = await client.docs.admin[":slug"].approve.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -324,11 +328,12 @@ export function useRejectDoc(
       const response = await client.docs.admin[":slug"].reject.$post({ param: { slug }, json: { reason } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -344,11 +349,12 @@ export function useDeleteDoc(
       const response = await client.docs.admin[":slug"].$delete({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -364,11 +370,12 @@ export function useUndeleteDoc(
       const response = await client.docs.admin[":slug"].undelete.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -384,11 +391,12 @@ export function usePurgeDoc(
       const response = await client.docs.admin[":slug"].purge.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 

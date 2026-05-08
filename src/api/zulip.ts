@@ -45,10 +45,11 @@ export function useSendMessage(
       const response = await client.zulip.message.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["zulip"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -103,9 +104,10 @@ export function useInviteUsers(
       const response = await client.zulip.invites.send.$post({ json: data });
       return unwrapResponse<{ success: boolean; invitedCount: number }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["zulip"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

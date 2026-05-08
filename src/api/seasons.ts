@@ -113,11 +113,12 @@ export function useSaveSeason(
       const response = await client.seasons.admin.save.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -133,11 +134,12 @@ export function useDeleteSeason(
       const response = await client.seasons.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -153,11 +155,12 @@ export function useUndeleteSeason(
       const response = await client.seasons.admin[":id"].undelete.$post({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -173,10 +176,11 @@ export function usePurgeSeason(
       const response = await client.seasons.admin[":id"].purge.$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

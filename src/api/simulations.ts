@@ -88,10 +88,11 @@ export function useSaveSimulation(
       const response = await client.simulations.$post({ json: data });
       return unwrapResponse<SaveSimulationResponse>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -107,10 +108,11 @@ export function useDeleteSimulation(
       const response = await client.simulations[":id"].$delete({ param: { id } });
       return unwrapResponse<SuccessResponse>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 

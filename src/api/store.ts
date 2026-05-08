@@ -98,9 +98,10 @@ export function useUpdateOrderStatus(
       });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store", "orders"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

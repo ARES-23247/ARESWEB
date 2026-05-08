@@ -100,11 +100,12 @@ export function useSaveSponsor(
       const response = await client.sponsors.admin.save.$post({ json: data });
       return unwrapResponse<{ success: boolean; id: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sponsors"] });
       queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -120,11 +121,12 @@ export function useDeleteSponsor(
       const response = await client.sponsors.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sponsors"] });
       queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -156,9 +158,10 @@ export function useGenerateSponsorToken(
       const response = await client.sponsors.admin.tokens.generate.$post({ json: data });
       return unwrapResponse<{ success: boolean; token?: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sponsor_tokens"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }

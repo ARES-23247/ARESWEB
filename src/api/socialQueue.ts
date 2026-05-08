@@ -116,11 +116,12 @@ export function useCreateSocialPost(
       const response = await client["social-queue"].$post({ json: data as never });  
       return unwrapResponse<{ success: boolean; post: SocialQueuePost }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -136,11 +137,12 @@ export function useUpdateSocialPost(
       const response = await client["social-queue"][":id"].$patch({ param: { id }, json: updates as never });
       return unwrapResponse<{ success: boolean; post: SocialQueuePost }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -156,11 +158,12 @@ export function useDeleteSocialPost(
       const response = await client["social-queue"][":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -176,11 +179,12 @@ export function useSendSocialPostNow(
       const response = await client["social-queue"][":id"]["send-now"].$post({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 

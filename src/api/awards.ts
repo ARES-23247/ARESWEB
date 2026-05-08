@@ -59,10 +59,11 @@ export function useSaveAward(
       const response = await client.awards.admin.save.$post({ json: data });
       return unwrapResponse<{ success: boolean; id?: string }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["awards"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
 
@@ -78,9 +79,10 @@ export function useDeleteAward(
       const response = await client.awards.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
+    ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["awards"] });
-    },
-    ...options,
+      options?.onSuccess?.();
+    }
   });
 }
