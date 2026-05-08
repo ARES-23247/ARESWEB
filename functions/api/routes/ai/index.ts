@@ -897,6 +897,7 @@ aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
   const id = c.req.param("id");
   const db = getDb(c);
 
+  // @ts-ignore - Drizzle delete type narrowing
   await (db as any).delete(schema.externalKnowledgeSources).where(eq(schema.externalKnowledgeSources.id, id)).execute();
   return c.json({ success: true });
 });

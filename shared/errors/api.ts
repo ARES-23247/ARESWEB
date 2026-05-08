@@ -40,8 +40,8 @@ export function errorResponse<T extends Context>(
   status: 400 | 401 | 403 | 404 | 409 | 429 | 500,
   code?: string,
   details?: unknown
-): ReturnType<T["json"]> {
-  return c.json(createErrorResponse(message, code, details), status) as ReturnType<T["json"]>;
+): any {
+  return c.json(createErrorResponse(message, code, details), status);
 }
 
 /**
@@ -119,7 +119,7 @@ export function formatZodError(zodError: {
 export function validationErrorResponse(
   c: Context,
   validationErrors: Record<string, string>
-): ReturnType<typeof c.json> {
+): any {
   return c.json(
     createErrorResponse("Validation failed", ErrorCode.VALIDATION_ERROR, validationErrors),
     400
@@ -144,8 +144,8 @@ export function successResponse<T extends Context, D>(
   c: T,
   data: D,
   status: 200 | 201 | 202 | 204 = 200
-): ReturnType<T["json"]> {
-  return c.json(data, status) as ReturnType<T["json"]>;
+): any {
+  return c.json(data, status as any);
 }
 
 /**
@@ -160,7 +160,7 @@ export function paginatedResponse<T extends Context, D>(
   limit: number,
   offset: number,
   total?: number
-): ReturnType<T["json"]> {
+): any {
   const response: {
     items: D[];
     limit: number;
@@ -176,7 +176,7 @@ export function paginatedResponse<T extends Context, D>(
   if (total !== undefined) {
     response.total = total;
   }
-  return c.json(response, 200) as ReturnType<T["json"]>;
+  return c.json(response, 200);
 }
 
 /**

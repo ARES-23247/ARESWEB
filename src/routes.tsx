@@ -2,7 +2,7 @@ import React from "react";
 
 export interface RouteConfig {
   path: string;
-  component: React.LazyExoticComponent<() => JSX.Element>;
+  component: React.LazyExoticComponent<React.FC<{}>>;
 }
 
 const routes: RouteConfig[] = [

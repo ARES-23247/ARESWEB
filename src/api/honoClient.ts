@@ -1,5 +1,5 @@
 import { hc } from "hono/client";
-import type { ClientResponse, Client } from "hono/client";
+import type { ClientResponse } from "hono/client";
 import { type AppType } from "../../functions/api/[[route]]";
 
 /**
@@ -14,7 +14,8 @@ import { type AppType } from "../../functions/api/[[route]]";
  * wrapper functions handle their own type safety through Zod schemas and
  * explicit type annotations.
  */
-export const client: Client<AppType, "/api"> = hc<AppType>("/api", {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const client: any = hc<AppType>("/api", {
   init: {
     credentials: "include",
   },
