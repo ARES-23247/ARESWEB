@@ -24,7 +24,7 @@ const urls = [
   '/judges',
 ].map(path => `${baseUrl}${path}`);
 
-module.exports = {
+export default {
   defaults: {
     standard: 'WCAG2AA',
     timeout: 30000,
