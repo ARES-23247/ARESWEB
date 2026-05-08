@@ -191,6 +191,18 @@ ON CONFLICT(slug) DO UPDATE SET
   status = excluded.status;
 
 -- ────────────────────────────────────────
+-- Seasons
+-- ──────────────────────────────────────────
+
+INSERT INTO seasons (start_year, end_year, challenge_name, robot_name, robot_description, summary, status, is_deleted)
+VALUES
+  (2024, 2025, 'INTO THE DEEP', 'AresBot Mk4', '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Our 2024-2025 robot."}]}]}', 'Our 2024-2025 season robot.', 'published', 0),
+  (2025, 2026, 'Upcoming Game', NULL, NULL, 'Coming soon...', 'published', 0)
+ON CONFLICT(start_year) DO UPDATE SET
+  challenge_name = excluded.challenge_name,
+  robot_name = excluded.robot_name;
+
+-- ────────────────────────────────────────
 -- Events
 -- ──────────────────────────────────────────
 
@@ -214,18 +226,6 @@ VALUES
 ON CONFLICT(slug) DO UPDATE SET
   title = excluded.title,
   status = excluded.status;
-
--- ────────────────────────────────────────
--- Seasons
--- ──────────────────────────────────────────
-
-INSERT INTO seasons (start_year, end_year, challenge_name, robot_name, robot_description, summary, status, is_deleted)
-VALUES
-  (2024, 2025, 'INTO THE DEEP', 'AresBot Mk4', '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Our 2024-2025 robot."}]}]}', 'Our 2024-2025 season robot.', 'published', 0),
-  (2025, 2026, 'Upcoming Game', NULL, NULL, NULL, 'Coming soon...', 'published', 0)
-ON CONFLICT(start_year) DO UPDATE SET
-  challenge_name = excluded.challenge_name,
-  robot_name = excluded.robot_name;
 
 -- ────────────────────────────────────────
 -- Awards
