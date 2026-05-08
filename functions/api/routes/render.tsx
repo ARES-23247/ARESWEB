@@ -2,10 +2,11 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../middleware";
 
+import type { Child } from "hono/jsx";
+
 export const renderRouter = new OpenAPIHono<AppEnv>();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Layout = ({ title, children }: { title: string; children: any }) => (
+const Layout = ({ title, children }: { title: string; children: Child }) => (
   <html lang="en">
     <head>
       <meta charset="UTF-8" />

@@ -49,14 +49,16 @@ export interface MockTaskItem {
 
 /**
  * Creates a mock media item.
+ * The url is auto-generated from the key if not provided.
  */
 export function createMockMediaItem(overrides: Partial<MockMediaItem> = {}): MockMediaItem {
   const now = new Date().toISOString();
+  const key = overrides.key ?? 'test-asset.png';
   return {
-    key: 'test-asset.png',
+    key,
     size: 12345,
     uploaded: now,
-    url: '/api/media/test-asset.png',
+    url: overrides.url ?? `/api/media/${key}`,
     folder: null,
     tags: null,
     ...overrides,

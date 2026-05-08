@@ -6,3 +6,4 @@
 export { AssetVaultPage } from './AssetVaultPage';
 export { KanbanPage } from './KanbanPage';
 export { DashboardPage } from './DashboardPage';
+export { MediaManagerPage } from './MediaManagerPage';

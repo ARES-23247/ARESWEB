@@ -108,8 +108,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
 class TitleRewriter {
   constructor(public newTitle: string) {}
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  element(element: any) {
+  element(element: Element) {
     element.setInnerContent(this.newTitle);
   }
 }
@@ -123,8 +122,7 @@ class MetaInjector {
     public type: string
   ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  element(element: any) {
+  element(element: Element) {
     const defaultImage = "https://aresfirst.org/ares_hero.png";
     const imgUrl = this.image || defaultImage;
     const desc = this.description || "ARES 23247 - Appalachian Robotics & Engineering Society.";

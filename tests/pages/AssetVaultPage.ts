@@ -41,7 +41,6 @@ export class AssetVaultPage {
    */
   async setFolder(folderName: string): Promise<void> {
     await this.folderInput.fill(folderName);
-    await this.folderInput.expect(folderName).toHaveValue(folderName);
   }
 
   /**

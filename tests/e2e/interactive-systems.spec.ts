@@ -1,30 +1,30 @@
 import { test, expect } from '@playwright/test';
+import { setupMockAuth } from '../fixtures/auth';
 
 test.describe('Interactive Systems & Workflows', () => {
-  
   test('Command Palette triggers, searches, and navigates correctly', async ({ page }) => {
     // Navigate to homepage
     await page.goto('/');
-    
+
     // Ensure the Command Palette button exists in the header
     const commandPaletteBtn = page.getByRole('button', { name: 'Open Command Palette' }).first();
     await expect(commandPaletteBtn).toBeVisible();
-    
+
     // Open Command Palette
     await commandPaletteBtn.click();
-    
+
     // Verify modal appeared and input is focused
     const searchInput = page.getByPlaceholder('Search documentation, routes, workflows...');
     await expect(searchInput).toBeVisible();
     await expect(searchInput).toBeFocused();
-    
+
     // Type a query
     await searchInput.fill('Sponsorships');
-    
+
     // Wait for the results to filter
     const resultItem = page.getByText('Sponsorships & ROI');
     await expect(resultItem).toBeVisible();
-    
+
     // Select the item and verify navigation
     await resultItem.click();
     await expect(page).toHaveURL(/\/sponsors/);
@@ -38,26 +38,26 @@ test.describe('Interactive Systems & Workflows', () => {
 
     // Intercept the API submission so we don't pollute the database,
     // and instead force a success response.
-    await page.route(url => url.pathname.includes('/inquiries'), async route => {
+    await page.route((url) => url.pathname.includes('/inquiries'), async (route) => {
       if (route.request().resourceType() !== 'fetch' && route.request().resourceType() !== 'xhr') {
         return route.fallback();
       }
       // Small artificial delay to ensure "Sending..." state is visible if quickly checked
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ success: true, id: 'test-id' })
+        body: JSON.stringify({ success: true, id: 'test-id' }),
       });
     });
 
     // Navigate to the join page
     await page.goto('/join');
-    
+
     // Verify an inquiry form is on the page
     const nameInput = page.getByLabel(/Full Name/i);
     await expect(nameInput).toBeVisible();
-    
+
     // Fill out the form
     await nameInput.fill('John Doe');
     await page.getByLabel(/Email Address/i).fill('johndoe@test.com');
@@ -65,36 +65,31 @@ test.describe('Interactive Systems & Workflows', () => {
     await page.getByLabel(/Current Grade/i).selectOption('10');
     // Check one of the interest boxes
     await page.getByLabel(/Programming/i).check();
-    await page.getByLabel(/Additional Information/i).fill('I love robotics and want to build things.');
-    
+    await page
+      .getByLabel(/Additional Information/i)
+      .fill('I love robotics and want to build things.');
+
     // Submit the form
     const submitBtn = page.getByRole('button', { name: /Submit Student Application/i });
     await expect(submitBtn).toBeVisible();
     await submitBtn.click();
-    
+
     // Verify success message rendered! (Checks Join.tsx UI state)
     const successAlert = page.getByText(/Application submitted successfully/i);
     try {
       await expect(successAlert).toBeVisible({ timeout: 5000 });
     } catch (e) {
       const errorMsg = await page.locator('.text-ares-red').allTextContents();
-      console.error("Form submission failed with errors on page:", errorMsg);
+      console.error('Form submission failed with errors on page:', errorMsg);
       throw e;
     }
   });
 
   test('Interactive Zulip threads render inline and allow replies', async ({ page }) => {
-    await page.route('**/api/auth/get-session', async route => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          session: { id: 'mock', userId: 'mock', expiresAt: '2099-01-01T00:00:00.000Z', ipAddress: '127.0.0.1', userAgent: 'test' },
-          user: { id: 'mock', name: 'Test', email: 't@t.com', emailVerified: true, createdAt: '2020', updatedAt: '2020', role: 'user' }
-        }
-      });
-    });
+    await setupMockAuth(page);
+
     // Mock the single event route to return a zulip topic and messages
-    await page.route('**/api/events/*', async route => {
+    await page.route('**/api/events/*', async (route) => {
       await route.fulfill({
         status: 200,
         json: {
@@ -103,14 +98,14 @@ test.describe('Interactive Systems & Workflows', () => {
             title: 'Zulip E2E Event',
             date_start: new Date().toISOString(),
             date_end: new Date().toISOString(),
-            description: "Test description",
-            category: 'meeting'
-          }
-        }
+            description: 'Test description',
+            category: 'meeting',
+          },
+        },
       });
     });
 
-    await page.route(url => url.pathname.includes('/api/zulip/topic'), async route => {
+    await page.route((url) => url.pathname.includes('/api/zulip/topic'), async (route) => {
       await route.fulfill({
         status: 200,
         json: {
@@ -122,19 +117,19 @@ test.describe('Interactive Systems & Workflows', () => {
               sender_full_name: 'Zulip Tester',
               avatar_url: '',
               content: '<p>This is a test message from Zulip.</p>',
-              timestamp: Date.now() / 1000
-            }
+              timestamp: Date.now() / 1000,
+            },
           ],
-          zulipUrl: 'https://aresfirst.zulipchat.com'
-        }
+          zulipUrl: 'https://aresfirst.zulipchat.com',
+        },
       });
     });
 
     // Mock the POST message route
-    await page.route('**/api/zulip/message', async route => {
+    await page.route('**/api/zulip/message', async (route) => {
       await route.fulfill({
         status: 200,
-        json: { success: true, id: 100000 }
+        json: { success: true, id: 100000 },
       });
     });
 
@@ -148,13 +143,12 @@ test.describe('Interactive Systems & Workflows', () => {
     const replyInput = page.getByPlaceholder('Reply to #events > Event: Zulip E2E Event...');
     await expect(replyInput).toBeVisible();
     await replyInput.fill('This is a test reply');
-    
+
     // Instead of explicitly waiting for button enabled state, we can just press enter on the input
     // because Playwright might be racing with React state updates for the disabled property.
     await replyInput.press('Enter');
-    
+
     // Verify the input clears (onSuccess handler)
     await expect(replyInput).toHaveValue('');
   });
 });
-

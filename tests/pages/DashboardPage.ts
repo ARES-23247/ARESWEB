@@ -34,14 +34,6 @@ export class DashboardPage {
     // Wait for React to finish rendering
     await this.page.waitForLoadState('domcontentloaded');
 
-    // Wait for Framer Motion animations to settle
-    await this.page.waitForFunction(() => {
-      const animations = document.getAnimations();
-      return animations.every((anim) => anim.playState === 'finished' || anim.playState === 'idle');
-    }).catch(() => {
-      // If timeout, continue anyway - some animations may loop
-    });
-
     // Force full opacity for contrast scan
     await this.page.addStyleTag({
       content: `

@@ -34,8 +34,11 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
 
   const cachedResponse = await cache.match(cacheKey);
   if (cachedResponse) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await cachedResponse.json() as any;
+    const data = await cachedResponse.json() as {
+      grid: { date: string; count: number; level: number }[][];
+      totalCommits: number;
+      repoCount: number;
+    };
     return c.json(data, 200);
   }
 
@@ -85,11 +88,11 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
     const maxCount = Math.max(1, ...Array.from(dailyMap.values()));
     let totalCommits = 0;
 
-    const weeks: unknown[][] = [];
+    const weeks: { date: string; count: number; level: number }[][] = [];
 
     const cursor = new Date(startDate);
     while (cursor <= today || weeks.length < 53) {
-      const week: unknown[] = [];
+      const week: { date: string; count: number; level: number }[] = [];
       for (let d = 0; d < 7; d++) {
         const key = cursor.toISOString().split("T")[0];
         const count = dailyMap.get(key) || 0;
