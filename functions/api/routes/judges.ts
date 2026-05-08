@@ -168,7 +168,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
 
     const validToken = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
     if (!validToken) {
-      return errorResponses.forbidden(c, "Security verification failed");
+      throw new ApiError("Security verification failed", 403);
     }
 
     const [row] = await db.select({
@@ -187,7 +187,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
       ).limit(1);
 
     if (!row) {
-      return errorResponses.forbidden(c, "Invalid or expired access code");
+      throw new ApiError("Invalid or expired access code", 403);
     }
 
     return c.json({ success: true, label: row.label }, 200);
@@ -197,7 +197,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
   const db = getDb(c);
     const { "x-judge-code": code } = c.req.valid("header");
     if (!code) {
-      return errorResponses.unauthorized(c, "Access code required");
+      throw new ApiError("Access code required", 401);
     }
 
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
@@ -220,7 +220,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         )
       ).limit(1);
     if (!valid) {
-      return errorResponses.forbidden(c, "Invalid or expired access code");
+      throw new ApiError("Invalid or expired access code", 403);
     }
 
     // WR-10: Audit log judge portfolio access for security monitoring

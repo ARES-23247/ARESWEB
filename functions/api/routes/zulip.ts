@@ -58,7 +58,7 @@ zulipRouter.openapi(getPresenceRoute, typedHandler<typeof getPresenceRoute>(asyn
     });
 
     if (!res.ok) {
-      return c.json({ success: false, error: await res.text() }, 500);
+      throw new ApiError(await res.text(), 500);
     }
 
     const usersRes = await fetch(
@@ -153,15 +153,9 @@ zulipRouter.openapi(getTopicMessagesRoute, typedHandler<typeof getTopicMessagesR
 
     if (!res.ok) {
       if (res.status === 403) {
-        return c.json(
-          {
-            success: false,
-            error: "Zulip bot is not subscribed to this stream.",
-          },
-          403
-        );
+        throw new ApiError("Zulip bot is not subscribed to this stream.", 403);
       }
-      return c.json({ success: false, error: await res.text() }, 500);
+      throw new ApiError(await res.text(), 500);
     }
 
     const data = (await res.json()) as {
@@ -174,13 +168,7 @@ zulipRouter.openapi(getTopicMessagesRoute, typedHandler<typeof getTopicMessagesR
 zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUsersRoute>(async (c) => {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
-      return c.json(
-        {
-          success: false,
-          error: "Zulip not configured. Set ZULIP_BOT_EMAIL and ZULIP_API_KEY in settings.",
-        },
-        500
-      );
+      throw new ApiError("Zulip not configured. Set ZULIP_BOT_EMAIL and ZULIP_API_KEY in settings.", 500);
     }
 
     const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
@@ -204,13 +192,7 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
 
       if (!zulipRes.ok) {
         const errText = (await zulipRes.text().catch(() => "(no body)"));
-        return c.json(
-          {
-            success: false,
-            error: `Zulip API returned ${zulipRes.status}: ${errText.slice(0, 200)}`,
-          },
-          500
-        );
+        throw new ApiError(`Zulip API returned ${zulipRes.status}: ${errText.slice(0, 200)}`, 500);
       }
 
       const zulipData = (await zulipRes.json()) as {
@@ -223,13 +205,7 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
       };
 
       if (!zulipData.members || !Array.isArray(zulipData.members)) {
-        return c.json(
-          {
-            success: false,
-            error: "Zulip returned invalid data — no members array",
-          },
-          500
-        );
+        throw new ApiError("Zulip returned invalid data — no members array", 500);
       }
 
       for (const m of zulipData.members) {
@@ -357,7 +333,7 @@ zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(asyn
     }
 
     if (allErrors.length > 0 && totalInvited === 0) {
-      return c.json({ success: false, error: allErrors.join("; ") }, 500);
+      throw new ApiError(allErrors.join("; "), 500);
     }
 
     return c.json({ success: true, invitedCount: totalInvited }, 200);

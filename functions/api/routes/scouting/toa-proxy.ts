@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
+import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv } from "../../middleware";
@@ -14,8 +15,7 @@ toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => 
   const toaKey = c.env.TOA_API_KEY;
 
   if (!toaKey) {
-    return c.json(
-      { error: "TOA_API_KEY not configured. Contact an administrator.", status: 500 }, 500);
+    throw new ApiError("TOA_API_KEY not configured. Contact an administrator.", 500);
   }
 
   const url = `https://theorangealliance.org/api/${path}`;
@@ -30,8 +30,7 @@ toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => 
 
     if (!upstream.ok) {
       console.error(`[TOA Proxy] Upstream ${upstream.status} for ${path}`);
-      return c.json(
-        { error: `TOA upstream error: ${upstream.status}`, status: upstream.status }, 502);
+      throw new ApiError(`TOA upstream error: ${upstream.status}`, 502);
     }
 
     const data = await upstream.json();

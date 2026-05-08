@@ -274,7 +274,7 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
         .where(eq(schema.seasons.startYear, body.start_year))
         .get();
       if (collision) {
-        return errorResponses.conflict(c, `Season ${body.start_year} already exists.`);
+        throw new ApiError(`Season ${body.start_year} already exists.`, 409);
       }
     }
 

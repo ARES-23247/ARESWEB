@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { ApiError } from "../middleware/errorHandler";
+import { ApiError } from "../../middleware/errorHandler";
 import {
   getMediaRoute,
   getAdminMediaRoute,
@@ -233,7 +233,7 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return errorResponses.badRequest(c, `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+      throw new ApiError(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`, 400);
     }
 
     const isLarge = file.size > MAX_FILE_SIZE_FOR_AI;
@@ -253,7 +253,7 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
 
     const canonicalExtension = getExtensionForMimeType(file.type);
     if (!canonicalExtension) {
-      return errorResponses.badRequest(c, `Unsupported image type: ${file.type}`);
+      throw new ApiError(`Unsupported image type: ${file.type}`, 400);
     }
 
     const normalizedName = normalizeFileNameExtension(file.name, file.type);
@@ -381,7 +381,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     if (!publicFolders.includes(folder)) {
       const user = await getSessionUser(c);
       if (!user) {
-        return c.text("Unauthorized", 401);
+        throw new ApiError("Unauthorized", 401);
       }
     }
 
@@ -416,7 +416,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     return response;
   } catch (e) {
     console.error("[Media:Raw] Error", e);
-    return c.text("Internal Error", 500);
+    throw new ApiError("Internal Error", 500);
   }
 });
 

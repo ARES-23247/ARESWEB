@@ -1,5 +1,5 @@
 import { typedHandler } from "../../utils/handler";
-import { ApiError } from "../middleware/errorHandler";
+import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { z } from "zod";
 
@@ -121,14 +121,14 @@ eventsRouter.openapi(getEventsRoute, typedHandler<typeof getEventsRoute>(async (
   const query = c.req.valid("query");
   const result = await eventHandlers.getEvents({ query, params: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetEventsSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSettingsRoute>(async (c) => {
   const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetCalendarSettingsSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -136,7 +136,7 @@ eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c)
   const params = c.req.valid("param");
   const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body, 200);
-  if (result.status === 404) return c.json(result.body, 404);
+  if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -144,7 +144,7 @@ eventsRouter.openapi(getSignupsRoute, typedHandler<typeof getSignupsRoute>(async
   const params = c.req.valid("param");
   const result = await eventHandlers.getSignups({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetSignupsSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -153,8 +153,8 @@ eventsRouter.openapi(submitSignupRoute, typedHandler<typeof submitSignupRoute>(a
   const body = c.req.valid("json");
   const result = await eventHandlers.submitSignup({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies SubmitSignupSuccess, 200);
-  if (result.status === 403) return c.json(result.body, 403);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 403) throw new ApiError((result.body as any)?.error || "Operation failed", 403);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -162,8 +162,8 @@ eventsRouter.openapi(deleteMySignupRoute, typedHandler<typeof deleteMySignupRout
   const params = c.req.valid("param");
   const result = await eventHandlers.deleteMySignup({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies DeleteMySignupSuccess, 200);
-  if (result.status === 401) return c.json(result.body, 401);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -172,8 +172,8 @@ eventsRouter.openapi(updateMyAttendanceRoute, typedHandler<typeof updateMyAttend
   const body = c.req.valid("json");
   const result = await eventHandlers.updateMyAttendance({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UpdateMyAttendanceSuccess, 200);
-  if (result.status === 401) return c.json(result.body, 401);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -182,7 +182,7 @@ eventsRouter.openapi(getAdminEventsRoute, typedHandler<typeof getAdminEventsRout
   const query = c.req.valid("query");
   const result = await eventHandlers.getAdminEvents({ query, params: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetAdminEventsSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -190,8 +190,8 @@ eventsRouter.openapi(getAdminEventRoute, typedHandler<typeof getAdminEventRoute>
   const params = c.req.valid("param");
   const result = await eventHandlers.adminDetail({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body, 200);
-  if (result.status === 404) return c.json(result.body, 404);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -199,9 +199,9 @@ eventsRouter.openapi(saveEventRoute, typedHandler<typeof saveEventRoute>(async (
   const body = c.req.valid("json");
   const result = await eventHandlers.saveEvent({ body, params: {}, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies SaveEventSuccess, 200);
-  if (result.status === 400) return c.json(result.body, 400);
-  if (result.status === 401) return c.json(result.body, 401);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 400) throw new ApiError((result.body as any)?.error || "Operation failed", 400);
+  if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -210,9 +210,9 @@ eventsRouter.openapi(updateEventRoute, typedHandler<typeof updateEventRoute>(asy
   const body = c.req.valid("json");
   const result = await eventHandlers.updateEvent({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UpdateEventSuccess, 200);
-  if (result.status === 400) return c.json(result.body, 400);
-  if (result.status === 404) return c.json(result.body, 404);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 400) throw new ApiError((result.body as any)?.error || "Operation failed", 400);
+  if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -220,21 +220,21 @@ eventsRouter.openapi(deleteEventRoute, typedHandler<typeof deleteEventRoute>(asy
   const params = c.req.valid("param");
   const result = await eventHandlers.deleteEvent({ params, body: {} , query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies DeleteEventSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(syncEventsRoute, typedHandler<typeof syncEventsRoute>(async (c) => {
   const result = await eventHandlers.syncEvents({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies SyncEventsSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
 eventsRouter.openapi(repairCalendarRoute, typedHandler<typeof repairCalendarRoute>(async (c) => {
   const result = await eventHandlers.repairCalendar({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RepairCalendarSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -242,7 +242,7 @@ eventsRouter.openapi(approveEventRoute, typedHandler<typeof approveEventRoute>(a
   const params = c.req.valid("param");
   const result = await eventHandlers.approveEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies ApproveEventSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -250,7 +250,7 @@ eventsRouter.openapi(rejectEventRoute, typedHandler<typeof rejectEventRoute>(asy
   const params = c.req.valid("param");
   const result = await eventHandlers.rejectEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RejectEventSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -258,7 +258,7 @@ eventsRouter.openapi(undeleteEventRoute, typedHandler<typeof undeleteEventRoute>
   const params = c.req.valid("param");
   const result = await eventHandlers.undeleteEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UndeleteEventSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -266,7 +266,7 @@ eventsRouter.openapi(purgeEventRoute, typedHandler<typeof purgeEventRoute>(async
   const params = c.req.valid("param");
   const result = await eventHandlers.purgeEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies PurgeEventSuccess, 200);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -275,9 +275,9 @@ eventsRouter.openapi(repushEventRoute, typedHandler<typeof repushEventRoute>(asy
   const body = c.req.valid("json");
   const result = await eventHandlers.repushEvent({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RepushEventSuccess, 200);
-  if (result.status === 401) return c.json(result.body, 401);
-  if (result.status === 404) return c.json(result.body, 404);
-  if (result.status === 502) return c.json(result.body, 502);
+  if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
+  if (result.status === 502) throw new ApiError((result.body as any)?.error || "Operation failed", 502);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 
@@ -286,8 +286,8 @@ eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAt
   const body = c.req.valid("json");
   const result = await eventHandlers.updateUserAttendance({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UpdateUserAttendanceSuccess, 200);
-  if (result.status === 401) return c.json(result.body, 401);
-  if (result.status === 500) return c.json(result.body, 500);
+  if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
 

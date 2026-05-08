@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
+import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv } from "../../middleware";
@@ -15,8 +16,7 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRo
   const apiKey = c.env.FTC_EVENTS_API_KEY;
 
   if (!username || !apiKey) {
-    return c.json(
-      { error: "FTC Events API credentials not configured. Contact an administrator.", status: 500 }, 500);
+    throw new ApiError("FTC Events API credentials not configured. Contact an administrator.", 500);
   }
 
   const authHeader = "Basic " + btoa(`${username}:${apiKey}`);
@@ -31,8 +31,7 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRo
 
     if (!upstream.ok) {
       console.error(`[FTC Events Proxy] Upstream ${upstream.status} for ${path}`);
-      return c.json(
-        { error: `FTC Events upstream error: ${upstream.status}`, status: upstream.status }, 502);
+      throw new ApiError(`FTC Events upstream error: ${upstream.status}`, 502);
     }
 
     const data = await upstream.json();

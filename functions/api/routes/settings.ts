@@ -56,8 +56,7 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
     const body = c.req.valid("json");
     const validationResult = settingsSchema.safeParse(body);
     if (!validationResult.success) {
-      return c.json(
-        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i: { message: string }) => i.message).join(", ") }, 400);
+      throw new ApiError("Invalid settings format: ", 400);
     }
 
     const entries = Object.entries(validationResult.data) as [string, string][];
@@ -66,7 +65,7 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
     for (const [key, value] of entries) {
       if (SENSITIVE_KEYS.has(key)) {
         if (value.startsWith("••••")) continue;
-        return c.json({ success: false, error: `Cannot update ${key} via API. Please use the admin console.` }, 403);
+        throw new ApiError(`Cannot update ${key} via API. Please use the admin console.`, 403);
       }
 
       const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);

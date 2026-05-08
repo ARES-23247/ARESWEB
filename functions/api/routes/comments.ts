@@ -104,10 +104,7 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
   if (rawContent.length > MAX_INPUT_LENGTHS.comment) {
-    return c.json({
-      error: `Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`,
-      code: "BAD_REQUEST"
-    }, 400);
+    throw new ApiError(`Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`, 400);
   }
 
     const id = crypto.randomUUID();
@@ -171,10 +168,7 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
   if (rawContent && rawContent.length > MAX_INPUT_LENGTHS.comment) {
-    return c.json({
-      error: `Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`,
-      code: "BAD_REQUEST"
-    }, 400);
+    throw new ApiError(`Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`, 400);
   }
 
     const row = await db.select({

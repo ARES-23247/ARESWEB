@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
+import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import * as schema from "../../../../src/db/schema";
@@ -70,7 +71,7 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
   const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
   if (!SYSTEM_PROMPTS[mode]) {
-    return c.json({ error: `Invalid analysis mode: ${mode}.` }, 400);
+    throw new ApiError(`Invalid analysis mode: ${mode}.`, 400);
   }
 
   const zaiKey = c.env.Z_AI_API_KEY;
@@ -100,12 +101,12 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
     if (!zaiRes.ok) {
       const errText = await zaiRes.text();
       console.error(`[Scouting Analyze] Z.ai error ${zaiRes.status}:`, errText);
-      return c.json({ error: `AI analysis failed (${zaiRes.status})` }, 502);
+      throw new ApiError(`AI analysis failed (${zaiRes.status})`, 502);
     }
 
     const data = (await zaiRes.json()) as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string }; usage?: { total_tokens?: number } };
     if (data.error) {
-      return c.json({ error: data.error.message || "AI returned an error" }, 502);
+      throw new ApiError(data.error.message || "AI returned an error", 502);
     }
 
     const markdown = data.choices?.[0]?.message?.content || "";

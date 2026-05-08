@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
-import { ApiError } from "../middleware/errorHandler";
+import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, verifyTurnstile, getDb } from "../../middleware";
 import type { DrizzleDB } from "../../middleware/utils";

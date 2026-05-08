@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ApiError } from "../middleware/errorHandler";
 import { typedHandler } from "../utils/handler";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -89,7 +90,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       .all();
 
     if (!tokens || tokens.length === 0) {
-      return errorResponses.forbidden(c, "Invalid token");
+      throw new ApiError("Invalid token", 403);
     }
     const sponsor_id = tokens[0].sponsorId;
 
@@ -108,7 +109,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       .get();
 
     if (!sponsorRow) {
-      return errorResponses.forbidden(c, "Sponsor not found");
+      throw new ApiError("Sponsor not found", 403);
     }
 
     const metricsRow = await db

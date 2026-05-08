@@ -470,7 +470,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
       .get();
 
     if (recent) {
-      return errorResponses.conflict(c, "A post with this title already exists for today");
+      throw new ApiError("A post with this title already exists for today", 409);
     }
 
     let slug = body.title
@@ -750,7 +750,7 @@ postsRouter.openapi(approvePostRoute, typedHandler<typeof approvePostRoute>(asyn
 
     const result = await approvePost(c, slug);
     if (!result.success) {
-      return errorResponses.notFound(c, result.error || "Post");
+      throw new ApiError(result.error || "Post", 404);
     }
 
     return c.json({ success: true, warnings: result.warnings }, 200);
@@ -842,7 +842,7 @@ postsRouter.openapi(restorePostHistoryRoute, typedHandler<typeof restorePostHist
   const result = await restorePostFromHistory(c, slug, String(id), user?.email || "anonymous_admin");
 
   if (!result.success) {
-    return errorResponses.notFound(c, result.error || "History entry");
+    throw new ApiError(result.error || "History entry", 404);
   }
 
   return c.json({ success: true }, 200);

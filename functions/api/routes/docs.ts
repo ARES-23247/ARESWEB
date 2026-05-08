@@ -715,7 +715,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
 
   const valid = await verifyTurnstile(turnstileToken ?? "", c.env.TURNSTILE_SECRET_KEY, ip);
   if (!valid) {
-    return errorResponses.forbidden(c, "Security verification failed");
+    throw new ApiError("Security verification failed", 403);
   }
 
   if (comment && comment.length > 2000) {

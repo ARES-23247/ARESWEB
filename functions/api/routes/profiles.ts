@@ -177,10 +177,7 @@ profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (
     const body = c.req.valid("json");
     const validationResult = updateUserProfileSchema.safeParse(body);
     if (!validationResult.success) {
-      return c.json(
-        { error: "Invalid profile data: " + validationResult.error.issues.map((i) => i.message).join(", ") },
-        400
-      );
+      throw new ApiError("Invalid profile data: ", 400);
     }
 
     await upsertProfile(c, user.id, validationResult.data);
