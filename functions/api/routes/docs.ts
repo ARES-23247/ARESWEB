@@ -206,7 +206,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .all() as (DocWithAuthor | PartialDoc)[];
     }
 
-    const docs = results.map((d) => ({
+    const docs = results.map((d: any) => ({
       slug: String(d.slug),
       title: d.title ?? null,
       category: d.category ?? null,
@@ -226,7 +226,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
       original_author_avatar: ('original_author_avatar' in d ? d.original_author_avatar : undefined)
     }));
 
-    const response: GetDocsResponse = { docs };
+    const response = { docs } as GetDocsResponse;
     return c.json(response satisfies GetDocsResponse, 200);
 }));
 
@@ -711,7 +711,7 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
   const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
   const ua = c.req.header("User-Agent") ?? "unknown";
   const db = getDb(c);
-  if (!(await checkPersistentRateLimit(db, `feedback:${ip}`, ua, 10, 60))) return errorResponses.tooManyRequests(c);
+  if (!(await checkPersistentRateLimit(db, `feedback:${ip}`, ua, 10, 60))) throw new ApiError("Too many requests", 429, "RATE_LIMIT_EXCEEDED");
 
   const valid = await verifyTurnstile(turnstileToken ?? "", c.env.TURNSTILE_SECRET_KEY, ip);
   if (!valid) {
@@ -750,7 +750,7 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
       id: Number(h.id)
     }));
 
-    const response: GetHistoryResponse = { history };
+    const response = { history } as GetHistoryResponse;
     return c.json(response, 200);
 }));
 
@@ -953,7 +953,7 @@ docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRout
     }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
     if (!doc) {
-      return c.text("Doc not found", 404, { "Content-Type": "text/plain; charset=utf-8" });
+      throw new ApiError("Doc not found", 404, "NOT_FOUND");
     }
 
     // Convert Tiptap JSON to Markdown if needed

@@ -452,7 +452,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
     }
 
     const titleError = validateLength(body.title, MAX_INPUT_LENGTHS.title, "Title");
-    if (titleError) return errorResponses.badRequest(c, titleError);
+    if (titleError) throw new ApiError(titleError, 400, "VALIDATION_ERROR");
 
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_dashboard_user";
@@ -608,7 +608,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
 
     if (user?.role !== "admin") {
       if (!user) {
-        return errorResponses.unauthorized(c);
+        throw new ApiError("Unauthorized", 401);
       }
       const revSlug = await createShadowRevision(c, slug, user, {
         title: body.title,

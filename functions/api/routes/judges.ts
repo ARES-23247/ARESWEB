@@ -230,7 +230,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     const cacheKey = getPortfolioCacheKey();
     const cached = portfolioCache.get(cacheKey);
     if (cached && cached.expiresAt > now && cached.version === portfolioCacheVersion) {
-      return c.json(cached.data, 200);
+      return c.json(cached.data as any, 200);
     }
 
     const [portfolioDocs, outreach, awards, sponsors] = await Promise.all([
