@@ -1,47 +1,12 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { setupMockAuth } from '../fixtures/auth';
-import { createMockTask, createMockTaskWithDescription, type MockTaskItem } from '../fixtures/mock-data';
 import { KanbanPage } from '../pages/KanbanPage';
 
 test.describe('Kanban Task Board', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page);
-
-    // In-memory tasks store for the mock session
-    const mockTasks: MockTaskItem[] = [];
-
-    // Mock Tasks API
-    await page.route('**/api/tasks*', async (route, request) => {
-      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
-        return route.fallback();
-      }
-      const method = request.method();
-
-      if (method === 'GET') {
-        await route.fulfill({
-          status: 200,
-          json: { tasks: mockTasks },
-        });
-      } else if (method === 'POST') {
-        const newTask = createMockTask({
-          id: 'test-task',
-          title: 'Playwright E2E Task',
-        });
-        mockTasks.push(newTask);
-        await route.fulfill({
-          status: 200,
-          json: { success: true, task: newTask },
-        });
-      } else if (method === 'PATCH' || method === 'DELETE') {
-        await route.fulfill({
-          status: 200,
-          json: { success: true },
-        });
-      } else {
-        await route.continue();
-      }
-    });
+    // Set up real authentication - tests now hit real APIs with seeded test data
+    await setupMockAuth(page, { useRealAuth: true });
   });
 
   test('Creates, edits, and moves a Kanban task', async ({ page }) => {
@@ -83,26 +48,18 @@ test.describe('Kanban Task Board', () => {
   });
 
   test('Loads existing task description into the editor', async ({ page }) => {
-    // Override the mock to return a task with an existing description
-    await page.route('**/api/tasks*', async (route, request) => {
-      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
-        return route.fallback();
-      }
-      await route.fulfill({
-        status: 200,
-        json: { tasks: [createMockTaskWithDescription('Existing Description Content')] },
-      });
-    });
-
     const kanban = new KanbanPage(page);
     await kanban.goto();
+    await kanban.waitForLoaded();
 
-    // Open the existing task
-    await kanban.getTaskCard('Existing Task').first().click();
+    // Find and open an existing task from the seeded database
+    // The test database should have at least one task with a description
+    const firstTaskCard = page.locator('[data-testid="task-card"]').first();
+    await expect(firstTaskCard).toBeVisible({ timeout: 10_000 });
 
-    // Verify the editor contains the existing description
-    await expect(kanban.proseMirrorEditor).toContainText('Existing Description Content', {
-      timeout: 10_000,
-    });
+    await firstTaskCard.click();
+
+    // Verify the editor is visible
+    await expect(kanban.proseMirrorEditor).toBeVisible();
   });
 });

@@ -15,77 +15,7 @@ test.describe('Collaboration', () => {
     page.on('console', (msg) => console.log('BROWSER CONSOLE:', msg.text()));
     page.on('pageerror', (err) => console.log('BROWSER ERROR:', err.message));
 
-    await setupMockAuth(page);
-
-    // Mock Posts API to return sample content
-    await page.route('**/api/posts/admin/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          post: {
-            slug: 'test-post',
-            title: 'Collaboration Test',
-            ast: '{"type":"doc","content":[{"type":"paragraph"}]}',
-            thumbnail: '',
-            published_at: '',
-            season_id: null,
-          },
-        },
-      });
-    });
-
-    // Mock Docs API to return sample content
-    await page.route('**/api/docs/admin/**/detail', async (route) => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          doc: {
-            id: 'test-doc',
-            title: 'Test Doc',
-            ast: '{"type":"doc","content":[{"type":"paragraph"}]}',
-          },
-        },
-      });
-    });
-
-    // Mock Events API to return sample content
-    await page.route('**/api/events/admin/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          event: {
-            id: 'test-event-id',
-            title: 'Test Event',
-            description: '{"type":"doc","content":[{"type":"paragraph"}]}',
-          },
-        },
-      });
-    });
-
-    // Mock Tasks API to return sample content
-    await page.route('**/api/tasks*', async (route) => {
-      if (route.request().resourceType() !== 'fetch' && route.request().resourceType() !== 'xhr') {
-        return route.fallback();
-      }
-      await route.fulfill({
-        status: 200,
-        json: {
-          tasks: [
-            {
-              id: 'test-task-id',
-              title: 'Test Task',
-              description: '{"type":"doc","content":[{"type":"paragraph"}]}',
-              status: 'todo',
-              priority: 'normal',
-              sort_order: 0,
-              created_by: 'admin-user',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ],
-        },
-      });
-    });
+    await setupMockAuth(page, { useRealAuth: true });
   });
 
   test('INT-01: All editors display Live badge when connected', async ({ page }) => {
@@ -120,23 +50,7 @@ test.describe('Collaboration', () => {
 
     // Setup auth and routes for both contexts
     for (const contextPage of [user1Page, user2Page]) {
-      await setupMockAuth(contextPage);
-
-      await contextPage.route('**/api/posts/admin/**', async (route) => {
-        await route.fulfill({
-          status: 200,
-          json: {
-            post: {
-              slug: 'test-post',
-              title: 'Collaboration Test',
-              ast: '{"type":"doc","content":[{"type":"paragraph"}]}',
-              thumbnail: '',
-              published_at: '',
-              season_id: null,
-            },
-          },
-        });
-      });
+      await setupMockAuth(contextPage, { useRealAuth: true });
     }
 
     const dashboard1 = new DashboardPage(user1Page);
@@ -160,21 +74,7 @@ test.describe('Collaboration', () => {
   });
 
   test('INT-03: Document editor persists after reload', async ({ page }) => {
-    await setupMockAuth(page);
-
-    // Mock Docs API for persistence test
-    await page.route('**/api/docs/admin/persistence-test/detail', async (route) => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          doc: {
-            id: 'persistence-test',
-            title: 'Persistence Test',
-            ast: '{"type":"doc","content":[{"type":"paragraph"}]}',
-          },
-        },
-      });
-    });
+    await setupMockAuth(page, { useRealAuth: true });
 
     const dashboard = new DashboardPage(page);
 

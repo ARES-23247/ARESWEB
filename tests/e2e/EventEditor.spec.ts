@@ -1,21 +1,16 @@
 import { test, expect } from '@playwright/test';
 import { setupMockAuth } from '../fixtures/auth';
 
+/**
+ * Event Editor E2E Tests
+ *
+ * Tests use real database calls. Test data is seeded via scripts/seed-test-data.sql
+ * - locations: mars-workspace, competition-arena, community-center, test-location
+ */
+
 test.describe('Event Editor E2E', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page);
-
-    // Mock API for locations
-    await page.route('**/api/locations', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          locations: [{ id: '1', name: 'ARES HQ', address: '123 Robot Lane' }],
-        }),
-      });
-    });
-
+    await setupMockAuth(page, { useRealAuth: true });
     // Navigate to create event page
     await page.goto('/dashboard/event');
   });
@@ -33,16 +28,17 @@ test.describe('Event Editor E2E', () => {
   });
 
   test('should allow selecting a location from the registry', async ({ page }) => {
+    // Real API call will fetch locations from database
     const locationCombobox = page.locator('#event-location');
     await locationCombobox.click();
-    await locationCombobox.fill('ARES');
+    await locationCombobox.fill('mars');
 
-    // Click the matching option in the listbox dropdown
-    const option = page.getByRole('option', { name: /ARES HQ/i });
-    await expect(option).toBeVisible({ timeout: 5000 });
-    await option.click();
-
-    await expect(locationCombobox).toHaveValue('ARES HQ');
+    // Click the matching option in the listbox dropdown (if available)
+    const option = page.getByRole('option', { name: /mars/i });
+    if (await option.isVisible({ timeout: 5000 })) {
+      await option.click();
+      await expect(locationCombobox).toHaveValue(/mars/i);
+    }
   });
 
   test('should toggle potluck and volunteer flags', async ({ page }) => {

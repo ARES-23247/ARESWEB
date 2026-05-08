@@ -76,6 +76,8 @@ interface SetupMockAuthOptions {
   skipProfileMock?: boolean;
   /** Use real authentication instead of mocking (for remote testing) */
   useRealAuth?: boolean;
+  /** User role to authenticate as (for real auth) */
+  role?: string;
 }
 
 /**
@@ -96,6 +98,7 @@ export async function setupMockAuth(
   const userId = typeof options === 'string' ? options : options.userId ?? MOCK_ADMIN_USER.id;
   const skipProfileMock = typeof options === 'string' ? false : options.skipProfileMock ?? false;
   const useRealAuth = typeof options === 'string' ? false : (options.useRealAuth ?? isRemoteTesting());
+  const role = typeof options === 'string' ? undefined : options.role;
 
   // Set test flag
   await page.addInitScript(() => {
@@ -104,7 +107,7 @@ export async function setupMockAuth(
 
   // If using real auth, call test-login endpoint
   if (useRealAuth) {
-    await setupRealAuth(page, userId);
+    await setupRealAuth(page, userId, role);
     return;
   }
 
@@ -143,18 +146,25 @@ export async function setupMockAuth(
  *
  * @param page - Playwright page object
  * @param userId - User ID to authenticate as
+ * @param role - User role (for looking up seeded test users)
  */
-async function setupRealAuth(page: Page, userId: string): Promise<void> {
+async function setupRealAuth(page: Page, userId: string, role?: string): Promise<void> {
   const baseUrl = process.env.PREVIEW_URL || 'http://localhost:5173';
   const testLoginUrl = `${baseUrl}/api/auth/test-login`;
 
   try {
+    // Map role to test user ID if specified
+    let testUserId = userId;
+    if (role === 'author') {
+      testUserId = 'test-user-author'; // Should exist in seeded data
+    }
+
     // Call test-login endpoint to get session
     const response = await page.context().request.post(testLoginUrl, {
       headers: {
         'x-test-bypass-auth': 'true', // Enable test mode
       },
-      data: { userId },
+      data: { userId: testUserId },
     });
 
     if (!response.ok()) {
