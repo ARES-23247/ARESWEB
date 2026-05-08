@@ -82,8 +82,8 @@ interface SetupMockAuthOptions {
  * Sets up mocked authentication for a Playwright page.
  * This eliminates the ~60 lines of duplicated auth mocking across test files.
  *
- * When useRealAuth is true (or in remote testing mode), skips mocking and
- * relies on the test being authenticated via other means (e.g., Cloudflare Access).
+ * When useRealAuth is true (or in remote testing mode), calls the test-login
+ * endpoint to get a real session token from the deployed backend.
  *
  * @param page - Playwright page object
  * @param options - Configuration options
@@ -97,12 +97,14 @@ export async function setupMockAuth(
   const skipProfileMock = typeof options === 'string' ? false : options.skipProfileMock ?? false;
   const useRealAuth = typeof options === 'string' ? false : (options.useRealAuth ?? isRemoteTesting());
 
-  // If using real auth, skip all mocking
+  // Set test flag
+  await page.addInitScript(() => {
+    Object.assign(window, { __PLAYWRIGHT_TEST__: true });
+  });
+
+  // If using real auth, call test-login endpoint
   if (useRealAuth) {
-    // Set flag to indicate we're in testing mode but using real auth
-    await page.addInitScript(() => {
-      Object.assign(window, { __PLAYWRIGHT_TEST__: true, __REAL_AUTH__: true });
-    });
+    await setupRealAuth(page, userId);
     return;
   }
 
@@ -133,11 +135,69 @@ export async function setupMockAuth(
       path: '/',
     },
   ]);
+}
 
-  // Set flag to bypass client-side checks
-  await page.addInitScript(() => {
-    Object.assign(window, { __PLAYWRIGHT_TEST__: true });
-  });
+/**
+ * Sets up real authentication by calling the test-login endpoint.
+ * This creates a real session in the database and sets the auth cookie.
+ *
+ * @param page - Playwright page object
+ * @param userId - User ID to authenticate as
+ */
+async function setupRealAuth(page: Page, userId: string): Promise<void> {
+  const baseUrl = process.env.PREVIEW_URL || 'http://localhost:5173';
+  const testLoginUrl = `${baseUrl}/api/auth/test-login`;
+
+  try {
+    // Call test-login endpoint to get session
+    const response = await page.context().request.post(testLoginUrl, {
+      headers: {
+        'x-test-bypass-auth': 'true', // Enable test mode
+      },
+      data: { userId },
+    });
+
+    if (!response.ok()) {
+      throw new Error(`Test login failed: ${response.status()} ${await response.text()}`);
+    }
+
+    const data = await response.json() as {
+      success: boolean;
+      user: { id: string; name: string; email: string; role: string };
+      sessionToken: string;
+    };
+
+    if (!data.success || !data.sessionToken) {
+      throw new Error('Test login did not return session token');
+    }
+
+    // Set the session cookie from the response
+    const urlObj = new URL(baseUrl);
+    const cookieDomain = urlObj.hostname;
+    const isSecure = baseUrl.startsWith('https://');
+
+    await page.context().addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: data.sessionToken,
+        domain: cookieDomain || (baseUrl.match(/:\/\/([^\/]+)/)?.[1] || 'localhost'),
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax' as const,
+        secure: isSecure,
+      },
+    ]);
+
+    // Set real auth flag
+    await page.addInitScript(() => {
+      Object.assign(window, { __REAL_AUTH__: true });
+    });
+
+    console.log(`[Auth] Real auth setup for user: ${data.user.email} (${data.user.role})`);
+  } catch (error) {
+    console.error('[Auth] Failed to set up real auth:', error);
+    throw error;
+  }
 }
 
 /**

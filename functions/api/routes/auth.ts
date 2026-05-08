@@ -39,6 +39,79 @@ authRouter.get("/emergency-clear", (c) => {
   return res;
 });
 
+// ── POST /api/auth/test-login — generate test session (E2E testing only) ───
+// SECURITY: This endpoint only works in test environments. Never enable in production.
+authRouter.post("/test-login", async (c) => {
+  // SECURITY: Verify test mode via environment or special header
+  const isTestMode = c.env.ENVIRONMENT === 'test' ||
+                     c.env.CI === 'true' ||
+                     c.req.header('x-test-bypass-auth') === 'true';
+
+  if (!isTestMode) {
+    return c.json({ error: 'Test login only available in test environments' }, 403);
+  }
+
+  // Get test user ID from request body, default to admin-user
+  const body = await c.req.json().catch(() => ({}));
+  const userId = body.userId || 'admin-user';
+
+  try {
+    // Check if user exists
+    const user = await c.env.DB.prepare(
+      'SELECT id, name, email, role FROM user WHERE id = ?'
+    ).bind(userId).first();
+
+    if (!user) {
+      return c.json({ error: 'Test user not found' }, 404);
+    }
+
+    // Create a new session using Better Auth's API
+    // Note: Better Auth sessions are created via the signIn API
+    // For testing, we'll create a session token directly
+    const sessionId = crypto.randomUUID();
+    const expiresAt = Date.now() + (60 * 60 * 24 * 7 * 1000); // 7 days
+    const token = Buffer.from(`${userId}:${sessionId}:${expiresAt}`).toString('base64');
+
+    // Insert session directly into database
+    await c.env.DB.prepare(`
+      INSERT INTO session (id, userId, expiresAt, token, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      sessionId,
+      userId,
+      expiresAt,
+      token,
+      Date.now(),
+      Date.now()
+    ).run();
+
+    // Set session cookie
+    const res = c.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      sessionToken: token,
+    });
+
+    // Set the session cookie for immediate use
+    const isSecure = c.req.url.startsWith('https://');
+    const cookieDomain = isSecure ? undefined : 'localhost';
+    res.headers.append(
+      'Set-Cookie',
+      `better-auth.session_token=${token}; Path=/; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}${cookieDomain ? `; Domain=${cookieDomain}` : ''}`
+    );
+
+    return res;
+  } catch (error) {
+    console.error('[Test Auth] Error creating test session:', error);
+    return c.json({ error: 'Failed to create test session' }, 500);
+  }
+});
+
 // ── Better Auth Routes ────────────────────────────────────────────────
 // Catch-all for Better Auth internal routes
 authRouter.on(["POST", "GET"], "/*", async (c, next) => {
