@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import postsRouter from "./posts";
 import { AppEnv } from "../middleware";
+import type { DbRows } from "../../test/testTypes";
 
 const mockExecutionContext = {
   waitUntil: vi.fn((promise: Promise<unknown>) => promise),
@@ -52,12 +53,44 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
-const createMockDb = () => {
+// Mock database types (same pattern as judges.test.ts)
+type MockFn = ReturnType<typeof vi.fn>;
+
+interface MockDbFunctions {
+  all: MockFn;
+  get: MockFn;
+  run: MockFn;
+  execute: MockFn;
+  executeTakeFirst: MockFn;
+  first: MockFn;
+  [key: string]: MockFn;
+}
+
+interface ChainableQuery {
+  select: MockFn & ChainableQuery;
+  from: MockFn & ChainableQuery;
+  where: MockFn & ChainableQuery;
+  insert: MockFn & ChainableQuery;
+  values: MockFn & ChainableQuery;
+  update: MockFn & ChainableQuery;
+  set: MockFn & ChainableQuery;
+  delete: MockFn & ChainableQuery;
+  limit: MockFn & ChainableQuery;
+  offset: MockFn & ChainableQuery;
+  orderBy: MockFn & ChainableQuery;
+  returning: MockFn & ChainableQuery;
+  transaction: MockFn;
+  [key: string]: MockFn | ChainableQuery | unknown;
+}
+
+type MockDb = MockDbFunctions & ChainableQuery;
+
+const createMockDb = (): MockDb => {
       const allFn = vi.fn().mockResolvedValue([]);
       const getFn = vi.fn().mockResolvedValue(null);
       const runFn = vi.fn().mockResolvedValue({ success: true });
 
-      const fns: Record<string, any> = {
+      const fns: MockDbFunctions = {
         all: allFn,
         get: getFn,
         run: runFn,
@@ -66,21 +99,21 @@ const createMockDb = () => {
         first: getFn
       };
 
-      const chainable: any = new Proxy(fns, {
+      const chainable = new Proxy(fns, {
         get: (target, prop) => {
           if (prop === 'then') {
-            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+            return (resolve: (value: DbRows) => unknown, reject: (reason?: unknown) => unknown) => Promise.resolve(fns.all()).then(resolve).catch(reject);
           }
           if (prop === 'catch') {
-            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+            return (reject: (reason?: unknown) => unknown) => Promise.resolve(fns.all()).catch(reject);
           }
           if (prop === 'finally') {
-            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+            return (cb: () => void) => Promise.resolve(fns.all()).finally(cb);
           }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
-                   get: (tTarget, tProp) => {
+                   get: (_tTarget: unknown, tProp: string | symbol) => {
                       if (tProp === 'findFirst') return fns.get;
                       if (tProp === 'findMany') return fns.all;
                       return vi.fn().mockReturnValue(chainable);
@@ -88,14 +121,14 @@ const createMockDb = () => {
                 })
              });
           }
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (prop in target) return target[prop as keyof MockDbFunctions];
+          if (prop === 'transaction') return vi.fn(async (cb: (tx: MockDb) => Promise<unknown>) => cb(chainable));
           if (typeof prop === 'symbol') return chainable;
-          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          (target[prop as string] as MockFn) = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
-      return chainable;
+      return chainable as MockDb;
     };;
 
 function createMockPost(overrides: Record<string, unknown> = {}) {
@@ -119,7 +152,7 @@ function createMockPost(overrides: Record<string, unknown> = {}) {
 
 describe("Hono Backend - /posts Router", () => {
   let app: Hono<AppEnv>;
-  let mockDb: ReturnType<typeof createMockDb>;
+  let mockDb: MockDb;
   let env: { DB: D1Database; ENVIRONMENT: string; DEV_BYPASS: string };
 
   beforeEach(() => {
@@ -133,8 +166,8 @@ describe("Hono Backend - /posts Router", () => {
 
     app = new Hono<AppEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", mockDb as any);
-      c.set("sessionUser", { id: "1", email: "admin@test.com", name: null, nickname: "Admin", image: null, role: "admin", member_type: "student" });
+      c.set("db", mockDb as never);
+      c.set("sessionUser", { id: "1", email: "admin@test.com", name: null, nickname: "Admin", image: null, role: "admin", member_type: "student" } as never);
       await next();
     });
     app.route("/", postsRouter);
@@ -229,7 +262,7 @@ describe("Hono Backend - /posts Router", () => {
   it("DELETE /admin/:slug/purge - permanent delete with storage", async () => {
     mockDb.get.mockResolvedValueOnce({ thumbnail: "https://r2.aresfirst.org/test.png" });
 
-    const storageEnv = { ...env, ARES_STORAGE: { delete: vi.fn().mockResolvedValue(true) } } as any;
+    const storageEnv = { ...env, ARES_STORAGE: { delete: vi.fn().mockResolvedValue(true) } } as typeof env & { ARES_STORAGE: { delete: MockFn } };
     const res = await app.request("/admin/test-post/purge", {
       method: "DELETE",
       body: JSON.stringify({}),
@@ -244,7 +277,7 @@ describe("Hono Backend - /posts Router", () => {
 
     const res = await app.request("/admin/test", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);
-    const body = await res.json() as any;
+    const body = await res.json() as { post: { season_id: number } };
     expect(body.post.season_id).toBe(5);
   });
 
