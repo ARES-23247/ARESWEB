@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { setupMockAuth } from '../fixtures/auth';
-import { TEST_TIMEOUTS, createMockLocations, type MockLocationItem } from '../fixtures/mock-data';
+import { TEST_TIMEOUTS, createMockLocations } from '../fixtures/mock-data';
 
 /**
  * E2E tests for Locations Manager dashboard route.
@@ -23,17 +23,17 @@ test.describe('Locations Manager', () => {
     await setupMockAuth(page);
 
     // Mock GET /api/locations/admin/list - List all locations
-    await page.route('**/api/locations/admin/list', async (route) => {
+    await page.route('**/api/locations/admin/list', async (_route) => {
       const mockLocations = createMockLocations();
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { locations: mockLocations },
       });
     });
 
     // Mock POST /api/locations/admin/save - Create or update a location
-    await page.route('**/api/locations/admin/save', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/locations/admin/save', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true, id: 'new-location' },
       });
@@ -41,20 +41,20 @@ test.describe('Locations Manager', () => {
 
     // Mock DELETE /api/locations/admin/:id - Delete a location
     await page.route('**/api/locations/admin/*', async (route) => {
-      const method = route.request().method();
-      if (method === 'DELETE') {
-        await route.fulfill({
+      const _method = route.request().method();
+      if (_method === 'DELETE') {
+        await _route.fulfill({
           status: 200,
           json: { success: true },
         });
       } else {
-        await route.continue();
+        await _route.continue();
       }
     });
 
     // Mock OpenStreetMap Nominatim API for address auto-suggest
-    await page.route('**/nominatim.openstreetmap.org/**', async (route) => {
-      await route.fulfill({
+    await page.route('**/nominatim.openstreetmap.org/**', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: [
           {
@@ -268,8 +268,8 @@ test.describe('Locations Manager', () => {
 
   test('LOCATIONS-09: Empty state displays when no locations exist', async ({ page }) => {
     // Override the mock to return empty locations list
-    await page.route('**/api/locations/admin/list', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/locations/admin/list', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { locations: [] },
       });
@@ -286,7 +286,7 @@ test.describe('Locations Manager', () => {
     const { createMockLocation: createTestLocation } = await import('../fixtures/mock-data');
 
     // Override the mock to include a deleted location
-    await page.route('**/api/locations/admin/list', async (route) => {
+    await page.route('**/api/locations/admin/list', async (_route) => {
       const mockLocations = [
         ...createMockLocations(),
         createTestLocation({
@@ -297,7 +297,7 @@ test.describe('Locations Manager', () => {
           is_deleted: 1,
         }),
       ];
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { locations: mockLocations },
       });
@@ -374,7 +374,7 @@ test.describe('Locations Manager', () => {
     const { createMockLocation: createTestLocation } = await import('../fixtures/mock-data');
 
     // Override the mock to include a deleted location
-    await page.route('**/api/locations/admin/list', async (route) => {
+    await page.route('**/api/locations/admin/list', async (_route) => {
       const mockLocations = [
         ...createMockLocations(),
         createTestLocation({
@@ -385,7 +385,7 @@ test.describe('Locations Manager', () => {
           is_deleted: 1,
         }),
       ];
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { locations: mockLocations },
       });
@@ -406,10 +406,10 @@ test.describe('Locations Manager', () => {
 
   test('LOCATIONS-14: Loading state displays while fetching locations', async ({ page }) => {
     // Mock a slow response
-    await page.route('**/api/locations/admin/list', async (route) => {
+    await page.route('**/api/locations/admin/list', async (_route) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       const mockLocations = createMockLocations();
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { locations: mockLocations },
       });

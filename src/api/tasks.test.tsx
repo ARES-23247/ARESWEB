@@ -22,7 +22,19 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  tasks: {
+    $get: ReturnType<typeof vi.fn>;
+    $post: ReturnType<typeof vi.fn>;
+    ":id": {
+      $patch: ReturnType<typeof vi.fn>;
+      $delete: ReturnType<typeof vi.fn>;
+    };
+    reorder: {
+      $patch: ReturnType<typeof vi.fn>;
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -95,7 +107,7 @@ describe("Tasks API", () => {
         description: "Task description",
         status: "todo",
         priority: "normal",
-      } as any);
+      } as tasksApi.CreateTaskRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.tasks.$post).toHaveBeenCalledWith({
@@ -119,7 +131,7 @@ describe("Tasks API", () => {
       result.current.mutate({
         title: "Team Task",
         assignees: ["user1", "user2"],
-      } as any);
+      } as tasksApi.CreateTaskRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.tasks.$post).toHaveBeenCalledWith({
@@ -137,7 +149,7 @@ describe("Tasks API", () => {
 
       const { result } = renderHook(() => tasksApi.useCreateTask(), { wrapper });
 
-      result.current.mutate({ title: "Test" } as any);
+      result.current.mutate({ title: "Test" } as tasksApi.CreateTaskRequest);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -154,7 +166,7 @@ describe("Tasks API", () => {
       result.current.mutate({
         id: "task-123",
         updates: { status: "done", priority: "urgent" },
-      } as any);
+      } as { id: string; updates: tasksApi.UpdateTaskRequest });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.tasks[":id"].$patch).toHaveBeenCalledWith({
@@ -173,7 +185,7 @@ describe("Tasks API", () => {
       result.current.mutate({
         id: "task-123",
         updates: { sort_order: 5 },
-      } as any);
+      } as { id: string; updates: tasksApi.UpdateTaskRequest });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.tasks[":id"].$patch).toHaveBeenCalledWith({
@@ -191,7 +203,7 @@ describe("Tasks API", () => {
 
       const { result } = renderHook(() => tasksApi.useDeleteTask(), { wrapper });
 
-      result.current.mutate("task-123" as any);
+      result.current.mutate("task-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.tasks[":id"].$delete).toHaveBeenCalledWith({
@@ -206,7 +218,7 @@ describe("Tasks API", () => {
 
       const { result } = renderHook(() => tasksApi.useDeleteTask(), { wrapper });
 
-      result.current.mutate("task-123" as any);
+      result.current.mutate("task-123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -225,7 +237,7 @@ describe("Tasks API", () => {
 
       const { result } = renderHook(() => tasksApi.useReorderTasks(), { wrapper });
 
-      result.current.mutate({ items: reorderItems } as any);
+      result.current.mutate({ items: reorderItems } as tasksApi.ReorderTasksRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.tasks.reorder.$patch).toHaveBeenCalledWith({
@@ -240,7 +252,7 @@ describe("Tasks API", () => {
 
       const { result } = renderHook(() => tasksApi.useReorderTasks(), { wrapper });
 
-      result.current.mutate({ items: [] } as any);
+      result.current.mutate({ items: [] } as tasksApi.ReorderTasksRequest);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

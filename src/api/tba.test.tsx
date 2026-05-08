@@ -23,7 +23,7 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as typeof honoClient.client;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>

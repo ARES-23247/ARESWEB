@@ -28,7 +28,25 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  "social-queue": {
+    $get: ReturnType<typeof vi.fn>;
+    $post: ReturnType<typeof vi.fn>;
+    calendar: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    ":id": {
+      $patch: ReturnType<typeof vi.fn>;
+      $delete: ReturnType<typeof vi.fn>;
+      "send-now": {
+        $post: ReturnType<typeof vi.fn>;
+      };
+    };
+    analytics: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -137,13 +155,13 @@ describe("Social Queue API", () => {
 
       const { result } = renderHook(() => socialQueueApi.useCreateSocialPost(), { wrapper });
 
-      const postData = {
+      const postData: socialQueueApi.CreateSocialPostRequest = {
         content: "New post",
         scheduled_for: "2024-01-01T12:00:00Z",
         platforms: { twitter: true, instagram: false },
       };
 
-      result.current.mutate(postData as any);
+      result.current.mutate(postData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -160,7 +178,7 @@ describe("Social Queue API", () => {
         content: "New post",
         scheduled_for: "2024-01-01T12:00:00Z",
         platforms: {},
-      } as any);
+      } as socialQueueApi.CreateSocialPostRequest);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -184,7 +202,7 @@ describe("Social Queue API", () => {
         content: "New post",
         scheduled_for: "2024-01-01T12:00:00Z",
         platforms: {},
-      } as any);
+      } as socialQueueApi.CreateSocialPostRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["social-queue"] });
@@ -200,7 +218,7 @@ describe("Social Queue API", () => {
 
       const { result } = renderHook(() => socialQueueApi.useUpdateSocialPost(), { wrapper });
 
-      result.current.mutate({ id: "123", updates: { content: "Updated post" } } as any);
+      result.current.mutate({ id: "123", updates: { content: "Updated post" } });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient["social-queue"][":id"].$patch).toHaveBeenCalledWith({
@@ -216,7 +234,7 @@ describe("Social Queue API", () => {
 
       const { result } = renderHook(() => socialQueueApi.useUpdateSocialPost(), { wrapper });
 
-      result.current.mutate({ id: "123", updates: { status: "cancelled" } } as any);
+      result.current.mutate({ id: "123", updates: { status: "cancelled" } });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -231,7 +249,7 @@ describe("Social Queue API", () => {
 
       const { result } = renderHook(() => socialQueueApi.useDeleteSocialPost(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient["social-queue"][":id"].$delete).toHaveBeenCalledWith({
@@ -246,7 +264,7 @@ describe("Social Queue API", () => {
 
       const { result } = renderHook(() => socialQueueApi.useDeleteSocialPost(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -261,7 +279,7 @@ describe("Social Queue API", () => {
 
       const { result } = renderHook(() => socialQueueApi.useSendSocialPostNow(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient["social-queue"][":id"]["send-now"].$post).toHaveBeenCalledWith({
@@ -276,7 +294,7 @@ describe("Social Queue API", () => {
 
       const { result } = renderHook(() => socialQueueApi.useSendSocialPostNow(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);

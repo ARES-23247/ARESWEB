@@ -57,19 +57,18 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 6.9 (Type Safety Debt Elimination)** — Achieved 100% compile-time type safety by creating `typedHandler` wrappers, unifying frontend API types, and eliminating all `as any` and `eslint-disable` bypasses.
 
 ### Active
+- **Milestone 7.3 (Full ESLint Sanitization)** — Resolving 364 pre-existing ESLint problems (errors and warnings) to achieve a zero-problem build state.
 
-None — all tracked milestones completed.
+## Current Milestone: v7.3 Full Codebase ESLint Sanitization
 
-## Current Milestone: Maintenance Mode
-
-**Status**: All major migrations complete. Drizzle ORM fully adopted, ESLint at 0 errors/warnings, E2E and accessibility tests passing.
+**Status**: Planning phases 64-68. TSC at 0 errors, ESLint at 364 problems.
 
 **Quality Metrics**:
-- ESLint: 0 errors, 0 warnings
+- ESLint: 364 problems (282 errors, 82 warnings)
 - Unit Tests: 834+ passing
 - Playwright E2E: 55/55 passing
 - Pa11y Accessibility: 16/16 URLs passing
-- TypeScript: Full type safety (no `any` bypasses)
+- TypeScript: 0 errors (TSC)
 
 **Goal**: Complete the migration of ARESWEB backend persistence from Kysely to Drizzle ORM to achieve full type safety and architectural stability.
 

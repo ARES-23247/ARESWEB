@@ -274,8 +274,8 @@ describe('JSON utility helpers', () => {
 
     it('roundtrips an array correctly', () => {
       const original = [1, 2, 3, 'four', { five: 5 }];
-      const stringified = safeJSONStringify(original);
-      const parsed = safeJSONParse<typeof original>(stringified, []);
+      const _stringified = safeJSONStringify(original);
+      const parsed = safeJSONParse<typeof original>(_stringified, []);
       expect(parsed).toEqual(original);
     });
 
@@ -289,7 +289,7 @@ describe('JSON utility helpers', () => {
     it('handles empty array roundtrip', () => {
       const original: unknown[] = [];
       const stringified = safeJSONStringify(original);
-      const parsed = safeJSONParse(original, []);
+      const parsed = safeJSONParse(stringified, []);
       expect(parsed).toEqual(original);
     });
   });

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { setupMockAuth, shouldIgnoreConsoleError } from '../fixtures/auth';
-import { createMockTask, createMockTaskWithDescription, type MockTaskItem, TEST_TIMEOUTS } from '../fixtures/mock-data';
+import { createMockTaskWithDescription, type MockTaskItem, TEST_TIMEOUTS } from '../fixtures/mock-data';
 import { DashboardPage } from '../pages/DashboardPage';
 
 /**
@@ -44,8 +44,8 @@ test.describe('Task Detail Page', () => {
     await setupMockAuth(page);
 
     // Mock tasks list API (required by TaskDetailPage to find the task)
-    await page.route('**/api/tasks*', async (route, request) => {
-      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
+    await page.route('**/api/tasks*', async (route, _request) => {
+      if (_request.resourceType() !== 'fetch' && _request.resourceType() !== 'xhr') {
         return route.fallback();
       }
       const method = request.method();
@@ -73,8 +73,8 @@ test.describe('Task Detail Page', () => {
     });
 
     // Mock users API (for assignee picker)
-    await page.route('**/api/users/admin/list*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/users/admin/list*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           users: MOCK_TEAM_MEMBERS,
@@ -88,8 +88,8 @@ test.describe('Task Detail Page', () => {
     await page.goto(`/dashboard/tasks/${MOCK_TASK_ID}`);
 
     // Verify the page loads
-    const response = page.response();
-    expect(response?.status()).toBeLessThan(400);
+    const _response = page.response();
+    expect(_response?.status()).toBeLessThan(400);
 
     // Verify task title is displayed
     const taskTitle = page.getByRole('textbox', { name: 'Task Title' });
@@ -279,11 +279,11 @@ test.describe('Task Detail Page', () => {
       status: 'in_progress',
     };
 
-    await page.route('**/api/tasks*', async (route, request) => {
-      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
+    await page.route('**/api/tasks*', async (route, _request) => {
+      if (_request.resourceType() !== 'fetch' && _request.resourceType() !== 'xhr') {
         return route.fallback();
       }
-      if (request.method() === 'GET') {
+      if (_request.method() === 'GET') {
         await route.fulfill({
           status: 200,
           json: { tasks: [overdueTask] },
@@ -301,11 +301,11 @@ test.describe('Task Detail Page', () => {
 
   test('should handle missing task gracefully', async ({ page }) => {
     // Mock empty tasks list
-    await page.route('**/api/tasks*', async (route, request) => {
-      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
+    await page.route('**/api/tasks*', async (route, _request) => {
+      if (_request.resourceType() !== 'fetch' && _request.resourceType() !== 'xhr') {
         return route.fallback();
       }
-      if (request.method() === 'GET') {
+      if (_request.method() === 'GET') {
         await route.fulfill({
           status: 200,
           json: { tasks: [] },
@@ -328,11 +328,11 @@ test.describe('Task Detail Page', () => {
   test('should load task with ProseMirror-formatted description', async ({ page }) => {
     const taskWithRichDescription = createMockTaskWithDescription('This is a rich text description with formatting.');
 
-    await page.route('**/api/tasks*', async (route, request) => {
-      if (request.resourceType() !== 'fetch' && request.resourceType() !== 'xhr') {
+    await page.route('**/api/tasks*', async (route, _request) => {
+      if (_request.resourceType() !== 'fetch' && _request.resourceType() !== 'xhr') {
         return route.fallback();
       }
-      if (request.method() === 'GET') {
+      if (_request.method() === 'GET') {
         await route.fulfill({
           status: 200,
           json: { tasks: [taskWithRichDescription] },

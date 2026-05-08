@@ -81,7 +81,6 @@ export function useSaveLocation(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["locations"] });
       queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -102,7 +101,6 @@ export function useDeleteLocation(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["locations"] });
       queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

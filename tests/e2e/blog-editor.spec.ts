@@ -19,8 +19,8 @@ test.describe('Blog Editor Dashboard Route', () => {
     await setupMockAuth(page);
 
     // Mock admin settings for social syndication options
-    await page.route('**/api/settings/admin/settings*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/settings/admin/settings*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           settings: {
@@ -33,8 +33,8 @@ test.describe('Blog Editor Dashboard Route', () => {
     });
 
     // Mock seasons for season picker
-    await page.route('**/api/seasons*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/seasons*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           seasons: [
@@ -60,16 +60,16 @@ test.describe('Blog Editor Dashboard Route', () => {
     });
 
     // Mock Zulip presence to avoid network errors affecting a11y scans
-    await page.route('**/api/zulip/presence', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/zulip/presence', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true, presence: {}, userNames: {} },
       });
     });
 
     // Mock analytics admin stats
-    await page.route('**/api/analytics/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/analytics/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           posts: 10,
@@ -616,14 +616,6 @@ test.describe('Blog Editor Dashboard Route', () => {
       );
 
       if (await uploadButton.isVisible({ timeout: 2000 })) {
-        // Create a minimal file for upload
-        const fileBuffer = Buffer.from([
-          0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, // PNG signature
-          0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-          0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-          0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-        ]);
-
         // Note: Actual file upload handling depends on the implementation
         await expect(uploadButton).toBeVisible();
       }

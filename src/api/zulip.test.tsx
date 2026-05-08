@@ -30,7 +30,27 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  zulip: {
+    presence: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    message: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    topic: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    invites: {
+      audit: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+      send: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -109,7 +129,7 @@ describe("Zulip API", () => {
         stream: "general",
         topic: "Test Topic",
         content: "Test message",
-      } as any);
+      });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.zulip.message.$post).toHaveBeenCalledWith({
@@ -132,7 +152,7 @@ describe("Zulip API", () => {
         stream: "general",
         topic: "Test Topic",
         content: "Test message",
-      } as any);
+      });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -156,7 +176,7 @@ describe("Zulip API", () => {
         stream: "general",
         topic: "Test Topic",
         content: "Test message",
-      } as any);
+      });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["zulip"] });
@@ -265,7 +285,7 @@ describe("Zulip API", () => {
 
       const { result } = renderHook(() => zulipApi.useInviteUsers(), { wrapper });
 
-      result.current.mutate({ emails: ["user1@example.com", "user2@example.com"] } as any);
+      result.current.mutate({ emails: ["user1@example.com", "user2@example.com"] });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.zulip.invites.send.$post).toHaveBeenCalledWith({
@@ -280,7 +300,7 @@ describe("Zulip API", () => {
 
       const { result } = renderHook(() => zulipApi.useInviteUsers(), { wrapper });
 
-      result.current.mutate({ emails: ["user1@example.com"] } as any);
+      result.current.mutate({ emails: ["user1@example.com"] });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -300,7 +320,7 @@ describe("Zulip API", () => {
 
       const { result } = renderHook(() => zulipApi.useInviteUsers(), { wrapper: customWrapper });
 
-      result.current.mutate({ emails: ["user1@example.com"] } as any);
+      result.current.mutate({ emails: ["user1@example.com"] });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["zulip"] });

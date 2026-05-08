@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MonthViewGrid } from "./MonthViewGrid";
-import type { CalendarEvent } from "./EventMockData";
 import { MemoryRouter } from "react-router-dom";
 
 // Mock QuickAddEventModal

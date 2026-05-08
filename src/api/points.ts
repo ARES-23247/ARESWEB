@@ -77,7 +77,6 @@ export function useAwardPoints(
       queryClient.invalidateQueries({ queryKey: ["points", "balance", variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ["points", "history", variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      (options?.onSuccess as any)?.(_data, variables);
     }
   });
 }

@@ -1,19 +1,20 @@
-# Milestone v7.1 Requirements
+# Milestone v7.3 — Full Codebase ESLint Sanitization
 
-**Goal**: Complete the migration of ARESWEB backend persistence from legacy Kysely syntax to Drizzle ORM to achieve full type safety and architectural stability.
+## Goal
+Achieve a zero-error and zero-warning ESLint state across the entire ARESWEB codebase (Next.js frontend, Hono backend, and E2E tests).
 
-### Drizzle Core Migration
-- [ ] **MIGRATE-01**: Refactor `tasks`, `store`, `sponsors`, `socialQueue`, `sitemap`, and `simulations` routes to Drizzle ORM (Batch 2).
-- [ ] **MIGRATE-02**: Refactor `zulip`, `zulipWebhook`, `users`, `seasons`, `settings`, and any remaining backend routes to Drizzle ORM (Batch 3).
-- [ ] **MIGRATE-03**: Remove all legacy Kysely querying logic (`db.selectFrom`, `execute`, `executeTakeFirst`) from `functions/api/routes`.
+## Acceptance Criteria
+- [ ] `npm run lint` returns 0 problems.
+- [ ] No remaining `@typescript-eslint/no-unused-vars` errors in source or test files.
+- [ ] No remaining `@typescript-eslint/no-explicit-any` errors (except where explicitly justified and documented).
+- [ ] All `eslint-disable` comments reviewed and removed where the underlying issue can be fixed.
+- [ ] No regressions in runtime behavior or TypeScript compilation (`tsc --noEmit` must still pass).
 
-### Type Safety & Testing
-- [ ] **MIGRATE-04**: Update all backend unit test suites (`*.test.ts`) to mock the Drizzle ORM API (`all`, `run`, `get`) instead of Kysely.
-- [ ] **MIGRATE-05**: Replace the globally cast `c.get("db") as any` bypass with the strongly-typed Drizzle Cloudflare D1 Context once Kysely queries are eliminated.
-- [ ] **MIGRATE-06**: Ensure codebase integrity by passing `npx tsc --noEmit` and `npm run test`.
+## Out of Scope
+- Architectural refactoring that doesn't directly relate to linting errors.
+- New feature development.
 
-### Traceability
-- Phase 52: Batch 1 (Completed)
-- Phase 53: MIGRATE-01
-- Phase 54: MIGRATE-02, MIGRATE-03
-- Phase 55: MIGRATE-04, MIGRATE-05, MIGRATE-06
+## Verification Plan
+- `npm run lint` (Target: 0 problems)
+- `npx tsc --noEmit` (Target: 0 errors)
+- `npm test` (Target: 100% pass)

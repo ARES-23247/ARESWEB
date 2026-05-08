@@ -39,8 +39,8 @@ vi.mock("../api/middleware/utils", async (importOriginal) => {
 });
 
 import { emitNotification } from "./notifications";
-import { dispatchSocials } from "./socialSync";
-import { getSocialConfig } from "../api/middleware/utils";
+import { dispatchSocials as _dispatchSocials } from "./socialSync";
+import { getSocialConfig as _getSocialConfig } from "../api/middleware/utils";
 
 function createMockContext(overrides?: {
   insertResults?: unknown[];
@@ -447,7 +447,7 @@ describe("postHistory utilities", () => {
     });
 
     it("uses defaults for nullable fields", async () => {
-      const { mockCtx, mockDb } = createMockContext();
+      const { mockCtx, mockDb: _mockDb } = createMockContext();
 
       await captureHistory(
         mockCtx,
@@ -462,11 +462,11 @@ describe("postHistory utilities", () => {
         }
       );
 
-      expect(mockDb.insert).toHaveBeenCalled();
+      expect(_mockDb.insert).toHaveBeenCalled();
     });
 
     it("converts seasonId to number when provided", async () => {
-      const { mockCtx, mockDb } = createMockContext();
+      const { mockCtx, mockDb: _mockDb } = createMockContext();
 
       await captureHistory(
         mockCtx,
@@ -482,7 +482,7 @@ describe("postHistory utilities", () => {
         }
       );
 
-      expect(mockDb.insert).toHaveBeenCalled();
+      expect(_mockDb.insert).toHaveBeenCalled();
     });
   });
 
@@ -519,7 +519,7 @@ describe("postHistory utilities", () => {
     });
 
     it("returns empty array when no history exists", async () => {
-      const { mockCtx, mockDb, mockAll } = createMockContext({
+      const { mockCtx, mockDb: _mockDb, mockAll: _mockAll } = createMockContext({
         selectResults: [],
       });
 
@@ -575,7 +575,7 @@ describe("postHistory utilities", () => {
         seasonId: 2024,
       };
 
-      const { mockCtx, mockDb, mockGet, mockExecute } = createMockContext({
+      const { mockCtx, mockDb: _mockDb, mockGet, mockExecute } = createMockContext({
         selectResults: [historicalRecord, currentPost],
       });
 
@@ -612,7 +612,7 @@ describe("postHistory utilities", () => {
         seasonId: 2024,
       };
 
-      const { mockCtx, mockDb, mockGet, mockExecute } = createMockContext({
+      const { mockCtx, mockDb: _mockDb, mockGet, mockExecute } = createMockContext({
         selectResults: [historicalRecord, currentPost],
       });
 
@@ -624,12 +624,12 @@ describe("postHistory utilities", () => {
       );
 
       expect(mockGet).toHaveBeenCalled();
-      expect(mockDb.insert).toHaveBeenCalled();
+      expect(_mockDb.insert).toHaveBeenCalled();
       expect(mockExecute).toHaveBeenCalled();
     });
 
     it("returns error when historical record not found", async () => {
-      const { mockCtx, mockDb, mockGet } = createMockContext({
+      const { mockCtx, mockDb: _mockDb, mockGet } = createMockContext({
         selectResults: [],
       });
 
@@ -657,7 +657,7 @@ describe("postHistory utilities", () => {
         seasonId: null,
       };
 
-      const { mockCtx, mockDb, mockGet, mockExecute } = createMockContext({
+      const { mockCtx, mockDb: _mockDb, mockGet, mockExecute } = createMockContext({
         selectResults: [historicalRecord],
       });
 
@@ -711,7 +711,7 @@ describe("postHistory utilities", () => {
         seasonId: 2024,
       };
 
-      const { mockCtx, mockDb, mockGet, mockExecute } = createMockContext({
+      const { mockCtx, mockDb: _mockDb, mockGet, mockExecute } = createMockContext({
         selectResults: [shadowRevision],
       });
 
@@ -726,7 +726,7 @@ describe("postHistory utilities", () => {
     });
 
     it("returns error when post not found", async () => {
-      const { mockCtx, mockDb, mockGet } = createMockContext({
+      const { mockCtx, mockDb: _mockDb, mockGet } = createMockContext({
         selectResults: [],
       });
 

@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, wrapOnSuccess } from "./honoClient";
 import { eventResponseSchema, eventSignupSchema } from "@shared/routes/events";
 import { eventSchema, EventCategoryEnum } from "@shared/schemas/eventSchema";
 
@@ -141,11 +141,9 @@ export function useSubmitEventSignup(
       const response = await client.events[":id"].signups.$post({ param: { id: eventId }, json: body });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
+    ...wrapOnSuccess(options, (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-      (options?.onSuccess as any)?.(_data, variables);
-    }
+    })
   });
 }
 
@@ -156,16 +154,18 @@ export function useDeleteMyEventSignup(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, string>({
+  type MutationData = { success: boolean };
+  type MutationVariables = string;
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async (eventId: string) => {
       const response = await client.events[":id"].signups.$delete({ param: { id: eventId } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: (_data, eventId) => {
-      queryClient.invalidateQueries({ queryKey: ["event_signups", eventId] });
-      (options?.onSuccess as any)?.(_data, eventId);
-    }
+    ...wrapOnSuccess(options, (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["event_signups", variables] });
+    })
   });
 }
 
@@ -176,16 +176,18 @@ export function useUpdateMyEventAttendance(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, { eventId: string; attended: boolean }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, { eventId: string; attended: boolean }>({
+  type MutationData = { success: boolean };
+  type MutationVariables = { eventId: string; attended: boolean };
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async ({ eventId, attended }) => {
       const response = await client.events[":id"].signups.me.attendance.$patch({ param: { id: eventId }, json: { attended } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
+    ...wrapOnSuccess(options, (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-      (options?.onSuccess as any)?.(_data, variables);
-    }
+    })
   });
 }
 
@@ -235,17 +237,19 @@ export function useSaveEvent(
   options?: Omit<UseMutationOptions<{ success: boolean; id?: string; warning?: string }, Error, EventPayload>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean; id?: string; warning?: string }, Error, EventPayload>({
+  type MutationData = { success: boolean; id?: string; warning?: string };
+  type MutationVariables = EventPayload;
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async (body) => {
       const response = await client.events.admin.save.$post({ json: body });
       return unwrapResponse<{ success: boolean; id?: string; warning?: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      (options?.onSuccess as any)?.();
-    }
+    })
   });
 }
 
@@ -256,21 +260,23 @@ export function useUpdateEvent(
   options?: Omit<UseMutationOptions<{ success: boolean; id?: string; error?: string; warning?: string }, Error, { id: string; body: Partial<EventPayload> }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean; id?: string; error?: string; warning?: string }, Error, { id: string; body: Partial<EventPayload> }>({
+  type MutationData = { success: boolean; id?: string; error?: string; warning?: string };
+  type MutationVariables = { id: string; body: Partial<EventPayload> };
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async ({ id, body }) => {
       const response = await client.events.admin[":id"].$patch({ param: { id }, json: body });
       return unwrapResponse<{ success: boolean; id?: string; error?: string; warning?: string }>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
+    ...wrapOnSuccess(options, (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
       if (variables.id) {
         queryClient.invalidateQueries({ queryKey: ["event", variables.id] });
         queryClient.invalidateQueries({ queryKey: ["admin_event_detail", variables.id] });
       }
-      (options?.onSuccess as any)?.(_data, variables);
-    }
+    })
   });
 }
 
@@ -281,17 +287,19 @@ export function useDeleteEvent(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; deleteMode?: "single" | "following" }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, { id: string; deleteMode?: "single" | "following" }>({
+  type MutationData = { success: boolean };
+  type MutationVariables = { id: string; deleteMode?: "single" | "following" };
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async ({ id, deleteMode }) => {
       const response = await client.events.admin[":id"].$delete({ param: { id }, json: { deleteMode } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      (options?.onSuccess as any)?.();
-    }
+    })
   });
 }
 
@@ -302,17 +310,19 @@ export function useSyncEvents(
   options?: Omit<UseMutationOptions<{ success: boolean; count?: number }, Error, void>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean; count?: number }, Error, void>({
+  type MutationData = { success: boolean; count?: number };
+  type MutationVariables = void;
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async () => {
       const response = await client.events.admin.sync.$post();
       return unwrapResponse<{ success: boolean; count?: number }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      (options?.onSuccess as any)?.();
-    }
+    })
   });
 }
 
@@ -338,16 +348,18 @@ export function useApproveEvent(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, string>({
+  type MutationData = { success: boolean };
+  type MutationVariables = string;
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async (id) => {
       const response = await client.events.admin[":id"].approve.$post({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      (options?.onSuccess as any)?.();
-    }
+    })
   });
 }
 
@@ -358,16 +370,18 @@ export function useRejectEvent(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; reason?: string }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, { id: string; reason?: string }>({
+  type MutationData = { success: boolean };
+  type MutationVariables = { id: string; reason?: string };
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async ({ id, reason }) => {
       const response = await client.events.admin[":id"].reject.$post({ param: { id }, json: { reason } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      (options?.onSuccess as any)?.();
-    }
+    })
   });
 }
 
@@ -378,16 +392,18 @@ export function useUndeleteEvent(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, string>({
+  type MutationData = { success: boolean };
+  type MutationVariables = string;
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async (id) => {
       const response = await client.events.admin[":id"].restore.$post({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      (options?.onSuccess as any)?.();
-    }
+    })
   });
 }
 
@@ -398,16 +414,18 @@ export function usePurgeEvent(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, string>({
+  type MutationData = { success: boolean };
+  type MutationVariables = string;
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async (id) => {
       const response = await client.events.admin[":id"].purge.$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin_events"] });
-      (options?.onSuccess as any)?.();
-    }
+    })
   });
 }
 
@@ -433,15 +451,17 @@ export function useUpdateUserEventAttendance(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, { eventId: string; userId: string; attended: boolean }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, { eventId: string; userId: string; attended: boolean }>({
+  type MutationData = { success: boolean };
+  type MutationVariables = { eventId: string; userId: string; attended: boolean };
+  type MutationContext = unknown;
+
+  return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async ({ eventId, userId, attended }) => {
       const response = await client.events.admin[":id"].signups[":userId"].attendance.$patch({ param: { id: eventId, userId }, json: { attended } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
+    ...wrapOnSuccess(options, (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event_signups", variables.eventId] });
-      (options?.onSuccess as any)?.(_data, variables);
-    }
+    })
   });
 }

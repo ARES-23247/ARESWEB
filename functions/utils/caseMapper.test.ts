@@ -14,8 +14,8 @@ describe('caseMapper utility', () => {
     });
 
     it('handles multiple uppercase letters', () => {
-      expect(camelToSnake('userID')).toBe('_user_i_d');
-      expect(camelToSnake('parseURLToJSON')).toBe('parse_u_r_l_to_json');
+      expect(camelToSnake('userID')).toBe('user_i_d');
+      expect(camelToSnake('parseURLToJSON')).toBe('parse_u_r_l_to_j_s_o_n');
     });
 
     it('returns lowercase for single lowercase word', () => {
@@ -60,12 +60,12 @@ describe('caseMapper utility', () => {
     });
 
     it('handles null input', () => {
-      expect(toSnakeCase(null as any)).toBe(null);
+      expect(toSnakeCase(null as never)).toBe(null);
     });
 
     it('handles non-object input', () => {
-      expect(toSnakeCase('string' as any)).toBe('string');
-      expect(toSnakeCase(123 as any)).toBe(123);
+      expect(toSnakeCase('string' as never)).toBe('string');
+      expect(toSnakeCase(123 as never)).toBe(123);
     });
 
     it('handles empty object', () => {

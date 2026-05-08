@@ -15,6 +15,9 @@ export default defineConfig({
   use: {
     baseURL: process.env.CI ? 'http://127.0.0.1:8788' : 'http://localhost:5173',
     trace: 'on-first-retry',
+    // Force cleanup after each test to prevent memory buildup
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
   },
   projects: [
     {

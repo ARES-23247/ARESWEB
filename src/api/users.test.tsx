@@ -25,9 +25,32 @@ vi.mock("./honoClient", () => ({
     },
   },
   unwrapResponse: vi.fn(),
+  ApiError: class extends Error {
+    constructor(public status: number, message: string) {
+      super(message);
+      this.name = "ApiError";
+    }
+  },
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  users: {
+    admin: {
+      list: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+      ":id": {
+        $get: ReturnType<typeof vi.fn>;
+        $patch: ReturnType<typeof vi.fn>;
+        profile: {
+          $get: ReturnType<typeof vi.fn>;
+          $put: ReturnType<typeof vi.fn>;
+        };
+        $delete: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -134,7 +157,7 @@ describe("Users API", () => {
 
       const { result } = renderHook(() => usersApi.usePatchUser(), { wrapper });
 
-      result.current.mutate({ id: "123", role: "admin" } as any);
+      result.current.mutate({ id: "123", role: "admin" as usersApi.UserRole });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.users.admin[":id"].$patch).toHaveBeenCalledWith({
@@ -150,7 +173,7 @@ describe("Users API", () => {
 
       const { result } = renderHook(() => usersApi.usePatchUser(), { wrapper });
 
-      result.current.mutate({ id: "123", member_type: "student" } as any);
+      result.current.mutate({ id: "123", member_type: "student" as usersApi.UserMemberType });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.users.admin[":id"].$patch).toHaveBeenCalledWith({
@@ -166,7 +189,7 @@ describe("Users API", () => {
 
       const { result } = renderHook(() => usersApi.usePatchUser(), { wrapper });
 
-      result.current.mutate({ id: "123", role: "admin" } as any);
+      result.current.mutate({ id: "123", role: "admin" as usersApi.UserRole });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -186,7 +209,7 @@ describe("Users API", () => {
 
       const { result } = renderHook(() => usersApi.usePatchUser(), { wrapper: customWrapper });
 
-      result.current.mutate({ id: "123", role: "admin" } as any);
+      result.current.mutate({ id: "123", role: "admin" as usersApi.UserRole });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["users"] });
@@ -221,7 +244,7 @@ describe("Users API", () => {
 
       const { result } = renderHook(() => usersApi.useUpdateUserProfile(), { wrapper });
 
-      result.current.mutate({ id: "123", profile: mockProfile } as any);
+      result.current.mutate({ id: "123", profile: mockProfile });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.users.admin[":id"].profile.$put).toHaveBeenCalledWith({
@@ -239,7 +262,7 @@ describe("Users API", () => {
 
       const { result } = renderHook(() => usersApi.useDeleteUser(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.users.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -254,7 +277,7 @@ describe("Users API", () => {
 
       const { result } = renderHook(() => usersApi.useDeleteUser(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);

@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { setupMockAuth, MOCK_ADMIN_USER } from '../fixtures/auth';
-import { TEST_TIMEOUTS } from '../fixtures/mock-data';
+import { setupMockAuth } from '../fixtures/auth';
 import { DashboardPage } from '../pages/DashboardPage';
 
 /**
@@ -72,8 +71,8 @@ test.describe('Member Impact Dashboard', () => {
     dashboardPage = new DashboardPage(page);
 
     // Mock the roster stats API endpoint
-    await page.route('**/api/analytics/admin/roster-stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/analytics/admin/roster-stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: MOCK_ROSTER_DATA,
       });
@@ -212,8 +211,8 @@ test.describe('Member Impact Dashboard', () => {
 
   test('Empty roster handles gracefully with MVP sections hidden', async ({ page }) => {
     // Override mock to return empty roster
-    await page.route('**/api/analytics/admin/roster-stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/analytics/admin/roster-stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: EMPTY_ROSTER_DATA,
       });
@@ -234,8 +233,8 @@ test.describe('Member Impact Dashboard', () => {
 
   test('Error state displays fallback UI when API fails', async ({ page }) => {
     // Override mock to return error
-    await page.route('**/api/analytics/admin/roster-stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/analytics/admin/roster-stats*', async (_route) => {
+      await _route.fulfill({
         status: 500,
         json: { error: 'Internal server error' },
       });
@@ -274,8 +273,8 @@ test.describe('Member Impact Dashboard', () => {
 
   test('Access control redirects non-admin users', async ({ page }) => {
     // Setup mock auth with non-admin user
-    await page.route('**/api/auth/get-session', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/auth/get-session', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           session: {

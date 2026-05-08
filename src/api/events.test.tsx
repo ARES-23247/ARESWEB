@@ -3,6 +3,75 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
 import * as eventsApi from "./events";
+import type { EventPayload } from "./events";
+
+// Define types for the mocked client
+interface MockEventsClient {
+  $get: ReturnType<typeof vi.fn>;
+  ":id": {
+    $get: ReturnType<typeof vi.fn>;
+    signups: {
+      $get: ReturnType<typeof vi.fn>;
+      $post: ReturnType<typeof vi.fn>;
+      $delete: ReturnType<typeof vi.fn>;
+      me: {
+        attendance: {
+          $patch: ReturnType<typeof vi.fn>;
+        };
+      };
+    };
+    $patch: ReturnType<typeof vi.fn>;
+    $delete: ReturnType<typeof vi.fn>;
+  };
+  "calendar-settings": {
+    $get: ReturnType<typeof vi.fn>;
+  };
+  admin: {
+    list: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    ":id": {
+      $get: ReturnType<typeof vi.fn>;
+      $patch: ReturnType<typeof vi.fn>;
+      $delete: ReturnType<typeof vi.fn>;
+      approve: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      reject: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      restore: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      purge: {
+        $delete: ReturnType<typeof vi.fn>;
+      };
+      repush: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      signups: {
+        ":userId": {
+          attendance: {
+            $patch: ReturnType<typeof vi.fn>;
+          };
+        };
+      };
+    };
+    save: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    sync: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    "repair-calendar": {
+      $post: ReturnType<typeof vi.fn>;
+    };
+  };
+}
+
+interface MockHonoClient {
+  events: MockEventsClient;
+}
 
 // Mock the honoClient module
 vi.mock("./honoClient", () => ({
@@ -71,8 +140,19 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as MockHonoClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
+
+// Type aliases for mutation parameters (derived from the hook signatures)
+type SubmitEventSignupParams = Parameters<ReturnType<typeof eventsApi.useSubmitEventSignup>['mutate']>[0];
+type DeleteMyEventSignupParams = Parameters<ReturnType<typeof eventsApi.useDeleteMyEventSignup>['mutate']>[0];
+type UpdateMyEventAttendanceParams = Parameters<ReturnType<typeof eventsApi.useUpdateMyEventAttendance>['mutate']>[0];
+type SaveEventParams = Parameters<ReturnType<typeof eventsApi.useSaveEvent>['mutate']>[0];
+type UpdateEventParams = Parameters<ReturnType<typeof eventsApi.useUpdateEvent>['mutate']>[0];
+type DeleteEventParams = Parameters<ReturnType<typeof eventsApi.useDeleteEvent>['mutate']>[0];
+// type ApproveEventParams = Parameters<ReturnType<typeof eventsApi.useApproveEvent>['mutate']>[0];
+type RejectEventParams = Parameters<ReturnType<typeof eventsApi.useRejectEvent>['mutate']>[0];
+type UpdateUserEventAttendanceParams = Parameters<ReturnType<typeof eventsApi.useUpdateUserEventAttendance>['mutate']>[0];
 
 const createQueryClient = () =>
   new QueryClient({
@@ -191,7 +271,7 @@ describe("Events API", () => {
       result.current.mutate({
         eventId: "123",
         body: { bringing: "Chips", notes: "No nuts", prep_hours: 1 },
-      } as any);
+      } as SubmitEventSignupParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events[":id"].signups.$post).toHaveBeenCalledWith({
@@ -207,7 +287,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useSubmitEventSignup(), { wrapper });
 
-      result.current.mutate({ eventId: "123", body: {} } as any);
+      result.current.mutate({ eventId: "123", body: {} } as Parameters<ReturnType<typeof eventsApi.useSubmitEventSignup>['mutate']>[0]);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -221,7 +301,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useDeleteMyEventSignup(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123" as DeleteMyEventSignupParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events[":id"].signups.$delete).toHaveBeenCalledWith({
@@ -238,7 +318,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useUpdateMyEventAttendance(), { wrapper });
 
-      result.current.mutate({ eventId: "123", attended: true } as any);
+      result.current.mutate({ eventId: "123", attended: true } as UpdateMyEventAttendanceParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events[":id"].signups.me.attendance.$patch).toHaveBeenCalledWith({
@@ -269,17 +349,21 @@ describe("Events API", () => {
   describe("useSaveEvent", () => {
     it("should save event successfully", async () => {
       const mockResponse = { success: true, id: "new-event-123", warning: "" };
-      const eventData = {
+      const eventData: EventPayload = {
         title: "New Event",
-        start_date: "2024-01-01",
-        end_date: "2024-01-02",
-      } as never;
+        dateStart: "2024-01-01",
+        dateEnd: "2024-01-02",
+        category: "internal",
+        isPotluck: false,
+        isVolunteer: false,
+        meetingNotes: undefined,
+      };
       mockClient.events.admin.save.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => eventsApi.useSaveEvent(), { wrapper });
 
-      result.current.mutate(eventData as any);
+      result.current.mutate(eventData as SaveEventParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events.admin.save.$post).toHaveBeenCalledWith({
@@ -294,7 +378,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useSaveEvent(), { wrapper });
 
-      result.current.mutate({ title: "Test" } as never as any);
+      result.current.mutate({ title: "Test" } as SaveEventParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data?.warning).toBe("Event already exists");
@@ -309,7 +393,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useUpdateEvent(), { wrapper });
 
-      result.current.mutate({ id: "123", body: { title: "Updated Title" } } as any);
+      result.current.mutate({ id: "123", body: { title: "Updated Title" } } as UpdateEventParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events.admin[":id"].$patch).toHaveBeenCalledWith({
@@ -327,7 +411,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useDeleteEvent(), { wrapper });
 
-      result.current.mutate({ id: "123" } as any);
+      result.current.mutate({ id: "123" } as DeleteEventParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -343,7 +427,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useDeleteEvent(), { wrapper });
 
-      result.current.mutate({ id: "123", deleteMode: "following" } as any);
+      result.current.mutate({ id: "123", deleteMode: "following" } as DeleteEventParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -376,7 +460,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useApproveEvent(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123" as DeleteMyEventSignupParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events.admin[":id"].approve.$post).toHaveBeenCalledWith({
@@ -393,7 +477,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useRejectEvent(), { wrapper });
 
-      result.current.mutate({ id: "123", reason: "Duplicate event" } as any);
+      result.current.mutate({ id: "123", reason: "Duplicate event" } as RejectEventParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events.admin[":id"].reject.$post).toHaveBeenCalledWith({
@@ -411,7 +495,7 @@ describe("Events API", () => {
 
       const { result } = renderHook(() => eventsApi.useUpdateUserEventAttendance(), { wrapper });
 
-      result.current.mutate({ eventId: "123", userId: "user456", attended: true } as any);
+      result.current.mutate({ eventId: "123", userId: "user456", attended: true } as UpdateUserEventAttendanceParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.events.admin[":id"].signups[":userId"].attendance.$patch).toHaveBeenCalledWith({

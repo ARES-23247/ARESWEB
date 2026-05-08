@@ -30,7 +30,18 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as {
+  settings: {
+    admin: {
+      settings: { $get: ReturnType<typeof vi.fn>; $post: ReturnType<typeof vi.fn> };
+      stats: { $get: ReturnType<typeof vi.fn> };
+      backup: { $get: ReturnType<typeof vi.fn> };
+    };
+    public: {
+      settings: { $get: ReturnType<typeof vi.fn> };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -120,12 +131,12 @@ describe("Settings API", () => {
 
       const { result } = renderHook(() => settingsApi.useUpdateSettings(), { wrapper });
 
-      const newSettings = {
+      const newSettings: Record<string, string> = {
         github_token: "ghp_newtoken",
         zulip_bot_email: "newbot@example.com",
       };
 
-      result.current.mutate(newSettings as any);
+      result.current.mutate(newSettings);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -141,7 +152,7 @@ describe("Settings API", () => {
 
       const { result } = renderHook(() => settingsApi.useUpdateSettings(), { wrapper });
 
-      result.current.mutate({ github_token: "new" } as any);
+      result.current.mutate({ github_token: "new" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -161,7 +172,7 @@ describe("Settings API", () => {
 
       const { result } = renderHook(() => settingsApi.useUpdateSettings(), { wrapper: customWrapper });
 
-      result.current.mutate({ github_token: "new" } as any);
+      result.current.mutate({ github_token: "new" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["settings"] });

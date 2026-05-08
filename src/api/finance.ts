@@ -93,7 +93,6 @@ export function useSaveSponsorshipPipeline(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -114,7 +113,6 @@ export function useDeleteSponsorshipPipeline(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -158,7 +156,6 @@ export function useSaveFinanceTransaction(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "transactions"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -179,7 +176,6 @@ export function useDeleteFinanceTransaction(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", "transactions"] });
       queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

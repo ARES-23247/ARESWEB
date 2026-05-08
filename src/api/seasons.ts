@@ -117,7 +117,6 @@ export function useSaveSeason(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -138,7 +137,6 @@ export function useDeleteSeason(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -159,7 +157,6 @@ export function useUndeleteSeason(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -180,7 +177,6 @@ export function usePurgeSeason(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["admin-seasons"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

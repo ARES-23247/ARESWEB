@@ -32,7 +32,23 @@ vi.mock("./honoClient", () => ({
   },
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  profile: {
+    me: {
+      $get: ReturnType<typeof vi.fn>;
+      $put: ReturnType<typeof vi.fn>;
+    };
+    avatar: {
+      $put: ReturnType<typeof vi.fn>;
+    };
+    "team-roster": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    ":userId": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -95,7 +111,7 @@ describe("Profiles API", () => {
         bio: "Updated bio",
       };
 
-      result.current.mutate(updateData as any);
+      result.current.mutate(updateData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.profile.me.$put).toHaveBeenCalledWith({
@@ -110,7 +126,7 @@ describe("Profiles API", () => {
 
       const { result } = renderHook(() => profilesApi.useUpdateMe(), { wrapper });
 
-      result.current.mutate({ name: "New Name" } as any);
+      result.current.mutate({ name: "New Name" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -130,7 +146,7 @@ describe("Profiles API", () => {
 
       const { result } = renderHook(() => profilesApi.useUpdateMe(), { wrapper: customWrapper });
 
-      result.current.mutate({ name: "New Name" } as any);
+      result.current.mutate({ name: "New Name" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["profile", "me"] });
@@ -145,7 +161,7 @@ describe("Profiles API", () => {
 
       const { result } = renderHook(() => profilesApi.useUpdateAvatar(), { wrapper });
 
-      result.current.mutate({ image: "data:image/png;base64,iVBORw0KG..." } as any);
+      result.current.mutate({ image: "data:image/png;base64,iVBORw0KG..." });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.profile.avatar.$put).toHaveBeenCalledWith({
@@ -160,7 +176,7 @@ describe("Profiles API", () => {
 
       const { result } = renderHook(() => profilesApi.useUpdateAvatar(), { wrapper });
 
-      result.current.mutate({ image: null } as any);
+      result.current.mutate({ image: null });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.profile.avatar.$put).toHaveBeenCalledWith({
@@ -175,7 +191,7 @@ describe("Profiles API", () => {
 
       const { result } = renderHook(() => profilesApi.useUpdateAvatar(), { wrapper });
 
-      result.current.mutate({ image: "data:image/png;base64,..." } as any);
+      result.current.mutate({ image: "data:image/png;base64,..." });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -195,7 +211,7 @@ describe("Profiles API", () => {
 
       const { result } = renderHook(() => profilesApi.useUpdateAvatar(), { wrapper: customWrapper });
 
-      result.current.mutate({ image: "new-avatar-url" } as any);
+      result.current.mutate({ image: "new-avatar-url" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["profile", "me"] });

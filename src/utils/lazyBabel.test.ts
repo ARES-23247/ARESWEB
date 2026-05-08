@@ -52,7 +52,7 @@ describe("transformCode", () => {
   it("should filter out falsy presets", async () => {
     const { transformCode } = await import("./lazyBabel");
 
-    await transformCode("test", ["react", null, "", "typescript", false, undefined] as any);
+    await transformCode("test", ["react", null, "", "typescript", false, undefined] as never);
 
     const presets = mockTransform.mock.calls[0][1].presets;
     expect(presets).toEqual(["react", "typescript"]);

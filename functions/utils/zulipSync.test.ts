@@ -10,7 +10,7 @@ import type { Bindings } from "../api/middleware";
 
 // Mock p-retry
 vi.mock("p-retry", () => ({
-  default: vi.fn((fn: () => Promise<unknown>, options: { onFailedAttempt: (error: { attemptNumber: number; retriesLeft: number }) => void }) => fn(),
+  default: vi.fn((fn: () => Promise<unknown>, _options: { onFailedAttempt: (error: { attemptNumber: number; retriesLeft: number }) => void }) => fn(),
   ),
 }));
 
@@ -592,7 +592,7 @@ describe("zulipSync", () => {
 
       const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-      const result = await sendZulipMessage(mockEnv, "general", "test", "Hello");
+      await sendZulipMessage(mockEnv, "general", "test", "Hello");
 
       // After retry should succeed
       expect(vi.mocked(fetch)).toHaveBeenCalled();

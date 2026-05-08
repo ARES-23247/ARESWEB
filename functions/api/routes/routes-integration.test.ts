@@ -6,76 +6,87 @@ import tasksRouter from './tasks';
 import inquiriesRouter from './inquiries/index';
 import eventsRouter from './events/index';
 
+// Define a type for OpenAPIHono router interface
+interface OpenAPIRouter {
+  openapi: (...args: unknown[]) => unknown;
+  routes: unknown[];
+}
+
+// Helper function to cast router to OpenAPIRouter type
+function asOpenAPIRouter(router: unknown): OpenAPIRouter {
+  return router as OpenAPIRouter;
+}
+
 describe('API route modules', () => {
   describe('auth routes', () => {
     it('exports an auth router', () => {
       expect(authRouter).toBeDefined();
-      expect(typeof (authRouter as any).openapi).toBe('function');
+      expect(typeof asOpenAPIRouter(authRouter).openapi).toBe('function');
     });
 
     it('has routes defined', () => {
-      expect((authRouter as any).routes).toBeDefined();
-      expect((authRouter as any).routes.length).toBeGreaterThan(0);
+      expect(asOpenAPIRouter(authRouter).routes).toBeDefined();
+      expect(asOpenAPIRouter(authRouter).routes.length).toBeGreaterThan(0);
     });
   });
 
   describe('users routes', () => {
     it('exports a users router', () => {
       expect(usersRouter).toBeDefined();
-      expect(typeof (usersRouter as any).openapi).toBe('function');
+      expect(typeof asOpenAPIRouter(usersRouter).openapi).toBe('function');
     });
 
     it('has routes defined', () => {
-      expect((usersRouter as any).routes).toBeDefined();
-      expect((usersRouter as any).routes.length).toBeGreaterThan(0);
+      expect(asOpenAPIRouter(usersRouter).routes).toBeDefined();
+      expect(asOpenAPIRouter(usersRouter).routes.length).toBeGreaterThan(0);
     });
   });
 
   describe('posts routes', () => {
     it('exports a posts router', () => {
       expect(postsRouter).toBeDefined();
-      expect(typeof (postsRouter as any).openapi).toBe('function');
+      expect(typeof asOpenAPIRouter(postsRouter).openapi).toBe('function');
     });
 
     it('has routes defined', () => {
-      expect((postsRouter as any).routes).toBeDefined();
-      expect((postsRouter as any).routes.length).toBeGreaterThan(0);
+      expect(asOpenAPIRouter(postsRouter).routes).toBeDefined();
+      expect(asOpenAPIRouter(postsRouter).routes.length).toBeGreaterThan(0);
     });
   });
 
   describe('tasks routes', () => {
     it('exports a tasks router', () => {
       expect(tasksRouter).toBeDefined();
-      expect(typeof (tasksRouter as any).openapi).toBe('function');
+      expect(typeof asOpenAPIRouter(tasksRouter).openapi).toBe('function');
     });
 
     it('has routes defined', () => {
-      expect((tasksRouter as any).routes).toBeDefined();
-      expect((tasksRouter as any).routes.length).toBeGreaterThan(0);
+      expect(asOpenAPIRouter(tasksRouter).routes).toBeDefined();
+      expect(asOpenAPIRouter(tasksRouter).routes.length).toBeGreaterThan(0);
     });
   });
 
   describe('inquiries routes', () => {
     it('exports an inquiries router', () => {
       expect(inquiriesRouter).toBeDefined();
-      expect(typeof (inquiriesRouter as any).openapi).toBe('function');
+      expect(typeof asOpenAPIRouter(inquiriesRouter).openapi).toBe('function');
     });
 
     it('has routes defined', () => {
-      expect((inquiriesRouter as any).routes).toBeDefined();
-      expect((inquiriesRouter as any).routes.length).toBeGreaterThan(0);
+      expect(asOpenAPIRouter(inquiriesRouter).routes).toBeDefined();
+      expect(asOpenAPIRouter(inquiriesRouter).routes.length).toBeGreaterThan(0);
     });
   });
 
   describe('events routes', () => {
     it('exports an events router', () => {
       expect(eventsRouter).toBeDefined();
-      expect(typeof (eventsRouter as any).openapi).toBe('function');
+      expect(typeof asOpenAPIRouter(eventsRouter).openapi).toBe('function');
     });
 
     it('has routes defined', () => {
-      expect((eventsRouter as any).routes).toBeDefined();
-      expect((eventsRouter as any).routes.length).toBeGreaterThan(0);
+      expect(asOpenAPIRouter(eventsRouter).routes).toBeDefined();
+      expect(asOpenAPIRouter(eventsRouter).routes.length).toBeGreaterThan(0);
     });
   });
 });

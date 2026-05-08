@@ -44,7 +44,7 @@ const createMockEditor = (): Partial<Editor> => ({
       })),
       insertContent: vi.fn(() => ({ run: vi.fn() })),
     })),
-  })) as any,
+  })) as unknown as Editor["chain"],
   state: {
     doc: {
       descendants: vi.fn((callback) => {
@@ -54,19 +54,18 @@ const createMockEditor = (): Partial<Editor> => ({
             type: { name: "heading" },
             attrs: { level: 2 },
             textContent: "Test Heading",
-          },
+          } as never,
           0
         );
       }),
-    } as any,
-  } as any,
+    },
+  } as unknown as Editor["state"],
 });
 
 const mockRange = { from: 0, to: 10 };
 
 describe("CommandsList Component", () => {
   let mockEditor: Partial<Editor>;
-  let ref: React.RefObject<CommandsListRef>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -170,13 +169,10 @@ describe("CommandsList Component", () => {
   });
 
   it("handles keyboard navigation via ref", () => {
-    let capturedRef: CommandsListRef | null = null;
-
     const TestComponent = () => {
       const ref = React.createRef<CommandsListRef>();
 
       React.useEffect(() => {
-        capturedRef = ref.current;
         if (ref.current) {
           // Test Arrow Down
           const downEvent = new KeyboardEvent("keydown", { key: "ArrowDown" });
@@ -198,7 +194,7 @@ describe("CommandsList Component", () => {
           const handledOther = ref.current.onKeyDown({ event: otherEvent });
           expect(handledOther).toBe(false);
         }
-      }, []);
+      }, [ref]);
 
       return <CommandsList editor={mockEditor as Editor} range={mockRange} items={[]} ref={ref} />;
     };

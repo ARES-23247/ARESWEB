@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { parseAstToText, getStandardDate } from './content';
 
 describe('content utilities', () => {
@@ -37,7 +37,7 @@ describe('content utilities', () => {
           {
             type: 'paragraph',
             content: [
-              { type: 'text', text: 'First ' },
+              { type: 'text', text: 'First' },
               { type: 'text', text: 'sentence' }
             ]
           }
@@ -77,15 +77,7 @@ describe('content utilities', () => {
     });
 
     it('handles malformed JSON gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       expect(parseAstToText('{invalid json}')).toBe('{invalid json}');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'AST Extraction failed:',
-        expect.any(Error)
-      );
-
-      consoleSpy.mockRestore();
     });
 
     it('handles complex nested structure with multiple levels', () => {

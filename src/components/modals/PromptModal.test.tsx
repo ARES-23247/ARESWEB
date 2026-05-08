@@ -190,7 +190,10 @@ describe("PromptModal Component", () => {
       />
     );
 
-    const backdrop = screen.getByText("Click outside to cancel").closest("div")?.parentElement;
+    // The backdrop is the first child of the fixed container (the motion.div with opacity)
+    const fixedContainer = document.querySelector(".fixed.inset-0");
+    const backdrop = fixedContainer?.firstElementChild;
+
     if (backdrop) {
       fireEvent.click(backdrop);
       expect(mockCancel).toHaveBeenCalledTimes(1);
@@ -302,8 +305,9 @@ describe("PromptModal Component", () => {
     expect(dialog).toHaveAttribute("aria-labelledby", "prompt-modal-title");
     expect(dialog).toHaveAttribute("aria-describedby", "prompt-modal-desc");
 
-    expect(screen.getByText("Prompt Title").parentElement).toHaveAttribute("id", "prompt-modal-title");
-    expect(screen.getByText("Prompt description").parentElement).toHaveAttribute("id", "prompt-modal-desc");
+    // The id is on the h3 and p elements directly, not their parent
+    expect(screen.getByText("Prompt Title")).toHaveAttribute("id", "prompt-modal-title");
+    expect(screen.getByText("Prompt description")).toHaveAttribute("id", "prompt-modal-desc");
   });
 
   it("handles empty input submission", () => {

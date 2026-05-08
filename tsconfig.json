@@ -16,7 +16,7 @@
       "@/*": ["./src/*"],
       "@shared/*": ["./shared/*"]
     },
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types", "vitest/globals"]
   },
   "include": ["src", "functions", "shared"],
   "exclude": ["node_modules", "dist"]

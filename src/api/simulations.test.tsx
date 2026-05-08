@@ -25,7 +25,22 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  simulations: {
+    $get: ReturnType<typeof vi.fn>;
+    $post: ReturnType<typeof vi.fn>;
+    ":id": {
+      $get: ReturnType<typeof vi.fn>;
+      $delete: ReturnType<typeof vi.fn>;
+    };
+    gist: {
+      $post: ReturnType<typeof vi.fn>;
+      ":id": {
+        $get: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -132,7 +147,7 @@ describe("Simulations API", () => {
         files: { "index.ts": "console.log('hello');" },
       };
 
-      result.current.mutate(simData as any);
+      result.current.mutate(simData as simulationsApi.SaveSimulationRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -148,7 +163,7 @@ describe("Simulations API", () => {
 
       const { result } = renderHook(() => simulationsApi.useSaveSimulation(), { wrapper });
 
-      result.current.mutate({ name: "New Sim", files: {} } as any);
+      result.current.mutate({ name: "New Sim", files: {} } as simulationsApi.SaveSimulationRequest);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -168,7 +183,7 @@ describe("Simulations API", () => {
 
       const { result } = renderHook(() => simulationsApi.useSaveSimulation(), { wrapper: customWrapper });
 
-      result.current.mutate({ files: {} } as any);
+      result.current.mutate({ files: {} } as simulationsApi.CreateGistRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["simulations"] });
@@ -183,7 +198,7 @@ describe("Simulations API", () => {
 
       const { result } = renderHook(() => simulationsApi.useDeleteSimulation(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.simulations[":id"].$delete).toHaveBeenCalledWith({
@@ -198,7 +213,7 @@ describe("Simulations API", () => {
 
       const { result } = renderHook(() => simulationsApi.useDeleteSimulation(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -218,7 +233,7 @@ describe("Simulations API", () => {
 
       const { result } = renderHook(() => simulationsApi.useDeleteSimulation(), { wrapper: customWrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["simulations"] });
@@ -238,7 +253,7 @@ describe("Simulations API", () => {
         files: { "index.ts": "code" },
       };
 
-      result.current.mutate(gistData as any);
+      result.current.mutate(gistData as simulationsApi.CreateGistRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -254,7 +269,7 @@ describe("Simulations API", () => {
 
       const { result } = renderHook(() => simulationsApi.useCreateGist(), { wrapper });
 
-      result.current.mutate({ files: {} } as any);
+      result.current.mutate({ files: {} } as simulationsApi.CreateGistRequest);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);

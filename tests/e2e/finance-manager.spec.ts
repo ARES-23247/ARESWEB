@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { DashboardPage } from '../pages/DashboardPage';
-import { setupMockAuth, MOCK_ADMIN_USER } from '../fixtures/auth';
+import { setupMockAuth } from '../fixtures/auth';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 /**
@@ -151,8 +151,8 @@ test.describe('Finance Manager Dashboard', () => {
     await setupMockAuth(page);
 
     // Mock finance summary API
-    await page.route('**/api/finance/summary*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/finance/summary*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: MOCK_FINANCE_SUMMARY,
       });
@@ -160,11 +160,9 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Mock sponsorship pipeline API
     await page.route('**/api/finance/sponsorship*', async (route) => {
-      const url = route.request().url();
-
       // Handle POST (save/update)
       if (route.request().method() === 'POST') {
-        await route.fulfill({
+        await _route.fulfill({
           status: 200,
           json: { success: true, id: 'new-lead-' + Date.now() },
         });
@@ -173,7 +171,7 @@ test.describe('Finance Manager Dashboard', () => {
 
       // Handle DELETE
       if (route.request().method() === 'DELETE') {
-        await route.fulfill({
+        await _route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -181,7 +179,7 @@ test.describe('Finance Manager Dashboard', () => {
       }
 
       // Handle GET
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { pipeline: [...MOCK_SPONSORSHIP_PIPELINE] },
       });
@@ -189,11 +187,9 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Mock transactions API
     await page.route('**/api/finance/transactions*', async (route) => {
-      const url = route.request().url();
-
       // Handle POST (save/update)
       if (route.request().method() === 'POST') {
-        await route.fulfill({
+        await _route.fulfill({
           status: 200,
           json: { success: true, id: 'new-txn-' + Date.now() },
         });
@@ -202,7 +198,7 @@ test.describe('Finance Manager Dashboard', () => {
 
       // Handle DELETE
       if (route.request().method() === 'DELETE') {
-        await route.fulfill({
+        await _route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -210,7 +206,7 @@ test.describe('Finance Manager Dashboard', () => {
       }
 
       // Handle GET
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { transactions: [...MOCK_TRANSACTIONS] },
       });
@@ -260,7 +256,6 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Verify leads are in correct columns based on status
-    const potentialColumn = page.locator('.border-ares-red\\/30').filter({ hasText: 'Potential' }).locator('..');
     await expect(page.getByText('Acme Robotics')).toBeVisible();
 
     // Verify specific lead details
@@ -643,9 +638,7 @@ test.describe('Finance Manager Dashboard', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify season picker is visible (if implemented in the UI)
-    const seasonPicker = page.locator('[class*="season"]').or(page.locator('select')).first();
-    // Note: This test assumes a season picker exists - adjust selector based on actual implementation
+    // Note: Season picker visibility test - adjust selector based on actual implementation
   });
 
   test('should display loading state while fetching data', async ({ page }) => {
@@ -660,8 +653,6 @@ test.describe('Finance Manager Dashboard', () => {
 
     await page.goto('/dashboard/finance');
 
-    // Verify loading indicator is shown briefly
-    const loadingText = page.getByText(/Syncing Ledger/i).or(page.getByText(/Syncing/)).or(page.locator('.animate-spin'));
     // The loading state may be too brief to catch reliably, so we just verify the page eventually loads
     await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,

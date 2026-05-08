@@ -19,7 +19,21 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+// Mock types for the Hono client
+interface MockJudgesClient {
+  login: {
+    $post: ReturnType<typeof vi.fn>;
+  };
+  portfolio: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+}
+
+interface MockClient {
+  judges: MockJudgesClient;
+}
+
+const mockClient = honoClient.client as MockClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -47,7 +61,7 @@ describe("Judges API", () => {
 
       const { result } = renderHook(() => judgesApi.useJudgeLogin(), { wrapper });
 
-      result.current.mutate({ code: "JUDGE-ABC-123" } as any);
+      result.current.mutate({ code: "JUDGE-ABC-123" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.judges.login.$post).toHaveBeenCalledWith({
@@ -63,7 +77,7 @@ describe("Judges API", () => {
 
       const { result } = renderHook(() => judgesApi.useJudgeLogin(), { wrapper });
 
-      result.current.mutate({ code: "TEST-CODE", turnstileToken: "turnstile-token-xyz" } as any);
+      result.current.mutate({ code: "TEST-CODE", turnstileToken: "turnstile-token-xyz" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.judges.login.$post).toHaveBeenCalledWith({
@@ -78,7 +92,7 @@ describe("Judges API", () => {
 
       const { result } = renderHook(() => judgesApi.useJudgeLogin(), { wrapper });
 
-      result.current.mutate({ code: "INVALID-CODE" } as any);
+      result.current.mutate({ code: "INVALID-CODE" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data?.success).toBe(false);
@@ -91,7 +105,7 @@ describe("Judges API", () => {
 
       const { result } = renderHook(() => judgesApi.useJudgeLogin(), { wrapper });
 
-      result.current.mutate({ code: "TEST" } as any);
+      result.current.mutate({ code: "TEST" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

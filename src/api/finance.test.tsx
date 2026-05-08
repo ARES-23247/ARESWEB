@@ -4,6 +4,31 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
 import * as financeApi from "./finance";
 
+// Define types for the mocked client
+interface MockFinanceClient {
+  summary: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+  sponsorship: {
+    $get: ReturnType<typeof vi.fn>;
+    $post: ReturnType<typeof vi.fn>;
+    ":id": {
+      $delete: ReturnType<typeof vi.fn>;
+    };
+  };
+  transactions: {
+    $get: ReturnType<typeof vi.fn>;
+    $post: ReturnType<typeof vi.fn>;
+    ":id": {
+      $delete: ReturnType<typeof vi.fn>;
+    };
+  };
+}
+
+interface MockHonoClient {
+  finance: MockFinanceClient;
+}
+
 // Mock the honoClient module
 vi.mock("./honoClient", () => ({
   client: {
@@ -30,8 +55,14 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as MockHonoClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
+
+// Type aliases for mutation parameters
+type SaveSponsorshipPipelineParams = Parameters<ReturnType<typeof financeApi.useSaveSponsorshipPipeline>['mutate']>[0];
+type DeleteSponsorshipPipelineParams = Parameters<ReturnType<typeof financeApi.useDeleteSponsorshipPipeline>['mutate']>[0];
+type SaveFinanceTransactionParams = Parameters<ReturnType<typeof financeApi.useSaveFinanceTransaction>['mutate']>[0];
+type DeleteFinanceTransactionParams = Parameters<ReturnType<typeof financeApi.useDeleteFinanceTransaction>['mutate']>[0];
 
 const createQueryClient = () =>
   new QueryClient({
@@ -97,8 +128,8 @@ describe("Finance API", () => {
   describe("useListSponsorshipPipeline", () => {
     it("should fetch sponsorship pipeline successfully", async () => {
       const mockPipeline = [
-        { id: "1", company_name: "Acme Corp", status: "prospecting", amount: 5000 },
-        { id: "2", company_name: "Beta Inc", status: "negotiating", amount: 10000 },
+        { id: "1", company_name: "Acme Corp", status: "potential", estimated_value: 5000 },
+        { id: "2", company_name: "Beta Inc", status: "contacted", estimated_value: 10000 },
       ];
       const mockResponse = { pipeline: mockPipeline };
       mockClient.finance.sponsorship.$get.mockResolvedValue({ ok: true });
@@ -126,15 +157,15 @@ describe("Finance API", () => {
       const mockResponse = { success: true, id: "new-123" };
       const pipelineItem = {
         company_name: "New Sponsor",
-        status: "prospecting" as const,
-        amount: 7500,
+        status: "potential" as const,
+        estimated_value: 7500,
       };
       mockClient.finance.sponsorship.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => financeApi.useSaveSponsorshipPipeline(), { wrapper });
 
-      result.current.mutate(pipelineItem as any);
+      result.current.mutate(pipelineItem as SaveSponsorshipPipelineParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.sponsorship.$post).toHaveBeenCalledWith({
@@ -158,7 +189,7 @@ describe("Finance API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate({ company_name: "Test", status: "prospecting", amount: 1000 } as unknown as any);
+      result.current.mutate({ company_name: "Test", status: "potential", estimated_value: 1000 } as SaveSponsorshipPipelineParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["finance", "sponsorship"] });
@@ -172,7 +203,7 @@ describe("Finance API", () => {
 
       const { result } = renderHook(() => financeApi.useSaveSponsorshipPipeline(), { wrapper });
 
-      result.current.mutate({ company_name: "Test", status: "prospecting", amount: 1000 } as unknown as any);
+      result.current.mutate({ company_name: "Test", status: "potential", estimated_value: 1000 } as SaveSponsorshipPipelineParams);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -186,7 +217,7 @@ describe("Finance API", () => {
 
       const { result } = renderHook(() => financeApi.useDeleteSponsorshipPipeline(), { wrapper });
 
-      result.current.mutate("pipeline-123" as any);
+      result.current.mutate("pipeline-123" as DeleteSponsorshipPipelineParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.sponsorship[":id"].$delete).toHaveBeenCalledWith({
@@ -210,7 +241,7 @@ describe("Finance API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate("pipeline-123" as any);
+      result.current.mutate("pipeline-123" as DeleteSponsorshipPipelineParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["finance", "sponsorship"] });
@@ -299,7 +330,7 @@ describe("Finance API", () => {
 
       const { result } = renderHook(() => financeApi.useSaveFinanceTransaction(), { wrapper });
 
-      result.current.mutate(transaction as any);
+      result.current.mutate(transaction as SaveFinanceTransactionParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.transactions.$post).toHaveBeenCalledWith({
@@ -323,7 +354,7 @@ describe("Finance API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate({ type: "expense", amount: 100, description: "Test" } as unknown as any);
+      result.current.mutate({ type: "expense", amount: 100, description: "Test" } as SaveFinanceTransactionParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["finance", "transactions"] });
@@ -339,7 +370,7 @@ describe("Finance API", () => {
 
       const { result } = renderHook(() => financeApi.useDeleteFinanceTransaction(), { wrapper });
 
-      result.current.mutate("trans-123" as any);
+      result.current.mutate("trans-123" as DeleteFinanceTransactionParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.transactions[":id"].$delete).toHaveBeenCalledWith({
@@ -363,7 +394,7 @@ describe("Finance API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate("trans-123" as any);
+      result.current.mutate("trans-123" as DeleteFinanceTransactionParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["finance", "transactions"] });
@@ -377,7 +408,7 @@ describe("Finance API", () => {
 
       const { result } = renderHook(() => financeApi.useDeleteFinanceTransaction(), { wrapper });
 
-      result.current.mutate("trans-123" as any);
+      result.current.mutate("trans-123" as DeleteFinanceTransactionParams);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

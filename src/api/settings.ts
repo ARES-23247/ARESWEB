@@ -85,7 +85,6 @@ export function useUpdateSettings(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       queryClient.invalidateQueries({ queryKey: ["public-settings"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

@@ -52,11 +52,11 @@ describe("AdminInquiries component", () => {
       data: { inquiries: mockInquiries },
       isLoading: false,
       isError: false,
-    } as any);
+    } as unknown as ReturnType<typeof inquiriesApi.useGetAdminInquiries>);
 
-    vi.mocked(inquiriesApi.useUpdateInquiryStatus).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
-    vi.mocked(inquiriesApi.useDeleteInquiry).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
-    vi.mocked(inquiriesApi.useUpdateInquiryNotes).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
+    vi.mocked(inquiriesApi.useUpdateInquiryStatus).mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as ReturnType<typeof inquiriesApi.useUpdateInquiryStatus>);
+    vi.mocked(inquiriesApi.useDeleteInquiry).mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as ReturnType<typeof inquiriesApi.useDeleteInquiry>);
+    vi.mocked(inquiriesApi.useUpdateInquiryNotes).mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as ReturnType<typeof inquiriesApi.useUpdateInquiryNotes>);
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -65,7 +65,7 @@ describe("AdminInquiries component", () => {
 
   it("should send the inquiry id when deleting an inquiry", () => {
     const mutate = vi.fn();
-    vi.mocked(inquiriesApi.useDeleteInquiry).mockReturnValue({ mutate, isPending: false } as any);
+    vi.mocked(inquiriesApi.useDeleteInquiry).mockReturnValue({ mutate, isPending: false } as unknown as ReturnType<typeof inquiriesApi.useDeleteInquiry>);
 
     render(<AdminInquiries />, { wrapper });
 
@@ -83,7 +83,7 @@ describe("AdminInquiries component", () => {
 
   it("should call updateStatus mutation to resolve inquiry", () => {
     const mutate = vi.fn();
-    vi.mocked(inquiriesApi.useUpdateInquiryStatus).mockReturnValue({ mutate, isPending: false } as any);
+    vi.mocked(inquiriesApi.useUpdateInquiryStatus).mockReturnValue({ mutate, isPending: false } as unknown as ReturnType<typeof inquiriesApi.useUpdateInquiryStatus>);
 
     render(<AdminInquiries />, { wrapper });
 

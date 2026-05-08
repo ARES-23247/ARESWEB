@@ -25,7 +25,22 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  outreach: {
+    $get: ReturnType<typeof vi.fn>;
+    admin: {
+      list: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+      save: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      ":id": {
+        $delete: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -151,7 +166,7 @@ describe("Outreach API", () => {
         attendees: 50,
       };
 
-      result.current.mutate(outreachData as any);
+      result.current.mutate(outreachData as outreachApi.OutreachPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -176,7 +191,7 @@ describe("Outreach API", () => {
         attendees: 60,
       };
 
-      result.current.mutate(outreachData as any);
+      result.current.mutate(outreachData as outreachApi.OutreachPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.outreach.admin.save.$post).toHaveBeenCalledWith({
@@ -191,7 +206,7 @@ describe("Outreach API", () => {
 
       const { result } = renderHook(() => outreachApi.useSaveOutreach(), { wrapper });
 
-      result.current.mutate({ title: "New Event" } as any);
+      result.current.mutate({ title: "New Event" } as outreachApi.OutreachPayload);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -211,7 +226,7 @@ describe("Outreach API", () => {
 
       const { result } = renderHook(() => outreachApi.useSaveOutreach(), { wrapper: customWrapper });
 
-      result.current.mutate({ title: "New Event" } as any);
+      result.current.mutate({ title: "New Event" } as outreachApi.OutreachPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin-outreach"] });
@@ -227,7 +242,7 @@ describe("Outreach API", () => {
 
       const { result } = renderHook(() => outreachApi.useDeleteOutreach(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.outreach.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -242,7 +257,7 @@ describe("Outreach API", () => {
 
       const { result } = renderHook(() => outreachApi.useDeleteOutreach(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -262,7 +277,7 @@ describe("Outreach API", () => {
 
       const { result } = renderHook(() => outreachApi.useDeleteOutreach(), { wrapper: customWrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin-outreach"] });

@@ -1,6 +1,23 @@
 import "@testing-library/jest-dom";
-import { vi as _vi } from "vitest";
+import { vi } from "vitest";
 import { server } from "./mocks/server";
+
+// Mock drizzle-orm sql BEFORE any schema imports
+// This must be hoisted to avoid "sql is not a function" errors when schema.ts is imported
+// The mock needs to support both sql.raw() and sql`template` syntax
+const mockSql = vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
+  sql: strings.reduce((acc: string, str: string, i: number) => acc + str + (values[i] ?? ''), ''),
+  getSQL: () => strings.reduce((acc: string, str: string, i: number) => acc + str + (values[i] ?? ''), ''),
+})) as ReturnType<typeof vi.fn> & { raw: (str: string) => { raw: string } };
+(mockSql as ReturnType<typeof vi.fn> & { raw: (str: string) => { raw: string } }).raw = vi.fn((str: string) => ({ raw: str }));
+
+vi.mock("drizzle-orm", async () => {
+  const actual = await vi.importActual<typeof import("drizzle-orm")>("drizzle-orm");
+  return {
+    ...actual,
+    sql: mockSql,
+  };
+});
 
 // Start MSW Server - runs immediately when setup file loads
 server.listen({ onUnhandledRequest: "warn" });

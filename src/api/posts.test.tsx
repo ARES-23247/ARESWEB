@@ -5,6 +5,8 @@ import * as honoClient from "./honoClient";
 import * as postsApi from "./posts";
 
 // Mock the honoClient module
+import type { PostsResponse, PostDetailResponse, SavePostResponse, UpdatePostResponse, PostHistoryResponse } from "./posts";
+
 vi.mock("./honoClient", () => ({
   client: {
     posts: {
@@ -48,7 +50,45 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  posts: {
+    $get: ReturnType<typeof vi.fn>;
+    ":slug": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    admin: {
+      list: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+      ":slug": {
+        $get: ReturnType<typeof vi.fn>;
+        $post: ReturnType<typeof vi.fn>;
+        $delete: ReturnType<typeof vi.fn>;
+        undelete: {
+          $post: ReturnType<typeof vi.fn>;
+        };
+        purge: {
+          $delete: ReturnType<typeof vi.fn>;
+        };
+        approve: {
+          $post: ReturnType<typeof vi.fn>;
+        };
+        reject: {
+          $post: ReturnType<typeof vi.fn>;
+        };
+        history: {
+          $get: ReturnType<typeof vi.fn>;
+        };
+        repush: {
+          $post: ReturnType<typeof vi.fn>;
+        };
+      };
+      save: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -74,7 +114,7 @@ describe("Posts API", () => {
         { id: "1", slug: "post-1", title: "Post 1", published: true },
         { id: "2", slug: "post-2", title: "Post 2", published: true },
       ];
-      const mockResponse = { posts: mockPosts };
+      const mockResponse: PostsResponse = { posts: mockPosts };
       mockClient.posts.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -85,7 +125,7 @@ describe("Posts API", () => {
     });
 
     it("should pass query parameters", async () => {
-      const mockResponse = { posts: [] };
+      const mockResponse: PostsResponse = { posts: [] };
       mockClient.posts.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -98,11 +138,15 @@ describe("Posts API", () => {
 
   describe("useGetPost", () => {
     it("should fetch single post successfully", async () => {
-      const mockPost = { id: "123", slug: "test-post", title: "Test Post", content: "Content" };
-      const mockResponse = {
+      const mockPost = {
+        slug: "test-post",
+        title: "Test Post",
+        ast: '{"type":"doc","content":[]}',
+      };
+      const mockResponse: PostDetailResponse = {
         post: mockPost,
         is_editor: false,
-        author: { name: "Author", email: "author@test.com" },
+        author: { id: "123", name: "Author", role: "author" },
       };
       mockClient.posts[":slug"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -123,10 +167,10 @@ describe("Posts API", () => {
   describe("useGetAdminPosts", () => {
     it("should fetch admin posts successfully", async () => {
       const mockPosts = [
-        { id: "1", slug: "admin-post-1", title: "Admin Post 1" },
-        { id: "2", slug: "admin-post-2", title: "Admin Post 2" },
+        { slug: "admin-post-1", title: "Admin Post 1" },
+        { slug: "admin-post-2", title: "Admin Post 2" },
       ];
-      const mockResponse = { posts: mockPosts };
+      const mockResponse: PostsResponse = { posts: mockPosts };
       mockClient.posts.admin.list.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -139,7 +183,11 @@ describe("Posts API", () => {
 
   describe("useGetAdminPost", () => {
     it("should fetch admin post detail successfully", async () => {
-      const mockPost = { id: "123", slug: "test-post", title: "Test Post", content: "Content" };
+      const mockPost = {
+        slug: "test-post",
+        title: "Test Post",
+        ast: '{"type":"doc","content":[]}',
+      };
       const mockResponse = { post: mockPost };
       mockClient.posts.admin[":slug"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -153,18 +201,18 @@ describe("Posts API", () => {
 
   describe("useSavePost", () => {
     it("should save new post successfully", async () => {
-      const mockResponse = { success: true, slug: "new-post-slug" };
+      const mockResponse: SavePostResponse = { success: true, slug: "new-post-slug" };
       const postData = {
         title: "New Post",
         content: "Post content",
-        published: false,
+        ast: '{"type":"doc","content":[]}',
       };
       mockClient.posts.admin.save.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => postsApi.useSavePost(), { wrapper });
 
-      result.current.mutate(postData as never as any);
+      result.current.mutate(postData as postsApi.PostPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin.save.$post).toHaveBeenCalledWith({
@@ -173,13 +221,13 @@ describe("Posts API", () => {
     });
 
     it("should handle save with warning", async () => {
-      const mockResponse = { success: true, slug: "post-slug", warning: "Slug already exists" };
+      const mockResponse: SavePostResponse = { success: true, slug: "post-slug", warning: "Slug already exists" };
       mockClient.posts.admin.save.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => postsApi.useSavePost(), { wrapper });
 
-      result.current.mutate({ title: "Test", content: "Content" } as never as any);
+      result.current.mutate({ title: "Test", content: "Content", ast: '{"type":"doc"}' } as postsApi.PostPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data?.warning).toBe("Slug already exists");
@@ -188,14 +236,14 @@ describe("Posts API", () => {
 
   describe("useUpdatePost", () => {
     it("should update existing post successfully", async () => {
-      const mockResponse = { success: true, slug: "updated-post-slug" };
-      const postData = { title: "Updated Title", content: "Updated content" };
+      const mockResponse: UpdatePostResponse = { success: true, slug: "updated-post-slug" };
+      const postData: postsApi.PostPayload = { title: "Updated Title", content: "Updated content", ast: '{"type":"doc"}' };
       mockClient.posts.admin[":slug"].$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => postsApi.useUpdatePost(), { wrapper });
 
-      result.current.mutate({ slug: "test-post", body: postData as never } as any);
+      result.current.mutate({ slug: "test-post", body: postData });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin[":slug"].$post).toHaveBeenCalledWith({
@@ -213,7 +261,7 @@ describe("Posts API", () => {
 
       const { result } = renderHook(() => postsApi.useDeletePost(), { wrapper });
 
-      result.current.mutate("test-post" as any);
+      result.current.mutate("test-post");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin[":slug"].$delete).toHaveBeenCalledWith({
@@ -230,7 +278,7 @@ describe("Posts API", () => {
 
       const { result } = renderHook(() => postsApi.useUndeletePost(), { wrapper });
 
-      result.current.mutate("test-post" as any);
+      result.current.mutate("test-post");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin[":slug"].undelete.$post).toHaveBeenCalledWith({
@@ -247,7 +295,7 @@ describe("Posts API", () => {
 
       const { result } = renderHook(() => postsApi.usePurgePost(), { wrapper });
 
-      result.current.mutate("test-post" as any);
+      result.current.mutate("test-post");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin[":slug"].purge.$delete).toHaveBeenCalledWith({
@@ -264,7 +312,7 @@ describe("Posts API", () => {
 
       const { result } = renderHook(() => postsApi.useApprovePost(), { wrapper });
 
-      result.current.mutate("test-post" as any);
+      result.current.mutate("test-post");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin[":slug"].approve.$post).toHaveBeenCalledWith({
@@ -279,7 +327,7 @@ describe("Posts API", () => {
 
       const { result } = renderHook(() => postsApi.useApprovePost(), { wrapper });
 
-      result.current.mutate("test-post" as any);
+      result.current.mutate("test-post");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data?.warnings).toEqual(["Missing alt text"]);
@@ -294,7 +342,7 @@ describe("Posts API", () => {
 
       const { result } = renderHook(() => postsApi.useRejectPost(), { wrapper });
 
-      result.current.mutate({ slug: "test-post", reason: "Inappropriate content" } as any);
+      result.current.mutate({ slug: "test-post", reason: "Inappropriate content" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin[":slug"].reject.$post).toHaveBeenCalledWith({
@@ -306,11 +354,11 @@ describe("Posts API", () => {
 
   describe("useGetPostHistory", () => {
     it("should fetch post history successfully", async () => {
-      const mockHistory = [
-        { id: "1", version: 1, created_at: "2024-01-01", changes: "Initial version" },
-        { id: "2", version: 2, created_at: "2024-01-02", changes: "Updated title" },
+      const mockHistory: postsApi.PostHistory[] = [
+        { id: 1, slug: "test-post", title: "Test Post", created_at: "2024-01-01T00:00:00Z", ast: '{"type":"doc"}' },
+        { id: 2, slug: "test-post", title: "Updated Title", created_at: "2024-01-02T00:00:00Z", ast: '{"type":"doc"}' },
       ];
-      const mockResponse = { history: mockHistory };
+      const mockResponse: PostHistoryResponse = { history: mockHistory };
       mockClient.posts.admin[":slug"].history.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -329,7 +377,7 @@ describe("Posts API", () => {
 
       const { result } = renderHook(() => postsApi.useRepushPost(), { wrapper });
 
-      result.current.mutate({ slug: "test-post", socials: ["twitter", "instagram"] } as any);
+      result.current.mutate({ slug: "test-post", socials: ["twitter", "instagram"] });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.posts.admin[":slug"].repush.$post).toHaveBeenCalledWith({

@@ -1,7 +1,53 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import TaskDetailsModal from "./TaskDetailsModal";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Define task type based on the component's expected TaskItem type
+// Matches the TaskSchema from @shared/routes/tasks.ts
+interface MockTask {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "todo" | "in_progress" | "done" | "blocked";
+  priority: "low" | "normal" | "high" | "urgent";
+  sort_order: number;
+  assignees: Array<{ id: string; nickname: string | null }>;
+  created_by: string;
+  creator_name: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  subteam: string | null;
+  zulip_stream: string | null;
+  zulip_topic: string | null;
+  assigned_to: string | null;
+  assignee_name: string | null;
+  parent_id: string | null;
+  time_spent_seconds: number | null;
+}
+
+const mockTask: MockTask = {
+  id: "task-123",
+  title: "Test Task Title",
+  description: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Test description"}]}]}',
+  status: "in_progress",
+  priority: "normal",
+  sort_order: 0,
+  assignees: [{ id: "user1", nickname: null }],
+  created_by: "user1",
+  creator_name: "Test Creator",
+  due_date: "2024-12-31",
+  time_spent_seconds: 3600,
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-02T00:00:00Z",
+  subteam: "Mechanical",
+  zulip_stream: "tasks",
+  zulip_topic: "Task: Test Task Title",
+  assigned_to: null,
+  assignee_name: null,
+  parent_id: null,
+};
 
 // Mock the imports
 vi.mock("../../api", () => ({
@@ -51,23 +97,6 @@ vi.mock("../ZulipThread", () => ({
   ),
 }));
 
-const mockTask: Record<string, unknown> = {
-  id: "task-123",
-  title: "Test Task Title",
-  description: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Test description"}]}]}',
-  status: "in_progress",
-  priority: "normal",
-  subteam: "Mechanical",
-  assignees: [{ id: "user1" }],
-  due_date: "2024-12-31",
-  time_spent_seconds: 3600,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-01-02T00:00:00Z",
-  creator_name: "Test Creator",
-  zulip_stream: "tasks",
-  zulip_topic: "Task: Test Task Title",
-};
-
 const createQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -96,7 +125,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders task details", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -110,7 +139,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders task ID in header", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -123,7 +152,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders all status options", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -139,7 +168,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders all priority options", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -155,7 +184,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders subteam selector", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -169,7 +198,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders assignees section", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -183,7 +212,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders due date input", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -196,7 +225,7 @@ describe("TaskDetailsModal Component", () => {
   });
 
   it("shows overdue indicator for past due dates", () => {
-    const overdueTask = {
+    const overdueTask: MockTask = {
       ...mockTask,
       due_date: "2020-01-01",
       status: "in_progress",
@@ -204,7 +233,7 @@ describe("TaskDetailsModal Component", () => {
 
     renderWithQueryClient(
       <TaskDetailsModal
-        task={overdueTask as any}
+        task={overdueTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -217,7 +246,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders time logged inputs", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -231,7 +260,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders Zulip thread integration", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -244,7 +273,7 @@ describe("TaskDetailsModal Component", () => {
   it("closes when clicking close button", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -260,7 +289,7 @@ describe("TaskDetailsModal Component", () => {
   it("closes on Escape key", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -274,7 +303,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders collaborative editor", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -287,7 +316,7 @@ describe("TaskDetailsModal Component", () => {
   it("disables save button when title is empty", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -304,7 +333,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders metadata in footer", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -319,7 +348,7 @@ describe("TaskDetailsModal Component", () => {
   it("has proper ARIA attributes", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -333,7 +362,7 @@ describe("TaskDetailsModal Component", () => {
   it("has proper ARES styling classes", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -350,7 +379,7 @@ describe("TaskDetailsModal Component", () => {
   it("renders subtasks section", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -364,7 +393,7 @@ describe("TaskDetailsModal Component", () => {
   it("allows adding new subtask via Enter key", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}
@@ -382,7 +411,7 @@ describe("TaskDetailsModal Component", () => {
   it("shows no subtasks message when empty", () => {
     renderWithQueryClient(
       <TaskDetailsModal
-        task={mockTask as any}
+        task={mockTask}
         onClose={mockOnClose}
         onSave={mockOnSave}
         onDelete={mockOnDelete}

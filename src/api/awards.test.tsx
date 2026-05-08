@@ -22,7 +22,19 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  awards: {
+    $get: ReturnType<typeof vi.fn>;
+    admin: {
+      save: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      ":id": {
+        $delete: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -95,7 +107,7 @@ describe("Awards API", () => {
 
       const { result } = renderHook(() => awardsApi.useSaveAward(), { wrapper });
 
-      result.current.mutate(newAward as any);
+      result.current.mutate(newAward as awardsApi.AwardPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.awards.admin.save.$post).toHaveBeenCalledWith({
@@ -117,7 +129,7 @@ describe("Awards API", () => {
 
       const { result } = renderHook(() => awardsApi.useSaveAward(), { wrapper });
 
-      result.current.mutate(updatedAward as any);
+      result.current.mutate(updatedAward as awardsApi.AwardPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.awards.admin.save.$post).toHaveBeenCalledWith({
@@ -139,7 +151,7 @@ describe("Awards API", () => {
 
       const { result } = renderHook(() => awardsApi.useSaveAward(), { wrapper: customWrapper });
 
-      result.current.mutate({ title: "Test Award", year: 2024 } as unknown as any);
+      result.current.mutate({ title: "Test Award", year: 2024 } as awardsApi.AwardPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["awards"] });
@@ -152,7 +164,7 @@ describe("Awards API", () => {
 
       const { result } = renderHook(() => awardsApi.useSaveAward(), { wrapper });
 
-      result.current.mutate({ title: "Test", year: 2024 } as unknown as any);
+      result.current.mutate({ title: "Test", year: 2024 } as awardsApi.AwardPayload);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -166,7 +178,7 @@ describe("Awards API", () => {
 
       const { result } = renderHook(() => awardsApi.useDeleteAward(), { wrapper });
 
-      result.current.mutate("award-123" as any);
+      result.current.mutate("award-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.awards.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -188,7 +200,7 @@ describe("Awards API", () => {
 
       const { result } = renderHook(() => awardsApi.useDeleteAward(), { wrapper: customWrapper });
 
-      result.current.mutate("award-123" as any);
+      result.current.mutate("award-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["awards"] });
@@ -201,7 +213,7 @@ describe("Awards API", () => {
 
       const { result } = renderHook(() => awardsApi.useDeleteAward(), { wrapper });
 
-      result.current.mutate("award-123" as any);
+      result.current.mutate("award-123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);

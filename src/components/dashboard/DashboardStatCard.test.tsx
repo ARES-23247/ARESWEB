@@ -159,9 +159,11 @@ describe("DashboardStatCard Component", () => {
     );
 
     const labelElement = screen.getByText("Label Text");
-    expect(labelElement).toHaveClass("text-marble/60");
-    expect(labelElement).toHaveClass("uppercase");
-    expect(labelElement).toHaveClass("tracking-widest");
+    // The label text is in a span, but the styling is on the parent div
+    const parentElement = labelElement.parentElement;
+    expect(parentElement).toHaveClass("text-marble/60");
+    expect(parentElement).toHaveClass("uppercase");
+    expect(parentElement).toHaveClass("tracking-widest");
   });
 
   it("has proper text styling for value", () => {

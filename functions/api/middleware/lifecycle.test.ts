@@ -15,16 +15,6 @@ vi.mock('./utils', () => ({
   AppEnv: {},
 }));
 
-vi.mock('drizzle-orm', () => ({
-  sql: {
-    raw: (_str: TemplateStringsArray, ..._vals: unknown[]) => ({
-      get: () => Promise.resolve({}),
-      run: () => Promise.resolve({}),
-      execute: () => Promise.resolve({}),
-    }),
-  },
-}));
-
 describe('lifecycle middleware', () => {
   let mockDb: DrizzleDB;
   let mockEnv: AppEnv['Bindings'];

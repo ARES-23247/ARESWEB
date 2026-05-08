@@ -4,6 +4,32 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
 import * as mediaApi from "./media";
 
+// Define types for the mocked client
+interface MockMediaClient {
+  $get: ReturnType<typeof vi.fn>;
+  admin: {
+    $get: ReturnType<typeof vi.fn>;
+    upload: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    move: {
+      ":key": {
+        $put: ReturnType<typeof vi.fn>;
+      };
+    };
+    ":key": {
+      $delete: ReturnType<typeof vi.fn>;
+    };
+    syndicate: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+  };
+}
+
+interface MockHonoClient {
+  media: MockMediaClient;
+}
+
 // Mock the honoClient module
 vi.mock("./honoClient", () => ({
   client: {
@@ -31,8 +57,14 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as MockHonoClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
+
+// Type aliases for mutation parameters
+// type UploadMediaParams = Parameters<ReturnType<typeof mediaApi.useUploadMedia>['mutate']>[0];
+type MoveMediaParams = Parameters<ReturnType<typeof mediaApi.useMoveMedia>['mutate']>[0];
+type DeleteMediaParams = Parameters<ReturnType<typeof mediaApi.useDeleteMedia>['mutate']>[0];
+type SyndicateMediaParams = Parameters<ReturnType<typeof mediaApi.useSyndicateMedia>['mutate']>[0];
 
 const createQueryClient = () =>
   new QueryClient({
@@ -116,7 +148,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useUploadMedia(), { wrapper });
 
-      result.current.mutate(new mediaApi.UploadFormData(formData as any));
+      result.current.mutate(new mediaApi.UploadFormData(formData));
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -137,7 +169,7 @@ describe("Media API", () => {
       const { result } = renderHook(() => mediaApi.useUploadMedia(), { wrapper: customWrapper });
 
       const formData = new FormData();
-      result.current.mutate(new mediaApi.UploadFormData(formData as any));
+      result.current.mutate(new mediaApi.UploadFormData(formData));
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin-media"] });
@@ -152,7 +184,7 @@ describe("Media API", () => {
       const { result } = renderHook(() => mediaApi.useUploadMedia(), { wrapper });
 
       const formData = new FormData();
-      result.current.mutate(new mediaApi.UploadFormData(formData as any));
+      result.current.mutate(new mediaApi.UploadFormData(formData));
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -166,7 +198,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useMoveMedia(), { wrapper });
 
-      result.current.mutate({ key: "photo.jpg", folder: "2024" } as any);
+      result.current.mutate({ key: "photo.jpg", folder: "2024" } as MoveMediaParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.media.admin.move[":key"].$put).toHaveBeenCalledWith({
@@ -190,7 +222,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useMoveMedia(), { wrapper: customWrapper });
 
-      result.current.mutate({ key: "test.jpg", folder: "archive" } as any);
+      result.current.mutate({ key: "test.jpg", folder: "archive" } as MoveMediaParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin-media"] });
@@ -206,7 +238,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useDeleteMedia(), { wrapper });
 
-      result.current.mutate("photo.jpg" as any);
+      result.current.mutate("photo.jpg" as DeleteMediaParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.media.admin[":key"].$delete).toHaveBeenCalledWith({
@@ -228,7 +260,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useDeleteMedia(), { wrapper: customWrapper });
 
-      result.current.mutate("test.jpg" as any);
+      result.current.mutate("test.jpg" as DeleteMediaParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin-media"] });
@@ -242,7 +274,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useDeleteMedia(), { wrapper });
 
-      result.current.mutate("photo.jpg" as any);
+      result.current.mutate("photo.jpg" as DeleteMediaParams);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -256,7 +288,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useSyndicateMedia(), { wrapper });
 
-      result.current.mutate({ key: "photo.jpg", caption: "Championship winner!" } as any);
+      result.current.mutate({ key: "photo.jpg", caption: "Championship winner!" } as SyndicateMediaParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.media.admin.syndicate.$post).toHaveBeenCalledWith({
@@ -272,7 +304,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useSyndicateMedia(), { wrapper });
 
-      result.current.mutate({ key: "photo.jpg" } as any);
+      result.current.mutate({ key: "photo.jpg" } as SyndicateMediaParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.media.admin.syndicate.$post).toHaveBeenCalledWith({
@@ -287,7 +319,7 @@ describe("Media API", () => {
 
       const { result } = renderHook(() => mediaApi.useSyndicateMedia(), { wrapper });
 
-      result.current.mutate({ key: "photo.jpg" } as any);
+      result.current.mutate({ key: "photo.jpg" } as SyndicateMediaParams);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

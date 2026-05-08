@@ -173,10 +173,11 @@ export function useAddExternalSource(
       return response.json() as Promise<{ id: string; success: boolean }>;
     },
     ...options,
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
       queryClient.invalidateQueries({ queryKey: ["ai", "status"] });
-      (options?.onSuccess as any)?.();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (options?.onSuccess as any)?.(data, variables, context);
     }
   });
 }
@@ -200,7 +201,6 @@ export function useDeleteExternalSource(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

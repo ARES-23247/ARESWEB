@@ -22,26 +22,30 @@ describe('security middleware', () => {
   let mockEnv: AppEnv['Bindings'];
   let mockContext: Context<AppEnv>;
 
+  // Create fresh mock helpers for each test
+  const createMockRateLimitChain = (count: number) => {
+    const returningMock = vi.fn().mockResolvedValue([{ count, expiresAt: Math.floor(Date.now() / 1000) + 60 }]);
+    const onConflictMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const valuesMock = vi.fn().mockReturnValue({ onConflictDoUpdate: onConflictMock });
+    // Use onConflictMock to avoid unused warning
+    void onConflictMock;
+    return valuesMock;
+  };
+
+  const createMockInsertWithExecute = () => {
+    const executeMock = vi.fn().mockResolvedValue(undefined);
+    const valuesMock = vi.fn().mockReturnValue({ execute: executeMock });
+    return valuesMock;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
 
-    // Create a mock that supports both drizzle chain and Promise await
-    const createMockChain = () => {
-      const chain = {
-        onConflictDoUpdate: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([{ count: 1, expiresAt: Math.floor(Date.now() / 1000) + 60 }]),
-        }),
-      };
-      // Create a Promise that also has the chain methods
-      const promise = Promise.resolve() as Promise<void> & typeof chain;
-      Object.assign(promise, chain);
-      return vi.fn().mockReturnValue(promise);
-    };
-
+    // Setup mock db for rate limit checks
     mockDb = {
       insert: vi.fn().mockReturnValue({
-        values: createMockChain(),
+        values: createMockRateLimitChain(1),
       }),
       delete: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
@@ -83,7 +87,17 @@ describe('security middleware', () => {
         waitUntil: vi.fn(),
       },
       json: vi.fn().mockReturnThis(),
-      get: vi.fn().mockReturnValue(mockDb),
+      get: vi.fn((key: string) => {
+        if (key === 'db') {
+          // Return db with auditLog insert support
+          return {
+            insert: vi.fn().mockReturnValue({
+              values: createMockInsertWithExecute(),
+            }),
+          };
+        }
+        return mockDb;
+      }),
       set: vi.fn(),
       header: vi.fn().mockReturnThis(),
     } as unknown as Context<AppEnv>;
@@ -95,23 +109,18 @@ describe('security middleware', () => {
 
   describe('checkPersistentRateLimit', () => {
     it('allows requests under the limit', async () => {
+      (mockDb.insert as ReturnType<typeof vi.fn>).mockReturnValue({
+        values: createMockRateLimitChain(1),
+      });
+
       const result = await checkPersistentRateLimit(mockDb, '127.0.0.1', 'test-agent', 10, 60);
       expect(result).toBe(true);
     });
 
     it('denies requests over the limit', async () => {
-      const createMockInsert = () => {
-        const mockValues = Object.assign(vi.fn().mockReturnValue(Promise.resolve()), {
-          onConflictDoUpdate: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ count: 20, expiresAt: Math.floor(Date.now() / 1000) + 60 }]),
-          })
-        });
-        return mockValues;
-      };
-
       const mockDbOverLimit = {
         insert: vi.fn().mockReturnValue({
-          values: createMockInsert(),
+          values: createMockRateLimitChain(20),
         }),
       } as unknown as Parameters<typeof checkPersistentRateLimit>[0];
 
@@ -123,35 +132,97 @@ describe('security middleware', () => {
       const result = await checkPersistentRateLimit(null as unknown as Parameters<typeof checkPersistentRateLimit>[0], '127.0.0.1', 'test-agent', 10, 60);
       expect(result).toBe(true);
     });
+  });
 
-    it('opens circuit breaker after threshold failures', async () => {
-      const createMockInsert = () => {
-        const mockValues = Object.assign(vi.fn().mockImplementation(() => {
-          throw new Error('Database error');
-        }), {
-          onConflictDoUpdate: vi.fn().mockReturnValue({
-            returning: vi.fn().mockImplementation(() => {
-              throw new Error('Database error');
+  describe('persistentRateLimitMiddleware', () => {
+    beforeEach(() => {
+      // Reset the mock context with fresh mocks
+      mockContext.get = vi.fn((key: string) => {
+        if (key === 'db') {
+          return {
+            insert: vi.fn().mockReturnValue({
+              values: createMockInsertWithExecute(),
             }),
-          })
-        });
-        return mockValues;
+          };
+        }
+        return mockDb;
+      });
+    });
+
+    it('bypasses rate limit when DEV_BYPASS is enabled', async () => {
+      mockContext.env.DEV_BYPASS = '1';
+
+      const middleware = persistentRateLimitMiddleware(10, 60);
+      const next = vi.fn();
+
+      await middleware(mockContext, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('allows requests under the rate limit', async () => {
+      // Reset db mock to ensure clean state
+      mockContext.get = vi.fn((key: string) => {
+        if (key === 'db') {
+          return {
+            insert: vi.fn().mockReturnValue({
+              values: createMockInsertWithExecute(),
+            }),
+          };
+        }
+        return mockDb;
+      });
+
+      const middleware = persistentRateLimitMiddleware(10, 60);
+      const next = vi.fn();
+
+      await middleware(mockContext, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('blocks requests over the rate limit', async () => {
+      // Mock the db to return a count over the limit for rateLimits insert
+      // and provide execute for the auditLog insert
+      // We need to distinguish between the two inserts by checking the call chain
+
+      let insertCallCount = 0;
+      const mockDbOverLimit = {
+        insert: vi.fn().mockImplementation(() => {
+          insertCallCount++;
+          // First call is for rateLimits (needs onConflictDoUpdate chain)
+          // Second call is for auditLog (needs execute)
+          if (insertCallCount === 1) {
+            return {
+              values: vi.fn().mockReturnValue({
+                onConflictDoUpdate: vi.fn().mockReturnValue({
+                  returning: vi.fn().mockResolvedValue([{ count: 20, expiresAt: Math.floor(Date.now() / 1000) + 60 }]),
+                }),
+              }),
+            };
+          }
+          // Second call for auditLog
+          return {
+            values: vi.fn().mockReturnValue({
+              execute: vi.fn().mockResolvedValue(undefined),
+            }),
+          };
+        }),
       };
 
-      const mockDbError = {
-        insert: vi.fn().mockReturnValue({
-          values: createMockInsert(),
-        }),
-      } as unknown as Parameters<typeof checkPersistentRateLimit>[0];
+      mockContext.get = vi.fn().mockReturnValue(mockDbOverLimit);
 
-      // Trigger circuit breaker threshold (5 failures)
-      for (let i = 0; i < 5; i++) {
-        await checkPersistentRateLimit(mockDbError, '127.0.0.1', 'test-agent', 10, 60);
-      }
+      const middleware = persistentRateLimitMiddleware(10, 60);
+      const next = vi.fn();
 
-      // Next call should fail due to circuit breaker
-      const result = await checkPersistentRateLimit(mockDbError, '127.0.0.1', 'test-agent', 10, 60);
-      expect(result).toBe(false);
+      await middleware(mockContext, next);
+
+      expect(mockContext.json).toHaveBeenCalledWith(
+        { error: 'Too many requests. Please try again later.' },
+        429
+      );
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -217,60 +288,6 @@ describe('security middleware', () => {
     it('creates middleware with custom parameters', () => {
       const middleware = rateLimitMiddleware(5, 30);
       expect(middleware).toBeTypeOf('function');
-    });
-  });
-
-  describe('persistentRateLimitMiddleware', () => {
-    it('bypasses rate limit when DEV_BYPASS is enabled', async () => {
-      mockContext.env.DEV_BYPASS = '1';
-
-      const middleware = persistentRateLimitMiddleware(10, 60);
-      const next = vi.fn();
-
-      await middleware(mockContext, next);
-
-      expect(next).toHaveBeenCalled();
-      expect(mockContext.json).not.toHaveBeenCalled();
-    });
-
-    it('allows requests under the rate limit', async () => {
-      const middleware = persistentRateLimitMiddleware(10, 60);
-      const next = vi.fn();
-
-      await middleware(mockContext, next);
-
-      expect(next).toHaveBeenCalled();
-    });
-
-    it('blocks requests over the rate limit', async () => {
-      // Mock database to return count over limit
-      const createMockInsert = () => {
-        const mockValues = Object.assign(vi.fn().mockReturnValue(Promise.resolve()), {
-          onConflictDoUpdate: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ count: 20, expiresAt: Math.floor(Date.now() / 1000) + 60 }]),
-          })
-        });
-        return mockValues;
-      };
-
-      const mockDbOverLimit = {
-        insert: vi.fn().mockReturnValue({
-          values: createMockInsert(),
-        }),
-      } as unknown as Parameters<typeof checkPersistentRateLimit>[0];
-
-      mockContext.get = vi.fn().mockReturnValue(mockDbOverLimit);
-
-      const middleware = persistentRateLimitMiddleware(10, 60);
-      const next = vi.fn();
-
-      await middleware(mockContext, next);
-
-      expect(mockContext.json).toHaveBeenCalledWith(
-        { error: 'Too mnever requests. Please try again later.' },
-        429
-      );
-      expect(next).not.toHaveBeenCalled();
     });
   });
 

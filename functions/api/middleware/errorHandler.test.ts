@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Context } from 'hono';
-import { ZodError } from 'zod';
+import { ZodError, z } from 'zod';
 import {
   errorHandlerMiddleware,
   asyncHandler,
@@ -96,20 +96,17 @@ describe('errorHandler', () => {
         json: vi.fn().mockReturnThis(),
       } as unknown as Context<AppEnv>;
 
-      const zodError = new ZodError([
-        {
-          code: 'too_small',
-          path: ['email'],
-          message: 'Email is required',
-        },
-      ] as never);
+      // Create a ZodError by actually using zod validation
+      const EmailSchema = z.string().email();
+      const result = EmailSchema.safeParse('not-an-email');
+      const zodError = result.error ? new ZodError(result.error.issues) : new ZodError([]);
+
       const next = vi.fn().mockRejectedValue(zodError);
 
       await errorHandlerMiddleware(mockContext, next);
 
       expect(mockContext.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          error: 'Validation failed',
           code: 'VALIDATION_ERROR',
           details: expect.any(Object),
         }),

@@ -60,7 +60,6 @@ export function useUpdateMe(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -80,7 +79,6 @@ export function useUpdateAvatar(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

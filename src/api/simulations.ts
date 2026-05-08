@@ -38,6 +38,16 @@ export interface SuccessResponse {
   success: boolean;
 }
 
+export interface SaveSimulationRequest {
+  name?: string;
+  files: Record<string, string>;
+}
+
+export interface CreateGistRequest {
+  name?: string;
+  files: Record<string, string>;
+}
+
 // ============================================
 // Simulations
 // ============================================
@@ -91,7 +101,6 @@ export function useSaveSimulation(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -111,7 +120,6 @@ export function useDeleteSimulation(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

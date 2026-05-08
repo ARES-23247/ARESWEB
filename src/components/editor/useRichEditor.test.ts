@@ -15,6 +15,7 @@ import { useRichEditor } from "./useRichEditor";
 import * as Y from "yjs";
 
 // Mock @tiptap/react
+// Define mockEditor outside the mock factory for test access
 const mockEditor = {
   isEditable: true,
   isEmpty: false,
@@ -32,12 +33,14 @@ const mockEditor = {
   },
 };
 
-const mockUseEditor = vi.fn(() => mockEditor);
-
 vi.mock("@tiptap/react", () => ({
-  useEditor: mockUseEditor,
+  useEditor: vi.fn(() => mockEditor),
   Editor: class MockEditor {},
 }));
+
+// Import the mocked useEditor after the mock is set up
+import { useEditor } from "@tiptap/react";
+const mockUseEditor = vi.mocked(useEditor);
 
 // Mock lowlight
 vi.mock("lowlight", () => ({
@@ -71,14 +74,15 @@ vi.mock("yjs", () => ({
 }));
 
 describe("useRichEditor", () => {
-  let createLowlightMock: any;
+  let createLowlightMock: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
 
     // Import and mock createLowlight
     const lowlightModule = await import("lowlight");
-    createLowlightMock = vi.spyOn(lowlightModule, "createLowlight");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    createLowlightMock = vi.spyOn(lowlightModule, "createLowlight") as any;
   });
 
   afterEach(() => {
@@ -171,7 +175,7 @@ describe("useRichEditor", () => {
       );
 
       expect(mockUseEditor).toHaveBeenCalled();
-      const extensions = ((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).extensions;
+      const extensions = (vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { extensions?: unknown[] } | undefined)?.extensions;
       expect(extensions).toBeDefined();
       expect(Array.isArray(extensions)).toBe(true);
     });
@@ -214,23 +218,27 @@ describe("useRichEditor", () => {
     it("should apply correct CSS classes", () => {
       renderHook(() => useRichEditor());
 
-      const editorProps = ((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).editorProps;
+      const editorProps = (vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { editorProps?: { attributes: { class: string; spellcheck: string } } } | undefined)?.editorProps;
+      expect(editorProps).toBeDefined();
 
-      expect(editorProps.attributes.class).toContain("prose");
-      expect(editorProps.attributes.class).toContain("prose-invert");
-      expect(editorProps.attributes.class).toContain("max-w-none");
-      expect(editorProps.attributes.class).toContain("focus:outline-none");
-      expect(editorProps.attributes.class).toContain("min-h-[400px]");
-      expect(editorProps.attributes.class).toContain("text-[#e6edf3]");
-      expect(editorProps.attributes.class).toContain("font-mono");
+      const props = editorProps!;
+      expect(props.attributes.class).toContain("prose");
+      expect(props.attributes.class).toContain("prose-invert");
+      expect(props.attributes.class).toContain("max-w-none");
+      expect(props.attributes.class).toContain("focus:outline-none");
+      expect(props.attributes.class).toContain("min-h-[400px]");
+      expect(props.attributes.class).toContain("text-[#e6edf3]");
+      expect(props.attributes.class).toContain("font-mono");
     });
 
     it("should enable spellcheck", () => {
       renderHook(() => useRichEditor());
 
-      const editorProps = ((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).editorProps;
+      const editorProps = (vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { editorProps?: { attributes: { class: string; spellcheck: string } } } | undefined)?.editorProps;
+      expect(editorProps).toBeDefined();
 
-      expect(editorProps.attributes.spellcheck).toBe("true");
+      const props = editorProps!;
+      expect(props.attributes.spellcheck).toBe("true");
     });
   });
 
@@ -238,11 +246,11 @@ describe("useRichEditor", () => {
     it("should load editor extensions", () => {
       renderHook(() => useRichEditor());
 
-      const extensions = ((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).extensions;
+      const extensions = (vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { extensions?: unknown[] } | undefined)?.extensions;
 
       expect(extensions).toBeDefined();
       expect(Array.isArray(extensions)).toBe(true);
-      expect(extensions.length).toBeGreaterThan(0);
+      expect(extensions?.length ?? 0).toBeGreaterThan(0);
     });
 
     it("should include collaboration extensions when Ydoc is provided", () => {
@@ -254,10 +262,10 @@ describe("useRichEditor", () => {
         })
       );
 
-      const extensions = ((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).extensions;
+      const extensions = (vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { extensions?: unknown[] } | undefined)?.extensions;
 
       // Should have collaboration extensions
-      expect(extensions.length).toBeGreaterThan(0);
+      expect(extensions?.length ?? 0).toBeGreaterThan(0);
     });
 
     it("should include cursor extension when provider is provided", () => {
@@ -278,10 +286,10 @@ describe("useRichEditor", () => {
         })
       );
 
-      const extensions = ((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).extensions;
+      const extensions = (vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { extensions?: unknown[] } | undefined)?.extensions;
 
       // Should have cursor extension when provider is present
-      expect(extensions.length).toBeGreaterThan(0);
+      expect(extensions?.length ?? 0).toBeGreaterThan(0);
     });
   });
 
@@ -308,7 +316,7 @@ describe("useRichEditor", () => {
         { initialProps: { ydoc: mockYDoc1 } }
       );
 
-      expect(((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).extensions).toBeDefined();
+      expect((vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { extensions?: unknown[] } | undefined)?.extensions).toBeDefined();
 
       rerender({ ydoc: mockYDoc2 });
 
@@ -435,13 +443,14 @@ describe("useRichEditor", () => {
     it("should include accessible markup attributes", () => {
       renderHook(() => useRichEditor());
 
-      const editorProps = ((vi.mocked(mockUseEditor).mock.calls as any)[0][0]).editorProps;
+      const editorProps = (vi.mocked(mockUseEditor).mock.calls[0]?.[0] as { editorProps?: { attributes: { class: string; spellcheck: string } } } | undefined)?.editorProps;
 
       // Verify attributes object is properly structured
       expect(editorProps).toBeDefined();
-      expect(editorProps.attributes).toBeDefined();
-      expect(typeof editorProps.attributes.class).toBe("string");
-      expect(typeof editorProps.attributes.spellcheck).toBe("string");
+      const props = editorProps!;
+      expect(props.attributes).toBeDefined();
+      expect(typeof props.attributes.class).toBe("string");
+      expect(typeof props.attributes.spellcheck).toBe("string");
     });
   });
 });

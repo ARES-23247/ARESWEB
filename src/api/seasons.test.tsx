@@ -29,7 +29,31 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+// Mock types for the Hono client
+interface MockSeasonsClient {
+  $get: ReturnType<typeof vi.fn>;
+  ":year": {
+    $get: ReturnType<typeof vi.fn>;
+  };
+  admin: {
+    list: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    ":id": {
+      $get: ReturnType<typeof vi.fn>;
+      $delete: ReturnType<typeof vi.fn>;
+    };
+    save: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+  };
+}
+
+interface MockClient {
+  seasons: MockSeasonsClient;
+}
+
+const mockClient = honoClient.client as MockClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -188,13 +212,14 @@ describe("Seasons API", () => {
 
       const { result } = renderHook(() => seasonsApi.useSaveSeason(), { wrapper });
 
-      const seasonData = {
-        year: "2024",
-        game_name: "Into the Deep",
+      const seasonData: seasonsApi.SeasonPayload = {
+        start_year: 2024,
+        end_year: 2025,
+        challenge_name: "Into the Deep",
         robot_name: "Atlas",
       };
 
-      result.current.mutate(seasonData as any);
+      result.current.mutate(seasonData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.seasons.admin.save.$post).toHaveBeenCalledWith({
@@ -209,7 +234,7 @@ describe("Seasons API", () => {
 
       const { result } = renderHook(() => seasonsApi.useSaveSeason(), { wrapper });
 
-      result.current.mutate({ year: "2024" } as any);
+      result.current.mutate({ start_year: 2024, end_year: 2025, challenge_name: "Test" } as seasonsApi.SeasonPayload);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -229,7 +254,7 @@ describe("Seasons API", () => {
 
       const { result } = renderHook(() => seasonsApi.useSaveSeason(), { wrapper: customWrapper });
 
-      result.current.mutate({ year: "2024" } as any);
+      result.current.mutate({ start_year: 2024, end_year: 2025, challenge_name: "Test" } as seasonsApi.SeasonPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["seasons"] });
@@ -245,7 +270,7 @@ describe("Seasons API", () => {
 
       const { result } = renderHook(() => seasonsApi.useDeleteSeason(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.seasons.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -260,7 +285,7 @@ describe("Seasons API", () => {
 
       const { result } = renderHook(() => seasonsApi.useDeleteSeason(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);

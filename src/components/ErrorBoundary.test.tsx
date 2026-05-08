@@ -251,17 +251,6 @@ describe("ErrorBoundary Component", () => {
   });
 
   describe("Stale Chunk Error Handling", () => {
-    const originalSessionStorage = window.sessionStorage;
-
-    beforeEach(() => {
-      // Reset session storage before each stale chunk test
-      window.sessionStorage.clear();
-    });
-
-    afterEach(() => {
-      window.sessionStorage = originalSessionStorage;
-    });
-
     it("detects stale chunk errors", () => {
       const ThrowStaleChunkError = () => {
         const error = new Error("Failed to fetch dynamically imported module");

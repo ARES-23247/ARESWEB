@@ -24,7 +24,7 @@ describe('BAND Social Integration', () => {
     BAND_KEY: 'test_band_key_123',
   };
 
-  const partialConfig: SocialConfig = {
+  const _partialConfig: SocialConfig = {
     BAND_ACCESS_TOKEN: 'test_band_token',
   };
 
@@ -140,7 +140,7 @@ describe('BAND Social Integration', () => {
     });
 
     it('retries up to 2 times on failure', async () => {
-      const failResponse = {
+      const _failResponse = {
         ok: false,
         text: async () => 'Service unavailable',
       };
@@ -162,7 +162,7 @@ describe('BAND Social Integration', () => {
     });
 
     it('waits 1500ms between retries', async () => {
-      const failResponse = {
+      const _failResponse = {
         ok: false,
         text: async () => 'Failed',
       };

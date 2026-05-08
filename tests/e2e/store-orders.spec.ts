@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { setupMockAuth, MOCK_ADMIN_USER } from '../fixtures/auth';
+import { setupMockAuth } from '../fixtures/auth';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 /**
@@ -124,16 +124,16 @@ test.describe('Store Orders Dashboard', () => {
     await setupMockAuth(page);
 
     // Mock GET /api/store/orders - List all orders
-    await page.route('**/api/store/orders*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/store/orders*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { orders: createMockOrders() },
       });
     });
 
     // Mock PATCH /api/store/orders/:id/status - Update order fulfillment status
-    await page.route('**/api/store/orders/*/status', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/store/orders/*/status', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true },
       });
@@ -302,8 +302,8 @@ test.describe('Store Orders Dashboard', () => {
 
   test('displays empty state when no orders exist', async ({ page }) => {
     // Override mock to return empty list
-    await page.route('**/api/store/orders*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/store/orders*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { orders: [] },
       });
@@ -331,9 +331,9 @@ test.describe('Store Orders Dashboard', () => {
 
   test('displays loading state while fetching orders', async ({ page }) => {
     // Slow down the API response to ensure loading state is visible
-    await page.route('**/api/store/orders*', async (route) => {
+    await page.route('**/api/store/orders*', async (_route) => {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { orders: createMockOrders() },
       });
@@ -456,8 +456,8 @@ test.describe('Store Orders Dashboard', () => {
 test.describe('Store Orders - Permissions', () => {
   test('redirects unauthorized users away from store orders page', async ({ page }) => {
     // Setup mock auth with non-admin user
-    await page.route('**/api/auth/get-session', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/auth/get-session', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           session: {
@@ -481,8 +481,8 @@ test.describe('Store Orders - Permissions', () => {
     });
 
     // Mock profile with member role
-    await page.route('**/profile/me', async (route) => {
-      await route.fulfill({
+    await page.route('**/profile/me', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           user_id: 'regular-user',
@@ -511,8 +511,8 @@ test.describe('Store Orders - Permissions', () => {
     ]);
 
     // Mock orders API to return data (to test if UI actually blocks access)
-    await page.route('**/api/store/orders*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/store/orders*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { orders: createMockOrders() },
       });
@@ -539,11 +539,11 @@ test.describe('Store Orders - Keyboard Interaction', () => {
     await setupMockAuth(page);
 
     // Mock API responses
-    await page.route('**/api/store/orders*', async (route) => {
-      await route.fulfill({ status: 200, json: { orders: createMockOrders() } });
+    await page.route('**/api/store/orders*', async (_route) => {
+      await _route.fulfill({ status: 200, json: { orders: createMockOrders() } });
     });
-    await page.route('**/api/store/orders/*/status', async (route) => {
-      await route.fulfill({ status: 200, json: { success: true } });
+    await page.route('**/api/store/orders/*/status', async (_route) => {
+      await _route.fulfill({ status: 200, json: { success: true } });
     });
 
     await page.goto('/dashboard/store_orders');
@@ -567,8 +567,8 @@ test.describe('Store Orders - Keyboard Interaction', () => {
     await setupMockAuth(page);
 
     // Mock API responses
-    await page.route('**/api/store/orders*', async (route) => {
-      await route.fulfill({ status: 200, json: { orders: createMockOrders() } });
+    await page.route('**/api/store/orders*', async (_route) => {
+      await _route.fulfill({ status: 200, json: { orders: createMockOrders() } });
     });
 
     await page.goto('/dashboard/store_orders');

@@ -94,7 +94,7 @@ describe("honoClient", () => {
         ok: true,
         json: vi.fn().mockResolvedValue(mockData),
       };
-      const result = await unwrapResponse<TestData>(mockResponse as any);
+      const result = await unwrapResponse<TestData>(mockResponse as unknown as Parameters<typeof unwrapResponse>[0]);
       expect(result).toEqual(mockData);
       expect(result.id).toBe("123");
       expect(result.name).toBe("Test");

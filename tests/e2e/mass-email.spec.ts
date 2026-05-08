@@ -35,23 +35,21 @@ test.describe('Mass Email Composer Dashboard', () => {
     await setupMockAuth(page);
 
     // Mock GET /api/communications/admin/stats - Get count of active users
-    await page.route('**/api/communications/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/communications/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: createMockStatsResponse(),
       });
     });
 
     // Mock POST /api/communications/admin/mass-email - Send mass email
-    let sendRequestCount = 0;
     await page.route('**/api/communications/admin/mass-email', async (route) => {
-      sendRequestCount++;
       if (route.request().method() === 'POST') {
         const requestBody = await route.request().postData();
-        const data = JSON.parse(requestBody || '{}');
+        const _data = JSON.parse(requestBody || '{}');
 
         // Validate request body
-        if (!data.subject || !data.htmlContent) {
+        if (!_data.subject || !_data.htmlContent) {
           await route.fulfill({
             status: 400,
             json: {
@@ -74,8 +72,8 @@ test.describe('Mass Email Composer Dashboard', () => {
     });
 
     // Mock Zulip presence to avoid body stream errors in a11y audit
-    await page.route('**/api/zulip/presence', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/zulip/presence', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true, presence: {}, userNames: {} },
       });
@@ -196,10 +194,10 @@ test.describe('Mass Email Composer Dashboard', () => {
 
   test('shows loading state while dispatching email', async ({ page }) => {
     // Slow down the API response to ensure loading state is visible
-    await page.route('**/api/communications/admin/mass-email', async (route) => {
+    await page.route('**/api/communications/admin/mass-email', async (_route) => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
+      if (_route.request().method() === 'POST') {
+        await _route.fulfill({
           status: 200,
           json: {
             success: true,
@@ -242,8 +240,8 @@ test.describe('Mass Email Composer Dashboard', () => {
 
   test('displays empty state when no active users exist', async ({ page }) => {
     // Override mock to return zero active users
-    await page.route('**/api/communications/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/communications/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: createMockStatsResponse({ activeUsers: 0 }),
       });
@@ -265,9 +263,9 @@ test.describe('Mass Email Composer Dashboard', () => {
 
   test('shows loading skeleton while fetching stats', async ({ page }) => {
     // Slow down the API response to ensure loading state is visible
-    await page.route('**/api/communications/admin/stats*', async (route) => {
+    await page.route('**/api/communications/admin/stats*', async (_route) => {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: createMockStatsResponse(),
       });
@@ -275,8 +273,6 @@ test.describe('Mass Email Composer Dashboard', () => {
 
     await page.goto('/dashboard/mass_email');
 
-    // Verify loading indicator is shown briefly
-    const loadingIndicator = page.locator('.animate-pulse').or(page.locator('[data-loading="true"]'));
     // The loading state appears briefly before content loads
 
     // Wait for content to load
@@ -287,8 +283,8 @@ test.describe('Mass Email Composer Dashboard', () => {
 
   test('displays error state when API fails', async ({ page }) => {
     // Override mock to return error
-    await page.route('**/api/communications/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/communications/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 500,
         json: { error: 'Internal Server Error' },
       });
@@ -447,8 +443,8 @@ test.describe('Mass Email Composer Dashboard', () => {
 
   test('warning icon displays properly for empty state', async ({ page }) => {
     // Override mock to return zero active users
-    await page.route('**/api/communications/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/communications/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: createMockStatsResponse({ activeUsers: 0 }),
       });
@@ -467,8 +463,8 @@ test.describe('Mass Email Composer Dashboard', () => {
 test.describe('Mass Email Composer - Permissions', () => {
   test('redirects unauthorized users away from mass email page', async ({ page }) => {
     // Setup mock auth with non-admin user
-    await page.route('**/api/auth/get-session', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/auth/get-session', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           session: {
@@ -492,8 +488,8 @@ test.describe('Mass Email Composer - Permissions', () => {
     });
 
     // Mock profile with member role
-    await page.route('**/profile/me', async (route) => {
-      await route.fulfill({
+    await page.route('**/profile/me', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           user_id: 'regular-user',
@@ -533,17 +529,17 @@ test.describe('Mass Email Composer - Error Handling', () => {
     await setupMockAuth(page);
 
     // Mock stats endpoint
-    await page.route('**/api/communications/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/communications/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: createMockStatsResponse(),
       });
     });
 
     // Mock send endpoint to return error
-    await page.route('**/api/communications/admin/mass-email', async (route) => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
+    await page.route('**/api/communications/admin/mass-email', async (_route) => {
+      if (_route.request().method() === 'POST') {
+        await _route.fulfill({
           status: 500,
           json: {
             success: false,
@@ -554,8 +550,8 @@ test.describe('Mass Email Composer - Error Handling', () => {
     });
 
     // Mock Zulip presence
-    await page.route('**/api/zulip/presence', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/zulip/presence', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true, presence: {}, userNames: {} },
       });
@@ -587,24 +583,24 @@ test.describe('Mass Email Composer - Error Handling', () => {
     await setupMockAuth(page);
 
     // Mock stats endpoint
-    await page.route('**/api/communications/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/communications/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: createMockStatsResponse(),
       });
     });
 
     // Mock send endpoint to timeout
-    await page.route('**/api/communications/admin/mass-email', async (route) => {
-      if (route.request().method() === 'POST') {
+    await page.route('**/api/communications/admin/mass-email', async (_route) => {
+      if (_route.request().method() === 'POST') {
         // Abort the request to simulate network error
-        await route.abort('failed');
+        await _route.abort('failed');
       }
     });
 
     // Mock Zulip presence
-    await page.route('**/api/zulip/presence', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/zulip/presence', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true, presence: {}, userNames: {} },
       });

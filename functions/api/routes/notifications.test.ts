@@ -294,7 +294,7 @@ describe('notifications router', () => {
     });
   });
 
-  describe('GET /notifications/dashboard', () => {
+  describe('GET /notifications/action-items', () => {
     it('returns detailed pending items for dashboard', async () => {
       mockDb = {
         select: vi.fn().mockReturnValue({
@@ -315,7 +315,7 @@ describe('notifications router', () => {
       });
 
       const route = notificationsRouter.routes.find((r: unknown) =>
-        typeof r === 'object' && r !== null && 'path' in r && typeof (r as Record<string, unknown>).path === 'string' && (r as Record<string, string>).path.includes('dashboard')
+        typeof r === 'object' && r !== null && 'path' in r && typeof (r as Record<string, unknown>).path === 'string' && (r as Record<string, string>).path.includes('action-items')
       );
 
       expect(route).toBeDefined();

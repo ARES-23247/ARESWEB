@@ -29,7 +29,26 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  notifications: {
+    $get: ReturnType<typeof vi.fn>;
+    ":id": {
+      read: {
+        $put: ReturnType<typeof vi.fn>;
+      };
+      $delete: ReturnType<typeof vi.fn>;
+    };
+    "read-all": {
+      $put: ReturnType<typeof vi.fn>;
+    };
+    "pending-counts": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    "action-items": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -84,7 +103,7 @@ describe("Notifications API", () => {
 
       const { result } = renderHook(() => notificationsApi.useMarkNotificationRead(), { wrapper });
 
-      result.current.mutate("notif-123" as any);
+      result.current.mutate("notif-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.notifications[":id"].read.$put).toHaveBeenCalledWith({
@@ -108,7 +127,7 @@ describe("Notifications API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate("notif-123" as any);
+      result.current.mutate("notif-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notifications"] });
@@ -121,7 +140,7 @@ describe("Notifications API", () => {
 
       const { result } = renderHook(() => notificationsApi.useMarkNotificationRead(), { wrapper });
 
-      result.current.mutate("notif-123" as any);
+      result.current.mutate("notif-123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -172,7 +191,7 @@ describe("Notifications API", () => {
 
       const { result } = renderHook(() => notificationsApi.useDeleteNotification(), { wrapper });
 
-      result.current.mutate("notif-123" as any);
+      result.current.mutate("notif-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.notifications[":id"].$delete).toHaveBeenCalledWith({
@@ -196,7 +215,7 @@ describe("Notifications API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate("notif-123" as any);
+      result.current.mutate("notif-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notifications"] });
@@ -209,7 +228,7 @@ describe("Notifications API", () => {
 
       const { result } = renderHook(() => notificationsApi.useDeleteNotification(), { wrapper });
 
-      result.current.mutate("notif-123" as any);
+      result.current.mutate("notif-123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

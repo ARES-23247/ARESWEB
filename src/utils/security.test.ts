@@ -69,12 +69,12 @@ describe('security utility - HMAC tutorial progress', () => {
   });
 
   it('should reject data without progress', async () => {
-    const verified = await verifyTutorialProgress({ signature: 'abc' } as any);
+    const verified = await verifyTutorialProgress({ signature: 'abc' } as never);
     expect(verified).toBeNull();
   });
 
   it('should reject data without signature', async () => {
-    const verified = await verifyTutorialProgress({ progress: ['step1'] } as any);
+    const verified = await verifyTutorialProgress({ progress: ['step1'] } as never);
     expect(verified).toBeNull();
   });
 

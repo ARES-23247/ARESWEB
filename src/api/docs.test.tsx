@@ -4,6 +4,64 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
 import * as docsApi from "./docs";
 
+// Define types for the mocked client
+interface MockDocsClient {
+  $get: ReturnType<typeof vi.fn>;
+  ":slug": {
+    $get: ReturnType<typeof vi.fn>;
+    feedback: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+  };
+  search: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+  admin: {
+    list: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    ":slug": {
+      detail: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+      sort: {
+        $patch: ReturnType<typeof vi.fn>;
+      };
+      approve: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      reject: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      $delete: ReturnType<typeof vi.fn>;
+      undelete: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      purge: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      history: {
+        $get: ReturnType<typeof vi.fn>;
+        ":id": {
+          restore: {
+            $patch: ReturnType<typeof vi.fn>;
+          };
+        };
+      };
+    };
+    save: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    export: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+}
+
+interface MockHonoClient {
+  docs: MockDocsClient;
+}
+
 // Mock the honoClient module
 vi.mock("./honoClient", () => ({
   client: {
@@ -63,8 +121,19 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as MockHonoClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
+
+// Type aliases for mutation parameters
+type SaveDocParams = Parameters<ReturnType<typeof docsApi.useSaveDoc>['mutate']>[0];
+type UpdateDocSortParams = Parameters<ReturnType<typeof docsApi.useUpdateDocSort>['mutate']>[0];
+type SubmitDocFeedbackParams = Parameters<ReturnType<typeof docsApi.useSubmitDocFeedback>['mutate']>[0];
+type RestoreDocHistoryParams = Parameters<ReturnType<typeof docsApi.useRestoreDocHistory>['mutate']>[0];
+type ApproveDocParams = Parameters<ReturnType<typeof docsApi.useApproveDoc>['mutate']>[0];
+type RejectDocParams = Parameters<ReturnType<typeof docsApi.useRejectDoc>['mutate']>[0];
+// type DeleteDocParams = Parameters<ReturnType<typeof docsApi.useDeleteDoc>['mutate']>[0];
+// type UndeleteDocParams = Parameters<ReturnType<typeof docsApi.useUndeleteDoc>['mutate']>[0];
+// type PurgeDocParams = Parameters<ReturnType<typeof docsApi.usePurgeDoc>['mutate']>[0];
 
 const createQueryClient = () =>
   new QueryClient({
@@ -229,7 +298,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useSaveDoc(), { wrapper });
 
-      result.current.mutate(docData as any);
+      result.current.mutate(docData as SaveDocParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin.save.$post).toHaveBeenCalledWith({ json: docData });
@@ -249,7 +318,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useSaveDoc(), { wrapper: customWrapper });
 
-      result.current.mutate({ slug: "test", title: "Test" } as unknown as any);
+      result.current.mutate({ slug: "test", title: "Test" } as SaveDocParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["docs"] });
@@ -265,7 +334,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useUpdateDocSort(), { wrapper });
 
-      result.current.mutate({ slug: "test-doc", sortOrder: 5 } as any);
+      result.current.mutate({ slug: "test-doc", sortOrder: 5 } as UpdateDocSortParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin[":slug"].sort.$patch).toHaveBeenCalledWith({
@@ -286,7 +355,7 @@ describe("Docs API", () => {
       result.current.mutate({
         slug: "test-doc",
         data: { isHelpful: true, turnstileToken: "token123" },
-      } as any);
+      } as SubmitDocFeedbackParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs[":slug"].feedback.$post).toHaveBeenCalledWith({
@@ -305,7 +374,7 @@ describe("Docs API", () => {
       result.current.mutate({
         slug: "test-doc",
         data: { isHelpful: false, comment: "Not clear enough", turnstileToken: "token" },
-      } as any);
+      } as SubmitDocFeedbackParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs[":slug"].feedback.$post).toHaveBeenCalledWith({
@@ -340,7 +409,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useRestoreDocHistory(), { wrapper });
 
-      result.current.mutate({ slug: "test-doc", id: 123 } as any);
+      result.current.mutate({ slug: "test-doc", id: 123 } as RestoreDocHistoryParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin[":slug"].history[":id"].restore.$patch).toHaveBeenCalledWith({
@@ -357,7 +426,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useApproveDoc(), { wrapper });
 
-      result.current.mutate("test-doc" as any);
+      result.current.mutate("test-doc" as ApproveDocParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin[":slug"].approve.$post).toHaveBeenCalledWith({
@@ -374,7 +443,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useRejectDoc(), { wrapper });
 
-      result.current.mutate({ slug: "test-doc", reason: "Inaccurate information" } as any);
+      result.current.mutate({ slug: "test-doc", reason: "Inaccurate information" } as RejectDocParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin[":slug"].reject.$post).toHaveBeenCalledWith({
@@ -392,7 +461,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useDeleteDoc(), { wrapper });
 
-      result.current.mutate("test-doc" as any);
+      result.current.mutate("test-doc" as ApproveDocParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin[":slug"].$delete).toHaveBeenCalledWith({
@@ -409,7 +478,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.useUndeleteDoc(), { wrapper });
 
-      result.current.mutate("test-doc" as any);
+      result.current.mutate("test-doc" as ApproveDocParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin[":slug"].undelete.$post).toHaveBeenCalledWith({
@@ -426,7 +495,7 @@ describe("Docs API", () => {
 
       const { result } = renderHook(() => docsApi.usePurgeDoc(), { wrapper });
 
-      result.current.mutate("test-doc" as any);
+      result.current.mutate("test-doc" as ApproveDocParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.docs.admin[":slug"].purge.$post).toHaveBeenCalledWith({

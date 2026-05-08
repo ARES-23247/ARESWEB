@@ -73,7 +73,6 @@ export function useCreateTask(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -93,7 +92,6 @@ export function useUpdateTask(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -113,7 +111,6 @@ export function useDeleteTask(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -133,7 +130,6 @@ export function useReorderTasks(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

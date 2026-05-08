@@ -28,8 +28,26 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  inquiries: {
+    $post: ReturnType<typeof vi.fn>;
+    admin: {
+      list: { $get: ReturnType<typeof vi.fn> };
+      ":id": {
+        status: { $patch: ReturnType<typeof vi.fn> };
+        notes: { $patch: ReturnType<typeof vi.fn> };
+        $delete: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
+
+// Type aliases for mutation parameters
+type SubmitInquiryParams = Parameters<ReturnType<typeof inquiriesApi.useSubmitInquiry>['mutate']>[0];
+type UpdateInquiryStatusParams = Parameters<ReturnType<typeof inquiriesApi.useUpdateInquiryStatus>['mutate']>[0];
+type UpdateInquiryNotesParams = Parameters<ReturnType<typeof inquiriesApi.useUpdateInquiryNotes>['mutate']>[0];
+type DeleteInquiryParams = Parameters<ReturnType<typeof inquiriesApi.useDeleteInquiry>['mutate']>[0];
 
 const createQueryClient = () =>
   new QueryClient({
@@ -105,7 +123,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useSubmitInquiry(), { wrapper });
 
-      result.current.mutate(inquiryData as unknown as any);
+      result.current.mutate(inquiryData as unknown as SubmitInquiryParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.inquiries.$post).toHaveBeenCalledWith({
@@ -121,7 +139,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useSubmitInquiry(), { wrapper });
 
-      result.current.mutate({ name: "Test", email: "test@test.com", type: "mentor", message: "Hi" } as unknown as any);
+      result.current.mutate({ name: "Test", email: "test@test.com", type: "mentor", message: "Hi" } as unknown as SubmitInquiryParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data?.warning).toBe("Duplicate inquiry detected");
@@ -141,7 +159,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useSubmitInquiry(), { wrapper: customWrapper });
 
-      result.current.mutate({ name: "Test", email: "test@test.com", type: "student", message: "Test" } as unknown as any);
+      result.current.mutate({ name: "Test", email: "test@test.com", type: "student", message: "Test" } as unknown as SubmitInquiryParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin_inquiries"] });
@@ -157,7 +175,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useUpdateInquiryStatus(), { wrapper });
 
-      result.current.mutate({ id: "inquiry-123", status: "contacted" } as any);
+      result.current.mutate({ id: "inquiry-123", status: "contacted" } as UpdateInquiryStatusParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.inquiries.admin[":id"].status.$patch).toHaveBeenCalledWith({
@@ -180,7 +198,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useUpdateInquiryStatus(), { wrapper: customWrapper });
 
-      result.current.mutate({ id: "123", status: "completed" } as any);
+      result.current.mutate({ id: "123", status: "completed" } as UpdateInquiryStatusParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin_inquiries"] });
@@ -196,7 +214,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useUpdateInquiryNotes(), { wrapper });
 
-      result.current.mutate({ id: "inquiry-123", notes: "Called and left voicemail" } as any);
+      result.current.mutate({ id: "inquiry-123", notes: "Called and left voicemail" } as UpdateInquiryNotesParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.inquiries.admin[":id"].notes.$patch).toHaveBeenCalledWith({
@@ -212,7 +230,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useUpdateInquiryNotes(), { wrapper });
 
-      result.current.mutate({ id: "inquiry-123", notes: null } as any);
+      result.current.mutate({ id: "inquiry-123", notes: null } as UpdateInquiryNotesParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.inquiries.admin[":id"].notes.$patch).toHaveBeenCalledWith({
@@ -230,7 +248,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useDeleteInquiry(), { wrapper });
 
-      result.current.mutate("inquiry-123" as any);
+      result.current.mutate("inquiry-123" as DeleteInquiryParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.inquiries.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -252,7 +270,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useDeleteInquiry(), { wrapper: customWrapper });
 
-      result.current.mutate("inquiry-123" as any);
+      result.current.mutate("inquiry-123" as DeleteInquiryParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["admin_inquiries"] });
@@ -266,7 +284,7 @@ describe("Inquiries API", () => {
 
       const { result } = renderHook(() => inquiriesApi.useDeleteInquiry(), { wrapper });
 
-      result.current.mutate("inquiry-123" as any);
+      result.current.mutate("inquiry-123" as DeleteInquiryParams);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

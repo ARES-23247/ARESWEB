@@ -49,38 +49,14 @@ const MOCK_SIMULATIONS = [
 /**
  * Mock sim registry metadata (from sim-registry.ts).
  */
-const MOCK_SIM_REGISTRY = [
-  {
-    id: 'armkg',
-    name: 'Arm Kinematics Gravity Model',
-    folder: 'armkg',
-    requiresContext: false,
-  },
-  {
-    id: 'elevatorpid',
-    name: 'Elevator PID Tuning',
-    folder: 'elevatorpid',
-    requiresContext: false,
-  },
-  {
-    id: 'swerve',
-    name: 'Swerve Kinematics Playground',
-    folder: 'swerve',
-    requiresContext: false,
-  },
-  {
-    id: 'nnIntro',
-    name: 'Sim 1: Neural Networks Basics',
-    folder: 'nn-intro',
-    requiresContext: false,
-  },
-  {
-    id: 'field',
-    name: 'PathPlanner Canvas Renderer',
-    folder: 'field',
-    requiresContext: true,
-  },
-] as const;
+// Sim registry metadata for reference (unused in current tests):
+// const MOCK_SIM_REGISTRY = [
+//   { id: 'armkg', name: 'Arm Kinematics Gravity Model', folder: 'armkg', requiresContext: false },
+//   { id: 'elevatorpid', name: 'Elevator PID Tuning', folder: 'elevatorpid', requiresContext: false },
+//   { id: 'swerve', name: 'Swerve Kinematics Playground', folder: 'swerve', requiresContext: false },
+//   { id: 'nnIntro', name: 'Sim 1: Neural Networks Basics', folder: 'nn-intro', requiresContext: false },
+//   { id: 'field', name: 'PathPlanner Canvas Renderer', folder: 'field', requiresContext: true },
+// ] as const;
 
 test.describe('Sim Manager Dashboard', () => {
   let dashboardPage: DashboardPage;
@@ -92,9 +68,9 @@ test.describe('Sim Manager Dashboard', () => {
     await setupMockAuth(page);
 
     // Mock GET /api/simulations - List all user simulations
-    await page.route('**/api/simulations', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
+    await page.route('**/api/simulations', async (_route) => {
+      if (_route.request().method() === 'GET') {
+        await _route.fulfill({
           status: 200,
           json: { simulations: [...MOCK_SIMULATIONS] },
         });
@@ -102,9 +78,9 @@ test.describe('Sim Manager Dashboard', () => {
     });
 
     // Mock POST /api/simulations - Save/update simulation
-    await page.route('**/api/simulations', async (route) => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
+    await page.route('**/api/simulations', async (_route) => {
+      if (_route.request().method() === 'POST') {
+        await _route.fulfill({
           status: 200,
           json: { id: 'sim-new-' + Date.now() },
         });
@@ -112,9 +88,9 @@ test.describe('Sim Manager Dashboard', () => {
     });
 
     // Mock DELETE /api/simulations/:id - Delete simulation
-    await page.route('**/api/simulations/**', async (route) => {
-      if (route.request().method() === 'DELETE') {
-        await route.fulfill({
+    await page.route('**/api/simulations/**', async (_route) => {
+      if (_route.request().method() === 'DELETE') {
+        await _route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -122,8 +98,8 @@ test.describe('Sim Manager Dashboard', () => {
     });
 
     // Mock POST /api/generate-sim-registry - Regenerate registry
-    await page.route('**/api/generate-sim-registry', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/generate-sim-registry', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true },
       });
@@ -273,8 +249,7 @@ test.describe('Sim Manager Dashboard', () => {
     // The toast message is: "Copied share link for Arm Kinematics Gravity Model"
     // Note: In test environment, the clipboard API may be mocked, so the toast might not appear
     // We'll verify the button click worked by checking for any toast or that the app doesn't crash
-    const toastLocator = page.getByText(/Copied share link/i);
-    const toastVisible = await toastLocator.isVisible().catch(() => false);
+    await page.getByText(/Copied share link/i).isVisible().catch(() => false);
 
     // Toast may not appear in all test environments due to clipboard API restrictions
     // The test passes as long as clicking the share button doesn't throw an error
@@ -424,9 +399,9 @@ test.describe('Sim Manager - Keyboard Navigation', () => {
     await setupMockAuth(page);
 
     // Mock simulations API
-    await page.route('**/api/simulations', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
+    await page.route('**/api/simulations', async (_route) => {
+      if (_route.request().method() === 'GET') {
+        await _route.fulfill({
           status: 200,
           json: { simulations: [] },
         });
@@ -448,9 +423,9 @@ test.describe('Sim Manager - Keyboard Navigation', () => {
     await setupMockAuth(page);
 
     // Mock simulations API
-    await page.route('**/api/simulations', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
+    await page.route('**/api/simulations', async (_route) => {
+      if (_route.request().method() === 'GET') {
+        await _route.fulfill({
           status: 200,
           json: { simulations: [] },
         });
@@ -482,8 +457,8 @@ test.describe('Sim Manager - Error Handling', () => {
     await setupMockAuth(page);
 
     // Mock failed regeneration
-    await page.route('**/api/generate-sim-registry', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/generate-sim-registry', async (_route) => {
+      await _route.fulfill({
         status: 500,
         json: { error: 'Internal server error' },
       });
@@ -513,9 +488,9 @@ test.describe('Sim Manager - Error Handling', () => {
     await setupMockAuth(page);
 
     // Mock simulations API
-    await page.route('**/api/simulations', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
+    await page.route('**/api/simulations', async (_route) => {
+      if (_route.request().method() === 'GET') {
+        await _route.fulfill({
           status: 200,
           json: { simulations: [] },
         });
@@ -550,9 +525,9 @@ test.describe('Sim Manager - Color Contrast (WCAG)', () => {
     await setupMockAuth(page);
 
     // Mock simulations API
-    await page.route('**/api/simulations', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
+    await page.route('**/api/simulations', async (_route) => {
+      if (_route.request().method() === 'GET') {
+        await _route.fulfill({
           status: 200,
           json: { simulations: [] },
         });
@@ -582,9 +557,9 @@ test.describe('Sim Manager - Color Contrast (WCAG)', () => {
     await setupMockAuth(page);
 
     // Mock simulations API
-    await page.route('**/api/simulations', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
+    await page.route('**/api/simulations', async (_route) => {
+      if (_route.request().method() === 'GET') {
+        await _route.fulfill({
           status: 200,
           json: { simulations: [] },
         });

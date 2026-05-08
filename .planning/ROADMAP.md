@@ -21,13 +21,25 @@
 
 ---
 
+## v7.3 Full Codebase ESLint Sanitization 🚧 ACTIVE
+
+**Goal**: Achieve zero ESLint errors and warnings across all source files, addressing pre-existing technical debt and unused code.
+
+- [x] **Phase 64: Analysis & Automated Fixes** — Audit all current errors and run `eslint --fix` for low-hanging fruit.
+- [ ] **Phase 65: Backend Sanitization** — Resolve remaining errors in `functions/api/` (handlers, middleware, utils).
+- [ ] **Phase 66: Frontend Sanitization** — Resolve remaining errors in `src/` (components, hooks, pages).
+- [ ] **Phase 67: Test Suite Sanitization** — Resolve remaining errors in `tests/` and unit test files.
+- [ ] **Phase 68: Final Audit & Lock** — Verify zero-problem state and ensure CI enforcement.
+
+---
+
 ## Maintenance Mode
 
-**Current Status**: No active milestones. All major work complete.
+**Current Status**: Paused for v7.3 sanitization.
 
-**Quality Gates**: All passing (TSC, ESLint, Tests, Accessibility)
+**Quality Gates**: TSC passing; ESLint pending cleanup.
 
-**Next**: Awaiting feature requirements or bug reports.
+**Next**: Resuming maintenance after ESLint sanitization.
 
 ---
 

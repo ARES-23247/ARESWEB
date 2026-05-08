@@ -683,7 +683,7 @@ describe("useSimulationChat hook", () => {
       Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
       await act(async () => {
-        result.current.handleChatKeyDown(event as any);
+        result.current.handleChatKeyDown(event as unknown as React.KeyboardEvent);
         await waitFor(() => expect(mockFetch).toHaveBeenCalled());
       });
 
@@ -704,7 +704,7 @@ describe("useSimulationChat hook", () => {
       Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
       act(() => {
-        result.current.handleChatKeyDown(event as any);
+        result.current.handleChatKeyDown(event as unknown as React.KeyboardEvent);
       });
 
       expect(event.preventDefault).not.toHaveBeenCalled();
@@ -725,7 +725,7 @@ describe("useSimulationChat hook", () => {
       Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
       act(() => {
-        result.current.handleChatKeyDown(event as any);
+        result.current.handleChatKeyDown(event as unknown as React.KeyboardEvent);
       });
 
       expect(event.preventDefault).not.toHaveBeenCalled();

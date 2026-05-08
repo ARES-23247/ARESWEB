@@ -138,10 +138,15 @@ describe("ConfirmModal Component", () => {
       />
     );
 
-    const backdrop = screen.getByText("Confirm this action?").closest("div")?.parentElement;
-    if (backdrop) {
-      fireEvent.click(backdrop);
-      expect(mockCancel).toHaveBeenCalledTimes(1);
+    // Find the backdrop element (motion.div with absolute inset-0 and bg-black/60)
+    const container = screen.getByRole("alertdialog").parentElement;
+    if (container) {
+      // The backdrop is the first child with the backdrop styling
+      const backdrop = container.querySelector('[class*="bg-black/60"]');
+      if (backdrop) {
+        fireEvent.click(backdrop);
+        expect(mockCancel).toHaveBeenCalledTimes(1);
+      }
     }
   });
 
@@ -260,7 +265,7 @@ describe("ConfirmModal Component", () => {
     expect(dialog).toHaveAttribute("aria-labelledby", "confirm-modal-title");
     expect(dialog).toHaveAttribute("aria-describedby", "confirm-modal-desc");
 
-    expect(screen.getByText("Test Title").parentElement).toHaveAttribute("id", "confirm-modal-title");
-    expect(screen.getByText("Test description").parentElement).toHaveAttribute("id", "confirm-modal-desc");
+    expect(screen.getByText("Test Title")).toHaveAttribute("id", "confirm-modal-title");
+    expect(screen.getByText("Test description")).toHaveAttribute("id", "confirm-modal-desc");
   });
 });

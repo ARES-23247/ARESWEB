@@ -48,7 +48,6 @@ export function useSendMessage(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["zulip"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -107,7 +106,6 @@ export function useInviteUsers(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["zulip"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

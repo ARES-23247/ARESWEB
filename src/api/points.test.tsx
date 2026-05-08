@@ -29,7 +29,31 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+// Mock types for the Hono client
+interface MockPointsClient {
+  balance: {
+    ":user_id": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+  history: {
+    ":user_id": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+  transaction: {
+    $post: ReturnType<typeof vi.fn>;
+  };
+  leaderboard: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+}
+
+interface MockClient {
+  points: MockPointsClient;
+}
+
+const mockClient = honoClient.client as MockClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -57,14 +81,14 @@ describe("Points API", () => {
         total_earned: 1000,
         total_spent: 500,
       };
-      mockClient.points.points_balance[":user_id"].$get.mockResolvedValue({ ok: true });
+      mockClient.points.balance[":user_id"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockBalance);
 
       const { result } = renderHook(() => pointsApi.useGetPointsBalance("user123"), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockBalance);
-      expect(mockClient.points.points_balance[":user_id"].$get).toHaveBeenCalledWith({
+      expect(mockClient.points.balance[":user_id"].$get).toHaveBeenCalledWith({
         param: { user_id: "user123" },
       });
     });
@@ -77,7 +101,7 @@ describe("Points API", () => {
 
     it("should handle API errors", async () => {
       const mockError = new Error("Failed to fetch balance");
-      mockClient.points.points_balance[":user_id"].$get.mockResolvedValue({ ok: false });
+      mockClient.points.balance[":user_id"].$get.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(mockError);
 
       const { result } = renderHook(() => pointsApi.useGetPointsBalance("user123"), { wrapper });
@@ -159,7 +183,7 @@ describe("Points API", () => {
         reason: "Excellent work at competition",
       };
 
-      result.current.mutate(awardData as any);
+      result.current.mutate(awardData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -181,7 +205,7 @@ describe("Points API", () => {
         reason: "Redeemed team hoodie",
       };
 
-      result.current.mutate(deductData as any);
+      result.current.mutate(deductData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -198,7 +222,7 @@ describe("Points API", () => {
         user_id: "user123",
         points_delta: 50,
         reason: "Good job",
-      } as any);
+      });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -224,7 +248,7 @@ describe("Points API", () => {
         reason: "Mentoring new students",
       };
 
-      result.current.mutate(awardData as any);
+      result.current.mutate(awardData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["points", "balance", "user123"] });

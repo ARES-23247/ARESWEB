@@ -36,7 +36,38 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+// Mock types for the Hono client
+interface MockAnalyticsClient {
+  track: {
+    $post: ReturnType<typeof vi.fn>;
+  };
+  "sponsor-click": {
+    $post: ReturnType<typeof vi.fn>;
+  };
+  leaderboard: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+  admin: {
+    stats: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    "platform-analytics": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    "roster-stats": {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+  search: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+}
+
+interface MockClient {
+  analytics: MockAnalyticsClient;
+}
+
+const mockClient = honoClient.client as MockClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -68,7 +99,7 @@ describe("Analytics API", () => {
         path: "/about",
         category: "page",
         referrer: "https://google.com",
-      } as any);
+      });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.analytics.track.$post).toHaveBeenCalledWith({
@@ -87,7 +118,7 @@ describe("Analytics API", () => {
 
       const { result } = renderHook(() => analyticsApi.useTrackPageView(), { wrapper });
 
-      result.current.mutate({ path: "/test" } as any);
+      result.current.mutate({ path: "/test" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -101,7 +132,7 @@ describe("Analytics API", () => {
 
       const { result } = renderHook(() => analyticsApi.useTrackSponsorClick(), { wrapper });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" } as any);
+      result.current.mutate({ sponsor_id: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.analytics["sponsor-click"].$post).toHaveBeenCalledWith({

@@ -21,7 +21,23 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+// Mock types for the Hono client
+interface MockCommunicationsClient {
+  admin: {
+    "mass-email": {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    stats: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+  };
+}
+
+interface MockClient {
+  communications: MockCommunicationsClient;
+}
+
+const mockClient = honoClient.client as MockClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -53,7 +69,7 @@ describe("Communications API", () => {
 
       const { result } = renderHook(() => communicationsApi.useSendMassEmail(), { wrapper });
 
-      result.current.mutate(emailData as any);
+      result.current.mutate(emailData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.communications.admin["mass-email"].$post).toHaveBeenCalledWith({
@@ -69,7 +85,7 @@ describe("Communications API", () => {
 
       const { result } = renderHook(() => communicationsApi.useSendMassEmail(), { wrapper });
 
-      result.current.mutate({ subject: "Test", htmlContent: "<p>Test</p>" } as any);
+      result.current.mutate({ subject: "Test", htmlContent: "<p>Test</p>" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data?.message).toBe("Email queued for delivery");
@@ -82,7 +98,7 @@ describe("Communications API", () => {
 
       const { result } = renderHook(() => communicationsApi.useSendMassEmail(), { wrapper });
 
-      result.current.mutate({ subject: "Test", htmlContent: "Content" } as any);
+      result.current.mutate({ subject: "Test", htmlContent: "Content" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

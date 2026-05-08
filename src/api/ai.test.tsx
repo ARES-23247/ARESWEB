@@ -34,7 +34,22 @@ vi.mock("./honoClient", () => ({
 // Mock global fetch for non-honoClient requests
 global.fetch = vi.fn();
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  ai: {
+    status: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    "rag-chatbot": {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    "sim-playground": {
+      $post: ReturnType<typeof vi.fn>;
+    };
+    suggest: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -171,12 +186,13 @@ describe("AI API", () => {
 
       const { result } = renderHook(() => aiApi.useAISuggest(), { wrapper });
 
-      result.current.mutate({ context: "function getData( as any) { return fetch('/api'); }" });
+      const context = "function getData() { return fetch('/api'); }";
+      result.current.mutate({ context });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
       expect(mockClient.ai.suggest.$post).toHaveBeenCalledWith({
-        json: { context: "function getData() { return fetch('/api'); }" },
+        json: { context },
       });
     });
 
@@ -187,7 +203,7 @@ describe("AI API", () => {
 
       const { result } = renderHook(() => aiApi.useAISuggest(), { wrapper });
 
-      result.current.mutate({ context: "some code context" } as any);
+      result.current.mutate({ context: "some code context" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -260,7 +276,7 @@ describe("AI API", () => {
         type: "github",
         url: "https://github.com/new/repo",
         branch: "main",
-      } as any);
+      });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -279,7 +295,7 @@ describe("AI API", () => {
 
       const { result } = renderHook(() => aiApi.useAddExternalSource(), { wrapper });
 
-      result.current.mutate({ type: "github", url: "invalid-url" } as any);
+      result.current.mutate({ type: "github", url: "invalid-url" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error?.message).toBe("Invalid URL");
@@ -300,7 +316,7 @@ describe("AI API", () => {
 
       const { result } = renderHook(() => aiApi.useDeleteExternalSource(), { wrapper: customWrapper });
 
-      result.current.mutate("source-123" as any);
+      result.current.mutate("source-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(global.fetch).toHaveBeenCalledWith("/api/ai/external-sources/source-123", {
@@ -316,7 +332,7 @@ describe("AI API", () => {
 
       const { result } = renderHook(() => aiApi.useDeleteExternalSource(), { wrapper });
 
-      result.current.mutate("nonexistent-id" as any);
+      result.current.mutate("nonexistent-id");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error?.message).toBe("Source not found");

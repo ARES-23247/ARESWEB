@@ -53,8 +53,8 @@ test.describe('Gallery Page', () => {
       }),
     ];
 
-    await page.route('**/api/media', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/media', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { media: mockImages },
       });
@@ -62,8 +62,8 @@ test.describe('Gallery Page', () => {
 
     // Mock image responses to prevent 404s
     for (const img of mockImages) {
-      await page.route(`**/api/media/${img.key}`, async (route) => {
-        await route.fulfill({
+      await page.route(`**/api/media/${img.key}`, async (_route) => {
+        await _route.fulfill({
           status: 200,
           contentType: 'image/png',
           body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'),
@@ -72,8 +72,8 @@ test.describe('Gallery Page', () => {
     }
 
     // Mock public settings API for photo drive URL
-    await page.route('**/api/settings/public/settings', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/settings/public/settings', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           success: true,
@@ -146,7 +146,6 @@ test.describe('Gallery Page', () => {
 
   test('should show loading state while images are being fetched', async ({ page }) => {
     // Track page state changes
-    let loadingWasPresent = false;
 
     // Intercept console to detect render phases
     page.on('console', msg => {
@@ -176,7 +175,7 @@ test.describe('Gallery Page', () => {
 
     // Check for loading spinner immediately (it may be very brief)
     const loadingSpinner = page.locator('.animate-spin').first();
-    loadingWasPresent = await loadingSpinner.isVisible().catch(() => false);
+    await loadingSpinner.isVisible().catch(() => false);
 
     // Wait for page to finish loading
     await page.waitForLoadState('domcontentloaded');
@@ -191,8 +190,8 @@ test.describe('Gallery Page', () => {
 
   test('should show empty state when no photos are available', async ({ page }) => {
     // Mock media API with empty response
-    await page.route('**/api/media', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/media', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { media: [] },
       });
@@ -217,8 +216,8 @@ test.describe('Gallery Page', () => {
 
   test('should show error state when media API fails', async ({ page }) => {
     // Mock media API with error response
-    await page.route('**/api/media', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/media', async (_route) => {
+      await _route.fulfill({
         status: 500,
         json: { error: 'Internal server error' },
       });
@@ -266,8 +265,8 @@ test.describe('Gallery Page', () => {
       }),
     ];
 
-    await page.route('**/api/media', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/media', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { media: mixedMedia },
       });

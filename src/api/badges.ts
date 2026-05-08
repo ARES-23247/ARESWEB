@@ -91,7 +91,6 @@ export function useCreateBadge(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -112,7 +111,6 @@ export function useGrantBadge(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -135,7 +133,6 @@ export function useRevokeBadge(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -155,7 +152,6 @@ export function useDeleteBadge(
     ...options,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["badges"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

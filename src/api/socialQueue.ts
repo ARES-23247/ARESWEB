@@ -120,7 +120,6 @@ export function useCreateSocialPost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -141,7 +140,6 @@ export function useUpdateSocialPost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -162,7 +160,6 @@ export function useDeleteSocialPost(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }
@@ -183,7 +180,6 @@ export function useSendSocialPostNow(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-queue"] });
       queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-      (options?.onSuccess as any)?.();
     }
   });
 }

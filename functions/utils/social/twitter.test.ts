@@ -33,13 +33,13 @@ describe('Twitter (X) Social Integration', () => {
     TWITTER_ACCESS_SECRET: 'test_access_secret',
   };
 
-  const partialConfig: SocialConfig = {
+  const _partialConfig: SocialConfig = {
     TWITTER_API_KEY: 'test_api_key',
     TWITTER_API_SECRET: 'test_api_secret',
     TWITTER_ACCESS_TOKEN: 'test_access_token',
   };
 
-  const emptyConfig: SocialConfig = {};
+  const _emptyConfig: SocialConfig = {};
 
   beforeEach(() => {
     mockFetch.mockClear();
@@ -53,8 +53,8 @@ describe('Twitter (X) Social Integration', () => {
 
   describe('generateOAuth1Signature()', () => {
     it('generates valid OAuth 1.0 signature header', async () => {
-      const testUrl = 'https://api.twitter.com/2/tweets';
-      const testMethod = 'POST';
+      const _testUrl = 'https://api.twitter.com/2/tweets';
+      const _testMethod = 'POST';
 
       // Import and test the internal function via dispatchTwitterPhoto call
       const imgBuffer = new ArrayBuffer(100);

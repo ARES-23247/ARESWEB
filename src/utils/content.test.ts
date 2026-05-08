@@ -5,7 +5,7 @@ import { extractTextFromAst } from "./content";
 describe("extractTextFromAst", () => {
   it("returns empty string for null or undefined", () => {
     expect(extractTextFromAst(null)).toBe("");
-    expect(extractTextFromAst(undefined as any)).toBe("");
+    expect(extractTextFromAst(undefined as never)).toBe("");
   });
 
   it("extracts text from plain string if not JSON", () => {

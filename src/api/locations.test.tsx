@@ -25,7 +25,22 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  locations: {
+    $get: ReturnType<typeof vi.fn>;
+    admin: {
+      list: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+      save: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      ":id": {
+        $delete: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -158,9 +173,10 @@ describe("Locations API", () => {
         zip: "62701",
         latitude: 39.78,
         longitude: -89.65,
+        is_deleted: 0,
       };
 
-      result.current.mutate(locationData as any);
+      result.current.mutate(locationData as locationsApi.Location);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -183,9 +199,10 @@ describe("Locations API", () => {
         city: "Springfield",
         state: "IL",
         zip: "62701",
+        is_deleted: 0,
       };
 
-      result.current.mutate(locationData as any);
+      result.current.mutate(locationData as locationsApi.Location);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.locations.admin.save.$post).toHaveBeenCalledWith({
@@ -200,7 +217,7 @@ describe("Locations API", () => {
 
       const { result } = renderHook(() => locationsApi.useSaveLocation(), { wrapper });
 
-      result.current.mutate({ name: "New Location" } as any);
+      result.current.mutate({ name: "New Location" } as locationsApi.Location);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -220,7 +237,7 @@ describe("Locations API", () => {
 
       const { result } = renderHook(() => locationsApi.useSaveLocation(), { wrapper: customWrapper });
 
-      result.current.mutate({ name: "New Location" } as any);
+      result.current.mutate({ name: "New Location" } as locationsApi.Location);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["locations"] });
@@ -236,7 +253,7 @@ describe("Locations API", () => {
 
       const { result } = renderHook(() => locationsApi.useDeleteLocation(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.locations.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -251,7 +268,7 @@ describe("Locations API", () => {
 
       const { result } = renderHook(() => locationsApi.useDeleteLocation(), { wrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -271,7 +288,7 @@ describe("Locations API", () => {
 
       const { result } = renderHook(() => locationsApi.useDeleteLocation(), { wrapper: customWrapper });
 
-      result.current.mutate("123" as any);
+      result.current.mutate("123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["locations"] });

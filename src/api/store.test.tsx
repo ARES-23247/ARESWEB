@@ -27,7 +27,29 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+// Mock types for the Hono client
+interface MockStoreClient {
+  products: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+  checkout: {
+    $post: ReturnType<typeof vi.fn>;
+  };
+  orders: {
+    $get: ReturnType<typeof vi.fn>;
+    ":id": {
+      status: {
+        $patch: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+}
+
+interface MockClient {
+  store: MockStoreClient;
+}
+
+const mockClient = honoClient.client as MockClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -102,7 +124,7 @@ describe("Store API", () => {
         cancelUrl: "https://example.com/cancel",
       };
 
-      result.current.mutate(checkoutData as any);
+      result.current.mutate(checkoutData as storeApi.CheckoutSessionRequest);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -119,7 +141,7 @@ describe("Store API", () => {
         items: [],
         successUrl: "https://example.com/success",
         cancelUrl: "https://example.com/cancel",
-      } as any);
+      } as storeApi.CheckoutSessionRequest);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -174,7 +196,7 @@ describe("Store API", () => {
 
       const { result } = renderHook(() => storeApi.useUpdateOrderStatus(), { wrapper });
 
-      result.current.mutate({ id: "123", fulfillment_status: "shipped" } as any);
+      result.current.mutate({ id: "123", fulfillment_status: "shipped" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.store.orders[":id"].status.$patch).toHaveBeenCalledWith({
@@ -190,7 +212,7 @@ describe("Store API", () => {
 
       const { result } = renderHook(() => storeApi.useUpdateOrderStatus(), { wrapper });
 
-      result.current.mutate({ id: "123", fulfillment_status: "shipped" } as any);
+      result.current.mutate({ id: "123", fulfillment_status: "shipped" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -210,7 +232,7 @@ describe("Store API", () => {
 
       const { result } = renderHook(() => storeApi.useUpdateOrderStatus(), { wrapper: customWrapper });
 
-      result.current.mutate({ id: "123", fulfillment_status: "delivered" } as any);
+      result.current.mutate({ id: "123", fulfillment_status: "delivered" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["store", "orders"] });

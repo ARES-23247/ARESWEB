@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { setupMockAuth, MOCK_ADMIN_USER } from '../fixtures/auth';
-import { TEST_TIMEOUTS, createMockBadges, createMockUser, type MockBadgeItem } from '../fixtures/mock-data';
+import { setupMockAuth } from '../fixtures/auth';
+import { TEST_TIMEOUTS, createMockBadges, createMockUser } from '../fixtures/mock-data';
 
 /**
  * E2E tests for Badges Manager dashboard route.
@@ -18,17 +18,17 @@ test.describe('Badges Manager', () => {
     await setupMockAuth(page);
 
     // Mock GET /api/badges - List all badge definitions
-    await page.route('**/api/badges', async (route) => {
+    await page.route('**/api/badges', async (_route) => {
       const mockBadges = createMockBadges();
-      await route.fulfill({
+      await _route.fulfill({
         status: 200,
         json: { badges: mockBadges },
       });
     });
 
     // Mock GET /api/users - Get users list for badge assignment
-    await page.route('**/api/users', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/users', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           users: [
@@ -50,24 +50,24 @@ test.describe('Badges Manager', () => {
     });
 
     // Mock POST /api/badges/admin - Create a new badge
-    await page.route('**/api/badges/admin', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/badges/admin', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true },
       });
     });
 
     // Mock POST /api/badges/admin/grant - Grant a badge to a user
-    await page.route('**/api/badges/admin/grant', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/badges/admin/grant', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true },
       });
     });
 
     // Mock DELETE /api/badges/admin/:id - Delete a badge definition
-    await page.route('**/api/badges/admin/*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/badges/admin/*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true },
       });

@@ -210,16 +210,16 @@ describe("MemberCard Component", () => {
   });
 
   it("uses fallback avatar when avatar is empty", () => {
-    renderWithRouter(<MemberCard member={mockAlumniMember} />);
+    const { container } = renderWithRouter(<MemberCard member={mockAlumniMember} />);
 
-    const img = screen.getByRole("img");
+    const img = container.querySelector("img");
     expect(img).toHaveAttribute("src", expect.stringContaining("dicebear"));
   });
 
   it("uses provided avatar when available", () => {
-    renderWithRouter(<MemberCard member={mockMember} />);
+    const { container } = renderWithRouter(<MemberCard member={mockMember} />);
 
-    const img = screen.getByRole("img");
+    const img = container.querySelector("img");
     expect(img).toHaveAttribute("src", "https://example.com/avatar.png");
   });
 
@@ -233,8 +233,13 @@ describe("MemberCard Component", () => {
   it("has proper hover classes for interactivity", () => {
     const { container } = renderWithRouter(<MemberCard member={mockMember} />);
 
+    const link = container.querySelector("a");
+    expect(link).toHaveClass("group");
+
+    // The hover classes are on the inner hero-card div, not the link
     const card = container.querySelector(".hero-card");
-    expect(card).toHaveClass("group", "hover:border-ares-red/30", "hover:shadow-lg");
+    expect(card).toHaveClass("group-hover:border-ares-red/30");
+    expect(card).toHaveClass("group-hover:shadow-lg");
   });
 
   it("renders ares-cut styled avatar container", () => {

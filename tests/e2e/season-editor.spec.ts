@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { setupMockAuth, MOCK_ADMIN_USER } from '../fixtures/auth';
+import { setupMockAuth } from '../fixtures/auth';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Season/Award Editor E2E', () => {
@@ -8,16 +8,16 @@ test.describe('Season/Award Editor E2E', () => {
     await setupMockAuth(page);
 
     // Mock Zulip presence to avoid network errors affecting a11y scans
-    await page.route('**/api/zulip/presence', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/zulip/presence', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: { success: true, presence: {}, userNames: {} },
       });
     });
 
     // Mock analytics admin stats
-    await page.route('**/api/analytics/admin/stats*', async (route) => {
-      await route.fulfill({
+    await page.route('**/api/analytics/admin/stats*', async (_route) => {
+      await _route.fulfill({
         status: 200,
         json: {
           posts: 10,
@@ -92,8 +92,8 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should save season draft successfully', async ({ page }) => {
       // Mock the save endpoint
-      await page.route('**/api/seasons/admin/save', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/save', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -116,8 +116,8 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should publish season successfully', async ({ page }) => {
       // Mock the save endpoint
-      await page.route('**/api/seasons/admin/save', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/save', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -141,8 +141,8 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should handle save errors gracefully', async ({ page }) => {
       // Mock a failed save attempt
-      await page.route('**/api/seasons/admin/save', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/save', async (_route) => {
+        await _route.fulfill({
           status: 500,
           json: { error: 'Database connection failed' },
         });
@@ -191,8 +191,8 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should load existing season data for editing', async ({ page }) => {
       // Mock the season detail endpoint
-      await page.route('**/api/seasons/admin/2024', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/2024', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { season: mockSeason },
         });
@@ -215,16 +215,16 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should update existing season', async ({ page }) => {
       // Mock the season detail endpoint
-      await page.route('**/api/seasons/admin/2024', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/2024', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { season: mockSeason },
         });
       });
 
       // Mock the save endpoint
-      await page.route('**/api/seasons/admin/save', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/save', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -247,8 +247,8 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should handle missing season gracefully', async ({ page }) => {
       // Mock a 404 response for non-existent season
-      await page.route('**/api/seasons/admin/9999', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/9999', async (_route) => {
+        await _route.fulfill({
           status: 404,
           json: { error: 'Season not found' },
         });
@@ -293,16 +293,16 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should navigate from manager to season editor', async ({ page }) => {
       // Mock the seasons list endpoint
-      await page.route('**/api/seasons/admin/list', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/list', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { seasons: mockSeasons },
         });
       });
 
       // Mock the season detail endpoint
-      await page.route('**/api/seasons/admin/2024', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/2024', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { season: mockSeasons[0] },
         });
@@ -329,8 +329,8 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should create new season from manager', async ({ page }) => {
       // Mock the seasons list endpoint
-      await page.route('**/api/seasons/admin/list', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/list', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { seasons: mockSeasons },
         });
@@ -386,8 +386,8 @@ test.describe('Season/Award Editor E2E', () => {
       };
 
       // Mock the season detail endpoint
-      await page.route('**/api/seasons/admin/2024', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/2024', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { season: mockSeason },
         });
@@ -472,16 +472,16 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should load award editor from dashboard', async ({ page }) => {
       // Mock the awards endpoint
-      await page.route('**/api/awards*', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/awards*', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { awards: mockAwards },
         });
       });
 
       // Mock seasons for season picker
-      await page.route('**/api/seasons*', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons*', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: {
             seasons: [
@@ -513,14 +513,14 @@ test.describe('Season/Award Editor E2E', () => {
     test('should add new award', async ({ page }) => {
       // Mock the awards endpoint
       await page.route('**/api/awards*', async (route) => {
-        const request = route.request();
-        if (request.method() === 'POST') {
-          await route.fulfill({
+        const _request = route.request();
+        if (_request.method() === 'POST') {
+          await _route.fulfill({
             status: 200,
             json: { success: true },
           });
         } else {
-          await route.fulfill({
+          await _route.fulfill({
             status: 200,
             json: { awards: [] },
           });
@@ -528,8 +528,8 @@ test.describe('Season/Award Editor E2E', () => {
       });
 
       // Mock seasons for season picker
-      await page.route('**/api/seasons*', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons*', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: {
             seasons: [
@@ -567,16 +567,16 @@ test.describe('Season/Award Editor E2E', () => {
 
     test('should pass WCAG 2.1 AA accessibility audit for award editor', async ({ page }) => {
       // Mock the awards endpoint
-      await page.route('**/api/awards*', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/awards*', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { awards: mockAwards },
         });
       });
 
       // Mock seasons for season picker
-      await page.route('**/api/seasons*', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons*', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: {
             seasons: [
@@ -640,22 +640,22 @@ test.describe('Season/Award Editor E2E', () => {
       ];
 
       // Mock both endpoints
-      await page.route('**/api/seasons/admin/2024', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons/admin/2024', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { season: mockSeason },
         });
       });
 
-      await page.route('**/api/awards*', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/awards*', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: { awards: mockSeasonAwards },
         });
       });
 
-      await page.route('**/api/seasons*', async (route) => {
-        await route.fulfill({
+      await page.route('**/api/seasons*', async (_route) => {
+        await _route.fulfill({
           status: 200,
           json: {
             seasons: [mockSeason],

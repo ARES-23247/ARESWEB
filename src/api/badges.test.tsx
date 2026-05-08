@@ -3,6 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
 import * as badgesApi from "./badges";
+import type { BadgesResponse, BadgeLeaderboardResponse, BadgeUsersListResponse } from "./badges";
 
 // Mock the honoClient module
 vi.mock("./honoClient", () => ({
@@ -34,7 +35,31 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  badges: {
+    $get: ReturnType<typeof vi.fn>;
+    leaderboard: {
+      $get: ReturnType<typeof vi.fn>;
+    };
+    admin: {
+      $post: ReturnType<typeof vi.fn>;
+      grant: {
+        $post: ReturnType<typeof vi.fn>;
+        ":userId": {
+          ":badgeId": {
+            $delete: ReturnType<typeof vi.fn>;
+          };
+        };
+      };
+      ":id": {
+        $delete: ReturnType<typeof vi.fn>;
+      };
+    };
+  };
+  users: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -56,11 +81,11 @@ describe("Badges API", () => {
 
   describe("useGetBadges", () => {
     it("should fetch badges successfully", async () => {
-      const mockBadges = [
-        { id: "1", name: "Rookie", description: "New member", icon: "star" },
-        { id: "2", name: "Veteran", description: "2+ years", icon: "medal" },
+      const mockBadges: badgesApi.Badge[] = [
+        { id: "1", name: "Rookie", description: "New member", icon: "star", color_theme: "blue", created_at: "2024-01-01" },
+        { id: "2", name: "Veteran", description: "2+ years", icon: "medal", color_theme: "gold", created_at: "2024-01-02" },
       ];
-      const mockResponse = { badges: mockBadges };
+      const mockResponse: BadgesResponse = { badges: mockBadges };
       mockClient.badges.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -84,11 +109,11 @@ describe("Badges API", () => {
 
   describe("useGetBadgeLeaderboard", () => {
     it("should fetch badge leaderboard successfully", async () => {
-      const mockLeaderboard = [
+      const mockLeaderboard: BadgeLeaderboardResponse["leaderboard"] = [
         { user_id: "1", nickname: "Top Scorer", member_type: "student", badge_count: 15 },
         { user_id: "2", nickname: "Second", member_type: "mentor", badge_count: 10 },
       ];
-      const mockResponse = { leaderboard: mockLeaderboard };
+      const mockResponse: BadgeLeaderboardResponse = { leaderboard: mockLeaderboard };
       mockClient.badges.leaderboard.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -102,18 +127,19 @@ describe("Badges API", () => {
   describe("useCreateBadge", () => {
     it("should create badge successfully", async () => {
       const mockResponse = { success: true };
-      const newBadge = {
+      const newBadge: Omit<badgesApi.Badge, "created_at"> = {
         id: "new-123",
         name: "Achievement Unlocked",
         description: "Special badge",
         icon: "trophy",
+        color_theme: "gold",
       };
       mockClient.badges.admin.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => badgesApi.useCreateBadge(), { wrapper });
 
-      result.current.mutate(newBadge as any);
+      result.current.mutate(newBadge);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.badges.admin.$post).toHaveBeenCalledWith({
@@ -135,7 +161,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useCreateBadge(), { wrapper: customWrapper });
 
-      result.current.mutate({ name: "Test", description: "Test badge" } as unknown as any);
+      result.current.mutate({ name: "Test", description: "Test badge", icon: "star", color_theme: "blue", id: "test" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["badges"] });
@@ -148,7 +174,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useCreateBadge(), { wrapper });
 
-      result.current.mutate({ name: "Test" } as unknown as any);
+      result.current.mutate({ name: "Test", description: "Test", icon: "star", color_theme: "blue", id: "test" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -162,7 +188,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useGrantBadge(), { wrapper });
 
-      result.current.mutate({ userId: "user-123", badgeId: "badge-456" } as any);
+      result.current.mutate({ userId: "user-123", badgeId: "badge-456" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.badges.admin.grant.$post).toHaveBeenCalledWith({
@@ -184,7 +210,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useGrantBadge(), { wrapper: customWrapper });
 
-      result.current.mutate({ userId: "user-123", badgeId: "badge-456" } as any);
+      result.current.mutate({ userId: "user-123", badgeId: "badge-456" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["badges"] });
@@ -200,7 +226,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useRevokeBadge(), { wrapper });
 
-      result.current.mutate({ userId: "user-123", badgeId: "badge-456" } as any);
+      result.current.mutate({ userId: "user-123", badgeId: "badge-456" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.badges.admin.grant[":userId"][":badgeId"].$delete).toHaveBeenCalledWith({
@@ -215,7 +241,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useRevokeBadge(), { wrapper });
 
-      result.current.mutate({ userId: "user-123", badgeId: "badge-456" } as any);
+      result.current.mutate({ userId: "user-123", badgeId: "badge-456" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -229,7 +255,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useDeleteBadge(), { wrapper });
 
-      result.current.mutate("badge-123" as any);
+      result.current.mutate("badge-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.badges.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -251,7 +277,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useDeleteBadge(), { wrapper: customWrapper });
 
-      result.current.mutate("badge-123" as any);
+      result.current.mutate("badge-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["badges"] });
@@ -260,11 +286,11 @@ describe("Badges API", () => {
 
   describe("useGetUsersForBadges", () => {
     it("should fetch users list for badge assignment successfully", async () => {
-      const mockUsers = [
+      const mockUsers: BadgeUsersListResponse["users"] = [
         { id: "1", name: "User 1", nickname: "Nick 1", email: "user1@test.com" },
         { id: "2", name: "User 2", nickname: null, email: "user2@test.com" },
       ];
-      const mockResponse = { users: mockUsers };
+      const mockResponse: BadgeUsersListResponse = { users: mockUsers };
       mockClient.users.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 

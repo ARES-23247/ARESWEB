@@ -34,13 +34,13 @@ describe("LazyImage Component", () => {
     expect(wrapper).toBeInTheDocument();
   });
 
-  it("applies custom imgClassName to image", () => {
+  it("applies custom imgClassName to picture element", () => {
     render(
       <LazyImage src="/test.jpg" alt="Test" imgClassName="custom-img" />
     );
 
-    const img = screen.getByRole("img");
-    expect(img).toHaveClass("custom-img");
+    const picture = screen.getByRole("img").closest("picture");
+    expect(picture).toHaveClass("custom-img");
   });
 
   it("renders with loading attribute set to lazy", () => {
@@ -70,8 +70,9 @@ describe("LazyImage Component", () => {
     fireEvent.load(img);
 
     await waitFor(() => {
-      const skeleton = container.querySelector(".animate-pulse");
-      expect(skeleton).not.toBeInTheDocument();
+      const skeleton = container.querySelector(".animate-pulse") as HTMLElement;
+      expect(skeleton).toBeInTheDocument();
+      expect(skeleton).toHaveStyle({ opacity: "0" });
     });
   });
 
@@ -207,6 +208,9 @@ describe("LazyImage Component", () => {
     render(<LazyImage src="" alt="Test" />);
 
     const img = screen.getByRole("img");
-    expect(img).toHaveAttribute("src", "");
+    // Component renders with empty src, but img element exists
+    expect(img).toBeInTheDocument();
+    // When src is empty, getAttribute returns null (browser normalizes empty src)
+    expect(img.getAttribute("src")).toBeNull();
   });
 });

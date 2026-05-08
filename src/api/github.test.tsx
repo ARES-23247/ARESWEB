@@ -22,7 +22,24 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+// Mock types for the Hono client
+interface MockGitHubClient {
+  projects: {
+    $get: ReturnType<typeof vi.fn>;
+    items: {
+      $post: ReturnType<typeof vi.fn>;
+    };
+  };
+  activity: {
+    $get: ReturnType<typeof vi.fn>;
+  };
+}
+
+interface MockClient {
+  github: MockGitHubClient;
+}
+
+const mockClient = honoClient.client as MockClient;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -90,7 +107,7 @@ describe("GitHub API", () => {
 
       const { result } = renderHook(() => githubApi.useCreateGitHubItem(), { wrapper });
 
-      result.current.mutate({ title: "New Issue" } as any);
+      result.current.mutate({ title: "New Issue" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.github.projects.items.$post).toHaveBeenCalledWith({
@@ -105,7 +122,7 @@ describe("GitHub API", () => {
 
       const { result } = renderHook(() => githubApi.useCreateGitHubItem(), { wrapper });
 
-      result.current.mutate({ title: "New Issue" } as any);
+      result.current.mutate({ title: "New Issue" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -120,7 +137,7 @@ describe("GitHub API", () => {
 
       const { result } = renderHook(() => githubApi.useCreateGitHubItem(), { wrapper });
 
-      result.current.mutate({ title: "New Issue" } as any);
+      result.current.mutate({ title: "New Issue" });
 
       // Wait a tick for the mutation to start
       await new Promise(resolve => setTimeout(resolve, 0));

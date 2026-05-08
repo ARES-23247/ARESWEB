@@ -1,6 +1,7 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
 import { type AppType } from "../../functions/api/[[route]]";
+import { type UseMutationOptions } from "@tanstack/react-query";
 
 /**
  * Type-safe Hono client for API calls.
@@ -54,4 +55,43 @@ export async function unwrapResponse<T>(response: ClientResponse<unknown>): Prom
     throw new ApiError(response.status, errorData.error || `API Error: ${response.status}`);
   }
   return (await response.json()) as T;
+}
+
+/**
+ * Wraps user-provided mutation options to run internal logic before user callbacks.
+ *
+ * This solves a type system limitation where TanStack Query's UseMutationOptions
+ * doesn't support "wrapping" callbacks cleanly. The internal onSuccess needs to
+ * run (for cache invalidation), then forward to the user's onSuccess, but the
+ * type signatures don't align perfectly.
+ *
+ * @example
+ * ```ts
+ * return useMutation({
+ *   mutationFn: ...,
+ *   ...wrapOnSuccess(options, (data, variables) => {
+ *     queryClient.invalidateQueries({ queryKey: ["key"] });
+ *   }),
+ * });
+ * ```
+ */
+export function wrapOnSuccess<TData, TError, TVariables>(
+  options: UseMutationOptions<TData, TError, TVariables> | undefined,
+  internalOnSuccess: (data: TData, variables: TVariables) => void
+): UseMutationOptions<TData, TError, TVariables> {
+  if (!options) {
+    return { onSuccess: internalOnSuccess };
+  }
+
+  return {
+    ...options,
+    onSuccess: (data, variables) => {
+      internalOnSuccess(data, variables);
+      // Forward to user's callback. The type cast is safe because we're preserving
+      // the parameters the user expects (data, variables). TanStack Query types
+      // include a third 'context' parameter that our hooks don't use.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (options.onSuccess as any)?.(data, variables);
+    },
+  };
 }

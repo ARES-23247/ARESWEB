@@ -3,6 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
 import * as sponsorsApi from "./sponsors";
+import type { SponsorsResponse, SponsorRoiResponse, SponsorTokensResponse } from "./sponsors";
 
 // Mock the honoClient module
 vi.mock("./honoClient", () => ({
@@ -36,7 +37,33 @@ vi.mock("./honoClient", () => ({
   unwrapResponse: vi.fn(),
 }));
 
-const mockClient = honoClient.client as any;
+const mockClient = honoClient.client as unknown as {
+  sponsors: {
+    $get: ReturnType<typeof vi.fn>;
+    roi: {
+      ":token": {
+        $get: ReturnType<typeof vi.fn>;
+      };
+    };
+    admin: {
+      list: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+      save: {
+        $post: ReturnType<typeof vi.fn>;
+      };
+      ":id": {
+        $delete: ReturnType<typeof vi.fn>;
+      };
+      tokens: {
+        $get: ReturnType<typeof vi.fn>;
+        generate: {
+          $post: ReturnType<typeof vi.fn>;
+        };
+      };
+    };
+  };
+};
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -58,11 +85,11 @@ describe("Sponsors API", () => {
 
   describe("useGetSponsors", () => {
     it("should fetch public sponsors successfully", async () => {
-      const mockSponsors = [
-        { id: "1", name: "Acme Corp", logo_url: "/acme.png", tier: "Gold" },
-        { id: "2", name: "Beta Inc", logo_url: "/beta.png", tier: "Silver" },
+      const mockSponsors: sponsorsApi.Sponsor[] = [
+        { id: "1", name: "Acme Corp", logo_url: "/acme.png", tier: "Gold", website_url: null, is_active: 1 },
+        { id: "2", name: "Beta Inc", logo_url: "/beta.png", tier: "Silver", website_url: null, is_active: 1 },
       ];
-      const mockResponse = { sponsors: mockSponsors };
+      const mockResponse: SponsorsResponse = { sponsors: mockSponsors };
       mockClient.sponsors.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -85,12 +112,12 @@ describe("Sponsors API", () => {
 
   describe("useGetSponsorRoi", () => {
     it("should fetch sponsor ROI dashboard successfully", async () => {
-      const mockSponsor = { id: "1", name: "Acme Corp", logo_url: "/acme.png" };
-      const mockMetrics = [
-        { metric_name: "Social Reach", value: 50000 },
-        { metric_name: "Logo Placements", value: 25 },
+      const mockSponsor: sponsorsApi.Sponsor = { id: "1", name: "Acme Corp", logo_url: "/acme.png", tier: "Gold", website_url: null, is_active: 1 };
+      const mockMetrics: sponsorsApi.SponsorRoiMetric[] = [
+        { id: "1", sponsor_id: "1", clicks: 5000, impressions: 50000, year_month: "2024-01" },
+        { id: "2", sponsor_id: "1", clicks: 2500, impressions: 25000, year_month: "2024-02" },
       ];
-      const mockResponse = { sponsor: mockSponsor, metrics: mockMetrics };
+      const mockResponse: SponsorRoiResponse = { sponsor: mockSponsor, metrics: mockMetrics };
       mockClient.sponsors.roi[":token"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -101,7 +128,7 @@ describe("Sponsors API", () => {
     });
 
     it("should pass token parameter", async () => {
-      const mockResponse = { sponsor: null, metrics: [] };
+      const mockResponse: SponsorRoiResponse = { sponsor: undefined, metrics: [] };
       mockClient.sponsors.roi[":token"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -121,7 +148,7 @@ describe("Sponsors API", () => {
 
     it("should be enabled when token is provided", async () => {
       mockClient.sponsors.roi[":token"].$get.mockResolvedValue({ ok: true });
-      mockUnwrapResponse.mockResolvedValue({ sponsor: null, metrics: [] });
+      mockUnwrapResponse.mockResolvedValue({ sponsor: undefined, metrics: [] } as SponsorRoiResponse);
 
       const { result } = renderHook(() => sponsorsApi.useGetSponsorRoi("valid-token"), { wrapper });
 
@@ -170,7 +197,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useSaveSponsor(), { wrapper });
 
-      result.current.mutate(newSponsor as any);
+      result.current.mutate(newSponsor as sponsorsApi.SponsorPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.sponsors.admin.save.$post).toHaveBeenCalledWith({
@@ -192,7 +219,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useSaveSponsor(), { wrapper });
 
-      result.current.mutate(updatedSponsor as any);
+      result.current.mutate(updatedSponsor as sponsorsApi.SponsorPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.sponsors.admin.save.$post).toHaveBeenCalledWith({
@@ -214,7 +241,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useSaveSponsor(), { wrapper: customWrapper });
 
-      result.current.mutate({ name: "Test", tier: "Bronze" } as any);
+      result.current.mutate({ name: "Test", tier: "Bronze" } as sponsorsApi.SponsorPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["sponsors"] });
@@ -228,7 +255,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useSaveSponsor(), { wrapper });
 
-      result.current.mutate({ name: "Test", tier: "Bronze" } as any);
+      result.current.mutate({ name: "Test", tier: "Bronze" } as sponsorsApi.SponsorPayload);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -242,7 +269,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useDeleteSponsor(), { wrapper });
 
-      result.current.mutate("sponsor-123" as any);
+      result.current.mutate("sponsor-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.sponsors.admin[":id"].$delete).toHaveBeenCalledWith({
@@ -264,7 +291,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useDeleteSponsor(), { wrapper: customWrapper });
 
-      result.current.mutate("sponsor-123" as any);
+      result.current.mutate("sponsor-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["sponsors"] });
@@ -278,7 +305,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useDeleteSponsor(), { wrapper });
 
-      result.current.mutate("sponsor-123" as any);
+      result.current.mutate("sponsor-123");
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -286,11 +313,11 @@ describe("Sponsors API", () => {
 
   describe("useGetAdminTokens", () => {
     it("should fetch admin tokens successfully", async () => {
-      const mockTokens = [
-        { id: "1", token: "token-abc", sponsor_id: "sponsor-1", created_at: "2024-01-01" },
-        { id: "2", token: "token-xyz", sponsor_id: "sponsor-2", created_at: "2024-01-02" },
+      const mockTokens: sponsorsApi.SponsorToken[] = [
+        { sponsor_id: "sponsor-1", token: "token-abc", created_at: "2024-01-01", last_used: null },
+        { sponsor_id: "sponsor-2", token: "token-xyz", created_at: "2024-01-02", last_used: null },
       ];
-      const mockResponse = { tokens: mockTokens };
+      const mockResponse: SponsorTokensResponse = { tokens: mockTokens };
       mockClient.sponsors.admin.tokens.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -319,7 +346,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useGenerateSponsorToken(), { wrapper });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" } as any);
+      result.current.mutate({ sponsor_id: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.sponsors.admin.tokens.generate.$post).toHaveBeenCalledWith({
@@ -344,7 +371,7 @@ describe("Sponsors API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" } as any);
+      result.current.mutate({ sponsor_id: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["sponsor_tokens"] });
@@ -357,7 +384,7 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useGenerateSponsorToken(), { wrapper });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" } as any);
+      result.current.mutate({ sponsor_id: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

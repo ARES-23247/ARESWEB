@@ -46,16 +46,21 @@ describe('Bluesky Social Integration', () => {
     BLUESKY_APP_PASSWORD: 'test_app_password',
   };
 
-  const partialConfig: SocialConfig = {
+  const _partialConfig: SocialConfig = {
     BLUESKY_HANDLE: 'ares23247.bsky.social',
   };
 
-  const emptyConfig: SocialConfig = {};
+  const _emptyConfig: SocialConfig = {};
 
   beforeEach(() => {
     vi.clearAllMocks();
     consoleErrorSpy.mockClear();
     consoleWarnSpy.mockClear();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   afterAll(() => {
@@ -79,7 +84,7 @@ describe('Bluesky Social Integration', () => {
     });
 
     it('returns early if both credentials are missing', async () => {
-      await dispatchBluesky(payload, emptyConfig);
+      await dispatchBluesky(payload, _emptyConfig);
 
       expect(fetch).not.toHaveBeenCalled();
     });
@@ -105,7 +110,6 @@ describe('Bluesky Social Integration', () => {
       await dispatchBluesky(payload, fullConfig);
 
       const { RichText } = await import('@atproto/api');
-      const rtMock = vi.mocked(RichText).mock.results[0].value;
 
       expect(RichText).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -232,7 +236,7 @@ describe('Bluesky Social Integration', () => {
         ok: true,
         arrayBuffer: async () => imgBuffer,
         headers: {
-          get: (name: string) => 'image/jpeg',
+          get: (_name: string) => 'image/jpeg',
         },
       };
       vi.mocked(fetch).mockResolvedValueOnce(mockImgResponse as any);

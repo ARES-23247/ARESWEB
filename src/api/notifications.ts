@@ -73,7 +73,8 @@ export function useMarkNotificationRead(
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      (options?.onSuccess as any)?.(...args);
+
+        options?.onSuccess?.(...args);
     },
   });
 }
@@ -93,7 +94,8 @@ export function useMarkAllNotificationsRead(
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      (options?.onSuccess as any)?.(...args);
+
+        options?.onSuccess?.(...args);
     },
   });
 }
@@ -113,7 +115,8 @@ export function useDeleteNotification(
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      (options?.onSuccess as any)?.(...args);
+
+        options?.onSuccess?.(...args);
     },
   });
 }
