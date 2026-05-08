@@ -145,13 +145,12 @@ ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
   description = excluded.description;
 
--- Award some badges to test users
+-- Award some badges to test users (cleanup above removes these, so plain INSERT is safe)
 INSERT INTO user_badges (user_id, badge_id, awarded_by, awarded_at)
 VALUES
   ('admin-user', 'outreach-mvp', 'system', datetime('now')),
   ('admin-user', 'programming-excellence', 'system', datetime('now')),
-  ('test-user-1', 'safety-certified', 'admin-user', datetime('now'))
-ON CONFLICT(user_id, badge_id) DO NOTHING;
+  ('test-user-1', 'safety-certified', 'admin-user', datetime('now'));
 
 -- ────────────────────────────────────────
 -- Sponsors
