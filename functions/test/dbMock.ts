@@ -1,7 +1,8 @@
 import { vi } from "vitest";
+import type { ChainableQuery, DbRows, MockFn } from "./testTypes";
 
-export function createDrizzleMock() {
-  const chainable = {
+export function createDrizzleMock(): ChainableQuery {
+  const chainable: Record<string, MockFn> = {
     select: vi.fn().mockReturnThis(),
     selectDistinct: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
@@ -23,14 +24,14 @@ export function createDrizzleMock() {
     fullJoin: vi.fn().mockReturnThis(),
     groupBy: vi.fn().mockReturnThis(),
     having: vi.fn().mockReturnThis(),
-    all: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue(null),
+    all: vi.fn().mockResolvedValue<DbRows>([]),
+    get: vi.fn().mockResolvedValue<unknown>(null),
     run: vi.fn().mockResolvedValue({ success: true }),
-    execute: vi.fn().mockResolvedValue([]),
+    execute: vi.fn().mockResolvedValue<DbRows>([]),
   };
 
   // transaction callback is passed the mock itself so inner queries use it
-  (chainable as { transaction: ReturnType<typeof vi.fn> }).transaction = vi.fn(async (cb: (tx: typeof chainable) => Promise<unknown>) => await cb(chainable));
+  chainable.transaction = vi.fn(async (cb: (tx: ChainableQuery) => Promise<unknown>) => await cb(chainable as ChainableQuery));
 
-  return chainable;
+  return chainable as ChainableQuery;
 }
