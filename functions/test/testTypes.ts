@@ -1,4 +1,4 @@
-import { MockedFunction } from "vitest";
+import { MockedFunction, vi } from "vitest";
 
 /**
  * Test mock types and interfaces for database and API testing

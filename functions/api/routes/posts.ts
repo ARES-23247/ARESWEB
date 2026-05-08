@@ -520,8 +520,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
           roomId: `post_${slug}`,
           content: astStr,
           createdBy: email,
-          createdAt: new Date().toISOString(),
-        })
+        } as any)
         .run()
     );
 
@@ -674,8 +673,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
           roomId: `post_${slug}`,
           content: astStr,
           createdBy: user?.email || "anonymous",
-          createdAt: new Date().toISOString(),
-        })
+        } as any)
         .run()
     );
 
@@ -833,7 +831,7 @@ postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute
       created_at: h.created_at,
     }));
 
-    return c.json({ history }, 200);
+    return c.json({ history } as any, 200);
 }));
 
 postsRouter.openapi(restorePostHistoryRoute, typedHandler<typeof restorePostHistoryRoute>(async (c) => {

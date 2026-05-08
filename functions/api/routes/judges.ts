@@ -190,7 +190,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
       throw new ApiError("Invalid or expired access code", 403);
     }
 
-    return c.json({ success: true, label: row.label }, 200);
+    return c.json({ success: true, label: row.label } as any, 200);
 }));
 
 judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRoute>(async (c) => {

@@ -41,7 +41,7 @@ export function errorResponse<T extends Context>(
   code?: string,
   details?: unknown
 ): ReturnType<T["json"]> {
-  return c.json(createErrorResponse(message, code, details), status);
+  return c.json(createErrorResponse(message, code, details), status) as ReturnType<T["json"]>;
 }
 
 /**
@@ -145,7 +145,7 @@ export function successResponse<T extends Context, D>(
   data: D,
   status: 200 | 201 | 202 | 204 = 200
 ): ReturnType<T["json"]> {
-  return c.json(data, status);
+  return c.json(data, status) as ReturnType<T["json"]>;
 }
 
 /**
@@ -176,7 +176,7 @@ export function paginatedResponse<T extends Context, D>(
   if (total !== undefined) {
     response.total = total;
   }
-  return c.json(response, 200);
+  return c.json(response, 200) as ReturnType<T["json"]>;
 }
 
 /**

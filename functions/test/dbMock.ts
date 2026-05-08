@@ -24,10 +24,10 @@ export function createDrizzleMock(): ChainableQuery {
     fullJoin: vi.fn().mockReturnThis(),
     groupBy: vi.fn().mockReturnThis(),
     having: vi.fn().mockReturnThis(),
-    all: vi.fn().mockResolvedValue<DbRows>([]),
-    get: vi.fn().mockResolvedValue<unknown>(null),
+    all: vi.fn().mockResolvedValue([]),
+    get: vi.fn().mockResolvedValue(null),
     run: vi.fn().mockResolvedValue({ success: true }),
-    execute: vi.fn().mockResolvedValue<DbRows>([]),
+    execute: vi.fn().mockResolvedValue([]),
   };
 
   // transaction callback is passed the mock itself so inner queries use it

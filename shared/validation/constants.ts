@@ -42,10 +42,7 @@ export function createStringValidator(
   fieldName: string,
   minLength: number = 1
 ) {
-  return z.string({
-    required_error: `${fieldName} is required`,
-    invalid_type_error: `${fieldName} must be a string`,
-  })
+  return z.string()
     .min(minLength, `${fieldName} must be at least ${minLength} character${minLength === 1 ? "" : "s"}`)
     .max(maxLength, `${fieldName} cannot exceed ${maxLength} characters`);
 }
