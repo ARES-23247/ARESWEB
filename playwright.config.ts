@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const WRANGLER_COMMAND = 'cross-env DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist -b SKIP_ENV_VALIDATION=true --env-file .env.test';
+const WRANGLER_COMMAND = 'DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist -b SKIP_ENV_VALIDATION=true --env-file .env.test';
 
 // Define test suites for batch running
 const testSuites = {
@@ -177,7 +177,7 @@ export default defineConfig({
         timeout: 120 * 1000,
       }
     : {
-        command: 'cross-env MODE=test npm run dev',
+        command: 'MODE=test npm run dev',
         url: 'http://localhost:5173',
         reuseExistingServer: true,
       },
