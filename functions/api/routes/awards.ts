@@ -16,7 +16,6 @@ export const awardsRouter = new OpenAPIHono<AppEnv>();
 awardsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 
 awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const { limit = 50, offset = 0 } = c.req.valid('query');
     const results = await db.select({
@@ -49,16 +48,11 @@ awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (
     }));
 
     return c.json({ awards }, 200);
-  } catch (e) {
-    console.error("GET_AWARDS ERROR", e);
-    return c.json({ error: "Failed to fetch awards", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 awardsRouter.use("/admin/*", ensureAdmin);
 
 awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (c) => {
-  try {
     const validatedData = c.req.valid('json');
     const db = getDb(c);
     const { id, title, year, event_name, description, image_url, season_id } = validatedData;
@@ -141,14 +135,9 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
     }
 
     return c.json({ success: true, id: finalId! }, 200);
-  } catch (e) {
-    console.error("SAVE_AWARD ERROR", e);
-    return c.json({ error: "Failed to save award", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 awardsRouter.openapi(deleteAwardRoute, typedHandler<typeof deleteAwardRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const params = c.req.valid('param');
     const numericId = Number(params.id);
@@ -158,10 +147,6 @@ awardsRouter.openapi(deleteAwardRoute, typedHandler<typeof deleteAwardRoute>(asy
     await db.update(schema.awards).set({ isDeleted: 1 }).where(eq(schema.awards.id, numericId)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("DELETE_AWARD ERROR", e);
-    return c.json({ error: "Failed to delete award", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 export default awardsRouter;

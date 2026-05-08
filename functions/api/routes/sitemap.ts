@@ -13,7 +13,6 @@ let sitemapCache: { xml: string; expiresAt: number } | null = null;
 
 sitemapRouter.openapi(getSitemapRoute, typedHandler<typeof getSitemapRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const now = Date.now();
     if (sitemapCache && sitemapCache.expiresAt > now) {
       return c.text(sitemapCache.xml, 200, {
@@ -100,10 +99,6 @@ sitemapRouter.openapi(getSitemapRoute, typedHandler<typeof getSitemapRoute>(asyn
       "Content-Type": "application/xml",
       "Cache-Control": "public, s-maxage=900, max-age=900",
     });
-  } catch (err) {
-    console.error("Sitemap generation error:", err);
-    return c.text("Error generating sitemap", 500);
-  }
 }));
 
 export default sitemapRouter;

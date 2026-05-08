@@ -85,7 +85,6 @@ const sanitizeFtsQuery = (query: string): string => {
 postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) => {
   const { limit = 10, offset = 0, q } = c.req.valid("query");
 
-  try {
     const db = getDb(c);
 
     if (q) {
@@ -200,16 +199,11 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
 
     c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
     return c.json({ posts }, 200);
-  } catch (e) {
-    console.error("[Posts:List] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch posts");
-  }
 }));
 
 postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
 
-  try {
     const db = getDb(c);
     const user = await getSessionUser(c);
 
@@ -276,10 +270,6 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
       },
       200
     );
-  } catch (e) {
-    console.error("[Posts:Detail] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 // ─── Admin Routes ────────────────────────────────────────────────────────
@@ -287,7 +277,6 @@ postsRouter.openapi(getPostRoute, typedHandler<typeof getPostRoute>(async (c) =>
 postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(async (c) => {
   const { limit = 50, offset = 0 } = c.req.valid("query");
 
-  try {
     const db = getDb(c);
 
     let results;
@@ -358,16 +347,11 @@ postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(
     });
 
     return c.json({ posts }, 200);
-  } catch (e) {
-    console.error("[Posts:AdminList] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
 
-  try {
     const db = getDb(c);
     const row = await db
       .select({
@@ -416,16 +400,11 @@ postsRouter.openapi(getAdminPostRoute, typedHandler<typeof getAdminPostRoute>(as
       },
       200
     );
-  } catch (e) {
-    console.error("[Posts:AdminDetail] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) => {
   const body = c.req.valid("json");
 
-  try {
     const db = getDb(c);
 
     // If slug is provided, update existing post
@@ -615,17 +594,12 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
 
     const warning = warnings.length > 0 ? warnings.join(" | ") : undefined;
     return c.json({ success: true, slug, warning }, 200);
-  } catch (e) {
-    console.error("[Posts:Save] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   const body = c.req.valid("json");
 
-  try {
     const db = getDb(c);
     const astStr = JSON.stringify(body.ast);
     const snippet = extractAstText(body.ast).substring(0, 200);
@@ -710,16 +684,11 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
 
     return c.json({ success: true, slug }, 200);
-  } catch (e) {
-    console.error("[Posts:Update] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
 
-  try {
     const db = getDb(c);
     await db
       .update(schema.posts)
@@ -731,16 +700,11 @@ postsRouter.openapi(deletePostRoute, typedHandler<typeof deletePostRoute>(async 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Posts:Delete] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
 
-  try {
     const db = getDb(c);
     await db
       .update(schema.posts)
@@ -750,16 +714,11 @@ postsRouter.openapi(undeletePostRoute, typedHandler<typeof undeletePostRoute>(as
     c.executionCtx.waitUntil(logAuditAction(c, "RESTORE_POST", "posts", slug));
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Posts:Undelete] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(purgePostRoute, typedHandler<typeof purgePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
 
-  try {
     const db = getDb(c);
 
     const post = await db
@@ -783,33 +742,23 @@ postsRouter.openapi(purgePostRoute, typedHandler<typeof purgePostRoute>(async (c
     c.executionCtx.waitUntil(logAuditAction(c, "PURGE_POST", "posts", slug));
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Posts:Purge] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(approvePostRoute, typedHandler<typeof approvePostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
 
-  try {
     const result = await approvePost(c, slug);
     if (!result.success) {
       return errorResponses.notFound(c, result.error || "Post");
     }
 
     return c.json({ success: true, warnings: result.warnings }, 200);
-  } catch (e) {
-    console.error("[Posts:Approve] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(rejectPostRoute, typedHandler<typeof rejectPostRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   const { reason } = c.req.valid("json");
 
-  try {
     const db = getDb(c);
     const row = await db
       .select({
@@ -849,16 +798,11 @@ postsRouter.openapi(rejectPostRoute, typedHandler<typeof rejectPostRoute>(async 
     c.executionCtx.waitUntil(logAuditAction(c, "REJECT_POST", "posts", slug));
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Posts:Reject] Error", e);
-    return errorResponses.internalError(c, "Internal server error");
-  }
 }));
 
 postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute>(async (c) => {
   const { slug } = c.req.valid("param");
 
-  try {
     const db = getDb(c);
     const historyRows = await db
       .select({
@@ -889,10 +833,6 @@ postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute
     }));
 
     return c.json({ history }, 200);
-  } catch (e) {
-    console.error("[Posts:History] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch history");
-  }
 }));
 
 postsRouter.openapi(restorePostHistoryRoute, typedHandler<typeof restorePostHistoryRoute>(async (c) => {
@@ -911,7 +851,6 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
   const { slug } = c.req.valid("param");
   const { socials } = c.req.valid("json");
 
-  try {
     const db = getDb(c);
     const post = await db
       .select({
@@ -950,10 +889,6 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
     );
 
     return c.json({ success: true }, 200);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return errorResponses.internalError(c, message);
-  }
 }));
 
 export default postsRouter;

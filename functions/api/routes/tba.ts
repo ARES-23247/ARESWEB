@@ -40,21 +40,15 @@ async function getTBA(path: string, c: HonoContext) {
 }
 
 tbaRouter.openapi(getRankingsRoute, typedHandler<typeof getRankingsRoute>(async (c) => {
-  try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
       return c.json({ error: "Invalid eventKey" }, 400);
     }
     const data = await getTBA(`/event/${eventKey}/rankings`, c);
     return c.json({ rankings: (data as { rankings?: unknown[] })?.rankings || [] }, 200);
-  } catch (e) {
-    console.error("GET_TBA_RANKINGS ERROR", e);
-    return c.json({ error: "Failed to fetch rankings" }, 500);
-  }
 }));
 
 tbaRouter.openapi(getMatchesRoute, typedHandler<typeof getMatchesRoute>(async (c) => {
-  try {
     const { eventKey } = c.req.valid("param");
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
       return c.json({ error: "Invalid eventKey" }, 400);
@@ -62,14 +56,9 @@ tbaRouter.openapi(getMatchesRoute, typedHandler<typeof getMatchesRoute>(async (c
     const data = await getTBA(`/event/${eventKey}/matches/simple`, c) as Array<{ time?: number }>;
     const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
     return c.json({ matches: sorted as unknown[] }, 200);
-  } catch (e) {
-    console.error("GET_TBA_MATCHES ERROR", e);
-    return c.json({ error: "Failed to fetch matches" }, 500);
-  }
 }));
 
 tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(async (c) => {
-  try {
     const { season, eventCode, type } = c.req.valid("param");
     const path = `/${season}/events/${eventCode}/${type}`;
 
@@ -92,9 +81,6 @@ tbaRouter.openapi(getFtcEventsRoute, typedHandler<typeof getFtcEventsRoute>(asyn
     
     const data = await r.json();
     return c.json(data, 200);
-  } catch (_e) {
-    return c.json({ error: "Failed to fetch official event data" }, 500);
-  }
 }));
 
 export default tbaRouter;

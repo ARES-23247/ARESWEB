@@ -128,7 +128,6 @@ analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRou
   if (!(await checkPersistentRateLimit(db, `track:${ip}`, ua, 20, 600))) {
     return c.json({ error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" }, 429);
   }
-  try {
     const body = c.req.valid("json") as TrackPageViewBody;
     const { path, category, referrer } = body;
     const userAgent = c.req.header("user-agent") || ua;
@@ -145,9 +144,6 @@ analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRou
 
     const response: TrackPageViewSuccess = { success: true };
     return c.json(response satisfies TrackPageViewSuccess, 200);
-  } catch {
-    return c.json({ error: "Internal Server Error", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 // Track sponsor click
@@ -158,7 +154,6 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
   if (!(await checkPersistentRateLimit(db, `click:${ip}`, ua, 10, 600))) {
     return c.json({ error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" }, 429);
   }
-  try {
     const body = c.req.valid("json") as TrackSponsorClickBody;
     const { sponsor_id } = body;
 
@@ -186,16 +181,12 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
 
     const response: TrackSponsorClickSuccess = { success: true };
     return c.json(response satisfies TrackSponsorClickSuccess, 200);
-  } catch {
-    return c.json({ error: "Internal Server Error", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 // Get platform analytics (admin)
 analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c) => {
   const db = getDb(c);
   console.log("[Analytics] Fetching platform analytics...");
-  try {
     const [
       totalViewsData,
       uniqueVisitorsData,
@@ -296,20 +287,11 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       }
     };
     return c.json(response satisfies PlatformAnalyticsSuccess, 200);
-  } catch (err) {
-    console.error("[Analytics] Platform metrics error:", err);
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    return c.json({
-      error: errorMsg.includes("no such table") ? "Required database table missing. Run migrations." : "Failed to fetch platform metrics",
-      code: "INTERNAL_SERVER_ERROR"
-    }, 500);
-  }
 }));
 
 // Get roster stats (admin)
 analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const results = await db.all(sql<RosterMemberRow>`
       SELECT
         u.user_id,
@@ -340,15 +322,11 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
 
     const response: RosterStatsSuccess = { roster };
     return c.json(response satisfies RosterStatsSuccess, 200);
-  } catch {
-    return c.json({ error: "Failed to fetch roster stats", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 // Get leaderboard
 analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const results = await db.all(sql<LeaderboardRow>`
       SELECT
         u.id as user_id,
@@ -383,15 +361,11 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
 
     const response: LeaderboardSuccess = { leaderboard };
     return c.json(response satisfies LeaderboardSuccess, 200);
-  } catch {
-    return c.json({ error: "Failed to fetch leaderboard", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 // Get stats (admin)
 analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
       db.select({ total: sql<number>`count(${schema.posts.slug})` }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
       db.select({ total: sql<number>`count(${schema.events.id})` }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
@@ -415,9 +389,6 @@ analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async 
       securityBlocks: Number(securityBlocksRow?.total || 0)
     };
     return c.json(response satisfies StatsSuccess, 200);
-  } catch {
-    return c.json({ error: "Failed to fetch stats", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 // Search
@@ -425,7 +396,6 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
   const db = getDb(c);
   const query = c.req.valid("query") as SearchQuery;
   const { q } = query;
-  try {
     // SCA-FTS-01: Sanitize FTS5 query
     const qClean = (q || "").replace(/[^a-zA-Z0-9\s]/g, "").trim();
     if (!qClean) {
@@ -452,9 +422,6 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
 
     const response: SearchSuccess = { results };
     return c.json(response satisfies SearchSuccess, 200);
-  } catch {
-    return c.json({ error: "Search failed", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 export default analyticsRouter;

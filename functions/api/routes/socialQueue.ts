@@ -40,7 +40,6 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
 
 // List posts
 socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQueueRoute>(async (c) => {
-  try {
     const user = await getSessionUser(c);
     if (!user) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -84,15 +83,10 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
     const posts: SocialQueuePost[] = results.map(toSocialQueuePost);
 
     return c.json({ posts, total }, 200);
-  } catch (error) {
-    console.error("Social queue list error:", error);
-    return c.json({ error: "Failed to fetch scheduled posts" }, 500);
-  }
 }));
 
 // Calendar view
 socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendarSocialQueueRoute>(async (c) => {
-  try {
     const user = await getSessionUser(c);
     if (!user) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -120,15 +114,10 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendar
     const posts: SocialQueuePost[] = results.map(toSocialQueuePost);
 
     return c.json({ posts }, 200);
-  } catch (error) {
-    console.error("Social queue calendar error:", error);
-    return c.json({ error: "Failed to fetch calendar posts" }, 500);
-  }
 }));
 
 // Create post
 socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSocialQueueRoute>(async (c) => {
-  try {
     const user = await getSessionUser(c);
     if (!user) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -169,15 +158,10 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
     };
 
     return c.json({ success: true, post }, 200);
-  } catch (error) {
-    console.error("Social queue create error:", error);
-    return c.json({ error: "Failed to schedule post" }, 500);
-  }
 }));
 
 // Update post
 socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSocialQueueRoute>(async (c) => {
-  try {
     const user = await getSessionUser(c);
     if (!user) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -223,15 +207,10 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
     }
 
     return c.json({ success: true, post: toSocialQueuePost(updated) }, 200);
-  } catch (error) {
-    console.error("Social queue update error:", error);
-    return c.json({ error: "Failed to update post" }, 500);
-  }
 }));
 
 // Delete post
 socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSocialQueueRoute>(async (c) => {
-  try {
     const user = await getSessionUser(c);
     if (!user) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -256,15 +235,10 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
     await db.delete(schema.socialQueue).where(eq(schema.socialQueue.id, id)).run();
 
     return c.json({ success: true }, 200);
-  } catch (error) {
-    console.error("Social queue delete error:", error);
-    return c.json({ error: "Failed to delete post" }, 500);
-  }
 }));
 
 // Send post now
 socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSocialQueueRoute>(async (c) => {
-  try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
       return c.json({ error: "Unauthorized" }, 401);
@@ -298,15 +272,10 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
     await dispatchQueuePost(db, post, config);
 
     return c.json({ success: true }, 200);
-  } catch (error) {
-    console.error("Social queue sendNow error:", error);
-    return c.json({ error: "Failed to send post" }, 500);
-  }
 }));
 
 // Analytics
 socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyticsSocialQueueRoute>(async (c) => {
-  try {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
       return c.json({ error: "Unauthorized" }, 401);
@@ -370,10 +339,6 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
       },
       200
     );
-  } catch (error) {
-    console.error("Social queue analytics error:", error);
-    return c.json({ error: "Failed to fetch analytics" }, 500);
-  }
 }));
 
 export default socialQueueRouter;

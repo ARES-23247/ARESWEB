@@ -22,7 +22,6 @@ notificationsRouter.use("/:id/read", rateLimitMiddleware(20, 60));
 notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 
 notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotificationsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -55,14 +54,9 @@ notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotifi
     }));
 
     return c.json({ notifications }, 200);
-  } catch (e) {
-    console.error("GET_NOTIFICATIONS ERROR", e);
-    return c.json({ error: "Fetch failed", notifications: [] }, 500);
-  }
 }));
 
 notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markNotificationReadRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -75,13 +69,9 @@ notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markN
       .run();
 
     return c.json({ success: true }, 200);
-  } catch {
-    return c.json({ error: "Update failed" }, 500);
-  }
 }));
 
 notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof markAllNotificationsReadRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -93,13 +83,9 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof m
       .run();
 
     return c.json({ success: true }, 200);
-  } catch {
-    return c.json({ error: "Update failed" }, 500);
-  }
 }));
 
 notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteNotificationRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -111,13 +97,9 @@ notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteN
       .run();
 
     return c.json({ success: true }, 200);
-  } catch {
-    return c.json({ error: "Delete failed" }, 500);
-  }
 }));
 
 notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendingCountsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -164,13 +146,9 @@ notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendin
       events: Number(events?.count || 0),
       docs: Number(docs?.count || 0),
     }, 200);
-  } catch {
-    return c.json({ error: "Count failed" }, 500);
-  }
 }));
 
 notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof getDashboardActionItemsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -239,9 +217,6 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof ge
       events,
       docs,
     }, 200);
-  } catch {
-    return c.json({ error: "Action items fetch failed" }, 500);
-  }
 }));
 
 export default notificationsRouter;

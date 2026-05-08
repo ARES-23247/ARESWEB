@@ -16,7 +16,6 @@ logisticsRouter.use("/admin/*", ensureAdmin);
 logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisticsSummaryRoute>(async (c) => {
   const db = getDb(c);
 
-  try {
     const results = await db.select({
       dietary_restrictions: schema.userProfiles.dietaryRestrictions,
       tshirt_size: schema.userProfiles.tshirtSize,
@@ -55,16 +54,12 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisti
       dietary: summary,
       tshirts: tshirtSummary,
     }, 200);
-  } catch {
-    return c.json({ error: "Logistics fetch failed" }, 500);
-  }
 }));
 
 logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLogisticsEmailsRoute>(async (c) => {
   const db = getDb(c);
   const secret = c.env.ENCRYPTION_SECRET;
 
-  try {
     const results = await db.select({
       name: schema.user.name,
       email: schema.user.email,
@@ -102,9 +97,6 @@ logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLo
     }
 
     return c.json({ users }, 200);
-  } catch {
-    return c.json({ error: "Failed to export roster" }, 500);
-  }
 }));
 
 export default logisticsRouter;

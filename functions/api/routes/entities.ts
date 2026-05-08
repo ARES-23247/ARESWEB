@@ -13,7 +13,6 @@ export const entitiesRouter = new OpenAPIHono<AppEnv>();
 entitiesRouter.use("*", ensureAuth);
 
 entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const { type, id } = c.req.valid("query");
 
@@ -77,14 +76,9 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
     }));
 
     return c.json({ links: enrichedLinks }, 200);
-  } catch (e) {
-    console.error("GET_LINKS ERROR", e);
-    return c.json({ error: "Failed to fetch links", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const body = c.req.valid("json");
     const id = crypto.randomUUID();
@@ -102,22 +96,14 @@ entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRo
 
     c.executionCtx.waitUntil(logAuditAction(c, "create_link", "entity_links", id, `Linked ${body.source_type}:${body.source_id} to ${body.target_type}:${body.target_id}`));
     return c.json({ success: true, id }, 200);
-  } catch (e) {
-    console.error("SAVE_LINK ERROR", e);
-    return c.json({ error: "Failed to create link", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 entitiesRouter.openapi(deleteEntityLinkRoute, typedHandler<typeof deleteEntityLinkRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const { id } = c.req.valid("param");
     await db.delete(schema.entityLinks).where(eq(schema.entityLinks.id, id)).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_link", "entity_links", id));
     return c.json({ success: true }, 200);
-  } catch (_e) {
-    return c.json({ error: "Failed to delete link", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 export default entitiesRouter;

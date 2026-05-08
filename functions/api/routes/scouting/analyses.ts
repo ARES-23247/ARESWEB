@@ -15,7 +15,6 @@ analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScouti
   const { teamNumber: teamNumberStr, eventKey } = c.req.valid("query");
   const db = getDb(c);
 
-  try {
     let query = db.select().from(schema.scoutingAnalyses).$dynamic();
 
     if (teamNumberStr) {
@@ -31,10 +30,6 @@ analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScouti
 
     const results = await query.orderBy(desc(schema.scoutingAnalyses.createdAt)).all();
     return c.json(results, 200);
-  } catch (err) {
-    console.error("[Scouting Analyses] Database error:", err);
-    return errorResponses.internalError(c);
-  }
 }));
 
 export default analysesRouter;

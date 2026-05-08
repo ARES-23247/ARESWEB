@@ -101,7 +101,6 @@ storeRouter.use("/orders/*", ensureAdmin);
 storeRouter.use("/orders", ensureAdmin);
 
 storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const products = await db
       .select()
@@ -123,15 +122,9 @@ storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(asyn
       })),
       200
     );
-  } catch (err: unknown) {
-    console.error("[Store] Get products failed:", err);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return c.json({ error: message }, 500);
-  }
 }));
 
 storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createCheckoutSessionRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const { items, successUrl, cancelUrl } = body;
     const stripeKey = c.env.STRIPE_SECRET_KEY;
@@ -201,15 +194,9 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       },
       200
     );
-  } catch (err: unknown) {
-    console.error("[Store] Checkout failed:", err);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return c.json({ error: message }, 500);
-  }
 }));
 
 storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const orders = await db
       .select()
@@ -236,23 +223,14 @@ storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c
     }));
 
     return c.json({ orders: formattedOrders }, 200);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return c.json({ error: message }, 500);
-  }
 }));
 
 storeRouter.openapi(updateOrderStatusRoute, typedHandler<typeof updateOrderStatusRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
     const db = getDb(c);
     await db.update(schema.orders).set({ status: body.fulfillment_status }).where(eq(schema.orders.id, id)).run();
     return c.json({ success: true }, 200);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return c.json({ error: message }, 500);
-  }
 }));
 
 export default storeRouter;

@@ -43,7 +43,6 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
   const user = await getSessionUser(c);
   const db = getDb(c);
 
-  try {
     const results = await db.select({
       id: schema.comments.id,
       user_id: schema.comments.userId,
@@ -78,10 +77,6 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
       authenticated: !!user,
       role: user?.role || null
     }, 200);
-  } catch (e) {
-    console.error("[Comments:List] Error", e);
-    return c.json({ error: "Failed to fetch comments", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRoute>(async (c) => {
@@ -114,7 +109,6 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
     }, 400);
   }
 
-  try {
     const id = crypto.randomUUID();
     await db.insert(schema.comments)
       .values({
@@ -159,10 +153,6 @@ commentsRouter.openapi(submitCommentRoute, typedHandler<typeof submitCommentRout
     }
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Comments:Submit] Error", e);
-    return c.json({ error: "Failed to submit comment", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRoute>(async (c) => {
@@ -186,7 +176,6 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
     }, 400);
   }
 
-  try {
     const row = await db.select({
       user_id: schema.comments.userId,
       zulip_message_id: schema.comments.zulipMessageId
@@ -215,10 +204,6 @@ commentsRouter.openapi(updateCommentRoute, typedHandler<typeof updateCommentRout
     }
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Comments:Update] Error", e);
-    return c.json({ error: "Failed to update comment", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRoute>(async (c) => {
@@ -229,7 +214,6 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
-  try {
     const row = await db.select({
       user_id: schema.comments.userId,
       zulip_message_id: schema.comments.zulipMessageId
@@ -258,10 +242,6 @@ commentsRouter.openapi(deleteCommentRoute, typedHandler<typeof deleteCommentRout
     }
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Comments:Delete] Error", e);
-    return c.json({ error: "Failed to delete comment", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 export default commentsRouter;

@@ -798,7 +798,6 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
     return c.json({ suggestion: "" }, 200);
   }
 
-  try {
     const systemPrompt = "You are an AI assistant for ARES 23247. Provide a short, helpful suggestion.";
 
     if (hasZai) {
@@ -832,10 +831,6 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
     }
 
     return c.json({ suggestion: "" }, 200);
-  } catch (e) {
-    console.error("[AI Suggest] Error:", e);
-    return c.json({ suggestion: "" }, 200);
-  }
 }));
 
 aiRouter.post("/reindex", ensureAdmin, async (c) => {

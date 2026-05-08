@@ -160,7 +160,6 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
     return errorResponses.tooManyRequests(c);
   }
 
-  try {
     const { code, turnstileToken } = c.req.valid("json");
     if (!code) {
       return errorResponses.badRequest(c, "Code required");
@@ -191,14 +190,10 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
     }
 
     return c.json({ success: true, label: row.label }, 200);
-  } catch {
-    return errorResponses.internalError(c, "Login failed");
-  }
 }));
 
 judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const { "x-judge-code": code } = c.req.valid("header");
     if (!code) {
       return errorResponses.unauthorized(c, "Access code required");
@@ -308,10 +303,6 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 
     return c.json(payload, 200);
-  } catch (err) {
-    console.error("[Judges] Portfolio failed:", err);
-    return errorResponses.internalError(c, "Portfolio fetch failed");
-  }
 }));
 
 // Admin routes require ensureAdmin middleware
@@ -319,7 +310,6 @@ judgesRouter.use("/admin/*", ensureAdmin);
 
 judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const results = await db.select({
       id: schema.judgeAccessCodes.id,
       code: schema.judgeAccessCodes.code,
@@ -336,14 +326,10 @@ judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRout
     }));
 
     return c.json({ codes }, 200);
-  } catch {
-    return errorResponses.internalError(c, "Failed to fetch codes");
-  }
 }));
 
 judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const { label, expiresAt } = c.req.valid("json");
     const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
     const id = crypto.randomUUID();
@@ -363,14 +349,10 @@ judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRo
 
     c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
     return c.json({ success: true, code, id }, 200);
-  } catch {
-    return errorResponses.internalError(c, "Create failed");
-  }
 }));
 
 judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const { id } = c.req.valid("param");
     await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();
 
@@ -379,9 +361,6 @@ judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRo
     portfolioCache.clear();
 
     return c.json({ success: true }, 200);
-  } catch {
-    return errorResponses.internalError(c, "Delete failed");
-  }
 }));
 
 export default judgesRouter;

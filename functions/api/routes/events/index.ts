@@ -292,7 +292,6 @@ eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAt
 
 // ─── Event Version History ──────────────────────────────────────────────
 eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const results = await db.select({
@@ -321,14 +320,9 @@ eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRo
     }));
 
     return c.json({ history }, 200);
-  } catch (e) {
-    console.error("[Events:History] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch history");
-  }
 }));
 
 eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventHistoryRoute>(async (c) => {
-  try {
     const { id, historyId } = c.req.valid("param");
     const db = getDb(c);
 
@@ -361,10 +355,6 @@ eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventH
       .run();
 
     return c.json({ success: true } satisfies RestoreEventHistorySuccess, 200);
-  } catch (e) {
-    console.error("[Events:RestoreHistory] Error", e);
-    return errorResponses.internalError(c, "Restore failed");
-  }
 }));
 
 export default eventsRouter;

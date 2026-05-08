@@ -48,7 +48,6 @@ sponsorsRouter.use("/admin/*", ensureAdmin);
 sponsorsRouter.use("/", edgeCacheMiddleware(180, 60, 300));
 // Get all public sponsors
 sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const results = await db
       .select({
@@ -77,15 +76,10 @@ sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(a
 
     const response: GetSponsorsResponse = { sponsors };
     return c.json(response satisfies GetSponsorsResponse, 200);
-  } catch (e) {
-    console.error("[Sponsors:List] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch sponsors");
-  }
 }));
 
 // Get ROI dashboard by token
 sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) => {
-  try {
     const { token } = c.req.valid("param");
     const db = getDb(c);
     const tokens = await db
@@ -150,15 +144,10 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
 
     const response = { sponsor, metrics } satisfies z.infer<typeof getRoiRoute.responses[200]["content"]["application/json"]["schema"]>;
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Sponsors:Roi] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch ROI");
-  }
 }));
 
 // Admin list all sponsors
 sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSponsorsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const sponsors = await db.select({
         id: schema.sponsors.id,
@@ -182,15 +171,10 @@ sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSpon
 
     const response = { sponsors: mappedSponsors } satisfies z.infer<typeof adminListSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Sponsors:AdminList] Error", e);
-    return errorResponses.internalError(c, "Admin access required");
-  }
 }));
 
 // Save/create sponsor
 sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const db = getDb(c);
     const id = body.id || crypto.randomUUID();
@@ -227,15 +211,10 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
 
     const response = { success: true, id } satisfies z.infer<typeof saveSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Sponsors:Save] Error", e);
-    return errorResponses.internalError(c, "Failed to save sponsor");
-  }
 }));
 
 // Delete sponsor
 sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
 
@@ -244,15 +223,10 @@ sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRout
 
     const response = { success: true } satisfies z.infer<typeof deleteSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Sponsors:Delete] Error", e);
-    return errorResponses.internalError(c, "Failed to delete sponsor");
-  }
 }));
 
 // Get admin tokens
 sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const results = await db
       .select({
@@ -276,15 +250,10 @@ sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRo
 
     const response = { tokens } satisfies z.infer<typeof getAdminTokensRoute.responses[200]["content"]["application/json"]["schema"]>;
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Sponsors:Tokens] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch tokens");
-  }
 }));
 
 // Generate token
 sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRoute>(async (c) => {
-  try {
     const { sponsor_id } = c.req.valid("json");
     const db = getDb(c);
 
@@ -302,10 +271,6 @@ sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRout
 
     const response = { success: true, token } satisfies z.infer<typeof generateTokenRoute.responses[200]["content"]["application/json"]["schema"]>;
     return c.json(response, 200);
-  } catch (error) {
-    console.error("[Sponsors:GenerateToken] Error:", error);
-    return errorResponses.internalError(c, "Failed to generate token");
-  }
 }));
 
 export default sponsorsRouter;

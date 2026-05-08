@@ -20,7 +20,6 @@ toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => 
 
   const url = `https://theorangealliance.org/api/${path}`;
 
-  try {
     const upstream = await fetch(url, {
       headers: {
         "X-TOA-Key": toaKey,
@@ -37,11 +36,6 @@ toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => 
 
     const data = await upstream.json();
     return c.json(data, 200);
-  } catch (err) {
-    console.error("[TOA Proxy] Fetch error:", err);
-    return c.json(
-      { error: "Failed to reach The Orange Alliance API", status: 502 }, 502);
-  }
 }));
 
 export default toaProxy;

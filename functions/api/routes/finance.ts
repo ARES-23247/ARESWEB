@@ -52,7 +52,6 @@ financeRouter.use("*", rateLimitMiddleware(30, 60));
 
 // GET /finance/summary - Get financial summary for a season
 financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof financeRoutes.getSummaryRoute>(async (c) => {
-  try {
     const { season_id } = c.req.valid("query");
     const db = getDb(c);
 
@@ -94,15 +93,10 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
       season_id: Number(latestSeasonId),
     };
     return c.json(response satisfies GetSummaryResponse, 200);
-  } catch (e) {
-    console.error("[Finance:Summary] Error", e);
-    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to fetch summary");
-  }
 }));
 
 // GET /finance/sponsorship - List sponsorship pipeline items
 financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof financeRoutes.listPipelineRoute>(async (c) => {
-  try {
     const { season_id } = c.req.valid("query");
     const db = getDb(c);
     let queryBuilder = db.select().from(schema.sponsorshipPipeline).$dynamic();
@@ -132,15 +126,10 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
 
     const response: ListPipelineResponse = { pipeline: result };
     return c.json(response satisfies ListPipelineResponse, 200);
-  } catch (e) {
-    console.error("[Finance:ListPipeline] Error", e);
-    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to fetch pipeline");
-  }
 }));
 
 // POST /finance/sponsorship - Create or update a sponsorship pipeline item
 financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof financeRoutes.savePipelineRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
@@ -240,30 +229,20 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
     await logAuditAction(c, isNew ? "create" : "update", "sponsorship_pipeline", id);
     const response: SavePipelineResponse = { success: true, id };
     return c.json(response satisfies SavePipelineResponse, 200);
-  } catch (e) {
-    console.error("[Finance:SavePipeline] Error", e);
-    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to save pipeline");
-  }
 }));
 
 // DELETE /finance/sponsorship/{id} - Delete a sponsorship pipeline item
 financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof financeRoutes.deletePipelineRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     await db.delete(schema.sponsorshipPipeline).where(eq(schema.sponsorshipPipeline.id, id)).run();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
     const response: DeletePipelineResponse = { success: true };
     return c.json(response satisfies DeletePipelineResponse, 200);
-  } catch (e) {
-    console.error("[Finance:DeletePipeline] Error", e);
-    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to delete pipeline");
-  }
 }));
 
 // GET /finance/transactions - List financial transactions
 financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof financeRoutes.listTransactionsRoute>(async (c) => {
-  try {
     const { season_id, type } = c.req.valid("query");
     const db = getDb(c);
     let queryBuilder = db.select().from(schema.financeTransactions).$dynamic();
@@ -289,15 +268,10 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
 
     const response: ListTransactionsResponse = { transactions: result };
     return c.json(response satisfies ListTransactionsResponse, 200);
-  } catch (e) {
-    console.error("[Finance:ListTransactions] Error", e);
-    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to fetch transactions");
-  }
 }));
 
 // POST /finance/transactions - Create or update a financial transaction
 financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof financeRoutes.saveTransactionRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
@@ -345,15 +319,10 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
     const response: SaveTransactionResponse = { success: true, id };
     return c.json(response satisfies SaveTransactionResponse, 200);
-  } catch (e) {
-    console.error("[Finance:SaveTransaction] Error", e);
-    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to save transaction");
-  }
 }));
 
 // DELETE /finance/transactions/{id} - Delete a financial transaction
 financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof financeRoutes.deleteTransactionRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const tx = await db
@@ -382,10 +351,6 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
     await logAuditAction(c, "delete", "finance_transactions", id);
     const response: DeleteTransactionResponse = { success: true };
     return c.json(response satisfies DeleteTransactionResponse, 200);
-  } catch (e) {
-    console.error("[Finance:DeleteTransaction] Error", e);
-    return errorResponses.internalError(c, e instanceof Error ? e.message : "Failed to delete transaction");
-  }
 }));
 
 export default financeRouter;

@@ -42,22 +42,16 @@ const settingsSchema = z.record(z.string(), z.string().max(10000));
 settingsRouter.use("/admin/*", ensureAdmin);
 
 settingsRouter.openapi(getSettingsRoute, typedHandler<typeof getSettingsRoute>(async (c) => {
-  try {
     const settings = await getDbSettings(c);
     const masked: Record<string, string> = {};
     for (const [key, value] of Object.entries(settings)) {
       masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
     }
     return c.json({ success: true, settings: masked }, 200);
-  } catch (e) {
-    console.error("GET_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Failed to fetch settings" }, 500);
-  }
 }));
 
 settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const body = c.req.valid("json");
     const validationResult = settingsSchema.safeParse(body);
     if (!validationResult.success) {
@@ -95,15 +89,10 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
 
     c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
     return c.json({ success: true, updated: updatedCount }, 200);
-  } catch (e) {
-    console.error("UPDATE_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Update failed" }, 500);
-  }
 }));
 
 settingsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const [posts, events, docs, inquiries, users] = await Promise.all([
       db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
       db.select({ count: count(schema.events.id) }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
@@ -118,14 +107,9 @@ settingsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (
       inquiries: Number(inquiries?.count || 0),
       users: Number(users?.count || 0),
     }, 200);
-  } catch (e) {
-    console.error("GET_STATS ERROR", e);
-    return c.json({ error: "Failed to fetch stats" }, 500);
-  }
 }));
 
 settingsRouter.openapi(getPublicSettingsRoute, typedHandler<typeof getPublicSettingsRoute>(async (c) => {
-  try {
     const settings = await getDbSettings(c);
     const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
     const publicSettings: Record<string, string> = {};
@@ -133,10 +117,6 @@ settingsRouter.openapi(getPublicSettingsRoute, typedHandler<typeof getPublicSett
       if (settings[key]) publicSettings[key] = settings[key];
     }
     return c.json({ success: true, settings: publicSettings }, 200);
-  } catch (e) {
-    console.error("GET_PUBLIC_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Failed to fetch public settings" }, 500);
-  }
 }));
 
 const SCHEMA_MAP: Record<string, unknown> = {

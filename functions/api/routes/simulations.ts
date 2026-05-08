@@ -99,7 +99,6 @@ async function canModifySimulation(
 
 // List all simulations from GitHub
 simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulationsRoute>(async (c) => {
-  try {
     const ghConfig = getGitHubConfig(c);
     let pat = c.env.GITHUB_PAT;
 
@@ -137,10 +136,6 @@ simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulati
     }));
 
     return c.json({ simulations: githubSims }, 200);
-  } catch (e) {
-    console.error("[Simulations] List error:", e);
-    return c.json({ error: "Failed to list simulations from GitHub" }, 500);
-  }
 }));
 
 // Get a single simulation file by id from GitHub
@@ -213,7 +208,6 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
 
 // Save simulation to GitHub
 simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulationRoute>(async (c) => {
-  try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -331,10 +325,6 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
     }
 
     return c.json({ id: `github:${simIdStr}` }, 200);
-  } catch (e) {
-    console.error("[Simulations] Save error:", e);
-    return c.json({ error: "Failed to save simulation" }, 500);
-  }
 }));
 
 // Delete simulation from GitHub
@@ -433,7 +423,6 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 
 // Create a new GitHub Gist for a simulation
 simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(async (c) => {
-  try {
     const { name, files } = c.req.valid("json");
     if (Object.keys(files).length === 0) {
       return c.json({ error: "No files provided" }, 400);
@@ -478,17 +467,12 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
 
     const gistResponse = await res.json() as { id: string; html_url: string };
     return c.json({ success: true, gistId: gistResponse.id, url: gistResponse.html_url }, 200);
-  } catch (e) {
-    console.error("[Simulations] Gist POST error:", e);
-    return c.json({ error: "Failed to create Gist" }, 500);
-  }
 }));
 
 // Fetch a GitHub Gist by ID
 simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async (c) => {
   const { id } = c.req.valid("param");
 
-  try {
     const db = getDb(c);
     let pat = c.env.GITHUB_PAT;
     try {
@@ -538,10 +522,6 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
         updated_at: gist.updated_at
       }
     }, 200);
-  } catch (e) {
-    console.error("[Simulations] Gist GET error:", e);
-    return c.json({ error: "Failed to fetch Gist" }, 500);
-  }
 }));
 
 export default simulationsRouter;

@@ -37,7 +37,6 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
     return c.json(data, 200);
   }
 
-  try {
     const config = await getSocialConfig(c);
     const pat = config["GITHUB_PAT"];
 
@@ -122,16 +121,11 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
     }
 
     return c.json(payload, 200);
-  } catch (e) {
-    console.error("[GitHub:Activity] Error", e);
-    return c.json({ error: "Failed to fetch GitHub activity" }, 500);
-  }
 }));
 
 githubRouter.use("/projects/*", ensureAdmin);
 
 githubRouter.openapi(getBoardRoute, typedHandler<typeof getBoardRoute>(async (c) => {
-  try {
     const config = await getSocialConfig(c);
     const ghConfig = buildGitHubConfig(config);
     if (!ghConfig) {
@@ -155,15 +149,9 @@ githubRouter.openapi(getBoardRoute, typedHandler<typeof getBoardRoute>(async (c)
     });
 
     return c.json({ success: true, board }, 200);
-  } catch (e) {
-    console.error("[GitHub:Board] Error fetching board:", (e as Error).message, (e as Error).stack);
-    // Return empty board with success:false so the frontend shows a meaningful error
-    return c.json({ success: false, board: [] }, 200);
-  }
 }));
 
 githubRouter.openapi(createItemRoute, typedHandler<typeof createItemRoute>(async (c) => {
-  try {
     const { title } = c.req.valid("json");
     const config = await getSocialConfig(c);
     const ghConfig = buildGitHubConfig(config);
@@ -174,10 +162,6 @@ githubRouter.openapi(createItemRoute, typedHandler<typeof createItemRoute>(async
 
     await createProjectItem(ghConfig, title);
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[GitHub:Create] Error", e);
-    return c.json({ error: "Failed to create project item" }, 500);
-  }
 }));
 
 export default githubRouter;

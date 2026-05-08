@@ -73,7 +73,6 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
   const user = (await getSessionUser(c))!;
   const db = getDb(c);
 
-  try {
     const profileRow = await db
       .select({
         userId: schema.userProfiles.userId,
@@ -170,15 +169,10 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
       } as z.infer<typeof profileMeSchema>,
       200
     );
-  } catch (err) {
-    console.error("[Profile:Me] Error", err);
-    return c.json({ error: "Failed to fetch your profile" }, 500);
-  }
 }));
 
 profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (c) => {
   const user = (await getSessionUser(c))!;
-  try {
     const body = c.req.valid("json");
     const validationResult = updateUserProfileSchema.safeParse(body);
     if (!validationResult.success) {
@@ -190,29 +184,20 @@ profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (
 
     await upsertProfile(c, user.id, validationResult.data);
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Profile:UpdateMe] Error", e);
-    return c.json({ error: "Failed to update profile" }, 500);
-  }
 }));
 
 profilesRouter.openapi(updateAvatarRoute, typedHandler<typeof updateAvatarRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const image = (body as { image?: string | null }).image;
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     await auth.api.updateUser({ headers: c.req.raw.headers, body: { image: image || null } });
     return c.json({ success: true }, 200);
-  } catch {
-    return c.json({ error: "Avatar update failed" }, 500);
-  }
 }));
 
 // ─── Public Routes ────────────────────────────────────────────────────────
 
 profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRoute>(async (c) => {
   const db = getDb(c);
-  try {
     const results = await db
       .select({
         userId: schema.userProfiles.userId,
@@ -307,16 +292,11 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
     }
 
     return c.json({ members: members as z.infer<typeof rosterMemberSchema>[] }, 200);
-  } catch (err) {
-    console.error("[Profile:Roster] Error", err);
-    return c.json({ error: "Failed to fetch team roster" }, 500);
-  }
 }));
 
 profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfileRoute>(async (c) => {
   const { userId } = c.req.valid("param");
   const db = getDb(c);
-  try {
     const profileRow = await db
       .select({
         userId: schema.userProfiles.userId,
@@ -430,9 +410,6 @@ profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfi
       .all();
 
     return c.json({ profile: sanitized, badges: rawBadges }, 200);
-  } catch {
-    return c.json({ error: "Profile fetch failed" }, 500);
-  }
 }));
 
 export default profilesRouter;

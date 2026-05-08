@@ -12,7 +12,6 @@ export const gcRouter = new OpenAPIHono<AppEnv>();
 
 // This is an internal cron trigger endpoint
 gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
-  try {
     const cronSecret = c.env.CRON_SECRET;
     const providedSecret = c.req.header("x-cron-secret");
 
@@ -40,10 +39,6 @@ gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
     };
 
     return c.json({ success: true, deleted: deletedCounts }, 200);
-  } catch (e) {
-    console.error("[GC Cron] Error", e);
-    return c.json({ error: "Internal Server Error" }, 500);
-  }
 }));
 
 export default gcRouter;

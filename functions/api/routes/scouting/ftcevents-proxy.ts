@@ -22,7 +22,6 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRo
   const authHeader = "Basic " + btoa(`${username}:${apiKey}`);
   const url = `https://ftc-api.firstinspires.org/v2.0/${path}`;
 
-  try {
     const upstream = await fetch(url, {
       headers: {
         Authorization: authHeader,
@@ -38,11 +37,6 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRo
 
     const data = await upstream.json();
     return c.json(data, 200);
-  } catch (err) {
-    console.error("[FTC Events Proxy] Fetch error:", err);
-    return c.json(
-      { error: "Failed to reach FTC Events API", status: 502 }, 502);
-  }
 }));
 
 export default ftcEventsProxy;

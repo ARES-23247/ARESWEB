@@ -21,7 +21,6 @@ export const tasksRouter = new OpenAPIHono<AppEnv>();
 tasksRouter.use("*", originIntegrityMiddleware());
 
 tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c) => {
-  try {
     const query = c.req.valid("query") || {};
     const db = getDb(c);
     const { limit, offset } = parsePagination(c, 50, 200);
@@ -116,14 +115,9 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
     return c.json({
       tasks: formattedTasks,
     }, 200);
-  } catch (err) {
-    console.error("[Tasks] List error:", err);
-    return c.json({ error: "Failed to fetch tasks" }, 500);
-  }
 }));
 
 tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
@@ -223,14 +217,9 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
     };
 
     return c.json({ success: true, task: createdTask }, 200);
-  } catch (err) {
-    console.error("[Tasks] Create error:", err);
-    return c.json({ error: "Failed to create task" }, 500);
-  }
 }));
 
 tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
@@ -245,14 +234,9 @@ tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(as
     ));
 
     return c.json({ success: true }, 200);
-  } catch (err) {
-    console.error("[Tasks] Reorder error:", err);
-    return c.json({ error: "Failed to reorder tasks" }, 500);
-  }
 }));
 
 tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
     const db = getDb(c);
@@ -367,14 +351,9 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
     }).run();
 
     return c.json({ success: true }, 200);
-  } catch (err) {
-    console.error("[Tasks] Update error:", err);
-    return c.json({ error: "Failed to update task" }, 500);
-  }
 }));
 
 tasksRouter.openapi(deleteTaskRoute, typedHandler<typeof deleteTaskRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const user = await getSessionUser(c);
@@ -409,10 +388,6 @@ tasksRouter.openapi(deleteTaskRoute, typedHandler<typeof deleteTaskRoute>(async 
     }).run();
 
     return c.json({ success: true }, 200);
-  } catch (err) {
-    console.error("[Tasks] Delete error:", err);
-    return c.json({ error: "Failed to delete task" }, 500);
-  }
 }));
 
 export default tasksRouter;

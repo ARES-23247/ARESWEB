@@ -138,7 +138,6 @@ mediaRouter.openapi(getMediaRoute, typedHandler<typeof getMediaRoute>(async (c) 
     return errorResponses.tooManyRequests(c);
   }
 
-  try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
     const cache = typeof caches !== 'undefined' ? (caches).default : null;
     const url = new URL(c.req.url);
@@ -190,14 +189,9 @@ mediaRouter.openapi(getMediaRoute, typedHandler<typeof getMediaRoute>(async (c) 
     }
 
     return response;
-  } catch (e) {
-    console.error("[Media:GetMedia] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch media");
-  }
 }));
 
 mediaRouter.openapi(getAdminMediaRoute, typedHandler<typeof getAdminMediaRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const [objects, results] = await Promise.all([
       listAllObjects(c.env.ARES_STORAGE),
@@ -226,14 +220,9 @@ mediaRouter.openapi(getAdminMediaRoute, typedHandler<typeof getAdminMediaRoute>(
     }));
 
     return c.json({ media }, 200);
-  } catch (e) {
-    console.error("[Media:AdminList] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch media");
-  }
 }));
 
 mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(async (c) => {
-  try {
     const formData = await c.req.parseBody();
     const file = formData["file"] as File | undefined;
     const folder = formData["folder"] as string | undefined;
@@ -314,18 +303,12 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
     }
 
     return c.json({ success: true, key, url: `/api/media/${key}`, altText }, 200);
-  } catch (err: unknown) {
-    const error = err instanceof Error ? err : new Error(String(err));
-    console.error("[Media:Upload] Error", error.stack || error);
-    return errorResponses.internalError(c, `Upload failed: ${error.message}`);
-  }
 }));
 
 mediaRouter.openapi(moveMediaRoute, typedHandler<typeof moveMediaRoute>(async (c) => {
   const { key } = c.req.valid("param");
   const { folder } = c.req.valid("json");
 
-  try {
     const fileName = key.split("/").pop();
     if (!fileName) {
       return errorResponses.badRequest(c, "Invalid key format");
@@ -357,16 +340,11 @@ mediaRouter.openapi(moveMediaRoute, typedHandler<typeof moveMediaRoute>(async (c
     }
 
     return c.json({ success: true, newKey }, 200);
-  } catch (e) {
-    console.error("[Media:Move] Error", e);
-    return errorResponses.internalError(c, "Failed to move media");
-  }
 }));
 
 mediaRouter.openapi(deleteMediaRoute, typedHandler<typeof deleteMediaRoute>(async (c) => {
   const { key } = c.req.valid("param");
 
-  try {
     if (c.env.ARES_STORAGE) {
       await c.env.ARES_STORAGE.delete(key);
     }
@@ -376,16 +354,11 @@ mediaRouter.openapi(deleteMediaRoute, typedHandler<typeof deleteMediaRoute>(asyn
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
     }
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Media:Delete] Error", e);
-    return errorResponses.internalError(c, "Failed to delete media");
-  }
 }));
 
 mediaRouter.openapi(syndicateMediaRoute, typedHandler<typeof syndicateMediaRoute>(async (c) => {
   const { key, caption } = c.req.valid("json");
 
-  try {
     const config = await getDbSettings(c);
     const baseUrl = new URL(c.req.url).origin;
     const imageUrl = `${baseUrl}/api/media/${key}`;
@@ -396,10 +369,6 @@ mediaRouter.openapi(syndicateMediaRoute, typedHandler<typeof syndicateMediaRoute
     }
 
     return c.json({ success: true, message: "Dispatched" }, 200);
-  } catch (e) {
-    console.error("[Media:Syndicate] Error", e);
-    return errorResponses.internalError(c, "Failed to syndicate media");
-  }
 }));
 
 // GET /media/:key - Serve raw object from R2 (This is NOT an OpenAPI route because it returns binary/raw data)

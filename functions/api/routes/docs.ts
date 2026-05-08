@@ -154,7 +154,6 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 
 // GET /docs - List all public docs
 docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDocsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     let results;
     try {
@@ -228,10 +227,6 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
 
     const response: GetDocsResponse = { docs };
     return c.json(response satisfies GetDocsResponse, 200);
-  } catch (e) {
-    console.error("[Docs:List] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch documents");
-  }
 }));
 
 // GET /docs/search - Search docs
@@ -247,7 +242,6 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
     return errorResponses.badRequest(c, "Query too long (max 50 characters)");
   }
 
-  try {
     const now = Date.now();
     const cached = docSearchCache.get(q);
     if (cached && cached.expiresAt > now) {
@@ -285,15 +279,10 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
     const payload: SearchDocsResponse = { results: mapped };
     setCache(q, { data: payload, expiresAt: now + 60000 });
     return c.json(payload, 200);
-  } catch (e) {
-    console.error("[Docs:Search] Error", e);
-    return errorResponses.internalError(c, "Search failed");
-  }
 }));
 
 // GET /docs/admin/list - List all docs (admin view)
 docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adminListRoute>(async (c) => {
-  try {
     const db = getDb(c);
     let results;
     try {
@@ -353,16 +342,11 @@ docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adm
 
     const response: GetDocsResponse = { docs };
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Docs:AdminList] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch docs");
-  }
 }));
 
 // GET /docs/admin/{slug}/detail - Get doc detail (admin view)
 docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.adminDetailRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  try {
     const db = getDb(c);
     let row;
     try {
@@ -431,16 +415,11 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, typedHandler<typeof docsRoutes.a
 
     const response: AdminDetailResponse = { doc };
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Docs:AdminDetail] Error", e);
-    return errorResponses.internalError(c, "Database error");
-  }
 }));
 
 // GET /docs/{slug} - Get single doc with contributors
 docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  try {
     const db = getDb(c);
     let row;
     try {
@@ -542,16 +521,11 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
 
     const response: GetDocResponse = { doc, contributors };
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Docs:Detail] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch document detail");
-  }
 }));
 
 // DELETE /docs/admin/{slug} - Delete doc (soft delete)
 docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.deleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  try {
     const db = getDb(c);
     const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
     if (!existing) {
@@ -562,15 +536,10 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, typedHandler<typeof docsRoutes.del
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Docs:Delete] Error", e);
-    return errorResponses.internalError(c, "Delete failed");
-  }
 }));
 
 // POST /docs/admin/save - Save or update doc
 docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveDocRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const body = c.req.valid("json") as SaveDocRequest;
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = body;
@@ -723,24 +692,15 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug }, 200);
-  } catch (e) {
-    console.error("[Docs:Save] Error", e);
-    return errorResponses.internalError(c, "Write failed");
-  }
 }));
 
 // PATCH /docs/admin/{slug}/sort - Update doc sort order
 docsRouter.openapi(docsRoutes.updateSortRoute, typedHandler<typeof docsRoutes.updateSortRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   const { sortOrder } = c.req.valid("json") as UpdateSortRequest;
-  try {
     const db = getDb(c);
     await db.update(schema.docs).set({ sortOrder: sortOrder }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Docs:Sort] Error", e);
-    return errorResponses.internalError(c, "Sort update failed");
-  }
 }));
 
 // POST /docs/{slug}/feedback - Submit doc feedback
@@ -761,19 +721,13 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, typedHandler<typeof docsRoute
     return errorResponses.badRequest(c, "Comment too long");
   }
 
-  try {
     await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment ?? null }).run();
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Docs:Feedback] Error", e);
-    return errorResponses.internalError(c, "Feedback failed");
-  }
 }));
 
 // GET /docs/admin/{slug}/history - Get doc history
 docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.getHistoryRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  try {
     const db = getDb(c);
     const results = await db.select({
       id: schema.docsHistory.id,
@@ -797,16 +751,11 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
 
     const response: GetHistoryResponse = { history };
     return c.json(response, 200);
-  } catch (e) {
-    console.error("[Docs:History] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch history");
-  }
 }));
 
 // PATCH /docs/admin/{slug}/history/{id}/restore - Restore doc from history
 docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoutes.restoreHistoryRoute>(async (c) => {
   const { slug, id } = c.req.valid("param");
-  try {
     const db = getDb(c);
     const row = await db.select().from(schema.docsHistory).where(
       and(eq(schema.docsHistory.slug, slug), eq(schema.docsHistory.id, id))
@@ -837,16 +786,11 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, typedHandler<typeof docsRoute
     }).where(eq(schema.docs.slug, slug)).run();
 
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Docs:Restore] Error", e);
-    return errorResponses.internalError(c, "Restore failed");
-  }
 }));
 
 // POST /docs/admin/{slug}/approve - Approve doc
 docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.approveDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  try {
     const db = getDb(c);
 
     // First, verify the doc exists and is pending
@@ -892,17 +836,12 @@ docsRouter.openapi(docsRoutes.approveDocRoute, typedHandler<typeof docsRoutes.ap
       }
     }
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Docs:Approve] Error", e);
-    return errorResponses.internalError(c, "Approve failed");
-  }
 }));
 
 // POST /docs/admin/{slug}/reject - Reject doc
 docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rejectDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
   const { reason } = c.req.valid("json") as RejectDocRequest;
-  try {
     const db = getDb(c);
     const row = await db.select({
       title: schema.docs.title,
@@ -928,23 +867,14 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, typedHandler<typeof docsRoutes.rej
       }
     }
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Docs:Reject] Error", e);
-    return errorResponses.internalError(c, "Reject failed");
-  }
 }));
 
 // POST /docs/admin/{slug}/undelete - Undelete doc
 docsRouter.openapi(docsRoutes.undeleteDocRoute, typedHandler<typeof docsRoutes.undeleteDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  try {
     const db = getDb(c);
     await db.update(schema.docs).set({ isDeleted: 0, status: "draft" }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Docs:Undelete] Error", e);
-    return errorResponses.internalError(c, "Undelete failed");
-  }
 }));
 
 // POST /docs/admin/{slug}/purge - Permanently delete doc
@@ -984,7 +914,6 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
 
 // Export all docs as JSON
 docsRouter.openapi(docsRoutes.exportAllDocsRoute, typedHandler<typeof docsRoutes.exportAllDocsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const results = await db.select().from(schema.docs).orderBy(desc(schema.docs.updatedAt)).all();
     const docs = results.map(row => ({
@@ -1010,15 +939,11 @@ docsRouter.openapi(docsRoutes.exportAllDocsRoute, typedHandler<typeof docsRoutes
     }));
     const response: ExportAllDocsResponse = { docs };
     return c.json(response, 200);
-  } catch (_e) {
-    return errorResponses.internalError(c, "Export failed");
-  }
 }));
 
 // Export single doc as Markdown
 docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRoutes.exportSingleDocRoute>(async (c) => {
   const { slug } = c.req.valid("param");
-  try {
     const db = getDb(c);
     const doc = await db.select({
       title: schema.docs.title,
@@ -1044,9 +969,6 @@ docsRouter.openapi(docsRoutes.exportSingleDocRoute, typedHandler<typeof docsRout
 
     const markdown = `# ${doc.title ?? slug}\n\n**Category:** ${doc.category ?? "General"}\n\n${markdownContent}`;
     return c.text(markdown, 200, { "Content-Type": "text/plain; charset=utf-8" });
-  } catch (_e) {
-    return c.text("Export failed", 500, { "Content-Type": "text/plain; charset=utf-8" });
-  }
 }));
 
 // TipTap node types

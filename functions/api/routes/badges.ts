@@ -25,7 +25,6 @@ badgesRouter.use("/admin/*", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
 badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const results = await db
       .select({
@@ -50,14 +49,9 @@ badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async
     }));
 
     return c.json({ badges }, 200);
-  } catch (e: unknown) {
-    const err = e as Error;
-    return c.json({ error: err.message || "Failed to fetch badges", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(async (c) => {
-  try {
     const { id, name, description, icon, color_theme } = c.req.valid("json");
     const db = getDb(c);
     await db
@@ -71,14 +65,9 @@ badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(asy
       })
       .run();
     return c.json({ success: true }, 200);
-  } catch (e: unknown) {
-    const err = e as Error;
-    return c.json({ error: err.message || "Failed to create badge", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async (c) => {
-  try {
     const { userId, badgeId } = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
@@ -142,14 +131,9 @@ badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async
     );
 
     return c.json({ success: true }, 200);
-  } catch (e: unknown) {
-    const err = e as Error;
-    return c.json({ error: err.message || "Failed to award badge", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 badgesRouter.openapi(revokeBadgeRoute, typedHandler<typeof revokeBadgeRoute>(async (c) => {
-  try {
     const { userId, badgeId } = c.req.valid("param");
     const db = getDb(c);
     await db
@@ -157,26 +141,16 @@ badgesRouter.openapi(revokeBadgeRoute, typedHandler<typeof revokeBadgeRoute>(asy
       .where(and(eq(schema.userBadges.userId, userId), eq(schema.userBadges.badgeId, badgeId)))
       .run();
     return c.json({ success: true }, 200);
-  } catch (e: unknown) {
-    const err = e as Error;
-    return c.json({ error: err.message || "Failed to revoke badge", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 badgesRouter.openapi(deleteBadgeRoute, typedHandler<typeof deleteBadgeRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     await db.delete(schema.badges).where(eq(schema.badges.id, id)).run();
     return c.json({ success: true }, 200);
-  } catch (e: unknown) {
-    const err = e as Error;
-    return c.json({ error: err.message || "Failed to delete badge definition", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadgeRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const results = await db
       .select({
@@ -201,10 +175,6 @@ badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadge
     }));
 
     return c.json({ leaderboard }, 200);
-  } catch (e: unknown) {
-    const err = e as Error;
-    return c.json({ error: err.message || "Failed to fetch leaderboard", code: "INTERNAL_SERVER_ERROR" }, 500);
-  }
 }));
 
 export default badgesRouter;

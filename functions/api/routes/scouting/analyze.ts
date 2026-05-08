@@ -81,7 +81,6 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
   const systemPrompt = SYSTEM_PROMPTS[mode];
   const userContent = `Season: ${seasonKey}\n${teamNumber ? `Team: ${teamNumber}\n` : ""}Data:\n${JSON.stringify(context, null, 2)}`;
 
-  try {
     const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
       method: "POST",
       headers: {
@@ -138,10 +137,6 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
       model: "GLM-5.1",
       tokensUsed,
     }, 200);
-  } catch (err) {
-    console.error("[Scouting Analyze] Error:", err);
-    return errorResponses.internalError(c);
-  }
 }));
 
 export default analyzeRouter;

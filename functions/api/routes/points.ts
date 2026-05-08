@@ -18,7 +18,6 @@ export const pointsRouter = new OpenAPIHono<AppEnv>();
 
 pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalanceRoute>(async (c) => {
   const { user_id } = c.req.valid("param");
-  try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -38,15 +37,10 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
     const balance = ledger.reduce((sum, tx) => sum + (tx.points_delta || 0), 0);
 
     return c.json({ user_id, balance }, 200);
-  } catch (err) {
-    console.error("[Points] Get balance failed:", err);
-    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
-  }
 }));
 
 pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c) => {
   const { user_id } = c.req.valid("param");
-  try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -73,15 +67,10 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       id: tx.id || "",
       created_at: tx.createdAt || null
     })), 200);
-  } catch (err) {
-    console.error("[Points] Get history failed:", err);
-    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
-  }
 }));
 
 pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(async (c) => {
   const { user_id, points_delta, reason } = c.req.valid("json");
-  try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser || sessionUser.role !== "admin") {
       return c.json({ error: "Unauthorized" }, 401);
@@ -106,14 +95,9 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
       success: true, 
       transaction_id: id 
     }, 201);
-  } catch (err) {
-    console.error("[Points] Award points failed:", err);
-    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
-  }
 }));
 
 pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLeaderboardRoute>(async (c) => {
-  try {
     const db = getDb(c);
 
     const results = await db
@@ -142,10 +126,6 @@ pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLea
     });
 
     return c.json({ leaderboard }, 200);
-  } catch (err) {
-    console.error("[Points] Get leaderboard failed:", err);
-    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
-  }
 }));
 
 export default pointsRouter;

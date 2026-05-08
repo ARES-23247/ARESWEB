@@ -29,7 +29,6 @@ seasonsRouter.use("/admin/*", ensureAdmin);
 seasonsRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
 seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const results = await db
       .select({
@@ -65,14 +64,9 @@ seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(as
     }));
 
     return c.json({ seasons }, 200);
-  } catch (e) {
-    console.error("[Seasons:List] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch seasons");
-  }
 }));
 
 seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeasonsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const results = await db
       .select({
@@ -102,14 +96,9 @@ seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeason
     }));
 
     return c.json({ seasons }, 200);
-  } catch (e) {
-    console.error("[Seasons:AdminList] Error", e);
-    return errorResponses.internalError(c, "Failed to list seasons");
-  }
 }));
 
 seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSeasonRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const year = parseInt(id, 10);
@@ -145,14 +134,9 @@ seasonsRouter.openapi(adminDetailSeasonRoute, typedHandler<typeof adminDetailSea
     };
 
     return c.json({ season }, 200);
-  } catch (e) {
-    console.error("[Seasons:AdminDetail] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch season");
-  }
 }));
 
 seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailRoute>(async (c) => {
-  try {
     const { year } = c.req.valid("param");
     const db = getDb(c);
     const yearNum = parseInt(year, 10);
@@ -274,14 +258,9 @@ seasonsRouter.openapi(getSeasonDetailRoute, typedHandler<typeof getSeasonDetailR
     };
 
     return c.json({ season, awards, events, posts, outreach }, 200);
-  } catch (e) {
-    console.error("[Seasons:Detail] Error", e);
-    return errorResponses.internalError(c, "Failed to fetch season details");
-  }
 }));
 
 seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(async (c) => {
-  try {
     const body = c.req.valid("json");
     const db = getDb(c);
 
@@ -355,14 +334,9 @@ seasonsRouter.openapi(saveSeasonRoute, typedHandler<typeof saveSeasonRoute>(asyn
     }
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Seasons:Save] Error", e);
-    return errorResponses.internalError(c, "Save failed");
-  }
 }));
 
 seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const year = parseInt(id, 10);
@@ -374,14 +348,9 @@ seasonsRouter.openapi(deleteSeasonRoute, typedHandler<typeof deleteSeasonRoute>(
 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Seasons:Delete] Error", e);
-    return errorResponses.internalError(c, "Delete failed");
-  }
 }));
 
 seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const year = parseInt(id, 10);
@@ -391,14 +360,9 @@ seasonsRouter.openapi(undeleteSeasonRoute, typedHandler<typeof undeleteSeasonRou
       .where(eq(schema.seasons.startYear, year));
     c.executionCtx.waitUntil(logAuditAction(c, "season_restored", "seasons", id, `Season "${id}" restored`));
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Seasons:Undelete] Error", e);
-    return errorResponses.internalError(c, "Restore failed");
-  }
 }));
 
 seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const year = parseInt(id, 10);
@@ -407,10 +371,6 @@ seasonsRouter.openapi(purgeSeasonRoute, typedHandler<typeof purgeSeasonRoute>(as
       .where(eq(schema.seasons.startYear, year));
     c.executionCtx.waitUntil(logAuditAction(c, "season_purged", "seasons", id, `Season "${id}" permanently deleted`));
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Seasons:Purge] Error", e);
-    return errorResponses.internalError(c, "Purge failed");
-  }
 }));
 
 export default seasonsRouter;

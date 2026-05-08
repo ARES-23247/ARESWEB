@@ -24,7 +24,6 @@ export const usersRouter = new OpenAPIHono<AppEnv>();
 usersRouter.use("/admin/*", ensureAdmin);
 
 usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const { limit, cursor } = parsePagination(c, 50, 100);
 
@@ -93,14 +92,9 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
         : null;
 
     return c.json({ users, nextCursor }, 200);
-  } catch (e) {
-    console.error("getUsers failed:", e);
-    return c.json({ error: "Database error" }, 500);
-  }
 }));
 
 usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     
@@ -157,14 +151,9 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
       },
       200
     );
-  } catch (e) {
-    console.error("adminDetail failed:", e);
-    return c.json({ error: "Database error" }, 500);
-  }
 }));
 
 usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c) => {
-  try {
     // Defense-in-depth: Re-validate admin authorization for sensitive role changes
     const sessionUser = c.get("sessionUser") as
       | { id: string; role: string }
@@ -237,28 +226,16 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
     );
 
     return c.json({ success: true }, 200);
-  } catch (e: unknown) {
-    console.error("patchUser failed:", e);
-    return c.json(
-      { error: "Update failed: " + (e instanceof Error ? e.message : "Unknown error") },
-      500
-    );
-  }
 }));
 
 usersRouter.openapi(updateUserProfileRoute, typedHandler<typeof updateUserProfileRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
     await upsertProfile(c, id, body as Record<string, unknown>);
     return c.json({ success: true }, 200);
-  } catch {
-    return c.json({ error: "Profile update failed" }, 500);
-  }
 }));
 
 usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     
@@ -377,14 +354,9 @@ usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRou
       },
       200
     );
-  } catch (err) {
-    console.error("[Admin:GetProfile] Error", err);
-    return c.json({ error: "Failed to fetch user profile" }, 500);
-  }
 }));
 
 usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async (c) => {
-  try {
     const { id } = c.req.valid("param");
     const db = getDb(c);
 
@@ -405,11 +377,6 @@ usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async 
     );
 
     return c.json({ success: true }, 200);
-  } catch (e: unknown) {
-    console.error("Delete user failed:", e);
-    console.error(e);
-    return c.json({ error: "Delete failed" }, 500);
-  }
 }));
 
 export default usersRouter;

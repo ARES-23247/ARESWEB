@@ -19,23 +19,16 @@ communicationsRouter.use("/stats", ensureAdmin);
 
 // Get stats
 communicationsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
-  try {
     const db = getDb(c);
     const users = await db.select({ email: schema.user.email }).from(schema.user);
 
     const activeMembers = users.filter((m) => m.email);
     return c.json({ activeUsers: activeMembers.length }, 200);
 
-  } catch (err: unknown) {
-    console.error("[Communications] Error fetching stats:", err);
-    const errorMessage = err instanceof Error ? err.message : "Internal server error";
-    return c.json({ success: false, error: errorMessage }, 500);
-  }
 }));
 
 // Send mass email
 communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEmailRoute>(async (c) => {
-  try {
     const { subject, htmlContent } = c.req.valid("json");
     const socialConfig = await getSocialConfig(c);
 
@@ -104,20 +97,6 @@ communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEma
       recipientCount: sentCount
     }, 200);
 
-  } catch (err: unknown) {
-    // WR-09: Sanitize error message to avoid logging PII (email addresses)
-    const errMsg = err instanceof Error ? err.message : "Unknown error";
-    // Only log error type/class, not full details which may contain emails
-    const sanitizedErrMsg = errMsg.length > 200
-      ? errMsg.substring(0, 200) + "... (truncated)"
-      : errMsg;
-    console.error("[Communications] Send mass email failed:", sanitizedErrMsg);
-    try {
-      const db = getDb(c);
-      await logSystemError(db, "Communications", "Failed to send mass email", errMsg);
-    } catch { /* don't let logging failure mask the real error */ }
-    return c.json({ success: false, error: errMsg || "Failed to dispatch emails" }, 500);
-  }
 }));
 
 export default communicationsRouter;
