@@ -26,71 +26,42 @@ function createMockExecutionContext() {
 }
 
 // Simple inline mock database for Drizzle ORM
-function createMockDb() {
-  // Create chainable query builder
-  const queryBuilder = {
-    from: vi.fn().mockReturnThis(),
-    selectFrom: vi.fn().mockReturnThis(),
-    selectAll: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    and: vi.fn().mockReturnThis(),
-    or: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    offset: vi.fn().mockReturnThis(),
-    innerJoin: vi.fn().mockReturnThis(),
-    leftJoin: vi.fn().mockReturnThis(),
-    rightJoin: vi.fn().mockReturnThis(),
-    fullJoin: vi.fn().mockReturnThis(),
-    groupBy: vi.fn().mockReturnThis(),
-    having: vi.fn().mockReturnThis(),
-    $dynamic: vi.fn().mockReturnThis(),
-    // Terminal methods
-    all: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue(null),
-    run: vi.fn().mockResolvedValue({ success: true }),
-    execute: vi.fn().mockResolvedValue([]),
-    executeTakeFirst: vi.fn().mockResolvedValue(null),
-  };
+const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
 
-  return {
-    select: vi.fn(() => queryBuilder),
-    insert: vi.fn(() => queryBuilder),
-    update: vi.fn(() => queryBuilder),
-    delete: vi.fn(() => queryBuilder),
-    // Direct access to query builder methods
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    // Direct methods
-    all: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue(null),
-    run: vi.fn().mockResolvedValue({ success: true }),
-    execute: vi.fn().mockResolvedValue([]),
-    executeTakeFirst: vi.fn().mockResolvedValue(null),
-    // Values and set for mutations
-    values: vi.fn(() => queryBuilder),
-    set: vi.fn(() => queryBuilder),
-    // Aggregates
-    fn: {
-      count: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("count") }),
-      avg: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("avg") }),
-      sum: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("sum") }),
-      max: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("max") }),
-      min: vi.fn().mockReturnValue({ as: vi.fn().mockReturnValue("min") }),
-    },
-    // Query executor
-    getExecutor: vi.fn().mockReturnValue({
-      compileQuery: vi.fn().mockReturnValue({ sql: "", parameters: [], query: { kind: "RawNode" } }),
-      executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
-      transformQuery: vi.fn((q: unknown) => q),
-    }),
-    // Transaction support
-    transaction: vi.fn().mockImplementation(async (cb: any) => cb(queryBuilder)),
-    batch: vi.fn().mockResolvedValue([]),
-  };
-}
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };
 
 describe("Hono Backend - /notifications Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -147,10 +118,10 @@ describe("Hono Backend - /notifications Router", () => {
   });
 
   it("GET /pending-counts - get pending counts", async () => {
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 5 }); // inquiries
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 2 }); // posts
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 1 }); // events
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0 }); // docs
+    mockDb.get.mockResolvedValueOnce({ count: 5 }); // inquiries
+    mockDb.get.mockResolvedValueOnce({ count: 2 }); // posts
+    mockDb.get.mockResolvedValueOnce({ count: 1 }); // events
+    mockDb.get.mockResolvedValueOnce({ count: 0 }); // docs
     const res = await testApp.request("/pending-counts", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
     const body = await res.json() as { inquiries?: number };
@@ -262,7 +233,7 @@ describe("Hono Backend - /notifications Router", () => {
   });
 
   it("GET /pending-counts - handles db error", async () => {
-    mockDb.executeTakeFirst.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/pending-counts", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -276,10 +247,10 @@ describe("Hono Backend - /notifications Router", () => {
   it("GET /pending-counts - filters outreach for students", async () => {
     (getSessionUser as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ id: "1", role: "user", member_type: "student" });
 
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 5 }); // inquiries
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 2 }); // posts
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 1 }); // events
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0 }); // docs
+    mockDb.get.mockResolvedValueOnce({ count: 5 }); // inquiries
+    mockDb.get.mockResolvedValueOnce({ count: 2 }); // posts
+    mockDb.get.mockResolvedValueOnce({ count: 1 }); // events
+    mockDb.get.mockResolvedValueOnce({ count: 0 }); // docs
     const res = await testApp.request("/pending-counts", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });
@@ -297,10 +268,10 @@ describe("Hono Backend - /notifications Router", () => {
   it("GET /pending-counts - does not filter outreach for mentors", async () => {
     (getSessionUser as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ id: "1", role: "user", member_type: "mentor" });
 
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 5 }); // inquiries
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 2 }); // posts
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 1 }); // events
-    mockDb.executeTakeFirst.mockResolvedValueOnce({ count: 0 }); // docs
+    mockDb.get.mockResolvedValueOnce({ count: 5 }); // inquiries
+    mockDb.get.mockResolvedValueOnce({ count: 2 }); // posts
+    mockDb.get.mockResolvedValueOnce({ count: 1 }); // events
+    mockDb.get.mockResolvedValueOnce({ count: 0 }); // docs
     const res = await testApp.request("/pending-counts", {}, { DEV_BYPASS: "true" }, mockExecutionContext);
     expect(res.status).toBe(200);
   });

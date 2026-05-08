@@ -53,7 +53,7 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
       where: cursor ? lt(schema.user.createdAt, new Date(Number(cursor))) : undefined
     });
 
-    const users = results.map((u: any) => {
+    const users = results.map((u) => {
       const profile = u.userProfiles?.[0];
       return {
         id: String(u.id),
@@ -153,7 +153,7 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
               ? row.updatedAt
               : new Date(row.updatedAt as unknown as string).getTime(),
           nickname: (profile?.nickname as string | null) || null,
-          member_type: profile?.memberType as any,
+          member_type: (profile?.memberType as string | null) || null,
         },
       },
       200

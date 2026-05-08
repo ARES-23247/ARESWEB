@@ -1,12 +1,78 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
- 
+
 import { eq, desc, inArray, sum, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser, getDb } from "../middleware";
 import * as financeRoutes from "../../../shared/routes/finance";
+
+// Type definitions for finance data structures
+type FinanceTransactionType = "income" | "expense";
+
+interface FinanceSummaryResponse {
+  total_income: number;
+  total_expenses: number;
+  balance: number;
+  season_id: number | null;
+}
+
+interface FinanceSummaryItem {
+  type: FinanceTransactionType;
+  total: number;
+}
+
+interface SponsorshipPipelineItem {
+  id: string;
+  companyName: string;
+  contactPerson: string | null;
+  status: string;
+  estimatedValue: number | null;
+  seasonId: number | null;
+  notes: string | null;
+  zulipMessageId: string | null;
+  createdAt: string;
+  // Computed fields
+  season_id: number | null;
+  estimated_value: number;
+  assignees: string[];
+}
+
+interface SponsorshipAssignment {
+  sponsorshipId: string;
+  userId: string;
+}
+
+interface TransactionListItem {
+  id: string;
+  amount: number;
+  type: FinanceTransactionType;
+  category: string;
+  date: string;
+  description: string | null;
+  receiptUrl: string | null;
+  seasonId: number | null;
+  loggedBy: string | null;
+  // Computed fields
+  season_id: number | null;
+}
+
+interface ApiErrorResponse {
+  error: string;
+}
+
+interface ApiSuccessResponse {
+  success: true;
+  id?: string;
+}
+
+interface PipelineListResponse {
+  pipeline: SponsorshipPipelineItem[];
+}
+
+interface TransactionListResponse {
+  transactions: TransactionListItem[];
+}
 
 
 
@@ -29,12 +95,13 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
     }
 
     if (!latestSeasonId) {
-      return c.json({
+      const response: FinanceSummaryResponse = {
         total_income: 0,
         total_expenses: 0,
         balance: 0,
         season_id: null
-      } as any, 200 as any);
+      };
+      return c.json(response, 200);
     }
 
     const summary = await db
@@ -48,19 +115,21 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
       .all();
 
     const totals = {
-      income: summary.find((s: any) => s.type === "income")?.total || 0,
-      expense: summary.find((s: any) => s.type === "expense")?.total || 0,
+      income: summary.find((s: FinanceSummaryItem) => s.type === "income")?.total || 0,
+      expense: summary.find((s: FinanceSummaryItem) => s.type === "expense")?.total || 0,
     };
 
-    return c.json({
+    const response: FinanceSummaryResponse = {
       total_income: totals.income,
       total_expenses: totals.expense,
       balance: totals.income - totals.expense,
       season_id: Number(latestSeasonId),
-    } as any, 200 as any);
+    };
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Finance:Summary] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch summary" } as any, 500 as any);
+    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to fetch summary" };
+    return c.json(errorResponse, 500);
   }
 }));
 
@@ -74,25 +143,27 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
       queryBuilder = queryBuilder.where(eq(schema.sponsorshipPipeline.seasonId, Number(season_id)));
     }
     const pipeline = await queryBuilder.orderBy(desc(schema.sponsorshipPipeline.createdAt)).all();
-    const pipelineIds = pipeline.map((p: any) => p.id).filter(Boolean);
+    const pipelineIds = pipeline.map((p) => p.id).filter(Boolean);
 
-    let assignments: Array<{ sponsorshipId: string; userId: string }> = [];
+    let assignments: SponsorshipAssignment[] = [];
     if (pipelineIds.length > 0) {
       assignments = await db.select().from(schema.sponsorshipAssignments).where(inArray(schema.sponsorshipAssignments.sponsorshipId, pipelineIds)).all();
     }
 
-    const result = pipeline.map((p: any) => ({
+    const result: SponsorshipPipelineItem[] = pipeline.map((p) => ({
       ...p,
       season_id: p.seasonId ? Number(p.seasonId) : null,
       estimated_value: Number(p.estimatedValue || 0),
       status: (p.status || "potential").toLowerCase(),
-      assignees: assignments.filter((a: any) => a.sponsorshipId === p.id).map((a: any) => a.userId)
+      assignees: assignments.filter((a: SponsorshipAssignment) => a.sponsorshipId === p.id).map((a: SponsorshipAssignment) => a.userId)
     }));
 
-    return c.json({ pipeline: result } as any, 200 as any);
+    const response: PipelineListResponse = { pipeline: result };
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Finance:ListPipeline] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch pipeline" } as any, 500 as any);
+    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to fetch pipeline" };
+    return c.json(errorResponse, 500);
   }
 }));
 
@@ -104,9 +175,13 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for pipeline modifications
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401 as any);
+    if (!user) {
+      const errorResponse: ApiErrorResponse = { error: "Unauthorized" };
+      return c.json(errorResponse, 401);
+    }
     if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      return c.json({ error: "Insufficient permissions" } as any, 403 as any);
+      const errorResponse: ApiErrorResponse = { error: "Insufficient permissions" };
+      return c.json(errorResponse, 403);
     }
 
     const id = body.id || crypto.randomUUID();
@@ -194,10 +269,12 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "sponsorship_pipeline", id);
-    return c.json({ success: true, id } as any, 200 as any);
+    const successResponse: ApiSuccessResponse = { success: true, id };
+    return c.json(successResponse, 200);
   } catch (e) {
     console.error("[Finance:SavePipeline] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to save pipeline" } as any, 500 as any);
+    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to save pipeline" };
+    return c.json(errorResponse, 500);
   }
 }));
 
@@ -208,10 +285,12 @@ financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof fin
     const db = getDb(c);
     await db.delete(schema.sponsorshipPipeline).where(eq(schema.sponsorshipPipeline.id, id)).run();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
-    return c.json({ success: true } as any, 200 as any);
+    const successResponse: ApiSuccessResponse = { success: true };
+    return c.json(successResponse, 200);
   } catch (e) {
     console.error("[Finance:DeletePipeline] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to delete pipeline" } as any, 500 as any);
+    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to delete pipeline" };
+    return c.json(errorResponse, 500);
   }
 }));
 
@@ -229,16 +308,18 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
     }
     const transactions = await queryBuilder.orderBy(desc(schema.financeTransactions.date)).all();
 
-    return c.json({
-      transactions: transactions.map((t: any) => ({
-        ...t,
-        season_id: t.season_id ? Number(t.season_id) : null,
-        amount: Number(t.amount)
-      }))
-    } as any, 200 as any);
+    const result: TransactionListItem[] = transactions.map((t) => ({
+      ...t,
+      season_id: t.seasonId ? Number(t.seasonId) : null,
+      amount: Number(t.amount)
+    }));
+
+    const response: TransactionListResponse = { transactions: result };
+    return c.json(response, 200);
   } catch (e) {
     console.error("[Finance:ListTransactions] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to fetch transactions" } as any, 500 as any);
+    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to fetch transactions" };
+    return c.json(errorResponse, 500);
   }
 }));
 
@@ -250,9 +331,13 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for transaction modifications
-    if (!user) return c.json({ error: "Unauthorized" } as any, 401 as any);
+    if (!user) {
+      const errorResponse: ApiErrorResponse = { error: "Unauthorized" };
+      return c.json(errorResponse, 401);
+    }
     if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      return c.json({ error: "Insufficient permissions" } as any, 403 as any);
+      const errorResponse: ApiErrorResponse = { error: "Insufficient permissions" };
+      return c.json(errorResponse, 403);
     }
 
     const id = body.id || crypto.randomUUID();
@@ -261,12 +346,14 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     // WR-15: Validate transaction amount and type
     const amount = Number(body.amount);
     if (isNaN(amount) || amount < 0 || amount > 1000000) {
-      return c.json({ error: "Invalid amount: must be between 0 and 1,000,000" } as any, 400 as any);
+      const errorResponse: ApiErrorResponse = { error: "Invalid amount: must be between 0 and 1,000,000" };
+      return c.json(errorResponse, 400);
     }
 
     const validTypes = ['income', 'expense'];
     if (!body.type || !validTypes.includes(body.type)) {
-      return c.json({ error: "Invalid transaction type: must be 'income' or 'expense'" } as any, 400 as any);
+      const errorResponse: ApiErrorResponse = { error: "Invalid transaction type: must be 'income' or 'expense'" };
+      return c.json(errorResponse, 400);
     }
 
     const data = {
@@ -288,10 +375,12 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
-    return c.json({ success: true, id } as any, 200 as any);
+    const successResponse: ApiSuccessResponse = { success: true, id };
+    return c.json(successResponse, 200);
   } catch (e) {
     console.error("[Finance:SaveTransaction] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to save transaction" } as any, 500 as any);
+    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to save transaction" };
+    return c.json(errorResponse, 500);
   }
 }));
 
@@ -306,7 +395,10 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
       .where(eq(schema.financeTransactions.id, id))
       .get();
 
-    if (!tx) return c.json({ error: "Transaction not found" } as any, 404 as any);
+    if (!tx) {
+      const errorResponse: ApiErrorResponse = { error: "Transaction not found" };
+      return c.json(errorResponse, 404);
+    }
 
     await db.delete(schema.financeTransactions).where(eq(schema.financeTransactions.id, id)).run();
 
@@ -322,10 +414,12 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
     }
 
     await logAuditAction(c, "delete", "finance_transactions", id);
-    return c.json({ success: true } as any, 200 as any);
+    const successResponse: ApiSuccessResponse = { success: true };
+    return c.json(successResponse, 200);
   } catch (e) {
     console.error("[Finance:DeleteTransaction] Error", e);
-    return c.json({ error: e instanceof Error ? e.message : "Failed to delete transaction" } as any, 500 as any);
+    const errorResponse: ApiErrorResponse = { error: e instanceof Error ? e.message : "Failed to delete transaction" };
+    return c.json(errorResponse, 500);
   }
 }));
 

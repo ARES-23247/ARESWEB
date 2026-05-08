@@ -76,7 +76,7 @@ zulipRouter.openapi(getPresenceRoute, typedHandler<typeof getPresenceRoute>(asyn
         members: Array<{ email: string; full_name: string }>;
       };
       if (usersData.members) {
-        userNames = usersData.members.reduce((acc: any, user: any) => {
+        userNames = usersData.members.reduce((acc: Record<string, string>, user: { email: string; full_name: string }) => {
           acc[user.email] = user.full_name;
           return acc;
         }, {} as Record<string, string>);
@@ -269,12 +269,12 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
       .all();
 
     const missingEmails = aresUsers
-      .map((u: any) => u.email)
-      .filter((email: any) => {
+      .map((u: { email: string | null }) => u.email)
+      .filter((email): email is string => {
         if (!email) return false;
         const normalized = normalizeEmail(email);
         return !zulipEmails.has(normalized);
-      }) as string[];
+      });
 
     const sampleZulip = Array.from(zulipEmails).slice(0, 10);
     const sampleMissing = missingEmails.slice(0, 10);
@@ -307,7 +307,7 @@ zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(asyn
 
     const { emails } = body;
     if (!emails || emails.length === 0) {
-      return c.json({ success: true, invitedCount: 0 } as any, 200);
+      return c.json({ success: true, invitedCount: 0 }, 200);
     }
 
     const credentials = `${config.ZULIP_BOT_EMAIL}:${config.ZULIP_API_KEY}`;
@@ -324,7 +324,7 @@ zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(asyn
       const streamsData = (await streamsRes.json()) as {
         default_streams?: Array<{ stream_id: number }>;
       };
-      streamIds = (streamsData.default_streams || []).map((s: any) => s.stream_id);
+      streamIds = (streamsData.default_streams || []).map((s: { stream_id: number }) => s.stream_id);
     }
 
     const BATCH_SIZE = 10;
@@ -380,7 +380,7 @@ zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(asyn
       return c.json({ success: false, error: allErrors.join("; ") }, 500);
     }
 
-    return c.json({ success: true, invitedCount: totalInvited } as any, 200);
+    return c.json({ success: true, invitedCount: totalInvited }, 200);
   } catch (err) {
     return c.json({ success: false, error: (err as Error).message }, 500);
   }

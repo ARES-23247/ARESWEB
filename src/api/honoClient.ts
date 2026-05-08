@@ -1,5 +1,5 @@
 import { hc } from "hono/client";
-import type { ClientResponse } from "hono/client";
+import type { ClientResponse, Client } from "hono/client";
 import { type AppType } from "../../functions/api/[[route]]";
 
 /**
@@ -7,15 +7,14 @@ import { type AppType } from "../../functions/api/[[route]]";
  *
  * NOTE: We use hc<AppType> to get full RPC type safety where possible.
  *
- * IMPORTANT: The client is typed as `any` because OpenAPIHono route types
- * are not fully inferrable by Hono's hc() client. OpenAPIHono extends
+ * IMPORTANT: The client uses a loose type (extends Client) because OpenAPIHono
+ * route types are not fully inferrable by Hono's hc() client. OpenAPIHono extends
  * Hono with additional metadata (for OpenAPI spec generation) that creates
  * structural incompatibilities with hc's type inference. Individual API
  * wrapper functions handle their own type safety through Zod schemas and
  * explicit type annotations.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenAPIHono route types are not inferrable by hc; individual API wrappers handle their own type safety
-export const client: any = hc<AppType>("/api", {
+export const client: Client<AppType, "/api"> = hc<AppType>("/api", {
   init: {
     credentials: "include",
   },

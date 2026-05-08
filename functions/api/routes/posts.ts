@@ -93,7 +93,9 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
 
     if (q) {
       const cleanQ = sanitizeFtsQuery(String(q || ""));
-      if (!cleanQ) return c.json({ posts: [] } as any, 200 as any);
+      if (!cleanQ) {
+        return c.json({ posts: [] }, 200);
+      }
 
       const results = await db.run(sql<{
         slug: string;
@@ -119,15 +121,29 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
          ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
       `);
 
-      const rows = (results as any).rows || [];
-      const posts = rows.map((p: any) => ({
+      type FtsPostRow = {
+        slug: string;
+        title: string;
+        date: string | null;
+        snippet: string | null;
+        thumbnail: string | null;
+        status: string;
+        season_id: number | null;
+        author: string | null;
+        author_nickname: string | null;
+        author_avatar: string | null;
+        published_at: string | null;
+      };
+
+      const rows = (results as { rows: FtsPostRow[] }).rows || [];
+      const posts = rows.map((p: FtsPostRow) => ({
         ...p,
         season_id: p.season_id ? Number(p.season_id) : null,
         is_deleted: 0,
         is_portfolio: 0,
       }));
 
-      return c.json({ posts } as any, 200 as any);
+      return c.json({ posts }, 200);
     }
 
     const results = await db
@@ -160,7 +176,7 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       .offset(Number(offset) || 0)
       .all();
 
-    const posts = results.map((p: any) => ({
+    const posts = results.map((p) => ({
       ...p,
       season_id: p.season_id ? Number(p.season_id) : null,
       is_deleted: 0,
@@ -168,10 +184,10 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
     }));
 
     c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
-    return c.json({ posts } as any, 200 as any);
+    return c.json({ posts }, 200);
   } catch (e) {
     console.error("[Posts:List] Error", e);
-    return c.json({ error: "Failed to fetch posts" } as any, 500 as any);
+    return c.json({ error: "Failed to fetch posts" }, 500);
   }
 }));
 
@@ -286,12 +302,13 @@ postsRouter.openapi(getAdminPostsRoute, typedHandler<typeof getAdminPostsRoute>(
         .all();
     }
 
-    const posts = results.map((p: any) => {
-      const item = p as { season_id?: unknown; is_deleted?: unknown };
+    type AdminPostResult = typeof results extends (infer T)[] ? T : never;
+
+    const posts = results.map((p: AdminPostResult) => {
       return {
         ...p,
-        season_id: item.season_id ? Number(item.season_id) : null,
-        is_deleted: Number(item.is_deleted ?? 0),
+        season_id: p.season_id ? Number(p.season_id) : null,
+        is_deleted: Number(p.is_deleted ?? 0),
         is_portfolio: 0,
       };
     });
@@ -505,7 +522,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
             "blog",
             `Blog: ${body.title}`,
             `🚀 **New Blog Post Published:** [${body.title}](${siteConfig.urls.base}/blog/${slug})\n\n${snippet.substring(0, 300)}`
-          ).catch((err: any) => {
+          ).catch((err: unknown) => {
             console.error("[Posts] Zulip announcement failed:", err);
             warnings.push("Zulip Notification Failed");
           })
@@ -753,14 +770,14 @@ postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute
   const { slug } = c.req.valid("param");
   try {
     const historyRows = await getPostHistory(c, slug);
-    const history = historyRows.map((h: any) => ({
+    const history = historyRows.map((h) => ({
       ...h,
       id: Number(h.id),
     }));
-    return c.json({ history } as any, 200 as any);
+    return c.json({ history }, 200);
   } catch (e) {
     console.error("[Posts:History] Error", e);
-    return c.json({ error: "Failed to fetch history" } as any, 500 as any);
+    return c.json({ error: "Failed to fetch history" }, 500);
   }
 }));
 
@@ -810,7 +827,7 @@ postsRouter.openapi(repushSocialsRoute, typedHandler<typeof repushSocialsRoute>(
               {} as Record<string, boolean>
             )
           : null
-      ).catch((err: any) => console.error("[Repush] Social dispatch failed:", err))
+      ).catch((err: unknown) => console.error("[Repush] Social dispatch failed:", err))
     );
     return c.json({ success: true } as any, 200 as any);
   } catch (err) {

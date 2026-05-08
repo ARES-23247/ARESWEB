@@ -10,16 +10,57 @@ vi.mock("../middleware", async (importOriginal) => {
     ...actual,
     ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
     getSessionUser: vi.fn().mockResolvedValue({ id: "1", email: "admin@test.com", role: "admin" }),
-    getDb: () => ({
-      all: vi.fn().mockResolvedValue([]),
-      run: vi.fn().mockResolvedValue({ success: true }),
+    getDb: () => {
+      const fns = {
+        all: vi.fn().mockResolvedValue([]),
+        get: vi.fn().mockResolvedValue(null),
+        run: vi.fn().mockResolvedValue({ success: true }),
+        execute: vi.fn().mockResolvedValue([]),
+        executeTakeFirst: vi.fn().mockResolvedValue(null),
+        first: vi.fn().mockResolvedValue(null)
+      };
+      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+      const orig = {};
+      for (const m of methods) {
+        orig[m] = {
+          all: fns.all[m].bind(fns.all),
+          get: fns.get[m].bind(fns.get),
+          run: fns.run[m].bind(fns.run),
+          execute: fns.execute[m].bind(fns.execute),
+          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
+          first: fns.first[m].bind(fns.first)
+        };
+      }
+      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      for (const key of terminalsList) {
+        for (const m of methods) {
+          fns[key][m] = (...args) => {
+            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+            for (const k of terminals) {
+              if (orig[m][k]) orig[m][k](...args);
+            }
+            return fns[key];
+          };
+        }
+      }
+      const chainable = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop] = vi.fn().mockReturnValue(chainable);
+          return target[prop];
+        }
+      });
+      return chainable;
+    },
     }),
   };
 });
 
 describe("Hono Backend - /outreach Router", () => {
   let app: Hono<AppEnv>;
-  let getDbMock: () => ReturnType<typeof vi.mocked<typeof import("../middleware").getDb>>;
+  let getDbMock: () => any;
   const env = { DEV_BYPASS: "true" } as AppEnv["Bindings"];
   const mockExecutionContext = {
     waitUntil: vi.fn(),
@@ -50,7 +91,7 @@ describe("Hono Backend - /outreach Router", () => {
         { id: "v2", title: "Volunteer No Season", date: "2024-01-15", location: null, season_id: null }
       ]); // events
 
-    const res = await app.request("/", {}, env, mockExecutionContext);
+    const res = await app.request("/", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { logs: { title: string; season_id: string | null }[] };
     expect(body.logs).toHaveLength(3);
@@ -63,7 +104,7 @@ describe("Hono Backend - /outreach Router", () => {
   it("GET / - handles list failure", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockRejectedValue(new Error("DB Error"));
-    const res = await app.request("/", {}, env, mockExecutionContext);
+    const res = await app.request("/", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
@@ -74,7 +115,7 @@ describe("Hono Backend - /outreach Router", () => {
       method: "POST",
       body: JSON.stringify({ title: "New", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { id: string };
     expect(body.id).toBe("123");
@@ -85,7 +126,7 @@ describe("Hono Backend - /outreach Router", () => {
       method: "POST",
       body: JSON.stringify({ id: "1", title: "Updated", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
@@ -104,7 +145,7 @@ describe("Hono Backend - /outreach Router", () => {
         description: null
       }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
@@ -118,7 +159,7 @@ describe("Hono Backend - /outreach Router", () => {
         { id: "v1", title: "Volunteer", date: "2024-02-01", location: "Loc", season_id: "1" }
       ]); // events
 
-    const res = await app.request("/admin/list", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/list", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { logs: { title: string }[] };
     expect(body.logs).toHaveLength(2);
@@ -133,7 +174,7 @@ describe("Hono Backend - /outreach Router", () => {
       ])
       .mockResolvedValueOnce([]); // events
 
-    const res = await app.request("/admin/list", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/list", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { logs: { description: string }[] };
     expect(body.logs[0].description.length).toBe(203); // 200 + "..."
@@ -147,7 +188,7 @@ describe("Hono Backend - /outreach Router", () => {
       ])
       .mockRejectedValueOnce(new Error("Volunteer DB Error")); // fetchVolunteerEvents fails
 
-    const res = await app.request("/", {}, env, mockExecutionContext);
+    const res = await app.request("/", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
     const body = await res.json() as { logs: unknown[] };
     expect(body.logs).toHaveLength(1);
@@ -156,7 +197,7 @@ describe("Hono Backend - /outreach Router", () => {
   it("GET /admin/list - handles admin list failure", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockRejectedValue(new Error("DB Error"));
-    const res = await app.request("/admin/list", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/list", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
@@ -165,7 +206,7 @@ describe("Hono Backend - /outreach Router", () => {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
@@ -176,7 +217,7 @@ describe("Hono Backend - /outreach Router", () => {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
@@ -187,7 +228,7 @@ describe("Hono Backend - /outreach Router", () => {
       method: "POST",
       body: JSON.stringify({ title: "Fail", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(401);
   });
 
@@ -198,7 +239,7 @@ describe("Hono Backend - /outreach Router", () => {
       method: "POST",
       body: JSON.stringify({ title: "New", is_mentoring: true, mentored_team_number: "1234", date: "2024-01-01", students_count: 5, hours_logged: 10, reach_count: 50, location: "Test", description: "Test" }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
@@ -209,7 +250,7 @@ describe("Hono Backend - /outreach Router", () => {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(401);
   });
 });

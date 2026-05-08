@@ -49,37 +49,42 @@ function createMockExecutionContext() {
 }
 
 // Simple inline mock database for Drizzle ORM
-function createMockDb() {
-  return {
-    select: vi.fn().mockReturnThis(),
-    selectDistinct: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    execute: vi.fn().mockResolvedValue([]),
-    executeTakeFirst: vi.fn().mockResolvedValue(null),
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    onConflictDoUpdate: vi.fn().mockReturnThis(),
-    onConflictDoNothing: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    innerJoin: vi.fn().mockReturnThis(),
-    leftJoin: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    offset: vi.fn().mockReturnThis(),
-    groupBy: vi.fn().mockReturnThis(),
-    having: vi.fn().mockReturnThis(),
-    then: vi.fn().mockResolvedValue([]),
-    batch: vi.fn().mockResolvedValue([]),
-    transaction: vi.fn().mockImplementation(async (cb: any) => cb(createMockDb())),
-    all: vi.fn().mockResolvedValue([]),
-    run: vi.fn().mockResolvedValue({ success: true }),
-    get: vi.fn().mockResolvedValue(null),
-  };
-}
+const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
+
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };
 
 describe("Hono Backend - /media Router", () => {
   let mockR2: MockR2;

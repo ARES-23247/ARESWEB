@@ -13,7 +13,7 @@ interface MockQuery {
   orderBy: ReturnType<typeof vi.fn>;
   limit: ReturnType<typeof vi.fn>;
   execute: ReturnType<typeof vi.fn>;
-  executeTakeFirst: ReturnType<typeof vi.fn>;
+  get: ReturnType<typeof vi.fn>;
   all: ReturnType<typeof vi.fn>;
   then: ReturnType<typeof vi.fn>;
   values: ReturnType<typeof vi.fn>;
@@ -35,7 +35,7 @@ const createMockQuery = (): MockQuery => {
       if (shouldFail) throw new Error("DB connection lost");
       return executeResult;
     }),
-    executeTakeFirst: vi.fn().mockResolvedValue(null),
+    get: vi.fn().mockResolvedValue(null),
     all: vi.fn().mockImplementation(async () => {
       if (shouldFail) throw new Error("DB connection lost");
       return executeResult;

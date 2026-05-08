@@ -29,7 +29,7 @@ storeRouter.post("/webhook", async (c) => {
         return c.json({ error: "Missing stripe signature" }, 400);
       }
 
-      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
+      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
       let event: Stripe.Event;
 
       try {
@@ -65,7 +65,7 @@ storeRouter.post("/webhook", async (c) => {
             totalCents: session.amount_total || 0,
             status: "paid",
             createdAt: new Date().toISOString(),
-          } as any)
+          })
           .run();
 
         // Deplete inventory
@@ -110,8 +110,9 @@ storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(asyn
       .where(eq(schema.products.active, 1))
       .all();
 
+    type Product = typeof schema.products.$inferSelect;
     return c.json(
-      products.map((p: any) => ({
+      products.map((p: Product) => ({
         id: p.id || "",
         name: p.name || "Unknown Product",
         description: p.description || null,
@@ -139,7 +140,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       throw new Error("STRIPE_SECRET_KEY is not configured.");
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
     const db = getDb(c);
 
     // Fetch product details
@@ -155,10 +156,11 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       )
       .all();
 
-    const productMap = new Map(products.map((p: any) => [p.id, p]));
+    type Product = typeof schema.products.$inferSelect;
+    const productMap = new Map<string, Product>(products.map((p: Product) => [p.id, p]));
 
     const lineItems = items.map((item: { productId: string; quantity: number }) => {
-      const product = productMap.get(item.productId) as any;
+      const product = productMap.get(item.productId);
       if (!product) {
         throw new Error(`Product ${item.productId} not found or inactive.`);
       }
@@ -216,7 +218,8 @@ storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c
       .orderBy(desc(schema.orders.createdAt))
       .all();
 
-    const formattedOrders = orders.map((o: any) => ({
+    type Order = typeof schema.orders.$inferSelect;
+    const formattedOrders = orders.map((o: Order) => ({
       ...o,
       stripe_session_id: o.stripeSessionId,
       customer_email: o.customerEmail,
@@ -233,7 +236,7 @@ storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c
       updated_at: o.updatedAt,
     }));
 
-    return c.json({ orders: formattedOrders as any }, 200);
+    return c.json({ orders: formattedOrders }, 200);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return c.json({ error: message }, 500);

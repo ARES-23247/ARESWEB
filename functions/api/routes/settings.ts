@@ -49,10 +49,10 @@ settingsRouter.openapi(getSettingsRoute, typedHandler<typeof getSettingsRoute>(a
     for (const [key, value] of Object.entries(settings)) {
       masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
     }
-    return c.json({ success: true, settings: masked } as any, 200 as any);
+    return c.json({ success: true, settings: masked }, 200);
   } catch (e) {
     console.error("GET_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Failed to fetch settings" } as any, 500 as any);
+    return c.json({ success: false, error: "Failed to fetch settings" }, 500);
   }
 }));
 
@@ -63,7 +63,7 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
     const validationResult = settingsSchema.safeParse(body);
     if (!validationResult.success) {
       return c.json(
-        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i: any) => i.message).join(", ") } as any, 400 as any);
+        { success: false, error: "Invalid settings format: " + validationResult.error.issues.map((i: { message: string }) => i.message).join(", ") }, 400);
     }
 
     const entries = Object.entries(validationResult.data) as [string, string][];
@@ -72,11 +72,11 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
     for (const [key, value] of entries) {
       if (SENSITIVE_KEYS.has(key)) {
         if (value.startsWith("••••")) continue;
-        return c.json({ success: false, error: `Cannot update ${key} via API. Please use the admin console.` } as any, 403 as any);
+        return c.json({ success: false, error: `Cannot update ${key} via API. Please use the admin console.` }, 403);
       }
 
       const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);
-      if (error) return c.json({ success: false, updated: 0 } as any, 400 as any);
+      if (error) return c.json({ success: false, updated: 0 }, 400);
 
       await db
         .insert(schema.settings)
@@ -95,10 +95,10 @@ settingsRouter.openapi(updateSettingsRoute, typedHandler<typeof updateSettingsRo
       : `Updated ${updatedCount} integration keys.`;
 
     c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
-    return c.json({ success: true, updated: updatedCount } as any, 200 as any);
+    return c.json({ success: true, updated: updatedCount }, 200);
   } catch (e) {
     console.error("UPDATE_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Update failed" } as any, 500 as any);
+    return c.json({ success: false, error: "Update failed" }, 500);
   }
 }));
 
@@ -118,10 +118,10 @@ settingsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (
       docs: Number(docs?.count || 0),
       inquiries: Number(inquiries?.count || 0),
       users: Number(users?.count || 0),
-    } as any, 200 as any);
+    }, 200);
   } catch (e) {
     console.error("GET_STATS ERROR", e);
-    return c.json({ error: "Failed to fetch stats" } as any, 500 as any);
+    return c.json({ error: "Failed to fetch stats" }, 500);
   }
 }));
 
@@ -133,14 +133,14 @@ settingsRouter.openapi(getPublicSettingsRoute, typedHandler<typeof getPublicSett
     for (const key of publicKeys) {
       if (settings[key]) publicSettings[key] = settings[key];
     }
-    return c.json({ success: true, settings: publicSettings } as any, 200 as any);
+    return c.json({ success: true, settings: publicSettings }, 200);
   } catch (e) {
     console.error("GET_PUBLIC_SETTINGS ERROR", e);
-    return c.json({ success: false, error: "Failed to fetch public settings" } as any, 500 as any);
+    return c.json({ success: false, error: "Failed to fetch public settings" }, 500);
   }
 }));
 
-const SCHEMA_MAP: Record<string, any> = {
+const SCHEMA_MAP: Record<string, unknown> = {
   posts: schema.posts,
   events: schema.events,
   docs: schema.docs,
@@ -175,20 +175,20 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
       "awards", "page_analytics", "audit_log",
     ] as const;
 
-    const TABLE_COLUMNS: Record<string, any[]> = {
+    const TABLE_COLUMNS: Record<string, unknown[]> = {
       user_profiles: [
-        schema.userProfiles.userId, schema.userProfiles.nickname, schema.userProfiles.pronouns, 
-        schema.userProfiles.subteams, schema.userProfiles.memberType, schema.userProfiles.bio, 
+        schema.userProfiles.userId, schema.userProfiles.nickname, schema.userProfiles.pronouns,
+        schema.userProfiles.subteams, schema.userProfiles.memberType, schema.userProfiles.bio,
         schema.userProfiles.favoriteFirstThing, schema.userProfiles.funFact, schema.userProfiles.showOnAbout,
         schema.userProfiles.favoriteRobotMechanism, schema.userProfiles.preMatchSuperstition,
         schema.userProfiles.leadershipRole, schema.userProfiles.rookieYear, schema.userProfiles.updatedAt,
       ],
       inquiries: [
-        schema.inquiries.id, schema.inquiries.type, schema.inquiries.name, 
+        schema.inquiries.id, schema.inquiries.type, schema.inquiries.name,
         schema.inquiries.email, schema.inquiries.status, schema.inquiries.createdAt
       ],
       audit_log: [
-        schema.auditLog.id, schema.auditLog.action, schema.auditLog.resourceType, 
+        schema.auditLog.id, schema.auditLog.action, schema.auditLog.resourceType,
         schema.auditLog.resourceId, schema.auditLog.actor, schema.auditLog.createdAt
       ],
     };
@@ -202,11 +202,13 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
         const cols = TABLE_COLUMNS[tableName];
         let query;
         if (cols && cols.length > 0) {
-          const selectObj: Record<string, any> = {};
+          const selectObj: Record<string, unknown> = {};
           cols.forEach(col => {
-            selectObj[col.name] = col;
+            if (col && typeof col === 'object' && 'name' in col) {
+              selectObj[col.name as string] = col;
+            }
           });
-          query = db.select(selectObj).from(tableSchema);
+          query = db.select(selectObj).from(tableSchema as never);
         } else {
           query = db.select().from(tableSchema);
         }
@@ -216,9 +218,8 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
         if (tableName === "inquiries") {
           return {
             tableName,
-            data: (data || []).map((r: any) => {
-              const row = r as Record<string, unknown>;
-              return { ...row, name: row.name ? String(row.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
+            data: (data || []).map((r: Record<string, unknown>) => {
+              return { ...r, name: r.name ? String(r.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
             }),
           };
         }
@@ -233,10 +234,10 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
     for (const res of results) backup[res.tableName] = res.data;
 
     c.executionCtx.waitUntil(logAuditAction(c, "database_export", "system", null, "Exported full D1 database backup as JSON."));
-    return c.json({ success: true, timestamp: new Date().toISOString(), backup } as any, 200 as any);
+    return c.json({ success: true, timestamp: new Date().toISOString(), backup }, 200);
   } catch (e) {
     console.error("BACKUP ERROR", e);
-    return c.json({ success: false, error: "Backup failed" } as any, 500 as any);
+    return c.json({ success: false, error: "Backup failed" }, 500);
   }
 });
 

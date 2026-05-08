@@ -9,27 +9,90 @@ vi.mock("../../middleware", () => ({
   logAuditAction: vi.fn().mockResolvedValue(true),
   rateLimitMiddleware: () => async (_c: unknown, next: Next) => next(),
   persistentRateLimitMiddleware: () => async (_c: unknown, next: Next) => next(),
-  getDb: vi.fn().mockReturnValue({}),
-}));
-
-// Simple inline mock execution context
-function createMockExecutionContext() {
-  return {
-    waitUntil: vi.fn((promise: Promise<unknown>) => promise),
-    passThroughOnException: vi.fn(),
-    props: {},
+  getDb: () => {
+      const fns = {
+        all: vi.fn().mockResolvedValue([]),
+        get: vi.fn().mockResolvedValue(null),
+        run: vi.fn().mockResolvedValue({ success: true }),
+        execute: vi.fn().mockResolvedValue([]),
+        executeTakeFirst: vi.fn().mockResolvedValue(null),
+        first: vi.fn().mockResolvedValue(null)
+      };
+      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+      const orig = {};
+      for (const m of methods) {
+        orig[m] = {
+          all: fns.all[m].bind(fns.all),
+          get: fns.get[m].bind(fns.get),
+          run: fns.run[m].bind(fns.run),
+          execute: fns.execute[m].bind(fns.execute),
+          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
+          first: fns.first[m].bind(fns.first)
+        };
+      }
+      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      for (const key of terminalsList) {
+        for (const m of methods) {
+          fns[key][m] = (...args) => {
+            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+            for (const k of terminals) {
+              if (orig[m][k]) orig[m][k](...args);
+            }
+            return fns[key];
+          };
+        }
+      }
+      const chainable = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop] = vi.fn().mockReturnValue(chainable);
+          return target[prop];
+        }
+      });
+      return chainable;
+    },
   };
 }
 
 // Simple inline mock database
-function createMockDb() {
-  return {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    execute: vi.fn().mockResolvedValue([]),
-  };
-}
+const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
+
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };
 
 // Mock the dynamic import of indexer
 const mockIndexSiteContent = vi.fn();

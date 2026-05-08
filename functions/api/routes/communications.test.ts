@@ -11,11 +11,50 @@ vi.mock("../middleware", async (importOriginal) => {
     getSocialConfig: vi.fn(),
     logAuditAction: vi.fn(),
     logSystemError: vi.fn(),
-    getDb: () => ({
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      all: vi.fn().mockResolvedValue([]),
-    }),
+    getDb: () => {
+      const fns = {
+        all: vi.fn().mockResolvedValue([]),
+        get: vi.fn().mockResolvedValue(null),
+        run: vi.fn().mockResolvedValue({ success: true }),
+        execute: vi.fn().mockResolvedValue([]),
+        executeTakeFirst: vi.fn().mockResolvedValue(null),
+        first: vi.fn().mockResolvedValue(null)
+      };
+      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+      const orig = {};
+      for (const m of methods) {
+        orig[m] = {
+          all: fns.all[m].bind(fns.all),
+          get: fns.get[m].bind(fns.get),
+          run: fns.run[m].bind(fns.run),
+          execute: fns.execute[m].bind(fns.execute),
+          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
+          first: fns.first[m].bind(fns.first)
+        };
+      }
+      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      for (const key of terminalsList) {
+        for (const m of methods) {
+          fns[key][m] = (...args) => {
+            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+            for (const k of terminals) {
+              if (orig[m][k]) orig[m][k](...args);
+            }
+            return fns[key];
+          };
+        }
+      }
+      const chainable = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop] = vi.fn().mockReturnValue(chainable);
+          return target[prop];
+        }
+      });
+      return chainable;
+    },
   };
 });
 
@@ -37,7 +76,7 @@ describe("Hono Backend - /communications Router", () => {
 
   it("GET /stats - returns active users count", async () => {
     const { getDb } = await import("../middleware");
-    const mockDb = getDb();
+    const mockDb = getDb({} as any);
     (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
       { email: "test1@test.com" },
       { email: "test2@test.com" },
@@ -56,7 +95,7 @@ describe("Hono Backend - /communications Router", () => {
 
   it("GET /stats - returns 500 when getDb throws", async () => {
     const { getDb } = await import("../middleware");
-    const mockDb = getDb();
+    const mockDb = getDb({} as any);
     (mockDb.select as ReturnType<typeof vi.fn>).mockImplementationOnce(() => { throw new Error("Database not initialized"); });
 
     const res = await app.request("/stats", {}, {
@@ -71,7 +110,7 @@ describe("Hono Backend - /communications Router", () => {
 
   it("GET /stats - handles DB error", async () => {
     const { getDb } = await import("../middleware");
-    const mockDb = getDb();
+    const mockDb = getDb({} as any);
     (mockDb.all as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("DB Connection Error"));
 
     const res = await app.request("/stats", {}, {
@@ -105,7 +144,7 @@ describe("Hono Backend - /communications Router", () => {
   it("POST /mass-email - returns 400 if no active users", async () => {
     vi.mocked(getSocialConfig).mockResolvedValueOnce({ RESEND_API_KEY: "test_key" });
     const { getDb } = await import("../middleware");
-    const mockDb = getDb();
+    const mockDb = getDb({} as any);
     (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
 
     const res = await app.request("/mass-email", {
@@ -126,7 +165,7 @@ describe("Hono Backend - /communications Router", () => {
   it("POST /mass-email - handles Resend API failure", async () => {
     vi.mocked(getSocialConfig).mockResolvedValueOnce({ RESEND_API_KEY: "test_key" });
     const { getDb } = await import("../middleware");
-    const mockDb = getDb();
+    const mockDb = getDb({} as any);
     (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValueOnce([{ email: "test@test.com" }]);
 
     fetchMock.mockResolvedValueOnce({
@@ -153,7 +192,7 @@ describe("Hono Backend - /communications Router", () => {
   it("POST /mass-email - handles Resend Batch payload error", async () => {
     vi.mocked(getSocialConfig).mockResolvedValueOnce({ RESEND_API_KEY: "test_key" });
     const { getDb } = await import("../middleware");
-    const mockDb = getDb();
+    const mockDb = getDb({} as any);
     (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValueOnce([{ email: "test@test.com" }]);
 
     fetchMock.mockResolvedValueOnce({
@@ -179,7 +218,7 @@ describe("Hono Backend - /communications Router", () => {
   it("POST /mass-email - sends emails successfully in batches", async () => {
     vi.mocked(getSocialConfig).mockResolvedValueOnce({ RESEND_API_KEY: "test_key" });
     const { getDb } = await import("../middleware");
-    const mockDb = getDb();
+    const mockDb = getDb({} as any);
 
     // Create 51 users to test batching logic (batch size is 50)
     const mockUsers = Array.from({ length: 51 }, (_, i) => ({ email: `user${i}@test.com` }));

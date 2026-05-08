@@ -3,15 +3,37 @@ import { Hono } from "hono";
 import analyzeRouter from "./analyze";
 import { AppEnv } from "../../middleware";
 
-vi.mock("../../middleware", () => ({
-  getDb: () => ({
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    run: vi.fn().mockResolvedValue({ success: true })
-  }),
-}));
+// Simple inline mock database
+function createMockDb() {
+  const runMock = vi.fn().mockResolvedValue({ success: true });
 
+  const valuesBuilder = {
+    run: runMock,
+  };
 
+  const insertBuilder = {
+    values: vi.fn(() => valuesBuilder),
+  };
+
+  return {
+    insert: vi.fn(() => insertBuilder),
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([]),
+    get: vi.fn().mockResolvedValue(null),
+    run: runMock,
+    execute: vi.fn().mockResolvedValue([]),
+  };
+}
+
+vi.mock("../../middleware", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware")>();
+  return {
+    ...actual,
+    getDb: vi.fn(() => createMockDb()),
+  };
+});
 
 describe("scoutingAnalyzeRouter", () => {
   let app: Hono<AppEnv>;

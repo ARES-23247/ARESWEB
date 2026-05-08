@@ -10,13 +10,51 @@ vi.mock("../middleware", async (importOriginal) => {
     ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
     rateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
     logAuditAction: vi.fn(),
-    getSessionUser: vi.fn().mockResolvedValue({ id: "user-123", role: "admin", member_type: "mentor" }),
-    getDb: () => ({
-      all: vi.fn().mockResolvedValue([]),
-      get: vi.fn().mockResolvedValue(null),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      run: vi.fn().mockResolvedValue({ success: true }),
+    getSessionUser: vi.fn().mockResolvedValue({ id: "user-123", role: "admin", member_type: "mentor", email: "admin@test.com", name: "Admin", nickname: "Admin", image: null }),
+    getDb: () => {
+      const fns = {
+        all: vi.fn().mockResolvedValue([]),
+        get: vi.fn().mockResolvedValue(null),
+        run: vi.fn().mockResolvedValue({ success: true }),
+        execute: vi.fn().mockResolvedValue([]),
+        executeTakeFirst: vi.fn().mockResolvedValue(null),
+        first: vi.fn().mockResolvedValue(null)
+      };
+      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+      const orig = {};
+      for (const m of methods) {
+        orig[m] = {
+          all: fns.all[m].bind(fns.all),
+          get: fns.get[m].bind(fns.get),
+          run: fns.run[m].bind(fns.run),
+          execute: fns.execute[m].bind(fns.execute),
+          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
+          first: fns.first[m].bind(fns.first)
+        };
+      }
+      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      for (const key of terminalsList) {
+        for (const m of methods) {
+          fns[key][m] = (...args) => {
+            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+            for (const k of terminals) {
+              if (orig[m][k]) orig[m][k](...args);
+            }
+            return fns[key];
+          };
+        }
+      }
+      const chainable = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop] = vi.fn().mockReturnValue(chainable);
+          return target[prop];
+        }
+      });
+      return chainable;
+    },
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
@@ -27,17 +65,28 @@ vi.mock("../middleware", async (importOriginal) => {
 
 describe("Hono Backend - /finance Router", () => {
   let app: Hono<AppEnv>;
-  let getDbMock: () => ReturnType<typeof vi.mocked<typeof import("../middleware").getDb>>;
+  let getDbMock: (_c: unknown) => {
+    all: ReturnType<typeof vi.fn>;
+    get: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    values: ReturnType<typeof vi.fn>;
+    run: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    set: ReturnType<typeof vi.fn>;
+    where: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  };
   const env = {
     DB: {} as unknown as D1Database,
     DEV_BYPASS: "true",
     ARES_STORAGE: {
       delete: vi.fn().mockResolvedValue(undefined),
     },
-  } as AppEnv["Bindings"];
+  } as unknown as AppEnv["Bindings"];
   const mockExecutionContext = {
     waitUntil: vi.fn(),
     passThroughOnException: vi.fn(),
+    props: {},
   };
 
   beforeEach(async () => {
@@ -47,9 +96,9 @@ describe("Hono Backend - /finance Router", () => {
 
     app = new Hono<AppEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", getDbMock());
+      c.set("db", getDbMock({} as never) as never);
       (c as any).set("executionCtx", mockExecutionContext);
-      c.set("sessionUser", { id: "admin-123", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" });
+      c.set("sessionUser", { id: "admin-123", role: "admin", email: "admin@test.com", name: "Admin", nickname: "Admin", image: null, member_type: "mentor" } as never);
       await next();
     });
     app.route("/", financeRouter);
@@ -57,7 +106,7 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("GET /summary", () => {
     it("returns correct totals for a specific season", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.all = vi.fn().mockResolvedValueOnce([{ type: "income", total: 1000 }, { type: "expense", total: 400 }]);
       const res = await app.request("/summary?season_id=2024", {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
@@ -67,7 +116,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("returns correct totals for latest season if not specified", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn()
         .mockResolvedValueOnce({ startYear: 2024 });
       mockDb.all = vi.fn().mockResolvedValueOnce([{ type: "income", total: 1000 }]);
@@ -79,7 +128,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles no seasons", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn().mockResolvedValueOnce(null);
       const res = await app.request("/summary", {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
@@ -88,7 +137,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles summary error", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn().mockRejectedValueOnce(new Error("Fail"));
       const res = await app.request("/summary", {}, env, mockExecutionContext);
       expect(res.status).toBe(500);
@@ -97,7 +146,7 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("GET /sponsorship", () => {
     it("lists pipeline with season filter", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.all = vi.fn().mockResolvedValueOnce([{ id: "lead-1", companyName: "Test Corp", status: "potential", estimatedValue: 500 }]);
       const res = await app.request("/sponsorship?season_id=2024", {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
@@ -106,7 +155,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles list pipeline error", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.all = vi.fn().mockRejectedValueOnce(new Error("Fail"));
       const res = await app.request("/sponsorship", {}, env, mockExecutionContext);
       expect(res.status).toBe(500);
@@ -122,7 +171,7 @@ describe("Hono Backend - /finance Router", () => {
     };
 
     it("creates a new pipeline item", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       const res = await app.request("/sponsorship", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,7 +182,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles 'secured' side-effects atomically", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       // Mock existing pipeline item as not secured yet
       mockDb.get = vi.fn()
         .mockResolvedValueOnce({ status: "potential" })
@@ -150,7 +199,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("does not duplicate transaction if it already exists (idempotency)", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       // Mock existing pipeline item as not secured yet
       mockDb.get = vi.fn()
         .mockResolvedValueOnce({ status: "potential" })
@@ -170,7 +219,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("idempotent when already 'secured'", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn().mockResolvedValueOnce({ status: "secured" });
 
       const res = await app.request("/sponsorship", {
@@ -184,7 +233,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles save error", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.insert = vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
           run: vi.fn().mockRejectedValue(new Error("Fail"))
@@ -210,7 +259,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles delete error", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.run = vi.fn().mockRejectedValueOnce(new Error("Fail"));
       const res = await app.request("/sponsorship/123", {
         method: "DELETE",
@@ -223,7 +272,7 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("GET /transactions", () => {
     it("lists transactions with filters", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.all = vi.fn().mockResolvedValueOnce([{ id: "tx-1", amount: 100, type: "income", category: "Donation", date: "2024-01-01" }]);
       const res = await app.request("/transactions?season_id=2024&type=income", {}, env, mockExecutionContext);
       expect(res.status).toBe(200);
@@ -232,7 +281,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles list error", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.all = vi.fn().mockRejectedValueOnce(new Error("Fail"));
       const res = await app.request("/transactions", {}, env, mockExecutionContext);
       expect(res.status).toBe(500);
@@ -248,7 +297,7 @@ describe("Hono Backend - /finance Router", () => {
     };
 
     it("creates new transaction", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       const res = await app.request("/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -259,7 +308,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("updates existing transaction", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       const res = await app.request("/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -270,7 +319,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles save error", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.insert = vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
           run: vi.fn().mockRejectedValue(new Error("Fail"))
@@ -287,7 +336,7 @@ describe("Hono Backend - /finance Router", () => {
 
   describe("DELETE /transactions/:id", () => {
     it("deletes an existing transaction", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn().mockResolvedValueOnce({ receiptUrl: "https://r2.ares/receipts/test.png" });
       const res = await app.request("/transactions/tx-123", {
         method: "DELETE",
@@ -301,7 +350,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles delete safely when executionCtx is not provided", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn().mockResolvedValueOnce({ receiptUrl: "https://r2.ares/receipts/test2.png" });
       const res = await app.request("/transactions/tx-123", {
         method: "DELETE",
@@ -313,7 +362,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles missing transaction", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn().mockResolvedValueOnce(null);
       const res = await app.request("/transactions/tx-123", {
         method: "DELETE",
@@ -324,7 +373,7 @@ describe("Hono Backend - /finance Router", () => {
     });
 
     it("handles delete error", async () => {
-      const mockDb = getDbMock();
+      const mockDb = getDbMock({});
       mockDb.get = vi.fn().mockRejectedValueOnce(new Error("Fail"));
       const res = await app.request("/transactions/tx-123", {
         method: "DELETE",

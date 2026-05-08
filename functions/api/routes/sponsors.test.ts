@@ -19,17 +19,57 @@ vi.mock("../middleware", async (importOriginal) => {
       role: "admin",
       member_type: "mentor"
     }),
-    getDb: () => ({
-      all: vi.fn().mockResolvedValue([]),
-      get: vi.fn().mockResolvedValue(null),
-      run: vi.fn().mockResolvedValue({ success: true }),
+    getDb: () => {
+      const fns = {
+        all: vi.fn().mockResolvedValue([]),
+        get: vi.fn().mockResolvedValue(null),
+        run: vi.fn().mockResolvedValue({ success: true }),
+        execute: vi.fn().mockResolvedValue([]),
+        executeTakeFirst: vi.fn().mockResolvedValue(null),
+        first: vi.fn().mockResolvedValue(null)
+      };
+      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+      const orig = {};
+      for (const m of methods) {
+        orig[m] = {
+          all: fns.all[m].bind(fns.all),
+          get: fns.get[m].bind(fns.get),
+          run: fns.run[m].bind(fns.run),
+          execute: fns.execute[m].bind(fns.execute),
+          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
+          first: fns.first[m].bind(fns.first)
+        };
+      }
+      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      for (const key of terminalsList) {
+        for (const m of methods) {
+          fns[key][m] = (...args) => {
+            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+            for (const k of terminals) {
+              if (orig[m][k]) orig[m][k](...args);
+            }
+            return fns[key];
+          };
+        }
+      }
+      const chainable = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop] = vi.fn().mockReturnValue(chainable);
+          return target[prop];
+        }
+      });
+      return chainable;
+    },
     }),
   };
 });
 
 describe("Hono Backend - /sponsors Router", () => {
   let app: Hono<AppEnv>;
-  let getDbMock: () => ReturnType<typeof vi.mocked<typeof import("../middleware").getDb>>;
+  let getDbMock: () => any;
   const env = {
     DB: {} as unknown as D1Database,
     DEV_BYPASS: "true",
@@ -59,14 +99,14 @@ describe("Hono Backend - /sponsors Router", () => {
   it("GET / - list sponsors error", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockRejectedValueOnce(new Error("DB error"));
-    const res = await app.request("/", {}, env, mockExecutionContext);
+    const res = await app.request("/", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
   it("GET / - list sponsors", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockResolvedValueOnce([{ id: "1", name: "Google", tier: "Gold", logo_url: null, website_url: null, is_active: 1 }]);
-    const res = await app.request("/", {}, env, mockExecutionContext);
+    const res = await app.request("/", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
@@ -77,7 +117,7 @@ describe("Hono Backend - /sponsors Router", () => {
       method: "POST",
       body: JSON.stringify({ name: "Google", tier: "Gold", logo_url: "https://example.com/logo.png", website_url: "https://example.com", description: "..." }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
@@ -88,7 +128,7 @@ describe("Hono Backend - /sponsors Router", () => {
       method: "POST",
       body: JSON.stringify({ id: "my-sponsor", name: "Google", tier: "Gold", logo_url: "https://example.com/logo.png", website_url: "https://example.com", is_active: 1 }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
@@ -99,14 +139,14 @@ describe("Hono Backend - /sponsors Router", () => {
       method: "POST",
       body: JSON.stringify({ sponsor_id: "123" }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
   it("GET /roi/:token - invalid token", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockResolvedValueOnce([]); // No token found
-    const res = await app.request("/roi/bad-token", {}, env, mockExecutionContext);
+    const res = await app.request("/roi/bad-token", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(403);
   });
 
@@ -114,7 +154,7 @@ describe("Hono Backend - /sponsors Router", () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockResolvedValueOnce([{ sponsor_id: "1" }]); // Token found
     mockDb.get = vi.fn().mockResolvedValueOnce(null); // Sponsor not found
-    const res = await app.request("/roi/good-token", {}, env, mockExecutionContext);
+    const res = await app.request("/roi/good-token", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(403);
   });
 
@@ -124,28 +164,28 @@ describe("Hono Backend - /sponsors Router", () => {
       .mockResolvedValueOnce([{ sponsor_id: "1" }]) // Token found
       .mockResolvedValueOnce([{ id: "m1", sponsor_id: "1", clicks: 100, impressions: 1000, year_month: "2023-01" }]); // Metrics
     mockDb.get = vi.fn().mockResolvedValueOnce({ id: "1", name: "Google", tier: "Gold", logo_url: null, website_url: null, is_active: 1 }); // Sponsor found
-    const res = await app.request("/roi/good-token", {}, env, mockExecutionContext);
+    const res = await app.request("/roi/good-token", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
   it("GET /roi/:token - error", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockRejectedValueOnce(new Error("DB error"));
-    const res = await app.request("/roi/good-token", {}, env, mockExecutionContext);
+    const res = await app.request("/roi/good-token", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
   it("GET /admin/list - normal path", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockResolvedValueOnce([{ id: "1", name: "Sponsor 1", tier: "Gold", is_active: 1 }]);
-    const res = await app.request("/admin/list", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/list", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
   it("GET /admin/list - error", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockRejectedValueOnce(new Error("DB error"));
-    const res = await app.request("/admin/list", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/list", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
@@ -156,7 +196,7 @@ describe("Hono Backend - /sponsors Router", () => {
       method: "POST",
       body: JSON.stringify({ name: "Google", tier: "Gold" }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
@@ -167,7 +207,7 @@ describe("Hono Backend - /sponsors Router", () => {
       method: "DELETE",
       body: JSON.stringify({}),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
@@ -178,21 +218,21 @@ describe("Hono Backend - /sponsors Router", () => {
       method: "DELETE",
       body: JSON.stringify({}),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
   it("GET /admin/tokens - normal path", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockResolvedValueOnce([{ id: "t1", sponsor_id: "s1", token: "good-token", created_at: "2023-01-01", last_used: null }]);
-    const res = await app.request("/admin/tokens", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/tokens", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(200);
   });
 
   it("GET /admin/tokens - error", async () => {
     const mockDb = getDbMock();
     mockDb.all = vi.fn().mockRejectedValueOnce(new Error("DB error"));
-    const res = await app.request("/admin/tokens", {}, env, mockExecutionContext);
+    const res = await app.request("/admin/tokens", {}, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 
@@ -203,7 +243,7 @@ describe("Hono Backend - /sponsors Router", () => {
       method: "POST",
       body: JSON.stringify({ sponsor_id: "123" }),
       headers: { "Content-Type": "application/json" }
-    }, env, mockExecutionContext);
+    }, env, mockExecutionContext as any);
     expect(res.status).toBe(500);
   });
 });

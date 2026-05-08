@@ -43,7 +43,7 @@ const adminPrivilegedPaths = [
   "/admin/:slug" // deleteDoc
 ];
 
-adminPrivilegedPaths.forEach((path: any) => {
+adminPrivilegedPaths.forEach((path: string) => {
   docsRouter.use(path, ensureAdmin);
 });
 
@@ -133,7 +133,7 @@ const sanitizeFtsQuery = (query: string): string => {
 
 async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
   try {
-    const db = getDb(c as any);
+    const db = getDb(c);
     const results = await db.select({ id: schema.docsHistory.id })
       .from(schema.docsHistory)
       .where(eq(schema.docsHistory.slug, slug))
@@ -205,20 +205,20 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .leftJoin(schema.user, eq(schema.docs.cfEmail, schema.user.email))
         .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
         .orderBy(asc(schema.docs.category), asc(schema.docs.sortOrder))
-        .all() as any[];
+        .all() as (DocWithAuthor | PartialDoc)[];
     }
 
-    const docs = results.map((d: any) => ({
+    const docs = results.map((d: DocWithAuthor | PartialDoc) => ({
       ...d,
       sort_order: Number(d.sort_order || 0),
       is_portfolio: Number(d.is_portfolio || 0),
       is_executive_summary: Number(d.is_executive_summary || 0),
-      is_deleted: Number(d.is_deleted || 0),
+      is_deleted: Number(d.is_deleted ?? 0),
       display_in_areslib: Number(d.display_in_areslib || 0),
       display_in_math_corner: Number(d.display_in_math_corner || 0),
       display_in_science_corner: Number(d.display_in_science_corner || 0),
-      original_author_nickname: d.original_author_nickname || undefined,
-      original_author_avatar: d.original_author_avatar || undefined
+      original_author_nickname: ('original_author_nickname' in d ? d.original_author_nickname : undefined) || undefined,
+      original_author_avatar: ('original_author_avatar' in d ? d.original_author_avatar : undefined) || undefined
     }));
 
     return c.json({ docs } as any, 200 as any);
@@ -256,7 +256,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
       ORDER BY f.rank LIMIT 20
     `);
 
-    const mapped = ((results as any).rows ?? []).map((row: any) => {
+    const mapped = ((results as { rows?: Array<{ slug: string; title: string; category: string; description: string | null }> }).rows ?? []).map((row: { slug: unknown; title: unknown; category: unknown; description: string | null }) => {
       return {
         slug: String(row.slug),
         title: String(row.title),
@@ -317,7 +317,7 @@ docsRouter.openapi(docsRoutes.adminListRoute, typedHandler<typeof docsRoutes.adm
         .all() as PartialDoc[];
     }
 
-    const docs = results.map((d: any) => ({
+    const docs = results.map((d: PartialDoc) => ({
       ...d,
       title: d.title || "Untitled",
       category: d.category || "Uncategorized",
@@ -478,7 +478,7 @@ docsRouter.openapi(docsRoutes.getDocRoute, typedHandler<typeof docsRoutes.getDoc
       ))
       .all();
 
-    const contributors = contributorRows.map((cnt: any) => ({
+    const contributors = contributorRows.map((cnt: { nickname: string | null; avatar: string | null }) => ({
       nickname: cnt.nickname || null,
       avatar: cnt.avatar || null
     }));
@@ -740,7 +740,7 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, typedHandler<typeof docsRoutes.ge
       .limit(50)
       .all();
 
-    const history = results.map((h: any) => ({
+    const history = results.map((h: { id: number | string; slug: string; title: string | null; category: string | null; description: string | null; author_email: string | null; created_at: string | null }) => ({
       ...h,
       id: Number(h.id)
     }));
@@ -1011,15 +1011,33 @@ docsRouter.get("/admin/:slug/export", async (c) => {
   }
 });
 
+// TipTap node types
+interface TipTapTextNode {
+  type: "text";
+  text?: string;
+}
+
+interface TipTapAttributes {
+  level?: number;
+  [key: string]: unknown;
+}
+
+interface TipTapNode {
+  type: string;
+  text?: string;
+  attrs?: TipTapAttributes;
+  content?: TipTapNode[];
+}
+
 // Simple Tiptap JSON to Markdown converter
-function tiptapToMarkdown(node: any): string {
+function tiptapToMarkdown(node: TipTapNode | TipTapTextNode): string {
   if (!node) return "";
 
   if (node.type === "text") {
     return node.text || "";
   }
 
-  const content = node.content || [];
+  const content = (node as TipTapNode).content || [];
   let result = "";
 
   for (const child of content) {

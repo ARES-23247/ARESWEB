@@ -53,29 +53,42 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
-function createMockDb() {
-  const allMock = vi.fn().mockResolvedValue([]);
-  const runMock = vi.fn().mockResolvedValue({ success: true });
-  const getMock = vi.fn().mockResolvedValue(null);
+const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
 
-  return {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    leftJoin: vi.fn().mockReturnThis(),
-    all: allMock,
-    get: getMock,
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    run: runMock,
-    onConflictDoUpdate: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-  };
-}
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };
 
 interface DocsResponse {
   success?: boolean;

@@ -29,26 +29,42 @@ vi.mock("../middleware/cache", () => ({
 import awardsRouter from "./awards";
 
 // Simple inline mock database
-function createMockDb() {
-  return {
-    prepare: vi.fn().mockReturnThis(),
-    bind: vi.fn().mockReturnThis(),
-    all: vi.fn().mockResolvedValue([]),
-    first: vi.fn().mockResolvedValue(null),
-    run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    offset: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-  };
-}
+const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
+
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };
 
 describe("Hono Backend - /awards Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -119,7 +135,7 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - update existing award by ID", async () => {
-    mockDb.first.mockResolvedValueOnce({ id: 123 }); // Find by ID
+    mockDb.get.mockResolvedValueOnce({ id: 123 }); // Find by ID
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -133,8 +149,8 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - update by ID but not found falls back to duplicate check", async () => {
-    mockDb.first.mockResolvedValueOnce(null); // Find by ID fails
-    mockDb.first.mockResolvedValueOnce({ id: 456 }); // Duplicate check succeeds
+    mockDb.get.mockResolvedValueOnce(null); // Find by ID fails
+    mockDb.get.mockResolvedValueOnce({ id: 456 }); // Duplicate check succeeds
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -150,7 +166,7 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - update existing award by duplicate match", async () => {
-    mockDb.first.mockResolvedValueOnce({ id: 123 }); // Find by duplicate title/year/event
+    mockDb.get.mockResolvedValueOnce({ id: 123 }); // Find by duplicate title/year/event
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -164,8 +180,8 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - create new award with mock insert object", async () => {
-    mockDb.first.mockResolvedValueOnce(null); // Not duplicate
-    mockDb.first.mockResolvedValueOnce({ insertId: 999n }); // Insert result
+    mockDb.get.mockResolvedValueOnce(null); // Not duplicate
+    mockDb.get.mockResolvedValueOnce({ insertId: 999n }); // Insert result
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({
@@ -180,7 +196,7 @@ describe("Hono Backend - /awards Router", () => {
   });
 
   it("POST /admin/save - handles db error", async () => {
-    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ title: "Fail", year: 2024 }),

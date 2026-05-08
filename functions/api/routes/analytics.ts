@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { Context } from "hono";
 
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit, getDb } from "../middleware";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -15,6 +15,137 @@ import {
   getPlatformAnalyticsRoute,
   searchRoute,
 } from "../../../shared/routes/analytics";
+
+// ── Type Definitions ──────────────────────────────────────────────────────
+
+interface ErrorResponse {
+  error: string;
+  details?: string;
+}
+
+interface SuccessResponse {
+  success: true;
+}
+
+interface TopPage {
+  path: string;
+  category: string;
+  views: number;
+}
+
+interface TopReferrer {
+  referrer: string;
+  visits: number;
+}
+
+interface RecentView {
+  path: string;
+  category: string;
+  user_agent: string;
+  referrer: string;
+  timestamp: string;
+}
+
+interface CategoryTotal {
+  category: string;
+  total: number;
+}
+
+interface UserActivity {
+  date: string;
+  pageViews: number;
+}
+
+interface LatencyData {
+  date: string;
+  avg_latency: number;
+}
+
+interface ResourceUsage {
+  totalAssets: number;
+  totalStorage: number;
+  apiCalls: number;
+}
+
+interface PlatformAnalyticsResponse {
+  totalPageViews: number;
+  uniqueVisitors: number;
+  topPages: TopPage[];
+  topReferrers: TopReferrer[];
+  recentViews: RecentView[];
+  totals: CategoryTotal[];
+  userActivity: UserActivity[];
+  latency: LatencyData[];
+  resourceUsage: ResourceUsage;
+}
+
+interface RosterMember {
+  user_id: string;
+  nickname: string | null;
+  member_type: string | null;
+  attended_events: number;
+  manual_prep_hours: number;
+  event_volunteer_hours: number;
+  avatar: string | null;
+}
+
+interface RosterStatsResponse {
+  roster: RosterMember[];
+}
+
+interface LeaderboardEntry {
+  user_id: string;
+  first_name: string;
+  last_name: string | null;
+  nickname: string | null;
+  member_type: string;
+  badge_count: number;
+  avatar: string | null;
+}
+
+interface LeaderboardResponse {
+  leaderboard: LeaderboardEntry[];
+}
+
+interface StatsResponse {
+  posts: number;
+  events: number;
+  docs: number;
+  integrations: {
+    zulip: boolean;
+    github: boolean;
+    discord: boolean;
+    bluesky: boolean;
+    band: boolean;
+    slack: boolean;
+    gcal: boolean;
+  };
+  securityBlocks: number;
+}
+
+interface SearchResult {
+  type: "blog" | "event" | "doc";
+  id: string;
+  title: string;
+}
+
+interface SearchResponse {
+  results: SearchResult[];
+}
+
+// ── SQL Result Types ───────────────────────────────────────────────────────
+
+interface SqlUniqueCountResult {
+  unique_count: number;
+}
+
+interface SqlTotalResult {
+  total: number;
+}
+
+interface SqlRowsResult<T> {
+  rows: T[];
+}
 
 
 export const analyticsRouter = new OpenAPIHono<AppEnv>();
@@ -35,12 +166,12 @@ analyticsRouter.use("/sponsor-click", turnstileMiddleware());
 analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 
 // Track page view
-analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRoute>(async (c) => {
+analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRoute>(async (c: Context<AppEnv>) => {
   const db = getDb(c);
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(db, `track:${ip}`, ua, 20, 600))) {
-    return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
+    return c.json<ErrorResponse>({ error: "Rate limit exceeded" }, 429);
   }
   try {
     const { path, category, referrer } = c.req.valid("json");
@@ -56,26 +187,26 @@ analyticsRouter.openapi(trackPageViewRoute, typedHandler<typeof trackPageViewRou
       })
       .run();
 
-    return c.json({ success: true } as any, 200 as any);
+    return c.json<SuccessResponse>({ success: true }, 200);
   } catch {
-    return c.json({ error: "Internal Server Error" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Internal Server Error" }, 500);
   }
 }));
 
 // Track sponsor click
-analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsorClickRoute>(async (c) => {
+analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsorClickRoute>(async (c: Context<AppEnv>) => {
   const db = getDb(c);
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   if (!(await checkPersistentRateLimit(db, `click:${ip}`, ua, 10, 600))) {
-    return c.json({ error: "Rate limit exceeded" } as any, 429 as any);
+    return c.json<ErrorResponse>({ error: "Rate limit exceeded" }, 429);
   }
   try {
     const { sponsor_id } = c.req.valid("json");
 
     // WR-04: Validate sponsor exists to prevent database pollution
     if (!sponsor_id || typeof sponsor_id !== 'string') {
-      return c.json({ error: "Invalid sponsor ID" } as any, 400 as any);
+      return c.json<ErrorResponse>({ error: "Invalid sponsor ID" }, 400);
     }
 
     const sponsor = await db.select({ id: schema.sponsors.id })
@@ -84,7 +215,7 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
       .get();
 
     if (!sponsor) {
-      return c.json({ error: "Invalid sponsor" } as any, 400 as any);
+      return c.json<ErrorResponse>({ error: "Invalid sponsor" }, 400);
     }
 
     const yearMonth = new Date().toISOString().slice(0, 7);
@@ -95,14 +226,14 @@ analyticsRouter.openapi(trackSponsorClickRoute, typedHandler<typeof trackSponsor
       ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = sponsor_metrics.clicks + 1
     `);
 
-    return c.json({ success: true } as any, 200 as any);
+    return c.json<SuccessResponse>({ success: true }, 200);
   } catch {
-    return c.json({ error: "Internal Server Error" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Internal Server Error" }, 500);
   }
 }));
 
 // Get platform analytics (admin)
-analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c) => {
+analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatformAnalyticsRoute>(async (c: Context<AppEnv>) => {
   const db = getDb(c);
   console.log("[Analytics] Fetching platform analytics...");
   try {
@@ -116,7 +247,7 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       activityData,
     ] = await Promise.all([
       db.select({ total: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).get().catch(() => ({ total: 0 })),
-      db.run(sql<{ unique_count: number }>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: any) => (r as any).rows?.[0] || { unique_count: 0 }).catch(() => ({ unique_count: 0 })),
+      db.run(sql<{ unique_count: number }>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((r: SqlRowsResult<SqlUniqueCountResult>) => r.rows?.[0] || { unique_count: 0 }).catch(() => ({ unique_count: 0 })),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all().catch(() => []),
       db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` }).from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all().catch(() => []),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, user_agent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp }).from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all().catch(() => []),
@@ -136,10 +267,10 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
 
     // usage_metrics table may not exist in all environments (needs migration)
     let apiCount = { total: 0 };
-    let latencyData: { rows: Array<{ date: string; avg_latency: number }> } = { rows: [] };
+    let latencyData: SqlRowsResult<{ date: string; avg_latency: number }> = { rows: [] };
     try {
       apiCount = await db.run(sql<{ total: number }>`SELECT COUNT(id) as total FROM usage_metrics`)
-        .then((r: any) => (r as any).rows?.[0] || { total: 0 })
+        .then((r: SqlRowsResult<SqlTotalResult>) => r.rows?.[0] || { total: 0 })
         .catch(() => ({ total: 0 }));
       const res = await db.run(sql<{ date: string; avg_latency: number }>`
         SELECT
@@ -150,25 +281,25 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
       `);
-      latencyData = { rows: (res as any).rows || [] };
+      latencyData = { rows: res.rows || [] };
     } catch {
       // Table doesn't exist or other error - use defaults
       apiCount = { total: 0 };
       latencyData = { rows: [] };
     }
 
-    const topPages = topPagesDataRow.map((p: any) => ({
+    const topPages = topPagesDataRow.map((p) => ({
       path: String(p.path),
       category: String(p.category),
       views: Number(p.views)
     }));
 
-    const topReferrers = referrersDataRow.map((r: any) => ({
+    const topReferrers = referrersDataRow.map((r) => ({
       referrer: String(r.referrer),
       visits: Number(r.visits),
     }));
 
-    const recentViews = recentViewsDataRow.map((v: any) => ({
+    const recentViews = recentViewsDataRow.map((v) => ({
       path: String(v.path),
       category: String(v.category),
       user_agent: String(v.user_agent || ""),
@@ -176,22 +307,22 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       timestamp: String(v.timestamp)
     }));
 
-    const totals = totalsDataRow.map((t: any) => ({
+    const totals = totalsDataRow.map((t) => ({
       category: String(t.category),
       total: Number(t.total)
     }));
 
-    const userActivity = ((activityData as any).rows || []).map((a: any) => ({
+    const userActivity = (activityData.rows || []).map((a) => ({
       date: String(a.date),
       pageViews: Number(a.pageViews),
     }));
 
-    const latency = (latencyData.rows || []).map((l: any) => ({
+    const latency = (latencyData.rows || []).map((l) => ({
       date: String(l.date),
       avg_latency: Number(l.avg_latency)
     }));
 
-    return c.json({
+    return c.json<PlatformAnalyticsResponse>({
       totalPageViews: Number(totalViewsData?.total || 0),
       uniqueVisitors: Number(uniqueVisitorsData?.unique_count || 0),
       topPages,
@@ -205,19 +336,19 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         totalStorage: 0,
         apiCalls: Number(apiCount?.total || 0),
       }
-    } as any, 200 as any);
+    }, 200);
   } catch (err) {
     console.error("[Analytics] Platform metrics error:", err);
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return c.json({
+    return c.json<ErrorResponse>({
       error: "Failed to fetch platform metrics",
       details: errorMsg.includes("no such table") ? "Required database table missing. Run migrations." : errorMsg
-    } as any, 500 as any);
+    }, 500);
   }
 }));
 
 // Get roster stats (admin)
-analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
+analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c: Context<AppEnv>) => {
   const db = getDb(c);
   try {
     const results = await db.run(sql<{
@@ -245,8 +376,8 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
       ORDER BY u.nickname ASC
     `);
 
-    const rows = (results as any).rows || [];
-    const roster = rows.map((r: any) => ({
+    const rows = results.rows || [];
+    const roster = rows.map((r) => ({
       user_id: String(r.user_id),
       nickname: r.nickname || null,
       member_type: r.member_type || null,
@@ -256,14 +387,14 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
       avatar: r.avatar ? String(r.avatar) : null
     }));
 
-    return c.json({ roster } as any, 200 as any);
+    return c.json<RosterStatsResponse>({ roster }, 200);
   } catch {
-    return c.json({ error: "Failed to fetch roster stats" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Failed to fetch roster stats" }, 500);
   }
 }));
 
 // Get leaderboard
-analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
+analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c: Context<AppEnv>) => {
   const db = getDb(c);
   try {
     const results = await db.run(sql<{
@@ -292,8 +423,8 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
       LIMIT 50
     `);
 
-    const rows = (results as any).rows || [];
-    const leaderboard = rows.map((r: any) => {
+    const rows = results.rows || [];
+    const leaderboard = rows.map((r) => {
       const isMinor = r.member_type === "student";
       return {
         user_id: String(r.user_id),
@@ -306,14 +437,14 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
       };
     });
 
-    return c.json({ leaderboard } as any, 200 as any);
+    return c.json<LeaderboardResponse>({ leaderboard }, 200);
   } catch {
-    return c.json({ error: "Failed to fetch leaderboard" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Failed to fetch leaderboard" }, 500);
   }
 }));
 
 // Get stats (admin)
-analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
+analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c: Context<AppEnv>) => {
   const db = getDb(c);
   try {
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
@@ -324,7 +455,7 @@ analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async 
       getDbSettings(c)
     ]);
 
-    return c.json({
+    return c.json<StatsResponse>({
       posts: Number(postsCount?.total || 0),
       events: Number(eventsCount?.total || 0),
       docs: Number(docsCount?.total || 0),
@@ -338,20 +469,20 @@ analyticsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async 
         gcal: !!dbSettings["GCAL_PRIVATE_KEY"]
       },
       securityBlocks: Number(securityBlocksRow?.total || 0)
-    } as any, 200 as any);
+    }, 200);
   } catch {
-    return c.json({ error: "Failed to fetch stats" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Failed to fetch stats" }, 500);
   }
 }));
 
 // Search
-analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) => {
+analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c: Context<AppEnv>) => {
   const db = getDb(c);
   const { q } = c.req.valid("query");
   try {
     // SCA-FTS-01: Sanitize FTS5 query
     const qClean = (q || "").replace(/[^a-zA-Z0-9\s]/g, "").trim();
-    if (!qClean) return c.json({ results: [] } as any, 200 as any);
+    if (!qClean) return c.json<SearchResponse>({ results: [] }, 200);
     const ftsQ = `"${qClean}"*`;
 
     const [postsReq, eventsReq, docsReq] = await Promise.all([
@@ -360,19 +491,19 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
       db.run(sql<{ id: string; title: string }>`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
     ]);
 
-    const postsRows = (postsReq as any).rows || [];
-    const eventsRows = (eventsReq as any).rows || [];
-    const docsRows = (docsReq as any).rows || [];
+    const postsRows = postsReq.rows || [];
+    const eventsRows = eventsReq.rows || [];
+    const docsRows = docsReq.rows || [];
 
-    const results = [
-      ...(postsRows || []).map((r: any) => ({ type: "blog" as const, id: r.id, title: r.title })),
-      ...(eventsRows || []).map((r: any) => ({ type: "event" as const, id: r.id, title: r.title })),
-      ...(docsRows || []).map((r: any) => ({ type: "doc" as const, id: r.id, title: r.title }))
+    const results: SearchResult[] = [
+      ...(postsRows || []).map((r) => ({ type: "blog" as const, id: r.id, title: r.title })),
+      ...(eventsRows || []).map((r) => ({ type: "event" as const, id: r.id, title: r.title })),
+      ...(docsRows || []).map((r) => ({ type: "doc" as const, id: r.id, title: r.title }))
     ];
 
-    return c.json({ results } as any, 200 as any);
+    return c.json<SearchResponse>({ results }, 200);
   } catch {
-    return c.json({ error: "Search failed" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Search failed" }, 500);
   }
 }));
 

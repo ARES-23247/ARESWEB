@@ -4,7 +4,7 @@ import { settingsRouter } from "./settings";
 import { AppEnv } from "../middleware";
 
 // Simple inline mock execution context
-function createMockExecutionContext() {
+function createMockExecutionContext(): any {
   return {
     waitUntil: vi.fn((promise: Promise<unknown>) => promise),
     passThroughOnException: vi.fn(),
@@ -23,21 +23,42 @@ vi.mock("../middleware", async (importOriginal) => {
 });
 
 // Simple inline mock database
-function createMockDb() {
-  return {
-    prepare: vi.fn().mockReturnThis(),
-    bind: vi.fn().mockReturnThis(),
-    all: vi.fn().mockResolvedValue([]),
-    first: vi.fn().mockResolvedValue(null),
-    run: vi.fn().mockResolvedValue({ success: true }),
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    onConflictDoUpdate: vi.fn().mockReturnThis(),
-  };
-}
+const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
+
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };
 
 describe("Hono Backend - /settings Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -65,7 +86,7 @@ describe("Hono Backend - /settings Router", () => {
         name: "Admin User",
         role: "admin",
         member_type: "mentor"
-      });
+      } as any);
       await next();
     });
     testApp.route("/", settingsRouter);

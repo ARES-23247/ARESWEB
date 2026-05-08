@@ -7,7 +7,8 @@ interface GitHubResponse {
   success?: boolean;
   data?: unknown;
   error?: string;
-  [key: string]: unknown;
+  board?: unknown[];
+  [key: string]: any;
 }
 
 vi.mock("../middleware", async (importOriginal) => {
@@ -21,12 +22,50 @@ vi.mock("../middleware", async (importOriginal) => {
       GITHUB_PROJECT_ID: "PVT_test123",
     }),
     checkPersistentRateLimit: vi.fn().mockResolvedValue(true),
-    getDb: () => ({
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      all: vi.fn().mockResolvedValue([]),
-    }),
+    getDb: () => {
+      const fns = {
+        all: vi.fn().mockResolvedValue([]),
+        get: vi.fn().mockResolvedValue(null),
+        run: vi.fn().mockResolvedValue({ success: true }),
+        execute: vi.fn().mockResolvedValue([]),
+        executeTakeFirst: vi.fn().mockResolvedValue(null),
+        first: vi.fn().mockResolvedValue(null)
+      };
+      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+      const orig = {};
+      for (const m of methods) {
+        orig[m] = {
+          all: fns.all[m].bind(fns.all),
+          get: fns.get[m].bind(fns.get),
+          run: fns.run[m].bind(fns.run),
+          execute: fns.execute[m].bind(fns.execute),
+          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
+          first: fns.first[m].bind(fns.first)
+        };
+      }
+      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      for (const key of terminalsList) {
+        for (const m of methods) {
+          fns[key][m] = (...args) => {
+            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+            for (const k of terminals) {
+              if (orig[m][k]) orig[m][k](...args);
+            }
+            return fns[key];
+          };
+        }
+      }
+      const chainable = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop] = vi.fn().mockReturnValue(chainable);
+          return target[prop];
+        }
+      });
+      return chainable;
+    },
   };
 });
 
@@ -72,13 +111,13 @@ describe("Hono Backend - /github Router", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as GitHubResponse;
 
     expect(body.success).toBe(true);
     expect(Array.isArray(body.board)).toBe(true);
-    expect(body.board.length).toBe(1);
-    expect(body.board[0].id).toBe("item_1");
-    expect(body.board[0].title).toBe("Test Task 1");
+    expect((body.board ?? []).length).toBe(1);
+    expect((body.board?.[0] as { id: string; title: string })?.id).toBe("item_1");
+    expect((body.board?.[0] as { id: string; title: string })?.title).toBe("Test Task 1");
   });
 
   it("POST /projects/items - creates new item", async () => {
@@ -95,7 +134,7 @@ describe("Hono Backend - /github Router", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as GitHubResponse;
     expect(body.success).toBe(true);
   });
 
@@ -108,7 +147,7 @@ describe("Hono Backend - /github Router", () => {
       passThroughOnException: vi.fn()
     });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as GitHubResponse;
     expect(body.success).toBe(false);
   });
 
@@ -121,7 +160,7 @@ describe("Hono Backend - /github Router", () => {
       passThroughOnException: vi.fn()
     });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as GitHubResponse;
     expect(body.success).toBe(false);
   });
 
@@ -196,7 +235,7 @@ describe("Hono Backend - /github Router", () => {
         passThroughOnException: vi.fn()
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await res.json() as GitHubResponse;
       expect(body.repoCount).toBe(1);
       expect(body.totalCommits).toBe(5);
       expect(body.grid.length).toBeGreaterThanOrEqual(52);
@@ -226,7 +265,7 @@ describe("Hono Backend - /github Router", () => {
         passThroughOnException: vi.fn()
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await res.json() as GitHubResponse;
       expect(body.repoCount).toBe(1);
       expect(body.totalCommits).toBe(0);
     });

@@ -59,22 +59,42 @@ const mockExecutionContext = {
 describe("Hono Backend - Events Router", () => {
   let app: Hono<AppEnv>;
 
-  const createMockDb = () => ({
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    execute: vi.fn().mockResolvedValue([]),
-    executeTakeFirst: vi.fn().mockResolvedValue(null),
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    run: vi.fn().mockResolvedValue({ success: true }),
-    all: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue(null),
-    transaction: vi.fn().mockImplementation(async (cb: unknown) => cb(mockDb)),
-  });
+  const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
+
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };;
 
   let mockDb: ReturnType<typeof createMockDb>;
 
@@ -93,8 +113,8 @@ describe("Hono Backend - Events Router", () => {
   });
 
   afterEach(async () => {
-    const calls = mockExecutionContext.waitUntil.mock.calls as ReadonlyArray<readonly [Promise<unknown>]>;
-    const promises = calls.map((call) => call[0]);
+    const calls = mockExecutionContext.waitUntil.mock.calls as unknown[][];
+    const promises = calls.map((call) => call[0] as Promise<unknown>);
     await Promise.all(promises);
   });
 

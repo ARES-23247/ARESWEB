@@ -80,13 +80,15 @@ tasksRouter.openapi(listTasksRoute, typedHandler<typeof listTasksRoute>(async (c
       .all();
 
     const formattedTasks = tasks.map((t) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let assignees: any[] = [];
+      interface Assignee {
+        id: string;
+        nickname: string | null;
+      }
+      let assignees: Assignee[] = [];
       if (t.assignees_json) {
         try {
-          const parsed = JSON.parse(t.assignees_json);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          assignees = parsed.filter((a: any) => a && a.id !== null);
+          const parsed = JSON.parse(t.assignees_json) as Assignee[];
+          assignees = parsed.filter((a: Assignee) => a && a.id !== null);
         } catch (_e) {
           // ignore
         }
@@ -130,8 +132,24 @@ tasksRouter.openapi(createTaskRoute, typedHandler<typeof createTaskRoute>(async 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const taskData: any = {
+    interface TaskData {
+      id: string;
+      title: string;
+      description: string | null;
+      status: string;
+      priority: string;
+      subteam: string | null;
+      dueDate: string | null;
+      sortOrder: number;
+      parentId: string | null;
+      timeSpentSeconds: number;
+      createdBy: string;
+      createdAt: string;
+      updatedAt: string;
+      assignedTo?: string;
+    }
+
+    const taskData: TaskData = {
       id,
       title: body.title,
       description: body.description || null,
@@ -219,8 +237,7 @@ tasksRouter.openapi(reorderTasksRoute, typedHandler<typeof reorderTasksRoute>(as
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     // Batch update sort orders
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await Promise.all(body.items.map((o: any) => 
+    await Promise.all(body.items.map((o: { id: string; sort_order: number }) =>
       db.update(schema.tasks)
         .set({ sortOrder: o.sort_order, updatedAt: new Date().toISOString() })
         .where(eq(schema.tasks.id, o.id))
@@ -260,8 +277,21 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
     const canAssign = isAdmin || isMentor || isOwner;
 
     // Any authenticated user can update task fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updates: Record<string, any> = { updatedAt: new Date().toISOString() };
+    type TaskUpdates = {
+      updatedAt: string;
+      title?: string;
+      description?: string | null;
+      status?: string;
+      priority?: string;
+      subteam?: string | null;
+      dueDate?: string | null;
+      sortOrder?: number;
+      parentId?: string | null;
+      timeSpentSeconds?: number;
+      assignedTo?: string | null;
+    };
+
+    const updates: TaskUpdates = { updatedAt: new Date().toISOString() };
     if (body.title !== undefined) updates.title = body.title;
     if (body.description !== undefined) updates.description = body.description;
     if (body.status !== undefined) updates.status = body.status;

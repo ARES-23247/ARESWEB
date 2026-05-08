@@ -56,7 +56,7 @@ seasonsRouter.openapi(listSeasonsRoute, typedHandler<typeof listSeasonsRoute>(as
       .orderBy(desc(schema.seasons.startYear))
       .all();
 
-    const seasons = results.map((r: any) => ({
+    const seasons = results.map((r) => ({
       ...r,
       start_year: Number(r.start_year),
       end_year: Number(r.end_year || Number(r.start_year) + 1),
@@ -93,7 +93,7 @@ seasonsRouter.openapi(adminListSeasonsRoute, typedHandler<typeof adminListSeason
       .orderBy(desc(schema.seasons.startYear))
       .all();
 
-    const seasons = results.map((r: any) => ({
+    const seasons = results.map((r) => ({
       ...r,
       start_year: Number(r.start_year),
       end_year: Number(r.end_year || Number(r.start_year) + 1),

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -13,6 +12,122 @@ import {
   deleteJudgeCodeRoute,
 } from "../../../shared/routes/judges";
 import type { HonoContext as _HonoContext } from "@shared/types/api";
+
+// Types for database query results
+interface JudgeAccessCodeResult {
+  code: string;
+  label: string;
+  expires_at: string | null;
+}
+
+interface PortfolioDocResult {
+  slug: string;
+  title: string;
+  category: string;
+  description: string | null;
+  content: string;
+}
+
+interface OutreachResult {
+  id: number;
+  title: string;
+  date: string;
+  location: string | null;
+  students_count: number | null;
+  hours_logged: number | null;
+  reach_count: number | null;
+  description: string | null;
+}
+
+interface AwardResult {
+  id: number;
+  title: string;
+  date: string;
+  event_name: string;
+  image_url: string;
+  description: string | null;
+}
+
+interface SponsorResult {
+  id: string;
+  name: string;
+  tier: string;
+  logo_url: string | null;
+  website_url: string | null;
+}
+
+interface JudgeCodeListResult {
+  id: string;
+  code: string;
+  label: string;
+  created_at: string;
+  expires_at: string | null;
+}
+
+// Types for API responses
+interface ErrorResponse {
+  error: string;
+}
+
+interface JudgeLoginSuccessResponse {
+  success: true;
+  label: string;
+}
+
+interface PortfolioResponse {
+  portfolioDocs: Array<{
+    slug: string;
+    title: string;
+    category: string;
+    description: string | null;
+    content: string;
+  }>;
+  outreach: Array<{
+    id: number;
+    title: string;
+    date: string;
+    location: string | null;
+    students_count: number;
+    hours_logged: number;
+    reach_count: number;
+    description: string;
+  }>;
+  awards: Array<{
+    id: number;
+    title: string;
+    year: number;
+    event_name: string;
+    image_url: string;
+    description: string;
+  }>;
+  sponsors: Array<{
+    id: string;
+    name: string;
+    tier: string;
+    logo_url: string | null;
+    website_url: string | null;
+  }>;
+}
+
+interface JudgeCodesResponse {
+  codes: Array<{
+    id: string;
+    code: string;
+    label: string;
+    created_at: string;
+    expires_at: string | null;
+  }>;
+}
+
+interface CreateJudgeCodeResponse {
+  success: true;
+  code: string;
+  id: string;
+}
+
+interface SuccessResponse {
+  success: true;
+}
 
 
 
@@ -46,18 +161,18 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
   if (!allowed) {
-    return c.json({ error: "Too many attempts. Please try again later." } as any, 429 as any);
+    return c.json<ErrorResponse>({ error: "Too many attempts. Please try again later." }, 429);
   }
 
   try {
     const { code, turnstileToken } = c.req.valid("json");
     if (!code) {
-      return c.json({ error: "Code required" } as any, 400 as any);
+      return c.json<ErrorResponse>({ error: "Code required" }, 400);
     }
 
     const validToken = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
     if (!validToken) {
-      return c.json({ error: "Security verification failed." } as any, 403 as any);
+      return c.json<ErrorResponse>({ error: "Security verification failed." }, 403);
     }
 
     const [row] = await db.select({
@@ -76,12 +191,12 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
       ).limit(1);
 
     if (!row) {
-      return c.json({ error: "Invalid or expired access code" } as any, 403 as any);
+      return c.json<ErrorResponse>({ error: "Invalid or expired access code" }, 403);
     }
 
-    return c.json({ success: true, label: row.label } as any, 200 as any);
+    return c.json<JudgeLoginSuccessResponse>({ success: true, label: row.label }, 200);
   } catch {
-    return c.json({ error: "Login failed" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Login failed" }, 500);
   }
 }));
 
@@ -90,14 +205,14 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
   try {
     const { "x-judge-code": code } = c.req.valid("header");
     if (!code) {
-      return c.json({ error: "Access code required" } as any, 401 as any);
+      return c.json<ErrorResponse>({ error: "Access code required" }, 401);
     }
 
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const allowed = await checkPersistentRateLimit(db, `judge-portfolio:${ip}`, ua, 20, 60);
     if (!allowed) {
-      return c.json({ error: "Too many requests" } as any, 429 as any);
+      return c.json<ErrorResponse>({ error: "Too many requests" }, 429);
     }
 
     const [valid] = await db.select({
@@ -113,7 +228,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         )
       ).limit(1);
     if (!valid) {
-      return c.json({ error: "Invalid or expired access code" } as any, 403 as any);
+      return c.json<ErrorResponse>({ error: "Invalid or expired access code" }, 403);
     }
 
     // WR-10: Audit log judge portfolio access for security monitoring
@@ -174,32 +289,32 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         .where(eq(schema.sponsors.isActive, 1))
     ]);
 
-    const payload = {
-      portfolioDocs: portfolioDocs.map((d: any) => ({
+    const payload: PortfolioResponse = {
+      portfolioDocs: portfolioDocs.map((d: PortfolioDocResult) => ({
         ...d,
         content: sanitizeJudgeContent(d.content)
       })),
-      outreach: outreach.map((o: any) => ({
+      outreach: outreach.map((o: OutreachResult) => ({
         ...o,
         description: sanitizeJudgeContent(o.description || ""),
         students_count: Number(o.students_count),
         hours_logged: Number(o.hours_logged),
         reach_count: Number(o.reach_count)
       })),
-      awards: awards.map((a: any) => ({
+      awards: awards.map((a: AwardResult) => ({
         ...a,
         description: sanitizeJudgeContent(a.description || ""),
         year: Number(a.date)
       })),
-      sponsors: sponsors.map((s: any) => ({ ...s, id: s.id || "", tier: s.tier as string }))
+      sponsors: sponsors.map((s: SponsorResult) => ({ ...s, id: s.id || "", tier: s.tier as string }))
     };
 
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 
-    return c.json(payload as any, 200 as any);
+    return c.json<PortfolioResponse>(payload, 200);
   } catch (err) {
     console.error("[Judges] Portfolio failed:", err);
-    return c.json({ error: "Portfolio fetch failed" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Portfolio fetch failed" }, 500);
   }
 }));
 
@@ -218,15 +333,15 @@ judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRout
     }).from(schema.judgeAccessCodes)
       .orderBy(desc(schema.judgeAccessCodes.createdAt));
 
-    const codes = results.map((r: any) => ({
+    const codes: JudgeCodeListResult[] = results.map((r: JudgeCodeListResult) => ({
       ...r,
       created_at: String(r.created_at),
       expires_at: r.expires_at || null
     }));
 
-    return c.json({ codes } as any, 200 as any);
+    return c.json<JudgeCodesResponse>({ codes }, 200);
   } catch {
-    return c.json({ error: "Failed to fetch codes" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Failed to fetch codes" }, 500);
   }
 }));
 
@@ -251,9 +366,9 @@ judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRo
     portfolioCache.clear();
 
     c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
-    return c.json({ success: true, code, id } as any, 200 as any);
+    return c.json<CreateJudgeCodeResponse>({ success: true, code, id }, 200);
   } catch {
-    return c.json({ error: "Create failed" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Create failed" }, 500);
   }
 }));
 
@@ -267,9 +382,9 @@ judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRo
     portfolioCacheVersion++;
     portfolioCache.clear();
 
-    return c.json({ success: true } as any, 200 as any);
+    return c.json<SuccessResponse>({ success: true }, 200);
   } catch {
-    return c.json({ error: "Delete failed" } as any, 500 as any);
+    return c.json<ErrorResponse>({ error: "Delete failed" }, 500);
   }
 }));
 

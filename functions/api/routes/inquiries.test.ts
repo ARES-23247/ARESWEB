@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import { AppEnv } from "../middleware";
-import declare const global: typeof globalThis;
-
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -72,26 +70,42 @@ function createMockExecutionContext() {
 }
 
 // Simple inline mock database
-function createMockDb() {
-  return {
-    prepare: vi.fn().mockReturnThis(),
-    bind: vi.fn().mockReturnThis(),
-    all: vi.fn().mockResolvedValue([]),
-    first: vi.fn().mockResolvedValue(null),
-    run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    offset: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-  };
-}
+const createMockDb = () => {
+      const allFn = vi.fn().mockResolvedValue([]);
+      const getFn = vi.fn().mockResolvedValue(null);
+      const runFn = vi.fn().mockResolvedValue({ success: true });
+
+      const fns: Record<string, any> = {
+        all: allFn,
+        get: getFn,
+        run: runFn,
+        execute: allFn,
+        executeTakeFirst: getFn,
+        first: getFn
+      };
+
+      const chainable: any = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop === 'query') {
+             return new Proxy({}, {
+                get: () => new Proxy({}, {
+                   get: (tTarget, tProp) => {
+                      if (tProp === 'findFirst') return fns.get;
+                      if (tProp === 'findMany') return fns.all;
+                      return vi.fn().mockReturnValue(chainable);
+                   }
+                })
+             });
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          return target[prop as string];
+        }
+      });
+      return chainable;
+    };
 
 describe("Hono Backend - /inquiries Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -271,7 +285,7 @@ describe("Hono Backend - /inquiries Router", () => {
 
   it("purgeOldInquiries - delete old inquiries", async () => {
     const { purgeOldInquiries } = await import("./inquiries/index");
-    mockDb.run = vi.fn().mockResolvedValue({ meta: { changes: 2 } });
+    mockDb.run.mockResolvedValueOnce({ meta: { changes: 2 } });
     const res = await purgeOldInquiries(mockDb as any, 30);
     expect(res.deleted).toBe(2);
   });
@@ -457,7 +471,7 @@ describe("Hono Backend - /inquiries Router", () => {
 
   it("purgeOldInquiries function - with results", async () => {
     const { purgeOldInquiries } = await import("./inquiries/handlers");
-    mockDb.run = vi.fn().mockResolvedValue({ meta: { changes: 1 } });
+    mockDb.run.mockResolvedValueOnce({ meta: { changes: 1 } });
 
     const res = await purgeOldInquiries(mockDb as any, 30);
     expect(res.deleted).toBe(1);

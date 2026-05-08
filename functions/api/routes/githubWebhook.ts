@@ -1,9 +1,78 @@
 import { typedHandler } from "../utils/handler";
-/* eslint-disable @typescript-eslint/no-explicit-any -- GitHub webhook payloads are dynamic and external */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { githubWebhookRoute } from "../../../shared/routes/webhooks";
+
+// ── GitHub Webhook Payload Types ────────────────────────────────────────
+
+interface GitHubUser {
+  login: string;
+  name?: string;
+}
+
+interface GitHubRepository {
+  full_name: string;
+}
+
+interface GitHubChangeValue {
+  from?: unknown;
+  to?: unknown;
+}
+
+interface ProjectChanges {
+  [key: string]: GitHubChangeValue;
+}
+
+interface ProjectV2Item {
+  node_id?: string;
+}
+
+interface ProjectV2Payload {
+  action: string;
+  projects_v2_item?: ProjectV2Item;
+  changes?: ProjectChanges;
+}
+
+interface GitHubCommit {
+  message: string;
+  author?: {
+    name?: string;
+  };
+}
+
+interface PushPayload {
+  ref?: string;
+  commits?: GitHubCommit[];
+  repository?: GitHubRepository;
+}
+
+interface PullRequest {
+  title?: string;
+  html_url?: string;
+  user?: GitHubUser;
+  merged?: boolean;
+}
+
+interface PullRequestPayload {
+  action: string;
+  pull_request?: PullRequest;
+  repository?: GitHubRepository;
+}
+
+interface Issue {
+  title?: string;
+  html_url?: string;
+  user?: GitHubUser;
+}
+
+interface IssuesPayload {
+  action: string;
+  issue?: Issue;
+  repository?: GitHubRepository;
+}
+
+type GitHubWebhookPayload = ProjectV2Payload | PushPayload | PullRequestPayload | IssuesPayload | Record<string, unknown>;
 
 const githubWebhookRouter = new OpenAPIHono<AppEnv>();
 
@@ -25,7 +94,7 @@ async function verifyGitHubSignature(
 
     const PREFIX = "sha256=";
     const sigHex = signature.length >= PREFIX.length ? signature.slice(PREFIX.length) : signature;
-    const sigBytes = new Uint8Array((sigHex.match(/.{1,2}/g) || []).map((byte: any) => parseInt(byte, 16)));
+    const sigBytes = new Uint8Array((sigHex.match(/.{1,2}/g) || []).map((byte: string) => parseInt(byte, 16)));
 
     const prefixMatches = signature.length >= PREFIX.length &&
       signature.substring(0, PREFIX.length) === PREFIX;
@@ -64,9 +133,9 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
   }
 
   const event = c.req.header("X-GitHub-Event") || "unknown";
-  let payload: any; // Webhook payloads are dynamic, 'any' is acceptable for top-level switch
+  let payload: GitHubWebhookPayload;
   try {
-    payload = JSON.parse(rawBody);
+    payload = JSON.parse(rawBody) as GitHubWebhookPayload;
   } catch {
     return c.json({ error: "Invalid JSON" }, 400);
   }
@@ -86,10 +155,10 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             "Project Board",
             `📋 **New project item created**\nItem ID: \`${item?.node_id || "unknown"}\``
-          ).catch((err: any) => console.error(err)));
+          ).catch((err: unknown) => console.error(err)));
         } else if (action === "edited" && changes) {
           const fieldChanges = Object.entries(changes)
-            .map(([key, val]: [string, any]) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
+            .map(([key, val]: [string, GitHubChangeValue]) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
             .join("\n");
 
           if (fieldChanges) {
@@ -98,7 +167,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
               engineeringStream,
               "Project Board",
               `🔄 **Project item updated**\nItem: \`${item?.node_id || "unknown"}\`\n${fieldChanges}`
-            ).catch((err: any) => console.error(err)));
+            ).catch((err: unknown) => console.error(err)));
           }
         } else if (action === "deleted") {
           c.executionCtx.waitUntil(sendZulipMessage(
@@ -106,7 +175,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             "Project Board",
             `🗑️ **Project item removed** from board`
-          ).catch((err: any) => console.error(err)));
+          ).catch((err: unknown) => console.error(err)));
         }
         break;
       }
@@ -121,7 +190,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
         if (commitCount > 0) {
           const commitList = (commits || [])
             .slice(0, 5)
-            .map((comm: any) => `• ${comm.message.split("\n")[0]} *(${comm.author?.name || 'unknown'})*`)
+            .map((comm: GitHubCommit) => `• ${comm.message.split("\n")[0]} *(${comm.author?.name || 'unknown'})*`)
             .join("\n");
 
           c.executionCtx.waitUntil(sendZulipMessage(
@@ -129,7 +198,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             `${repo}`,
             `⚡ **${commitCount} new commit${commitCount > 1 ? "s" : ""}** pushed to \`${branch}\`\n\n${commitList}${commitCount > 5 ? `\n...and ${commitCount - 5} more` : ""}`
-          ).catch((err: any) => console.error(err)));
+          ).catch((err: unknown) => console.error(err)));
         }
         break;
       }
@@ -147,7 +216,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             `${repo2}`,
             `${emoji} **PR ${status}**: [${pr?.title || "Untitled"}](${pr?.html_url || "#"}) by @${pr?.user?.login || "unknown"}`
-          ).catch((err: any) => console.error(err)));
+          ).catch((err: unknown) => console.error(err)));
         }
         break;
       }
@@ -164,7 +233,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, typedHandler<typeof githubWebhoo
             engineeringStream,
             `${repo3}`,
             `${emoji} **Issue ${action3}**: [${issue?.title || "Untitled"}](${issue?.html_url || "#"}) by @${issue?.user?.login || "unknown"}`
-          ).catch((err: any) => console.error(err)));
+          ).catch((err: unknown) => console.error(err)));
         }
         break;
       }

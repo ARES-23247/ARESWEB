@@ -32,9 +32,50 @@ vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
     ...actual,
-    getDb: () => ({
-      all: vi.fn().mockResolvedValue([]),
-      run: vi.fn().mockResolvedValue({ success: true }),
+    getDb: () => {
+      const fns = {
+        all: vi.fn().mockResolvedValue([]),
+        get: vi.fn().mockResolvedValue(null),
+        run: vi.fn().mockResolvedValue({ success: true }),
+        execute: vi.fn().mockResolvedValue([]),
+        executeTakeFirst: vi.fn().mockResolvedValue(null),
+        first: vi.fn().mockResolvedValue(null)
+      };
+      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+      const orig = {};
+      for (const m of methods) {
+        orig[m] = {
+          all: fns.all[m].bind(fns.all),
+          get: fns.get[m].bind(fns.get),
+          run: fns.run[m].bind(fns.run),
+          execute: fns.execute[m].bind(fns.execute),
+          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
+          first: fns.first[m].bind(fns.first)
+        };
+      }
+      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      for (const key of terminalsList) {
+        for (const m of methods) {
+          fns[key][m] = (...args) => {
+            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+            for (const k of terminals) {
+              if (orig[m][k]) orig[m][k](...args);
+            }
+            return fns[key];
+          };
+        }
+      }
+      const chainable = new Proxy(fns, {
+        get: (target, prop) => {
+          if (prop === 'then') return undefined;
+          if (prop in target) return target[prop];
+          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          target[prop] = vi.fn().mockReturnValue(chainable);
+          return target[prop];
+        }
+      });
+      return chainable;
+    },
     }),
   };
 });
@@ -49,7 +90,7 @@ interface _StoreResponse {
 
 describe("Hono Backend - /store Router", () => {
   let app: Hono<AppEnv>;
-  let getDbMock: () => ReturnType<typeof vi.mocked<typeof import("../middleware").getDb>>;
+  let getDbMock: () => any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -58,8 +99,8 @@ describe("Hono Backend - /store Router", () => {
 
     app = new Hono<AppEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", getDbMock());
-      c.set("sessionUser", { id: "admin-1", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" });
+      c.set("db", getDbMock() as any);
+      c.set("sessionUser", { id: "admin-1", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" } as any);
       c.env = {
         STRIPE_SECRET_KEY: "sk_test_123",
         STRIPE_WEBHOOK_SECRET: "whsec_123",
