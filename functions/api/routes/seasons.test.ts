@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { AppEnv } from "../middleware";
 import seasonsRouter from "./seasons";
+import type { DbRows } from "../../test/testTypes";
 
 vi.mock("../middleware/cache", () => ({
   edgeCacheMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
@@ -31,13 +32,45 @@ function createMockExecutionContext() {
   };
 }
 
+// Mock database types (same pattern as judges.test.ts)
+type MockFn = ReturnType<typeof vi.fn>;
+
+interface MockDbFunctions {
+  all: MockFn;
+  get: MockFn;
+  run: MockFn;
+  execute: MockFn;
+  executeTakeFirst: MockFn;
+  first: MockFn;
+  [key: string]: MockFn;
+}
+
+interface ChainableQuery {
+  select: MockFn & ChainableQuery;
+  from: MockFn & ChainableQuery;
+  where: MockFn & ChainableQuery;
+  insert: MockFn & ChainableQuery;
+  values: MockFn & ChainableQuery;
+  update: MockFn & ChainableQuery;
+  set: MockFn & ChainableQuery;
+  delete: MockFn & ChainableQuery;
+  limit: MockFn & ChainableQuery;
+  offset: MockFn & ChainableQuery;
+  orderBy: MockFn & ChainableQuery;
+  returning: MockFn & ChainableQuery;
+  transaction: MockFn;
+  [key: string]: MockFn | ChainableQuery | unknown;
+}
+
+type MockDb = MockDbFunctions & ChainableQuery;
+
 // Simple inline mock database
-const createMockDb = () => {
+const createMockDb = (): MockDb => {
       const allFn = vi.fn().mockResolvedValue([]);
       const getFn = vi.fn().mockResolvedValue(null);
       const runFn = vi.fn().mockResolvedValue({ success: true });
 
-      const fns: Record<string, any> = {
+      const fns: MockDbFunctions = {
         all: allFn,
         get: getFn,
         run: runFn,
@@ -46,21 +79,21 @@ const createMockDb = () => {
         first: getFn
       };
 
-      const chainable: any = new Proxy(fns, {
+      const chainable = new Proxy(fns, {
         get: (target, prop) => {
           if (prop === 'then') {
-            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+            return (resolve: (value: DbRows) => unknown, reject: (reason?: unknown) => unknown) => Promise.resolve(fns.all()).then(resolve).catch(reject);
           }
           if (prop === 'catch') {
-            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+            return (reject: (reason?: unknown) => unknown) => Promise.resolve(fns.all()).catch(reject);
           }
           if (prop === 'finally') {
-            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+            return (cb: () => void) => Promise.resolve(fns.all()).finally(cb);
           }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
-                   get: (tTarget, tProp) => {
+                   get: (_tTarget: unknown, tProp: string | symbol) => {
                       if (tProp === 'findFirst') return fns.get;
                       if (tProp === 'findMany') return fns.all;
                       return vi.fn().mockReturnValue(chainable);
@@ -68,19 +101,19 @@ const createMockDb = () => {
                 })
              });
           }
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (prop in target) return target[prop as keyof MockDbFunctions];
+          if (prop === 'transaction') return vi.fn(async (cb: (tx: MockDb) => Promise<unknown>) => cb(chainable));
           if (typeof prop === 'symbol') return chainable;
-          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          (target[prop as string] as MockFn) = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
-      return chainable;
-    };;
+      return chainable as MockDb;
+    };
 
 describe("Seasons Router", () => {
   let app: Hono<AppEnv>;
-  let mockDb: ReturnType<typeof createMockDb>;
+  let mockDb: MockDb;
   const env = { DB: {} as unknown as D1Database };
   const mockExecutionContext = createMockExecutionContext();
 
@@ -91,7 +124,7 @@ describe("Seasons Router", () => {
 
     app = new Hono<AppEnv>();
     app.use("*", async (c: Context<AppEnv>, next: () => Promise<void>) => {
-      c.set("db", mockDb as any);
+      c.set("db", mockDb as never);
       await next();
     });
     app.route("/", seasonsRouter);
