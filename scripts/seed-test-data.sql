@@ -80,7 +80,7 @@ ON CONFLICT(start_year) DO UPDATE SET
 -- ──────────────────────────────────────────
 
 -- Admin user (primary test user)
-INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt, role, twoFactorEnabled)
+INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt, role)
 VALUES (
   'admin-user',
   'Admin User',
@@ -88,8 +88,7 @@ VALUES (
   1,
   1704067200000,
   1704067200000,
-  'admin',
-  0
+  'admin'
 ) ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
   email = excluded.email,
@@ -114,10 +113,10 @@ INSERT INTO user_profiles (
   member_type = excluded.member_type;
 
 -- Additional test users
-INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt, role, twoFactorEnabled)
+INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt, role)
 VALUES
-  ('test-user-1', 'Test Student', 'student@ares.org', 1, 1704067200000, 1704067200000, 'user', 0),
-  ('test-user-2', 'Test Mentor', 'mentor@ares.org', 1, 1704067200000, 1704067200000, 'mentor', 0)
+  ('test-user-1', 'Test Student', 'student@ares.org', 1, 1704067200000, 1704067200000, 'user'),
+  ('test-user-2', 'Test Mentor', 'mentor@ares.org', 1, 1704067200000, 1704067200000, 'mentor')
 ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
   email = excluded.email,
