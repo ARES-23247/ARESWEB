@@ -125,7 +125,11 @@ describe('security middleware', () => {
     it('denies requests over the limit', async () => {
       const mockDbOverLimit = {
         insert: vi.fn().mockReturnValue({
-          values: createMockRateLimitChain(20),
+          values: vi.fn().mockReturnValue({
+            onConflictDoUpdate: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ count: 20, expiresAt: Math.floor(Date.now() / 1000) + 60 }]),
+            }),
+          }),
         }),
       } as unknown as Parameters<typeof checkPersistentRateLimit>[0];
 
