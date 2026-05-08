@@ -7,7 +7,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, wrapOnSuccess } from "./honoClient";
 
 // Inline schema definitions
 export const DocResponseSchema = z.object({
@@ -211,11 +211,10 @@ export function useSaveDoc(
       const response = await client.docs.admin.save.$post({ json: data });
       return unwrapResponse<{ success: boolean; slug?: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    }
+    })
   });
 }
 
@@ -231,11 +230,10 @@ export function useUpdateDocSort(
       const response = await client.docs.admin[":slug"].sort.$patch({ param: { slug }, json: { sortOrder } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    }
+    })
   });
 }
 
@@ -284,11 +282,10 @@ export function useRestoreDocHistory(
       const response = await client.docs.admin[":slug"].history[":id"].restore.$patch({ param: { slug, id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
+    ...wrapOnSuccess(options, (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["docs", variables.slug] });
       queryClient.invalidateQueries({ queryKey: ["docs", "history", variables.slug] });
-    }
+    })
   });
 }
 
@@ -304,11 +301,10 @@ export function useApproveDoc(
       const response = await client.docs.admin[":slug"].approve.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    }
+    })
   });
 }
 
@@ -324,11 +320,10 @@ export function useRejectDoc(
       const response = await client.docs.admin[":slug"].reject.$post({ param: { slug }, json: { reason } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    }
+    })
   });
 }
 
@@ -344,11 +339,10 @@ export function useDeleteDoc(
       const response = await client.docs.admin[":slug"].$delete({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    }
+    })
   });
 }
 

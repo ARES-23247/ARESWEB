@@ -80,11 +80,20 @@ export default function TaskDetailPage() {
 
   const handleDelete = async () => {
     if (!taskId) return;
-    await deleteMutation.mutateAsync(taskId);
-    // Invalidate tasks query to ensure fresh data after navigation
-    _queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    // Use setTimeout to ensure React has processed state changes before navigation
-    setTimeout(() => navigate("/dashboard/command_center"), 0);
+    // Remove the task from cache directly to avoid loading state
+    _queryClient.setQueryData(['tasks'], (oldData: { tasks: TaskItem[] } | undefined) => {
+      if (!oldData) return oldData;
+      return {
+        tasks: oldData.tasks.filter(t => t.id !== taskId),
+      };
+    });
+    // Use mutate with custom onSuccess to prevent invalidation
+    await deleteMutation.mutateAsync(taskId, {
+      onSuccess: () => {
+        // Don't invalidate - we already updated the cache
+      },
+    });
+    navigate("/dashboard/command_center");
   };
 
   if (isLoading) {

@@ -152,15 +152,14 @@ export function useUpdatePost(
       const response = await client.posts.admin[":slug"].$post({ param: { slug }, json: body });
       return unwrapResponse<UpdatePostResponse>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
+    ...wrapOnSuccess(options, (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
       if (variables.slug) {
         queryClient.invalidateQueries({ queryKey: ["post", variables.slug] });
         queryClient.invalidateQueries({ queryKey: ["admin_post_detail", variables.slug] });
       }
-    }
+    })
   });
 }
 
@@ -176,11 +175,10 @@ export function useDeletePost(
       const response = await client.posts.admin[":slug"].$delete({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-    }
+    })
   });
 }
 
@@ -196,11 +194,10 @@ export function useUndeletePost(
       const response = await client.posts.admin[":slug"].undelete.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-    }
+    })
   });
 }
 
@@ -216,11 +213,10 @@ export function usePurgePost(
       const response = await client.posts.admin[":slug"].purge.$delete({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-    }
+    })
   });
 }
 
@@ -236,11 +232,10 @@ export function useApprovePost(
       const response = await client.posts.admin[":slug"].approve.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean; warnings?: string[] }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-    }
+    })
   });
 }
 
@@ -256,11 +251,10 @@ export function useRejectPost(
       const response = await client.posts.admin[":slug"].reject.$post({ param: { slug }, json: { reason } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-    }
+    })
   });
 }
 
@@ -294,11 +288,10 @@ export function useRestorePostHistory(
       const response = await client.posts.admin[":slug"].history[":id"].restore.$post({ param: { slug, id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
+    ...wrapOnSuccess(options, (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["post", variables.slug] });
       queryClient.invalidateQueries({ queryKey: ["posts", "history", variables.slug] });
-    }
+    })
   });
 }
 
