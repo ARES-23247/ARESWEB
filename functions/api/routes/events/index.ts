@@ -52,14 +52,14 @@ eventsRouter.openapi(getEventsRoute, typedHandler<typeof getEventsRoute>(async (
   return c.json(result.body as any, result.status as any);
 }));
 
-eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c) => {
-  const params = c.req.valid("param");
-  const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
+eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSettingsRoute>(async (c) => {
+  const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
   return c.json(result.body as any, result.status as any);
 }));
 
-eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSettingsRoute>(async (c) => {
-  const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
+eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c) => {
+  const params = c.req.valid("param");
+  const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
   return c.json(result.body as any, result.status as any);
 }));
 

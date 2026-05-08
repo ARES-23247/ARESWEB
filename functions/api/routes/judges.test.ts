@@ -115,8 +115,10 @@ describe("Hono Backend - /judges Router", () => {
       body: JSON.stringify({ code: "VALID" })
     }, env, mockExecutionContext);
 
+    const text = await res.text();
+    console.log("STATUS:", res.status, "BODY:", text);
     expect(res.status).toBe(200);
-    const body = await res.json() as JudgesResponse;
+    const body = JSON.parse(text) as JudgesResponse;
     expect(body.success).toBe(true);
   });
 

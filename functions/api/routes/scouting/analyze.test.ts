@@ -63,13 +63,16 @@ describe("scoutingAnalyzeRouter", () => {
         context: { OPR: 50 }
       })
     }, {
-      env: { Z_AI_API_KEY: "test-key" } as any,
+      Z_AI_API_KEY: "test-key"
+    } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
-    });
+    } as any);
 
+    const text = await res.text();
+    if (res.status !== 200) console.log("RES TEXT", text);
     expect(res.status).toBe(200);
-    const data = await res.json() as any;
+    const data = JSON.parse(text) as any;
     expect(data.markdown).toBe("Analysis Result Markdown");
     expect(data.tokensUsed).toBe(150);
   });
@@ -84,10 +87,11 @@ describe("scoutingAnalyzeRouter", () => {
         context: {}
       })
     }, {
-      env: { Z_AI_API_KEY: "test-key" } as any,
+      Z_AI_API_KEY: "test-key"
+    } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
-    });
+    } as any);
 
     expect(res.status).toBe(400);
   });

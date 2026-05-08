@@ -166,7 +166,7 @@ describe("Hono Backend - /notifications Router", () => {
   });
 
   it("DELETE /:id - handles database error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/123", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" }
@@ -203,7 +203,7 @@ describe("Hono Backend - /notifications Router", () => {
   });
 
   it("PUT /:id/read - handles db error", async () => {
-    (mockDb as unknown as Record<string, ReturnType<typeof vi.fn>>).updateTable.mockImplementationOnce(() => { throw new Error("DB error") });
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/123/read", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -213,7 +213,7 @@ describe("Hono Backend - /notifications Router", () => {
   });
 
   it("PUT /read-all - handles db error", async () => {
-    (mockDb as unknown as Record<string, ReturnType<typeof vi.fn>>).updateTable.mockImplementationOnce(() => { throw new Error("DB error") });
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/read-all", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -223,7 +223,7 @@ describe("Hono Backend - /notifications Router", () => {
   });
 
   it("DELETE /:id - handles db error", async () => {
-    (mockDb as unknown as Record<string, ReturnType<typeof vi.fn>>).deleteFrom.mockImplementationOnce(() => { throw new Error("DB error") });
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/123", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
