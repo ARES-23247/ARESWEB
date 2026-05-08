@@ -115,8 +115,8 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
     const result = pipeline.map((p) => ({
       id: p.id,
       company_name: p.companyName,
-      sponsor_id: p.sponsorId,
-      status: (p.status ?? "potential").toLowerCase() satisfies "potential" | "contacted" | "pledged" | "secured" | "lost",
+      sponsor_id: (p as any).sponsorId ?? null,
+      status: ((p.status ?? "potential").toLowerCase()) as "potential" | "contacted" | "pledged" | "secured" | "lost",
       estimated_value: Number(p.estimatedValue ?? 0),
       notes: p.notes,
       contact_person: p.contactPerson,
@@ -125,7 +125,7 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
       assignees: assignments.filter((a) => a.sponsorshipId === p.id).map((a) => a.userId)
     }));
 
-    const response: ListPipelineResponse = { pipeline: result };
+    const response = { pipeline: result } as ListPipelineResponse;
     return c.json(response satisfies ListPipelineResponse, 200);
 }));
 
@@ -137,10 +137,10 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
 
     // CR-05 FIX: Require proper authorization for pipeline modifications
     if (!user) {
-      return errorResponses.unauthorized(c);
+      throw new ApiError("Unauthorized", 401);
     }
     if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      return errorResponses.forbidden(c);
+      throw new ApiError("Forbidden", 403);
     }
 
     const id = body.id || crypto.randomUUID();
@@ -257,7 +257,7 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
 
     const result = transactions.map((t) => ({
       id: t.id,
-      type: t.type satisfies "income" | "expense",
+      type: t.type as "income" | "expense",
       amount: Number(t.amount),
       category: t.category,
       date: t.date,
@@ -267,7 +267,7 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
       logged_by: t.loggedBy,
     }));
 
-    const response: ListTransactionsResponse = { transactions: result };
+    const response = { transactions: result } as ListTransactionsResponse;
     return c.json(response satisfies ListTransactionsResponse, 200);
 }));
 
@@ -279,10 +279,10 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
 
     // CR-05 FIX: Require proper authorization for transaction modifications
     if (!user) {
-      return errorResponses.unauthorized(c);
+      throw new ApiError("Unauthorized", 401);
     }
     if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      return errorResponses.forbidden(c);
+      throw new ApiError("Forbidden", 403);
     }
 
     const id = body.id ?? crypto.randomUUID();
