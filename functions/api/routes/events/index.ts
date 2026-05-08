@@ -135,7 +135,7 @@ eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSe
 eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
-  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 200) return c.json(result.body as any, 200);
   if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -189,7 +189,7 @@ eventsRouter.openapi(getAdminEventsRoute, typedHandler<typeof getAdminEventsRout
 eventsRouter.openapi(getAdminEventRoute, typedHandler<typeof getAdminEventRoute>(async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.adminDetail({ params, query: {}, body: {} }, c);
-  if (result.status === 200) return c.json(result.body, 200);
+  if (result.status === 200) return c.json(result.body as any, 200);
   if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");

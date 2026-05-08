@@ -2,6 +2,7 @@ import { eq, desc, inArray, and, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getSocialConfig, logAuditAction, SocialConfig, getDb } from "../../middleware";
+import { ApiError } from "../../middleware/errorHandler";
 import type { DrizzleDB } from "../../../../src/db/types";
 
 // Type for the inquiry query result
@@ -55,11 +56,10 @@ export async function purgeOldInquiries(db: DrizzleDB, days: number) {
 }
 
 export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv> = async (c) => {
-  try {
-    const { limit = 50, offset = 0 } = c.req.valid("query");
+  const { limit = 50, offset = 0 } = c.req.valid("query");
     const db = getDb(c);
     const user = c.get("sessionUser");
-    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const secret = c.get("env")?.ENCRYPTION_SECRET || c.env.ENCRYPTION_SECRET;
     let maskPII = false;
@@ -141,20 +141,15 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
     }));
 
     return c.json({ inquiries }, 200);
-  } catch (e) {
-    console.error("[Inquiry:List] Error", e);
-    return c.json({ error: "Failed to fetch inquiries" }, 500);
-  }
 };
 
 export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv> = async (c) => {
-  try {
-    const { type, name, email, metadata } = c.req.valid("json");
+  const { type, name, email, metadata } = c.req.valid("json");
     const db = getDb(c);
     const secret = c.get("env")?.ENCRYPTION_SECRET || c.env.ENCRYPTION_SECRET;
     if (!secret) {
       console.error("[Inquiry:Submit] ENCRYPTION_SECRET is not configured!");
-      return c.json({ error: "Server configuration error: encryption key missing. Please contact the team." }, 500);
+      throw new ApiError("Server configuration error: encryption key missing. Please contact the team.", 500);
     }
 
     // Prevents double submissions
@@ -278,23 +273,10 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
     })());
 
     return c.json({ success: true, id }, 200);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("[Inquiry:Submit] Error", msg, e);
-    // Surface a more specific error for debugging
-    if (msg.includes("encrypt") || msg.includes("importKey") || msg.includes("subtle")) {
-      return c.json({ error: "Server configuration error: encryption service unavailable. Please contact the team." }, 500);
-    }
-    if (msg.includes("UNIQUE constraint") || msg.includes("constraint")) {
-      return c.json({ error: "A duplicate submission was detected." }, 409);
-    }
-    return c.json({ error: `Submission failed: ${msg.substring(0, 120)}` }, 500);
-  }
 };
 
 export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, AppEnv> = async (c) => {
-  try {
-    const { id } = c.req.valid("param");
+  const { id } = c.req.valid("param");
     const { status } = c.req.valid("json");
     const db = getDb(c);
     await db.update(schema.inquiries)
@@ -304,15 +286,10 @@ export const handleUpdateStatus: RouteHandler<typeof updateInquiryStatusRoute, A
 
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", id, `Status changed to ${status}`));
     return c.json({ success: true, status }, 200);
-  } catch (err) {
-    console.error("[Inquiry:UpdateStatus] Error", err);
-    return c.json({ error: "Update failed" }, 500);
-  }
 };
 
 export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, AppEnv> = async (c) => {
-  try {
-    const { id } = c.req.valid("param");
+  const { id } = c.req.valid("param");
     const { notes } = c.req.valid("json");
     const db = getDb(c);
     await db.update(schema.inquiries)
@@ -322,22 +299,12 @@ export const handleUpdateNotes: RouteHandler<typeof updateInquiryNotesRoute, App
 
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_notes_change", "inquiries", id, `Notes updated`));
     return c.json({ success: true }, 200);
-  } catch (err) {
-    console.error("[Inquiry:UpdateNotes] Error", err);
-    return c.json({ error: "Notes update failed" }, 500);
-  }
 };
 
 export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv> = async (c) => {
-  try {
-    const { id } = c.req.valid("param");
+  const { id } = c.req.valid("param");
     const db = getDb(c);
     await db.delete(schema.inquiries).where(eq(schema.inquiries.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry deleted"));
     return c.json({ success: true }, 200);
-  } catch (e: unknown) {
-    const error = e as Error;
-    console.error("[Inquiry:Delete] Error", error);
-    return c.json({ error: error.message || "Delete failed" }, 500);
-  }
 };
