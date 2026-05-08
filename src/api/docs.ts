@@ -358,11 +358,10 @@ export function useUndeleteDoc(
       const response = await client.docs.admin[":slug"].undelete.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    }
+    })
   });
 }
 
@@ -378,11 +377,10 @@ export function usePurgeDoc(
       const response = await client.docs.admin[":slug"].purge.$post({ param: { slug } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    ...wrapOnSuccess(options, () => {
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
-    }
+    })
   });
 }
 
