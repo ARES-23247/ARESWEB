@@ -20,72 +20,10 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  static-checks:
-    name: Lint & Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "npm"
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: TypeScript Type Check
-        run: npx tsc --noEmit
-
-      - name: Accessibility & Lint Audit
-        run: npm run lint
-
-
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "npm"
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Automated Vulnerability & SAST Check
-        run: npm run audit:security
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "npm"
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Component Tests (Vitest)
-        run: npm run test
-
-  # Deploy preview for all branches - tests run against deployed environment
+  # Deploy preview first - all tests run against this
   deploy-preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
-    needs: [static-checks, security, unit-tests]
     outputs:
       preview-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
@@ -137,8 +75,72 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Preview deployment ready!\n\n**URL:** ${{ steps.deploy.outputs.deployment-url }}\n\nPlaywright tests will run against this deployed environment.`
+              body: `🚀 Preview deployment ready!\n\n**URL:** ${{ steps.deploy.outputs.deployment-url }}\n\nAll tests will run against this deployed environment.`
             })
+
+  # All tests run in parallel against the deployed preview
+  static-checks:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    needs: deploy-preview
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: TypeScript Type Check
+        run: npx tsc --noEmit
+
+      - name: Accessibility & Lint Audit
+        run: npm run lint
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    needs: deploy-preview
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Automated Vulnerability & SAST Check
+        run: npm run audit:security
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: deploy-preview
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Component Tests (Vitest)
+        run: npm run test
 
   e2e-playwright:
     name: E2E Playwright
