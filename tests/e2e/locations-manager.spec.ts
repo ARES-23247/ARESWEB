@@ -43,12 +43,12 @@ test.describe('Locations Manager', () => {
     await page.route('**/api/locations/admin/*', async (route) => {
       const _method = route.request().method();
       if (_method === 'DELETE') {
-        await _route.fulfill({
+        await route.fulfill({
           status: 200,
           json: { success: true },
         });
       } else {
-        await _route.continue();
+        await route.continue();
       }
     });
 
