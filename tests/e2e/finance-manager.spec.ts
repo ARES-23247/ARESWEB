@@ -162,7 +162,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.route('**/api/finance/sponsorship*', async (route) => {
       // Handle POST (save/update)
       if (route.request().method() === 'POST') {
-        await _route.fulfill({
+        await route.fulfill({
           status: 200,
           json: { success: true, id: 'new-lead-' + Date.now() },
         });
@@ -171,7 +171,7 @@ test.describe('Finance Manager Dashboard', () => {
 
       // Handle DELETE
       if (route.request().method() === 'DELETE') {
-        await _route.fulfill({
+        await route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -179,7 +179,7 @@ test.describe('Finance Manager Dashboard', () => {
       }
 
       // Handle GET
-      await _route.fulfill({
+      await route.fulfill({
         status: 200,
         json: { pipeline: [...MOCK_SPONSORSHIP_PIPELINE] },
       });
@@ -189,7 +189,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.route('**/api/finance/transactions*', async (route) => {
       // Handle POST (save/update)
       if (route.request().method() === 'POST') {
-        await _route.fulfill({
+        await route.fulfill({
           status: 200,
           json: { success: true, id: 'new-txn-' + Date.now() },
         });
@@ -198,7 +198,7 @@ test.describe('Finance Manager Dashboard', () => {
 
       // Handle DELETE
       if (route.request().method() === 'DELETE') {
-        await _route.fulfill({
+        await route.fulfill({
           status: 200,
           json: { success: true },
         });
@@ -206,7 +206,7 @@ test.describe('Finance Manager Dashboard', () => {
       }
 
       // Handle GET
-      await _route.fulfill({
+      await route.fulfill({
         status: 200,
         json: { transactions: [...MOCK_TRANSACTIONS] },
       });
