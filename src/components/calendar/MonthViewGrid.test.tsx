@@ -116,7 +116,10 @@ describe("MonthViewGrid Component", () => {
     renderWithRouter(<MonthViewGrid currentDate={new Date("2024-02-01")} events={[]} />);
 
     // February 2024 is a leap year with 29 days
-    expect(screen.getByText("29")).toBeInTheDocument();
+    // Use getAllByText and find the one with current month styling (text-marble)
+    const twentyNines = screen.getAllByText("29");
+    const feb29 = twentyNines.find(el => el.className.includes("text-marble"));
+    expect(feb29).toBeInTheDocument();
   });
 
   it("renders December with 31 days", () => {

@@ -55,6 +55,7 @@ vi.mock("./honoClient", () => ({
     },
   },
   unwrapResponse: vi.fn(),
+  wrapOnSuccess: vi.fn(((options: any, internal: any) => ({ ...options, onSuccess: internal })) as any),
 }));
 
 const mockClient = honoClient.client as unknown as MockHonoClient;

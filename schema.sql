@@ -722,6 +722,21 @@ CREATE TABLE IF NOT EXISTS external_knowledge_sources (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS scouting_analyses (
+    id TEXT PRIMARY KEY,
+    season_key TEXT NOT NULL,
+    event_key TEXT,
+    team_number INTEGER,
+    mode TEXT NOT NULL,
+    model TEXT NOT NULL,
+    markdown TEXT NOT NULL,
+    tokens_used INTEGER,
+    created_by TEXT NOT NULL REFERENCES user(id) ON DELETE SET NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_scouting_analyses_team ON scouting_analyses(team_number);
+CREATE INDEX IF NOT EXISTS idx_scouting_analyses_event ON scouting_analyses(event_key);
+
 CREATE TABLE IF NOT EXISTS finance_transactions (
     id TEXT PRIMARY KEY,
     amount REAL NOT NULL,
@@ -752,6 +767,22 @@ CREATE TABLE IF NOT EXISTS sponsorship_assignments (
     sponsorship_id TEXT NOT NULL REFERENCES sponsorship_pipeline(id) ON DELETE CASCADE,
     user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
     PRIMARY KEY (sponsorship_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS social_queue (
+    id TEXT PRIMARY KEY,
+    content TEXT NOT NULL,
+    media_urls TEXT,
+    scheduled_for TEXT NOT NULL,
+    platforms TEXT NOT NULL,
+    status TEXT DEFAULT 'pending' NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    sent_at TEXT,
+    error_message TEXT,
+    created_by TEXT REFERENCES user(id) ON DELETE SET NULL,
+    linked_type TEXT,
+    linked_id TEXT,
+    analytics TEXT
 );
 
 -- ── PartyKit Document Collaboration ────────────────────────────────
