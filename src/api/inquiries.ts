@@ -81,11 +81,12 @@ export function useUpdateInquiryStatus(
       });
       return unwrapResponse<{ success: boolean; status?: string }>(response);
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
+      options?.onSuccess?.(...args);
     },
-    ...options,
   });
 }
 
@@ -104,10 +105,11 @@ export function useUpdateInquiryNotes(
       });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
-    },
     ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
+      options?.onSuccess?.(...args);
+    },
   });
 }
 
@@ -123,10 +125,11 @@ export function useDeleteInquiry(
       const response = await client.inquiries.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["admin_inquiries"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
+      options?.onSuccess?.(...args);
     },
-    ...options,
   });
 }

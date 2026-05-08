@@ -70,10 +70,11 @@ export function useMarkNotificationRead(
       const response = await client.notifications[":id"].read.$put({ param: { id } });
       return unwrapResponse<SuccessResponse>(response);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
     ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      options?.onSuccess?.(...args);
+    },
   });
 }
 
@@ -89,10 +90,11 @@ export function useMarkAllNotificationsRead(
       const response = await client.notifications["read-all"].$put();
       return unwrapResponse<SuccessResponse>(response);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
     ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      options?.onSuccess?.(...args);
+    },
   });
 }
 
@@ -108,10 +110,11 @@ export function useDeleteNotification(
       const response = await client.notifications[":id"].$delete({ param: { id } });
       return unwrapResponse<SuccessResponse>(response);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
     ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      options?.onSuccess?.(...args);
+    },
   });
 }
 
