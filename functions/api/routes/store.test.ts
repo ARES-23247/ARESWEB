@@ -3,6 +3,40 @@ import { Hono } from "hono";
 import storeRouter from "./store";
 import { AppEnv } from "../middleware";
 
+// Proper mock types
+interface MockDbMethods {
+  all: ReturnType<typeof vi.fn>;
+  get: ReturnType<typeof vi.fn>;
+  run: ReturnType<typeof vi.fn>;
+  execute: ReturnType<typeof vi.fn>;
+  executeTakeFirst: ReturnType<typeof vi.fn>;
+  first: ReturnType<typeof vi.fn>;
+  [key: string]: ReturnType<typeof vi.fn> | MockMethodMap;
+}
+
+interface MockMethodMap {
+  all: ReturnType<typeof vi.fn>;
+  get: ReturnType<typeof vi.fn>;
+  run: ReturnType<typeof vi.fn>;
+  execute: ReturnType<typeof vi.fn>;
+  executeTakeFirst: ReturnType<typeof vi.fn>;
+  first: ReturnType<typeof vi.fn>;
+}
+
+type ChainableDb = MockDbMethods & { transaction?: ReturnType<typeof vi.fn> };
+
+interface StoreResponse {
+  success?: boolean;
+  data?: unknown;
+  error?: string;
+  session?: { id: string; url: string };
+  [key: string]: unknown;
+}
+
+interface MockDbFunction {
+  (): ChainableDb;
+}
+
 vi.mock("../../utils/zulip", () => ({
   sendZulipMessage: vi.fn().mockResolvedValue(true)
 }));
@@ -17,7 +51,7 @@ vi.mock("stripe", () => {
         }
       };
       webhooks = {
-        constructEvent: vi.fn((rawBody, signature, _secret) => {
+        constructEvent: vi.fn((rawBody: string, signature: string, _secret: string) => {
           if (signature === "invalid") {
             throw new Error("Invalid signature");
           }
@@ -30,7 +64,7 @@ vi.mock("stripe", () => {
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
-  const fns = {
+  const fns: MockDbMethods = {
     all: vi.fn().mockResolvedValue([]),
     get: vi.fn().mockResolvedValue(null),
     run: vi.fn().mockResolvedValue({ success: true }),
@@ -38,43 +72,43 @@ vi.mock("../middleware", async (importOriginal) => {
     executeTakeFirst: vi.fn().mockResolvedValue(null),
     first: vi.fn().mockResolvedValue(null)
   };
-  const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
-  const orig: any = {};
+  const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'] as const;
+  const orig: Record<string, MockMethodMap> = {};
   for (const m of methods) {
     orig[m] = {
-      all: fns.all[m as keyof typeof fns.all].bind(fns.all),
-      get: fns.get[m as keyof typeof fns.get].bind(fns.get),
-      run: fns.run[m as keyof typeof fns.run].bind(fns.run),
-      execute: fns.execute[m as keyof typeof fns.execute].bind(fns.execute),
-      executeTakeFirst: fns.executeTakeFirst[m as keyof typeof fns.executeTakeFirst].bind(fns.executeTakeFirst),
-      first: fns.first[m as keyof typeof fns.first].bind(fns.first)
+      all: (fns.all as any)[m].bind(fns.all),
+      get: (fns.get as any)[m].bind(fns.get),
+      run: (fns.run as any)[m].bind(fns.run),
+      execute: (fns.execute as any)[m].bind(fns.execute),
+      executeTakeFirst: (fns.executeTakeFirst as any)[m].bind(fns.executeTakeFirst),
+      first: (fns.first as any)[m].bind(fns.first)
     };
   }
-  const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+  const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'] as const;
   for (const key of terminalsList) {
     for (const m of methods) {
-      (fns as any)[key][m] = (...args: any[]) => {
-        const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+      (fns[key])[m] = (...args: unknown[]) => {
+        const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'] as const;
         for (const k of terminals) {
           if (orig[m][k]) orig[m][k](...args);
         }
-        return (fns as any)[key];
+        return fns[key];
       };
     }
   }
   const chainable = new Proxy(fns, {
     get: (target, prop) => {
       if (prop === 'then') return undefined;
-      if (prop in target) return (target as any)[prop];
-      if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
-      (target as any)[prop] = vi.fn().mockReturnValue(chainable);
-      return (target as any)[prop];
+      if (prop in target) return target[prop as keyof MockDbMethods];
+      if (prop === 'transaction') return vi.fn(async (cb: (tx: ChainableDb) => Promise<unknown>) => cb(chainable));
+      (target[prop as string] as ReturnType<typeof vi.fn>) = vi.fn().mockReturnValue(chainable);
+      return target[prop as string];
     }
-  });
+  }) as ChainableDb;
 
   return {
     ...actual,
-    getDb: () => chainable,
+    getDb: (() => chainable) as MockDbFunction,
     resetDbMock: () => {
       vi.clearAllMocks();
       fns.all.mockResolvedValue([]);
@@ -87,28 +121,20 @@ vi.mock("../middleware", async (importOriginal) => {
   };
 });
 
-interface _StoreResponse {
-  success?: boolean;
-  data?: unknown;
-  error?: string;
-  session?: { id: string; url: string };
-  [key: string]: unknown;
-}
-
 describe("Hono Backend - /store Router", () => {
   let app: Hono<AppEnv>;
-  let getDbMock: () => any;
+  let getDbMock: MockDbFunction;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     const middleware = await import("../middleware");
-    getDbMock = middleware.getDb as any;
-    (middleware as any).resetDbMock();
+    getDbMock = middleware.getDb as unknown as MockDbFunction;
+    ((middleware as unknown as Record<string, () => void>).resetDbMock ?? (() => {}))();
 
     app = new Hono<AppEnv>();
     app.use("*", async (c, next) => {
-      c.set("db", getDbMock() as any);
-      c.set("sessionUser", { id: "admin-1", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" } as any);
+      c.set("db", getDbMock() as never);
+      c.set("sessionUser", { id: "admin-1", role: "admin", email: "admin@test.com", name: null, member_type: "mentor" } as never);
       c.env = {
         STRIPE_SECRET_KEY: "sk_test_123",
         STRIPE_WEBHOOK_SECRET: "whsec_123",
