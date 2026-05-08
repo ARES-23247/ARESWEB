@@ -28,8 +28,6 @@ describe('security middleware', () => {
     const returningMock = vi.fn().mockResolvedValue([{ count, expiresAt: Math.floor(Date.now() / 1000) + 60 }]);
     const onConflictMock = vi.fn().mockReturnValue({ returning: returningMock });
     const valuesMock = vi.fn().mockReturnValue({ onConflictDoUpdate: onConflictMock });
-    // Use onConflictMock to avoid unused warning
-    void onConflictMock;
     return valuesMock;
   };
 
@@ -110,6 +108,11 @@ describe('security middleware', () => {
   });
 
   describe('checkPersistentRateLimit', () => {
+    beforeEach(() => {
+      // Ensure clean state for each test in this describe block
+      _resetCircuitBreakerStateForTest();
+    });
+
     it('allows requests under the limit', async () => {
       (mockDb.insert as ReturnType<typeof vi.fn>).mockReturnValue({
         values: createMockRateLimitChain(1),
