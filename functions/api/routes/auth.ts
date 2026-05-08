@@ -29,6 +29,16 @@ authRouter.openapi(authCheckRoute, typedHandler<typeof authCheckRoute>(async (c)
   }, 200);
 }));
 
+// ── GET /api/auth/emergency-clear — force clear poisoned cookies ───────
+authRouter.get("/emergency-clear", (c) => {
+  const res = c.redirect("/");
+  res.headers.append("Set-Cookie", "better-auth.session_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
+  res.headers.append("Set-Cookie", "__Secure-better-auth.session_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
+  res.headers.append("Set-Cookie", "better-auth.csrf_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
+  res.headers.append("Set-Cookie", "__Secure-better-auth.csrf_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
+  return res;
+});
+
 // ── Better Auth Routes ────────────────────────────────────────────────
 // Catch-all for Better Auth internal routes
 authRouter.on(["POST", "GET"], "/*", persistentRateLimitMiddleware(20, 60), async (c) => {
