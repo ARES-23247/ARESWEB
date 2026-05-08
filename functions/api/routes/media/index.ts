@@ -12,7 +12,7 @@ import { AppEnv, ensureAdmin, getSessionUser, checkPersistentRateLimit, logAudit
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { typedHandler } from "../../utils/handler";
-import { errorResponses } from "../../../../shared/errors/api";
+
 import type { R2Bucket, R2Object, R2ListOptions } from "@cloudflare/workers-types";
 
 export const mediaRouter = new OpenAPIHono<AppEnv>();
@@ -262,6 +262,7 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
 
     if (c.env.ARES_STORAGE) {
       if (isLarge) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await c.env.ARES_STORAGE.put(key, file.stream() as any, { httpMetadata: { contentType: file.type } });
       } else {
         await c.env.ARES_STORAGE.put(key, buffer!, { httpMetadata: { contentType: file.type } });
@@ -403,12 +404,14 @@ mediaRouter.get("/:key{.+$}", async (c) => {
 
     const headers = new Headers();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     object.writeHttpMetadata(headers as any);
     headers.set("etag", object.httpEtag);
     if (publicFolders.includes(folder)) headers.set("Cache-Control", "public, max-age=2592000, stale-while-revalidate=86400");
     else headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
 
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = new Response(object.body as any, { headers });
     if (cache && publicFolders.includes(folder) && c.executionCtx) {
       c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));

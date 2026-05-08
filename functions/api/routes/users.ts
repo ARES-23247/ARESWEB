@@ -149,6 +149,7 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
           nickname: (profile?.nickname as string | null) || null,
           member_type: (profile?.memberType as string | null) || null,
         },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       200
     );

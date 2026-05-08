@@ -217,8 +217,8 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
     const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get().catch(() => ({ total: 0 }));
 
     // usage_metrics table may not exist in all environments (needs migration)
-    let apiCount: SqlTotalResult = { total: 0 };
-    let latencyData: LatencyRow[] = [];
+    let apiCount: SqlTotalResult;
+    let latencyData: LatencyRow[];
     try {
       const apiResults = await db.all(sql<SqlTotalResult>`SELECT COUNT(id) as total FROM usage_metrics`);
       apiCount = (apiResults?.[0] as SqlTotalResult) || { total: 0 };

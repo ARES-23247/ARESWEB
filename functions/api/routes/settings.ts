@@ -187,6 +187,7 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
               selectObj[col.name as string] = col;
             }
           });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           query = db.select(selectObj as any).from(tableSchema as never);
         } else {
           query = db.select().from(tableSchema as never);
@@ -197,6 +198,7 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
         if (tableName === "inquiries") {
           return {
             tableName,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data: (data || []).map((r: any) => {
               return { ...r, name: r.name ? String(r.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
             }),

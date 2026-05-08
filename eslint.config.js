@@ -22,6 +22,7 @@ export default ts.config(
       "scripts/*.cjs", // Ignore scripts
       "*.mjs", // Ignore ESM utility scripts at root
       "scratch/**", // Ignore scratch directory
+      ".scripts/**", // Ignore utility scripts
       "public/vendor/**", // Ignore vendored third-party UMD bundles (React, ReactDOM)
       "src/components/generated/**", // Ignore auto-generated files
       "src/components/editor/physics/**", // Migrated from .eslintignore
@@ -53,7 +54,7 @@ export default ts.config(
   },
   {
     // TypeScript files in src and functions
-    files: ["src/**/*.{ts,tsx}", "functions/**/*.{ts,tsx}"],
+    files: ["src/**/*.{ts,tsx}", "functions/**/*.{ts,tsx}", "shared/**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
         project: true,

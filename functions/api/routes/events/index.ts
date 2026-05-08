@@ -32,77 +32,61 @@ import {
   restoreEventHistoryRoute,
 } from "../../../../shared/routes/events";
 import { edgeCacheMiddleware } from "../../middleware/cache";
-import { errorResponses } from "../../../../shared/errors/api";
 
 // ─── Type Inference from Schemas ───────────────────────────────────────────────
 
-type GetEventsQuery = z.infer<typeof getEventsRoute.request.query>;
+
 type GetEventsSuccess = z.infer<typeof getEventsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type GetAdminEventsQuery = z.infer<typeof getAdminEventsRoute.request.query>;
+
 type GetAdminEventsSuccess = z.infer<typeof getAdminEventsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type GetAdminEventParams = z.infer<typeof getAdminEventRoute.request.params>;
-type GetAdminEventSuccess = z.infer<typeof getAdminEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type SaveEventBody = z.infer<typeof saveEventRoute.request.body.content["application/json"]["schema"]>;
 type SaveEventSuccess = z.infer<typeof saveEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type GetEventParams = z.infer<typeof getEventRoute.request.params>;
-type GetEventSuccess = z.infer<typeof getEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type UpdateEventParams = z.infer<typeof updateEventRoute.request.params>;
-type UpdateEventBody = z.infer<typeof updateEventRoute.request.body.content["application/json"]["schema"]>;
 type UpdateEventSuccess = z.infer<typeof updateEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type DeleteEventParams = z.infer<typeof deleteEventRoute.request.params>;
+
 type DeleteEventSuccess = z.infer<typeof deleteEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 type SyncEventsSuccess = z.infer<typeof syncEventsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 type RepairCalendarSuccess = z.infer<typeof repairCalendarRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type ApproveEventParams = z.infer<typeof approveEventRoute.request.params>;
+
 type ApproveEventSuccess = z.infer<typeof approveEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type RejectEventParams = z.infer<typeof rejectEventRoute.request.params>;
-type RejectEventBody = z.infer<typeof rejectEventRoute.request.body.content["application/json"]["schema"]>;
+
 type RejectEventSuccess = z.infer<typeof rejectEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type UndeleteEventParams = z.infer<typeof undeleteEventRoute.request.params>;
+
 type UndeleteEventSuccess = z.infer<typeof undeleteEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type PurgeEventParams = z.infer<typeof purgeEventRoute.request.params>;
+
 type PurgeEventSuccess = z.infer<typeof purgeEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type RepushEventParams = z.infer<typeof repushEventRoute.request.params>;
-type RepushEventBody = z.infer<typeof repushEventRoute.request.body.content["application/json"]["schema"]>;
+
 type RepushEventSuccess = z.infer<typeof repushEventRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 type GetCalendarSettingsSuccess = z.infer<typeof getCalendarSettingsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type GetSignupsParams = z.infer<typeof getSignupsRoute.request.params>;
+
 type GetSignupsSuccess = z.infer<typeof getSignupsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type SubmitSignupParams = z.infer<typeof submitSignupRoute.request.params>;
-type SubmitSignupBody = z.infer<typeof submitSignupRoute.request.body.content["application/json"]["schema"]>;
+
 type SubmitSignupSuccess = z.infer<typeof submitSignupRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type DeleteMySignupParams = z.infer<typeof deleteMySignupRoute.request.params>;
+
 type DeleteMySignupSuccess = z.infer<typeof deleteMySignupRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type UpdateMyAttendanceParams = z.infer<typeof updateMyAttendanceRoute.request.params>;
-type UpdateMyAttendanceBody = z.infer<typeof updateMyAttendanceRoute.request.body.content["application/json"]["schema"]>;
+
 type UpdateMyAttendanceSuccess = z.infer<typeof updateMyAttendanceRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type UpdateUserAttendanceParams = z.infer<typeof updateUserAttendanceRoute.request.params>;
-type UpdateUserAttendanceBody = z.infer<typeof updateUserAttendanceRoute.request.body.content["application/json"]["schema"]>;
+
 type UpdateUserAttendanceSuccess = z.infer<typeof updateUserAttendanceRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type GetEventHistoryParams = z.infer<typeof getEventHistoryRoute.request.params>;
-type GetEventHistorySuccess = z.infer<typeof getEventHistoryRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type RestoreEventHistoryParams = z.infer<typeof restoreEventHistoryRoute.request.params>;
 type RestoreEventHistorySuccess = z.infer<typeof restoreEventHistoryRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 // ─── Router Setup ─────────────────────────────────────────────────────────────
@@ -121,6 +105,7 @@ eventsRouter.openapi(getEventsRoute, typedHandler<typeof getEventsRoute>(async (
   const query = c.req.valid("query");
   const result = await eventHandlers.getEvents({ query, params: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetEventsSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -128,6 +113,7 @@ eventsRouter.openapi(getEventsRoute, typedHandler<typeof getEventsRoute>(async (
 eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSettingsRoute>(async (c) => {
   const result = await eventHandlers.getCalendarSettings({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetCalendarSettingsSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -135,7 +121,9 @@ eventsRouter.openapi(getCalendarSettingsRoute, typedHandler<typeof getCalendarSe
 eventsRouter.openapi(getEventRoute, typedHandler<typeof getEventRoute>(async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.getEvent({ params, query: {}, body: {} }, c);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 200) return c.json(result.body as any, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -144,6 +132,7 @@ eventsRouter.openapi(getSignupsRoute, typedHandler<typeof getSignupsRoute>(async
   const params = c.req.valid("param");
   const result = await eventHandlers.getSignups({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetSignupsSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -153,7 +142,9 @@ eventsRouter.openapi(submitSignupRoute, typedHandler<typeof submitSignupRoute>(a
   const body = c.req.valid("json");
   const result = await eventHandlers.submitSignup({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies SubmitSignupSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 403) throw new ApiError((result.body as any)?.error || "Operation failed", 403);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -162,7 +153,9 @@ eventsRouter.openapi(deleteMySignupRoute, typedHandler<typeof deleteMySignupRout
   const params = c.req.valid("param");
   const result = await eventHandlers.deleteMySignup({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies DeleteMySignupSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -172,7 +165,9 @@ eventsRouter.openapi(updateMyAttendanceRoute, typedHandler<typeof updateMyAttend
   const body = c.req.valid("json");
   const result = await eventHandlers.updateMyAttendance({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UpdateMyAttendanceSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -182,6 +177,7 @@ eventsRouter.openapi(getAdminEventsRoute, typedHandler<typeof getAdminEventsRout
   const query = c.req.valid("query");
   const result = await eventHandlers.getAdminEvents({ query, params: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies GetAdminEventsSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -189,8 +185,11 @@ eventsRouter.openapi(getAdminEventsRoute, typedHandler<typeof getAdminEventsRout
 eventsRouter.openapi(getAdminEventRoute, typedHandler<typeof getAdminEventRoute>(async (c) => {
   const params = c.req.valid("param");
   const result = await eventHandlers.adminDetail({ params, query: {}, body: {} }, c);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 200) return c.json(result.body as any, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -199,8 +198,11 @@ eventsRouter.openapi(saveEventRoute, typedHandler<typeof saveEventRoute>(async (
   const body = c.req.valid("json");
   const result = await eventHandlers.saveEvent({ body, params: {}, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies SaveEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 400) throw new ApiError((result.body as any)?.error || "Operation failed", 400);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -210,8 +212,11 @@ eventsRouter.openapi(updateEventRoute, typedHandler<typeof updateEventRoute>(asy
   const body = c.req.valid("json");
   const result = await eventHandlers.updateEvent({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UpdateEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 400) throw new ApiError((result.body as any)?.error || "Operation failed", 400);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -220,6 +225,7 @@ eventsRouter.openapi(deleteEventRoute, typedHandler<typeof deleteEventRoute>(asy
   const params = c.req.valid("param");
   const result = await eventHandlers.deleteEvent({ params, body: {} , query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies DeleteEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -227,6 +233,7 @@ eventsRouter.openapi(deleteEventRoute, typedHandler<typeof deleteEventRoute>(asy
 eventsRouter.openapi(syncEventsRoute, typedHandler<typeof syncEventsRoute>(async (c) => {
   const result = await eventHandlers.syncEvents({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies SyncEventsSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -234,6 +241,7 @@ eventsRouter.openapi(syncEventsRoute, typedHandler<typeof syncEventsRoute>(async
 eventsRouter.openapi(repairCalendarRoute, typedHandler<typeof repairCalendarRoute>(async (c) => {
   const result = await eventHandlers.repairCalendar({ params: {}, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RepairCalendarSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -242,6 +250,7 @@ eventsRouter.openapi(approveEventRoute, typedHandler<typeof approveEventRoute>(a
   const params = c.req.valid("param");
   const result = await eventHandlers.approveEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies ApproveEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -250,6 +259,7 @@ eventsRouter.openapi(rejectEventRoute, typedHandler<typeof rejectEventRoute>(asy
   const params = c.req.valid("param");
   const result = await eventHandlers.rejectEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RejectEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -258,6 +268,7 @@ eventsRouter.openapi(undeleteEventRoute, typedHandler<typeof undeleteEventRoute>
   const params = c.req.valid("param");
   const result = await eventHandlers.undeleteEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UndeleteEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -266,6 +277,7 @@ eventsRouter.openapi(purgeEventRoute, typedHandler<typeof purgeEventRoute>(async
   const params = c.req.valid("param");
   const result = await eventHandlers.purgeEvent({ params, query: {}, body: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies PurgeEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -275,8 +287,11 @@ eventsRouter.openapi(repushEventRoute, typedHandler<typeof repushEventRoute>(asy
   const body = c.req.valid("json");
   const result = await eventHandlers.repushEvent({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies RepushEventSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 404) throw new ApiError((result.body as any)?.error || "Operation failed", 404);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 502) throw new ApiError((result.body as any)?.error || "Operation failed", 502);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));
@@ -286,7 +301,9 @@ eventsRouter.openapi(updateUserAttendanceRoute, typedHandler<typeof updateUserAt
   const body = c.req.valid("json");
   const result = await eventHandlers.updateUserAttendance({ params, body, query: {} }, c);
   if (result.status === 200) return c.json(result.body satisfies UpdateUserAttendanceSuccess, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 401) throw new ApiError((result.body as any)?.error || "Operation failed", 401);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (result.status === 500) throw new ApiError((result.body as any)?.error || "Operation failed", 500);
   throw new ApiError("Unknown status code", 500, "INTERNAL_SERVER_ERROR");
 }));

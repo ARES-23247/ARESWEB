@@ -1,6 +1,5 @@
 import { vi } from "vitest";
-import type { ChainableQuery, DbRows, MockFn } from "./testTypes";
-
+import type { ChainableQuery, MockFn } from "./testTypes";
 export function createDrizzleMock(): ChainableQuery {
   const chainable: Record<string, MockFn> = {
     select: vi.fn().mockReturnThis(),

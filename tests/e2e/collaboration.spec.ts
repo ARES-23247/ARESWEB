@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { setupMockAuth } from '../fixtures/auth';
+import { DashboardPage } from '../pages/DashboardPage';
 
 /**
  * E2E tests for PartyKit real-time collaboration across all editor surfaces.
@@ -6,76 +8,17 @@ import { test, expect } from '@playwright/test';
  * - INT-01: All four editors (Blog, Docs, Events, Tasks) display 'Live' badge when PartyKit connects
  * - INT-02: Multi-user concurrent editing syncs changes between browser contexts in real-time
  * - INT-03: Document changes persist across page reloads via PartyKit's built-in persistence
- *
- * Note: Tests use __PLAYWRIGHT_TEST__ flag to bypass PartyKit connection timeout.
- * For full integration testing with real PartyKit sync, run against staging environment.
  */
 
 test.describe('Collaboration', () => {
   test.beforeEach(async ({ page }) => {
-    page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
-    page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
-    // Mock authentication session exactly like kanban.spec.ts
-    await page.route('**/api/auth/get-session', async route => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          session: {
-            id: "mockup-session-id",
-            userId: "admin-user",
-            expiresAt: new Date(Date.now() + 10000000).toISOString(),
-            ipAddress: "127.0.0.1",
-            userAgent: "Playwright"
-          },
-          user: {
-            id: "admin-user",
-            name: "Admin User",
-            email: "admin@ares.org",
-            emailVerified: true,
-            image: "https://api.dicebear.com/9.x/bottts/svg?seed=admin",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            role: "admin",
-            banned: false
-          }
-        }
-      });
-    });
+    page.on('console', (msg) => console.log('BROWSER CONSOLE:', msg.text()));
+    page.on('pageerror', (err) => console.log('BROWSER ERROR:', err.message));
 
-    await page.route('**/profile/me', async route => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          user_id: "admin-user",
-          nickname: "Admin User",
-          first_name: "Admin",
-          last_name: "User",
-          member_type: "mentor",
-          auth: {
-            id: "admin-user",
-            email: "admin@ares.org",
-            name: "Admin User",
-            image: "https://api.dicebear.com/9.x/bottts/svg?seed=admin",
-            role: "admin"
-          }
-        }
-      });
-    });
-
-    await page.context().addCookies([{
-      name: 'better-auth.session_token',
-      value: 'mockup-session-id',
-      domain: 'localhost',
-      path: '/'
-    }]);
-
-    await page.addInitScript(() => {
-      Object.assign(window, { __PLAYWRIGHT_TEST__: true });
-    });
+    await setupMockAuth(page);
 
     // Mock Posts API to return sample content
-    // BlogEditor calls: /api/posts/admin/:slug
-    await page.route('**/api/posts/admin/**', async route => {
+    await page.route('**/api/posts/admin/**', async (route) => {
       await route.fulfill({
         status: 200,
         json: {
@@ -86,14 +29,13 @@ test.describe('Collaboration', () => {
             thumbnail: '',
             published_at: '',
             season_id: null,
-          }
-        }
+          },
+        },
       });
     });
 
     // Mock Docs API to return sample content
-    // DocsEditor calls: /api/docs/admin/:slug/detail
-    await page.route('**/api/docs/admin/**/detail', async route => {
+    await page.route('**/api/docs/admin/**/detail', async (route) => {
       await route.fulfill({
         status: 200,
         json: {
@@ -101,14 +43,13 @@ test.describe('Collaboration', () => {
             id: 'test-doc',
             title: 'Test Doc',
             ast: '{"type":"doc","content":[{"type":"paragraph"}]}',
-          }
-        }
+          },
+        },
       });
     });
 
     // Mock Events API to return sample content
-    // EventEditor calls: /api/events/admin/:id
-    await page.route('**/api/events/admin/**', async route => {
+    await page.route('**/api/events/admin/**', async (route) => {
       await route.fulfill({
         status: 200,
         json: {
@@ -116,56 +57,57 @@ test.describe('Collaboration', () => {
             id: 'test-event-id',
             title: 'Test Event',
             description: '{"type":"doc","content":[{"type":"paragraph"}]}',
-          }
-        }
+          },
+        },
       });
     });
 
     // Mock Tasks API to return sample content
-    await page.route('**/api/tasks*', async route => {
+    await page.route('**/api/tasks*', async (route) => {
       if (route.request().resourceType() !== 'fetch' && route.request().resourceType() !== 'xhr') {
         return route.fallback();
       }
       await route.fulfill({
         status: 200,
         json: {
-          tasks: [{
-            id: 'test-task-id',
-            title: 'Test Task',
-            description: '{"type":"doc","content":[{"type":"paragraph"}]}',
-            status: "todo",
-            priority: "normal",
-            sort_order: 0,
-            created_by: "admin-user",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }]
-        }
+          tasks: [
+            {
+              id: 'test-task-id',
+              title: 'Test Task',
+              description: '{"type":"doc","content":[{"type":"paragraph"}]}',
+              status: 'todo',
+              priority: 'normal',
+              sort_order: 0,
+              created_by: 'admin-user',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        },
       });
     });
   });
 
   test('INT-01: All editors display Live badge when connected', async ({ page }) => {
+    const dashboard = new DashboardPage(page);
+
     // Test BlogEditor - route is /dashboard/blog/:slug
     await page.goto('/dashboard/blog/test-post');
-    await expect(page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
+    await dashboard.waitForLiveBadge();
 
     // Test DocsEditor - route is /dashboard/docs/:slug
     await page.goto('/dashboard/docs/test-doc');
-    await expect(page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
+    await dashboard.waitForLiveBadge();
 
     // Test EventEditor - route is /dashboard/event/:id
     await page.goto('/dashboard/event/test-event-id');
-    await expect(page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
+    await dashboard.waitForLiveBadge();
 
     // Test TaskDetailsModal - navigate to tasks, click on test task to open modal
     await page.goto('/dashboard/tasks');
-    // Click on the test task to open modal
     await page.getByText('Test Task').first().click();
-    // Wait for modal to be visible
     await expect(page.getByRole('dialog')).toBeVisible();
-    // Verify Live badge (may be in header or modal, we just need one to be visible)
-    await expect(page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
+    await dashboard.waitForLiveBadge();
   });
 
   test('INT-02: Multi-user concurrent editing - browser contexts', async ({ browser }) => {
@@ -178,42 +120,9 @@ test.describe('Collaboration', () => {
 
     // Setup auth and routes for both contexts
     for (const contextPage of [user1Page, user2Page]) {
-      await contextPage.addInitScript(() => {
-        Object.assign(window, { __PLAYWRIGHT_TEST__: true });
-      });
+      await setupMockAuth(contextPage);
 
-      await contextPage.route('**/api/auth/get-session', async route => {
-        await route.fulfill({
-          status: 200,
-          json: {
-            session: {
-              id: "mockup-session-id",
-              userId: "admin-user",
-              expiresAt: new Date(Date.now() + 10000000).toISOString(),
-            },
-            user: {
-              id: "admin-user",
-              name: "Admin User",
-              email: "admin@ares.org",
-              role: "admin"
-            }
-          }
-        });
-      });
-
-      await contextPage.route('**/profile/me', async route => {
-        await route.fulfill({
-          status: 200,
-          json: {
-            user_id: "admin-user",
-            nickname: "Admin User",
-            member_type: "mentor",
-            auth: { id: "admin-user", role: "admin" }
-          }
-        });
-      });
-
-      await contextPage.route('**/api/posts/admin/**', async route => {
+      await contextPage.route('**/api/posts/admin/**', async (route) => {
         await route.fulfill({
           status: 200,
           json: {
@@ -224,32 +133,26 @@ test.describe('Collaboration', () => {
               thumbnail: '',
               published_at: '',
               season_id: null,
-            }
-          }
+            },
+          },
         });
       });
-
-      await contextPage.context().addCookies([{
-        name: 'better-auth.session_token',
-        value: 'mockup-session-id',
-        domain: 'localhost',
-        path: '/'
-      }]);
     }
+
+    const dashboard1 = new DashboardPage(user1Page);
+    const dashboard2 = new DashboardPage(user2Page);
 
     // Both users navigate to the same blog post editor
     await user1Page.goto('/dashboard/blog/test-post');
     await user2Page.goto('/dashboard/blog/test-post');
 
     // Wait for Live badges on both - verifies multi-user connection works
-    await expect(user1Page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
-    await expect(user2Page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
+    await dashboard1.waitForLiveBadge();
+    await dashboard2.waitForLiveBadge();
 
     // Verify editors are present and interactive on both pages
-    const user1Editor = user1Page.locator('.ProseMirror');
-    const user2Editor = user2Page.locator('.ProseMirror');
-    await expect(user1Editor).toBeVisible();
-    await expect(user2Editor).toBeVisible();
+    await expect(dashboard1.getProseMirrorEditor()).toBeVisible();
+    await expect(dashboard2.getProseMirrorEditor()).toBeVisible();
 
     // Cleanup
     await user1Context.close();
@@ -257,8 +160,10 @@ test.describe('Collaboration', () => {
   });
 
   test('INT-03: Document editor persists after reload', async ({ page }) => {
+    await setupMockAuth(page);
+
     // Mock Docs API for persistence test
-    await page.route('**/api/docs/admin/persistence-test/detail', async route => {
+    await page.route('**/api/docs/admin/persistence-test/detail', async (route) => {
       await route.fulfill({
         status: 200,
         json: {
@@ -266,28 +171,28 @@ test.describe('Collaboration', () => {
             id: 'persistence-test',
             title: 'Persistence Test',
             ast: '{"type":"doc","content":[{"type":"paragraph"}]}',
-          }
-        }
+          },
+        },
       });
     });
 
-    // Navigate to a doc editor - route is /dashboard/docs/:slug
-    await page.goto('/dashboard/docs/persistence-test');
+    const dashboard = new DashboardPage(page);
 
-    // Wait for Live badge
-    await expect(page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
+    // Navigate to a doc editor
+    await page.goto('/dashboard/docs/persistence-test');
+    await dashboard.waitForLiveBadge();
 
     // Verify editor is present
-    const editor = page.locator('.ProseMirror');
+    const editor = dashboard.getProseMirrorEditor();
     await expect(editor).toBeVisible();
 
     // Reload the page and verify editor state persists
     await page.reload();
 
     // Wait for Live badge again after reload
-    await expect(page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first()).toBeVisible({ timeout: 15000 });
+    await dashboard.waitForLiveBadge();
 
-    // Verify editor is still present and interactive after reload
+    // Verify editor is still present after reload
     await expect(editor).toBeVisible();
   });
 });

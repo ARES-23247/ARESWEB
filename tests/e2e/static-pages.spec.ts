@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { shouldIgnoreConsoleError } from '../fixtures/auth';
+import { DashboardPage } from '../pages/DashboardPage';
 
 const staticRoutes = [
   { path: '/about', expectedTitle: 'About Us | ARES 23247' },
@@ -13,7 +15,9 @@ const staticRoutes = [
 
 test.describe('Static Information Pages', () => {
   for (const route of staticRoutes) {
-    test(`should load ${route.path} with correct title, no console errors, and WCAG AA compliance`, async ({ page }) => {
+    test(`should load ${route.path} with correct title, no console errors, and WCAG AA compliance`, async ({
+      page,
+    }) => {
       const consoleErrors: string[] = [];
       page.on('pageerror', (exception) => {
         consoleErrors.push(`Uncaught exception: "${exception}"`);
@@ -21,43 +25,24 @@ test.describe('Static Information Pages', () => {
       page.on('console', (msg) => {
         if (msg.type() === 'error') {
           const text = msg.text();
-          if (text.includes('favicon')) return;
-          if (text.includes('400')) return;
-          if (text.includes('401')) return;
-          if (text.includes('404')) return; // Ignore 404s in console during E2E (often missing assets in dev)
-          if (text.includes('429')) return;
-          if (text.includes('500')) return;
-          if (text.includes('502')) return;
-          if (text.includes('504')) return;
-          if (text.includes('ERR_CONNECTION_REFUSED')) return;
-          if (text.includes('ERR_CONNECTION_TIMED_OUT')) return;
-          if (text.includes('ERR_NAME_NOT_RESOLVED')) return;
-          if (text.includes('queryKey needs to be an Array')) return;
-          if (text.includes('uncontrolled input')) return;
-          consoleErrors.push(text);
+          if (!shouldIgnoreConsoleError(text)) {
+            consoleErrors.push(text);
+          }
         }
       });
 
+      const dashboard = new DashboardPage(page);
       await page.goto(route.path);
 
       // Wait for React to mount and render completely
-      await page.waitForLoadState('domcontentloaded');
+      await dashboard.waitForLoadState();
 
-      // Allow Framer Motion animations to settle and force full opacity for contrast scan
-      await page.waitForTimeout(1000);
-      await page.addStyleTag({
-        content: `
-          *, *::before, *::after {
-            transition: none !important;
-            animation: none !important;
-            opacity: 1 !important;
-          }
-        `
-      });
+      // Wait for Framer Motion animations to settle and force full opacity for contrast scan
+      await dashboard.stabilizeForAccessibility();
 
       // 1. Verify exactly zero javascript console errors (omitting harmless favicons)
       if (consoleErrors.length > 0) {
-        console.error("Console Errors:", consoleErrors);
+        console.error('Console Errors:', consoleErrors);
       }
       expect(consoleErrors).toHaveLength(0);
 
@@ -73,7 +58,7 @@ test.describe('Static Information Pages', () => {
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
         .exclude('.framer-motion-container')
         .analyze();
-        
+
       expect(accessibilityScanResults.violations).toEqual([]);
     });
   }

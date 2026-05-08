@@ -123,6 +123,7 @@ export async function errorHandlerMiddleware(c: Context<AppEnv>, next: Next) {
       getErrorDetails(error)
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json(response, status as any);
   }
 }
@@ -154,6 +155,7 @@ export function asyncHandler<T extends Context<AppEnv>>(
         getErrorCode(error),
         getErrorDetails(error)
       );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return c.json(response, status as any);
     }
   };

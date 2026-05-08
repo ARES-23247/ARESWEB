@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -73,7 +74,7 @@ interface IssuesPayload {
   repository?: GitHubRepository;
 }
 
-type GitHubWebhookPayload = ProjectV2Payload | PushPayload | PullRequestPayload | IssuesPayload | Record<string, unknown>;
+
 
 const githubWebhookRouter = new OpenAPIHono<AppEnv>();
 

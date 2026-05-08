@@ -11,7 +11,7 @@ import { edgeCacheMiddleware } from "../middleware/cache";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
-import { errorResponses } from "../../../shared/errors/api";
+
 import type { HonoContext } from "@shared/types/api";
 import * as docsRoutes from "../../../shared/routes/docs";
 import { z } from "zod";
@@ -206,6 +206,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .all() as (DocWithAuthor | PartialDoc)[];
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docs = results.map((d: any) => ({
       slug: String(d.slug),
       title: d.title ?? null,

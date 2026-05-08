@@ -34,6 +34,7 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
 
   const cachedResponse = await cache.match(cacheKey);
   if (cachedResponse) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await cachedResponse.json() as any;
     return c.json(data, 200);
   }

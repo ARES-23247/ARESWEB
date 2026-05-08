@@ -36,7 +36,7 @@ export async function transformCode(
       logger.debug("Lazy-loading Babel Standalone...");
 
       // no types available for @babel/standalone in this build environment
-      // @ts-ignore - no type declarations for @babel/standalone
+      // @ts-expect-error - no type declarations for @babel/standalone
       const mod = await import("@babel/standalone");
 
       // Babel exports as default or named depending on bundler

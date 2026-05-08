@@ -48,7 +48,6 @@ import {
   repushSocialsRoute,
 } from "../../../shared/routes/posts";
 import { siteConfig } from "../../utils/site.config";
-import { errorResponses } from "../../../shared/errors/api";
 
 export const postsRouter = new OpenAPIHono<AppEnv>();
 
@@ -520,6 +519,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
           roomId: `post_${slug}`,
           content: astStr,
           createdBy: email,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
         .run()
     );
@@ -673,6 +673,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
           roomId: `post_${slug}`,
           content: astStr,
           createdBy: user?.email || "anonymous",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
         .run()
     );
@@ -831,6 +832,7 @@ postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute
       created_at: h.created_at,
     }));
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ history } as any, 200);
 }));
 

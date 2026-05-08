@@ -17,7 +17,6 @@ import {
   purgeSeasonRoute,
 } from "../../../shared/routes/seasons";
 import { edgeCacheMiddleware } from "../middleware/cache";
-import { errorResponses } from "../../../shared/errors/api";
 
 export const seasonsRouter = new OpenAPIHono<AppEnv>();
 

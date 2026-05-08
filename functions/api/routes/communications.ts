@@ -2,8 +2,7 @@ import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, logSystemError, getDb } from "../middleware";
-
+import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, getDb } from "../middleware";
 import * as schema from "../../../src/db/schema";
 import {
 

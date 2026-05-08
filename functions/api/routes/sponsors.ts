@@ -22,18 +22,11 @@ import {
   sponsorRoiMetricSchema,
   sponsorTokenSchema,
 } from "../../../shared/routes/sponsors";
-import { errorResponses } from "../../../shared/errors/api";
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
 
 // Response type inference helpers
 type GetSponsorsResponse = z.infer<typeof getSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
-type GetRoiResponse = z.infer<typeof getRoiRoute.responses[200]["content"]["application/json"]["schema"]>;
-type AdminListSponsorsResponse = z.infer<typeof adminListSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
-type SaveSponsorResponse = z.infer<typeof saveSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
-type DeleteSponsorResponse = z.infer<typeof deleteSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
-type GetAdminTokensResponse = z.infer<typeof getAdminTokensRoute.responses[200]["content"]["application/json"]["schema"]>;
-type GenerateTokenResponse = z.infer<typeof generateTokenRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 // Infer individual types from schemas
 type SponsorResponse = z.infer<typeof sponsorResponseSchema>;

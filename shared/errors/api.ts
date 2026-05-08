@@ -3,6 +3,7 @@
  * API ERROR RESPONSE UTILITIES
  * ─────────────────────────────────────────────────────────────────────────────
  * Helper functions for creating standardized error responses in Hono routes.
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
  * These functions eliminate the need for `as any` type assertions.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -40,6 +41,7 @@ export function errorResponse<T extends Context>(
   status: 400 | 401 | 403 | 404 | 409 | 429 | 500,
   code?: string,
   details?: unknown
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   return c.json(createErrorResponse(message, code, details), status);
 }
@@ -119,6 +121,7 @@ export function formatZodError(zodError: {
 export function validationErrorResponse(
   c: Context,
   validationErrors: Record<string, string>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   return c.json(
     createErrorResponse("Validation failed", ErrorCode.VALIDATION_ERROR, validationErrors),
@@ -144,7 +147,9 @@ export function successResponse<T extends Context, D>(
   c: T,
   data: D,
   status: 200 | 201 | 202 | 204 = 200
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json(data, status as any);
 }
 
@@ -160,6 +165,7 @@ export function paginatedResponse<T extends Context, D>(
   limit: number,
   offset: number,
   total?: number
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   const response: {
     items: D[];

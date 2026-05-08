@@ -29,6 +29,7 @@ storeRouter.post("/webhook", async (c) => {
         throw new ApiError("Missing stripe signature", 400);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
       let event: Stripe.Event;
 
@@ -133,6 +134,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       throw new Error("STRIPE_SECRET_KEY is not configured.");
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" as any });
     const db = getDb(c);
 

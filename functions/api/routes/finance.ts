@@ -6,39 +6,36 @@ import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser, getDb } from "../middleware";
-import { errorResponses } from "../../../shared/errors/api";
+
 import * as financeRoutes from "../../../shared/routes/finance";
 import type { z } from "zod";
 
 // ─── Type Inference Helpers ─────────────────────────────────────────────────────
 // Infer types from route schemas for proper type safety
 
-type GetSummaryQuery = z.infer<typeof financeRoutes.getSummaryRoute.request.query>;
+
 type GetSummaryResponse = z.infer<typeof financeRoutes.FinanceSummarySchema>;
 
-type ListPipelineQuery = z.infer<typeof financeRoutes.listPipelineRoute.request.query>;
+
 type ListPipelineResponse = z.infer<typeof financeRoutes.listPipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type SavePipelineBody = z.infer<typeof financeRoutes.SavePipelineSchema>;
+
 type SavePipelineResponse = z.infer<typeof financeRoutes.savePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type DeletePipelineParams = z.infer<typeof financeRoutes.deletePipelineRoute.request.params>;
+
 type DeletePipelineResponse = z.infer<typeof financeRoutes.deletePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type ListTransactionsQuery = z.infer<typeof financeRoutes.listTransactionsRoute.request.query>;
+
 type ListTransactionsResponse = z.infer<typeof financeRoutes.listTransactionsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type SaveTransactionBody = z.infer<typeof financeRoutes.SaveTransactionSchema>;
+
 type SaveTransactionResponse = z.infer<typeof financeRoutes.saveTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-type DeleteTransactionParams = z.infer<typeof financeRoutes.deleteTransactionRoute.request.params>;
+
 type DeleteTransactionResponse = z.infer<typeof financeRoutes.deleteTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 // Database query result types
-interface FinanceSummaryItem {
-  type: "income" | "expense";
-  total: number;
-}
+
 
 interface SponsorshipAssignment {
   sponsorshipId: string;
@@ -115,6 +112,7 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
     const result = pipeline.map((p) => ({
       id: p.id,
       company_name: p.companyName,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sponsor_id: (p as any).sponsorId ?? null,
       status: ((p.status ?? "potential").toLowerCase()) as "potential" | "contacted" | "pledged" | "secured" | "lost",
       estimated_value: Number(p.estimatedValue ?? 0),

@@ -5,7 +5,7 @@ import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit, getDb } from "../middleware";
-import { errorResponses, ErrorCode } from "../../../shared/errors/api";
+
 import {
   judgeLoginRoute,
   judgePortfolioRoute,
@@ -13,7 +13,6 @@ import {
   createJudgeCodeRoute,
   deleteJudgeCodeRoute,
 } from "../../../shared/routes/judges";
-import type { HonoContext as _HonoContext } from "@shared/types/api";
 
 // Types for database query results
 
@@ -36,14 +35,7 @@ interface OutreachResult {
   description: string | null;
 }
 
-interface AwardResult {
-  id: number;
-  title: string;
-  date: string;
-  event_name: string;
-  image_url: string;
-  description: string | null;
-}
+
 
 interface SponsorResult {
   id: string;
@@ -62,14 +54,9 @@ interface JudgeCodeListResult {
 }
 
 // Types for API responses
-interface ErrorResponse {
-  error: string;
-}
 
-interface JudgeLoginSuccessResponse {
-  success: true;
-  label: string;
-}
+
+
 
 interface PortfolioResponse {
   portfolioDocs: Array<{
@@ -106,25 +93,11 @@ interface PortfolioResponse {
   }>;
 }
 
-interface JudgeCodesResponse {
-  codes: Array<{
-    id: string;
-    code: string;
-    label: string;
-    created_at: string;
-    expires_at: string | null;
-  }>;
-}
 
-interface CreateJudgeCodeResponse {
-  success: true;
-  code: string;
-  id: string;
-}
 
-interface SuccessResponse {
-  success: true;
-}
+
+
+
 
 
 
@@ -190,6 +163,7 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
       throw new ApiError("Invalid or expired access code", 403);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true, label: row.label } as any, 200);
 }));
 
@@ -230,6 +204,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     const cacheKey = getPortfolioCacheKey();
     const cached = portfolioCache.get(cacheKey);
     if (cached && cached.expiresAt > now && cached.version === portfolioCacheVersion) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return c.json(cached.data as any, 200);
     }
 
@@ -293,6 +268,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         hours_logged: Number(o.hours_logged),
         reach_count: Number(o.reach_count)
       })),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       awards: awards.map((a: any) => ({
         ...a,
         description: sanitizeJudgeContent(a.description || ""),
@@ -320,6 +296,7 @@ judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRout
     }).from(schema.judgeAccessCodes)
       .orderBy(desc(schema.judgeAccessCodes.createdAt));
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const codes: JudgeCodeListResult[] = results.map((r: any) => ({
       ...r,
       created_at: String(r.created_at),

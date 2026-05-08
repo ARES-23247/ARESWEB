@@ -11,6 +11,7 @@ export function sanitizeHtml(input: string): string {
   if (!input) return input;
 
   // Remove script tags and their content
+  // eslint-disable-next-line security/detect-unsafe-regex
   let sanitized = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
 
   // Remove other potentially dangerous tags (iframe, object, embed, etc.)

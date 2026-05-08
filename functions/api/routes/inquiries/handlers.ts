@@ -5,18 +5,8 @@ import { getSocialConfig, logAuditAction, SocialConfig, getDb } from "../../midd
 import { ApiError } from "../../middleware/errorHandler";
 import type { DrizzleDB } from "../../../../src/db/types";
 
-// Type for the inquiry query result
-type InquiryQueryResult = {
-  id: string;
-  type: string;
-  name: string;
-  email: string;
-  metadata: string | null;
-  status: string;
-  created_at: string;
-  zulip_message_id: string | null;
-  notes: string | null;
-};
+
+
 import { encrypt, decrypt } from "../../../utils/crypto";
 import { safeJSONStringify } from "../../../utils/json";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -96,6 +86,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
     const results = await dbQuery.all();
     const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const inquiries = await Promise.all(results.map(async (r: any) => {
       let name = String(r.name);
       let email = String(r.email);

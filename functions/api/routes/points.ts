@@ -67,6 +67,7 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
       created_by: tx.createdBy,
       id: tx.id || "",
       created_at: tx.createdAt || null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     })) as any, 200);
 }));
 

@@ -162,6 +162,7 @@ export const eventHandlers = {
 
         const events: FormattedEvent[] = results.map((e) => ({
           ...e,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           category: (e.category ?? "internal") as any,
           season_id: e.season_id ? Number(e.season_id) : null,
           is_deleted: Number(e.is_deleted || 0),
@@ -251,6 +252,7 @@ export const eventHandlers = {
         is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
         is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         category: (e.category ?? "internal") as any,
         meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null,
         location_address: e.location ? (locationMap[e.location] || null) : null
@@ -426,6 +428,7 @@ export const eventHandlers = {
         is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
         is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         category: (e.category ?? "internal") as any,
         meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null
       }));

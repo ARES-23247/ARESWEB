@@ -80,6 +80,7 @@ export type { DrizzleDB };
 // ── Database Context Helper ─────────────────────────────────────────────
 /**
  * Type-safe helper to get the database from Hono context.
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
  * Use this instead of `c.get("db") as any` to avoid lint errors.
  */
 export function getDb(c: Context<AppEnv>): DrizzleDB {

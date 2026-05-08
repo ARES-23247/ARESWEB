@@ -6,22 +6,6 @@ import { SNIPPET_LENGTH, fetchVolunteerEvents } from "./utils";
 import type { listOutreachRoute, adminListOutreachRoute } from "../../../../shared/routes/outreach";
 
 // Database query result type
-interface OutreachQueryResult {
-  id: number;
-  title: string;
-  date: string;
-  location: string | null;
-  hours_logged: number | null;
-  reach_count: number | null;
-  students_count: number | null;
-  description: string | null;
-  season_id: number | null;
-  is_mentoring: number | null;
-  mentored_team_number: number | null;
-  event_id: string | null;
-  mentor_count: number | null;
-  mentor_hours: number | null;
-}
 
 // Combined log entry type (database + volunteer events)
 interface OutreachLog {
@@ -64,9 +48,11 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
     .orderBy(desc(schema.outreachLogs.date))
     .all();
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const logs = results.map((r: any): OutreachLog => ({
     id: String(r.id),
     title: r.title,
@@ -87,6 +73,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ logs: combined } as any, 200);
 };
 
@@ -112,9 +99,11 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
     .orderBy(desc(schema.outreachLogs.date))
     .all();
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const logs = results.map((r: any): OutreachLog => ({
     id: String(r.id),
     title: r.title,
@@ -135,5 +124,6 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ logs: combined } as any, 200);
 };
