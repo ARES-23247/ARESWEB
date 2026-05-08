@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -38,6 +38,16 @@ export default function TaskDetailPage() {
 
   const tasks = tasksData?.tasks ?? [];
   const task = tasks.find((t: TaskItem) => t.id === taskId);
+  // Store task in local state to keep it after cache invalidation during deletion
+  const [localTask, setLocalTask] = useState<TaskItem | null>(null);
+
+  // Sync local task state when task from query changes
+  useEffect(() => {
+    if (task && !localTask) {
+      setLocalTask(task);
+    }
+  }, [task, localTask]);
+
   // Local edit state — synced from task on first load
   const [edits, setEdits] = useState<UpdateTaskRequest>({});
 
@@ -50,7 +60,8 @@ export default function TaskDetailPage() {
 
   const getValue = <K extends keyof UpdateTaskRequest>(field: K) => {
     if (field in edits) return edits[field];
-    return task[field as keyof TaskItem];
+    if (!localTask) return undefined;
+    return localTask[field as keyof TaskItem];
   };
   
   const setField = <K extends keyof UpdateTaskRequest>(field: K, value: UpdateTaskRequest[K]) => 
@@ -60,7 +71,7 @@ export default function TaskDetailPage() {
     if ("assignees" in edits) {
       return edits.assignees?.[0] || "";
     }
-    return task.assignees?.[0]?.id || "";
+    return localTask?.assignees?.[0]?.id || "";
   };
 
   const setAssigneeId = (val: string) => {
@@ -80,20 +91,20 @@ export default function TaskDetailPage() {
 
   const handleDelete = async () => {
     if (!taskId) return;
-    // Remove the task from cache directly to avoid loading state
+    // Update cache immediately to remove the task (prevents loading state on navigation)
     _queryClient.setQueryData(['tasks'], (oldData: { tasks: TaskItem[] } | undefined) => {
       if (!oldData) return oldData;
       return {
         tasks: oldData.tasks.filter(t => t.id !== taskId),
       };
     });
-    // Use mutate with custom onSuccess to prevent invalidation
-    await deleteMutation.mutateAsync(taskId, {
+    // Use mutation but don't wait for its onSuccess which would refetch
+    deleteMutation.mutate(taskId, {
       onSuccess: () => {
-        // Don't invalidate - we already updated the cache
+        // Navigate after successful deletion
+        window.location.href = "/dashboard/command_center";
       },
     });
-    navigate("/dashboard/command_center");
   };
 
   if (isLoading) {
@@ -104,7 +115,8 @@ export default function TaskDetailPage() {
     );
   }
 
-  if (!task) {
+  // Only show "task not found" on initial load (no local task yet)
+  if (!localTask && !isLoading) {
     return (
       <div className="text-center py-32">
         <Layers size={48} className="mx-auto text-ares-gray mb-4" />
@@ -165,7 +177,7 @@ export default function TaskDetailPage() {
               <Flag size={18} className="text-ares-cyan" />
             </div>
             <div>
-              <p className="text-[10px] text-ares-gray font-mono">{task.id}</p>
+              <p className="text-[10px] text-ares-gray font-mono">{localTask?.id}</p>
             </div>
           </div>
           <label htmlFor="task-title" className="sr-only">Task Title</label>
@@ -295,21 +307,23 @@ export default function TaskDetailPage() {
         {/* Metadata + Actions */}
         <div className="p-6 flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-4 text-[10px] text-ares-gray font-mono">
-            <span>Created {new Date(task.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-            {task.creator_name && <span>by <span className="text-marble">{task.creator_name}</span></span>}
-            <span>Last updated {new Date(task.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            {localTask && <span>Created {new Date(localTask.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
+            {localTask?.creator_name && <span>by <span className="text-marble">{localTask.creator_name}</span></span>}
+            {localTask && <span>Last updated {new Date(localTask.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
           </div>
           <div>
             {confirmDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-ares-red font-bold">Permanently delete?</span>
                 <button
+                  type="button"
                   onClick={handleDelete}
                   className="px-3 py-1.5 bg-ares-red/20 hover:bg-ares-red/30 text-ares-red text-xs font-bold ares-cut-sm border border-ares-red/30"
                 >
                   Delete
                 </button>
                 <button
+                  type="button"
                   onClick={() => setConfirmDelete(false)}
                   className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-ares-gray text-xs font-bold ares-cut-sm border border-white/5"
                 >
@@ -318,6 +332,7 @@ export default function TaskDetailPage() {
               </div>
             ) : (
               <button
+                type="button"
                 onClick={() => setConfirmDelete(true)}
                 className="p-2 text-ares-gray hover:text-ares-red transition-colors"
                 title="Delete task"
