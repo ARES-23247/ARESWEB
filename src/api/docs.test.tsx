@@ -119,6 +119,10 @@ vi.mock("./honoClient", () => ({
     },
   },
   unwrapResponse: vi.fn(),
+  wrapOnSuccess: vi.fn((<TData, TError, TVariables>(
+    _options: import("@tanstack/react-query").UseMutationOptions<TData, TError, TVariables> | undefined,
+    internal: (data: TData, variables: TVariables) => void
+  ) => ({ onSuccess: internal })) as typeof import("./honoClient").wrapOnSuccess),
 }));
 
 const mockClient = honoClient.client as unknown as MockHonoClient;
