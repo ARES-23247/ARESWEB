@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import type { Context } from "hono";
 import { AppEnv } from "../middleware";
 import judgesRouter from "./judges";
+import type { DbRows } from "../../test/testTypes";
 
 // Mock middleware
 vi.mock("../middleware", async (importOriginal) => {
@@ -20,7 +20,7 @@ vi.mock("../middleware/security", () => ({
   checkPersistentRateLimit: vi.fn().mockResolvedValue(true)
 }));
 
-// Simple inline mock execution context
+// Mock execution context
 function createMockExecutionContext() {
   return {
     waitUntil: vi.fn((promise: Promise<unknown>) => promise),
@@ -29,13 +29,45 @@ function createMockExecutionContext() {
   };
 }
 
+// Mock database types
+type MockFn = ReturnType<typeof vi.fn>;
+
+interface MockDbFunctions {
+  all: MockFn;
+  get: MockFn;
+  run: MockFn;
+  execute: MockFn;
+  executeTakeFirst: MockFn;
+  first: MockFn;
+  [key: string]: MockFn;
+}
+
+interface ChainableQuery {
+  select: MockFn & ChainableQuery;
+  from: MockFn & ChainableQuery;
+  where: MockFn & ChainableQuery;
+  insert: MockFn & ChainableQuery;
+  values: MockFn & ChainableQuery;
+  update: MockFn & ChainableQuery;
+  set: MockFn & ChainableQuery;
+  delete: MockFn & ChainableQuery;
+  limit: MockFn & ChainableQuery;
+  offset: MockFn & ChainableQuery;
+  orderBy: MockFn & ChainableQuery;
+  returning: MockFn & ChainableQuery;
+  transaction: MockFn;
+  [key: string]: MockFn | ChainableQuery | unknown;
+}
+
+type MockDb = MockDbFunctions & ChainableQuery;
+
 // Simple inline mock database
-const createMockDb = () => {
+const createMockDb = (): MockDb => {
       const allFn = vi.fn().mockResolvedValue([]);
       const getFn = vi.fn().mockResolvedValue(null);
       const runFn = vi.fn().mockResolvedValue({ success: true });
 
-      const fns: Record<string, any> = {
+      const fns: MockDbFunctions = {
         all: allFn,
         get: getFn,
         run: runFn,
@@ -44,21 +76,21 @@ const createMockDb = () => {
         first: getFn
       };
 
-      const chainable: any = new Proxy(fns, {
+      const chainable = new Proxy(fns, {
         get: (target, prop) => {
           if (prop === 'then') {
-            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+            return (resolve: (value: DbRows) => unknown, reject: (reason?: unknown) => unknown) => Promise.resolve(fns.all()).then(resolve).catch(reject);
           }
           if (prop === 'catch') {
-            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+            return (reject: (reason?: unknown) => unknown) => Promise.resolve(fns.all()).catch(reject);
           }
           if (prop === 'finally') {
-            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+            return (cb: () => void) => Promise.resolve(fns.all()).finally(cb);
           }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
-                   get: (tTarget, tProp) => {
+                   get: (_tTarget: unknown, tProp: string | symbol) => {
                       if (tProp === 'findFirst') return fns.get;
                       if (tProp === 'findMany') return fns.all;
                       return vi.fn().mockReturnValue(chainable);
@@ -66,25 +98,26 @@ const createMockDb = () => {
                 })
              });
           }
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (prop in target) return target[prop as keyof MockDbFunctions];
+          if (prop === 'transaction') return vi.fn(async (cb: (tx: MockDb) => Promise<unknown>) => cb(chainable));
           if (typeof prop === 'symbol') return chainable;
-          target[prop as string] = vi.fn().mockReturnValue(chainable);
+          (target[prop as string] as MockFn) = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
-      return chainable;
-    };;
+      return chainable as MockDb;
+    };
 
 interface JudgesResponse {
   success?: boolean;
-  judges?: unknown[];
+  judges?: DbRows;
   error?: string;
+  portfolioDocs?: Array<{ content: string }>;
   [key: string]: unknown;
 }
 
 describe("Hono Backend - /judges Router", () => {
-  let mockDb: ReturnType<typeof createMockDb>;
+  let mockDb: MockDb;
   let testApp: Hono<AppEnv>;
   let env: Record<string, unknown>;
   const mockExecutionContext = createMockExecutionContext();
@@ -108,8 +141,8 @@ describe("Hono Backend - /judges Router", () => {
 
     testApp = new Hono<AppEnv>();
     testApp.use("*", async (c, next) => {
-      c.set("db", mockDb as any);
-      c.set("sessionUser", { id: "1", email: "admin@test.com", role: "admin" } as any);
+      c.set("db", mockDb as never);
+      c.set("sessionUser", { id: "1", email: "admin@test.com", role: "admin", name: "", nickname: "", image: null, member_type: "student" } as never);
       await next();
     });
     testApp.route("/", judgesRouter);
@@ -157,7 +190,7 @@ describe("Hono Backend - /judges Router", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as JudgesResponse;
     expect(body.portfolioDocs).toHaveLength(1);
-    expect((body as any).portfolioDocs[0].content).toBe("Championship info.");
+    expect((body.portfolioDocs?.[0] as { content: string }).content).toBe("Championship info.");
   });
 
   it("GET /portfolio - returns cached data on second call", async () => {
