@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import { AppEnv } from "../middleware";
+import type {
+  ApiResponse,
+  DbRows,
+  Inquiry,
+  MockFn,
+  QueryBuilderProxy,
+  SessionUser,
+} from "../../test/testTypes";
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
   return {
@@ -45,14 +53,11 @@ vi.mock("../../utils/notifications", () => ({
 import inquiriesRouter from "./inquiries/index";
 
 // Test interfaces - flexible response type for API responses
-interface InquiryResponseType {
-  [key: string]: unknown;
-  inquiries?: unknown[];
-  inquiry?: { id: string; [key: string]: unknown };
+interface InquiryResponseType extends ApiResponse {
+  inquiries?: Inquiry[];
+  inquiry?: Inquiry & { id: string };
   id?: string;
   status?: string;
-  success?: boolean;
-  error?: string;
 }
 
 // Simple inline mock execution context
@@ -70,12 +75,12 @@ function createMockExecutionContext() {
 }
 
 // Simple inline mock database
-const createMockDb = () => {
-      const allFn = vi.fn().mockResolvedValue([]);
-      const getFn = vi.fn().mockResolvedValue(null);
+const createMockDb = (): QueryBuilderProxy => {
+      const allFn = vi.fn().mockResolvedValue<DbRows>([]);
+      const getFn = vi.fn().mockResolvedValue<unknown>(null);
       const runFn = vi.fn().mockResolvedValue({ success: true });
 
-      const fns: Record<string, any> = {
+      const fns: Record<string, MockFn> = {
         all: allFn,
         get: getFn,
         run: runFn,
@@ -84,13 +89,13 @@ const createMockDb = () => {
         first: getFn
       };
 
-      const chainable: any = new Proxy(fns, {
+      const chainable = new Proxy(fns, {
         get: (target, prop) => {
           if (prop === 'then') return undefined;
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
-                   get: (tTarget, tProp) => {
+                   get: (_tTarget, tProp) => {
                       if (tProp === 'findFirst') return fns.get;
                       if (tProp === 'findMany') return fns.all;
                       return vi.fn().mockReturnValue(chainable);
@@ -98,20 +103,19 @@ const createMockDb = () => {
                 })
              });
           }
-          if (prop in target) return target[prop];
+          if (prop in target) return target[prop as string];
           if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
-      });
+      }) as QueryBuilderProxy;
       return chainable;
-    }
-  ;
+    };
 
 describe("Hono Backend - /inquiries Router", () => {
-  let mockDb: ReturnType<typeof createMockDb>;
+  let mockDb: QueryBuilderProxy;
   let testApp: Hono<AppEnv>;
-  let env: { DB: D1Database; [key: string]: unknown };
+  let env: { DB: D1Database; DEV_BYPASS?: string; TURNSTILE_SECRET?: string; ENCRYPTION_SECRET?: string };
   const mockExecutionContext = createMockExecutionContext();
 
   beforeEach(async () => {
