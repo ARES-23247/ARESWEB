@@ -48,7 +48,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -61,13 +69,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 describe("Seasons Router", () => {
   let app: Hono<AppEnv>;
@@ -99,6 +108,9 @@ describe("Seasons Router", () => {
   it("GET / - handles database error", async () => {
     // Handler uses .select().from().where().orderBy().all() — mock .all to reject
     mockDb.all.mockRejectedValueOnce(new Error("DB Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Fail"));
     const res = await app.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -120,9 +132,15 @@ describe("Seasons Router", () => {
 
   it("GET /:year - handles error", async () => {
     // Handler uses .get() for season lookup — reject it
+    mockDb.all.mockRejectedValueOnce(new Error("Detail fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Detail fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Detail fail"));
     mockDb.first.mockRejectedValueOnce(new Error("Detail fail"));
     // Also need all() to reject since Promise.all will call it too
     mockDb.all.mockRejectedValue(new Error("Detail fail"));
+    mockDb.get.mockRejectedValue(new Error("Detail fail"));
+    mockDb.run.mockRejectedValue(new Error("Detail fail"));
+    mockDb.first.mockRejectedValue(new Error("Detail fail"));
     const res = await app.request("/2023", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -135,6 +153,9 @@ describe("Seasons Router", () => {
 
   it("GET /admin/:id - handles error", async () => {
     // Handler uses .select().from().where().get() — mock .first to reject
+    mockDb.all.mockRejectedValueOnce(new Error("Admin Detail fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Admin Detail fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Admin Detail fail"));
     mockDb.first.mockRejectedValueOnce(new Error("Admin Detail fail"));
     const res = await app.request("/admin/2023", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -153,6 +174,9 @@ describe("Seasons Router", () => {
 
   it("POST /admin/save - handles error", async () => {
     // Handler uses .select().from().where().get() for collision check — mock .first to reject
+    mockDb.all.mockRejectedValueOnce(new Error("Save check fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Save check fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Save check fail"));
     mockDb.first.mockRejectedValueOnce(new Error("Save check fail"));
     const res = await app.request("/admin/save", {
       method: "POST",

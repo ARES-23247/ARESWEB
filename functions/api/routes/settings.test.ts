@@ -39,7 +39,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -52,13 +60,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 describe("Hono Backend - /settings Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -131,6 +140,9 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /stats - handles database error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
     mockDb.first.mockRejectedValueOnce(new Error("Fail"));
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -153,7 +165,10 @@ describe("Hono Backend - /settings Router", () => {
 
   it("POST / - handles update error", async () => {
     // Handler uses insert().values().onConflictDoUpdate().run()
+    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
     mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Fail"));
     const payload = { site_name: "New Name" };
     const res = await testApp.request("/admin/settings", {
       method: "POST",
@@ -209,6 +224,9 @@ describe("Hono Backend - /settings Router", () => {
   });
 
   it("GET /admin/stats - error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
     mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/stats", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -227,6 +245,9 @@ describe("Hono Backend - /settings Router", () => {
 
   it("GET /admin/backup - database export with db execution failure", async () => {
     mockDb.all.mockRejectedValue(new Error("DB Error"));
+    mockDb.get.mockRejectedValue(new Error("DB Error"));
+    mockDb.run.mockRejectedValue(new Error("DB Error"));
+    mockDb.first.mockRejectedValue(new Error("DB Error"));
 
     const res = await testApp.request("/admin/backup", {}, env, mockExecutionContext);
     expect(res.status).toBe(200);

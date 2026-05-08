@@ -65,7 +65,7 @@ vi.mock("../middleware", async (importOriginal) => {
         }
       });
       return chainable;
-    },
+    }
   };
 });
 

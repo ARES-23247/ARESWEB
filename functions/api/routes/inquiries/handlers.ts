@@ -1,8 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { eq, desc, inArray, and, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getSocialConfig, logAuditAction, SocialConfig, getDb } from "../../middleware";
+import type { DrizzleDB } from "../../../../src/db/types";
+
+// Type for the inquiry query result
+type InquiryQueryResult = {
+  id: string;
+  type: string;
+  name: string;
+  email: string;
+  metadata: string | null;
+  status: string;
+  created_at: string;
+  zulip_message_id: string | null;
+  notes: string | null;
+};
 import { encrypt, decrypt } from "../../../utils/crypto";
 import { safeJSONStringify } from "../../../utils/json";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -25,7 +38,7 @@ import { AppEnv } from "../../middleware";
 /**
  * Deletes old inquiries that have been resolved or rejected.
  */
-export async function purgeOldInquiries(db: any, days: number) {
+export async function purgeOldInquiries(db: DrizzleDB, days: number) {
   if (days <= 0) return { deleted: 0 };
   
   const res = await db.run(sql`
@@ -83,7 +96,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
     const results = await dbQuery.all();
     const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
 
-    const inquiries = await Promise.all(results.map(async (r: any) => {
+    const inquiries = await Promise.all(results.map(async (r: InquiryQueryResult) => {
       let name = String(r.name);
       let email = String(r.email);
       
@@ -251,7 +264,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
           // Note: InquiryReceipt is a JSX component, so we wrap it in c.html or just use renderToString if available.
           // Since we are in a handler, we can use c.html(Component) or component.toString()
           // Actually, Hono components return a string-like object.
-          const html = (await (InquiryReceipt({ name, type, id }) as any)).toString();
+          const html = (await InquiryReceipt({ name, type, id })).toString();
           
           await sendEmail(c, {
             to: email,
@@ -273,7 +286,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
       return c.json({ error: "Server configuration error: encryption service unavailable. Please contact the team." }, 500);
     }
     if (msg.includes("UNIQUE constraint") || msg.includes("constraint")) {
-      return c.json({ error: "A duplicate submission was detected." } as any, 409 as any);
+      return c.json({ error: "A duplicate submission was detected." }, 409);
     }
     return c.json({ error: `Submission failed: ${msg.substring(0, 120)}` }, 500);
   }

@@ -54,13 +54,9 @@ vi.mock("../middleware", async (importOriginal) => {
         }
       });
       return chainable;
-    },
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-    }),
+    }
   };
+});
 });
 
 describe("Hono Backend - /finance Router", () => {

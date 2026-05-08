@@ -408,6 +408,7 @@ usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async 
     return c.json({ success: true }, 200);
   } catch (e: unknown) {
     console.error("Delete user failed:", e);
+    console.error(e);
     return c.json({ error: "Delete failed" }, 500);
   }
 }));

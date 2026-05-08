@@ -1,3 +1,51 @@
+const createMockDb = () => {
+  const allFn = vi.fn().mockResolvedValue([]);
+  const getFn = vi.fn().mockResolvedValue(null);
+  const runFn = vi.fn().mockResolvedValue({ success: true });
+
+  const fns: Record<string, any> = {
+    all: allFn,
+    get: getFn,
+    run: runFn,
+    execute: allFn,
+    executeTakeFirst: getFn,
+    first: getFn
+  };
+
+  const chainable: any = new Proxy(fns, {
+    get: (target, prop) => {
+      if (prop === 'then') {
+        return (resolve, reject) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+      }
+      if (prop === 'catch') {
+        return (reject) => Promise.resolve(fns.all()).catch(reject);
+      }
+      if (prop === 'finally') {
+        return (cb) => Promise.resolve(fns.all()).finally(cb);
+      }
+      if (prop === 'query') {
+         return new Proxy({}, {
+            get: () => new Proxy({}, {
+               get: (tTarget, tProp) => {
+                  if (tProp === 'findFirst') return fns.get;
+                  if (tProp === 'findMany') return fns.all;
+                  return vi.fn().mockReturnValue(chainable);
+               }
+            })
+         });
+      }
+      if (prop in target) return target[prop];
+      if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+      if (typeof prop === 'symbol') return chainable;
+      target[prop] = vi.fn().mockReturnValue(chainable);
+      return target[prop];
+    }
+  });
+  return chainable;
+};
+
+const mockDb = createMockDb();
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
@@ -18,6 +66,7 @@ vi.mock("../middleware", async (importOriginal) => {
     sanitizeProfileForPublic: vi.fn((p) => p),
     persistentRateLimitMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
     rateLimitMiddleware: () => async (_c: unknown, next: () => Promise<void>) => next(),
+    getDb: () => mockDb
   };
 });
 
@@ -42,6 +91,11 @@ describe("Hono Backend - /profiles Router", () => {
 
   describe("GET /me", () => {
     it("should return profile for authenticated user", async () => {
+      
+      (mockDb.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        nickname: "Local Dev",
+        userId: "local-dev"
+      });
       const res = await app.request("/me", {}, {
         env: { DB: {} as unknown as D1Database, DEV_BYPASS: "true", ENCRYPTION_SECRET: "test-secret" } as any,
         waitUntil: vi.fn(),
@@ -92,6 +146,11 @@ describe("Hono Backend - /profiles Router", () => {
 
   describe("GET /team-roster", () => {
     it("should return team roster", async () => {
+      
+      (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+        { nickname: "Member 1", userId: "1", role: "student" },
+        { nickname: "Member 2", userId: "2", role: "student" }
+      ]);
       const res = await app.request("/team-roster", {}, {
         env: { DB: {} as unknown as D1Database, DEV_BYPASS: "true", ENCRYPTION_SECRET: "test-secret" } as any,
         waitUntil: vi.fn(),
@@ -107,6 +166,12 @@ describe("Hono Backend - /profiles Router", () => {
 
   describe("GET /:userId", () => {
     it("should return public profile by userId", async () => {
+      
+      (mockDb.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        nickname: "Public User",
+        userId: "user-123",
+        showOnAbout: 1
+      });
       const res = await app.request("/user-123", {}, {
         env: { DB: {} as unknown as D1Database, DEV_BYPASS: "true", ENCRYPTION_SECRET: "test-secret" } as any,
         waitUntil: vi.fn(),
@@ -119,6 +184,8 @@ describe("Hono Backend - /profiles Router", () => {
     });
 
     it("should return 404 for non-existent profile", async () => {
+      
+      (mockDb.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
       const res = await app.request("/ghost", {}, {
         env: { DB: {} as unknown as D1Database, DEV_BYPASS: "true", ENCRYPTION_SECRET: "test-secret" } as any,
         waitUntil: vi.fn(),
@@ -128,6 +195,12 @@ describe("Hono Backend - /profiles Router", () => {
     });
 
     it("should return 403 for private profile", async () => {
+      
+      (mockDb.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        nickname: "Private User",
+        userId: "user-456",
+        showOnAbout: 0
+      });
       const res = await app.request("/user-456", {}, {
         env: { DB: {} as unknown as D1Database, DEV_BYPASS: "true", ENCRYPTION_SECRET: "test-secret" } as any,
         waitUntil: vi.fn(),

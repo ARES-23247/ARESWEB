@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
-import { getDbSettings, checkPersistentRateLimit, logAuditAction, getDb } from "../../middleware";
+import { getDbSettings, checkPersistentRateLimit, logAuditAction, getDb, AppEnv } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
+import type { Context } from "hono";
+import type { R2Bucket, R2Object, R2ListOptions } from "@cloudflare/workers-types";
 
 
 
@@ -64,12 +65,12 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
   const arr = new Uint8Array(buffer);
 
   if (arr.length >= 8) {
-    const header8 = Array.from(arr.subarray(0, 8)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    const header8 = Array.from(arr.subarray(0, 8)).map((b: number) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (header8 === '89504e470d0a1a0a') return true; // PNG
   }
 
   if (arr.length >= 4) {
-    const header4 = Array.from(arr.subarray(0, 4)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    const header4 = Array.from(arr.subarray(0, 4)).map((b: number) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (header4.startsWith('ffd8ff') || header4 === 'ffd8ffe0' || header4 === 'ffd8ffe1') return true; // JPEG
     if (header4.startsWith('47494638')) return true; // GIF
     if (header4 === '52494646') return true; // WEBP
@@ -79,7 +80,7 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
   // HEIC/HEIF usually have 'ftyp' at offset 4, but let's check first 16 bytes for 'ftypheic' or similar
   const checkLen = Math.min(arr.length, 16);
   if (checkLen >= 8) {
-    const longerHeader = Array.from(arr.subarray(0, checkLen)).map((b: any) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    const longerHeader = Array.from(arr.subarray(0, checkLen)).map((b: number) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
     if (longerHeader.includes('66747970')) return true; // 'ftyp'
   }
 
@@ -90,7 +91,28 @@ export function isValidImage(buffer: ArrayBuffer): boolean {
   return false;
 }
 
-async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOptions) {
+// ── Type Definitions ───────────────────────────────────────────────────────
+interface MediaItem {
+  key: string;
+  size: number;
+  uploaded: string;
+  url: string;
+  httpEtag: string;
+  folder: string;
+  tags: string;
+}
+
+interface MediaTagRow {
+  key: string;
+  folder: string | null;
+  tags: string | null;
+}
+
+interface ListAllObjectsResult {
+  objects: R2Object[];
+}
+
+async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOptions): Promise<ListAllObjectsResult> {
   if (!bucket) {
     console.warn("[media/handlers.ts] R2Bucket not bound! Returning empty list.");
     return { objects: [] };
@@ -106,7 +128,7 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
 
 
 export const mediaHandlers = {
-  getMedia: async (c: any) => {
+  getMedia: async (c: Context<AppEnv>) => {
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
     const ua = c.req.header("user-agent") || "unknown";
     const rl = await checkPersistentRateLimit(getDb(c), `media_list_${ip}`, ua, 30, 60);
@@ -115,6 +137,7 @@ export const mediaHandlers = {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
       const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
       const url = new URL(c.req.url);
       url.search = "";
@@ -143,11 +166,11 @@ export const mediaHandlers = {
         if (row.key) metaMap.set(row.key, { tags: row.tags || "" });
       }
 
-      const publicKeys = new Set(results.map((r: any) => r.key));
+      const publicKeys = new Set(results.map((r: MediaTagRow) => r.key));
 
       const media = objects.objects
-        .filter((obj: any) => publicKeys.has(obj.key))
-        .map((obj: any) => ({
+        .filter((obj: R2Object) => publicKeys.has(obj.key))
+        .map((obj: R2Object) => ({
           key: obj.key,
           size: obj.size,
           uploaded: obj.uploaded.toISOString(),
@@ -171,7 +194,7 @@ export const mediaHandlers = {
       return c.json({ error: "List failed", media: [] }, 500);
     }
   },
-  adminList: async (c: any) => {
+  adminList: async (c: Context<AppEnv>) => {
     try {
       const db = getDb(c);
       const [objects, results] = await Promise.all([
@@ -190,7 +213,7 @@ export const mediaHandlers = {
         if (row.key) metaMap.set(row.key, { folder: row.folder || "", tags: row.tags || "" });
       }
 
-      const media = objects.objects.map((obj: any) => ({
+      const media = objects.objects.map((obj: R2Object) => ({
         key: obj.key,
         size: obj.size,
         uploaded: obj.uploaded.toISOString(),
@@ -206,7 +229,7 @@ export const mediaHandlers = {
       return c.json({ error: "List failed", media: [] }, 500);
     }
   },
-  upload: async (c: any) => {
+  upload: async (c: Context<AppEnv>) => {
     try {
       const formData = await c.req.parseBody();
       const file = formData["file"] as File | null;
@@ -258,6 +281,7 @@ export const mediaHandlers = {
         try {
           if (!buffer) buffer = await file.arrayBuffer();
           const uint8 = new Uint8Array(buffer);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare AI run response is not strongly typed
           const aiRes = (await c.env.AI.run("@cf/llava-1.5-7b-hf", {
             prompt: "Describe for screen reader",
             image: [...uint8],
@@ -281,6 +305,7 @@ export const mediaHandlers = {
         c.executionCtx.waitUntil(logAuditAction(c, "media_upload", "media", key, `Uploaded to ${finalFolder}`));
 
         if (typeof caches !== 'undefined') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
           c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
         }
       }
@@ -292,7 +317,7 @@ export const mediaHandlers = {
       return c.json({ error: "Upload failed: " + (error.message || String(error)) }, 500);
     }
   },
-  move: async (c: any) => {
+  move: async (c: Context<AppEnv>) => {
     const { key } = c.req.valid("param");
     const { folder } = c.req.valid("json");
     try {
@@ -321,12 +346,12 @@ export const mediaHandlers = {
 
       c.executionCtx.waitUntil(logAuditAction(c, "media_move", "media", newKey, `Moved from ${key} to ${folder}`));
       return c.json({ success: true, newKey }, 200);
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("[Media:Move] Error", e);
       return c.json({ error: "Move failed" }, 500);
     }
   },
-  delete: async (c: any) => {
+  delete: async (c: Context<AppEnv>) => {
     const { key } = c.req.valid("param");
     try {
       if (c.env.ARES_STORAGE) {
@@ -336,12 +361,12 @@ export const mediaHandlers = {
       await db.delete(schema.mediaTags).where(eq(schema.mediaTags.key, key)).execute();
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
       return c.json({ success: true }, 200);
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("[Media:Delete] Error", e);
       return c.json({ error: "Delete failed" }, 500);
     }
   },
-  syndicate: async (c: any) => {
+  syndicate: async (c: Context<AppEnv>) => {
     try {
       const { key, caption } = c.req.valid("json");
       const config = await getDbSettings(c);
@@ -351,7 +376,7 @@ export const mediaHandlers = {
 
       c.executionCtx.waitUntil(dispatchPhotoSocials(imageUrl, caption || "", config));
       return c.json({ success: true, message: "Dispatched" }, 200);
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("[Media:Syndicate] Error", e);
       return c.json({ error: "Syndicate failed" }, 500);
     }

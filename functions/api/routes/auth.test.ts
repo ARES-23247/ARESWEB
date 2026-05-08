@@ -41,8 +41,7 @@ describe("Auth Router", () => {
         member_type: "mentor"
       });
 
-      const res = await app.request("/auth-check", {}, {
-        env: { ENVIRONMENT: "development", DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any,
+      const res = await app.request("/auth-check", {}, { ENVIRONMENT: "development", DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any, {
         waitUntil: vi.fn(),
         passThroughOnException: vi.fn()
       });
@@ -57,8 +56,7 @@ describe("Auth Router", () => {
       const { getSessionUser } = await import("../middleware");
       vi.mocked(getSessionUser).mockResolvedValue(null);
 
-      const res = await app.request("/auth-check", {}, {
-        env: { ENVIRONMENT: "development", DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any,
+      const res = await app.request("/auth-check", {}, { ENVIRONMENT: "development", DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any, {
         waitUntil: vi.fn(),
         passThroughOnException: vi.fn()
       });
@@ -80,11 +78,11 @@ describe("Auth Router", () => {
       const res = await app.request("/signin", {
         method: "POST",
         headers: { "BETTER_AUTH_SECRET": "test" }
-      }, {
-        env: { DB: {} as unknown as D1Database } as any,
-        waitUntil: vi.fn(),
-        passThroughOnException: vi.fn()
-      });
+      }, { DB: {} as unknown as D1Database } as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn()
+      
+    });
 
       expect(res.status).toBe(200);
       expect(await res.text()).toBe("auth response");
@@ -104,8 +102,7 @@ describe("Auth Router", () => {
           "Host": "localhost:8080",
           "ENVIRONMENT": "development"
         }
-      }, {
-        env: { DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any,
+      }, { DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any, {
         waitUntil: vi.fn(),
         passThroughOnException: vi.fn()
       });
@@ -128,11 +125,11 @@ describe("Auth Router", () => {
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const res = await app.request("/error", {
         headers: { "ENVIRONMENT": "production" }
-      }, {
-        env: { DB: {} as unknown as D1Database } as any,
-        waitUntil: vi.fn(),
-        passThroughOnException: vi.fn()
-      });
+      }, { DB: {} as unknown as D1Database } as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn()
+      
+    });
 
       expect(res.status).toBe(500);
       const body = await res.json() as { message: string; stack?: string };
@@ -153,8 +150,7 @@ describe("Auth Router", () => {
         headers: {
           "ENVIRONMENT": "development"
         }
-      }, {
-        env: { DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any,
+      }, { DB: {} as unknown as D1Database, DEV_BYPASS: "true" } as any, {
         waitUntil: vi.fn(),
         passThroughOnException: vi.fn()
       });

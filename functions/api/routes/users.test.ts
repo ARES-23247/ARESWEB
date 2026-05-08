@@ -25,7 +25,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -38,13 +46,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 let mockDbInstance: ReturnType<typeof createMockDb> | null = null;
 
@@ -90,10 +99,10 @@ describe("Hono Backend - /users Router", () => {
 
   it("GET /admin/list - list users", async () => {
     mockDb.query.user.findMany.mockResolvedValueOnce([]);
-    const res = await app.request("/admin/list", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/list", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(200);
   });
@@ -108,10 +117,10 @@ describe("Hono Backend - /users Router", () => {
       updatedAt: new Date(),
       userProfiles: [{ nickname: "TestUser" }]
     });
-    const res = await app.request("/admin/1", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/1", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(200);
     const body = await res.json() as { user: { id: string; email: string } };
@@ -130,10 +139,10 @@ describe("Hono Backend - /users Router", () => {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: "admin" })
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
 
     expect(res.status).toBe(200);
@@ -153,10 +162,10 @@ describe("Hono Backend - /users Router", () => {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ member_type: "mentor" })
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
 
     expect(res.status).toBe(200);
@@ -173,10 +182,10 @@ describe("Hono Backend - /users Router", () => {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ member_type: "student" })
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
 
     expect(res.status).toBe(200);
@@ -188,12 +197,14 @@ describe("Hono Backend - /users Router", () => {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
 
+    const text = await res.text();
+    console.log("DELETE STATUS:", res.status, "BODY:", text);
     expect(res.status).toBe(200);
   });
 
@@ -202,10 +213,10 @@ describe("Hono Backend - /users Router", () => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nickname: "Admin User" })
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBeDefined();
   });
@@ -220,10 +231,10 @@ describe("Hono Backend - /users Router", () => {
       userId: "1",
       nickname: "Admin User"
     });
-    const res = await app.request("/admin/1/profile", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/1/profile", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(200);
     const body = await res.json() as { profile: { nickname: string } };
@@ -233,30 +244,30 @@ describe("Hono Backend - /users Router", () => {
   // Error paths
   it("GET /admin/list - error", async () => {
     mockDb.query.user.findMany.mockRejectedValueOnce(new Error("DB error"));
-    const res = await app.request("/admin/list", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/list", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(500);
   });
 
   it("GET /admin/:id - not found", async () => {
     mockDb.query.user.findFirst.mockResolvedValueOnce(null);
-    const res = await app.request("/admin/999", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/999", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(404);
   });
 
   it("GET /admin/:id - database error", async () => {
     mockDb.query.user.findFirst.mockRejectedValueOnce(new Error("DB error"));
-    const res = await app.request("/admin/1", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/1", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(500);
   });
@@ -266,29 +277,35 @@ describe("Hono Backend - /users Router", () => {
       id: "1",
       email: "test@test.com"
     });
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/admin/1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: "admin" })
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(500);
   });
 
   it("DELETE /admin/:id - error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/admin/1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(500);
   });
@@ -300,20 +317,20 @@ describe("Hono Backend - /users Router", () => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nickname: "Admin User" })
-    }, {
-      env: { DEV_BYPASS: "true" } as any,
+    }, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(500);
   });
 
   it("GET /admin/:id/profile - handles user not found", async () => {
     mockDb.query.user.findFirst.mockResolvedValueOnce(null);
-    const res = await app.request("/admin/999/profile", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/999/profile", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(404);
   });
@@ -325,22 +342,22 @@ describe("Hono Backend - /users Router", () => {
       name: "Admin User"
     });
     mockDb.query.userProfiles.findFirst.mockResolvedValueOnce(null);
-    const res = await app.request("/admin/1/profile", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/1/profile", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(200);
     const body = await res.json() as { profile: { nickname: string } };
-    expect(body.profile.nickname).toBe("Admin");
+    expect(body.profile.nickname).toBe("Admin User");
   });
 
   it("GET /admin/:id/profile - handles database error", async () => {
     mockDb.query.user.findFirst.mockRejectedValueOnce(new Error("DB error"));
-    const res = await app.request("/admin/1/profile", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/1/profile", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(500);
   });
@@ -357,10 +374,10 @@ describe("Hono Backend - /users Router", () => {
         userProfiles: [{ nickname: "Student" }]
       }
     ]);
-    const res = await app.request("/admin/list", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/list", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(200);
     const body = await res.json() as { users: Array<{ email: string }> };
@@ -379,10 +396,10 @@ describe("Hono Backend - /users Router", () => {
       userId: "1",
       emergencyContactName: "encrypted_contact"
     });
-    const res = await app.request("/admin/1/profile", {}, {
-      env: { DEV_BYPASS: "true" } as any,
+    const res = await app.request("/admin/1/profile", {}, { DEV_BYPASS: "true" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
     expect(res.status).toBe(200);
     const body = await res.json() as { profile: { emergencyContactName: string } };

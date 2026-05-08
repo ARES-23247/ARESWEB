@@ -52,7 +52,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -65,13 +73,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 describe("Hono Backend - /tasks Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -141,6 +150,9 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("GET / - handles db error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
     const res = await testApp.request("/", {}, {}, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -372,7 +384,10 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /reorder - handles db error", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "student" } as any);
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await testApp.request("/reorder", {
       method: "PATCH",
@@ -487,6 +502,9 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("PATCH /:id - handles update error", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await testApp.request("/task1", {
@@ -617,6 +635,9 @@ describe("Hono Backend - /tasks Router", () => {
 
   it("DELETE /:id - handles error", async () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce({ id: "user1", role: "admin" } as any);
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await testApp.request("/task1", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" }, {}, mockExecutionContext);

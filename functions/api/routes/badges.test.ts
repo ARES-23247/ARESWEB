@@ -47,7 +47,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -60,13 +68,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 describe("Hono Backend - /badges Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -100,6 +109,9 @@ describe("Hono Backend - /badges Router", () => {
 
   it("GET / - handles error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
     expect(res.status).toBe(500);
   });
@@ -159,12 +171,18 @@ describe("Hono Backend - /badges Router", () => {
 
   it("GET /leaderboard - handles error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/leaderboard", {}, mockEnv, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("POST /admin - create badge error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -174,7 +192,10 @@ describe("Hono Backend - /badges Router", () => {
   });
 
   it("POST /admin/grant - error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/grant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -184,7 +205,10 @@ describe("Hono Backend - /badges Router", () => {
   });
 
   it("DELETE /admin/grant/:userId/:badgeId - error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/grant/u1/b1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -194,7 +218,10 @@ describe("Hono Backend - /badges Router", () => {
   });
 
   it("DELETE /admin/:id - error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await testApp.request("/admin/b1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -221,12 +248,34 @@ describe("Hono Backend - /badges Router", () => {
 
   it("GET / - handles error without message", async () => {
     mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
     const res = await testApp.request("/", {}, mockEnv, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("POST /admin - create badge error without message", async () => {
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
     mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
     const res = await testApp.request("/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -258,7 +307,18 @@ describe("Hono Backend - /badges Router", () => {
   });
 
   it("POST /admin/grant - error without message", async () => {
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
     mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
     const res = await testApp.request("/admin/grant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -268,7 +328,18 @@ describe("Hono Backend - /badges Router", () => {
   });
 
   it("DELETE /admin/grant/:userId/:badgeId - error without message", async () => {
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
     mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
     const res = await testApp.request("/admin/grant/u1/b1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -278,7 +349,18 @@ describe("Hono Backend - /badges Router", () => {
   });
 
   it("DELETE /admin/:id - error without message", async () => {
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
     mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
     const res = await testApp.request("/admin/b1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -295,6 +377,17 @@ describe("Hono Backend - /badges Router", () => {
 
   it("GET /leaderboard - error without message", async () => {
     mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
+    mockDb.all.mockRejectedValueOnce({});
+    mockDb.get.mockRejectedValueOnce({});
+    mockDb.run.mockRejectedValueOnce({});
+    mockDb.first.mockRejectedValueOnce({});
     const res = await testApp.request("/leaderboard", {}, mockEnv, mockExecutionContext);
     expect(res.status).toBe(500);
   });

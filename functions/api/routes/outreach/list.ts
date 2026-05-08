@@ -1,10 +1,46 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenAPI handler input validated by Zod schemas */
 import { eq, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getDb, type AppEnv } from "../../middleware";
 import { SNIPPET_LENGTH, fetchVolunteerEvents } from "./utils";
 import type { listOutreachRoute, adminListOutreachRoute } from "../../../../shared/routes/outreach";
+
+// Database query result type
+interface OutreachQueryResult {
+  id: number;
+  title: string;
+  date: string;
+  location: string | null;
+  hours_logged: number | null;
+  reach_count: number | null;
+  students_count: number | null;
+  description: string | null;
+  season_id: number | null;
+  is_mentoring: number | null;
+  mentored_team_number: number | null;
+  event_id: string | null;
+  mentor_count: number | null;
+  mentor_hours: number | null;
+}
+
+// Combined log entry type (database + volunteer events)
+interface OutreachLog {
+  id: string;
+  title: string;
+  date: string;
+  location: string | null;
+  students_count: number;
+  hours_logged: number;
+  reach_count: number;
+  description: string | null;
+  is_mentoring: boolean;
+  mentored_team_number: number | null;
+  season_id: number | null;
+  is_dynamic: boolean;
+  event_id: string | null;
+  mentor_count: number;
+  mentor_hours: number;
+}
 
 export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> = async (c) => {
   try {
@@ -28,10 +64,10 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
       .where(eq(schema.outreachLogs.isDeleted, 0))
       .orderBy(desc(schema.outreachLogs.date));
     
-    const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
+    const existingEventIds = results.filter((r: OutreachQueryResult) => r.event_id).map((r: OutreachQueryResult) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
     
-    const logs = results.map((r: any) => ({
+    const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
       id: String(r.id),
       title: r.title,
       date: r.date,
@@ -49,9 +85,9 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
       mentor_hours: Number(r.mentor_hours || 0)
     }));
 
-    const combined = [...logs, ...volunteerEvents].sort((a: any, b: any) => b.date.localeCompare(a.date));
-     
-    return c.json({ logs: combined as any[] }, 200);
+    const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
+
+    return c.json({ logs: combined }, 200);
   } catch (err) {
     console.error("[Outreach:List] Error", err);
     return c.json({ error: "Failed to fetch outreach logs" }, 500);
@@ -80,10 +116,10 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
       .where(eq(schema.outreachLogs.isDeleted, 0))
       .orderBy(desc(schema.outreachLogs.date));
     
-    const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
+    const existingEventIds = results.filter((r: OutreachQueryResult) => r.event_id).map((r: OutreachQueryResult) => String(r.event_id));
     const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
     
-    const logs = results.map((r: any) => ({
+    const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
       id: String(r.id),
       title: r.title,
       date: r.date,
@@ -101,9 +137,9 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
       mentor_hours: Number(r.mentor_hours || 0)
     }));
 
-    const combined = [...logs, ...volunteerEvents].sort((a: any, b: any) => b.date.localeCompare(a.date));
-     
-    return c.json({ logs: combined as any[] }, 200);
+    const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
+
+    return c.json({ logs: combined }, 200);
   } catch (err) {
     console.error("[Outreach:AdminList] Error", err);
     return c.json({ error: "Failed to fetch outreach logs" }, 500);

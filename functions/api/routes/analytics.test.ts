@@ -47,7 +47,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -60,13 +68,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 describe("Analytics Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;
@@ -140,7 +149,10 @@ describe("Analytics Router", () => {
     });
 
     it("should handle DB errors gracefully", async () => {
-      mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       const req = new Request("http://localhost/track", {
@@ -198,7 +210,10 @@ describe("Analytics Router", () => {
 
     it("should handle DB errors gracefully", async () => {
       mockDb.get.mockResolvedValueOnce({ id: "spon-123" });
-      mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       const req = new Request("http://localhost/sponsor-click", {
@@ -257,9 +272,18 @@ describe("Analytics Router", () => {
     });
 
     it("GET /admin/platform-analytics should handle DB errors gracefully", async () => {
-      mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
-      mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
       mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       const req = new Request("http://localhost/admin/platform-analytics");
@@ -271,7 +295,10 @@ describe("Analytics Router", () => {
     });
 
     it("GET /roster-stats should handle DB errors", async () => {
-      mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       const req = new Request("http://localhost/admin/roster-stats");
@@ -301,7 +328,10 @@ describe("Analytics Router", () => {
     });
 
     it("GET /leaderboard should handle DB errors", async () => {
-      mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
       const req = new Request("http://localhost/leaderboard");
       const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(500);
@@ -333,7 +363,10 @@ describe("Analytics Router", () => {
     });
 
     it("GET /stats should handle DB errors", async () => {
-      mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
       const req = new Request("http://localhost/admin/stats");
       const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(500);
@@ -374,7 +407,10 @@ describe("Analytics Router", () => {
     });
 
     it("should handle DB errors", async () => {
-      mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+      mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
       const req = new Request("http://localhost/search?q=test");
       const res = await testApp.request(req, {}, env, mockExecutionContext);
       expect(res.status).toBe(500);

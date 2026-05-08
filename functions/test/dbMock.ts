@@ -30,7 +30,7 @@ export function createDrizzleMock() {
   };
 
   // transaction callback is passed the mock itself so inner queries use it
-  (chainable as any).transaction = vi.fn(async (cb: (tx: any) => Promise<any>) => await cb(chainable));
+  (chainable as ReturnType<typeof createChainableQuery> & { transaction: ReturnType<typeof vi.fn> }).transaction = vi.fn(async (cb: (tx: ReturnType<typeof createChainableQuery>) => Promise<unknown>) => await cb(chainable));
 
   return chainable;
 }

@@ -53,13 +53,9 @@ vi.mock("../middleware", async (importOriginal) => {
         }
       });
       return chainable;
-    },
-      all: vi.fn().mockResolvedValue([{ id: "post_1", content: "Test Post", scheduledFor: "2030-01-01", platforms: '{"twitter":true}', status: "pending" }]),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      run: vi.fn().mockResolvedValue({ success: true })
-    }),
+    }
   };
+});
 });
 
 describe("socialQueueRouter", () => {

@@ -1,3 +1,51 @@
+const createMockDb = () => {
+  const allFn = vi.fn().mockResolvedValue([]);
+  const getFn = vi.fn().mockResolvedValue(null);
+  const runFn = vi.fn().mockResolvedValue({ success: true });
+
+  const fns: Record<string, any> = {
+    all: allFn,
+    get: getFn,
+    run: runFn,
+    execute: allFn,
+    executeTakeFirst: getFn,
+    first: getFn
+  };
+
+  const chainable: any = new Proxy(fns, {
+    get: (target, prop) => {
+      if (prop === 'then') {
+        return (resolve, reject) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+      }
+      if (prop === 'catch') {
+        return (reject) => Promise.resolve(fns.all()).catch(reject);
+      }
+      if (prop === 'finally') {
+        return (cb) => Promise.resolve(fns.all()).finally(cb);
+      }
+      if (prop === 'query') {
+         return new Proxy({}, {
+            get: () => new Proxy({}, {
+               get: (tTarget, tProp) => {
+                  if (tProp === 'findFirst') return fns.get;
+                  if (tProp === 'findMany') return fns.all;
+                  return vi.fn().mockReturnValue(chainable);
+               }
+            })
+         });
+      }
+      if (prop in target) return target[prop];
+      if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+      if (typeof prop === 'symbol') return chainable;
+      target[prop] = vi.fn().mockReturnValue(chainable);
+      return target[prop];
+    }
+  });
+  return chainable;
+};
+
+const mockDb = createMockDb();
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import zulipRouter from "./zulip";
@@ -31,50 +79,7 @@ vi.mock("../middleware", async (importOriginal) => {
       await next();
     },
     ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
-    getDb: () => {
-      const fns = {
-        all: vi.fn().mockResolvedValue([]),
-        get: vi.fn().mockResolvedValue(null),
-        run: vi.fn().mockResolvedValue({ success: true }),
-        execute: vi.fn().mockResolvedValue([]),
-        executeTakeFirst: vi.fn().mockResolvedValue(null),
-        first: vi.fn().mockResolvedValue(null)
-      };
-      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
-      const orig = {};
-      for (const m of methods) {
-        orig[m] = {
-          all: fns.all[m].bind(fns.all),
-          get: fns.get[m].bind(fns.get),
-          run: fns.run[m].bind(fns.run),
-          execute: fns.execute[m].bind(fns.execute),
-          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
-          first: fns.first[m].bind(fns.first)
-        };
-      }
-      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
-      for (const key of terminalsList) {
-        for (const m of methods) {
-          fns[key][m] = (...args) => {
-            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
-            for (const k of terminals) {
-              if (orig[m][k]) orig[m][k](...args);
-            }
-            return fns[key];
-          };
-        }
-      }
-      const chainable = new Proxy(fns, {
-        get: (target, prop) => {
-          if (prop === 'then') return undefined;
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
-          target[prop] = vi.fn().mockReturnValue(chainable);
-          return target[prop];
-        }
-      });
-      return chainable;
-    },
+    getDb: () => mockDb,
   };
 });
 
@@ -102,7 +107,10 @@ describe("Hono Backend - /zulip Router", () => {
   it("GET /presence - handles missing config", async () => {
     const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({});
-    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/presence", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(500);
   });
 
@@ -118,7 +126,10 @@ describe("Hono Backend - /zulip Router", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: { "alice@test.com": {} } }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ members: [{ email: "alice@test.com", full_name: "Alice" }] }) });
 
-    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/presence", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
     expect(body.success).toBe(true);
@@ -136,7 +147,10 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: false, text: async () => "Unauthorized" });
 
-    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/presence", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(500);
   });
 
@@ -147,7 +161,10 @@ describe("Hono Backend - /zulip Router", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stream: "general", topic: "test", content: "hello" })
-    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    }, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(500);
   });
 
@@ -165,7 +182,10 @@ describe("Hono Backend - /zulip Router", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stream: "general", topic: "test", content: "hello" })
-    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    }, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
 
     expect(res.status).toBe(200);
     expect(sendZulipMessage).toHaveBeenCalledWith(expect.anything(), "general", "test", "**TestNick** (via ARES Web):\n\nhello", "stream");
@@ -185,7 +205,10 @@ describe("Hono Backend - /zulip Router", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stream: "general", topic: "test", content: "hello" })
-    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    }, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
 
     expect(res.status).toBe(500);
   });
@@ -200,7 +223,10 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [{ id: 1, content: "hi" }] }) });
 
-    const res = await app.request("/topic?stream=general&topic=test", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/topic?stream=general&topic=test", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
     expect(body.messages).toHaveLength(1);
@@ -218,7 +244,10 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 403, text: async () => "Forbidden" });
 
-    const res = await app.request("/topic?stream=general&topic=test", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/topic?stream=general&topic=test", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(403);
   });
 
@@ -232,7 +261,10 @@ describe("Hono Backend - /zulip Router", () => {
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 500, text: async () => "Internal Error" });
 
-    const res = await app.request("/topic?stream=general&topic=test", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/topic?stream=general&topic=test", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(500);
   });
 
@@ -248,7 +280,10 @@ describe("Hono Backend - /zulip Router", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) })
       .mockResolvedValueOnce({ ok: false });
 
-    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/presence", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(200);
   });
 
@@ -264,14 +299,20 @@ describe("Hono Backend - /zulip Router", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ result: "success", presences: {} }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
 
-    const res = await app.request("/presence", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/presence", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(200);
   });
 
   it("GET /invites/audit - handles missing config", async () => {
     const { getSocialConfig } = await import("../middleware");
     vi.mocked(getSocialConfig).mockResolvedValueOnce({});
-    const res = await app.request("/invites/audit", {}, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/invites/audit", {}, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
     expect(res.status).toBe(500);
   });
 
@@ -296,13 +337,16 @@ describe("Hono Backend - /zulip Router", () => {
       json: async () => ({ members: [] })
     });
 
-    const mockDb = getDb({} as any);
+    
     (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
       { email: "alice@test.com" },
       { email: "charlie@test.com" }
     ]);
 
-    const res = await app.request("/invites/audit", {}, { env: { DB: {} as any }, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    const res = await app.request("/invites/audit", {}, { DB: {} as any }, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
 
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;
@@ -332,7 +376,10 @@ describe("Hono Backend - /zulip Router", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emails: ["newuser@test.com"] })
-    }, { env: {} as any, waitUntil: vi.fn(), passThroughOnException: vi.fn() });
+    }, {} as any, {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn() 
+    });
 
     expect(res.status).toBe(200);
     const body = await res.json() as ZulipResponse;

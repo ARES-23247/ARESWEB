@@ -52,7 +52,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -65,13 +73,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 describe("Hono Backend - /comments Router", () => {
   let app: Hono<AppEnv>;
@@ -153,6 +162,9 @@ describe("Hono Backend - /comments Router", () => {
   // Error paths and edge cases
   it("GET list - handles db error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Fail"));
 
     const res = await app.request("/post/my-post", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -190,7 +202,10 @@ describe("Hono Backend - /comments Router", () => {
   });
 
   it("POST submit - handles internal error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
     mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Fail"));
 
     const res = await app.request("/post/my-post", {
       method: "POST",
@@ -261,7 +276,10 @@ describe("Hono Backend - /comments Router", () => {
 
   it("PATCH edit - handles db error", async () => {
     mockDb.get.mockResolvedValueOnce({ user_id: "local-dev" });
+    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
     mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Fail"));
 
     const res = await app.request("/1", {
       method: "PATCH",
@@ -328,7 +346,10 @@ describe("Hono Backend - /comments Router", () => {
 
   it("DELETE - handles internal error", async () => {
     mockDb.get.mockResolvedValueOnce({ user_id: "local-dev" });
+    mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
     mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Fail"));
 
     const res = await app.request("/1", {
       method: "DELETE",

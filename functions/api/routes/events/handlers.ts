@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Event handlers work with dynamic external data (Gcal, rrule, Zulip, etc.) */
 import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
-import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
+import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal, type ARES_Event } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql } from "drizzle-orm";
@@ -12,9 +11,13 @@ import { eq, or, and, ne, isNull, inArray, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
 import type { SocialConfig } from "../../middleware";
+import type { DrizzleDB } from "../../../../src/db/types";
 
 // Drizzle ORM type inference for events table
 type EventRow = typeof schema.events.$inferSelect;
+
+// Type for Hono context with ARES environment
+type AresContext = HonoContext;
 
 /**
  * Sanitize FTS query to prevent SQL injection via SQLite FTS syntax.
@@ -71,8 +74,163 @@ type PartialEvent = Pick<EventRow, "id" | "title" | "category" | "dateStart" | "
   zulipTopic?: string | null;
 };
 
+// Type for Gcal event data
+type GcalEvent = {
+  title: string;
+  date_start: string;
+  date_end?: string | null;
+  location?: string;
+  description?: string;
+  gcal_event_id: string;
+};
+
+// Type for FTS (Full-Text Search) results from events_fts table
+type FtsEventResult = {
+  id: string;
+  title: string;
+  category: string;
+  date_start: string;
+  date_end: string | null;
+  location: string | null;
+  description: string | null;
+  cover_image: string | null;
+  status: string | null;
+  is_deleted: number;
+  season_id: number | null;
+  meeting_notes: string | null;
+  tba_event_key: string | null;
+  recurring_exception: string | null;
+  is_potluck: number;
+  is_volunteer: number;
+};
+
+// Type for signup records from database
+type SignupRecord = {
+  userId: string;
+  nickname: string | null;
+  bringing: string | null;
+  notes: string | null;
+  prepHours: number | null;
+  attended: number | null;
+  dietaryRestrictions: string | null;
+};
+type FtsEventResult = {
+  id: string;
+  title: string;
+  category: string;
+  date_start: string;
+  date_end: string | null;
+  location: string | null;
+  description: string | null;
+  cover_image: string | null;
+  status: string | null;
+  is_deleted: number;
+  season_id: number | null;
+  meeting_notes: string | null;
+  tba_event_key: string | null;
+  recurring_exception: string | null;
+  is_potluck: number;
+  is_volunteer: number;
+};
+
+// Type for event list results with camelCase fields (from Drizzle selects)
+// This is a union type to handle both full and fallback query results
+type EventListResult = {
+  id: string;
+  title: string;
+  category: string | null;
+  dateStart: string;
+  dateEnd: string | null;
+  location: string | null;
+  description: string | null;
+  coverImage: string | null;
+  status: string | null;
+  isDeleted: number | null;
+  seasonId: number | null;
+  meetingNotes: string | null;
+  tbaEventKey: string | null;
+  isPotluck: number | null;
+  isVolunteer: number | null;
+  // Also include snake_case fields for fallback compatibility
+  date_start?: string;
+  date_end?: string | null;
+  cover_image?: string | null;
+  tba_event_key?: string | null;
+  season_id?: number | null;
+  is_deleted?: number | null;
+  is_potluck?: number | null;
+  is_volunteer?: number | null;
+  meeting_notes?: string | null;
+};
+
+// Type for formatted event response (snake_case for API consumers)
+type FormattedEvent = {
+  id: string;
+  title: string;
+  category: string;
+  date_start: string;
+  date_end: string | null;
+  cover_image: string | null;
+  tba_event_key: string | null;
+  season_id: number | null;
+  is_deleted: number;
+  is_potluck: number;
+  is_volunteer: number;
+  status: string | null;
+  meeting_notes: string | null;
+  location: string | null;
+  location_address?: string | null;
+  description?: string | null;
+};
+
+// Type for location registry records
+type LocationRecord = {
+  name: string;
+  address: string | null;
+};
+
+// Type for settings row
+type SettingsRow = {
+  key: string;
+  value: string | null;
+};
+
+// Type for GCal event instances
+type GcalEventInstance = {
+  id: string;
+  title: string;
+  date_start: string;
+  date_end: string | null;
+  location: string;
+  description: string;
+  gcal_event_id?: string | null;
+};
+
+// Type for signup results
+type SignupResult = {
+  userId: string;
+  nickname: string | null;
+  bringing: string | null;
+  notes: string | null;
+  prepHours: number | null;
+  attended: number | null;
+  dietaryRestrictions: string | null;
+  avatar: string | null;
+};
+
+// Type for formatted signup response
+type FormattedSignup = {
+  user_id: string;
+  nickname: string | null;
+  bringing: string | null;
+  notes: string | null;
+  prep_hours: number;
+  attended: number;
+  is_own: boolean;
+};
+
 export const eventHandlers = {
-  getEvents: async (input: HandlerInput, c: any) => {
+  getEvents: async (input: HandlerInput, c: AresContext) => {
     try {
       const { query } = input;
       const db = getDb(c);
@@ -81,7 +239,7 @@ export const eventHandlers = {
       if (q) {
         // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
         const cleanQ = sanitizeFtsQuery(String(q || ''));
-        const results = await (db as any).all(sql`
+        const results = await db.all<FtsEventResult>(sql`
           SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.status, e.is_deleted, e.season_id, e.meeting_notes, e.tba_event_key, e.recurring_exception, e.is_potluck, e.is_volunteer
            FROM events_fts f
            JOIN events e ON f.id = e.id
@@ -90,7 +248,7 @@ export const eventHandlers = {
            ORDER BY f.rank LIMIT ${Number(limit) || 50} OFFSET ${Number(offset) || 0}
         `);
 
-        const events = (results as any).map((e: any) => ({
+        const events: FormattedEvent[] = results.map((e) => ({
           ...e,
           season_id: e.season_id ? Number(e.season_id) : null,
           is_deleted: Number(e.is_deleted || 0)
@@ -99,7 +257,7 @@ export const eventHandlers = {
         return { status: 200 as const, body: { events } };
       }
 
-      let results;
+      let results: EventListResult[];
       try {
         results = await db.select({
           id: schema.events.id,
@@ -148,11 +306,11 @@ export const eventHandlers = {
           .orderBy(desc(schema.events.dateStart))
           .limit(Number(limit) || 50)
           .offset(Number(offset) || 0)
-          .all() as any[];
+          .all() as EventListResult[];
       }
 
       // Resolve location addresses from the locations registry
-      const locationNames = [...new Set(results.map((e: any) => e.location).filter(Boolean))] as string[];
+      const locationNames = [...new Set(results.map((e) => e.location).filter(Boolean))] as string[];
       const locationMap: Record<string, string> = {};
       if (locationNames.length > 0) {
         try {
@@ -163,11 +321,11 @@ export const eventHandlers = {
             .from(schema.locations)
             .where(inArray(schema.locations.name, locationNames))
             .all();
-          locs.forEach((l: any) => { if (l.address) locationMap[l.name] = l.address; });
+          locs.forEach((l) => { if (l.address) locationMap[l.name] = l.address; });
         } catch { /* locations table may not exist */ }
       }
 
-      const events = results.map((e: any) => ({
+      const events: FormattedEvent[] = results.map((e) => ({
         ...e,
         // Map Drizzle camelCase back to snake_case for API consumers
         date_start: e.dateStart ?? e.date_start ?? null,
@@ -190,7 +348,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
   },
-  getCalendarSettings: async (_input: HandlerInput, c: any) => {
+  getCalendarSettings: async (_input: HandlerInput, c: AresContext) => {
     try {
       const db = getDb(c);
       const results = await db.select({
@@ -201,7 +359,7 @@ export const eventHandlers = {
         .where(inArray(schema.settings.key, ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"]))
         .all();
 
-      const map = results.reduce((acc: any, row: any) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
+      const map = results.reduce<Record<string, string>>((acc, row) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
 
       return { status: 200 as const, body: {
         calendarIdInternal: map["CALENDAR_ID_INTERNAL"] || map["CALENDAR_ID"] || "",
@@ -213,7 +371,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: {} };
     }
   },
-  getEvent: async (input: HandlerInput, c: any) => {
+  getEvent: async (input: HandlerInput, c: AresContext) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -285,40 +443,40 @@ export const eventHandlers = {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
-  getAdminEvents: async (input: HandlerInput, c: any) => {
+  getAdminEvents: async (input: HandlerInput, c: AresContext) => {
     try {
       const { query } = input;
       const db = getDb(c);
       const { limit = 100, cursor } = query;
 
-      let baseQuery: any = db.select({
-        id: schema.events.id,
-        title: schema.events.title,
-        category: schema.events.category,
-        dateStart: schema.events.dateStart,
-        dateEnd: schema.events.dateEnd,
-        location: schema.events.location,
-        description: schema.events.description,
-        coverImage: schema.events.coverImage,
-        status: schema.events.status,
-        isDeleted: schema.events.isDeleted,
-        seasonId: schema.events.seasonId,
-        meetingNotes: schema.events.meetingNotes,
-        tbaEventKey: schema.events.tbaEventKey,
-        isPotluck: schema.events.isPotluck,
-        isVolunteer: schema.events.isVolunteer,
-      })
-        .from(schema.events)
-        .orderBy(desc(schema.events.dateStart))
-        .limit(Number(limit) || 100);
-
-      if (cursor) {
-        baseQuery = baseQuery.where(sql`${schema.events.dateStart} < ${cursor}`);
-      }
-
-      let results;
+      let results: EventListResult[];
       try {
-        results = await baseQuery.all() as any[];
+        const baseQuery = db.select({
+          id: schema.events.id,
+          title: schema.events.title,
+          category: schema.events.category,
+          dateStart: schema.events.dateStart,
+          dateEnd: schema.events.dateEnd,
+          location: schema.events.location,
+          description: schema.events.description,
+          coverImage: schema.events.coverImage,
+          status: schema.events.status,
+          isDeleted: schema.events.isDeleted,
+          seasonId: schema.events.seasonId,
+          meetingNotes: schema.events.meetingNotes,
+          tbaEventKey: schema.events.tbaEventKey,
+          isPotluck: schema.events.isPotluck,
+          isVolunteer: schema.events.isVolunteer,
+        })
+          .from(schema.events)
+          .orderBy(desc(schema.events.dateStart))
+          .limit(Number(limit) || 100);
+
+        if (cursor) {
+          results = await baseQuery.where(sql`${schema.events.dateStart} < ${cursor}`).all();
+        } else {
+          results = await baseQuery.all();
+        }
       } catch {
         results = await db.select({
           id: schema.events.id,
@@ -333,7 +491,7 @@ export const eventHandlers = {
           .from(schema.events)
           .orderBy(desc(schema.events.dateStart))
           .limit(Number(limit) || 100)
-          .all() as any[];
+          .all() as EventListResult[];
       }
 
       const lastSyncRow = await db.select({
@@ -343,7 +501,7 @@ export const eventHandlers = {
         .where(eq(schema.settings.key, "LAST_CALENDAR_SYNC"))
         .get();
 
-      const events = results.map((e: any) => ({
+      const events: FormattedEvent[] = results.map((e) => ({
         ...e,
         date_start: e.dateStart ?? e.date_start ?? null,
         date_end: e.dateEnd ?? e.date_end ?? null,
@@ -358,7 +516,7 @@ export const eventHandlers = {
         meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null
       }));
 
-      const nextCursor = results.length === (Number(limit) || 100) ? (results[results.length - 1] as any).dateStart : null;
+      const nextCursor = results.length === (Number(limit) || 100) ? results[results.length - 1].dateStart : null;
 
       return { status: 200 as const, body: { events, lastSyncedAt: lastSyncRow?.value || null, nextCursor } };
     } catch (e) {
@@ -366,12 +524,12 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
   },
-  adminDetail: async (input: HandlerInput, c: any) => {
+  adminDetail: async (input: HandlerInput, c: AresContext) => {
     const { params } = input;
     const { id } = params;
     try {
       const db = getDb(c);
-      let row;
+      let row: PartialEvent | EventListResult | undefined;
       try {
         row = await db.select({
           id: schema.events.id,
@@ -392,7 +550,7 @@ export const eventHandlers = {
         })
           .from(schema.events)
           .where(eq(schema.events.id, id))
-          .get();
+          .get() as EventListResult | undefined;
       } catch {
         row = await db.select({
           id: schema.events.id,
@@ -411,22 +569,25 @@ export const eventHandlers = {
 
       if (!row) return { status: 404 as const, body: { error: "Event not found" } };
 
+      // Cast to unknown first to avoid type issues with union types
+      const rowData = row as unknown as Record<string, unknown>;
+
       return {
         status: 200 as const,
         body: {
           event: {
             ...row,
-            date_start: (row as any).dateStart ?? (row as any).date_start ?? null,
-            date_end: (row as any).dateEnd ?? (row as any).date_end ?? null,
-            cover_image: (row as any).coverImage ?? (row as any).cover_image ?? null,
-            tba_event_key: (row as any).tbaEventKey ?? (row as any).tba_event_key ?? null,
-            season_id: (row as any).seasonId ? Number((row as any).seasonId) : null,
-            is_deleted: Number((row as any).isDeleted || 0),
-            is_potluck: (row as any).isPotluck ?? 0,
-            is_volunteer: (row as any).isVolunteer ?? 0,
-            status: (row as any).status ?? "published",
-            category: (row as any).category ?? "internal",
-            meeting_notes: (row as any).meetingNotes ?? null
+            date_start: (rowData.dateStart ?? rowData.date_start ?? null) as string | null,
+            date_end: (rowData.dateEnd ?? rowData.date_end ?? null) as string | null,
+            cover_image: (rowData.coverImage ?? rowData.cover_image ?? null) as string | null,
+            tba_event_key: (rowData.tbaEventKey ?? rowData.tba_event_key ?? null) as string | null,
+            season_id: rowData.seasonId ? Number(rowData.seasonId) : (rowData.season_id ? Number(rowData.season_id) : null) as number | null,
+            is_deleted: Number(rowData.isDeleted ?? rowData.is_deleted ?? 0) as number,
+            is_potluck: (rowData.isPotluck ?? rowData.is_potluck ?? 0) as number,
+            is_volunteer: (rowData.isVolunteer ?? rowData.is_volunteer ?? 0) as number,
+            status: (rowData.status ?? "published") as string,
+            category: (rowData.category ?? "internal") as string,
+            meeting_notes: (rowData.meetingNotes ?? rowData.meeting_notes ?? null) as string | null
           }
         }
       };
@@ -435,7 +596,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Database error" } };
     }
   },
-  saveEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
+  saveEvent: async (input: HandlerInput<EventSaveBody>, c: AresContext) => {
     try {
       const { body } = input;
       const db = getDb(c);
@@ -505,18 +666,18 @@ export const eventHandlers = {
         }
 
         const upperRule = body.rrule.toUpperCase();
-        const hasValidKey = ALLOWED_RRULE_KEYS.some((key: any) => upperRule.includes(`${key}=`));
+        const hasValidKey = ALLOWED_RRULE_KEYS.some((key: string) => upperRule.includes(`${key}=`));
         if (!hasValidKey) {
           return { status: 400 as const, body: { error: "Invalid recurrence rule format" } };
         }
 
         try {
           const rule = rrulestr(body.rrule, { dtstart: new Date(dateStart) });
-          const dates = rule.all((d: any, i: any) => i < 52);
+          const dates = rule.all((d: Date, i: number) => i < 52);
 
           const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
 
-          instances = dates.map((d: any, i: any) => {
+          instances = dates.map((d: Date, i: number) => {
              const instStart = d.toISOString();
              const instEnd = dateEnd ? new Date(d.getTime() + duration).toISOString() : null;
              return {
@@ -595,7 +756,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: errorMessage } };
     }
   },
-  updateEvent: async (input: HandlerInput<EventSaveBody>, c: any) => {
+  updateEvent: async (input: HandlerInput<EventSaveBody>, c: AresContext) => {
     const { params, body } = input;
     const { id } = params;
     try {
@@ -682,7 +843,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Update failed" } };
     }
   },
-  deleteEvent: async (input: HandlerInput<Pick<EventSaveBody, 'deleteMode'>>, c: any) => {
+  deleteEvent: async (input: HandlerInput<Pick<EventSaveBody, 'deleteMode'>>, c: AresContext) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -719,7 +880,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Delete failed" } };
     }
   },
-  approveEvent: async (input: HandlerInput, c: any) => {
+  approveEvent: async (input: HandlerInput, c: AresContext) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -787,7 +948,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Approval failed" } };
     }
   },
-  rejectEvent: async (input: HandlerInput, c: any) => {
+  rejectEvent: async (input: HandlerInput, c: AresContext) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -799,7 +960,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Rejection failed" } };
     }
   },
-  undeleteEvent: async (input: HandlerInput, c: any) => {
+  undeleteEvent: async (input: HandlerInput, c: AresContext) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -834,7 +995,7 @@ export const eventHandlers = {
       return { status: 500 as const, body: { success: false, error: "Restore failed" } };
     }
   },
-  purgeEvent: async (input: HandlerInput, c: any) => {
+  purgeEvent: async (input: HandlerInput, c: AresContext) => {
     const { params } = input;
     const { id } = params;
     try {
@@ -877,7 +1038,7 @@ export const eventHandlers = {
         { id: dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"], category: "internal" },
         { id: dbSettings["CALENDAR_ID_OUTREACH"], category: "outreach" },
         { id: dbSettings["CALENDAR_ID_EXTERNAL"], category: "external" }
-      ].filter((cal: any) => !!cal.id);
+      ].filter((cal) => !!cal.id);
 
       if (!gcalEmail || !gcalKey || calendars.length === 0) {
         return { status: 500 as const, body: { success: false, error: "GCal config missing" } };
@@ -892,7 +1053,7 @@ export const eventHandlers = {
           
           const CHUNK_SIZE = 20;
           for (let i = 0; i < events.length; i += CHUNK_SIZE) {
-            const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: any) => ({
+            const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: ARES_Event) => ({
               id: crypto.randomUUID(),
               title: ev.title,
               dateStart: ev.date_start,
@@ -961,7 +1122,7 @@ export const eventHandlers = {
         ))
         .all();
 
-      const signups = isVerified ? results.map((rec: any) => ({
+      const signups = isVerified ? results.map((rec: SignupRecord) => ({
         user_id: rec.userId,
         nickname: rec.nickname || null,
         bringing: rec.bringing || null,
@@ -972,7 +1133,7 @@ export const eventHandlers = {
       })) : [];
 
       const dietarySummary: Record<string, number> = {};
-      results.forEach((r: any) => {
+      results.forEach((r: SignupRecord) => {
         if (r.dietaryRestrictions) {
           const restrictions = r.dietaryRestrictions.split(',').map((st: string) => st.trim());
           restrictions.forEach((res: string) => {

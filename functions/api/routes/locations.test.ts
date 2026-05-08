@@ -43,7 +43,15 @@ describe("Hono Backend - /locations Router", () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -56,13 +64,14 @@ describe("Hono Backend - /locations Router", () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };;
+    };;;
 
   let mockDb: ReturnType<typeof createMockDb>;
 
@@ -88,6 +97,9 @@ describe("Hono Backend - /locations Router", () => {
 
   it("GET / - handles db error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/", {}, { DEV_BYPASS: "true" } as never, mockExecutionContext as never);
     expect(res.status).toBe(500);
   });
@@ -100,6 +112,9 @@ describe("Hono Backend - /locations Router", () => {
 
   it("GET /admin/list - handles db error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/admin/list", {}, { DEV_BYPASS: "true" } as never, mockExecutionContext as never);
     expect(res.status).toBe(500);
   });
@@ -123,7 +138,10 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("POST /admin/save - handles db error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/admin/save", {
       method: "POST",
       body: JSON.stringify({ name: "Shop", address: "123 Main St" }),
@@ -166,7 +184,10 @@ describe("Hono Backend - /locations Router", () => {
   });
 
   it("DELETE /admin/:id - handles db error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/admin/123", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },

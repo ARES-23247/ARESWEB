@@ -69,7 +69,15 @@ const createMockDb = () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -82,13 +90,14 @@ const createMockDb = () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };
+    };;
 
 interface DocsResponse {
   success?: boolean;
@@ -129,6 +138,9 @@ describe("Hono Backend - /docs Router", () => {
 
   it("GET / - legacy database fallback and undefined mappings", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Fail"));
     mockDb.all.mockResolvedValueOnce([{ slug: "test", title: "Test Doc", category: "General", sort_order: null }]);
 
     const res = await app.request("/", {}, env, mockExecutionContext);
@@ -430,7 +442,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("POST /admin/:slug/purge - handles error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/purge", {
       method: "POST",
@@ -443,7 +458,13 @@ describe("Hono Backend - /docs Router", () => {
 
   it("GET / - list public docs error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -457,15 +478,24 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("GET /:slug - single doc error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/test", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("POST /admin/save - handles insert error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/save", {
       method: "POST",
@@ -477,7 +507,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("GET /search - search error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB Error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB Error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB Error"));
 
     const res2 = await app.request("/search?q=newquery" + Date.now(), {}, env, mockExecutionContext);
     expect(res2.status).toBe(500);
@@ -485,6 +518,9 @@ describe("Hono Backend - /docs Router", () => {
 
   it("GET /admin/list - list error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/list", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -503,7 +539,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("DELETE /admin/:slug - delete error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc", {
       method: "DELETE",
@@ -527,7 +566,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("PATCH /admin/:slug/history/:id/restore - restore error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/history/1/restore", {
       method: "PATCH",
@@ -540,6 +582,9 @@ describe("Hono Backend - /docs Router", () => {
 
   it("GET /admin/:slug/history - history error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/history", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
@@ -553,14 +598,20 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("GET /admin/:slug/detail - detail error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail")).mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/detail", {}, env, mockExecutionContext);
     expect(res.status).toBe(500);
   });
 
   it("PATCH /admin/:slug/sort - sort error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/sort", {
       method: "PATCH",
@@ -584,7 +635,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("POST /admin/:slug/approve - approve error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/approve", {
       method: "POST",
@@ -596,7 +650,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("POST /admin/:slug/reject - reject error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/reject", {
       method: "POST",
@@ -608,7 +665,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("POST /admin/:slug/undelete - undelete error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/undelete", {
       method: "POST",
@@ -620,7 +680,10 @@ describe("Hono Backend - /docs Router", () => {
   });
 
   it("POST /admin/:slug/reject - handles error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
 
     const res = await app.request("/admin/test-doc/reject", {
       method: "POST",

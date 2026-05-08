@@ -81,7 +81,15 @@ describe("Hono Backend - Events Router", () => {
 
       const chainable: any = new Proxy(fns, {
         get: (target, prop) => {
-          if (prop === 'then') return undefined;
+          if (prop === 'then') {
+            return (resolve: any, reject: any) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+          }
+          if (prop === 'catch') {
+            return (reject: any) => Promise.resolve(fns.all()).catch(reject);
+          }
+          if (prop === 'finally') {
+            return (cb: any) => Promise.resolve(fns.all()).finally(cb);
+          }
           if (prop === 'query') {
              return new Proxy({}, {
                 get: () => new Proxy({}, {
@@ -94,13 +102,14 @@ describe("Hono Backend - Events Router", () => {
              });
           }
           if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+          if (prop === 'transaction') return vi.fn(async (cb: any) => cb(chainable));
+          if (typeof prop === 'symbol') return chainable;
           target[prop as string] = vi.fn().mockReturnValue(chainable);
           return target[prop as string];
         }
       });
       return chainable;
-    };;
+    };;;
 
   let mockDb: ReturnType<typeof createMockDb>;
 
@@ -182,7 +191,10 @@ describe("Hono Backend - Events Router", () => {
   it("GET /:id - handles location lookup error", async () => {
     mockDb.get.mockResolvedValueOnce({ id: "event1", title: "Test", location: "Lab", date_start: "2026-01-01" });
     // Location lookup fails:
+    mockDb.all.mockRejectedValueOnce(new Error("No locations table"));
     mockDb.get.mockRejectedValueOnce(new Error("No locations table"));
+    mockDb.run.mockRejectedValueOnce(new Error("No locations table"));
+    mockDb.first.mockRejectedValueOnce(new Error("No locations table"));
     const res = await app.request("/event1", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(200);
     const body = await res.json() as { event: { location_address: string | null } };
@@ -417,8 +429,14 @@ describe("Hono Backend - Events Router", () => {
   it("GET /:id - db error", async () => {
     // The route calls .select().from().where().get() which uses get() via the proxy
     // Replace both get() and get() to reject since proxy checks both
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
     mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/1", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(404); // Database error returns 404 per code
   });
@@ -483,12 +501,18 @@ describe("Hono Backend - Events Router", () => {
 
   it("GET /:id/signups - db error", async () => {
     mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/1/signups", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(500);
   });
 
   it("POST /:id/signups - db error", async () => {
+    mockDb.all.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB error"));
     mockDb.run.mockRejectedValueOnce(new Error("DB error"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB error"));
     const res = await app.request("/1/signups", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -558,8 +582,9 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /admin/list - handles legacy schema error", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Missing column"));
-    mockDb.execute.mockResolvedValueOnce([]); // fallback
+    mockDb.all.mockRejectedValueOnce(new Error("no such column"));
+    mockDb.all.mockResolvedValueOnce([]); // fallback
+    mockDb.get.mockResolvedValueOnce(null); // sync query
     const res = await app.request("/admin/list", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(200);
   });
@@ -594,7 +619,10 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET / - handles fallback to older schema", async () => {
-    mockDb.execute.mockRejectedValueOnce(new Error("Column status missing"));
+    mockDb.all.mockRejectedValueOnce(new Error("Column status missing"));
+    mockDb.get.mockRejectedValueOnce(new Error("Column status missing"));
+    mockDb.run.mockRejectedValueOnce(new Error("Column status missing"));
+    mockDb.first.mockRejectedValueOnce(new Error("Column status missing"));
     mockDb.execute.mockResolvedValueOnce([{ id: "1", title: "Legacy", date_start: "2026-01-01" }]);
     const res = await app.request("/", {}, {} as never, mockExecutionContext as never);
     if (res.status !== 200) {
@@ -732,8 +760,14 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /admin/list - handles error without fallback", async () => {
-    mockDb.all.mockRejectedValueOnce(new Error("Total fail")); // main query
-    mockDb.all.mockRejectedValueOnce(new Error("Total fail")); // fallback query
+    mockDb.all.mockRejectedValueOnce(new Error("Total fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Total fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Total fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Total fail")); // main query
+    mockDb.all.mockRejectedValueOnce(new Error("Total fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("Total fail"));
+    mockDb.run.mockRejectedValueOnce(new Error("Total fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("Total fail")); // fallback query
     const res = await app.request("/admin/list", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(500);
   });
@@ -848,7 +882,10 @@ describe("Hono Backend - Events Router", () => {
 
   it("PATCH /admin/:id - handles db fail", async () => {
     mockDb.get.mockResolvedValueOnce({ id: "1", title: "Test" });
+    mockDb.all.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("DB fail"));
     mockDb.run.mockRejectedValueOnce(new Error("DB fail"));
+    mockDb.first.mockRejectedValueOnce(new Error("DB fail"));
     const res = await app.request("/admin/1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -868,7 +905,7 @@ describe("Hono Backend - Events Router", () => {
   });
 
   it("GET /admin/:id - handles error with fallback", async () => {
-    mockDb.get.mockRejectedValueOnce(new Error("Schema fail"));
+    mockDb.get.mockRejectedValueOnce(new Error("no such column"));
     mockDb.get.mockResolvedValueOnce({ id: "1", title: "Fallback", date_start: "2026-01-01" });
     const res = await app.request("/admin/1", {}, {} as never, mockExecutionContext as never);
     expect(res.status).toBe(200);

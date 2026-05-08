@@ -4,7 +4,37 @@ import type { DrizzleDB } from "../../middleware";
 
 export const SNIPPET_LENGTH = 200;
 
-export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: string[]) {
+/**
+ * Raw database result from volunteer events query
+ */
+interface VolunteerEventDbResult {
+  id: string;
+  title: string;
+  date: string;
+  location: string | null;
+  season_id: number | null;
+}
+
+/**
+ * Mapped volunteer event for outreach display
+ */
+interface VolunteerEvent {
+  id: string;
+  title: string;
+  date: string;
+  location: string | null;
+  students_count: number;
+  hours_logged: number;
+  reach_count: number;
+  description: string;
+  is_mentoring: boolean;
+  mentored_team_number: null;
+  season_id: number | null;
+  is_dynamic: boolean;
+  event_id: string;
+}
+
+export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: string[]): Promise<VolunteerEvent[]> {
   try {
     const results = await db.select({
       id: schema.events.id,
@@ -22,9 +52,9 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
       )
       .orderBy(desc(schema.events.dateStart));
       
-    const filteredResults = results.filter((r: any) => !existingEventIds.includes(String(r.id)));
-    
-    return filteredResults.map((r: any) => ({
+    const filteredResults = results.filter((r: VolunteerEventDbResult) => !existingEventIds.includes(String(r.id)));
+
+    return filteredResults.map((r: VolunteerEventDbResult): VolunteerEvent => ({
       id: String(r.id),
       title: r.title,
       date: r.date,
@@ -39,7 +69,7 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
       is_dynamic: true,
       event_id: String(r.id)
     }));
-  } catch {
+  } catch (_error: unknown) {
     return [];
   }
 }

@@ -1,33 +1,30 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useGetSettings } from "../api/settings";
 
-export function useAdminSettings() {
-  const [availableSocials, setAvailableSocials] = useState<string[]>([]);
-  const [isPending, setIsPending] = useState(true);
+// Configuration map for social platform requirements
+const SOCIAL_PLATFORM_CONFIG = {
+  discord: (cfg: Record<string, unknown>) => !!cfg.DISCORD_WEBHOOK_URL,
+  bluesky: (cfg: Record<string, unknown>) => !!cfg.BLUESKY_HANDLE && !!cfg.BLUESKY_APP_PASSWORD,
+  slack: (cfg: Record<string, unknown>) => !!cfg.SLACK_WEBHOOK_URL,
+  teams: (cfg: Record<string, unknown>) => !!cfg.TEAMS_WEBHOOK_URL,
+  gchat: (cfg: Record<string, unknown>) => !!cfg.GCHAT_WEBHOOK_URL,
+  facebook: (cfg: Record<string, unknown>) => !!cfg.FACEBOOK_ACCESS_TOKEN,
+  twitter: (cfg: Record<string, unknown>) => !!cfg.TWITTER_ACCESS_TOKEN,
+  instagram: (cfg: Record<string, unknown>) => !!cfg.INSTAGRAM_ACCESS_TOKEN,
+  zulip: (cfg: Record<string, unknown>) => !!cfg.ZULIP_BOT_EMAIL && !!cfg.ZULIP_API_KEY,
+  band: (cfg: Record<string, unknown>) => !!cfg.BAND_ACCESS_TOKEN && !!cfg.BAND_KEY,
+} as const;
 
+export function useAdminSettings() {
   const { data: rawData, isLoading } = useGetSettings();
 
-  useEffect(() => {
-    if (rawData?.settings) {
-      const config = rawData.settings;
-      const available = [];
-      if (config.DISCORD_WEBHOOK_URL) available.push("discord");
-      if (config.BLUESKY_HANDLE && config.BLUESKY_APP_PASSWORD) available.push("bluesky");
-      if (config.SLACK_WEBHOOK_URL) available.push("slack");
-      if (config.TEAMS_WEBHOOK_URL) available.push("teams");
-      if (config.GCHAT_WEBHOOK_URL) available.push("gchat");
-      if (config.FACEBOOK_ACCESS_TOKEN) available.push("facebook");
-      if (config.TWITTER_ACCESS_TOKEN) available.push("twitter");
-      if (config.INSTAGRAM_ACCESS_TOKEN) available.push("instagram");
-      if (config.ZULIP_BOT_EMAIL && config.ZULIP_API_KEY) available.push("zulip");
-      if (config.BAND_ACCESS_TOKEN && config.BAND_KEY) available.push("band");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAvailableSocials(available);
-      setIsPending(false);
-    } else if (!isLoading) {
-      setIsPending(false);
-    }
-  }, [rawData, isLoading]);
+  const availableSocials = useMemo(() => {
+    if (!rawData?.settings) return [];
+    const config = rawData.settings;
+    return Object.entries(SOCIAL_PLATFORM_CONFIG)
+      .filter(([, checkFn]) => checkFn(config))
+      .map(([platform]) => platform);
+  }, [rawData?.settings]);
 
-  return { availableSocials, isPending };
+  return { availableSocials, isPending: isLoading };
 }

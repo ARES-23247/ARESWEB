@@ -1,3 +1,51 @@
+const createMockDb = () => {
+  const allFn = vi.fn().mockResolvedValue([]);
+  const getFn = vi.fn().mockResolvedValue(null);
+  const runFn = vi.fn().mockResolvedValue({ success: true });
+
+  const fns: Record<string, any> = {
+    all: allFn,
+    get: getFn,
+    run: runFn,
+    execute: allFn,
+    executeTakeFirst: getFn,
+    first: getFn
+  };
+
+  const chainable: any = new Proxy(fns, {
+    get: (target, prop) => {
+      if (prop === 'then') {
+        return (resolve, reject) => Promise.resolve(fns.all()).then(resolve).catch(reject);
+      }
+      if (prop === 'catch') {
+        return (reject) => Promise.resolve(fns.all()).catch(reject);
+      }
+      if (prop === 'finally') {
+        return (cb) => Promise.resolve(fns.all()).finally(cb);
+      }
+      if (prop === 'query') {
+         return new Proxy({}, {
+            get: () => new Proxy({}, {
+               get: (tTarget, tProp) => {
+                  if (tProp === 'findFirst') return fns.get;
+                  if (tProp === 'findMany') return fns.all;
+                  return vi.fn().mockReturnValue(chainable);
+               }
+            })
+         });
+      }
+      if (prop in target) return target[prop];
+      if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+      if (typeof prop === 'symbol') return chainable;
+      target[prop] = vi.fn().mockReturnValue(chainable);
+      return target[prop];
+    }
+  });
+  return chainable;
+};
+
+const mockDb = createMockDb();
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { simulationsRouter } from "./simulations";
@@ -8,50 +56,7 @@ vi.mock("../middleware", async (importOriginal) => {
   return {
     ...actual,
     ensureAuth: async (_c: unknown, next: () => Promise<void>) => next(),
-    getDb: () => {
-      const fns = {
-        all: vi.fn().mockResolvedValue([]),
-        get: vi.fn().mockResolvedValue(null),
-        run: vi.fn().mockResolvedValue({ success: true }),
-        execute: vi.fn().mockResolvedValue([]),
-        executeTakeFirst: vi.fn().mockResolvedValue(null),
-        first: vi.fn().mockResolvedValue(null)
-      };
-      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
-      const orig = {};
-      for (const m of methods) {
-        orig[m] = {
-          all: fns.all[m].bind(fns.all),
-          get: fns.get[m].bind(fns.get),
-          run: fns.run[m].bind(fns.run),
-          execute: fns.execute[m].bind(fns.execute),
-          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
-          first: fns.first[m].bind(fns.first)
-        };
-      }
-      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
-      for (const key of terminalsList) {
-        for (const m of methods) {
-          fns[key][m] = (...args) => {
-            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
-            for (const k of terminals) {
-              if (orig[m][k]) orig[m][k](...args);
-            }
-            return fns[key];
-          };
-        }
-      }
-      const chainable = new Proxy(fns, {
-        get: (target, prop) => {
-          if (prop === 'then') return undefined;
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
-          target[prop] = vi.fn().mockReturnValue(chainable);
-          return target[prop];
-        }
-      });
-      return chainable;
-    },
+    getDb: () => mockDb,
   };
 });
 
@@ -72,10 +77,10 @@ describe("simulationsRouter", () => {
 
     const res = await app.request("/", {
       method: "GET"
-    }, {
-      env: { GITHUB_PAT: "test-pat" } as any,
+    }, { GITHUB_PAT: "test-pat" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
 
     expect(res.status).toBe(200);
@@ -100,10 +105,10 @@ describe("simulationsRouter", () => {
 
     const res = await app.request("/gist/12345", {
       method: "GET"
-    }, {
-      env: { GITHUB_PAT: "test-pat" } as any,
+    }, { GITHUB_PAT: "test-pat" } as any, {
       waitUntil: vi.fn(),
       passThroughOnException: vi.fn()
+    
     });
 
     expect(res.status).toBe(200);
