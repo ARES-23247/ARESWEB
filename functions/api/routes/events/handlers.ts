@@ -1079,13 +1079,22 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
       if (!user || user.role === "unverified") return { status: 403 as const, body: { error: "Forbidden" } };
       const db = getDb(c);
-      await db.insert(schema.eventSignups)
-        .values({ eventId: params.id, userId: user.id, bringing: body.bringing || "", notes: body.notes || "", prepHours: body.prep_hours || 0 })
-        .onConflictDoUpdate({
-          target: [schema.eventSignups.eventId, schema.eventSignups.userId],
-          set: { bringing: sql`excluded.bringing`, notes: sql`excluded.notes`, prepHours: sql`excluded.prep_hours` }
-        })
-        .run();
+      
+      const existing = await db.select({ id: schema.eventSignups.id })
+        .from(schema.eventSignups)
+        .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id)))
+        .get();
+
+      if (existing) {
+        await db.update(schema.eventSignups)
+          .set({ bringing: body.bringing || "", notes: body.notes || "", prepHours: body.prep_hours || 0 })
+          .where(eq(schema.eventSignups.id, existing.id))
+          .run();
+      } else {
+        await db.insert(schema.eventSignups)
+          .values({ eventId: params.id, userId: user.id, bringing: body.bringing || "", notes: body.notes || "", prepHours: body.prep_hours || 0 })
+          .run();
+      }
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:SubmitSignup] Error", e);
@@ -1111,13 +1120,22 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
       if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
       const db = getDb(c);
-      await db.insert(schema.eventSignups)
-        .values({ eventId: params.id, userId: user.id, attended: body.attended ? 1 : 0 })
-        .onConflictDoUpdate({
-          target: [schema.eventSignups.eventId, schema.eventSignups.userId],
-          set: { attended: body.attended ? 1 : 0 }
-        })
-        .run();
+
+      const existing = await db.select({ id: schema.eventSignups.id })
+        .from(schema.eventSignups)
+        .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id)))
+        .get();
+
+      if (existing) {
+        await db.update(schema.eventSignups)
+          .set({ attended: body.attended ? 1 : 0 })
+          .where(eq(schema.eventSignups.id, existing.id))
+          .run();
+      } else {
+        await db.insert(schema.eventSignups)
+          .values({ eventId: params.id, userId: user.id, attended: body.attended ? 1 : 0 })
+          .run();
+      }
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:UpdateMyAttendance] Error", e);
@@ -1130,13 +1148,22 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
       if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) return { status: 401 as const, body: { error: "Unauthorized" } };
       const db = getDb(c);
-      await db.insert(schema.eventSignups)
-        .values({ eventId: params.id, userId: params.userId, attended: body.attended ? 1 : 0 })
-        .onConflictDoUpdate({
-          target: [schema.eventSignups.eventId, schema.eventSignups.userId],
-          set: { attended: body.attended ? 1 : 0 }
-        })
-        .run();
+
+      const existing = await db.select({ id: schema.eventSignups.id })
+        .from(schema.eventSignups)
+        .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, params.userId)))
+        .get();
+
+      if (existing) {
+        await db.update(schema.eventSignups)
+          .set({ attended: body.attended ? 1 : 0 })
+          .where(eq(schema.eventSignups.id, existing.id))
+          .run();
+      } else {
+        await db.insert(schema.eventSignups)
+          .values({ eventId: params.id, userId: params.userId, attended: body.attended ? 1 : 0 })
+          .run();
+      }
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:UpdateUserAttendance] Error", e);
