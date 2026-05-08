@@ -2,6 +2,10 @@ import { defineConfig, devices } from '@playwright/test';
 
 const WRANGLER_COMMAND = 'DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist -b SKIP_ENV_VALIDATION=true --env-file .env.test';
 
+// Use deployed preview URL if available (from CI), otherwise use local URLs
+const previewUrl = process.env.PREVIEW_URL;
+const baseUrl = previewUrl || (process.env.CI ? 'http://127.0.0.1:8788' : 'http://localhost:5173');
+
 // Define test suites for batch running
 const testSuites = {
   // Core dashboard functionality
@@ -49,7 +53,7 @@ export default defineConfig({
   timeout: 60000,
   maxFailures: 10,
   use: {
-    baseURL: process.env.CI ? 'http://127.0.0.1:8788' : 'http://localhost:5173',
+    baseURL: baseUrl,
     trace: 'on-first-retry',
     actionTimeout: 10000,
     navigationTimeout: 30000,
@@ -169,7 +173,8 @@ export default defineConfig({
       },
     },
   ],
-  webServer: process.env.CI
+  // Skip webServer when using deployed preview URL (PR testing)
+  webServer: previewUrl ? undefined : process.env.CI
     ? {
         command: WRANGLER_COMMAND,
         url: 'http://127.0.0.1:8788',
