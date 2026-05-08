@@ -20,18 +20,60 @@
 -- Clean existing test data (to avoid conflicts on re-seed)
 -- ──────────────────────────────────────────
 
--- Delete test-specific data while preserving production data
+-- Delete in reverse dependency order to avoid FK violations.
+-- Child tables with FK → user must be cleaned BEFORE the user table.
+-- Tables with FK → events must be cleaned BEFORE events.
+-- Tables with FK → seasons must be cleaned BEFORE seasons.
+
+-- Better Auth session/account tables (FK → user)
+DELETE FROM session WHERE userId LIKE 'test-%' OR userId = 'admin-user';
+DELETE FROM account WHERE userId LIKE 'test-%' OR userId = 'admin-user';
+
+-- Event signups (FK → events, FK → user)
+DELETE FROM event_signups WHERE user_id LIKE 'test-%' OR user_id = 'admin-user';
+
+-- Task assignments (FK → tasks)
+DELETE FROM task_assignments WHERE user_id LIKE 'test-%' OR user_id = 'admin-user';
+
+-- User badges (FK → user, FK → badges)
 DELETE FROM user_badges WHERE user_id LIKE 'test-%' OR user_id = 'admin-user';
+
+-- User profiles (FK → user)
 DELETE FROM user_profiles WHERE user_id LIKE 'test-%' OR user_id = 'admin-user';
+
+-- Tasks (FK → user via created_by)
 DELETE FROM tasks WHERE created_by LIKE 'test-%' OR created_by = 'admin-user' OR id LIKE 'test-%';
+
+-- Simulations (FK → user via author_id)
+DELETE FROM simulations WHERE author_id LIKE 'test-%' OR author_id = 'admin-user' OR id LIKE 'sim-%';
+
+-- Now safe to delete users (all child FK references removed above)
+DELETE FROM user WHERE id LIKE 'test-%' OR id = 'admin-user';
+
+-- Independent tables (no user FK, safe to clean anytime)
 DELETE FROM badges WHERE id LIKE 'test-%';
 DELETE FROM sponsors WHERE id LIKE 'test-%';
 DELETE FROM locations WHERE id LIKE 'test-%';
-DELETE FROM simulations WHERE author_id LIKE 'test-%' OR author_id = 'admin-user' OR id LIKE 'sim-%';
 DELETE FROM posts WHERE slug LIKE 'test-%';
 DELETE FROM events WHERE id LIKE 'test-%';
 DELETE FROM docs WHERE slug LIKE 'test-%';
-DELETE FROM user WHERE id LIKE 'test-%' OR id = 'admin-user';
+
+-- Clean AUTOINCREMENT tables that lack ON CONFLICT (use known identifiers)
+DELETE FROM awards WHERE event_name IN ('Texas FTC Qualifier', 'Texas FTC Championship', 'Lone Star Regional');
+DELETE FROM outreach_logs WHERE cf_email = 'admin@ares.org';
+DELETE FROM products WHERE id IN ('team-t-shirt', 'team-hoodie', 'team-pin');
+
+-- ────────────────────────────────────────
+-- Seasons (must be seeded BEFORE events, awards, outreach_logs that FK → seasons)
+-- ──────────────────────────────────────────
+
+INSERT INTO seasons (start_year, end_year, challenge_name, robot_name, robot_description, summary, status, is_deleted)
+VALUES
+  (2024, 2025, 'INTO THE DEEP', 'AresBot Mk4', '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Our 2024-2025 robot."}]}]}', 'Our 2024-2025 season robot.', 'published', 0),
+  (2025, 2026, 'Upcoming Game', NULL, NULL, 'Coming soon...', 'published', 0)
+ON CONFLICT(start_year) DO UPDATE SET
+  challenge_name = excluded.challenge_name,
+  robot_name = excluded.robot_name;
 
 -- ────────────────────────────────────────
 -- Users
@@ -191,18 +233,6 @@ ON CONFLICT(slug) DO UPDATE SET
   status = excluded.status;
 
 -- ────────────────────────────────────────
--- Seasons
--- ──────────────────────────────────────────
-
-INSERT INTO seasons (start_year, end_year, challenge_name, robot_name, robot_description, summary, status, is_deleted)
-VALUES
-  (2024, 2025, 'INTO THE DEEP', 'AresBot Mk4', '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Our 2024-2025 robot."}]}]}', 'Our 2024-2025 season robot.', 'published', 0),
-  (2025, 2026, 'Upcoming Game', NULL, NULL, 'Coming soon...', 'published', 0)
-ON CONFLICT(start_year) DO UPDATE SET
-  challenge_name = excluded.challenge_name,
-  robot_name = excluded.robot_name;
-
--- ────────────────────────────────────────
 -- Events
 -- ──────────────────────────────────────────
 
@@ -228,7 +258,7 @@ ON CONFLICT(slug) DO UPDATE SET
   status = excluded.status;
 
 -- ────────────────────────────────────────
--- Awards
+-- Awards (AUTOINCREMENT — use INSERT OR IGNORE to prevent duplicates on re-seed)
 -- ──────────────────────────────────────────
 
 INSERT INTO awards (title, event_name, date, description, icon_type, season_id, is_deleted)
@@ -238,7 +268,7 @@ VALUES
   ('Design Award', 'Lone Star Regional', '2024-03-15', 'Recognized for innovative robot design.', 'award', 2024, 0);
 
 -- ────────────────────────────────────────
--- Outreach Logs
+-- Outreach Logs (AUTOINCREMENT — cleaned above by cf_email)
 -- ──────────────────────────────────────────
 
 INSERT INTO outreach_logs (title, date, location, hours, people_reached, students_count, impact_summary, cf_email, is_deleted, season_id)
@@ -254,7 +284,10 @@ INSERT INTO products (id, name, description, price_cents, image_url, active)
 VALUES
   ('team-t-shirt', 'ARES Team T-Shirt', 'Official team t-shirt with ARES 23247 logo.', 2500, 'https://example.com/tshirt.jpg', 1),
   ('team-hoodie', 'ARES Team Hoodie', 'Warm team hoodie for competition season.', 4500, 'https://example.com/hoodie.jpg', 1),
-  ('team-pin', 'ARES Lapel Pin', 'Collectible team pin.', 500, 'https://example.com/pin.jpg', 1);
+  ('team-pin', 'ARES Lapel Pin', 'Collectible team pin.', 500, 'https://example.com/pin.jpg', 1)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  price_cents = excluded.price_cents;
 
 -- ────────────────────────────────────────
 -- Settings
