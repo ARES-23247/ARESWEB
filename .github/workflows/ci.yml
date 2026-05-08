@@ -109,7 +109,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 migrations apply ares-db --remote --env preview
+          command: d1 migrations apply ares-db-preview --remote
           packageManager: npm
 
       # Use different branch names for PR vs master to avoid conflicts
