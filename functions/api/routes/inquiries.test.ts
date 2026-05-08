@@ -106,8 +106,7 @@ const createMockDb = () => {
       });
       return chainable;
     }
-  };
-});
+  ;
 
 describe("Hono Backend - /inquiries Router", () => {
   let mockDb: ReturnType<typeof createMockDb>;

@@ -3,8 +3,14 @@ import { getAuth } from "../../utils/auth";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, UserRole, SessionUser, DrizzleDB } from "./utils";
+import { sql } from "drizzle-orm";
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
+/**
+ * SEC-DEV-01: Development bypass with audit logging.
+ * ONLY bypasses auth on localhost in development environment.
+ * All bypass attempts are logged for security monitoring.
+ */
 export function isDevBypassEnabled(c: Context<AppEnv>): boolean {
   // CR-03 FIX: Only bypass auth in local development, NOT in preview environments
   // Preview deployments on Cloudflare Pages are publicly accessible and should not bypass auth
@@ -14,7 +20,25 @@ export function isDevBypassEnabled(c: Context<AppEnv>): boolean {
   const url = new URL(c.req.url);
   const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
 
-  return isLocalhost && (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1");
+  const enabled = isLocalhost && (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1");
+
+  // SEC-DEV-02: Log all bypass attempts for security monitoring
+  if (enabled) {
+    const db = c.get("db") as DrizzleDB;
+    if (db) {
+      c.executionCtx?.waitUntil(
+        db.insert(schema.auditLog).values({
+          id: crypto.randomUUID(),
+          action: "DEV_BYPASS_USED",
+          actor: "local-dev",
+          resourceType: "auth",
+          details: JSON.stringify({ path: c.req.path, method: c.req.method, timestamp: new Date().toISOString() })
+        }).execute().catch(err => console.error("[Audit] Failed to log DEV_BYPASS:", err))
+      );
+    }
+  }
+
+  return enabled;
 }
 
 // ── Admin Auth Middleware ─────────────────────────────────────────────
@@ -52,13 +76,14 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   const memberType = profile?.member_type || "student";
   const nickname = profile?.nickname || "ARES Member";
 
-  // Authors and Adult Leaders can do everything EXCEPT manage users
+  // RBAC-02: Super-admin routes (user management, roles) - admin only
   const isSuperAdminRoute = url.pathname.includes("/admin/users") || url.pathname.includes("/admin/roles");
   const allowedRoles: string[] = isSuperAdminRoute ? [UserRole.ADMIN] : [UserRole.ADMIN, UserRole.AUTHOR];
 
   let isAuthorized = allowedRoles.includes(role);
-  
-  // Grant standard admin privileges to verified Coaches and Mentors
+
+  // RBAC-03: Grant standard admin privileges to verified Coaches and Mentors for non-super-admin routes
+  // This allows adult leaders to manage content, events, etc. but NOT user accounts
   if (!isAuthorized && !isSuperAdminRoute) {
     if (role !== UserRole.UNVERIFIED && (memberType === "coach" || memberType === "mentor")) {
       isAuthorized = true;
@@ -67,6 +92,16 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
 
   if (!isAuthorized) {
      console.warn(`[Auth Check] Access Denied for ${session.user.email}. Role: ${role}, MemberType: ${memberType}. Path: ${url.pathname}`);
+     // SEC-AUDIT-01: Log authorization failures
+     c.executionCtx?.waitUntil(
+       db.insert(schema.auditLog).values({
+         id: crypto.randomUUID(),
+         action: "AUTHZ_FAILURE",
+         actor: session.user.id,
+         resourceType: "admin_access",
+         details: JSON.stringify({ path: url.pathname, role, memberType })
+       }).execute().catch(console.error)
+     );
      return c.json({ error: `Forbidden: Requires one of [${allowedRoles.join(", ")}] privileges or adult leader status.` }, 403);
   }
 

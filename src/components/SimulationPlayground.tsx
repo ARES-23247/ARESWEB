@@ -239,7 +239,7 @@ export default function SimulationPlayground() {
       const position = editor.getPosition();
       if (position) {
         editor.executeEdits("component-library", [{
-          range: new ((window as unknown as { monaco: { Range: new (a: number, b: number, c: number, d: number) => any } }).monaco.Range)(position.lineNumber, position.column, position.lineNumber, position.column),
+          range: new ((window as unknown as { monaco: { Range: new (startLine: number, startCol: number, endLine: number, endCol: number) => { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number } } }).monaco.Range)(position.lineNumber, position.column, position.lineNumber, position.column),
           text: code,
           forceMoveMarkers: true
         }]);

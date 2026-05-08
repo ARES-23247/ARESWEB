@@ -18,7 +18,7 @@ describe("GitHub Webhook Router", () => {
   };
 
   const mockExecutionContext = {
-    waitUntil: vi.fn(),
+    waitUntil: vi.fn((p) => { if (p && p.catch) p.catch(() => {}); }),
     passThroughOnException: vi.fn(),
     props: {},
   };
@@ -55,7 +55,7 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await app.request(req, {}, env);
+    const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
     expect(res.status).toBe(401);
   });
 
@@ -75,7 +75,7 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await app.request(req, {}, env);
+    const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
     expect(res.status).toBe(401);
   });
 
@@ -90,7 +90,7 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await app.request(req, {}, env);
+    const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
     expect(res.status).toBe(200);
   });
 
@@ -114,7 +114,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -134,7 +134,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -154,7 +154,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -173,7 +173,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -193,7 +193,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -212,7 +212,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -231,7 +231,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "projects_v2_item",
         },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -248,7 +248,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "projects_v2_item",
         },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -265,7 +265,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "projects_v2_item",
         },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -283,7 +283,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "pull_request",
         },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -301,7 +301,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "pull_request",
         },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -319,7 +319,7 @@ describe("GitHub Webhook Router", () => {
           "X-GitHub-Event": "issues",
         },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -341,7 +341,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -366,7 +366,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -386,7 +386,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
@@ -406,7 +406,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -420,7 +420,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(400);
     });
 
@@ -434,7 +434,7 @@ describe("GitHub Webhook Router", () => {
         },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -475,7 +475,7 @@ describe("GitHub Webhook Router", () => {
       });
       badApp.route("/", githubWebhookRouter);
 
-      const res = await badApp.request(req, {}, env);
+      const res = await badApp.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -494,7 +494,7 @@ describe("GitHub Webhook Router", () => {
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -511,7 +511,7 @@ describe("GitHub Webhook Router", () => {
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -527,7 +527,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "push" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -539,7 +539,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "projects_v2_item" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -551,7 +551,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "projects_v2_item" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -563,7 +563,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "projects_v2_item" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
     it("should handle ignored pull_request action", async () => {
@@ -577,7 +577,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -592,7 +592,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -604,7 +604,7 @@ describe("GitHub Webhook Router", () => {
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "unknown_event" },
       });
 
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -619,7 +619,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -634,7 +634,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -647,7 +647,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "pull_request" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -662,7 +662,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
 
@@ -675,7 +675,7 @@ describe("GitHub Webhook Router", () => {
         body: payload,
         headers: { "X-Hub-Signature-256": "sha256=valid", "X-GitHub-Event": "issues" },
       });
-      const res = await app.request(req, {}, env);
+      const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
       expect(res.status).toBe(200);
     });
   });
@@ -691,7 +691,7 @@ describe("GitHub Webhook Router", () => {
       },
     });
 
-    const res = await app.request(req, {}, env);
+    const res = await app.request(req, {}, env as any, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
     expect(res.status).toBe(401);
   });
 });

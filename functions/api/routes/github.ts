@@ -127,7 +127,7 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
     console.error("[GitHub:Activity] Error", e);
     return c.json({ error: "Failed to fetch GitHub activity" }, 500);
   }
-});
+}));
 
 githubRouter.use("/projects/*", ensureAdmin);
 

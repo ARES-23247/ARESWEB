@@ -5,58 +5,61 @@ import { AppEnv } from "../middleware";
 
 vi.mock("../middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware")>();
+    let chainable: any;
+  const resetDbMock = () => {
+    const fns = {
+      all: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(null),
+      run: vi.fn().mockResolvedValue({ success: true }),
+      execute: vi.fn().mockResolvedValue([]),
+      executeTakeFirst: vi.fn().mockResolvedValue(null),
+      first: vi.fn().mockResolvedValue(null)
+    };
+    const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
+    const orig = {} as any;
+    for (const m of methods) {
+      orig[m] = {
+        all: fns.all[m as keyof typeof fns.all].bind(fns.all),
+        get: fns.get[m as keyof typeof fns.get].bind(fns.get),
+        run: fns.run[m as keyof typeof fns.run].bind(fns.run),
+        execute: fns.execute[m as keyof typeof fns.execute].bind(fns.execute),
+        executeTakeFirst: fns.executeTakeFirst[m as keyof typeof fns.executeTakeFirst].bind(fns.executeTakeFirst),
+        first: fns.first[m as keyof typeof fns.first].bind(fns.first)
+      };
+    }
+    const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+    for (const key of terminalsList) {
+      for (const m of methods) {
+        (fns as any)[key][m] = (...args: any[]) => {
+          const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
+          for (const k of terminals) {
+            if (orig[m][k]) orig[m][k](...args);
+          }
+          return (fns as any)[key];
+        };
+      }
+    }
+    chainable = new Proxy(fns, {
+      get: (target: any, prop: string | symbol) => {
+        if (prop === 'then') return undefined;
+        if (prop in target) return target[prop];
+        if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
+        target[prop] = vi.fn().mockReturnValue(chainable);
+        return target[prop];
+      }
+    });
+  };
+  resetDbMock();
+
   return {
     ...actual,
     ensureAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
     rateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
     logAuditAction: vi.fn(),
     getSessionUser: vi.fn().mockResolvedValue({ id: "user-123", role: "admin", member_type: "mentor", email: "admin@test.com", name: "Admin", nickname: "Admin", image: null }),
-    getDb: () => {
-      const fns = {
-        all: vi.fn().mockResolvedValue([]),
-        get: vi.fn().mockResolvedValue(null),
-        run: vi.fn().mockResolvedValue({ success: true }),
-        execute: vi.fn().mockResolvedValue([]),
-        executeTakeFirst: vi.fn().mockResolvedValue(null),
-        first: vi.fn().mockResolvedValue(null)
-      };
-      const methods = ['mockResolvedValueOnce', 'mockResolvedValue', 'mockRejectedValueOnce', 'mockRejectedValue'];
-      const orig = {};
-      for (const m of methods) {
-        orig[m] = {
-          all: fns.all[m].bind(fns.all),
-          get: fns.get[m].bind(fns.get),
-          run: fns.run[m].bind(fns.run),
-          execute: fns.execute[m].bind(fns.execute),
-          executeTakeFirst: fns.executeTakeFirst[m].bind(fns.executeTakeFirst),
-          first: fns.first[m].bind(fns.first)
-        };
-      }
-      const terminalsList = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
-      for (const key of terminalsList) {
-        for (const m of methods) {
-          fns[key][m] = (...args) => {
-            const terminals = ['all', 'get', 'run', 'execute', 'executeTakeFirst', 'first'];
-            for (const k of terminals) {
-              if (orig[m][k]) orig[m][k](...args);
-            }
-            return fns[key];
-          };
-        }
-      }
-      const chainable = new Proxy(fns, {
-        get: (target, prop) => {
-          if (prop === 'then') return undefined;
-          if (prop in target) return target[prop];
-          if (prop === 'transaction') return vi.fn(async (cb) => cb(chainable));
-          target[prop] = vi.fn().mockReturnValue(chainable);
-          return target[prop];
-        }
-      });
-      return chainable;
-    }
+    getDb: () => chainable,
+    resetDbMock
   };
-});
 });
 
 describe("Hono Backend - /finance Router", () => {
@@ -86,6 +89,8 @@ describe("Hono Backend - /finance Router", () => {
   };
 
   beforeEach(async () => {
+    const middleware = await import("../middleware");
+    (middleware as any).resetDbMock();
     vi.clearAllMocks();
     const middleware = await import("../middleware");
     getDbMock = middleware.getDb as any;

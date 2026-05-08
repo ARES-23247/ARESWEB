@@ -32,7 +32,6 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
   const body = c.req.valid("json");
 
   const config = await getSocialConfig(c);
-  console.log("C.ENV IN HANDLER KEYS:", Object.keys(c.env || {}));
   const expectedToken = config.ZULIP_WEBHOOK_TOKEN;
   if (!expectedToken) {
     return c.json({ content: "❌ Webhook token not configured on server." }, 401);

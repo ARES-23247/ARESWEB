@@ -10,6 +10,7 @@ import CommandPalette from "./components/CommandPalette";
 import MobileQuickActions from "./components/MobileQuickActions";
 import ScrollToTop from "./components/ScrollToTop";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import SkipLink from "./components/SkipLink";
 
 import { useModal } from "./contexts/ModalContext";
 import { useRegisterSW } from "virtual:pwa-register/react";
@@ -42,6 +43,7 @@ export default function App() {
   
   return (
     <ErrorBoundary>
+      <SkipLink />
       <Toaster theme="dark" position="bottom-right" />
       <ScrollToTop />
       <PWAInstallPrompt />

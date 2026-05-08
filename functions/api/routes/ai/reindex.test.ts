@@ -52,9 +52,8 @@ vi.mock("../../middleware", () => ({
         }
       });
       return chainable;
-    },
-  };
-}
+    }
+}));
 
 // Simple inline mock database
 const createMockDb = () => {

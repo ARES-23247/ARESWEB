@@ -7,17 +7,49 @@ import * as relations from "../../../src/db/relations";
 
 type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
 
-// ── Global KV Rate limiting removed. Use D1 persistent checks instead. ────────────────────────
+// SEC-RL-01: Circuit breaker state for rate limiting
+// Track consecutive failures to implement circuit breaker pattern
+let rateLimitFailureCount = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 5;
+let circuitBreakerOpenUntil = 0;
 
 // ── Write-Endpoint Rate Limiting (Persistent D1) ────────────────────────────
 
 /**
- * Enhanced Persistent Rate Limit Check
+ * SEC-RL-02: Enhanced Persistent Rate Limit Check with Circuit Breaker
+ *
+ * Circuit Breaker Logic:
+ * - After 5 consecutive failures, open circuit for 60 seconds
+ * - When circuit is open, fail CLOSED (deny requests) for security
+ * - This prevents bypass by triggering DB errors
  */
 export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAgent: string, limit: number, windowSeconds: number, path: string = ""): Promise<boolean> {
-  if (!db) return true; // Fall open if middleware wasn't attached
-
   const now = Math.floor(Date.now() / 1000);
+
+  // Check if circuit breaker is open
+  if (circuitBreakerOpenUntil > now) {
+    console.warn(`[RateLimit] Circuit breaker OPEN until ${circuitBreakerOpenUntil} (denying request for security)`);
+    return false; // Fail closed when circuit is open
+  }
+
+  // Reset circuit breaker if window has passed
+  if (circuitBreakerOpenUntil > 0 && circuitBreakerOpenUntil <= now) {
+    console.log("[RateLimit] Circuit breaker reset, attempting recovery");
+    circuitBreakerOpenUntil = 0;
+    rateLimitFailureCount = 0;
+  }
+
+  if (!db) {
+    // SEC-RL-03: No database available - fail closed in production
+    const isProd = globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production";
+    if (!isProd) {
+      console.warn("[RateLimit] No database attached, allowing in non-production");
+      return true;
+    }
+    console.error("[RateLimit] No database in production - failing closed for security");
+    return false;
+  }
+
   // Composite key for D1 storage
   const compositeKey = `${ip}:${userAgent.substring(0, 64)}`;
 
@@ -42,14 +74,32 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
     const expires = result[0]?.expiresAt ?? 0;
     const allowed = count <= limit;
 
+    // Success - reset failure counter
+    rateLimitFailureCount = 0;
+
     // Log rate limit checks for debugging
     console.log(`[RateLimit] ${path || "unknown"} IP=${ip} count=${count}/${limit} allowed=${allowed} expires_at=${expires} now=${now}`);
 
     return allowed;
   } catch (err) {
-    console.error("[RateLimit] Persistent check failed:", err);
-    // Fall open on DB error or missing table so we don't bring down the API
-    return true;
+    rateLimitFailureCount++;
+    console.error(`[RateLimit] Persistent check failed (${rateLimitFailureCount}/${CIRCUIT_BREAKER_THRESHOLD}):`, err);
+
+    // Open circuit breaker after threshold failures
+    if (rateLimitFailureCount >= CIRCUIT_BREAKER_THRESHOLD) {
+      circuitBreakerOpenUntil = now + 60; // Open for 60 seconds
+      console.error(`[RateLimit] Circuit breaker OPENED for 60 seconds due to repeated failures`);
+    }
+
+    // SEC-RL-04: Fail closed in production on error
+    const isProd = globalThis.process?.env?.ENVIRONMENT === "production" || globalThis.process?.env?.NODE_ENV === "production";
+    if (!isProd) {
+      console.warn("[RateLimit] DB error in non-production, allowing request");
+      return true;
+    }
+
+    console.error("[RateLimit] DB error in production - failing closed for security");
+    return false;
   }
 }
 
