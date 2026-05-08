@@ -1,4 +1,23 @@
 import { Page } from "@playwright/test";
+
+/**
+ * Detects if tests are running against a deployed remote environment.
+ * Checks for PREVIEW_URL environment variable or CI flag.
+ */
+export function isRemoteTesting(): boolean {
+  return !!process.env.PREVIEW_URL || process.env.CI === 'true';
+}
+
+/**
+ * Test credentials for real authentication in remote testing mode.
+ * These credentials should exist in the seeded database.
+ */
+export const TEST_CREDENTIALS = {
+  email: 'admin@ares.org',
+  password: 'test-password-123', // This would need to be set for the test user
+  // For now, we'll rely on Cloudflare Access or skip auth in remote mode
+} as const;
+
 /**
  * Mock admin user for E2E tests.
  */
@@ -55,11 +74,16 @@ export const createMockProfile = (userId: string = MOCK_ADMIN_USER.id) => ({
 interface SetupMockAuthOptions {
   userId?: string;
   skipProfileMock?: boolean;
+  /** Use real authentication instead of mocking (for remote testing) */
+  useRealAuth?: boolean;
 }
 
 /**
  * Sets up mocked authentication for a Playwright page.
  * This eliminates the ~60 lines of duplicated auth mocking across test files.
+ *
+ * When useRealAuth is true (or in remote testing mode), skips mocking and
+ * relies on the test being authenticated via other means (e.g., Cloudflare Access).
  *
  * @param page - Playwright page object
  * @param options - Configuration options
@@ -71,6 +95,16 @@ export async function setupMockAuth(
   // Support legacy signature where second arg was userId string
   const userId = typeof options === 'string' ? options : options.userId ?? MOCK_ADMIN_USER.id;
   const skipProfileMock = typeof options === 'string' ? false : options.skipProfileMock ?? false;
+  const useRealAuth = typeof options === 'string' ? false : (options.useRealAuth ?? isRemoteTesting());
+
+  // If using real auth, skip all mocking
+  if (useRealAuth) {
+    // Set flag to indicate we're in testing mode but using real auth
+    await page.addInitScript(() => {
+      Object.assign(window, { __PLAYWRIGHT_TEST__: true, __REAL_AUTH__: true });
+    });
+    return;
+  }
 
   // Mock /api/auth/get-session endpoint
   await page.route('**/api/auth/get-session', async (route) => {

@@ -296,21 +296,25 @@ jobs:
       - name: Check test results
         id: check
         run: |
-          # E2E tests are informational for now - preview environment lacks test data
-          # Only require static checks and unit tests to pass for production deploy
+          # All tests must pass for production deploy
+          # Database is seeded with test data, and E2E tests use real API calls
           if [ "${{ needs.static-checks.result }}" == "success" ] && \
-             [ "${{ needs.unit-tests.result }}" == "success" ]; then
+             [ "${{ needs.unit-tests.result }}" == "success" ] && \
+             [ "${{ needs.e2e-playwright.result }}" == "success" ] && \
+             [ "${{ needs.e2e-pa11y.result }}" == "success" ]; then
             echo "all-passed=true" >> $GITHUB_OUTPUT
-            echo "✅ Critical tests passed!"
+            echo "✅ All tests passed!"
             echo "  static-checks: ${{ needs.static-checks.result }}"
             echo "  unit-tests: ${{ needs.unit-tests.result }}"
-            echo "  e2e-playwright: ${{ needs.e2e-playwright.result }} (informational)"
-            echo "  e2e-pa11y: ${{ needs.e2e-pa11y.result }} (informational)"
+            echo "  e2e-playwright: ${{ needs.e2e-playwright.result }}"
+            echo "  e2e-pa11y: ${{ needs.e2e-pa11y.result }}"
           else
             echo "all-passed=false" >> $GITHUB_OUTPUT
-            echo "❌ Critical tests failed:"
+            echo "❌ Tests failed:"
             echo "  static-checks: ${{ needs.static-checks.result }}"
             echo "  unit-tests: ${{ needs.unit-tests.result }}"
+            echo "  e2e-playwright: ${{ needs.e2e-playwright.result }}"
+            echo "  e2e-pa11y: ${{ needs.e2e-pa11y.result }}"
             exit 1
           fi
 

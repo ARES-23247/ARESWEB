@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { DashboardPage } from '../pages/DashboardPage';
-import { setupMockAuth, MOCK_ADMIN_USER } from '../fixtures/auth';
+import { setupMockAuth, MOCK_ADMIN_USER, shouldUseRealApi } from '../fixtures/auth';
+import { setupConditionalMock } from '../fixtures/api-mocking';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 /**
@@ -64,46 +65,49 @@ test.describe('Sim Manager Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     dashboardPage = new DashboardPage(page);
 
-    // Set up mock authentication with admin role
-    await setupMockAuth(page);
+    // Set up authentication (mocked in local, real in remote)
+    await setupMockAuth(page, { useRealAuth: shouldUseRealApi() });
 
-    // Mock GET /api/simulations - List all user simulations
-    await page.route('**/api/simulations', async (_route) => {
-      if (_route.request().method() === 'GET') {
-        await _route.fulfill({
-          status: 200,
-          json: { simulations: [...MOCK_SIMULATIONS] },
-        });
-      }
-    });
+    // Only mock API routes if not using real API
+    if (!shouldUseRealApi()) {
+      // Mock GET /api/simulations - List all user simulations
+      await setupConditionalMock(page, '**/api/simulations', async (_route) => {
+        if (_route.request().method() === 'GET') {
+          await _route.fulfill({
+            status: 200,
+            json: { simulations: [...MOCK_SIMULATIONS] },
+          });
+        }
+      });
 
-    // Mock POST /api/simulations - Save/update simulation
-    await page.route('**/api/simulations', async (_route) => {
-      if (_route.request().method() === 'POST') {
-        await _route.fulfill({
-          status: 200,
-          json: { id: 'sim-new-' + Date.now() },
-        });
-      }
-    });
+      // Mock POST /api/simulations - Save/update simulation
+      await setupConditionalMock(page, '**/api/simulations', async (_route) => {
+        if (_route.request().method() === 'POST') {
+          await _route.fulfill({
+            status: 200,
+            json: { id: 'sim-new-' + Date.now() },
+          });
+        }
+      });
 
-    // Mock DELETE /api/simulations/:id - Delete simulation
-    await page.route('**/api/simulations/**', async (_route) => {
-      if (_route.request().method() === 'DELETE') {
+      // Mock DELETE /api/simulations/:id - Delete simulation
+      await setupConditionalMock(page, '**/api/simulations/**', async (_route) => {
+        if (_route.request().method() === 'DELETE') {
+          await _route.fulfill({
+            status: 200,
+            json: { success: true },
+          });
+        }
+      });
+
+      // Mock POST /api/generate-sim-registry - Regenerate registry
+      await setupConditionalMock(page, '**/api/generate-sim-registry', async (_route) => {
         await _route.fulfill({
           status: 200,
           json: { success: true },
         });
-      }
-    });
-
-    // Mock POST /api/generate-sim-registry - Regenerate registry
-    await page.route('**/api/generate-sim-registry', async (_route) => {
-      await _route.fulfill({
-        status: 200,
-        json: { success: true },
       });
-    });
+    }
   });
 
   test('SIM-01: Sim manager page loads and displays simulation registry', async ({ page }) => {
@@ -396,17 +400,19 @@ test.describe('Sim Manager Dashboard', () => {
 
 test.describe('Sim Manager - Keyboard Navigation', () => {
   test('SIM-KB-01: Tab navigation works through simulation cards', async ({ page }) => {
-    await setupMockAuth(page);
+    await setupMockAuth(page, { useRealAuth: shouldUseRealApi() });
 
-    // Mock simulations API
-    await page.route('**/api/simulations', async (_route) => {
-      if (_route.request().method() === 'GET') {
-        await _route.fulfill({
-          status: 200,
-          json: { simulations: [] },
-        });
-      }
-    });
+    // Mock simulations API if not using real API
+    if (!shouldUseRealApi()) {
+      await setupConditionalMock(page, '**/api/simulations', async (_route) => {
+        if (_route.request().method() === 'GET') {
+          await _route.fulfill({
+            status: 200,
+            json: { simulations: [] },
+          });
+        }
+      });
+    }
 
     await page.goto('/dashboard/sims');
 
@@ -420,17 +426,19 @@ test.describe('Sim Manager - Keyboard Navigation', () => {
   });
 
   test('SIM-KB-02: Escape key closes preview modal', async ({ page }) => {
-    await setupMockAuth(page);
+    await setupMockAuth(page, { useRealAuth: shouldUseRealApi() });
 
-    // Mock simulations API
-    await page.route('**/api/simulations', async (_route) => {
-      if (_route.request().method() === 'GET') {
-        await _route.fulfill({
-          status: 200,
-          json: { simulations: [] },
-        });
-      }
-    });
+    // Mock simulations API if not using real API
+    if (!shouldUseRealApi()) {
+      await setupConditionalMock(page, '**/api/simulations', async (_route) => {
+        if (_route.request().method() === 'GET') {
+          await _route.fulfill({
+            status: 200,
+            json: { simulations: [] },
+          });
+        }
+      });
+    }
 
     await page.goto('/dashboard/sims');
 
@@ -454,10 +462,10 @@ test.describe('Sim Manager - Keyboard Navigation', () => {
 
 test.describe('Sim Manager - Error Handling', () => {
   test('SIM-ERR-01: Handles failed registry regeneration gracefully', async ({ page }) => {
-    await setupMockAuth(page);
+    await setupMockAuth(page, { useRealAuth: shouldUseRealApi() });
 
-    // Mock failed regeneration
-    await page.route('**/api/generate-sim-registry', async (_route) => {
+    // Mock failed regeneration (always mock for this error test)
+    await setupConditionalMock(page, '**/api/generate-sim-registry', { forceMock: true }, async (_route) => {
       await _route.fulfill({
         status: 500,
         json: { error: 'Internal server error' },
@@ -485,17 +493,19 @@ test.describe('Sim Manager - Error Handling', () => {
   });
 
   test('SIM-ERR-02: Handles network error during JSON copy', async ({ page }) => {
-    await setupMockAuth(page);
+    await setupMockAuth(page, { useRealAuth: shouldUseRealApi() });
 
-    // Mock simulations API
-    await page.route('**/api/simulations', async (_route) => {
-      if (_route.request().method() === 'GET') {
-        await _route.fulfill({
-          status: 200,
-          json: { simulations: [] },
-        });
-      }
-    });
+    // Mock simulations API if not using real API
+    if (!shouldUseRealApi()) {
+      await setupConditionalMock(page, '**/api/simulations', async (_route) => {
+        if (_route.request().method() === 'GET') {
+          await _route.fulfill({
+            status: 200,
+            json: { simulations: [] },
+          });
+        }
+      });
+    }
 
     // Mock clipboard write failure
     await page.addInitScript(() => {
@@ -522,17 +532,19 @@ test.describe('Sim Manager - Error Handling', () => {
 
 test.describe('Sim Manager - Color Contrast (WCAG)', () => {
   test('SIM-CC-01: All text meets minimum contrast requirements', async ({ page }) => {
-    await setupMockAuth(page);
+    await setupMockAuth(page, { useRealAuth: shouldUseRealApi() });
 
-    // Mock simulations API
-    await page.route('**/api/simulations', async (_route) => {
-      if (_route.request().method() === 'GET') {
-        await _route.fulfill({
-          status: 200,
-          json: { simulations: [] },
-        });
-      }
-    });
+    // Mock simulations API if not using real API
+    if (!shouldUseRealApi()) {
+      await setupConditionalMock(page, '**/api/simulations', async (_route) => {
+        if (_route.request().method() === 'GET') {
+          await _route.fulfill({
+            status: 200,
+            json: { simulations: [] },
+          });
+        }
+      });
+    }
 
     await page.goto('/dashboard/sims');
 
@@ -554,17 +566,19 @@ test.describe('Sim Manager - Color Contrast (WCAG)', () => {
   });
 
   test('SIM-CC-02: Badge backgrounds provide sufficient contrast for text', async ({ page }) => {
-    await setupMockAuth(page);
+    await setupMockAuth(page, { useRealAuth: shouldUseRealApi() });
 
-    // Mock simulations API
-    await page.route('**/api/simulations', async (_route) => {
-      if (_route.request().method() === 'GET') {
-        await _route.fulfill({
-          status: 200,
-          json: { simulations: [] },
-        });
-      }
-    });
+    // Mock simulations API if not using real API
+    if (!shouldUseRealApi()) {
+      await setupConditionalMock(page, '**/api/simulations', async (_route) => {
+        if (_route.request().method() === 'GET') {
+          await _route.fulfill({
+            status: 200,
+            json: { simulations: [] },
+          });
+        }
+      });
+    }
 
     await page.goto('/dashboard/sims');
 
