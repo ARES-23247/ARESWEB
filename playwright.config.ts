@@ -11,7 +11,7 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
-const WRANGLER_COMMAND = 'DEV_BYPASS=true ENVIRONMENT=test npx wrangler pages dev dist -b SKIP_ENV_VALIDATION=true --env-file .env.test';
+const WRANGLER_COMMAND = 'cross-env ENVIRONMENT=test npx wrangler pages dev dist -b SKIP_ENV_VALIDATION=true --env-file .env.test';
 
 // Use deployed preview URL if available (from CI), otherwise use local URLs
 const previewUrl = process.env.PREVIEW_URL;
