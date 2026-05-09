@@ -7,11 +7,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
-import { AppEnv, SessionUser } from '../middleware';
-import { ApiError } from '../middleware/errorHandler';
+
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
+import { AppEnv, SessionUser, __ApiError } from '../middleware';
 
 // Mock drizzle-orm to handle count function
 vi.mock('drizzle-orm', async () => {
@@ -26,12 +29,12 @@ vi.mock('../middleware/auth', async () => {
   const actual = await vi.importActual<typeof import('../middleware/auth.js')>('../middleware/auth');
   return {
     ...actual,
-    getSessionUser: vi.fn((c: any) => {
+    getSessionUser: vi.fn((c: Context<AppEnv>) => {
       // Return the global mock user or check if sessionUser is already set
-      return c.get('sessionUser') || (globalThis as any).__mockSessionUser || null;
+      return c.get('sessionUser') || globalThis.__mockSessionUser || null;
     }),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -75,7 +78,7 @@ describe('Notifications Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     // Clear mock call history and reset to default behavior
     (mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst?.mockReset();
     (mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll?.mockReset();
@@ -84,23 +87,15 @@ describe('Notifications Routes', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
+    const app = new Hono<AppEnv>();
     app.use('*', createTestDbMiddleware());
 
     // Use Hono's built-in onError for error handling (same pattern as production)
-    app.onError(async (err, c) => {
-      if (err instanceof ApiError) {
-        return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
-      }
-      console.error('Test Error:', err);
-      return c.json({ error: 'Internal Server Error' }, 500);
-    });
+    
 
     app.route('/api/notifications', notificationsRouter);
     return app;
@@ -125,7 +120,7 @@ describe('Notifications Routes', () => {
 
   describe('GET /api/notifications - List notifications', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -135,13 +130,13 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to list notifications', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for notifications
@@ -156,7 +151,7 @@ describe('Notifications Routes', () => {
           isRead: 0,
           createdAt: new Date().toISOString(),
         },
-      ] as any);
+      ] as unknown[]);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -165,16 +160,16 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('POST /api/notifications/:id/read - Mark notification as read', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -186,18 +181,18 @@ describe('Notifications Routes', () => {
         method: 'POST',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to mark notifications as read', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -208,16 +203,16 @@ describe('Notifications Routes', () => {
         method: 'POST',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('POST /api/notifications/read-all - Mark all notifications as read', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -229,18 +224,18 @@ describe('Notifications Routes', () => {
         method: 'POST',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to mark all notifications as read', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 5 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 5 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -251,16 +246,16 @@ describe('Notifications Routes', () => {
         method: 'POST',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('DELETE /api/notifications/:id - Delete notification', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -272,18 +267,18 @@ describe('Notifications Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to delete notifications', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the delete operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -294,16 +289,16 @@ describe('Notifications Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('GET /api/notifications/pending-counts - Get pending counts', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -313,18 +308,18 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications/pending-counts');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to get pending counts', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database queries for counts
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
-      mockFirst.mockResolvedValue({ count: 5 } as any);
+      mockFirst.mockResolvedValue({ success: true, count: 5, meta: { duration: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -333,19 +328,19 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications/pending-counts');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should filter outreach inquiries for non-admin students', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database queries for counts
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
-      mockFirst.mockResolvedValue({ count: 3 } as any);
+      mockFirst.mockResolvedValue({ success: true, count: 3, meta: { duration: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -354,19 +349,19 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications/pending-counts');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should not filter outreach inquiries for admins', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock the database queries for counts
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
-      mockFirst.mockResolvedValue({ count: 10 } as any);
+      mockFirst.mockResolvedValue({ success: true, count: 10, meta: { duration: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -375,16 +370,16 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications/pending-counts');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('GET /api/notifications/dashboard-action-items - Get dashboard action items', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -394,18 +389,18 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications/dashboard-action-items');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to get dashboard action items', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database queries for action items
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue([] as any);
+      mockAll.mockResolvedValue([] as unknown[]);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -414,10 +409,10 @@ describe('Notifications Routes', () => {
 
       const req = new Request('http://localhost/api/notifications/dashboard-action-items');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
@@ -451,8 +446,7 @@ describe('Notifications Routes', () => {
     it('should have rate limiting on mark notification read route', () => {
       // The notifications router applies rateLimitMiddleware(20, 60) to /:id/read route
       const routes = notificationsRouter.routes;
-      const hasMarkReadRoute = routes.some((route: any) =>
-        route.path?.includes('/read')
+      const hasMarkReadRoute = routes.some((route) => route.path?.includes('/read')
       );
       expect(hasMarkReadRoute).toBe(true);
     });
@@ -460,8 +454,7 @@ describe('Notifications Routes', () => {
     it('should have rate limiting on mark all read route', () => {
       // The notifications router applies rateLimitMiddleware(10, 60) to /read-all route
       const routes = notificationsRouter.routes;
-      const hasReadAllRoute = routes.some((route: any) =>
-        route.path?.includes('read-all')
+      const hasReadAllRoute = routes.some((route) => route.path?.includes('read-all')
       );
       expect(hasReadAllRoute).toBe(true);
     });
@@ -473,7 +466,7 @@ describe('Notifications Routes', () => {
       const routes = notificationsRouter.routes;
 
       // Check for common route paths - Hono parameterizes routes as /*
-      const routePaths = routes.map((r: any) => r.path);
+      const routePaths = routes.map((r) => r.path || '');
 
       // Should have the root route for listing notifications
       expect(routePaths).toContain('/');
@@ -489,37 +482,37 @@ describe('Notifications Routes', () => {
 
     it('should support GET method on root path', () => {
       const routes = notificationsRouter.routes;
-      const getRoute = routes.find((r: any) => r.path === '/' && r.method === 'GET');
+      const getRoute = routes.find((r) => r.path === '/' && r.method === 'GET');
       expect(getRoute).toBeDefined();
     });
 
     it('should support PUT method on mark read route', () => {
       const routes = notificationsRouter.routes;
-      const putRoute = routes.find((r: any) => r.path?.includes('/read') && r.method === 'PUT');
+      const putRoute = routes.find((r) => r.path?.includes('/read') && r.method === 'PUT');
       expect(putRoute).toBeDefined();
     });
 
     it('should support PUT method on read-all route', () => {
       const routes = notificationsRouter.routes;
-      const putRoute = routes.find((r: any) => r.path?.includes('read-all') && r.method === 'PUT');
+      const putRoute = routes.find((r) => r.path?.includes('read-all') && r.method === 'PUT');
       expect(putRoute).toBeDefined();
     });
 
     it('should support DELETE method on parameterized route', () => {
       const routes = notificationsRouter.routes;
-      const deleteRoute = routes.find((r: any) => r.path?.includes(':') && r.method === 'DELETE');
+      const deleteRoute = routes.find((r) => r.path?.includes(':') && r.method === 'DELETE');
       expect(deleteRoute).toBeDefined();
     });
 
     it('should support GET method on pending-counts route', () => {
       const routes = notificationsRouter.routes;
-      const getRoute = routes.find((r: any) => r.path?.includes('pending-counts') && r.method === 'GET');
+      const getRoute = routes.find((r) => r.path?.includes('pending-counts') && r.method === 'GET');
       expect(getRoute).toBeDefined();
     });
 
     it('should support GET method on action-items route', () => {
       const routes = notificationsRouter.routes;
-      const getRoute = routes.find((r: any) => r.path?.includes('action-items') && r.method === 'GET');
+      const getRoute = routes.find((r) => r.path?.includes('action-items') && r.method === 'GET');
       expect(getRoute).toBeDefined();
     });
   });

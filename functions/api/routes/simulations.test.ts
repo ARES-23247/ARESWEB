@@ -7,11 +7,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
-import { AppEnv, SessionUser } from '../middleware';
-import { ApiError } from '../middleware/errorHandler';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
+import { AppEnv, SessionUser, _ApiError } from '../middleware';
 
 // Mock the auth module BEFORE importing simulationsRouter
 vi.mock('../middleware/auth', async () => {
@@ -19,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -86,7 +88,7 @@ describe('Simulations Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     vi.mocked(logAuditAction).mockClear();
 
     // Mock fetch for GitHub API calls
@@ -95,23 +97,15 @@ describe('Simulations Routes', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
+    const app = new Hono<AppEnv>();
     app.use('*', createTestDbMiddleware());
 
     // Use Hono's built-in onError for error handling
-    app.onError(async (err, c) => {
-      if (err instanceof ApiError) {
-        return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
-      }
-      console.error("Test Error:", err);
-      return c.json({ error: "Internal Server Error" }, 500);
-    });
+    
 
     app.route('/api/simulations', simulationsRouter);
     return app;
@@ -133,7 +127,7 @@ describe('Simulations Routes', () => {
     // The route calls db.select().from(schema.settings).all() which doesn't work
     // with simple D1 mocks
     it.skip('should allow unauthenticated access to list simulations', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock GitHub API response
@@ -149,14 +143,14 @@ describe('Simulations Routes', () => {
 
       const req = new Request('http://localhost/api/simulations');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - public endpoint
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it.skip('should handle GitHub API errors gracefully', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock GitHub API error
@@ -171,18 +165,18 @@ describe('Simulations Routes', () => {
 
       const req = new Request('http://localhost/api/simulations');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return empty array on error
-      expect(res.status).toBe(200);
-      const body = await res.json();
+      expect(_res.status).toBe(200);
+      const body = await _res.json();
       expect(body).toHaveProperty('simulations');
     });
   });
 
   describe('GET /api/simulations/:id - Get simulation', () => {
     it('should return 404 for invalid simulation ID format (returns 404 instead of 400)', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -193,16 +187,16 @@ describe('Simulations Routes', () => {
       // Invalid ID with path traversal attempt - route returns 404 due to SIM_ID_PATTERN check
       const req = new Request('http://localhost/api/simulations/github:../etc/passwd');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The route checks if id starts with "github:" first, then validates with SIM_ID_PATTERN
       // If invalid pattern, it throws ApiError("Invalid simulation ID", 400)
       // But the test might fail due to path not matching, let's check the actual behavior
-      expect([400, 404]).toContain(res.status);
+      expect([400, 404]).toContain(_res.status);
     });
 
     it('should return 404 for non-github simulation IDs', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -213,15 +207,15 @@ describe('Simulations Routes', () => {
       // ID without github: prefix
       const req = new Request('http://localhost/api/simulations/not-github-id');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(404);
+      expect(_res.status).toBe(404);
     });
   });
 
   describe('POST /api/simulations - Save simulation', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -240,14 +234,14 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     // NOTE: These tests require proper Drizzle query mocking for settings table
     it.skip('should return 400 when no files provided', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -266,13 +260,13 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it.skip('should return 400 when too many files provided', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -298,13 +292,13 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it.skip('should return 400 when total size exceeds limit', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -327,13 +321,13 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it.skip('should return 400 for invalid filename', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -353,13 +347,13 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it.skip('should return 500 when GitHub PAT is not configured', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -379,13 +373,13 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(500);
+      expect(_res.status).toBe(500);
     });
 
     it.skip('should allow authenticated users to save simulations', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -421,16 +415,16 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - authenticated
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('DELETE /api/simulations/:id - Delete simulation', () => {
     it('should return 401 or 500 when not authenticated (delete route wraps errors)', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -442,16 +436,16 @@ describe('Simulations Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The delete route has a try/catch that wraps ApiError and returns 500
       // The ensureAuth middleware should return 401 before reaching the handler
       // but due to the try/catch, it might return 500
-      expect([401, 500]).toContain(res.status);
+      expect([401, 500]).toContain(_res.status);
     });
 
     it('should return 404 or 400 for invalid simulation ID', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -463,14 +457,14 @@ describe('Simulations Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Due to the try/catch in the delete route, errors might return 500 instead of 400
-      expect([400, 404, 500]).toContain(res.status);
+      expect([400, 404, 500]).toContain(_res.status);
     });
 
     it('should return 404 or 500 for non-github simulation IDs', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -482,16 +476,16 @@ describe('Simulations Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Due to the try/catch in the delete route, errors might return 500 instead of 404
-      expect([404, 500]).toContain(res.status);
+      expect([404, 500]).toContain(_res.status);
     });
   });
 
   describe('POST /api/simulations/gist - Create gist', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -510,14 +504,14 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     // NOTE: These tests require proper Drizzle query mocking
     it.skip('should return 400 when no files provided', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -536,13 +530,13 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it.skip('should return 500 when GitHub PAT is not configured', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -562,13 +556,13 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(500);
+      expect(_res.status).toBe(500);
     });
 
     it.skip('should allow authenticated users to create gists', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -594,15 +588,15 @@ describe('Simulations Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('GET /api/simulations/gist/:id - Get gist', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -612,15 +606,15 @@ describe('Simulations Routes', () => {
 
       const req = new Request('http://localhost/api/simulations/gist/gist123');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Gist routes require authentication (ensureAuth middleware on /gist/*)
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     // NOTE: These tests require proper Drizzle query mocking
     it.skip('should allow authenticated users to get gists', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock GitHub API response
@@ -644,14 +638,14 @@ describe('Simulations Routes', () => {
 
       const req = new Request('http://localhost/api/simulations/gist/gist123');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - authenticated
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it.skip('should return 404 when gist is not found', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock GitHub API 404 response
@@ -667,16 +661,16 @@ describe('Simulations Routes', () => {
 
       const req = new Request('http://localhost/api/simulations/gist/nonexistent');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(404);
+      expect(_res.status).toBe(404);
     });
   });
 
   describe('Admin routes', () => {
     describe('POST /api/simulations/admin/generate-registry', () => {
       it('should return 401 when not authenticated', async () => {
-        (globalThis as any).__mockSessionUser = null;
+        globalThis.__mockSessionUser = null;
         const app = createTestApp();
 
         const testEnv = createTestEnv({
@@ -688,13 +682,13 @@ describe('Simulations Routes', () => {
           method: 'POST',
         });
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-        expect(res.status).toBe(401);
+        expect(_res.status).toBe(401);
       });
 
       it('should return 403 when non-admin tries to generate registry', async () => {
-        (globalThis as any).__mockSessionUser = mockAuthUser;
+        globalThis.__mockSessionUser = mockAuthUser;
         const app = createTestApp();
 
         const testEnv = createTestEnv({
@@ -706,13 +700,13 @@ describe('Simulations Routes', () => {
           method: 'POST',
         });
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-        expect(res.status).toBe(403);
+        expect(_res.status).toBe(403);
       });
 
       it('should return 501 indicating shell access limitation for admins', async () => {
-        (globalThis as any).__mockSessionUser = mockAdminUser;
+        globalThis.__mockSessionUser = mockAdminUser;
         const app = createTestApp();
 
         const testEnv = createTestEnv({
@@ -724,16 +718,16 @@ describe('Simulations Routes', () => {
           method: 'POST',
         });
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
         // Should return 501 Not Implemented because Cloudflare Workers don't have shell access
-        expect(res.status).toBe(501);
+        expect(_res.status).toBe(501);
       });
     });
 
     describe('GET /api/simulations/admin/list-folders', () => {
       it('should return 401 when not authenticated', async () => {
-        (globalThis as any).__mockSessionUser = null;
+        globalThis.__mockSessionUser = null;
         const app = createTestApp();
 
         const testEnv = createTestEnv({
@@ -743,13 +737,13 @@ describe('Simulations Routes', () => {
 
         const req = new Request('http://localhost/api/simulations/admin/list-folders');
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-        expect(res.status).toBe(401);
+        expect(_res.status).toBe(401);
       });
 
       it('should return 403 when non-admin tries to list folders', async () => {
-        (globalThis as any).__mockSessionUser = mockAuthUser;
+        globalThis.__mockSessionUser = mockAuthUser;
         const app = createTestApp();
 
         const testEnv = createTestEnv({
@@ -759,13 +753,13 @@ describe('Simulations Routes', () => {
 
         const req = new Request('http://localhost/api/simulations/admin/list-folders');
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-        expect(res.status).toBe(403);
+        expect(_res.status).toBe(403);
       });
 
       it('should allow admins to list folders (returns empty due to filesystem limitation)', async () => {
-        (globalThis as any).__mockSessionUser = mockAdminUser;
+        globalThis.__mockSessionUser = mockAdminUser;
         const app = createTestApp();
 
         const testEnv = createTestEnv({
@@ -775,13 +769,13 @@ describe('Simulations Routes', () => {
 
         const req = new Request('http://localhost/api/simulations/admin/list-folders');
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
         // Should not be 401 or 403 - admin has access
-        expect(res.status).not.toBe(401);
-        expect(res.status).not.toBe(403);
+        expect(_res.status).not.toBe(401);
+        expect(_res.status).not.toBe(403);
 
-        const body = await res.json();
+        const body = await _res.json();
         expect(body).toHaveProperty('folders');
         expect(body).toHaveProperty('registeredPaths');
       });
@@ -918,20 +912,20 @@ describe('Simulations Routes', () => {
   describe('Middleware application verification', () => {
     it('should apply ensureAuth to /gist/* routes', () => {
       const routes = simulationsRouter.routes;
-      const gistRoutes = routes.filter((r: any) => r.path?.includes('/gist'));
+      const gistRoutes = routes.filter((r) => r.path?.includes('/gist'));
       expect(gistRoutes.length).toBeGreaterThan(0);
     });
 
     it('should apply conditional ensureAuth to POST/DELETE routes', () => {
       // The middleware applies ensureAuth for POST/DELETE methods
       const routes = simulationsRouter.routes;
-      const postDeleteRoutes = routes.filter((r: any) => r.method === 'POST' || r.method === 'DELETE');
+      const postDeleteRoutes = routes.filter((r) => r.method === 'POST' || r.method === 'DELETE');
       expect(postDeleteRoutes.length).toBeGreaterThan(0);
     });
 
     it('should apply ensureAdmin to /admin/* routes', () => {
       const routes = simulationsRouter.routes;
-      const adminRoutes = routes.filter((r: any) => r.path?.includes('/admin'));
+      const adminRoutes = routes.filter((r) => r.path?.includes('/admin'));
       expect(adminRoutes.length).toBeGreaterThan(0);
     });
   });

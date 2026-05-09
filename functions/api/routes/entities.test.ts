@@ -7,9 +7,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing entitiesRouter
@@ -18,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -52,7 +55,7 @@ const mockExecutionContext = {
 describe('Entities Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];
 
-  const mockAdminUser: SessionUser = {
+  const _mockAdminUser: SessionUser = {
     id: 'admin-user',
     email: 'admin@ares.org',
     name: 'Admin User',
@@ -75,7 +78,7 @@ describe('Entities Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     // Clear mock call history and reset to default behavior
     (mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst.mockReset();
     (mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll.mockReset();
@@ -84,13 +87,11 @@ describe('Entities Routes', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/entities', entitiesRouter);
     return app;
@@ -117,7 +118,7 @@ describe('Entities Routes', () => {
 
   describe('GET /api/entities/links - Get entity links', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -127,18 +128,18 @@ describe('Entities Routes', () => {
 
       const req = new Request('http://localhost/api/entities/links?type=task&id=task-123');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to get links', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database queries for links
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue([] as any);
+      mockAll.mockResolvedValue([] as unknown[]);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -147,14 +148,14 @@ describe('Entities Routes', () => {
 
       const req = new Request('http://localhost/api/entities/links?type=task&id=task-123');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate required query parameters', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -165,14 +166,14 @@ describe('Entities Routes', () => {
       // Missing required type and id parameters
       const req = new Request('http://localhost/api/entities/links');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should validate type parameter enum values', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -183,19 +184,19 @@ describe('Entities Routes', () => {
       // Invalid type parameter (not one of: doc, task, event, post, outreach)
       const req = new Request('http://localhost/api/entities/links?type=invalid&id=task-123');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should support all valid entity types', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database queries
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue([] as any);
+      mockAll.mockResolvedValue([] as unknown[]);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -207,17 +208,17 @@ describe('Entities Routes', () => {
       for (const type of validTypes) {
         const req = new Request(`http://localhost/api/entities/links?type=${type}&id=test-id`);
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
         // Should not be 400 - valid type
-        expect(res.status).not.toBe(400);
+        expect(_res.status).not.toBe(400);
       }
     });
   });
 
   describe('POST /api/entities/links - Create entity link', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -238,18 +239,18 @@ describe('Entities Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to create links', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the insert operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -269,14 +270,14 @@ describe('Entities Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate required fields', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -297,14 +298,14 @@ describe('Entities Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should validate entity type enum values in request body', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -326,19 +327,19 @@ describe('Entities Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should accept optional link_type field', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the insert operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -359,16 +360,16 @@ describe('Entities Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 400 - valid request
-      expect(res.status).not.toBe(400);
+      expect(_res.status).not.toBe(400);
     });
   });
 
   describe('DELETE /api/entities/links/{id} - Delete entity link', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -380,18 +381,18 @@ describe('Entities Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to delete links', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the delete operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -402,10 +403,10 @@ describe('Entities Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
@@ -439,7 +440,7 @@ describe('Entities Routes', () => {
       const routes = entitiesRouter.routes;
 
       // Check for common route paths
-      const routePaths = routes.map((r: any) => r.path);
+      const routePaths = routes.map((r) => r.path || '');
 
       // All routes should be /links or /links/:id
       expect(routePaths).toContain('/links');
@@ -448,24 +449,21 @@ describe('Entities Routes', () => {
 
     it('should support GET on /links', () => {
       const routes = entitiesRouter.routes;
-      const getLinksRoute = routes.find((r: any) =>
-        r.path === '/links' && r.method === 'GET'
+      const getLinksRoute = routes.find((r) => r.path === '/links' && r.method === 'GET'
       );
       expect(getLinksRoute).toBeDefined();
     });
 
     it('should support POST on /links', () => {
       const routes = entitiesRouter.routes;
-      const postLinksRoute = routes.find((r: any) =>
-        r.path === '/links' && r.method === 'POST'
+      const postLinksRoute = routes.find((r) => r.path === '/links' && r.method === 'POST'
       );
       expect(postLinksRoute).toBeDefined();
     });
 
     it('should support DELETE on /links/:id', () => {
       const routes = entitiesRouter.routes;
-      const deleteRoute = routes.find((r: any) =>
-        r.path === '/links/:id' && r.method === 'DELETE'
+      const deleteRoute = routes.find((r) => r.path === '/links/:id' && r.method === 'DELETE'
       );
       expect(deleteRoute).toBeDefined();
     });
@@ -474,12 +472,12 @@ describe('Entities Routes', () => {
   // Test audit logging is called
   describe('Audit logging', () => {
     it('should log audit action when creating link', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the insert operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -499,19 +497,19 @@ describe('Entities Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // waitUntil should be called for audit logging
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
     });
 
     it('should log audit action when deleting link', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the delete operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -522,7 +520,7 @@ describe('Entities Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // waitUntil should be called for audit logging
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();

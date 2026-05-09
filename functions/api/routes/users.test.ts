@@ -7,9 +7,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing usersRouter
@@ -18,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -86,18 +89,16 @@ describe('Users Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/users', usersRouter);
     return app;
@@ -116,8 +117,7 @@ describe('Users Routes', () => {
     it('should apply ensureAdmin to all /admin/* routes', () => {
       // Verify the middleware is applied by checking routes exist
       const routes = usersRouter.routes;
-      const hasAdminRoutes = routes.some((route: any) =>
-        route.path?.includes('/admin/')
+      const hasAdminRoutes = routes.some((route) => route.path?.includes('/admin/')
       );
       expect(hasAdminRoutes).toBe(true);
     });
@@ -125,7 +125,7 @@ describe('Users Routes', () => {
 
   describe('Authentication and Authorization', () => {
     it('should return 401 when not authenticated on admin list route', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -135,13 +135,13 @@ describe('Users Routes', () => {
 
       const req = new Request('http://localhost/api/users/admin/list');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 401 when not authenticated on admin detail route', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -151,13 +151,13 @@ describe('Users Routes', () => {
 
       const req = new Request('http://localhost/api/users/admin/some-id');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to access admin list route', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -167,13 +167,13 @@ describe('Users Routes', () => {
 
       const req = new Request('http://localhost/api/users/admin/list');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 403 when non-admin tries to access admin detail route', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -183,13 +183,13 @@ describe('Users Routes', () => {
 
       const req = new Request('http://localhost/api/users/admin/some-id');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 403 when non-admin tries to patch user', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -205,13 +205,13 @@ describe('Users Routes', () => {
         body: JSON.stringify({ role: 'admin' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 403 when non-admin tries to delete user', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -223,13 +223,13 @@ describe('Users Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to access admin list route', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -239,15 +239,15 @@ describe('Users Routes', () => {
 
       const req = new Request('http://localhost/api/users/admin/list');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow admin to access admin detail route', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -257,16 +257,16 @@ describe('Users Routes', () => {
 
       const req = new Request('http://localhost/api/users/admin/some-id');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow mentor (non-admin role) to access admin routes via member_type', async () => {
       // This tests RBAC-03 from auth.ts: mentors get admin access for non-super-admin routes
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -276,11 +276,11 @@ describe('Users Routes', () => {
 
       const req = new Request('http://localhost/api/users/admin/list');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - mentors are allowed on non-super-admin routes
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
@@ -314,21 +314,20 @@ describe('Users Routes', () => {
       // The users router applies ensureAdmin to /admin/* routes via middleware
       // We can verify this by checking that admin routes exist
       const routes = usersRouter.routes;
-      const adminRoutes = routes.filter((route: any) =>
-        route.path?.includes('/admin/')
+      const adminRoutes = routes.filter((route) => route.path?.includes('/admin/')
       );
 
       expect(adminRoutes.length).toBeGreaterThan(0);
 
       // Verify all admin paths start with /admin/
-      adminRoutes.forEach((route: any) => {
+      adminRoutes.forEach((route) => {
         expect(route.path).toMatch(/^\/admin\//);
       });
     });
 
     it('should have the correct admin route paths registered', () => {
       const routes = usersRouter.routes;
-      const paths = routes.map((r: any) => r.path || '');
+      const paths = routes.map((r) => r.path || '');
 
       // Expected admin routes based on users.ts
       const expectedAdminRoutes = [
@@ -352,8 +351,7 @@ describe('Users Routes', () => {
   describe('Route methods', () => {
     it('should support GET on /admin/list', () => {
       const routes = usersRouter.routes;
-      const listRoute = routes.find((r: any) =>
-        r.path?.includes('/admin/list') || r.path?.includes('list')
+      const listRoute = routes.find((r) => r.path?.includes('/admin/list') || r.path?.includes('list')
       );
       expect(listRoute).toBeDefined();
       expect(listRoute?.method).toBe('GET');
@@ -361,32 +359,28 @@ describe('Users Routes', () => {
 
     it('should support GET on /admin/{id}', () => {
       const routes = usersRouter.routes;
-      const detailRoute = routes.find((r: any) =>
-        r.path?.includes('/admin/') && r.path?.includes(':id') && r.method === 'GET'
+      const detailRoute = routes.find((r) => r.path?.includes('/admin/') && r.path?.includes(':id') && r.method === 'GET'
       );
       expect(detailRoute).toBeDefined();
     });
 
     it('should support PATCH on /admin/{id}', () => {
       const routes = usersRouter.routes;
-      const patchRoute = routes.find((r: any) =>
-        r.path?.includes('/admin/') && r.path?.includes(':id') && r.method === 'PATCH'
+      const patchRoute = routes.find((r) => r.path?.includes('/admin/') && r.path?.includes(':id') && r.method === 'PATCH'
       );
       expect(patchRoute).toBeDefined();
     });
 
     it('should support PUT on /admin/{id}/profile', () => {
       const routes = usersRouter.routes;
-      const profileRoute = routes.find((r: any) =>
-        r.path?.includes('profile') && r.method === 'PUT'
+      const profileRoute = routes.find((r) => r.path?.includes('profile') && r.method === 'PUT'
       );
       expect(profileRoute).toBeDefined();
     });
 
     it('should support DELETE on /admin/{id}', () => {
       const routes = usersRouter.routes;
-      const deleteRoute = routes.find((r: any) =>
-        r.path?.includes('/admin/') && r.path?.includes(':id') && r.method === 'DELETE'
+      const deleteRoute = routes.find((r) => r.path?.includes('/admin/') && r.path?.includes(':id') && r.method === 'DELETE'
       );
       expect(deleteRoute).toBeDefined();
     });

@@ -12,8 +12,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import { createTestEnv } from '../../test/test-env';
-import { AppEnv } from '../middleware';
-import { ApiError } from '../middleware/errorHandler';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
+import { AppEnv, _ApiError } from '../middleware';
+import { __HTTPException } from 'hono/http-exception';
 
 // Mock the zulipSync module BEFORE importing githubWebhookRouter
 vi.mock('../../utils/zulipSync', () => ({
@@ -44,13 +48,7 @@ describe('GitHub Webhook Routes', () => {
     const app = new Hono<AppEnv>();
 
     // Add error handler similar to the main app
-    app.onError(async (err, c) => {
-      if (err instanceof ApiError) {
-        return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
-      }
-      console.error('Global API Error:', err);
-      return c.json({ error: 'Internal Server Error' }, 500);
-    });
+    
 
     app.route('/webhooks/github', githubWebhookRouter);
     return app;
@@ -110,10 +108,10 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(503);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(503);
+      const json = (await _res.json()) as { error?: string };
       expect(json).toEqual({ error: 'Webhook not configured' });
     });
 
@@ -134,9 +132,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 401 when signature is invalid', async () => {
@@ -156,9 +154,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 400 when JSON is invalid', async () => {
@@ -178,9 +176,9 @@ describe('GitHub Webhook Routes', () => {
         body: invalidJson,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should accept valid webhook with correct signature', async () => {
@@ -201,10 +199,10 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { error?: string };
       expect(json).toEqual({
         received: true,
         event: 'push',
@@ -233,10 +231,10 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should reject - the prefix is required
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
   });
 
@@ -259,10 +257,10 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { error?: string };
       expect(json).toEqual({
         received: true,
         event: 'unknown_event',
@@ -295,9 +293,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
 
       // Verify waitUntil was called (indicating background task)
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
@@ -343,9 +341,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -379,9 +377,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -429,9 +427,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -473,9 +471,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -517,9 +515,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -561,9 +559,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -605,9 +603,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -649,9 +647,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -693,9 +691,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       // Should not trigger Zulip for synchronize action
       expect(sendZulipMessage).not.toHaveBeenCalled();
     });
@@ -731,9 +729,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -774,9 +772,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -817,9 +815,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       expect(mockExecutionContext.waitUntil).toHaveBeenCalled();
       expect(sendZulipMessage).toHaveBeenCalledWith(
         expect.any(Object),
@@ -860,9 +858,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
       // Should not trigger Zulip for labeled action
       expect(sendZulipMessage).not.toHaveBeenCalled();
     });
@@ -896,10 +894,10 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should still return 200 even if Zulip fails (background task)
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
 
     it('should handle malformed payload in events', async () => {
@@ -925,10 +923,10 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should handle gracefully and return 200
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
   });
 
@@ -953,9 +951,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
 
     it('should reject signature with wrong format', async () => {
@@ -978,9 +976,9 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
   });
 
@@ -1008,10 +1006,10 @@ describe('GitHub Webhook Routes', () => {
         body: payload,
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should still accept if signature is valid (doesn't check spoofable headers)
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
   });
 

@@ -7,10 +7,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
+import { ApiError } from '../middleware/errorHandler';
 
 // Mock the auth module BEFORE importing pointsRouter
 vi.mock('../middleware/auth', async () => {
@@ -18,16 +22,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -83,7 +87,7 @@ describe('Points Routes', () => {
     image: null,
   };
 
-  const mockOtherUser: SessionUser = {
+  const _mockOtherUser: SessionUser = {
     id: 'other-user',
     email: 'other@ares.org',
     name: 'Other User',
@@ -96,23 +100,21 @@ describe('Points Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
 
     // Inject mock session user into context before routing
     // The points.ts handlers do manual auth checks using c.get('sessionUser')
     app.use('*', async (c, next) => {
-      const mockUser = (globalThis as any).__mockSessionUser;
+      const mockUser = globalThis.__mockSessionUser;
       if (mockUser) {
         c.set('sessionUser', mockUser);
       }
@@ -123,8 +125,8 @@ describe('Points Routes', () => {
 
     // Add error handler at the app level to catch ApiError properly
     app.onError((err, c) => {
-      if ((err as any).status) {
-        return c.json({ error: err.message }, (err as any).status);
+      if (err instanceof ApiError) {
+        return c.json({ error: err.message }, err.status);
       }
       return c.json({ error: 'Internal server error' }, 500);
     });
@@ -145,7 +147,7 @@ describe('Points Routes', () => {
 
     it('should have the correct route paths registered', () => {
       const routes = pointsRouter.routes;
-      const paths = routes.map((r: any) => r.path || '');
+      const paths = routes.map((r) => r.path || '');
 
       // Expected points routes based on points.ts
       const expectedRoutes = [
@@ -169,7 +171,7 @@ describe('Points Routes', () => {
 
   describe('GET /balance/{user_id} - Authentication and Authorization', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -179,13 +181,13 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/balance/some-user-id');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow user to view their own balance', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -195,15 +197,15 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/balance/auth-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow admin to view any user balance', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -213,15 +215,15 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/balance/other-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 403 when user tries to view another user balance', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -231,14 +233,14 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/balance/other-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow mentor (non-admin role) to view any user balance via member_type', async () => {
       // This tests RBAC-03 from auth.ts: mentors get admin-like access for points routes
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -248,18 +250,18 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/balance/other-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The points router checks sessionUser.role === 'admin' strictly
       // Mentors with role='user' and member_type='mentor' are NOT granted access
       // This is different from ensureAdmin middleware which checks member_type
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
   });
 
   describe('GET /history/{user_id} - Authentication and Authorization', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -269,13 +271,13 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/history/some-user-id');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow user to view their own history', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -285,15 +287,15 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/history/auth-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow admin to view any user history', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -303,15 +305,15 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/history/other-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 403 when user tries to view another user history', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -321,15 +323,15 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/history/other-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
   });
 
   describe('POST /transaction - Authentication and Authorization', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -349,13 +351,13 @@ describe('Points Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 401 when non-admin tries to award points', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -375,19 +377,19 @@ describe('Points Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // awardPointsRoute checks sessionUser.role === 'admin' specifically
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow admin to award points', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock the run method for the insert operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -406,17 +408,17 @@ describe('Points Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should require admin role even for mentors (awardPoints is admin-only)', async () => {
       // The awardPoints route has a strict check: sessionUser.role === 'admin'
       // Unlike other routes, it does NOT check member_type for mentors
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -436,16 +438,16 @@ describe('Points Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // awardPointsRoute specifically checks role === 'admin', not member_type
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
   });
 
   describe('GET /leaderboard - Public Access', () => {
     it('should allow unauthenticated access to leaderboard', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -455,15 +457,15 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/leaderboard');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Leaderboard is public - should not require auth
       // May fail with database errors due to mocking, but should not be 401
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should allow authenticated access to leaderboard', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -473,43 +475,39 @@ describe('Points Routes', () => {
 
       const req = new Request('http://localhost/api/points/leaderboard');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
   describe('Route methods', () => {
     it('should support GET on /balance/{user_id}', () => {
       const routes = pointsRouter.routes;
-      const balanceRoute = routes.find((r: any) =>
-        r.path?.includes('balance') && r.method === 'GET'
+      const balanceRoute = routes.find((r) => r.path?.includes('balance') && r.method === 'GET'
       );
       expect(balanceRoute).toBeDefined();
     });
 
     it('should support GET on /history/{user_id}', () => {
       const routes = pointsRouter.routes;
-      const historyRoute = routes.find((r: any) =>
-        r.path?.includes('history') && r.method === 'GET'
+      const historyRoute = routes.find((r) => r.path?.includes('history') && r.method === 'GET'
       );
       expect(historyRoute).toBeDefined();
     });
 
     it('should support POST on /transaction', () => {
       const routes = pointsRouter.routes;
-      const transactionRoute = routes.find((r: any) =>
-        r.path?.includes('transaction') && r.method === 'POST'
+      const transactionRoute = routes.find((r) => r.path?.includes('transaction') && r.method === 'POST'
       );
       expect(transactionRoute).toBeDefined();
     });
 
     it('should support GET on /leaderboard', () => {
       const routes = pointsRouter.routes;
-      const leaderboardRoute = routes.find((r: any) =>
-        r.path?.includes('leaderboard') && r.method === 'GET'
+      const leaderboardRoute = routes.find((r) => r.path?.includes('leaderboard') && r.method === 'GET'
       );
       expect(leaderboardRoute).toBeDefined();
     });
@@ -544,7 +542,7 @@ describe('Points Routes', () => {
 
   describe('Validation', () => {
     it('should validate transaction request has required fields', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -563,10 +561,10 @@ describe('Points Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should fail validation or return error
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(_res.status).toBeGreaterThanOrEqual(400);
     });
   });
 });

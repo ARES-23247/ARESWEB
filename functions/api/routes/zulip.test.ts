@@ -7,9 +7,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing zulipRouter
@@ -18,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -56,7 +59,7 @@ const mockGetSocialConfig = vi.fn().mockResolvedValue({
 });
 
 vi.mock('../middleware', async () => {
-  const actual = await vi.importActual<typeof import('../middleware.js')>('../middleware');
+  const actual = await vi.importActual<typeof import('../middleware')>('../middleware');
   return {
     ...actual,
     getSocialConfig: () => mockGetSocialConfig(),
@@ -97,7 +100,7 @@ describe('Zulip Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     // Clear mock call history
     (mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst?.mockReset?.();
     (mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll?.mockReset?.();
@@ -106,13 +109,11 @@ describe('Zulip Routes', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/zulip', zulipRouter);
     return app;
@@ -136,7 +137,7 @@ describe('Zulip Routes', () => {
 
     it('should have the correct route paths registered', () => {
       const routes = zulipRouter.routes;
-      const paths = routes.map((r: any) => r.path || '');
+      const paths = routes.map((r) => r.path || '');
 
       // Expected routes based on zulip.ts
       const expectedRoutes = [
@@ -158,7 +159,7 @@ describe('Zulip Routes', () => {
 
   describe('GET /api/zulip/presence - Get team presence', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -168,13 +169,13 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/presence');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to access presence', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -184,13 +185,13 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/presence');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to access presence endpoint', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock fetch for Zulip API
@@ -225,17 +226,17 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/presence');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
   describe('POST /api/zulip/message - Send message', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -255,13 +256,13 @@ describe('Zulip Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to send messages', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -281,14 +282,14 @@ describe('Zulip Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate required fields', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -308,16 +309,16 @@ describe('Zulip Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
   describe('GET /api/zulip/topic - Get topic messages', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -327,13 +328,13 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/topic?stream=general&topic=Test');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to get topic messages', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock fetch for Zulip API
@@ -352,14 +353,14 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/topic?stream=general&topic=Test');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate required query parameters', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -370,16 +371,16 @@ describe('Zulip Routes', () => {
       // Missing required query parameters
       const req = new Request('http://localhost/api/zulip/topic');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
   describe('GET /api/zulip/invites/audit - Audit missing users', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -389,13 +390,13 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/invites/audit');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to audit', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -405,13 +406,13 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/invites/audit');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to audit missing users', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock fetch for Zulip API and database queries
@@ -428,7 +429,7 @@ describe('Zulip Routes', () => {
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
       mockAll.mockResolvedValue([
         { email: 'admin@ares.org' },
-      ] as any);
+      ] as unknown[]);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -437,17 +438,17 @@ describe('Zulip Routes', () => {
 
       const req = new Request('http://localhost/api/zulip/invites/audit');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
   describe('POST /api/zulip/invites/send - Invite users', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -465,13 +466,13 @@ describe('Zulip Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to send invites', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -489,13 +490,13 @@ describe('Zulip Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to send invites', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock fetch for Zulip API
@@ -522,15 +523,15 @@ describe('Zulip Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should validate emails array is provided', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -547,10 +548,10 @@ describe('Zulip Routes', () => {
         body: JSON.stringify({}),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
@@ -582,40 +583,35 @@ describe('Zulip Routes', () => {
   describe('Route methods', () => {
     it('should support GET on /presence', () => {
       const routes = zulipRouter.routes;
-      const presenceRoute = routes.find((r: any) =>
-        r.path?.includes('presence') && r.method === 'GET'
+      const presenceRoute = routes.find((r) => r.path?.includes('presence') && r.method === 'GET'
       );
       expect(presenceRoute).toBeDefined();
     });
 
     it('should support POST on /message', () => {
       const routes = zulipRouter.routes;
-      const messageRoute = routes.find((r: any) =>
-        r.path?.includes('message') && r.method === 'POST'
+      const messageRoute = routes.find((r) => r.path?.includes('message') && r.method === 'POST'
       );
       expect(messageRoute).toBeDefined();
     });
 
     it('should support GET on /topic', () => {
       const routes = zulipRouter.routes;
-      const topicRoute = routes.find((r: any) =>
-        r.path?.includes('topic') && r.method === 'GET'
+      const topicRoute = routes.find((r) => r.path?.includes('topic') && r.method === 'GET'
       );
       expect(topicRoute).toBeDefined();
     });
 
     it('should support GET on /invites/audit', () => {
       const routes = zulipRouter.routes;
-      const auditRoute = routes.find((r: any) =>
-        r.path?.includes('audit') && r.method === 'GET'
+      const auditRoute = routes.find((r) => r.path?.includes('audit') && r.method === 'GET'
       );
       expect(auditRoute).toBeDefined();
     });
 
     it('should support POST on /invites/send', () => {
       const routes = zulipRouter.routes;
-      const sendRoute = routes.find((r: any) =>
-        r.path?.includes('send') && r.method === 'POST'
+      const sendRoute = routes.find((r) => r.path?.includes('send') && r.method === 'POST'
       );
       expect(sendRoute).toBeDefined();
     });

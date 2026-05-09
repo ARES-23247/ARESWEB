@@ -7,9 +7,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing settingsRouter
@@ -18,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -75,18 +78,16 @@ describe('Settings Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/settings', settingsRouter);
     return app;
@@ -105,7 +106,7 @@ describe('Settings Routes', () => {
 
   describe('Public routes', () => {
     it('should allow access to public settings without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -115,16 +116,16 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/public');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public route should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('Admin routes authentication and authorization', () => {
     it('should return 401 when not authenticated on get settings', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -134,13 +135,13 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/get');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to get settings', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -150,13 +151,13 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/get');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to get settings', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -166,15 +167,15 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/get');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 401 when not authenticated on update settings', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -188,13 +189,13 @@ describe('Settings Routes', () => {
         body: JSON.stringify({ TEST_KEY: 'test-value' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to update settings', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -208,13 +209,13 @@ describe('Settings Routes', () => {
         body: JSON.stringify({ TEST_KEY: 'test-value' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to update settings', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -228,15 +229,15 @@ describe('Settings Routes', () => {
         body: JSON.stringify({ TEST_KEY: 'test-value' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 401 when not authenticated on backup', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -246,13 +247,13 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/backup');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to get backup', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -262,13 +263,13 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/backup');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to get backup', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -278,15 +279,15 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/backup');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 401 when not authenticated on stats', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -296,13 +297,13 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to get stats', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -312,13 +313,13 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to get stats', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -328,11 +329,11 @@ describe('Settings Routes', () => {
 
       const req = new Request('http://localhost/api/settings/admin/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
@@ -356,8 +357,7 @@ describe('Settings Routes', () => {
       // The settings router applies rateLimitMiddleware(5, 300) to /admin/backup
       // We can verify this by checking that the route exists
       const routes = settingsRouter.routes;
-      const hasBackupRoute = routes.some((route: any) =>
-        route.path.includes('/backup')
+      const hasBackupRoute = routes.some((route) => route.path.includes('/backup')
       );
       expect(hasBackupRoute).toBe(true);
     });

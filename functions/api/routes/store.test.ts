@@ -7,9 +7,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing storeRouter
@@ -18,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -75,18 +78,16 @@ describe('Store Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/store', storeRouter);
     return app;
@@ -105,7 +106,7 @@ describe('Store Routes', () => {
 
   describe('Public routes', () => {
     it('should allow access to products list without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -117,18 +118,18 @@ describe('Store Routes', () => {
 
       // Mock the database query to return empty results
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({ results: [], meta: { duration: 1, last_row_id: null, changes: 0, served_by: 'test' } } as any);
+      mockAll.mockResolvedValue({ success: true, results: [], meta: { duration: 1 } } as unknown as D1Result);
 
       const req = new Request('http://localhost/api/store/products');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public route should not require auth - might fail for other reasons but not 401
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should allow access to create checkout session without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -148,14 +149,14 @@ describe('Store Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public route should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should handle webhook without auth (Stripe signature verification)', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -174,17 +175,17 @@ describe('Store Routes', () => {
         body: JSON.stringify({ test: 'data' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Webhook uses Stripe signature verification, not session auth
       // It will fail signature verification but not with 401
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('Admin routes authentication and authorization', () => {
     it('should return 401 when not authenticated on get orders', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -194,13 +195,13 @@ describe('Store Routes', () => {
 
       const req = new Request('http://localhost/api/store/orders');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to get orders', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -210,13 +211,13 @@ describe('Store Routes', () => {
 
       const req = new Request('http://localhost/api/store/orders');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to get orders', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -226,15 +227,15 @@ describe('Store Routes', () => {
 
       const req = new Request('http://localhost/api/store/orders');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 401 when not authenticated on update order status', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -248,13 +249,13 @@ describe('Store Routes', () => {
         body: JSON.stringify({ fulfillment_status: 'shipped' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to update order status', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -268,13 +269,13 @@ describe('Store Routes', () => {
         body: JSON.stringify({ fulfillment_status: 'shipped' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to update order status', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -288,11 +289,11 @@ describe('Store Routes', () => {
         body: JSON.stringify({ fulfillment_status: 'shipped' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
@@ -314,16 +315,14 @@ describe('Store Routes', () => {
   describe('Webhook handling', () => {
     it('should have webhook route defined', () => {
       const routes = storeRouter.routes;
-      const hasWebhookRoute = routes.some((route: any) =>
-        route.path.includes('/webhook')
+      const hasWebhookRoute = routes.some((route) => route.path.includes('/webhook')
       );
       expect(hasWebhookRoute).toBe(true);
     });
 
     it('should have webhook route that accepts POST', () => {
       const routes = storeRouter.routes;
-      const webhookRoute = routes.find((route: any) =>
-        route.path.includes('/webhook')
+      const webhookRoute = routes.find((route) => route.path.includes('/webhook')
       );
       expect(webhookRoute?.method).toBe('POST');
     });
@@ -333,8 +332,7 @@ describe('Store Routes', () => {
   describe('Admin route protection', () => {
     it('should protect orders routes with ensureAdmin middleware', () => {
       const routes = storeRouter.routes;
-      const hasOrdersRoute = routes.some((route: any) =>
-        route.path.includes('/orders')
+      const hasOrdersRoute = routes.some((route) => route.path.includes('/orders')
       );
       expect(hasOrdersRoute).toBe(true);
     });

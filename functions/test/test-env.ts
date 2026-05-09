@@ -48,7 +48,7 @@ export function mockMultiResult<T>(data: T[]): D1Result {
  * Mock Drizzle query result - returns the data array directly
  * Use this for Drizzle .all() queries
  */
-export function mockDrizzleResult<T>(data: T[]): { results: T[]; meta: any } {
+export function mockDrizzleResult<T>(data: T[]): { results: T[]; meta: { duration: number; last_row_id: number | null; changes: number; served_by: string } } {
   return {
     results: data,
     meta: {
@@ -102,7 +102,7 @@ export function createMockDb() {
   };
 
   // Track prepare calls for debugging
-  const prepareMock = vi.fn((query: string) => {
+  const prepareMock = vi.fn((_query: string) => {
     return {
       bind: vi.fn(() => {
         return {
@@ -265,7 +265,7 @@ export function createMockContext(
     text: vi.fn().mockResolvedValue(typeof body === 'string' ? body : JSON.stringify(body)),
     body: body ? JSON.stringify(body) : undefined,
     query: () => ({}),
-    param: (name: string) => null,
+    param: (_name: string) => null,
     cookie: (name: string) => headers[name] || null,
     valid: vi.fn().mockReturnValue(body || {}),
   };

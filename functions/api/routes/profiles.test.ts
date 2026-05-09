@@ -7,9 +7,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing profilesRouter
@@ -18,16 +22,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -52,7 +56,7 @@ const mockExecutionContext = {
 describe('Profiles Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];
 
-  const mockAdminUser: SessionUser = {
+  const _mockAdminUser: SessionUser = {
     id: 'admin-user',
     email: 'admin@ares.org',
     name: 'Admin User',
@@ -72,7 +76,7 @@ describe('Profiles Routes', () => {
     image: null,
   };
 
-  const mockMentorUser: SessionUser = {
+  const _mockMentorUser: SessionUser = {
     id: 'mentor-user',
     email: 'mentor@ares.org',
     name: 'Mentor User',
@@ -85,18 +89,16 @@ describe('Profiles Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/profiles', profilesRouter);
     return app;
@@ -114,7 +116,7 @@ describe('Profiles Routes', () => {
 
     it('should have the correct routes registered', () => {
       const routes = profilesRouter.routes;
-      const paths = routes.map((r: any) => r.path || '');
+      const paths = routes.map((r) => r.path || '');
 
       // Expected routes based on profiles.ts
       const expectedRoutes = [
@@ -140,7 +142,7 @@ describe('Profiles Routes', () => {
 
   describe('Authentication and Authorization', () => {
     it('should return 401 when not authenticated on /me', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -150,13 +152,13 @@ describe('Profiles Routes', () => {
 
       const req = new Request('http://localhost/api/profiles/me');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 401 when not authenticated on /update-me', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -172,13 +174,13 @@ describe('Profiles Routes', () => {
         body: JSON.stringify({ nickname: 'Test' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 401 when not authenticated on /avatar', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -194,13 +196,13 @@ describe('Profiles Routes', () => {
         body: JSON.stringify({ image: 'https://example.com/avatar.png' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated user to access /me', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -210,14 +212,14 @@ describe('Profiles Routes', () => {
 
       const req = new Request('http://localhost/api/profiles/me');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - auth should pass
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should allow authenticated user to POST to /update-me', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -233,14 +235,14 @@ describe('Profiles Routes', () => {
         body: JSON.stringify({ nickname: 'Test User' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - auth should pass
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should allow authenticated user to POST to /avatar', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -256,14 +258,14 @@ describe('Profiles Routes', () => {
         body: JSON.stringify({ image: null }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - auth should pass
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should allow public access to /team-roster without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -273,15 +275,15 @@ describe('Profiles Routes', () => {
 
       const req = new Request('http://localhost/api/profiles/team-roster');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // /team-roster is public - should not require auth
       // It will fail due to DB mocking, but should not be 401
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should allow public access to /public/:userId without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -291,43 +293,39 @@ describe('Profiles Routes', () => {
 
       const req = new Request('http://localhost/api/profiles/public/some-user-id');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // /public/:userId is public - should not require auth
       // It will fail due to DB mocking, but should not be 401
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('Rate limiting', () => {
     it('should apply rate limiting to /team-roster', () => {
       const routes = profilesRouter.routes;
-      const teamRosterRoute = routes.find((r: any) =>
-        r.path?.includes('/team-roster')
+      const teamRosterRoute = routes.find((r) => r.path?.includes('/team-roster')
       );
       expect(teamRosterRoute).toBeDefined();
     });
 
     it('should apply rate limiting to /:userId', () => {
       const routes = profilesRouter.routes;
-      const userIdRoute = routes.find((r: any) =>
-        r.path?.includes(':userId') && !r.path?.includes('/public/')
+      const userIdRoute = routes.find((r) => r.path?.includes(':userId') && !r.path?.includes('/public/')
       );
       expect(userIdRoute).toBeDefined();
     });
 
     it('should apply persistent rate limiting to /update-me', () => {
       const routes = profilesRouter.routes;
-      const updateMeRoute = routes.find((r: any) =>
-        r.path?.includes('/update-me')
+      const updateMeRoute = routes.find((r) => r.path?.includes('/update-me')
       );
       expect(updateMeRoute).toBeDefined();
     });
 
     it('should apply persistent rate limiting to /avatar', () => {
       const routes = profilesRouter.routes;
-      const avatarRoute = routes.find((r: any) =>
-        r.path?.includes('/avatar')
+      const avatarRoute = routes.find((r) => r.path?.includes('/avatar')
       );
       expect(avatarRoute).toBeDefined();
     });
@@ -336,8 +334,7 @@ describe('Profiles Routes', () => {
   describe('Route methods', () => {
     it('should support GET on /me', () => {
       const routes = profilesRouter.routes;
-      const meRoute = routes.find((r: any) =>
-        r.path === '/me'
+      const meRoute = routes.find((r) => r.path === '/me'
       );
       expect(meRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -346,8 +343,7 @@ describe('Profiles Routes', () => {
 
     it('should support POST on /update-me', () => {
       const routes = profilesRouter.routes;
-      const updateMeRoute = routes.find((r: any) =>
-        r.path === '/update-me'
+      const updateMeRoute = routes.find((r) => r.path === '/update-me'
       );
       expect(updateMeRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -356,8 +352,7 @@ describe('Profiles Routes', () => {
 
     it('should support POST on /avatar', () => {
       const routes = profilesRouter.routes;
-      const avatarRoute = routes.find((r: any) =>
-        r.path === '/avatar'
+      const avatarRoute = routes.find((r) => r.path === '/avatar'
       );
       expect(avatarRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -366,8 +361,7 @@ describe('Profiles Routes', () => {
 
     it('should support GET on /team-roster', () => {
       const routes = profilesRouter.routes;
-      const rosterRoute = routes.find((r: any) =>
-        r.path?.includes('/team-roster')
+      const rosterRoute = routes.find((r) => r.path?.includes('/team-roster')
       );
       expect(rosterRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -376,8 +370,7 @@ describe('Profiles Routes', () => {
 
     it('should support GET on /public/:userId', () => {
       const routes = profilesRouter.routes;
-      const publicProfileRoute = routes.find((r: any) =>
-        r.path?.includes('/public/')
+      const publicProfileRoute = routes.find((r) => r.path?.includes('/public/')
       );
       expect(publicProfileRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -386,8 +379,7 @@ describe('Profiles Routes', () => {
 
     it('should support GET on /:userId', () => {
       const routes = profilesRouter.routes;
-      const profileRoute = routes.find((r: any) =>
-        r.path?.includes(':userId') && !r.path?.includes('/public/')
+      const profileRoute = routes.find((r) => r.path?.includes(':userId') && !r.path?.includes('/public/')
       );
       expect(profileRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' for param routes
@@ -397,7 +389,7 @@ describe('Profiles Routes', () => {
 
   describe('Profile update validation', () => {
     it('should reject bio exceeding maximum length', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -415,15 +407,15 @@ describe('Profiles Routes', () => {
         body: JSON.stringify({ bio: longBio }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should fail validation - could be 400 or other error due to validation
       // The key is it shouldn't succeed
-      expect(res.status).not.toBe(200);
+      expect(_res.status).not.toBe(200);
     });
 
     it('should reject nickname exceeding maximum length', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -441,14 +433,14 @@ describe('Profiles Routes', () => {
         body: JSON.stringify({ nickname: longNickname }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should fail validation
-      expect(res.status).not.toBe(200);
+      expect(_res.status).not.toBe(200);
     });
 
     it('should reject pronouns exceeding maximum length', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -466,16 +458,16 @@ describe('Profiles Routes', () => {
         body: JSON.stringify({ pronouns: longPronouns }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should fail validation
-      expect(res.status).not.toBe(200);
+      expect(_res.status).not.toBe(200);
     });
   });
 
   describe('Cache control headers', () => {
     it('should set cache-control headers on /me response', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -485,17 +477,17 @@ describe('Profiles Routes', () => {
 
       const req = new Request('http://localhost/api/profiles/me');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // /me explicitly sets no-cache headers
       // Note: The response may not reach the header setting code due to DB mocking,
       // but we can verify the route exists and doesn't return 401
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
 
       // If we get a successful response, check for cache headers
       // The route code explicitly sets these headers
-      if (res.status === 200) {
-        const cacheControl = res.headers.get('Cache-Control');
+      if (_res.status === 200) {
+        const cacheControl = _res.headers.get('Cache-Control');
         // Headers may be null if response didn't complete, only check if present
         if (cacheControl) {
           expect(cacheControl).toContain('no-store');
@@ -505,12 +497,12 @@ describe('Profiles Routes', () => {
     });
 
     it('should set cache-control headers on /public/:userId response', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock the database to return a valid profile
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 0 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 5 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -519,19 +511,18 @@ describe('Profiles Routes', () => {
 
       const req = new Request('http://localhost/api/profiles/public/test-user');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // /public/:userId is cacheable
       // Note: This will likely 404 due to DB mocking, but the route should exist
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('OpenAPI route definitions', () => {
     it('should have getMeRoute defined', () => {
       const routes = profilesRouter.routes;
-      const getMeRoute = routes.find((r: any) =>
-        r.path === '/me'
+      const getMeRoute = routes.find((r) => r.path === '/me'
       );
       expect(getMeRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -540,8 +531,7 @@ describe('Profiles Routes', () => {
 
     it('should have updateMeRoute defined', () => {
       const routes = profilesRouter.routes;
-      const updateMeRoute = routes.find((r: any) =>
-        r.path === '/update-me'
+      const updateMeRoute = routes.find((r) => r.path === '/update-me'
       );
       expect(updateMeRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -550,8 +540,7 @@ describe('Profiles Routes', () => {
 
     it('should have getTeamRosterRoute defined', () => {
       const routes = profilesRouter.routes;
-      const getTeamRosterRoute = routes.find((r: any) =>
-        r.path?.includes('/team-roster')
+      const getTeamRosterRoute = routes.find((r) => r.path?.includes('/team-roster')
       );
       expect(getTeamRosterRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -560,8 +549,7 @@ describe('Profiles Routes', () => {
 
     it('should have getPublicProfileByIdRoute defined', () => {
       const routes = profilesRouter.routes;
-      const publicRoute = routes.find((r: any) =>
-        r.path?.includes('/public/')
+      const publicRoute = routes.find((r) => r.path?.includes('/public/')
       );
       expect(publicRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases
@@ -570,8 +558,7 @@ describe('Profiles Routes', () => {
 
     it('should have getPublicProfileRoute defined', () => {
       const routes = profilesRouter.routes;
-      const profileRoute = routes.find((r: any) =>
-        r.path?.includes(':userId') && !r.path?.includes('/public/')
+      const profileRoute = routes.find((r) => r.path?.includes(':userId') && !r.path?.includes('/public/')
       );
       expect(profileRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' for param routes
@@ -580,8 +567,7 @@ describe('Profiles Routes', () => {
 
     it('should have updateAvatarRoute defined', () => {
       const routes = profilesRouter.routes;
-      const avatarRoute = routes.find((r: any) =>
-        r.path === '/avatar'
+      const avatarRoute = routes.find((r) => r.path === '/avatar'
       );
       expect(avatarRoute).toBeDefined();
       // OpenAPIHono may register as 'ALL' in some cases

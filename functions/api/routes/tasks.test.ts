@@ -7,18 +7,20 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
-import { AppEnv, SessionUser } from '../middleware';
-import { ApiError } from '../middleware/errorHandler';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
+import { AppEnv, SessionUser, _ApiError } from '../middleware';
 
 // Mock drizzle-orm to handle aliasedTable
 vi.mock('drizzle-orm', async () => {
   const actual = await vi.importActual<typeof import('drizzle-orm')>('drizzle-orm');
   return {
     ...actual,
-    aliasedTable: (table: any, name: string) => ({ ...table, _alias: name }),
+    aliasedTable: (table: unknown, name: string) => ({ ...(table as object), _alias: name }),
   };
 });
 
@@ -27,20 +29,20 @@ vi.mock('../middleware/auth', async () => {
   const actual = await vi.importActual<typeof import('../middleware/auth.js')>('../middleware/auth');
   return {
     ...actual,
-    getSessionUser: vi.fn((c: any) => {
+    getSessionUser: vi.fn((c: Context) => {
       // Return the global mock user or check if sessionUser is already set
-      return c.get('sessionUser') || (globalThis as any).__mockSessionUser || null;
+      return c.get('sessionUser') || globalThis.__mockSessionUser || null;
     }),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -98,7 +100,7 @@ describe('Tasks Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     // Clear mock call history and reset to default behavior
     (mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst.mockReset();
     (mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll.mockReset();
@@ -107,23 +109,15 @@ describe('Tasks Routes', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
+    const app = new Hono<AppEnv>();
     app.use('*', createTestDbMiddleware());
 
     // Use Hono's built-in onError for error handling (same pattern as production)
-    app.onError(async (err, c) => {
-      if (err instanceof ApiError) {
-        return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
-      }
-      console.error("Test Error:", err);
-      return c.json({ error: "Internal Server Error" }, 500);
-    });
+    
 
     app.route('/api/tasks', tasksRouter);
     return app;
@@ -158,7 +152,7 @@ describe('Tasks Routes', () => {
 
   describe('GET /api/tasks - List tasks', () => {
     it('should attempt to list tasks (database query may fail without proper mock)', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -168,16 +162,16 @@ describe('Tasks Routes', () => {
 
       const req = new Request('http://localhost/api/tasks');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The list tasks endpoint doesn't require authentication in the handler
       // but will fail at the database level due to mock limitations
       // We're just verifying the route exists and processes the request
-      expect(res.status).toBeGreaterThan(0);
+      expect(_res.status).toBeGreaterThan(0);
     });
 
     it('should support query parameters for filtering', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -187,16 +181,16 @@ describe('Tasks Routes', () => {
 
       const req = new Request('http://localhost/api/tasks?status=todo&subteam=mechanical');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Just verify the request is processed (may fail at DB level)
-      expect(res.status).toBeGreaterThan(0);
+      expect(_res.status).toBeGreaterThan(0);
     });
   });
 
   describe('POST /api/tasks - Create task', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -212,18 +206,18 @@ describe('Tasks Routes', () => {
         body: JSON.stringify({ title: 'New Task', description: 'Test task' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to create tasks', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the insert operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -238,14 +232,14 @@ describe('Tasks Routes', () => {
         body: JSON.stringify({ title: 'New Task', description: 'Test task' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate required fields', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -262,16 +256,16 @@ describe('Tasks Routes', () => {
         body: JSON.stringify({ description: 'Test task' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
   describe('PATCH /api/tasks/:id - Update task', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -287,13 +281,13 @@ describe('Tasks Routes', () => {
         body: JSON.stringify({ title: 'Updated Task' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to update tasks', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for existing task
@@ -303,11 +297,13 @@ describe('Tasks Routes', () => {
         title: 'Original Task',
         createdBy: mockAuthUser.id,
         subteam: null,
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       // Mock the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -322,19 +318,19 @@ describe('Tasks Routes', () => {
         body: JSON.stringify({ title: 'Updated Task' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should return 404 when task does not exist', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for non-existing task
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
-      mockFirst.mockResolvedValue(null as any);
+      mockFirst.mockResolvedValue(null);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -349,15 +345,15 @@ describe('Tasks Routes', () => {
         body: JSON.stringify({ title: 'Updated Task' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(404);
+      expect(_res.status).toBe(404);
     });
   });
 
   describe('DELETE /api/tasks/:id - Delete task', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -369,24 +365,26 @@ describe('Tasks Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow task owner to delete their task', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for existing task owned by user
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
       mockFirst.mockResolvedValue({
         createdBy: mockAuthUser.id,
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       // Mock the delete operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -397,26 +395,28 @@ describe('Tasks Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow admins to delete any task', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock the database query for existing task owned by another user
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
       mockFirst.mockResolvedValue({
         createdBy: 'other-user',
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       // Mock the delete operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -427,25 +427,27 @@ describe('Tasks Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - admin should be able to delete
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     // NOTE: This test requires working Drizzle query mocks. Skipped due to mock complexity.
     // The tasks route uses complex queries with aliased tables and joins that don't work
     // well with simple D1 mocks. This would require integration tests with a real database.
     it.skip('should return 403 when non-owner tries to delete task', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for existing task owned by another user
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
       mockFirst.mockResolvedValue({
         createdBy: 'other-user',
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -456,18 +458,18 @@ describe('Tasks Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 404 when task does not exist', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for non-existing task
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
-      mockFirst.mockResolvedValue(null as any);
+      mockFirst.mockResolvedValue(null);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -478,15 +480,15 @@ describe('Tasks Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(404);
+      expect(_res.status).toBe(404);
     });
   });
 
   describe('PATCH /api/tasks/reorder - Reorder tasks', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -507,18 +509,18 @@ describe('Tasks Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to reorder tasks', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -538,14 +540,14 @@ describe('Tasks Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate items array is provided', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -562,16 +564,16 @@ describe('Tasks Routes', () => {
         body: JSON.stringify({}),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
   describe('Authorization - Assignment changes', () => {
     it('should allow admins to change task assignments', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock the database query for existing task
@@ -581,11 +583,13 @@ describe('Tasks Routes', () => {
         title: 'Test Task',
         createdBy: 'other-user',
         subteam: null,
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       // Mock the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -602,14 +606,14 @@ describe('Tasks Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Admin should be able to change assignments
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow mentors to change task assignments', async () => {
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       // Mock the database query for existing task
@@ -619,11 +623,13 @@ describe('Tasks Routes', () => {
         title: 'Test Task',
         createdBy: 'other-user',
         subteam: null,
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       // Mock the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -640,14 +646,14 @@ describe('Tasks Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Mentor should be able to change assignments
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow task owner to change assignments', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for existing task owned by user
@@ -657,11 +663,13 @@ describe('Tasks Routes', () => {
         title: 'Test Task',
         createdBy: mockAuthUser.id,
         subteam: null,
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       // Mock the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -678,15 +686,15 @@ describe('Tasks Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Owner should be able to change assignments
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(403);
     });
 
     // NOTE: This test requires working Drizzle query mocks. Skipped due to mock complexity.
     it.skip('should deny non-owner, non-mentor from changing assignments', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock the database query for existing task owned by another user
@@ -696,7 +704,9 @@ describe('Tasks Routes', () => {
         title: 'Test Task',
         createdBy: 'other-user',
         subteam: null,
-      } as any);
+        success: true,
+        meta: { duration: 1 },
+      } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -713,10 +723,10 @@ describe('Tasks Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Non-owner, non-mentor should not be able to change assignments
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
   });
 
@@ -750,7 +760,7 @@ describe('Tasks Routes', () => {
       const routes = tasksRouter.routes;
 
       // Check for common route paths
-      const routePaths = routes.map((r: any) => r.path);
+      const routePaths = routes.map((r) => r.path || '');
 
       // Hono stores parameterized routes as '/*' not '/{id}'
       expect(routePaths).toContain('/');

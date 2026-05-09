@@ -13,6 +13,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import { createTestEnv } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv } from '../middleware';
 import type { SocialConfig } from '../middleware/utils';
 
@@ -22,7 +26,7 @@ vi.mock('../../utils/zulipSync', () => ({
 }));
 
 vi.mock('../../utils/irvCalculator', () => ({
-  calculateIRV: vi.fn().mockReturnValue({
+  _calculateIRV: vi.fn().mockReturnValue({
     winner: 0,
     rounds: [],
   }),
@@ -58,7 +62,6 @@ vi.mock('../middleware', async () => {
 
 import zulipWebhookRouter from './zulipWebhook';
 import { sendZulipMessage } from '../../utils/zulipSync';
-import { calculateIRV } from '../../utils/irvCalculator';
 import * as middleware from '../middleware';
 
 // Mock execution context for tests
@@ -89,13 +92,14 @@ describe('Zulip Webhook Routes', () => {
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>();
+    const app = new Hono<AppEnv>()
     app.route('/webhooks/zulip', zulipWebhookRouter);
     return app;
   };
 
   // Helper function to create a valid Zulip webhook payload
-  function createZulipPayload(overrides: Partial<Record<string, unknown>> = {}) {
+  function createZulipPayload(overrides: Record<string, unknown> = {}) {
+    const messageOverrides = (overrides.message as Record<string, unknown>) || {};
     return {
       token: testWebhookToken,
       message: {
@@ -108,11 +112,11 @@ describe('Zulip Webhook Routes', () => {
         subject: 'test',
         topic: 'test',
         type: 'stream',
-        ...overrides.message,
+        ...messageOverrides,
       },
       trigger: 'message',
       ...overrides,
-    };
+    } as Record<string, unknown>;
   }
 
   describe('Router structure', () => {
@@ -144,11 +148,11 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(401);
-      const json = (await res.json()) as any;
-      expect(json.content).toContain('Webhook token not configured');
+      expect(_res.status).toBe(401);
+      const json = (await _res.json()) as { error?: string; message?: string };
+      expect(json.error ?? json.message).toContain('Webhook token not configured');
     });
 
     it('should return 401 when token is missing from payload', async () => {
@@ -163,11 +167,11 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(401);
-      const json = (await res.json()) as any;
-      expect(json.content).toContain('Unauthorized');
+      expect(_res.status).toBe(401);
+      const json = (await _res.json()) as { error?: string; message?: string };
+      expect(json.error ?? json.message).toContain('Unauthorized');
     });
 
     it('should return 401 when token is invalid', async () => {
@@ -182,11 +186,11 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(401);
-      const json = (await res.json()) as any;
-      expect(json.content).toContain('Unauthorized');
+      expect(_res.status).toBe(401);
+      const json = (await _res.json()) as { error?: string; message?: string };
+      expect(json.error ?? json.message).toContain('Unauthorized');
     });
 
     it('should accept valid webhook with correct token', async () => {
@@ -201,10 +205,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toBeDefined();
     });
 
@@ -222,9 +226,9 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
   });
 
@@ -241,10 +245,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Hello! I am the ARES Bot');
     });
 
@@ -260,10 +264,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('ARES Bot Commands');
       expect(json.content).toContain('!tasks');
       expect(json.content).toContain('!stats');
@@ -286,10 +290,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('ARES Bot Commands');
     });
 
@@ -309,10 +313,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Unknown command');
     });
 
@@ -334,10 +338,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toBe('');
     });
   });
@@ -360,10 +364,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Broadcast dispatched');
 
       // Verify waitUntil was called (indicating background task)
@@ -396,10 +400,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Usage');
     });
   });
@@ -421,10 +425,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Ranked Choice Voting');
       expect(json.content).toContain('!rcv create');
       expect(json.content).toContain('!rcv vote');
@@ -448,10 +452,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Ranked Choice Voting');
     });
 
@@ -472,10 +476,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Permission denied');
     });
 
@@ -495,10 +499,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('Please specify a poll ID');
     });
 
@@ -518,10 +522,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       expect(json.content).toContain('not found');
     });
 
@@ -543,10 +547,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      expect(_res.status).toBe(200);
+      const json = (await _res.json()) as { content?: string };
       // Unknown subcommands try to look up the poll and return "not found"
       expect(json.content).toContain('not found');
     });
@@ -574,10 +578,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
       // Returns 200 (with empty content for success)
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
 
     it('should handle event/topic messages', async () => {
@@ -600,9 +604,9 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
 
     it('should ignore non-post/event/doc topics', async () => {
@@ -624,9 +628,9 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
   });
 
@@ -643,10 +647,10 @@ describe('Zulip Webhook Routes', () => {
         body: invalidJson,
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
       // Should return error for invalid JSON
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(_res.status).toBeGreaterThanOrEqual(400);
     });
 
     it('should handle missing message object with validation error', async () => {
@@ -664,10 +668,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
       // Zod validation returns 400 for missing required fields
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
@@ -687,10 +691,10 @@ describe('Zulip Webhook Routes', () => {
         body: JSON.stringify(payload),
       });
 
-      const res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
+      const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
       // Should still accept if token is valid (doesn't check spoofable headers)
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
     });
   });
 

@@ -10,9 +10,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing githubRouter
@@ -21,16 +24,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -101,19 +104,17 @@ describe('GitHub Integration Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     vi.clearAllMocks();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/github', githubRouter);
     return app;
@@ -131,7 +132,7 @@ describe('GitHub Integration Routes', () => {
 
     it('should have the correct routes registered', () => {
       const routes = githubRouter.routes;
-      const paths = routes.map((r: any) => r.path || '');
+      const paths = routes.map((r) => r.path || '');
 
       // Expected routes based on github.ts
       const expectedRoutes = [
@@ -151,7 +152,7 @@ describe('GitHub Integration Routes', () => {
 
   describe('GET /api/github/activity - Activity heatmap', () => {
     it('should apply rate limiting to prevent abuse', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -161,14 +162,14 @@ describe('GitHub Integration Routes', () => {
 
       const req = new Request('http://localhost/api/github/activity');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The route processes the request (may fail at GitHub API level)
-      expect(res.status).toBeGreaterThan(0);
+      expect(_res.status).toBeGreaterThan(0);
     });
 
     it('should return 429 when rate limit is exceeded', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock the rate limit check to return false (exceeded)
@@ -186,7 +187,7 @@ describe('GitHub Integration Routes', () => {
     });
 
     it('should be publicly accessible without authentication', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -196,16 +197,16 @@ describe('GitHub Integration Routes', () => {
 
       const req = new Request('http://localhost/api/github/activity');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // /activity is public - should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('GET /api/github/projects - Project board', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -215,14 +216,14 @@ describe('GitHub Integration Routes', () => {
 
       const req = new Request('http://localhost/api/github/projects');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // /projects requires admin auth
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when authenticated but not admin', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -232,14 +233,14 @@ describe('GitHub Integration Routes', () => {
 
       const req = new Request('http://localhost/api/github/projects');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Non-admin should get 403
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admins to access project board', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock fetchProjectBoard to return sample data
@@ -267,15 +268,15 @@ describe('GitHub Integration Routes', () => {
 
       const req = new Request('http://localhost/api/github/projects');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - admin should be able to access
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 200 with empty board when GitHub config is missing', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock buildGitHubConfig to return null (missing config)
@@ -288,12 +289,12 @@ describe('GitHub Integration Routes', () => {
 
       const req = new Request('http://localhost/api/github/projects');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return 200 with success: false when config is missing
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
 
-      const json = await res.json() as { success: boolean; board: unknown[] };
+      const json = await _res.json() as { success: boolean; board: unknown[] };
       expect(json.success).toBe(false);
       expect(json.board).toEqual([]);
     });
@@ -301,7 +302,7 @@ describe('GitHub Integration Routes', () => {
 
   describe('POST /api/github/projects/items - Create project item', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -317,14 +318,14 @@ describe('GitHub Integration Routes', () => {
         body: JSON.stringify({ title: 'New Item' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // /projects/items requires admin auth
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when authenticated but not admin', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -340,14 +341,14 @@ describe('GitHub Integration Routes', () => {
         body: JSON.stringify({ title: 'New Item' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Non-admin should get 403
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admins to create project items', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock createProjectItem
@@ -366,11 +367,11 @@ describe('GitHub Integration Routes', () => {
         body: JSON.stringify({ title: 'New Item' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - admin should be able to create
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
 
       // Verify the GitHub utility was called
       expect(createProjectItem).toHaveBeenCalledWith(
@@ -384,7 +385,7 @@ describe('GitHub Integration Routes', () => {
     });
 
     it('should validate required title field', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -401,14 +402,14 @@ describe('GitHub Integration Routes', () => {
         body: JSON.stringify({}),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should return 500 when GitHub config is missing', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock buildGitHubConfig to return null (missing config)
@@ -427,18 +428,17 @@ describe('GitHub Integration Routes', () => {
         body: JSON.stringify({ title: 'New Item' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return 500 when config is missing for create
-      expect(res.status).toBe(500);
+      expect(_res.status).toBe(500);
     });
   });
 
   describe('Route methods', () => {
     it('should support GET on /activity', () => {
       const routes = githubRouter.routes;
-      const activityRoute = routes.find((r: any) =>
-        r.path?.includes('/activity')
+      const activityRoute = routes.find((r) => r.path?.includes('/activity')
       );
       expect(activityRoute).toBeDefined();
       expect(['GET', 'ALL']).toContain(activityRoute?.method);
@@ -446,8 +446,7 @@ describe('GitHub Integration Routes', () => {
 
     it('should support GET on /projects', () => {
       const routes = githubRouter.routes;
-      const projectsRoute = routes.find((r: any) =>
-        r.path?.includes('/projects') && !r.path?.includes('/items')
+      const projectsRoute = routes.find((r) => r.path?.includes('/projects') && !r.path?.includes('/items')
       );
       expect(projectsRoute).toBeDefined();
       expect(['GET', 'ALL']).toContain(projectsRoute?.method);
@@ -455,8 +454,7 @@ describe('GitHub Integration Routes', () => {
 
     it('should support POST on /projects/items', () => {
       const routes = githubRouter.routes;
-      const createItemRoute = routes.find((r: any) =>
-        r.path?.includes('/projects/items')
+      const createItemRoute = routes.find((r) => r.path?.includes('/projects/items')
       );
       expect(createItemRoute).toBeDefined();
       expect(['POST', 'ALL']).toContain(createItemRoute?.method);
@@ -465,7 +463,7 @@ describe('GitHub Integration Routes', () => {
 
   describe('Caching behavior', () => {
     it('should use cache for activity endpoint', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -475,16 +473,16 @@ describe('GitHub Integration Routes', () => {
 
       const req = new Request('http://localhost/api/github/activity');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The route should process the request and attempt caching
-      expect(res.status).toBeGreaterThan(0);
+      expect(_res.status).toBeGreaterThan(0);
     });
   });
 
   describe('Origin integrity', () => {
     it('should not rely on spoofable headers for authentication', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -499,18 +497,17 @@ describe('GitHub Integration Routes', () => {
         },
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should process the request (not auth based on headers for public endpoint)
-      expect(res.status).toBeGreaterThan(0);
+      expect(_res.status).toBeGreaterThan(0);
     });
   });
 
   describe('OpenAPI route definitions', () => {
     it('should have getActivityRoute defined', () => {
       const routes = githubRouter.routes;
-      const activityRoute = routes.find((r: any) =>
-        r.path?.includes('/activity')
+      const activityRoute = routes.find((r) => r.path?.includes('/activity')
       );
       expect(activityRoute).toBeDefined();
       expect(['GET', 'ALL']).toContain(activityRoute?.method);
@@ -518,8 +515,7 @@ describe('GitHub Integration Routes', () => {
 
     it('should have getBoardRoute defined', () => {
       const routes = githubRouter.routes;
-      const boardRoute = routes.find((r: any) =>
-        r.path?.includes('/projects') && !r.path?.includes('/items')
+      const boardRoute = routes.find((r) => r.path?.includes('/projects') && !r.path?.includes('/items')
       );
       expect(boardRoute).toBeDefined();
       expect(['GET', 'ALL']).toContain(boardRoute?.method);
@@ -527,8 +523,7 @@ describe('GitHub Integration Routes', () => {
 
     it('should have createItemRoute defined', () => {
       const routes = githubRouter.routes;
-      const createItemRoute = routes.find((r: any) =>
-        r.path?.includes('/projects/items')
+      const createItemRoute = routes.find((r) => r.path?.includes('/projects/items')
       );
       expect(createItemRoute).toBeDefined();
       expect(['POST', 'ALL']).toContain(createItemRoute?.method);

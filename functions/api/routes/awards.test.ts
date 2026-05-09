@@ -7,10 +7,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
 import { AppEnv, SessionUser } from '../middleware';
+
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: SessionUser | null;
+}
 
 // Mock the auth module BEFORE importing awardsRouter
 vi.mock('../middleware/auth', async () => {
@@ -18,16 +22,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -75,18 +79,16 @@ describe('Awards Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/awards', awardsRouter);
     return app;
@@ -105,7 +107,7 @@ describe('Awards Routes', () => {
 
   describe('Public routes', () => {
     it('should allow access to awards list without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -115,18 +117,18 @@ describe('Awards Routes', () => {
 
       // Mock the database query to return empty results
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({ results: [], meta: { duration: 1, last_row_id: null, changes: 0, served_by: 'test' } } as any);
+      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as unknown as D1Result);
 
       const req = new Request('http://localhost/api/awards');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public route should not require auth - might fail for other reasons but not 401
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should support query parameters for pagination', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -135,20 +137,20 @@ describe('Awards Routes', () => {
       });
 
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({ results: [], meta: { duration: 1, last_row_id: null, changes: 0, served_by: 'test' } } as any);
+      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as unknown as D1Result);
 
       const req = new Request('http://localhost/api/awards?limit=10&offset=20');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public route should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('Admin routes authentication and authorization', () => {
     it('should return 401 when not authenticated on save award', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -167,13 +169,13 @@ describe('Awards Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to save award', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -192,13 +194,13 @@ describe('Awards Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to save award', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock the database methods for the save operation
@@ -206,9 +208,9 @@ describe('Awards Routes', () => {
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
 
       // Mock that no existing award is found
-      mockGet.mockResolvedValue(null as any);
+      mockGet.mockResolvedValue(null);
       // Mock successful insert
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1, last_row_id: '123' } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1, last_row_id: 'test' } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -226,15 +228,15 @@ describe('Awards Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should return 401 when not authenticated on delete award', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -246,13 +248,13 @@ describe('Awards Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to delete award', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -264,18 +266,18 @@ describe('Awards Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to delete award', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock the run method for the update operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -286,11 +288,11 @@ describe('Awards Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
@@ -315,8 +317,7 @@ describe('Awards Routes', () => {
       // The awards router applies edgeCacheMiddleware to public GET routes
       // We can verify the router has the middleware setup
       const routes = awardsRouter.routes;
-      const hasPublicRoutes = routes.some((route: any) =>
-        route.method === 'GET' && !route.path.includes('/admin/')
+      const hasPublicRoutes = routes.some((route) => route.method === 'GET' && !route.path.includes('/admin/')
       );
       expect(hasPublicRoutes).toBe(true);
     });
@@ -326,8 +327,7 @@ describe('Awards Routes', () => {
   describe('Admin route structure', () => {
     it('should have admin routes defined', () => {
       const routes = awardsRouter.routes;
-      const hasAdminRoutes = routes.some((route: any) =>
-        route.path.includes('/admin/')
+      const hasAdminRoutes = routes.some((route) => route.path.includes('/admin/')
       );
       expect(hasAdminRoutes).toBe(true);
     });

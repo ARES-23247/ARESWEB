@@ -7,10 +7,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
 import { AppEnv, SessionUser } from '../middleware';
+
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: SessionUser | null;
+}
 
 // Mock the auth module BEFORE importing analyticsRouter
 vi.mock('../middleware/auth', async () => {
@@ -18,16 +22,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -48,6 +52,24 @@ const mockExecutionContext = {
   waitUntil: vi.fn(),
   passThroughOnException: vi.fn(),
 } as unknown as ExecutionContext;
+
+// Helper types for mock return values
+type _MockD1Result = {
+  success?: boolean;
+  results?: unknown[];
+  meta: {
+    duration: number;
+    last_row_id?: string | number | null;
+    changes?: number;
+    served_by?: string;
+  };
+};
+
+type _MockRoute = {
+  path?: string;
+  method?: string;
+  handler?: unknown;
+};
 
 describe('Analytics Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];
@@ -85,7 +107,7 @@ describe('Analytics Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     // Clear mock call history and reset to default behavior
     (mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst?.mockReset?.();
     (mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll?.mockReset?.();
@@ -94,13 +116,11 @@ describe('Analytics Routes', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/analytics', analyticsRouter);
     return app;
@@ -118,7 +138,7 @@ describe('Analytics Routes', () => {
 
     it('should include performance sub-router', () => {
       const routes = analyticsRouter.routes;
-      const hasPerformanceRoute = routes.some((route: any) =>
+      const hasPerformanceRoute = routes.some((route: _MockRoute) =>
         route.path?.includes('performance')
       );
       expect(hasPerformanceRoute).toBe(true);
@@ -127,16 +147,16 @@ describe('Analytics Routes', () => {
 
   describe('POST /api/analytics/page-view - Track page view', () => {
     it('should accept page view tracking without auth (public endpoint)', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock the rate limit check to pass
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
-      mockFirst.mockResolvedValue({ success: true } as any);
+      mockFirst.mockResolvedValue({ success: true } as unknown as D1Result);
 
       // Mock the insert operation
       const mockRun = vi.mocked((mockDb as { _mockRun: ReturnType<typeof vi.fn> })._mockRun);
-      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      mockRun.mockResolvedValue({ success: true, meta: { changes: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -153,17 +173,17 @@ describe('Analytics Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public endpoint should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it.skip('should validate request body', async () => {
       // NOTE: This test is skipped because Zod validation happens before our route handler
       // and the mock database doesn't properly simulate the rate limiting check that happens first.
       // The validation works correctly in production; testing it requires more sophisticated mocks.
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -178,34 +198,34 @@ describe('Analytics Routes', () => {
         body: JSON.stringify({}),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
   describe('POST /api/analytics/sponsor-click - Track sponsor click', () => {
     it('should accept sponsor click tracking without auth (public endpoint)', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock the rate limit check to pass - mock the database method chain
-      const mockPrepare = vi.mocked((mockDb as { prepare: ReturnType<typeof vi.fn> }).prepare);
+      const mockPrepare = vi.mocked((mockDb as unknown as { prepare: ReturnType<typeof vi.fn> }).prepare);
       const mockBind = vi.fn().mockReturnThis();
-      const mockFirst = vi.fn().mockResolvedValue({ success: true } as any);
-      const mockAll = vi.fn().mockResolvedValue({ results: [], meta: { duration: 1 } } as any);
-      const mockRun = vi.fn().mockResolvedValue({ success: true, meta: { changes: 1 } } as any);
+      const mockFirst = vi.fn().mockResolvedValue({ success: true } as D1Result);
+      const mockAll = vi.fn().mockResolvedValue({ success: true, results: [], meta: { duration: 1 } } as unknown as D1Result);
+      const mockRun = vi.fn().mockResolvedValue({ success: true, meta: { changes: 1 } } as unknown as D1Result);
       mockPrepare.mockReturnValue({
         bind: mockBind,
         first: mockFirst,
         all: mockAll,
         run: mockRun,
-      } as any);
+      } as { bind: ReturnType<typeof vi.fn>; first: ReturnType<typeof vi.fn>; all: ReturnType<typeof vi.fn>; run: ReturnType<typeof vi.fn> });
 
       // Mock the Drizzle select method for sponsor check
-      const mockDrizzleFirst = vi.fn().mockResolvedValue({ id: 'sponsor-123' } as any);
-      (mockDb as any).select = vi.fn(() => ({
+      const mockDrizzleFirst = vi.fn().mockResolvedValue({ id: 'sponsor-123' } as unknown as D1Result);
+      (mockDb as { select?: ReturnType<typeof vi.fn> }).select = vi.fn(() => ({
         from: vi.fn(() => ({
           where: vi.fn(() => ({
             get: mockDrizzleFirst,
@@ -226,14 +246,14 @@ describe('Analytics Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public endpoint should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate sponsor_id is provided', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -248,25 +268,25 @@ describe('Analytics Routes', () => {
         body: JSON.stringify({}),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it.skip('should return 400 when sponsor does not exist', async () => {
       // NOTE: This test is skipped because properly mocking the sponsor check
       // requires a more sophisticated Drizzle mock that handles chained calls.
       // The validation logic works correctly in production.
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock the rate limit check to pass
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
-      mockFirst.mockResolvedValue({ success: true } as any);
+      mockFirst.mockResolvedValue({ success: true } as unknown as D1Result);
 
       // Mock sponsor does not exist
-      mockFirst.mockResolvedValue(null as any);
+mockFirst.mockResolvedValue(null);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -281,15 +301,15 @@ describe('Analytics Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
   describe('GET /api/analytics/admin/stats - Get platform analytics', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -299,13 +319,13 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/admin/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to access', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -315,21 +335,21 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/admin/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to access platform analytics', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock database queries
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
 
-      mockFirst.mockResolvedValue({ total: 100 } as any);
-      mockAll.mockResolvedValue({ results: [{ unique_count: 50 }], meta: { duration: 1 } } as any);
+      mockFirst.mockResolvedValue({ total: 100 } as unknown as D1Result);
+      mockAll.mockResolvedValue({ results: [{ unique_count: 50 }], meta: { duration: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -338,24 +358,24 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/admin/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - admin should be able to access
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow mentor to access platform analytics', async () => {
       // This tests RBAC-03: mentors get admin access for non-super-admin routes
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       // Mock database queries
       const mockFirst = vi.mocked((mockDb as { _mockFirst: ReturnType<typeof vi.fn> })._mockFirst);
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
 
-      mockFirst.mockResolvedValue({ total: 100 } as any);
-      mockAll.mockResolvedValue({ results: [{ unique_count: 50 }], meta: { duration: 1 } } as any);
+      mockFirst.mockResolvedValue({ total: 100 } as unknown as D1Result);
+      mockAll.mockResolvedValue({ results: [{ unique_count: 50 }], meta: { duration: 1 } } as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -364,17 +384,17 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/admin/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - mentors are allowed on admin routes
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
   describe('GET /api/analytics/admin/roster-stats - Get roster stats', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -384,13 +404,13 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/admin/roster-stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to access', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -400,18 +420,18 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/admin/roster-stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to access roster stats', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       // Mock database query
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as any);
+      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -420,17 +440,17 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/admin/roster-stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - admin should be able to access
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
   describe('GET /api/analytics/leaderboard - Get leaderboard', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -440,18 +460,18 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/leaderboard');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should allow authenticated users to access leaderboard', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       // Mock database query
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as any);
+      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -460,21 +480,21 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/leaderboard');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 - authenticated users can access
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('GET /api/analytics/search - Search', () => {
     it('should allow search without auth (public endpoint)', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock database query
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as any);
+      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -483,14 +503,14 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/search?q=test');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public endpoint should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should return empty results when query is empty', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -500,12 +520,12 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/search?q=');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return 200 with empty results
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await _res.json() as { results: unknown[] };
       expect(body.results).toEqual([]);
     });
 
@@ -513,12 +533,12 @@ describe('Analytics Routes', () => {
       // NOTE: This test is skipped because properly mocking the Drizzle SQL execution
       // requires a more sophisticated mock setup. The sanitization logic works correctly
       // in production - it removes non-alphanumeric characters from search queries.
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock database query
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as any);
+      mockAll.mockResolvedValue({ results: [], meta: { duration: 1 } } as unknown as D1Result);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -528,24 +548,24 @@ describe('Analytics Routes', () => {
       // Query with special characters that should be sanitized
       const req = new Request('http://localhost/api/analytics/search?q=<script>alert("xss")</script>');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should sanitize and return empty results for invalid chars
-      expect(res.status).toBe(200);
+      expect(_res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await _res.json() as { results: unknown[] };
       expect(body.results).toEqual([]);
     });
   });
 
   describe('GET /api/analytics/performance/summary - Get performance summary', () => {
     it('should access performance metrics without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock database query
       const mockExecute = vi.fn().mockResolvedValue([]);
-      (mockDb as any).select = vi.fn(() => ({
+      (mockDb as { select?: ReturnType<typeof vi.fn> }).select = vi.fn(() => ({
         from: vi.fn(() => ({
           groupBy: vi.fn(() => ({
             execute: mockExecute,
@@ -560,21 +580,21 @@ describe('Analytics Routes', () => {
 
       const req = new Request('http://localhost/api/analytics/performance/summary');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public endpoint should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
   });
 
   describe('POST /api/analytics/performance/metrics - Submit performance metrics', () => {
     it('should accept performance metrics without auth', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       // Mock the execute operation
       const mockExecute = vi.fn().mockResolvedValue([]);
-      (mockDb as any).insert = vi.fn(() => ({
+      (mockDb as { insert?: ReturnType<typeof vi.fn> }).insert = vi.fn(() => ({
         values: vi.fn(() => ({
           execute: mockExecute,
         })),
@@ -601,14 +621,14 @@ describe('Analytics Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public endpoint should not require auth
-      expect(res.status).not.toBe(401);
+      expect(_res.status).not.toBe(401);
     });
 
     it('should validate metrics array is provided', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -623,10 +643,10 @@ describe('Analytics Routes', () => {
         body: JSON.stringify({}),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
   });
 
@@ -668,8 +688,7 @@ describe('Analytics Routes', () => {
       // The rate limiting is applied via checkPersistentRateLimit in the handler.
       // This is verified in the actual route implementation at analytics.ts:129
       const routes = analyticsRouter.routes;
-      const hasPageViewRoute = routes.some((route: any) =>
-        route.path?.includes('page-view')
+      const hasPageViewRoute = routes.some((route) => route.path?.includes('page-view')
       );
       expect(hasPageViewRoute).toBe(true);
     });
@@ -679,8 +698,7 @@ describe('Analytics Routes', () => {
       // The rate limiting is applied via checkPersistentRateLimit in the handler.
       // This is verified in the actual route implementation at analytics.ts:155
       const routes = analyticsRouter.routes;
-      const hasSponsorClickRoute = routes.some((route: any) =>
-        route.path?.includes('sponsor-click')
+      const hasSponsorClickRoute = routes.some((route) => route.path?.includes('sponsor-click')
       );
       expect(hasSponsorClickRoute).toBe(true);
     });
@@ -705,8 +723,7 @@ describe('Analytics Routes', () => {
       // NOTE: OpenAPI routes don't expose paths the same way in the routes array.
       // Route is defined via openapi() with trackPageViewRoute schema.
       const routes = analyticsRouter.routes;
-      const pageViewRoute = routes.find((r: any) =>
-        r.path?.includes('page-view') && r.method === 'POST'
+      const pageViewRoute = routes.find((r) => r.path?.includes('page-view') && r.method === 'POST'
       );
       expect(pageViewRoute).toBeDefined();
     });
@@ -715,8 +732,7 @@ describe('Analytics Routes', () => {
       // NOTE: OpenAPI routes don't expose paths the same way in the routes array.
       // Route is defined via openapi() with trackSponsorClickRoute schema.
       const routes = analyticsRouter.routes;
-      const sponsorClickRoute = routes.find((r: any) =>
-        r.path?.includes('sponsor-click') && r.method === 'POST'
+      const sponsorClickRoute = routes.find((r) => r.path?.includes('sponsor-click') && r.method === 'POST'
       );
       expect(sponsorClickRoute).toBeDefined();
     });
@@ -725,8 +741,7 @@ describe('Analytics Routes', () => {
       // NOTE: OpenAPI routes don't expose paths the same way in the routes array.
       // Route is defined via openapi() with getStatsRoute schema.
       const routes = analyticsRouter.routes;
-      const statsRoute = routes.find((r: any) =>
-        r.path?.includes('admin/stats') && r.method === 'GET'
+      const statsRoute = routes.find((r) => r.path?.includes('admin/stats') && r.method === 'GET'
       );
       expect(statsRoute).toBeDefined();
     });
@@ -735,8 +750,7 @@ describe('Analytics Routes', () => {
       // NOTE: OpenAPI routes don't expose paths the same way in the routes array.
       // Route is defined via openapi() with getRosterStatsRoute schema.
       const routes = analyticsRouter.routes;
-      const rosterStatsRoute = routes.find((r: any) =>
-        r.path?.includes('admin/roster-stats') && r.method === 'GET'
+      const rosterStatsRoute = routes.find((r) => r.path?.includes('admin/roster-stats') && r.method === 'GET'
       );
       expect(rosterStatsRoute).toBeDefined();
     });
@@ -745,8 +759,7 @@ describe('Analytics Routes', () => {
       // NOTE: OpenAPI routes don't expose paths the same way in the routes array.
       // Route is defined via openapi() with getLeaderboardRoute schema.
       const routes = analyticsRouter.routes;
-      const leaderboardRoute = routes.find((r: any) =>
-        r.path?.includes('leaderboard') && r.method === 'GET'
+      const leaderboardRoute = routes.find((r) => r.path?.includes('leaderboard') && r.method === 'GET'
       );
       expect(leaderboardRoute).toBeDefined();
     });
@@ -755,8 +768,7 @@ describe('Analytics Routes', () => {
       // NOTE: OpenAPI routes don't expose paths the same way in the routes array.
       // Route is defined via openapi() with searchRoute schema.
       const routes = analyticsRouter.routes;
-      const searchRoute = routes.find((r: any) =>
-        r.path?.includes('search') && r.method === 'GET'
+      const searchRoute = routes.find((r) => r.path?.includes('search') && r.method === 'GET'
       );
       expect(searchRoute).toBeDefined();
     });
@@ -772,8 +784,7 @@ describe('Analytics Routes', () => {
     it('should apply ensureAuth to /admin/stats', () => {
       // Analytics router applies ensureAuth to /admin/stats
       const routes = analyticsRouter.routes;
-      const hasAdminStatsRoute = routes.some((route: any) =>
-        route.path?.includes('admin/stats')
+      const hasAdminStatsRoute = routes.some((route) => route.path?.includes('admin/stats')
       );
       expect(hasAdminStatsRoute).toBe(true);
     });
@@ -781,8 +792,7 @@ describe('Analytics Routes', () => {
     it('should apply ensureAuth to /admin/roster-stats', () => {
       // Analytics router applies ensureAuth to /admin/roster-stats
       const routes = analyticsRouter.routes;
-      const hasRosterStatsRoute = routes.some((route: any) =>
-        route.path?.includes('admin/roster-stats')
+      const hasRosterStatsRoute = routes.some((route) => route.path?.includes('admin/roster-stats')
       );
       expect(hasRosterStatsRoute).toBe(true);
     });
@@ -790,8 +800,7 @@ describe('Analytics Routes', () => {
     it('should apply ensureAuth to /leaderboard', () => {
       // Analytics router applies ensureAuth to /leaderboard
       const routes = analyticsRouter.routes;
-      const hasLeaderboardRoute = routes.some((route: any) =>
-        route.path?.includes('leaderboard')
+      const hasLeaderboardRoute = routes.some((route) => route.path?.includes('leaderboard')
       );
       expect(hasLeaderboardRoute).toBe(true);
     });
@@ -799,8 +808,7 @@ describe('Analytics Routes', () => {
     it('should apply ensureAdmin to /admin/* routes', () => {
       // Analytics router applies ensureAdmin to all /admin/* routes
       const routes = analyticsRouter.routes;
-      const adminRoutes = routes.filter((route: any) =>
-        route.path?.includes('/admin/')
+      const adminRoutes = routes.filter((route) => route.path?.includes('/admin/')
       );
       expect(adminRoutes.length).toBeGreaterThan(0);
     });

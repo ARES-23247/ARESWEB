@@ -7,9 +7,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv } from '../middleware';
 
 // Mock the auth module BEFORE importing sitemapRouter
@@ -18,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -55,18 +58,16 @@ describe('Sitemap Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api', sitemapRouter);
     return app;
@@ -94,11 +95,11 @@ describe('Sitemap Routes', () => {
 
       const req = new Request('http://localhost/api/sitemap.xml');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public route should not require auth - might fail for other reasons but not 401 or 403
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should not require origin integrity checks', async () => {
@@ -116,10 +117,10 @@ describe('Sitemap Routes', () => {
         },
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Public route should not require origin checks
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should process the request (may fail at DB level but route exists)', async () => {
@@ -132,12 +133,12 @@ describe('Sitemap Routes', () => {
 
       const req = new Request('http://localhost/api/sitemap.xml');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The route should be processed (status code exists)
       // Due to Drizzle mock limitations, the DB query may fail
-      expect(res.status).toBeGreaterThan(0);
-      expect(res.status).not.toBe(404); // Route exists
+      expect(_res.status).toBeGreaterThan(0);
+      expect(_res.status).not.toBe(404); // Route exists
     });
   });
 
@@ -186,12 +187,12 @@ describe('Sitemap Routes', () => {
         },
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Bots should be able to access sitemap
-      expect(res.status).not.toBe(429); // Not rate limited
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(429); // Not rate limited
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should handle multiple concurrent requests gracefully', async () => {
@@ -248,19 +249,17 @@ describe('Sitemap Routes', () => {
   describe('Route configuration', () => {
     it('should have the sitemap.xml route defined', () => {
       const routes = sitemapRouter.routes;
-      const hasSitemapRoute = routes.some((route: any) =>
-        route.path === '/sitemap.xml' || route.path === '/sitemap.xml'
+      const hasSitemapRoute = routes.some((route) => route.path === '/sitemap.xml' || route.path === '/sitemap.xml'
       );
       expect(hasSitemapRoute).toBe(true);
     });
 
     it('should be a GET-only route', () => {
       const routes = sitemapRouter.routes;
-      const sitemapRoutes = routes.filter((route: any) =>
-        route.path === '/sitemap.xml' || route.path === '/sitemap.xml'
+      const sitemapRoutes = routes.filter((route) => route.path === '/sitemap.xml' || route.path === '/sitemap.xml'
       );
       // Sitemap should only have GET method
-      sitemapRoutes.forEach((route: any) => {
+      sitemapRoutes.forEach((route) => {
         expect(route.method).toBe('GET');
       });
     });

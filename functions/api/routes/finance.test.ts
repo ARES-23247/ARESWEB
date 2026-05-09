@@ -7,9 +7,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
 import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing financeRouter
@@ -18,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -105,19 +108,17 @@ describe('Finance Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
     vi.mocked(logAuditAction).mockClear();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/finance', financeRouter);
     return app;
@@ -142,7 +143,7 @@ describe('Finance Routes', () => {
 
   describe('Authentication and Authorization', () => {
     it('should return 401 when not authenticated on GET /summary', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -152,13 +153,13 @@ describe('Finance Routes', () => {
 
       const req = new Request('http://localhost/api/finance/summary');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to access /summary', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -168,13 +169,13 @@ describe('Finance Routes', () => {
 
       const req = new Request('http://localhost/api/finance/summary');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 401 when not authenticated on GET /sponsorship', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -184,13 +185,13 @@ describe('Finance Routes', () => {
 
       const req = new Request('http://localhost/api/finance/sponsorship');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to POST /sponsorship', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -206,13 +207,13 @@ describe('Finance Routes', () => {
         body: JSON.stringify({ company_name: 'Test Sponsor', estimated_value: 1000 }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 403 when non-admin tries to DELETE /sponsorship/{id}', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -224,13 +225,13 @@ describe('Finance Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 403 when non-admin tries to GET /transactions', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -240,13 +241,13 @@ describe('Finance Routes', () => {
 
       const req = new Request('http://localhost/api/finance/transactions');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 403 when non-admin tries to POST /transactions', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -262,13 +263,13 @@ describe('Finance Routes', () => {
         body: JSON.stringify({ type: 'income', amount: 100, category: 'Sponsorship', date: '2026-01-01' }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should return 403 when non-admin tries to DELETE /transactions/{id}', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -280,13 +281,13 @@ describe('Finance Routes', () => {
         method: 'DELETE',
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to access /summary', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -296,16 +297,16 @@ describe('Finance Routes', () => {
 
       const req = new Request('http://localhost/api/finance/summary');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow mentor (non-admin role) to access finance routes via member_type', async () => {
       // This tests that mentors get admin access for finance routes
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -315,16 +316,16 @@ describe('Finance Routes', () => {
 
       const req = new Request('http://localhost/api/finance/summary');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - mentors are allowed
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow coach (non-admin role) to access finance routes via member_type', async () => {
       // This tests that coaches get admin access for finance routes
-      (globalThis as any).__mockSessionUser = mockCoachUser;
+      globalThis.__mockSessionUser = mockCoachUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -334,11 +335,11 @@ describe('Finance Routes', () => {
 
       const req = new Request('http://localhost/api/finance/summary');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - coaches are allowed
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
@@ -353,8 +354,7 @@ describe('Finance Routes', () => {
   describe('Route existence verification', () => {
     it('should have GET /summary route', () => {
       const routes = financeRouter.routes;
-      const summaryRoute = routes.find((r: any) =>
-        r.path?.includes('summary')
+      const summaryRoute = routes.find((r) => r.path?.includes('summary')
       );
       expect(summaryRoute).toBeDefined();
       expect(summaryRoute?.method).toBe('GET');
@@ -362,48 +362,42 @@ describe('Finance Routes', () => {
 
     it('should have GET /sponsorship route', () => {
       const routes = financeRouter.routes;
-      const listPipelineRoute = routes.find((r: any) =>
-        r.path?.includes('sponsorship') && r.method === 'GET'
+      const listPipelineRoute = routes.find((r) => r.path?.includes('sponsorship') && r.method === 'GET'
       );
       expect(listPipelineRoute).toBeDefined();
     });
 
     it('should have POST /sponsorship route', () => {
       const routes = financeRouter.routes;
-      const savePipelineRoute = routes.find((r: any) =>
-        r.path?.includes('sponsorship') && r.method === 'POST'
+      const savePipelineRoute = routes.find((r) => r.path?.includes('sponsorship') && r.method === 'POST'
       );
       expect(savePipelineRoute).toBeDefined();
     });
 
     it('should have DELETE /sponsorship/{id} route', () => {
       const routes = financeRouter.routes;
-      const deletePipelineRoute = routes.find((r: any) =>
-        r.path?.includes('sponsorship') && r.method === 'DELETE'
+      const deletePipelineRoute = routes.find((r) => r.path?.includes('sponsorship') && r.method === 'DELETE'
       );
       expect(deletePipelineRoute).toBeDefined();
     });
 
     it('should have GET /transactions route', () => {
       const routes = financeRouter.routes;
-      const listTransactionsRoute = routes.find((r: any) =>
-        r.path?.includes('transactions') && r.method === 'GET'
+      const listTransactionsRoute = routes.find((r) => r.path?.includes('transactions') && r.method === 'GET'
       );
       expect(listTransactionsRoute).toBeDefined();
     });
 
     it('should have POST /transactions route', () => {
       const routes = financeRouter.routes;
-      const saveTransactionRoute = routes.find((r: any) =>
-        r.path?.includes('transactions') && r.method === 'POST'
+      const saveTransactionRoute = routes.find((r) => r.path?.includes('transactions') && r.method === 'POST'
       );
       expect(saveTransactionRoute).toBeDefined();
     });
 
     it('should have DELETE /transactions/{id} route', () => {
       const routes = financeRouter.routes;
-      const deleteTransactionRoute = routes.find((r: any) =>
-        r.path?.includes('transactions') && r.method === 'DELETE'
+      const deleteTransactionRoute = routes.find((r) => r.path?.includes('transactions') && r.method === 'DELETE'
       );
       expect(deleteTransactionRoute).toBeDefined();
     });
@@ -465,7 +459,7 @@ describe('Finance Routes', () => {
 
     financeRoutes.forEach(({ path, method }) => {
       it(`should require admin for ${method} ${path}`, async () => {
-        (globalThis as any).__mockSessionUser = mockAuthUser; // Non-admin user
+        globalThis.__mockSessionUser = mockAuthUser; // Non-admin user
         const app = createTestApp();
 
         const testEnv = createTestEnv({
@@ -475,9 +469,9 @@ describe('Finance Routes', () => {
 
         const req = new Request(`http://localhost/api/finance${path}`, { method });
 
-        const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-        expect(res.status).toBe(403);
+        expect(_res.status).toBe(403);
       });
     });
   });

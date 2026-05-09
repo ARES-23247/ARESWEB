@@ -7,11 +7,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Hono } from 'hono';
-import { globalErrorHandler } from '../middleware/error';
+import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
-import { AppEnv, SessionUser } from '../middleware';
-import { ApiError } from '../middleware/errorHandler';
+// Extend globalThis for test mocks
+declare global {
+  var __mockSessionUser: import('../middleware').SessionUser | null;
+}
+import { AppEnv, SessionUser, _ApiError } from '../middleware';
 
 // Mock the auth module BEFORE importing communicationsRouter
 vi.mock('../middleware/auth', async () => {
@@ -19,16 +21,16 @@ vi.mock('../middleware/auth', async () => {
   return {
     ...actual,
     getSessionUser: vi.fn(),
-    ensureAuth: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       c.set('sessionUser', user);
       return next();
     }),
-    ensureAdmin: vi.fn((c: any, next: any) => {
-      const user = (globalThis as any).__mockSessionUser;
+    ensureAdmin: vi.fn((c: Context<AppEnv>, next: Next) => {
+      const user = globalThis.__mockSessionUser;
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
@@ -96,28 +98,20 @@ describe('Communications Routes', () => {
   beforeEach(() => {
     const dbSetup = createMockDb();
     mockDb = dbSetup.mockDb;
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    (globalThis as any).__mockSessionUser = null;
+    globalThis.__mockSessionUser = null;
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>()
-    app.onError(globalErrorHandler);
-    app.onError(globalErrorHandler);
+    const app = new Hono<AppEnv>();
     app.use('*', createTestDbMiddleware());
 
     // Use Hono's built-in onError for error handling (same pattern as production)
-    app.onError(async (err, c) => {
-      if (err instanceof ApiError) {
-        return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
-      }
-      console.error("Test Error:", err);
-      return c.json({ error: "Internal Server Error" }, 500);
-    });
+    
 
     app.route('/api/communications', communicationsRouter);
     return app;
@@ -146,8 +140,7 @@ describe('Communications Routes', () => {
     it('should apply ensureAdmin to all routes', () => {
       // Verify the middleware is applied by checking routes exist
       const routes = communicationsRouter.routes;
-      const hasProtectedRoutes = routes.some((route: any) =>
-        route.path?.includes('/mass-email') || route.path?.includes('/stats')
+      const hasProtectedRoutes = routes.some((route) => route.path?.includes('/mass-email') || route.path?.includes('/stats')
       );
       expect(hasProtectedRoutes).toBe(true);
     });
@@ -155,7 +148,7 @@ describe('Communications Routes', () => {
 
   describe('GET /api/communications/stats - Get communications stats', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -165,13 +158,13 @@ describe('Communications Routes', () => {
 
       const req = new Request('http://localhost/api/communications/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to access stats', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -181,13 +174,13 @@ describe('Communications Routes', () => {
 
       const req = new Request('http://localhost/api/communications/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to access stats', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -197,15 +190,15 @@ describe('Communications Routes', () => {
 
       const req = new Request('http://localhost/api/communications/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow mentor to access stats via member_type', async () => {
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -215,15 +208,15 @@ describe('Communications Routes', () => {
 
       const req = new Request('http://localhost/api/communications/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - mentors are allowed
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow coach to access stats via member_type', async () => {
-      (globalThis as any).__mockSessionUser = mockCoachUser;
+      globalThis.__mockSessionUser = mockCoachUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -233,17 +226,17 @@ describe('Communications Routes', () => {
 
       const req = new Request('http://localhost/api/communications/stats');
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - coaches are allowed
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
   describe('POST /api/communications/mass-email - Send mass email', () => {
     it('should return 401 when not authenticated', async () => {
-      (globalThis as any).__mockSessionUser = null;
+      globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -263,13 +256,13 @@ describe('Communications Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(401);
+      expect(_res.status).toBe(401);
     });
 
     it('should return 403 when non-admin tries to send mass email', async () => {
-      (globalThis as any).__mockSessionUser = mockAuthUser;
+      globalThis.__mockSessionUser = mockAuthUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -289,13 +282,13 @@ describe('Communications Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      expect(res.status).toBe(403);
+      expect(_res.status).toBe(403);
     });
 
     it('should validate required fields for mass email', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -315,14 +308,14 @@ describe('Communications Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should validate htmlContent is required for mass email', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -342,14 +335,14 @@ describe('Communications Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should return validation error (400)
-      expect(res.status).toBe(400);
+      expect(_res.status).toBe(400);
     });
 
     it('should allow admin to send mass email (proceeds to handler)', async () => {
-      (globalThis as any).__mockSessionUser = mockAdminUser;
+      globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -369,15 +362,15 @@ describe('Communications Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - the request should proceed to the handler
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow mentor to send mass email via member_type', async () => {
-      (globalThis as any).__mockSessionUser = mockMentorUser;
+      globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -397,15 +390,15 @@ describe('Communications Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - mentors are allowed
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
 
     it('should allow coach to send mass email via member_type', async () => {
-      (globalThis as any).__mockSessionUser = mockCoachUser;
+      globalThis.__mockSessionUser = mockCoachUser;
       const app = createTestApp();
 
       const testEnv = createTestEnv({
@@ -425,11 +418,11 @@ describe('Communications Routes', () => {
         }),
       });
 
-      const res = await app.request(req, undefined, testEnv, mockExecutionContext);
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // Should not be 401 or 403 - coaches are allowed
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      expect(_res.status).not.toBe(401);
+      expect(_res.status).not.toBe(403);
     });
   });
 
@@ -437,8 +430,7 @@ describe('Communications Routes', () => {
     it('should have all routes protected by ensureAdmin middleware', () => {
       // The communications router applies ensureAdmin to /mass-email and /stats routes
       const routes = communicationsRouter.routes;
-      const protectedPaths = routes.filter((route: any) =>
-        route.path?.includes('/mass-email') || route.path?.includes('/stats')
+      const protectedPaths = routes.filter((route) => route.path?.includes('/mass-email') || route.path?.includes('/stats')
       );
 
       expect(protectedPaths.length).toBeGreaterThan(0);
@@ -446,7 +438,7 @@ describe('Communications Routes', () => {
 
     it('should have the correct route paths registered', () => {
       const routes = communicationsRouter.routes;
-      const paths = routes.map((r: any) => r.path || '');
+      const paths = routes.map((r) => r.path || '');
 
       // Expected routes based on communications.ts
       const expectedRoutes = [
@@ -466,8 +458,7 @@ describe('Communications Routes', () => {
   describe('Route methods', () => {
     it('should support POST on /mass-email', () => {
       const routes = communicationsRouter.routes;
-      const massEmailRoute = routes.find((r: any) =>
-        r.path?.includes('/mass-email')
+      const massEmailRoute = routes.find((r) => r.path?.includes('/mass-email')
       );
       expect(massEmailRoute).toBeDefined();
       // OpenAPI routes may show 'ALL' as method instead of 'POST'
@@ -476,8 +467,7 @@ describe('Communications Routes', () => {
 
     it('should support GET on /stats', () => {
       const routes = communicationsRouter.routes;
-      const statsRoute = routes.find((r: any) =>
-        r.path?.includes('/stats')
+      const statsRoute = routes.find((r) => r.path?.includes('/stats')
       );
       expect(statsRoute).toBeDefined();
       // OpenAPI routes may show 'ALL' as method instead of 'GET'
@@ -490,7 +480,7 @@ describe('Communications Routes', () => {
       const routes = communicationsRouter.routes;
 
       // Routes should have OpenAPI metadata
-      routes.forEach((route: any) => {
+      routes.forEach((route) => {
         if (route.path?.includes('/mass-email') || route.path?.includes('/stats')) {
           expect(route).toBeDefined();
         }
@@ -501,7 +491,7 @@ describe('Communications Routes', () => {
       expect(communicationsRouter).toBeDefined();
 
       const routes = communicationsRouter.routes;
-      const commRoutes = routes.filter((r: any) =>
+      const commRoutes = routes.filter((r) =>
         r.path?.includes('/mass-email') || r.path?.includes('/stats')
       );
 
