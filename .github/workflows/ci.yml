@@ -49,7 +49,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 migrations apply ares-db --remote
+          command: d1 migrations apply ares-db-preview --remote
           packageManager: npm
 
       - name: Seed Test Data
@@ -57,7 +57,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 execute ares-db --remote --file=scripts/seed-test-data.sql
+          command: d1 execute ares-db-preview --remote --file=scripts/seed-test-data.sql
           packageManager: npm
 
       # Use different branch names for PR vs master to avoid conflicts
