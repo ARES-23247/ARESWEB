@@ -106,6 +106,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
     isSavingRef.current = true;
 
     const data = profileData;
+    console.log("[ProfileEditor] Submitting profile data:", data);
     const formatted = {
       ...data,
       subteams: JSON.stringify(data.subteams),
@@ -116,10 +117,13 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
       show_phone: data.show_phone ? 1 : 0,
       show_on_about: data.show_on_about ? 1 : 0,
     };
+    console.log("[ProfileEditor] Formatted data:", formatted);
 
     if (adminEditUserId) {
+      console.log("[ProfileEditor] Using admin mutation for user:", adminEditUserId);
       adminMutation.mutate({ id: adminEditUserId, profile: formatted });
     } else {
+      console.log("[ProfileEditor] Using self mutation");
       meMutation.mutate(formatted);
     }
   };

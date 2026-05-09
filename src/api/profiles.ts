@@ -54,15 +54,21 @@ export function useUpdateMe(
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean }, Error, Record<string, unknown>>({
     mutationFn: async (data) => {
+      console.log("[Profile:updateMe] Sending profile update:", Object.keys(data), data);
       const response = await client.profile.me.$put({ json: data });
-      return unwrapResponse<{ success: boolean }>(response);
+      console.log("[Profile:updateMe] Response status:", response.status, "ok:", response.ok);
+      const result = await unwrapResponse<{ success: boolean }>(response);
+      console.log("[Profile:updateMe] Response data:", result);
+      return result;
     },
     onSuccess: (...args) => {
+      console.log("[Profile:updateMe] Mutation successful");
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
       options?.onSuccess?.(...args);
     },
-    onError: (...args) => {
-      options?.onError?.(...args);
+    onError: (error) => {
+      console.error("[Profile:updateMe] Mutation failed:", error);
+      options?.onError?.(error);
     }
   });
 }

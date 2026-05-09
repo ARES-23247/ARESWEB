@@ -145,10 +145,11 @@ apiRouter.use("*", async (c, next) => {
   if (c.req.path.startsWith("/api/webhooks/")) {
     return await next();
   }
-  
+
   return csrf({
     origin: (origin) => {
-      if (!origin) return false;
+      // Allow same-origin requests (no Origin header)
+      if (!origin) return true;
       const trusted = ["http://localhost:5173", "http://localhost:8788", "https://aresfirst.org"];
       if (trusted.includes(origin)) return true;
       return origin.endsWith(".pages.dev") || origin.endsWith(".aresfirst.org");

@@ -220,10 +220,13 @@ profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (
     const body = c.req.valid("json");
     const validationResult = updateUserProfileSchema.safeParse(body);
     if (!validationResult.success) {
+      console.error("[Profile:UpdateMe] Validation failed:", validationResult.error.format());
       throw new ApiError(`Invalid profile data: ${validationResult.error.message}`, 400);
     }
 
+    console.log("[Profile:UpdateMe] Saving profile for user:", user.id, "data keys:", Object.keys(validationResult.data));
     await upsertProfile(c, user.id, validationResult.data);
+    console.log("[Profile:UpdateMe] Profile saved successfully for user:", user.id);
     return c.json({ success: true }, 200);
 }));
 
