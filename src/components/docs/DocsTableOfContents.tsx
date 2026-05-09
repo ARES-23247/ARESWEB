@@ -1,4 +1,5 @@
 import { memo, useState, useEffect, useMemo } from "react";
+import DOMPurify from 'dompurify';
 
 interface TocHeading {
   level: number;
@@ -14,9 +15,10 @@ function DocsTableOfContents({ content }: DocsTableOfContentsProps) {
   const [activeId, setActiveId] = useState("");
 
   const stripHtml = (html: string) => {
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
+    // Use DOMPurify to sanitize HTML before extracting text content
+    // This prevents XSS while still allowing us to strip HTML tags
+    const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
+    return sanitized;
   };
 
   const tableOfContents = useMemo<TocHeading[]>(() => {
