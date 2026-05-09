@@ -18,13 +18,13 @@ import {
 export const pointsRouter = new OpenAPIHono<AppEnv>();
 
 pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalanceRoute>(async (c) => {
-  const { user_id } = c.req.valid("param");
+  const { userId } = c.req.valid("param");
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
+    if (sessionUser.role !== "admin" && sessionUser.id !== userId) {
       throw new ApiError("Forbidden", 403);
     }
 
@@ -32,22 +32,22 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
     const ledger = await db
       .select({ points_delta: schema.pointsLedger.pointsDelta })
       .from(schema.pointsLedger)
-      .where(eq(schema.pointsLedger.userId, user_id))
+      .where(eq(schema.pointsLedger.userId, userId))
       .all();
 
     const balance = ledger.reduce((sum, tx) => sum + (tx.points_delta || 0), 0);
 
-    return c.json({ user_id, balance }, 200);
+    return c.json({ userId, balance }, 200);
 }));
 
 pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c) => {
-  const { user_id } = c.req.valid("param");
+  const { userId } = c.req.valid("param");
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    if (sessionUser.role !== "admin" && sessionUser.id !== user_id) {
+    if (sessionUser.role !== "admin" && sessionUser.id !== userId) {
       throw new ApiError("Forbidden", 403);
     }
 
@@ -55,24 +55,24 @@ pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistory
     const history = await db
       .select()
       .from(schema.pointsLedger)
-      .where(eq(schema.pointsLedger.userId, user_id))
+      .where(eq(schema.pointsLedger.userId, userId))
       .orderBy(desc(schema.pointsLedger.createdAt))
       .all();
 
     type PointsLedgerRow = typeof schema.pointsLedger.$inferSelect;
     return c.json(history.map((tx: PointsLedgerRow) => ({
       ...tx,
-      points_delta: tx.pointsDelta,
-      user_id: tx.userId,
-      created_by: tx.createdBy,
+      pointsDelta: tx.pointsDelta,
+      userId: tx.userId,
+      createdBy: tx.createdBy,
       id: tx.id || "",
-      created_at: tx.createdAt || null
+      createdAt: tx.createdAt || null
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     })) as any, 200);
 }));
 
 pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(async (c) => {
-  const { user_id, points_delta, reason } = c.req.valid("json");
+  const { userId, pointsDelta, reason } = c.req.valid("json");
     const sessionUser = c.get("sessionUser");
     if (!sessionUser || sessionUser.role !== "admin") {
       throw new ApiError("Unauthorized", 401);
@@ -84,8 +84,8 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
 
     const newTx = {
       id,
-      userId: user_id,
-      pointsDelta: points_delta,
+      userId: userId,
+      pointsDelta: pointsDelta,
       reason,
       createdAt: new Date().toISOString(),
       createdBy: sessionUser.id
@@ -93,9 +93,9 @@ pointsRouter.openapi(awardPointsRoute, typedHandler<typeof awardPointsRoute>(asy
 
     await db.insert(schema.pointsLedger).values(newTx).run();
 
-    return c.json({ 
-      success: true, 
-      transaction_id: id 
+    return c.json({
+      success: true,
+      transactionId: id
     }, 201);
 }));
 
@@ -121,8 +121,8 @@ pointsRouter.openapi(getPointsLeaderboardRoute, typedHandler<typeof getPointsLea
         id: String(r.id),
         name: r.name || "Anonymous",
         nickname: null,
-        member_type: String(r.role || "student"),
-        points_balance: Number(r.points_balance || 0),
+        memberType: String(r.role || "student"),
+        pointsBalance: Number(r.points_balance || 0),
         avatar: null
       };
     });

@@ -3,15 +3,15 @@ import { standardErrors } from "./common";
 
 export const PointsTransactionSchema = z.object({
   id: z.string(),
-  user_id: z.string(),
-  points_delta: z.number(),
+  userId: z.string(),
+  pointsDelta: z.number(),
   reason: z.string(),
-  created_by: z.string(),
-  created_at: z.string().nullable(),
+  createdBy: z.string(),
+  createdAt: z.string().nullable(),
 });
 
 export const PointsBalanceSchema = z.object({
-  user_id: z.string(),
+  userId: z.string(),
   balance: z.number(),
 });
 
@@ -19,8 +19,8 @@ export const PointsLeaderboardEntrySchema = z.object({
   id: z.string(),
   name: z.string().nullable(),
   nickname: z.string().nullable(),
-  member_type: z.string().nullable(),
-  points_balance: z.number(),
+  memberType: z.string().nullable(),
+  pointsBalance: z.number(),
   avatar: z.string().nullable(),
 });
 
@@ -64,8 +64,8 @@ export const awardPointsRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            user_id: z.string(),
-            points_delta: z.number(),
+            userId: z.string(),
+            pointsDelta: z.number(),
             reason: z.string().min(1),
           })
         }
@@ -75,7 +75,7 @@ export const awardPointsRoute = createRoute({
   responses: {
     201: {
       description: "Award or deduct points (Admin)",
-      content: { "application/json": { schema: z.object({ success: z.boolean(), transaction_id: z.string() }) } },
+      content: { "application/json": { schema: z.object({ success: z.boolean(), transactionId: z.string() }) } },
     },
     ...standardErrors,
   },
