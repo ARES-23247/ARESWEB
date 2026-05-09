@@ -1,3 +1,6 @@
+-- Migration: Initial schema setup
+-- Created: During Drizzle initialization
+-- Description: Creates all base tables, FTS virtual tables, and indexes
 CREATE TABLE `account` (
 	`id` text PRIMARY KEY NOT NULL,
 	`accountId` text NOT NULL,
