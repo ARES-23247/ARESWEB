@@ -31,7 +31,7 @@ export const userResponseSchema = z.object({
   createdAt: z.number().openapi({ example: 1234567890000 }),
   updatedAt: z.number().openapi({ example: 1234567890000 }),
   nickname: z.string().nullable().optional(),
-  member_type: MemberTypeEnum.nullable().optional(),
+  memberType: MemberTypeEnum.nullable().optional(),
 });
 
 export const getUsersRoute = createRoute({
@@ -96,7 +96,7 @@ export const patchUserRoute = createRoute({
         "application/json": {
           schema: z.object({
             role: UserRoleEnum.optional(),
-            member_type: MemberTypeEnum.optional(),
+            memberType: MemberTypeEnum.optional(),
           }),
         },
       },

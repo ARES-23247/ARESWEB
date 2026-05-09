@@ -56,7 +56,7 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
           ? u.updatedAt
           : new Date(u.updatedAt as unknown as string).getTime() || 0,
       nickname: u.nickname || null,
-      member_type: (u.memberType as
+      memberType: (u.memberType as
         | "student"
         | "mentor"
         | "coach"
@@ -126,7 +126,7 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
               ? user.updatedAt
               : new Date(user.updatedAt as unknown as string).getTime(),
           nickname: user.nickname || null,
-          member_type: user.memberType as "student" | "parent" | "mentor" | "coach" | "sponsor" | "alumnus" | "alumni" | "other" | null,
+          memberType: user.memberType as "student" | "parent" | "mentor" | "coach" | "sponsor" | "alumnus" | "alumni" | "other" | null,
         },
       },
       200
@@ -145,18 +145,18 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
 
-    // Validate role and member_type against enums
-    const { role, member_type } = body as {
+    // Validate role and memberType against enums
+    const { role, memberType } = body as {
       role?: string;
-      member_type?: string;
+      memberType?: string;
     };
 
     if (role && !UserRoleEnum.safeParse(role).success) {
       throw new ApiError("Invalid role value", 400);
     }
 
-    if (member_type && !MemberTypeEnum.safeParse(member_type).success) {
-      throw new ApiError("Invalid member_type value", 400);
+    if (memberType && !MemberTypeEnum.safeParse(memberType).success) {
+      throw new ApiError("Invalid memberType value", 400);
     }
 
     const db = getDb(c);
@@ -174,10 +174,10 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
       );
     }
     // WR-14: Document session invalidation behavior
-    // Note: member_type changes do NOT invalidate sessions currently.
-    // This is intentional as member_type is less security-critical than role.
+    // Note: memberType changes do NOT invalidate sessions currently.
+    // This is intentional as memberType is less security-critical than role.
     // If this changes, add session deletion here similar to role changes above.
-    if (member_type) {
+    if (memberType) {
       const existing = await db
         .select({ userId: schema.userProfiles.userId })
         .from(schema.userProfiles)
@@ -187,12 +187,12 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
       if (existing && existing.length > 0) {
         await db
           .update(schema.userProfiles)
-          .set({ memberType: member_type })
+          .set({ memberType: memberType })
           .where(eq(schema.userProfiles.userId, id));
       } else {
         await db
           .insert(schema.userProfiles)
-          .values({ userId: id, memberType: member_type });
+          .values({ userId: id, memberType: memberType });
       }
     }
 
@@ -202,7 +202,7 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
         "PATCH_USER",
         "user",
         id,
-        `Updated user ${id}: role=${role}, type=${member_type}`
+        `Updated user ${id}: role=${role}, type=${memberType}`
       )
     );
 
@@ -333,9 +333,9 @@ usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRou
       {
         profile: {
           ...p,
-          member_type: String(p.memberType || "student"),
-          first_name: String(p.firstName || ""),
-          last_name: String(p.lastName || ""),
+          memberType: String(p.memberType || "student"),
+          firstName: String(p.firstName || ""),
+          lastName: String(p.lastName || ""),
           nickname: String(p.nickname || ""),
           auth: {
             id: user.id,
