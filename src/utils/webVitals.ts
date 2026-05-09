@@ -47,18 +47,38 @@ async function flushMetrics() {
   }
 }
 
+// Track initialization state to prevent duplicate listeners
+let isInitialized = false;
+
+// Store references to event listeners for cleanup
+const handlePageHide = () => flushMetrics();
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'hidden') {
+    flushMetrics();
+  }
+};
+
 // Initialize web vitals tracking
 export function initWebVitals() {
+  // Prevent duplicate initialization
+  if (isInitialized) return;
+  isInitialized = true;
+
   onCLS(reportWebVitals);
   onLCP(reportWebVitals);
   onINP(reportWebVitals);
   onTTFB(reportWebVitals);
 
   // Flush on page hide
-  window.addEventListener('pagehide', flushMetrics);
-  window.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      flushMetrics();
-    }
-  });
+  window.addEventListener('pagehide', handlePageHide);
+  window.addEventListener('visibilitychange', handleVisibilityChange);
+}
+
+// Cleanup function for testing or manual cleanup
+export function cleanupWebVitals() {
+  if (!isInitialized) return;
+  isInitialized = false;
+
+  window.removeEventListener('pagehide', handlePageHide);
+  window.removeEventListener('visibilitychange', handleVisibilityChange);
 }
