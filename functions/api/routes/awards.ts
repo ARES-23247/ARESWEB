@@ -50,12 +50,12 @@ awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (
       id: String(a.id),
       title: a.title,
       year: Number(a.date),
-      event_name: a.event_name || null,
+      eventName: a.eventName || null,
       description: a.description || null,
-      image_url: a.image_url || "trophy",
-      season_id: a.season_id ? Number(a.season_id) : null,
-      created_at: a.created_at || new Date().toISOString(),
-      updated_at: a.created_at || new Date().toISOString()
+      imageUrl: a.iconType || "trophy",
+      seasonId: a.seasonId ? Number(a.seasonId) : null,
+      createdAt: a.createdAt || new Date().toISOString(),
+      updatedAt: a.createdAt || new Date().toISOString()
     }));
 
     return c.json({ awards }, 200);
@@ -66,15 +66,15 @@ awardsRouter.use("/admin/*", ensureAdmin);
 awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (c) => {
     const validatedData = c.req.valid('json');
     const db = getDb(c);
-    const { id, title, year, event_name, description, image_url, season_id } = validatedData;
+    const { id, title, year, eventName, description, imageUrl, seasonId } = validatedData;
 
     const values = {
       title,
       date: String(year),
-      eventName: event_name || "",
+      eventName: eventName || "",
       description: description || null,
-      iconType: image_url || "trophy",
-      seasonId: season_id ? Number(season_id) : null,
+      iconType: imageUrl || "trophy",
+      seasonId: seasonId ? Number(seasonId) : null,
       isDeleted: 0
     } as const;
 
