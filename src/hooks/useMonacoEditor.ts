@@ -18,6 +18,7 @@ export function useMonacoEditor() {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const vimRef = useRef<IVimMode | null>(null);
+  const completionProviderRef = useRef<ReturnType<typeof monaco.languages.registerInlineCompletionsProvider> | null>(null);
 
   const handleEditorDidMount = useCallback(async (
     editor: editor.IStandaloneCodeEditor,
@@ -65,8 +66,14 @@ export function useMonacoEditor() {
     editorRef.current = editor;
     monacoRef.current = monaco;
 
+    // Clean up previous completion provider if it exists
+    if (completionProviderRef.current) {
+      completionProviderRef.current.dispose();
+      completionProviderRef.current = null;
+    }
+
     // Ghost text provider
-    monaco.languages.registerInlineCompletionsProvider('javascript', {
+    completionProviderRef.current = monaco.languages.registerInlineCompletionsProvider('javascript', {
       provideInlineCompletions: async (
         model: editor.ITextModel,
         position: Position,
@@ -121,6 +128,16 @@ export function useMonacoEditor() {
       },
       disposeInlineCompletions: () => { /* no-op cleanup */ }
     });
+  }, []);
+
+  // Cleanup completion provider on unmount
+  useEffect(() => {
+    return () => {
+      if (completionProviderRef.current) {
+        completionProviderRef.current.dispose();
+        completionProviderRef.current = null;
+      }
+    };
   }, []);
 
   // Vim Mode Effect
