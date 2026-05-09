@@ -1,0 +1,35 @@
+#!/bin/bash
+# Manual command to show latest CI status for current branch
+
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
+REPO_URL=$(git remote get-url origin 2>/dev/null)
+
+if [[ "$REPO_URL" =~ github\.com[/:]([^/]+)/([^/]+)\.git$ ]]; then
+    REPO_OWNER="${BASH_REMATCH[1]}"
+    REPO_NAME="${BASH_REMATCH[2]}"
+else
+    echo "Could not determine GitHub repo"
+    exit 1
+fi
+
+RUN_INFO=$(gh run list --repo "$REPO_OWNER/$REPO_NAME" --branch "$BRANCH" --limit 1 --json databaseId,status,conclusion,updatedAt,workflowName 2>/dev/null)
+
+if [[ -n "$RUN_INFO" ]]; then
+    RUN_ID=$(echo "$RUN_INFO" | grep -o '"databaseId":[0-9]*' | head -1 | cut -d: -f2)
+    STATUS=$(echo "$RUN_INFO" | grep -o '"status":"[^"]*"' | head -1 | cut -d: -f2 | tr -d '"')
+    CONCLUSION=$(echo "$RUN_INFO" | grep -o '"conclusion":"[^"]*"' | head -1 | cut -d: -f2 | tr -d '"')
+    WORKFLOW=$(echo "$RUN_INFO" | grep -o '"workflowName":"[^"]*"' | head -1 | cut -d: -f2 | tr -d '"')
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  🚀 GitHub Actions CI - Latest Run"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Branch:   $BRANCH"
+    echo "  Workflow: $WORKFLOW"
+    echo "  Status:   $STATUS ${CONCLUSION:+"($CONCLUSION)"}"
+    echo "  URL: https://github.com/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+else
+    echo "No CI runs found for this branch"
+fi

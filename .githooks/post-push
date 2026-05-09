@@ -1,0 +1,48 @@
+#!/bin/bash
+# Post-push hook: Show GitHub Actions CI URL after successful push
+
+# Get the remote name (default to origin)
+REMOTE="${1:-origin}"
+
+# Get the current branch name
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
+
+# Get the repo slug from remote URL
+REPO_URL=$(git remote get-url "$REMOTE" 2>/dev/null)
+if [[ -z "$REPO_URL" ]]; then
+    exit 0
+fi
+
+# Extract repo owner/name from various URL formats
+if [[ "$REPO_URL" =~ github\.com[/:]([^/]+)/([^/]+)\.git$ ]]; then
+    REPO_OWNER="${BASH_REMATCH[1]}"
+    REPO_NAME="${BASH_REMATCH[2]}"
+else
+    exit 0
+fi
+
+# Check if gh is available
+if ! command -v gh &> /dev/null; then
+    exit 0
+fi
+
+# Get the latest workflow run for this branch (with a small delay to let CI trigger)
+sleep 2
+
+RUN_INFO=$(gh run list --repo "$REPO_OWNER/$REPO_NAME" --branch "$BRANCH" --limit 1 --json databaseId,status,conclusion,updatedAt 2>/dev/null)
+
+if [[ -n "$RUN_INFO" ]]; then
+    RUN_ID=$(echo "$RUN_INFO" | grep -o '"databaseId":[0-9]*' | head -1 | cut -d: -f2)
+    STATUS=$(echo "$RUN_INFO" | grep -o '"status":"[^"]*"' | head -1 | cut -d: -f2 | tr -d '"')
+
+    if [[ -n "$RUN_ID" ]]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "  🚀 GitHub Actions CI"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "  Status: $STATUS"
+        echo "  URL: https://github.com/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+    fi
+fi
