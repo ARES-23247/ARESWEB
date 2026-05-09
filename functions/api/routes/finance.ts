@@ -112,8 +112,7 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
     const result = pipeline.map((p) => ({
       id: p.id,
       company_name: p.companyName,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sponsor_id: (p as any).sponsorId ?? null,
+      sponsor_id: p.id, // Use the primary key as the sponsorship ID
       status: ((p.status ?? "potential").toLowerCase()) as "potential" | "contacted" | "pledged" | "secured" | "lost",
       estimated_value: Number(p.estimatedValue ?? 0),
       notes: p.notes,
