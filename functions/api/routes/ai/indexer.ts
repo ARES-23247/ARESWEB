@@ -46,10 +46,11 @@ export async function indexSiteContent(
   // Get the last index timestamp from D1
   let lastIndexed: string | null = null;
   if (!force) {
-    const setting = await db.query.settings.findFirst({
-      where: eq(schema.settings.key, KV_KEY),
-      columns: { value: true }
-    });
+    const [setting] = await db
+      .select({ value: schema.settings.value })
+      .from(schema.settings)
+      .where(eq(schema.settings.key, KV_KEY))
+      .limit(1);
     lastIndexed = setting?.value || null;
   }
 

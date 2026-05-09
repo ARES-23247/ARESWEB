@@ -33,7 +33,7 @@ export default function AwardEditor() {
       event_name: "",
       image_url: "",
       description: "",
-      season_id: ""
+      season_id: null
     }
   });
 
@@ -48,7 +48,8 @@ export default function AwardEditor() {
   const onFormSubmit = (data: AwardFormPayload) => {
     const payload: AwardFormPayload = {
       ...data,
-      season_id: data.season_id || null
+      year: typeof data.year === "number" ? data.year : Number(data.year) || new Date().getFullYear(),
+      season_id: data.season_id === null ? null : (typeof data.season_id === "number" ? data.season_id : Number(data.season_id) || null)
     };
     saveMutation.mutate(payload, {
       onSuccess: () => {
@@ -123,7 +124,7 @@ export default function AwardEditor() {
                 placeholder="e.g. West Virginia State Championship"
                 focusColor="ares-gold"
               />
-              <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("season_id", val)} />
+              <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("season_id", val === "" ? null : Number(val), { shouldValidate: true })} />
               <DashboardInput
                 id="award-image"
                 label="Image URL (Optional)"

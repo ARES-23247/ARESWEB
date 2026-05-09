@@ -23,12 +23,12 @@ export default function SimManager() {
   const generateRegistry = async () => {
     setIsGenerating(true);
     try {
-      const res = await fetch("/api/generate-sim-registry", { method: "POST" });
-      const data = await res.json() as { success?: boolean; error?: string };
+      const res = await fetch("/api/simulations/admin/generate-registry", { method: "POST" });
+      const data = await res.json() as { success?: boolean; error?: string; message?: string };
       if (data.success) {
         toast.success("Registry regenerated! Refresh to see changes.");
       } else {
-        toast.error(`Failed: ${data.error}`);
+        toast.error(`Failed: ${data.error || data.message || "Unknown error"}`);
       }
     } catch {
       toast.error("Failed to regenerate registry");

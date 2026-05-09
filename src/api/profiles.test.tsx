@@ -270,18 +270,15 @@ describe("Profiles API", () => {
 
   describe("useGetPublicProfile", () => {
     it("should fetch public user profile successfully", async () => {
-      const mockResponse = {
-        profile: { name: "Public User", bio: "Bio" },
-        badges: [{ name: "Volunteer", icon: "award" }],
-      };
-      mockClient.profile[":userId"].$get.mockResolvedValue({ ok: true });
-      mockUnwrapResponse.mockResolvedValue(mockResponse);
+      const mockProfileData = { name: "Public User", bio: "Bio" };
+      mockClient.profile.public[":userId"].$get.mockResolvedValue({ ok: true });
+      mockUnwrapResponse.mockResolvedValue(mockProfileData);
 
       const { result } = renderHook(() => profilesApi.useGetPublicProfile("user123"), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.data).toEqual(mockResponse);
-      expect(mockClient.profile[":userId"].$get).toHaveBeenCalledWith({
+      expect(result.current.data).toEqual({ profile: mockProfileData, badges: [] });
+      expect(mockClient.profile.public[":userId"].$get).toHaveBeenCalledWith({
         param: { userId: "user123" },
       });
     });

@@ -1,7 +1,7 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, asc, desc, and, sql } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware, getDb } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
@@ -14,6 +14,7 @@ import {
   deleteBadgeRoute,
   leaderboardBadgeRoute
 } from "../../../shared/routes/badges";
+import { queryHelpers } from "@/db/query-helpers";
 
 
 export const badgesRouter = new OpenAPIHono<AppEnv>();
@@ -152,26 +153,13 @@ badgesRouter.openapi(deleteBadgeRoute, typedHandler<typeof deleteBadgeRoute>(asy
 
 badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadgeRoute>(async (c) => {
     const db = getDb(c);
-    const results = await db
-      .select({
-        user_id: schema.userProfiles.userId,
-        nickname: schema.userProfiles.nickname,
-        member_type: schema.userProfiles.memberType,
-        badge_count: sql<number>`count(${schema.userBadges.id})`.as("badge_count")
-      })
-      .from(schema.userProfiles)
-      .innerJoin(schema.userBadges, eq(schema.userProfiles.userId, schema.userBadges.userId))
-      .where(eq(schema.userProfiles.showOnAbout, 1))
-      .groupBy(schema.userProfiles.userId)
-      .orderBy(desc(sql`count(${schema.userBadges.id})`), asc(schema.userProfiles.nickname))
-      .limit(20)
-      .all();
+    const results = await queryHelpers.getBadgeLeaderboard(db, 20);
 
     const leaderboard = results.map((r) => ({
-      user_id: r.user_id as string,
+      user_id: r.userId as string,
       nickname: r.nickname as string | null,
-      member_type: r.member_type as string | null,
-      badge_count: Number(r.badge_count),
+      member_type: r.memberType as string | null,
+      badge_count: Number(r.badgeCount),
     }));
 
     return c.json({ leaderboard }, 200);

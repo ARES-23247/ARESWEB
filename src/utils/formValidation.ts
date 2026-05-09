@@ -142,22 +142,21 @@ export function createZodResolver<T extends z.ZodType>(
  * />
  * ```
  */
-export function validateField<T extends z.ZodType>(
+export function validateField<T extends z.ZodTypeAny>(
   schema: T,
   data: Partial<z.infer<T>>,
   fieldName: string
 ): string | null {
-  // Create a partial schema for just this field
-  const fieldSchema = schema.pick({ [fieldName]: true } as any);
-
-  const result = fieldSchema.safeParse(data);
+  // Validate the full data against the schema
+  const result = schema.safeParse(data);
 
   if (result.success) {
     return null;
   }
 
+  // Find issues for this specific field
   const fieldError = result.error.issues.find(
-    (issue) => issue.path.join('.') === fieldName
+    (issue: z.ZodIssue) => issue.path.join('.') === fieldName
   );
 
   return fieldError?.message || null;
@@ -192,9 +191,9 @@ export function isValidationError<T>(
  * );
  * ```
  */
-export function combineSchemas<
-  T1 extends z.ZodType,
-  T2 extends z.ZodType
->(schema1: T1, schema2: T2): z.ZodIntersection<T1, T2> {
-  return schema1.and(schema2);
+export function combineSchemas<T1 extends z.ZodTypeAny, T2 extends z.ZodTypeAny>(
+  schema1: T1,
+  schema2: T2
+): z.ZodIntersection<T1, T2> {
+  return z.intersection(schema1, schema2);
 }

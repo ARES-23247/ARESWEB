@@ -2,12 +2,12 @@ import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, and, asc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, getSessionUser, MAX_INPUT_LENGTHS, getSocialConfig, persistentRateLimitMiddleware, ensureAuth, originIntegrityMiddleware, logAuditAction, getDb } from "../middleware";
 import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../utils/zulipSync";
 import { emitNotification } from "../../utils/notifications";
 import { listCommentsRoute, submitCommentRoute, updateCommentRoute, deleteCommentRoute } from "../../../shared/routes/comments";
+import { queryHelpers } from "@/db/query-helpers";
 
 
 
@@ -44,33 +44,16 @@ commentsRouter.openapi(listCommentsRoute, typedHandler<typeof listCommentsRoute>
   const user = await getSessionUser(c);
   const db = getDb(c);
 
-    const results = await db.select({
-      id: schema.comments.id,
-      user_id: schema.comments.userId,
-      content: schema.comments.content,
-      created_at: schema.comments.createdAt,
-      nickname: schema.userProfiles.nickname,
-      avatar: schema.user.image
-    })
-      .from(schema.comments)
-      .innerJoin(schema.userProfiles, eq(schema.comments.userId, schema.userProfiles.userId))
-      .innerJoin(schema.user, eq(schema.comments.userId, schema.user.id))
-      .where(and(
-        eq(schema.comments.targetType, targetType),
-        eq(schema.comments.targetId, targetId),
-        eq(schema.comments.isDeleted, 0)
-      ))
-      .orderBy(asc(schema.comments.createdAt))
-      .all();
+    const results = await queryHelpers.getCommentsWithUsers(db, targetType, targetId);
 
     const comments = results.map((r) => ({
       id: String(r.id),
-      user_id: String(r.user_id),
+      user_id: String(r.userId),
       nickname: r.nickname || "ARES Member",
       avatar: r.avatar || null,
       content: String(r.content),
-      created_at: String(r.created_at),
-      updated_at: String(r.created_at)
+      created_at: String(r.createdAt),
+      updated_at: String(r.createdAt)
     }));
 
     return c.json({

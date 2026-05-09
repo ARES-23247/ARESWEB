@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMiddleware, envMiddleware, originIntegrityMiddleware, DrizzleDB } from "./middleware";
-import { sql, desc } from "drizzle-orm";
+import { sql, desc, eq, and, inArray, lt, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../../src/db/schema";
 import { purgeOldInquiries } from "./routes/inquiries/index";
@@ -49,6 +48,7 @@ import { aiRouter } from "./routes/ai/index";
 import socialQueueRouter from "./routes/socialQueue";
 import scoutingRouter from "./routes/scouting/index";
 import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
+import { typedHandler } from "./utils/handler";
 
 import { logger } from "hono/logger";
 import { sentry } from "@hono/sentry";
@@ -104,6 +104,7 @@ apiRouter.get('/reference', apiReference(scalarConfig as unknown as Parameters<t
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";
+import * as schema from "../src/db/schema";
 apiRouter.use("*", async (c, next) => {
   const start = Date.now();
   await next();
@@ -116,19 +117,18 @@ apiRouter.use("*", async (c, next) => {
       c.executionCtx.waitUntil(
         (async () => {
           try {
-            await c.env.DB.prepare(`
-              INSERT INTO usage_metrics (id, endpoint, method, status_code, latency_ms, user_id, cf_ray, cf_ip)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(
-              crypto.randomUUID(),
-              c.req.path,
-              c.req.method,
-              c.res.status,
-              latency,
-              user?.id || null,
-              c.req.header("cf-ray") || null,
-              c.req.header("cf-connecting-ip") || null
-            ).run();
+            // SEC-SQL-01: Sanitize path to prevent SQL injection in analytics queries
+            const sanitizedPath = c.req.path.replace(/[^\w\/\-_.]/g, '').substring(0, 500);
+            await db.insert(schema.usageMetrics).values({
+              id: crypto.randomUUID(),
+              endpoint: sanitizedPath,
+              method: c.req.method,
+              statusCode: c.res.status,
+              latencyMs: latency,
+              userId: user?.id || null,
+              cfRay: c.req.header("cf-ray") || null,
+              cfIp: c.req.header("cf-connecting-ip") || null
+            }).run();
           } catch (err) {
             const errorMsg = err instanceof Error ? err.message : String(err);
             if (!errorMsg.includes("no such table") && !errorMsg.includes("does not exist")) {
@@ -259,7 +259,7 @@ apiRouter.openapi(searchRoute, async (c) => {
 });
 
 // ── Audit Log ────────────────────────────
-apiRouter.openapi(auditLogRoute, (async (c: any) => {
+apiRouter.openapi(auditLogRoute, typedHandler<typeof auditLogRoute>(async (c) => {
   const { limit: l, offset: o } = c.req.valid("query");
   const limit = l ? parseInt(l, 10) : 50;
   const offset = o ? parseInt(o, 10) : 0;
@@ -272,7 +272,7 @@ apiRouter.openapi(auditLogRoute, (async (c: any) => {
       resource_type: schema.auditLog.resourceType,
       resource_id: schema.auditLog.resourceId,
       created_at: schema.auditLog.createdAt,
-      details: sql<string>`substr(${schema.auditLog.details}, 1, 500)`
+      details: schema.auditLog.details
     })
     .from(schema.auditLog)
     .orderBy(desc(schema.auditLog.createdAt))
@@ -280,15 +280,15 @@ apiRouter.openapi(auditLogRoute, (async (c: any) => {
     .offset(offset)
     .all();
 
-  const logs = results.map((r: { id?: string; created_at?: string | null; details?: string | null }) => ({
+  const logs = results.map((r) => ({
     ...r,
     id: r.id || crypto.randomUUID(),
     created_at: r.created_at || new Date().toISOString(),
-    details: r.details || ""
+    details: (r.details || "").substring(0, 500)
   }));
 
   return c.json({ logs }, 200);
-}) as any);
+}));
 
 app.onError(async (err, c) => {
   // Import ApiError dynamically to avoid circular deps
@@ -317,55 +317,104 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   const db = drizzle(env.DB, { schema });
   await purgeOldInquiries(db as unknown as DrizzleDB, 30);
   const auditRetentionDays = parseInt(env.AUDIT_LOG_RETENTION_DAYS || "90", 10);
-  await env.DB.prepare(`DELETE FROM audit_log WHERE id IN (SELECT id FROM audit_log WHERE created_at < datetime('now', '-' || ? || ' days') LIMIT 100)`).bind(auditRetentionDays).run();
-  
+  // Calculate cutoff date in JavaScript instead of SQL
+  const auditCutoffDate = new Date(Date.now() - auditRetentionDays * 24 * 60 * 60 * 1000).toISOString();
+  // Delete old audit logs using Drizzle
+  const oldLogs = await db.select({ id: schema.auditLog.id })
+    .from(schema.auditLog)
+    .where(lt(schema.auditLog.createdAt, auditCutoffDate))
+    .limit(100)
+    .all();
+  if (oldLogs.length > 0) {
+    await db.delete(schema.auditLog)
+      .where(inArray(schema.auditLog.id, oldLogs.map(l => l.id!)))
+      .run();
+  }
+
   const now = new Date().toISOString();
-  const pendingPostsRes = await env.DB.prepare(`SELECT id, content, platforms, media_urls, linked_type, linked_id FROM social_queue WHERE status = 'pending' AND scheduled_for <= ?`).bind(now).all();
-  const pendingPosts = pendingPostsRes.results || [];
-  
+
+  // Get pending social queue posts using Drizzle
+  const pendingPosts = await db.select({
+    id: schema.socialQueue.id,
+    content: schema.socialQueue.content,
+    platforms: schema.socialQueue.platforms,
+    mediaUrls: schema.socialQueue.mediaUrls,
+    linkedType: schema.socialQueue.linkedType,
+    linkedId: schema.socialQueue.linkedId
+  })
+  .from(schema.socialQueue)
+  .where(and(
+    eq(schema.socialQueue.status, "pending"),
+    lte(schema.socialQueue.scheduledFor, now)
+  ))
+  .all();
+
   if (pendingPosts.length > 0) {
-    const settingsRes = await env.DB.prepare(`SELECT key, value FROM settings`).all();
-    const settings = settingsRes.results || [];
-    const settingsMap = settings.reduce((acc: Record<string, string>, s: { key?: string; value?: string }) => { 
-      if (s.key) acc[s.key] = s.value || ""; 
-      return acc; 
+    // Get settings using Drizzle
+    const settingsRows = await db.select({
+      key: schema.settings.key,
+      value: schema.settings.value
+    })
+    .from(schema.settings)
+    .all();
+
+    const settingsMap = settingsRows.reduce((acc: Record<string, string>, s) => {
+      if (s.key) acc[s.key] = s.value || "";
+      return acc;
     }, {} as Record<string, string>);
-    
-    const socialConfig = { 
-      DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"], 
-      MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"], 
-      BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"], 
-      BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"], 
-      SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"], 
-      TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"], 
-      GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"], 
-      FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"], 
-      FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"], 
-      TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"], 
-      TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"], 
-      TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"], 
-      TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"] 
+
+    const socialConfig = {
+      DISCORD_WEBHOOK_URL: env.DISCORD_WEBHOOK_URL || settingsMap["DISCORD_WEBHOOK_URL"],
+      MAKE_WEBHOOK_URL: settingsMap["MAKE_WEBHOOK_URL"],
+      BLUESKY_HANDLE: settingsMap["BLUESKY_HANDLE"],
+      BLUESKY_APP_PASSWORD: settingsMap["BLUESKY_APP_PASSWORD"],
+      SLACK_WEBHOOK_URL: settingsMap["SLACK_WEBHOOK_URL"],
+      TEAMS_WEBHOOK_URL: settingsMap["TEAMS_WEBHOOK_URL"],
+      GCHAT_WEBHOOK_URL: settingsMap["GCHAT_WEBHOOK_URL"],
+      FACEBOOK_PAGE_ID: settingsMap["FACEBOOK_PAGE_ID"],
+      FACEBOOK_ACCESS_TOKEN: settingsMap["FACEBOOK_ACCESS_TOKEN"],
+      TWITTER_API_KEY: settingsMap["TWITTER_API_KEY"],
+      TWITTER_API_SECRET: settingsMap["TWITTER_API_SECRET"],
+      TWITTER_ACCESS_TOKEN: settingsMap["TWITTER_ACCESS_TOKEN"],
+      TWITTER_ACCESS_SECRET: settingsMap["TWITTER_ACCESS_SECRET"]
     };
-    
+
     for (const post of pendingPosts) {
       try {
-        await env.DB.prepare(`UPDATE social_queue SET status = 'processing' WHERE id = ?`).bind(post.id).run();
+        await db.update(schema.socialQueue)
+          .set({ status: "processing" })
+          .where(eq(schema.socialQueue.id, post.id))
+          .run();
+
         const platforms = JSON.parse(post.platforms as string);
         await dispatchSocials(
-          db as unknown as DrizzleDB, 
-          { 
-            title: post.linked_type ? "ARES Content Update" : "ARES Social Post", 
-            url: post.linked_type ? `https://aresfirst.org/${post.linked_type}/${post.linked_id}` : "https://aresfirst.org", 
-            snippet: post.content as string, 
-            thumbnail: post.media_urls ? JSON.parse(post.media_urls as string)?.[0] : undefined 
-          }, 
-          socialConfig, 
+          db as unknown as DrizzleDB,
+          {
+            title: post.linkedType ? "ARES Content Update" : "ARES Social Post",
+            url: post.linkedType ? `https://aresfirst.org/${post.linkedType}/${post.linkedId}` : "https://aresfirst.org",
+            snippet: post.content as string,
+            thumbnail: post.mediaUrls ? JSON.parse(post.mediaUrls as string)?.[0] : undefined
+          },
+          socialConfig,
           platforms
         );
-        await env.DB.prepare(`UPDATE social_queue SET status = 'sent', sent_at = ? WHERE id = ?`).bind(now, post.id).run();
+
+        await db.update(schema.socialQueue)
+          .set({
+            status: "sent",
+            sentAt: now
+          })
+          .where(eq(schema.socialQueue.id, post.id))
+          .run();
       } catch (error) {
         console.error(`[Cron] Failed to send social post ${post.id}:`, error);
-        await env.DB.prepare(`UPDATE social_queue SET status = 'failed', error_message = ? WHERE id = ?`).bind(String(error), post.id).run();
+        await db.update(schema.socialQueue)
+          .set({
+            status: "failed",
+            errorMessage: String(error)
+          })
+          .where(eq(schema.socialQueue.id, post.id))
+          .run();
       }
     }
   }
@@ -373,16 +422,30 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
   if (env.AI && env.VECTORIZE_DB) {
     try {
       await indexSiteContent(db as unknown as DrizzleDB, env.AI, env.VECTORIZE_DB);
-    } catch (e) { 
-      console.error("[Cron] Vectorize indexing failed:", e); 
+    } catch (e) {
+      console.error("[Cron] Vectorize indexing failed:", e);
+      await logSystemError(db, "VectorizeIndexing", "Indexing failed", e instanceof Error ? e.message : String(e));
     }
   }
   
   try {
     const nowIso = new Date().toISOString();
-    await env.DB.prepare(`INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).bind("cron_last_run", nowIso, nowIso).run();
-  } catch (err) { 
-    console.error("[Cron] Failed to update heartbeat in D1", err); 
+    await db.insert(schema.settings)
+      .values({
+        key: "cron_last_run",
+        value: nowIso,
+        updatedAt: nowIso
+      })
+      .onConflictDoUpdate({
+        target: schema.settings.key,
+        set: {
+          value: nowIso,
+          updatedAt: nowIso
+        }
+      })
+      .run();
+  } catch (err) {
+    console.error("[Cron] Failed to update heartbeat in D1", err);
   }
 };
 

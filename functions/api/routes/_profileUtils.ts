@@ -21,20 +21,13 @@ export async function upsertProfile(
   const secret = c.env.ENCRYPTION_SECRET;
   const sessionUser = await getSessionUser(c);
   const db = getDb(c);
-  
-  const existing = await db.query.userProfiles.findFirst({
-    columns: {
-      userId: true, nickname: true, firstName: true, lastName: true, pronouns: true,
-      phone: true, contactEmail: true, bio: true, subteams: true, dietaryRestrictions: true,
-      showOnAbout: true, showEmail: true, showPhone: true, memberType: true, gradeYear: true,
-      colleges: true, employers: true, favoriteFirstThing: true, funFact: true,
-      favoriteRobotMechanism: true, preMatchSuperstition: true, leadershipRole: true,
-      rookieYear: true, tshirtSize: true, emergencyContactName: true, emergencyContactPhone: true,
-      parentsName: true, parentsEmail: true, studentsName: true, studentsEmail: true, favoriteFood: true
-    },
-    where: eq(schema.userProfiles.userId, userId)
-  });
-  
+
+  const [existing] = await db
+    .select()
+    .from(schema.userProfiles)
+    .where(eq(schema.userProfiles.userId, userId))
+    .limit(1);
+
   const isTargetingSelf = sessionUser?.id === userId;
   const isAdmin = sessionUser?.role === "admin" || sessionUser?.member_type === "coach" || sessionUser?.member_type === "mentor";
 
@@ -82,36 +75,36 @@ export async function upsertProfile(
   // Values object needs to match database column types which are mixed (string, number, JSON columns)
   const values: Record<string, string | number> = {
     userId: userId,
-    nickname: await getMergedValue("nickname") as string,
-    firstName: await getMergedValue("first_name") as string,
-    lastName: await getMergedValue("last_name") as string,
-    pronouns: await getMergedValue("pronouns") as string,
-    phone: await getMergedValue("phone", true) as string,
-    contactEmail: await getMergedValue("contact_email", true) as string,
-    bio: await getMergedValue("bio") as string,
-    subteams: await getMergedValue("subteams", false, "[]") as string,
-    dietaryRestrictions: await getMergedValue("dietary_restrictions", false, "[]") as string,
-    showOnAbout: await getMergedValue("show_on_about", false, 1) as number,
-    showEmail: await getMergedValue("show_email", false, 0) as number,
-    showPhone: await getMergedValue("show_phone", false, 0) as number,
-    memberType: memberType as string,
-    gradeYear: await getMergedValue("grade_year") as string,
-    colleges: await getMergedValue("colleges", false, "[]") as string,
-    employers: await getMergedValue("employers", false, "[]") as string,
-    favoriteFirstThing: await getMergedValue("favorite_first_thing") as string,
-    funFact: await getMergedValue("fun_fact") as string,
-    favoriteRobotMechanism: await getMergedValue("favorite_robot_mechanism") as string,
-    preMatchSuperstition: await getMergedValue("pre_match_superstition") as string,
-    leadershipRole: await getMergedValue("leadership_role") as string,
-    rookieYear: await getMergedValue("rookie_year") as string,
-    tshirtSize: await getMergedValue("tshirt_size") as string,
-    emergencyContactName: await getMergedValue("emergency_contact_name", true) as string,
-    emergencyContactPhone: await getMergedValue("emergency_contact_phone", true) as string,
-    parentsName: await getMergedValue("parents_name", true) as string,
-    parentsEmail: await getMergedValue("parents_email", true) as string,
-    studentsName: await getMergedValue("students_name", true) as string,
-    studentsEmail: await getMergedValue("students_email", true) as string,
-    favoriteFood: await getMergedValue("favorite_food") as string
+    nickname: (await getMergedValue("nickname")) ?? "",
+    firstName: (await getMergedValue("first_name")) ?? "",
+    lastName: (await getMergedValue("last_name")) ?? "",
+    pronouns: (await getMergedValue("pronouns")) ?? "",
+    phone: (await getMergedValue("phone", true)) ?? "",
+    contactEmail: (await getMergedValue("contact_email", true)) ?? "",
+    bio: (await getMergedValue("bio")) ?? "",
+    subteams: (await getMergedValue("subteams", false, "[]")) ?? "[]",
+    dietaryRestrictions: (await getMergedValue("dietary_restrictions", false, "[]")) ?? "[]",
+    showOnAbout: (await getMergedValue("show_on_about", false, 1)) ?? 1,
+    showEmail: (await getMergedValue("show_email", false, 0)) ?? 0,
+    showPhone: (await getMergedValue("show_phone", false, 0)) ?? 0,
+    memberType: memberType ?? "student",
+    gradeYear: (await getMergedValue("grade_year")) ?? "",
+    colleges: (await getMergedValue("colleges", false, "[]")) ?? "[]",
+    employers: (await getMergedValue("employers", false, "[]")) ?? "[]",
+    favoriteFirstThing: (await getMergedValue("favorite_first_thing")) ?? "",
+    funFact: (await getMergedValue("fun_fact")) ?? "",
+    favoriteRobotMechanism: (await getMergedValue("favorite_robot_mechanism")) ?? "",
+    preMatchSuperstition: (await getMergedValue("pre_match_superstition")) ?? "",
+    leadershipRole: (await getMergedValue("leadership_role")) ?? "",
+    rookieYear: (await getMergedValue("rookie_year")) ?? "",
+    tshirtSize: (await getMergedValue("tshirt_size")) ?? "",
+    emergencyContactName: (await getMergedValue("emergency_contact_name", true)) ?? "",
+    emergencyContactPhone: (await getMergedValue("emergency_contact_phone", true)) ?? "",
+    parentsName: (await getMergedValue("parents_name", true)) ?? "",
+    parentsEmail: (await getMergedValue("parents_email", true)) ?? "",
+    studentsName: (await getMergedValue("students_name", true)) ?? "",
+    studentsEmail: (await getMergedValue("students_email", true)) ?? "",
+    favoriteFood: (await getMergedValue("favorite_food")) ?? ""
   };
 
   const { userId: _, ...updateSet } = values;

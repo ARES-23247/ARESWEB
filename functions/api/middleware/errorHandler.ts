@@ -13,6 +13,16 @@ import type { AppEnv } from "./utils";
 import { createErrorResponse, ErrorCode } from "../../../shared/errors/api";
 
 /**
+ * Valid HTTP status codes for API responses with JSON body
+ * Note: 204 No Content and 304 Not Modified are excluded because they're incompatible with c.json()
+ */
+type HttpStatus =
+  | 200 | 201           // Success
+  | 301 | 302           // Redirection
+  | 400 | 401 | 403 | 404 | 409 | 422 | 429  // Client errors
+  | 500 | 502 | 503 | 504;  // Server errors
+
+/**
  * Custom API error class with status code
  *
  * @example
@@ -116,15 +126,14 @@ export async function errorHandlerMiddleware(c: Context<AppEnv>, next: Next) {
     });
 
     // Return standardized error response
-    const status = getStatusCode(error);
+    const status = getStatusCode(error) as HttpStatus;
     const response = createErrorResponse(
       getErrorMessage(error),
       getErrorCode(error),
       getErrorDetails(error)
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return c.json(response, status as any);
+    return c.json(response, status);
   }
 }
 
@@ -149,14 +158,13 @@ export function asyncHandler<T extends Context<AppEnv>>(
     try {
       return await handler(c);
     } catch (error) {
-      const status = getStatusCode(error);
+      const status = getStatusCode(error) as HttpStatus;
       const response = createErrorResponse(
         getErrorMessage(error),
         getErrorCode(error),
         getErrorDetails(error)
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return c.json(response, status as any);
+      return c.json(response, status);
     }
   };
 }

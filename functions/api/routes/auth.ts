@@ -1,8 +1,10 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { AppEnv, getSessionUser, persistentRateLimitMiddleware } from "../middleware";
+import { AppEnv, getSessionUser, persistentRateLimitMiddleware, getDb } from "../middleware";
 import { getAuth } from "../../utils/auth";
 import { authCheckRoute, emergencyClearRoute, testLoginRoute } from "../../../shared/routes/auth";
+import { eq } from "drizzle-orm";
+import * as schema from "../../../src/db/schema";
 
 const authRouter = new OpenAPIHono<AppEnv>();
 
@@ -53,7 +55,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
                      c.req.header('x-test-bypass-auth') === 'true';
 
   if (!isTestMode) {
-    return c.json({ error: 'Test login only available in test environments' }, 403);
+    throw new ApiError('Test login only available in test environments', 403);
   }
 
   // Get test user ID from request body, default to admin-user
@@ -61,13 +63,21 @@ authRouter.openapi(testLoginRoute, async (c) => {
   const userId = body.userId || 'admin-user';
 
   try {
+    const db = getDb(c);
+
     // Check if user exists
-    const user = await c.env.DB.prepare(
-      'SELECT id, name, email, role FROM user WHERE id = ?'
-    ).bind(userId).first() as { id: string; name: string | null; email: string; role: string | null } | undefined;
+    const user = await db.select({
+      id: schema.user.id,
+      name: schema.user.name,
+      email: schema.user.email,
+      role: schema.user.role
+    })
+    .from(schema.user)
+    .where(eq(schema.user.id, userId))
+    .first();
 
     if (!user) {
-      return c.json({ error: 'Test user not found' }, 404);
+      throw new ApiError('Test user not found', 404);
     }
 
     // Create a new session using Better Auth's API
@@ -78,17 +88,14 @@ authRouter.openapi(testLoginRoute, async (c) => {
     const token = Buffer.from(`${userId}:${sessionId}:${expiresAt}`).toString('base64');
 
     // Insert session directly into database
-    await c.env.DB.prepare(`
-      INSERT INTO session (id, userId, expiresAt, token, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      sessionId,
-      userId,
-      expiresAt,
-      token,
-      Date.now(),
-      Date.now()
-    ).run();
+    await db.insert(schema.session).values({
+      id: sessionId,
+      userId: userId,
+      expiresAt: new Date(expiresAt),
+      token: token,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).run();
 
     // Set session cookie
     const res = c.json({
@@ -133,15 +140,16 @@ authRouter.on(["POST", "GET"], "/*", async (c, next) => {
     const response = await auth.handler(c.req.raw);
     return response;
   } catch (error: unknown) {
-    const err = error as Error & { status?: number };
-    console.error("[Auth Handler] Internal Exception:", err);
-    // Only expose stack traces when explicitly enabled via DEV_BYPASS
-    // Header-based detection (Host, CF-Connecting-IP) is spoofable and unsafe
     const isDevBypass = c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1";
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const stack = error instanceof Error ? error.stack : undefined;
+    const status = (error as any)?.status;
+
+    console.error("[Auth Handler] Internal Exception:", error);
     return c.json({
-      message: err.message || "Internal Server Error during Authentication",
-      stack: isDevBypass ? err.stack : undefined
-    }, 500);
+      message: message || "Internal Server Error during Authentication",
+      stack: isDevBypass ? stack : undefined
+    }, status || 500);
   }
 });
 

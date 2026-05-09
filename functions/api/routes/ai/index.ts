@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { typedHandler } from "../../utils/handler";
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -14,9 +13,17 @@ import {
   simPlaygroundRoute,
   editorChatRoute,
   aiSuggestRoute,
-  ragChatbotRoute
+  ragChatbotRoute,
+  reindexRoute,
+  reindexExternalRoute,
+  externalSourcesRoute
 } from "../../../../shared/routes/ai";
 
+// Cloudflare Workers AI returns a stream-like object that we cast to ReadableStream
+// The official types don't perfectly match, so we use this helper type
+type CloudflareAIStreamResponse = {
+  getReader(): ReadableStreamDefaultReader<Uint8Array>;
+};
 
 export const aiRouter = new OpenAPIHono<AppEnv>();
 
@@ -30,6 +37,8 @@ const scrubPII = (text: string): string => {
 };
 
 // Truncates large context blocks so they fit within Cloudflare's 8k token limit during fallbacks
+// Cloudflare Workers AI has an 8k token limit. At ~4 chars per token, 18000 chars
+// provides a safe margin while preserving context from both ends.
 const truncateForFallback = (text: string, maxChars = 18000): string => {
   if (!text || text.length <= maxChars) return text || "";
   return text.substring(0, maxChars / 2) + "\n\n...[TRUNCATED BY FALLBACK]...\n\n" + text.substring(text.length - maxChars / 2);
@@ -39,12 +48,13 @@ const truncateForFallback = (text: string, maxChars = 18000): string => {
 aiRouter.openapi(aiStatusRoute, async (c) => {
   let indexErrors = null;
   const db = getDb(c);
-  
+
   try {
-    const errSetting = await db.query.settings.findFirst({
-      where: eq(schema.settings.key, "LAST_INDEX_ERRORS"),
-      columns: { value: true }
-    });
+    const [errSetting] = await db
+      .select({ value: schema.settings.value })
+      .from(schema.settings)
+      .where(eq(schema.settings.key, "LAST_INDEX_ERRORS"))
+      .limit(1);
     if (errSetting && errSetting.value) {
       try {
         indexErrors = JSON.parse(errSetting.value);
@@ -198,7 +208,7 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
         ],
         max_tokens: 1536,
         stream: true
-      }) as unknown as ReadableStream;
+      }) as unknown as CloudflareAIStreamResponse;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -311,7 +321,7 @@ Provide helpful, technical advice. Be concise.`;
           ],
           max_tokens: 1024,
           stream: true
-        }) as unknown as ReadableStream;
+        }) as unknown as CloudflareAIStreamResponse;
 
         const reader = aiStream.getReader();
         const decoder = new TextDecoder();
@@ -418,7 +428,7 @@ Be technical, helpful, and follow FIRST Core Values.`;
           ],
           max_tokens: 1536,
           stream: true
-        }) as unknown as ReadableStream;
+        }) as unknown as CloudflareAIStreamResponse;
 
         const reader = aiStream.getReader();
         const decoder = new TextDecoder();
@@ -457,6 +467,9 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
   if (!query || !turnstileToken) {
     throw new ApiError("Missing required fields", 400);
   }
+  if (query.length > 2000) {
+    throw new ApiError("Query too long (max 2000 characters)", 400);
+  }
 
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -482,6 +495,7 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
   if (c.env.AI) {
     let embeddingVector: number[] = [];
     try {
+      // @ts-expect-error - Cloudflare Workers AI types don't match actual response shape
       const response = (await c.env.AI.run("@cf/baai/bge-base-en-v1.5", { text: [safeQuery] })) as { data: number[][] };
       embeddingVector = response.data[0];
     } catch (e) {
@@ -529,10 +543,12 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
   // Current season context (robot name, challenge, etc.)
   let seasonContext = "";
   try {
-    const currentSeason = await db.query.seasons.findFirst({
-      where: eq(schema.seasons.status, "published"),
-      orderBy: desc(schema.seasons.startYear)
-    });
+    const [currentSeason] = await db
+      .select()
+      .from(schema.seasons)
+      .where(eq(schema.seasons.status, "published"))
+      .orderBy(desc(schema.seasons.startYear))
+      .limit(1);
 
     if (currentSeason) {
       const yr = currentSeason.startYear ?? 0;
@@ -569,13 +585,14 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
 
   // Fetch history if session exists
   let historyMessages: ChatMessage[] = [];
-  
+
   if (sessionId) {
     try {
-      const existing = await db.query.chatSessions.findFirst({
-        where: eq(schema.chatSessions.id, sessionId),
-        columns: { history: true }
-      });
+      const [existing] = await db
+        .select({ history: schema.chatSessions.history })
+        .from(schema.chatSessions)
+        .where(eq(schema.chatSessions.id, sessionId))
+        .limit(1);
       if (existing) {
         historyMessages = JSON.parse(existing.history);
       }
@@ -718,6 +735,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       }));
       const recentMessages = cleanMessages.slice(-5);
 
+      // @ts-expect-error - Cloudflare Workers AI streaming types don't match actual response shape
       const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [
           { role: "system", content: truncateForFallback(systemPrompt) },
@@ -725,7 +743,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
         ],
         max_tokens: 1536,
         stream: true
-      }) as unknown as ReadableStream;
+      }) as unknown as CloudflareAIStreamResponse;
 
       const reader = aiStream.getReader();
       const decoder = new TextDecoder();
@@ -834,40 +852,40 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
     return c.json({ suggestion: "" }, 200);
 }));
 
-aiRouter.post("/reindex", ensureAdmin, async (c) => {
-  const { force } = await c.req.json() as { force?: boolean };
+aiRouter.openapi(reindexRoute, typedHandler<typeof reindexRoute>(async (c) => {
+  const { force } = c.req.valid("json");
   const db = getDb(c);
-  
+
   if (!c.env.AI || !c.env.VECTORIZE_DB) {
     throw new ApiError("AI or Vectorize not configured", 500);
   }
 
   const { indexSiteContent } = await import("./indexer");
   const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, { force });
-  
-  return c.json(result);
-});
 
-aiRouter.post("/reindex-external", ensureAdmin, async (c) => {
-  const { sourceId } = await c.req.json() as { sourceId?: string };
+  return c.json(result);
+}));
+
+aiRouter.openapi(reindexExternalRoute, typedHandler<typeof reindexExternalRoute>(async (c) => {
+  const { sourceId } = c.req.valid("json");
   const db = getDb(c);
-  
+
   if (!c.env.VECTORIZE_DB) {
     throw new ApiError("Vectorize not configured", 500);
   }
 
   const { indexExternalResources } = await import("./indexer");
   const result = await indexExternalResources(
-    db, 
-    c.env.AI, 
-    c.env.VECTORIZE_DB, 
-    c.env.Z_AI_API_KEY, 
+    db,
+    c.env.AI,
+    c.env.VECTORIZE_DB,
+    c.env.Z_AI_API_KEY,
     c.env.GITHUB_PAT,
     sourceId
   );
-  
+
   return c.json(result);
-});
+}));
 
 // ── Knowledge Sources Management ───────────────────────────────────────────
 aiRouter.get("/external-sources", ensureAdmin, async (c) => {
@@ -876,8 +894,8 @@ aiRouter.get("/external-sources", ensureAdmin, async (c) => {
   return c.json(sources);
 });
 
-aiRouter.post("/external-sources", ensureAdmin, async (c) => {
-  const body = await c.req.json() as { type: string; url: string; branch?: string };
+aiRouter.openapi(externalSourcesRoute, ensureAdmin, typedHandler<typeof externalSourcesRoute>(async (c) => {
+  const body = c.req.valid("json");
   const db = getDb(c);
 
   const id = crypto.randomUUID();
@@ -890,25 +908,34 @@ aiRouter.post("/external-sources", ensureAdmin, async (c) => {
     createdAt: new Date().toISOString()
   }).execute();
 
-  return c.json({ id, success: true });
-});
+  return c.json({ id, success: true, message: "External source added" });
+}));
 
 aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
   const id = c.req.param("id");
   const db = getDb(c);
 
-  // @ts-expect-error - Drizzle delete type narrowing
-  await (db as any).delete(schema.externalKnowledgeSources).where(eq(schema.externalKnowledgeSources.id, id)).execute();
+  if (!id) throw new ApiError("ID is required", 400);
+
+  // Check that the delete actually affected a row
+  const result = await db.delete(schema.externalKnowledgeSources)
+    .where(eq(schema.externalKnowledgeSources.id, id))
+    .returning();
+  if (!result || result.length === 0) {
+    throw new ApiError("Source not found", 404);
+  }
   return c.json({ success: true });
 });
 
 aiRouter.get("/chat-session/:id", async (c) => {
   const id = c.req.param("id");
   const db = getDb(c);
-  
-  const session = await db.query.chatSessions.findFirst({
-    where: eq(schema.chatSessions.id, id)
-  });
+
+  const [session] = await db
+    .select()
+    .from(schema.chatSessions)
+    .where(eq(schema.chatSessions.id, id))
+    .limit(1);
   
   if (!session) throw new ApiError("Not found", 404);
   return c.json(session);

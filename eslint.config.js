@@ -30,6 +30,7 @@ export default ts.config(
       "tools/ares-sim-preview/out", // Ignore compiled VSCode extension output
       ".vite/**", // Ignore Vite cache directory
       "src/components/SimulationPlayground.refactored.tsx", // WIP refactor draft
+      "drizzle/**", // Ignore Drizzle Kit generated files
     ],
   },
   js.configs.recommended,

@@ -93,7 +93,7 @@ export const posts = sqliteTable("posts", {
 
 export const postsHistory = sqliteTable("posts_history", {
 	id: integer().primaryKey({ autoIncrement: true }),
-	slug: text().notNull(),
+	slug: text().notNull().references(() => posts.slug, { onDelete: "cascade" }),
 	title: text().notNull(),
 	author: text(),
 	thumbnail: text(),
@@ -199,7 +199,7 @@ export const docs = sqliteTable("docs", {
 
 export const docsHistory = sqliteTable("docs_history", {
 	id: integer().primaryKey({ autoIncrement: true }),
-	slug: text().notNull(),
+	slug: text().notNull().references(() => docs.slug, { onDelete: "cascade" }),
 	title: text(),
 	category: text(),
 	description: text(),
@@ -227,7 +227,7 @@ export const documentHistory = sqliteTable("document_history", {
 export const documentContributors = sqliteTable("document_contributors", {
 	id: integer().primaryKey({ autoIncrement: true }),
 	roomId: text("room_id").notNull(),
-	userId: text("user_id").notNull(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
 	userName: text("user_name").notNull(),
 	userAvatar: text("user_avatar"),
 	lastContributedAt: real("last_contributed_at").default(sql`(CURRENT_TIMESTAMP)`),

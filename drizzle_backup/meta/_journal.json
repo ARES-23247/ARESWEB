@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1778120448559,
+      "tag": "0000_tidy_prima",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1778180893798,
+      "tag": "0001_motionless_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778181681439,
+      "tag": "0002_pretty_forgotten_one",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1778185074117,
+      "tag": "0003_fancy_bedlam",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1778186237444,
+      "tag": "0004_charming_bishop",
+      "breakpoints": true
+    }
+  ]
+}

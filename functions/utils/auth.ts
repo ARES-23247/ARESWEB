@@ -125,19 +125,23 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                 create: {
                     after: async (session) => {
                         try {
-                            const currentUser = await drizzleDb.query.user.findFirst({
-                                columns: { role: true },
-                                where: eq(schema.user.id, session.userId)
-                            });
+                            const currentUserResult = await drizzleDb
+                                .select({ role: schema.user.role })
+                                .from(schema.user)
+                                .where(eq(schema.user.id, session.userId))
+                                .limit(1);
+                            const currentUser = currentUserResult?.[0];
 
                             if (currentUser && currentUser.role !== "admin") {
-                                const userAccount = await drizzleDb.query.account.findFirst({
-                                    columns: { accessToken: true },
-                                    where: and(
+                                const userAccountResult = await drizzleDb
+                                    .select({ accessToken: schema.account.accessToken })
+                                    .from(schema.account)
+                                    .where(and(
                                         eq(schema.account.userId, session.userId),
                                         eq(schema.account.providerId, "github")
-                                    )
-                                });
+                                    ))
+                                    .limit(1);
+                                const userAccount = userAccountResult?.[0];
 
                                 if (userAccount && userAccount.accessToken) {
                                     const res = await fetch("https://api.github.com/user/memberships/orgs/ARES-23247", { signal: AbortSignal.timeout(5000),
@@ -182,11 +186,11 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                 .where(eq(schema.user.email, user.email));
                         } else {
                             try {
-                                const admins = await drizzleDb.query.user.findMany({
-                                    columns: { id: true },
-                                    where: eq(schema.user.role, "admin")
-                                });
-                                
+                                const admins = await drizzleDb
+                                    .select({ id: schema.user.id })
+                                    .from(schema.user)
+                                    .where(eq(schema.user.role, "admin"));
+
                                 if (admins.length > 0) {
                                     const values = admins
                                         .filter((admin) => admin.id !== null)
@@ -198,7 +202,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                             link: "/dashboard/users",
                                             priority: "medium" as const
                                         }));
-                                    
+
                                     await drizzleDb.insert(schema.notifications).values(values);
                                 }
                             } catch (err) {

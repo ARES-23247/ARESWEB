@@ -11,11 +11,47 @@ const mockSql = vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => (
 })) as ReturnType<typeof vi.fn> & { raw: (str: string) => { raw: string } };
 (mockSql as ReturnType<typeof vi.fn> & { raw: (str: string) => { raw: string } }).raw = vi.fn((str: string) => ({ raw: str }));
 
-vi.mock("drizzle-orm", async () => {
-  const actual = await vi.importActual<typeof import("drizzle-orm")>("drizzle-orm");
+vi.mock("drizzle-orm", () => {
+  const relations = (..._args: unknown[]) => ({});
+  const eq = (..._args: unknown[]) => ({});
+  const and = (..._args: unknown[]) => ({});
+  const or = (..._args: unknown[]) => ({});
+  const not = (..._args: unknown[]) => ({});
+  const desc = (..._args: unknown[]) => ({});
+  const asc = (..._args: unknown[]) => ({});
+  const ne = (..._args: unknown[]) => ({});
+  const sql = mockSql;
+  const exists = (..._args: unknown[]) => ({});
+  const inArray = (..._args: unknown[]) => ({});
+  const isNull = (..._args: unknown[]) => ({});
+  const gt = (..._args: unknown[]) => ({});
+  const gte = (..._args: unknown[]) => ({});
+  const lt = (..._args: unknown[]) => ({});
+  const lte = (..._args: unknown[]) => ({});
+  const like = (..._args: unknown[]) => ({});
+  const sql_EMPTY_ARRAY = [];
+
   return {
-    ...actual,
-    sql: mockSql,
+    sql,
+    relations,
+    eq,
+    and,
+    or,
+    not,
+    desc,
+    asc,
+    ne,
+    exists,
+    inArray,
+    isNull,
+    gt,
+    gte,
+    lt,
+    lte,
+    like,
+    getPlaceholder: () => ({}),
+    param: () => ({}),
+    sql_EMPTY_ARRAY,
   };
 });
 

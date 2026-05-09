@@ -164,3 +164,99 @@ export const ragChatbotRoute = createRoute({
     },
   },
 });
+
+export const reindexRoute = createRoute({
+  method: "post",
+  path: "/admin/reindex",
+  summary: "Reindex AI search database",
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            force: z.boolean().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            message: z.string(),
+          }),
+        },
+      },
+      description: "Reindex started",
+    },
+  },
+});
+
+export const reindexExternalRoute = createRoute({
+  method: "post",
+  path: "/admin/reindex-external",
+  summary: "Reindex external knowledge source",
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            sourceId: z.string().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            message: z.string(),
+          }),
+        },
+      },
+      description: "External reindex started",
+    },
+  },
+});
+
+export const externalSourcesRoute = createRoute({
+  method: "post",
+  path: "/admin/external-sources",
+  summary: "Add external knowledge source",
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            type: z.string(),
+            url: z.string().url(),
+            branch: z.string().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            message: z.string(),
+            sourceId: z.string(),
+          }),
+        },
+      },
+      description: "External source added",
+    },
+  },
+});

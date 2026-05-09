@@ -3,9 +3,20 @@ import { ApiError } from "../middleware/errorHandler";
 
 import { sql } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { z } from "zod";
 
 import { eq, or, and, desc, isNull, lte } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
+
+// Type for documentHistory inserts (only fields we provide, id auto-increments)
+interface DocumentHistoryInsert {
+  roomId: string;
+  content: string;
+  createdBy: string;
+}
+
+// Type for post history response (matches postHistorySchema)
+type PostHistoryResponse = z.infer<typeof postHistorySchema>;
 
 import {
   AppEnv,
@@ -46,8 +57,10 @@ import {
   getPostHistoryRoute,
   restorePostHistoryRoute,
   repushSocialsRoute,
+  postHistorySchema,
 } from "../../../shared/routes/posts";
 import { siteConfig } from "../../utils/site.config";
+import { queryHelpers } from "@/db/query-helpers";
 
 export const postsRouter = new OpenAPIHono<AppEnv>();
 
@@ -151,51 +164,31 @@ postsRouter.openapi(getPostsRoute, typedHandler<typeof getPostsRoute>(async (c) 
       return c.json({ posts }, 200);
     }
 
-    const results = await db
-      .select({
-        slug: schema.posts.slug,
-        title: schema.posts.title,
-        date: schema.posts.date,
-        snippet: schema.posts.snippet,
-        thumbnail: schema.posts.thumbnail,
-        status: schema.posts.status,
-        author: schema.posts.author,
-        season_id: schema.posts.seasonId,
-        published_at: schema.posts.publishedAt,
-        author_nickname: schema.userProfiles.nickname,
-        author_avatar: schema.user.image,
-      })
-      .from(schema.posts)
-      .leftJoin(schema.user, eq(schema.posts.cfEmail, schema.user.email))
-      .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
-      .where(and(
-        eq(schema.posts.isDeleted, 0),
-        eq(schema.posts.status, "published"),
-        or(
-          isNull(schema.posts.publishedAt),
-          lte(schema.posts.publishedAt, new Date().toISOString())
-        )
-      ))
-      .orderBy(desc(schema.posts.date))
-      .limit(Number(limit) || 10)
-      .offset(Number(offset) || 0)
-      .all();
+    // Use query helper for posts with authors
+    const results = await queryHelpers.getPostsWithAuthors(db, Number(limit) || 10, Number(offset) || 0);
 
-    const posts = results.map((p) => ({
-      slug: p.slug,
-      title: p.title,
-      date: p.date,
-      snippet: p.snippet,
-      thumbnail: p.thumbnail,
-      status: p.status,
-      author: p.author,
-      author_nickname: p.author_nickname,
-      author_avatar: p.author_avatar,
-      published_at: p.published_at,
-      season_id: p.season_id ? Number(p.season_id) : null,
-      is_deleted: 0,
-      is_portfolio: 0,
-    }));
+    // Filter for published posts that should be visible
+    const now = new Date().toISOString();
+    const posts = results
+      .filter((p) => {
+        const publishDate = p.publishedAt;
+        return !publishDate || publishDate <= now;
+      })
+      .map((p) => ({
+        slug: p.slug,
+        title: p.title,
+        date: p.date,
+        snippet: p.snippet,
+        thumbnail: p.thumbnail,
+        status: p.status,
+        author: p.author,
+        author_nickname: p.authorNickname,
+        author_avatar: p.authorAvatar,
+        published_at: p.publishedAt,
+        season_id: p.seasonId ? Number(p.seasonId) : null,
+        is_deleted: 0,
+        is_portfolio: 0,
+      }));
 
     c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
     return c.json({ posts }, 200);
@@ -519,8 +512,7 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
           roomId: `post_${slug}`,
           content: astStr,
           createdBy: email,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+        } as DocumentHistoryInsert)
         .run()
     );
 
@@ -673,8 +665,7 @@ postsRouter.openapi(updatePostRoute, typedHandler<typeof updatePostRoute>(async 
           roomId: `post_${slug}`,
           content: astStr,
           createdBy: user?.email || "anonymous",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+        } as DocumentHistoryInsert)
         .run()
     );
 
@@ -832,8 +823,7 @@ postsRouter.openapi(getPostHistoryRoute, typedHandler<typeof getPostHistoryRoute
       created_at: h.created_at,
     }));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return c.json({ history } as any, 200);
+    return c.json({ history: history as PostHistoryResponse[] }, 200);
 }));
 
 postsRouter.openapi(restorePostHistoryRoute, typedHandler<typeof restorePostHistoryRoute>(async (c) => {

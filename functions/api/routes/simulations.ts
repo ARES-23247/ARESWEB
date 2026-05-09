@@ -2,7 +2,7 @@ import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAuth, getDb, DrizzleDB } from "../middleware";
+import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction } from "../middleware";
 import type { SessionUser } from "../middleware/utils";
 import * as schema from "../../../src/db/schema";
 import {
@@ -11,7 +11,9 @@ import {
   saveSimulationRoute,
   deleteSimulationRoute,
   createGistRoute,
-  getGistRoute
+  getGistRoute,
+  generateSimRegistryRoute,
+  listSimFoldersRoute
 } from "../../../shared/routes/simulations";
 
 /** Row shape returned by settings table queries */
@@ -314,6 +316,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
             });
 
             if (regPutRes.ok) break;
+            // Retry on 409 conflict with exponential backoff, bounded by maxRetries
             else if (regPutRes.status === 409 && attempt < maxRetries - 1) {
               await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt)));
               continue;
@@ -325,6 +328,7 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
       }
     }
 
+    c.executionCtx.waitUntil(logAuditAction(c, "UPDATE", "simulation", simIdStr, `Created/updated simulation: ${name || simIdStr}`));
     return c.json({ id: `github:${simIdStr}` }, 200);
 }));
 
@@ -415,6 +419,7 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
       }
     }
 
+    c.executionCtx.waitUntil(logAuditAction(c, "DELETE", "simulation", simIdStr, `Deleted simulation ${simIdStr}`));
     return c.json({ success: true }, 200);
   } catch (e) {
     console.error("[Simulations] Delete error:", e);
@@ -523,6 +528,38 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
         updated_at: gist.updated_at
       }
     }, 200);
+}));
+
+// ── Admin Routes ─────────────────────────────────────────────────────────────
+
+// Generate simulation registry by running npm script
+simulationsRouter.openapi(generateSimRegistryRoute, ensureAdmin, typedHandler<typeof generateSimRegistryRoute>(async (c) => {
+  try {
+    // In Cloudflare Workers, we can't directly run shell commands.
+    // This endpoint would need to be implemented differently or called via a different mechanism.
+    // For now, we'll return an error indicating this limitation.
+    throw new ApiError("Registry generation requires shell access. Please run 'npm run generate:sims' locally.", 501);
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
+  }
+}));
+
+// List unregistered simulation folders
+simulationsRouter.openapi(listSimFoldersRoute, ensureAdmin, typedHandler<typeof listSimFoldersRoute>(async (c) => {
+  // In Cloudflare Workers, we don't have filesystem access.
+  // This endpoint would need to be implemented differently, such as:
+  // 1. Using the GitHub API to scan the repository for sims
+  // 2. Maintaining a registry in the database
+  // For now, we return empty arrays with a note.
+  return c.json({
+    folders: [],
+    registeredPaths: [],
+    note: "Filesystem scanning not available in Cloudflare Workers. Use GitHub API to scan src/sims directory."
+  }, 200);
 }));
 
 export default simulationsRouter;

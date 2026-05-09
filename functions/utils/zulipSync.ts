@@ -104,7 +104,8 @@ export async function sendZulipMessage(
       const { drizzle } = await import("drizzle-orm/d1");
       const schema = await import("../../src/db/schema");
       const relations = await import("../../src/db/relations");
-      const drizzleDb = drizzle(db, { schema: { ...schema, ...relations } }) as DrizzleDB;
+      // Drizzle v2: pass schema and relations separately
+      const drizzleDb = drizzle(db, { schema, relations }) as DrizzleDB;
       await logSystemError(drizzleDb, "Zulip", "Critical failure after retries", String(err));
     }
     return null;

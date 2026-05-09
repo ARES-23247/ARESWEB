@@ -173,3 +173,57 @@ export const getGistRoute = createRoute({
     },
   },
 });
+
+export const generateSimRegistryRoute = createRoute({
+  method: "post",
+  path: "/admin/generate-registry",
+  tags: ["simulations"],
+  summary: "Regenerate simulation registry",
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({}),
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            output: z.string().optional(),
+            error: z.string().optional(),
+          }),
+        },
+      },
+      description: "Registry generation result",
+    },
+  },
+});
+
+export const listSimFoldersRoute = createRoute({
+  method: "get",
+  path: "/admin/list-folders",
+  tags: ["simulations"],
+  summary: "List unregistered simulation folders",
+  security: [{ BearerAuth: [] }],
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            folders: z.array(z.string()),
+            registeredPaths: z.array(z.string()),
+          }),
+        },
+      },
+      description: "List of folders",
+    },
+  },
+});

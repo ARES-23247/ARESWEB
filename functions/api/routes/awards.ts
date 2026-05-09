@@ -104,7 +104,7 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
       eventName: event_name || "",
       description: description || null,
       iconType: image_url || "trophy",
-      seasonId: season_id || null,
+      seasonId: season_id ? Number(season_id) : null,
       isDeleted: 0
     } as const;
 

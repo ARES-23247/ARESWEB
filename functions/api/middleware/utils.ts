@@ -193,11 +193,11 @@ export async function logAuditAction(
   resource_id: string | null,
   details?: string
 ): Promise<void> {
-  const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
+  const db: DrizzleD1Database<typeof schema, typeof relations> = c.get("db");
   try {
     const sessionUser = c.get("sessionUser") as SessionUser | undefined;
     const actor = sessionUser?.email || "unknown";
-    
+
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `log-${Date.now()}`;
     
     await db.insert(schema.auditLog)
@@ -215,7 +215,7 @@ export async function logAuditAction(
 }
 
 export async function logSystemError(
-  db: DrizzleD1Database<typeof schema & typeof relations>,
+  db: DrizzleD1Database<typeof schema, typeof relations>,
   service: string,
   error: string,
   details?: string
@@ -319,11 +319,11 @@ export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, 
     'RESEND_API_KEY', 'RESEND_FROM_EMAIL'
   ];
 
-  const db: DrizzleD1Database<typeof schema & typeof relations> = c.get("db");
-  const results = await db.query.settings.findMany({
-    columns: { key: true, value: true },
-    where: inArray(schema.settings.key, keys)
-  });
+  const db: DrizzleD1Database<typeof schema, typeof relations> = c.get("db");
+  const results = await db
+    .select({ key: schema.settings.key, value: schema.settings.value })
+    .from(schema.settings)
+    .where(inArray(schema.settings.key, keys));
   const settings: Record<string, string> = {};
   for (const row of results) {
     if (row.key) {

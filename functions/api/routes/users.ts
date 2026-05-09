@@ -2,7 +2,7 @@ import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 /* User management route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq, desc, lt } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 
 import { AppEnv, ensureAdmin, logAuditAction, parsePagination, getDb } from "../middleware";
@@ -18,6 +18,7 @@ import {
   UserRoleEnum,
   MemberTypeEnum,
 } from "../../../shared/routes/users";
+import { queryHelpers } from "@/db/query-helpers";
 
 export const usersRouter = new OpenAPIHono<AppEnv>();
 
@@ -28,68 +29,49 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
     const db = getDb(c);
     const { limit, cursor } = parsePagination(c, 50, 100);
 
-    const results = await db.query.user.findMany({
-      columns: {
-        id: true,
-        name: true,
-        email: true,
-        emailVerified: true,
-        image: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      with: {
-        userProfiles: {
-          columns: {
-            nickname: true,
-            memberType: true,
-          }
-        }
-      },
-      orderBy: [desc(schema.user.createdAt)],
-      limit: limit,
-      where: cursor ? lt(schema.user.createdAt, new Date(Number(cursor))) : undefined
-    });
+    // Use query helper for users with profiles
+    const results = await queryHelpers.getUsersWithProfiles(db, limit + 1, cursor);
 
-    const users = results.map((u) => {
-      const profile = u.userProfiles?.[0];
-      return {
-        id: String(u.id),
-        name: u.name || null,
-        email: u.email,
-        emailVerified: !!u.emailVerified,
-        image: u.image || null,
-        role: String(u.role || "user"),
-        createdAt:
-          u.createdAt instanceof Date
-            ? u.createdAt.getTime()
-            : typeof u.createdAt === "number"
-            ? u.createdAt
-            : new Date(u.createdAt as unknown as string).getTime() || 0,
-        updatedAt:
-          u.updatedAt instanceof Date
-            ? u.updatedAt.getTime()
-            : typeof u.updatedAt === "number"
-            ? u.updatedAt
-            : new Date(u.updatedAt as unknown as string).getTime() || 0,
-        nickname: profile?.nickname || null,
-        member_type:
-          (profile?.memberType as
-            | "student"
-            | "mentor"
-            | "coach"
-            | "parent"
-            | "alumnus"
-            | "alumni"
-            | "sponsor"
-            | "other") || null,
-      };
-    });
+    // Determine if there's a next page
+    const hasNextPage = results.length > limit;
+    const usersData = hasNextPage ? results.slice(0, limit) : results;
+
+    const users = usersData.map((u) => ({
+      id: String(u.id),
+      name: u.name || null,
+      email: u.email,
+      emailVerified: !!u.emailVerified,
+      image: u.image || null,
+      role: String(u.role || "user"),
+      createdAt:
+        u.createdAt instanceof Date
+          ? u.createdAt.getTime()
+          : typeof u.createdAt === "number"
+          ? u.createdAt
+          : new Date(u.createdAt as unknown as string).getTime() || 0,
+      updatedAt:
+        u.updatedAt instanceof Date
+          ? u.updatedAt.getTime()
+          : typeof u.updatedAt === "number"
+          ? u.updatedAt
+          : new Date(u.updatedAt as unknown as string).getTime() || 0,
+      nickname: u.nickname || null,
+      member_type: (u.memberType as
+        | "student"
+        | "mentor"
+        | "coach"
+        | "parent"
+        | "alumnus"
+        | "alumni"
+        | "sponsor"
+        | "other" | null) || null,
+    }));
 
     const nextCursor =
-      results.length === limit
-        ? String(results[results.length - 1].createdAt instanceof Date ? results[results.length - 1].createdAt.getTime() : results[results.length - 1].createdAt)
+      hasNextPage && usersData.length > 0
+        ? String(usersData[usersData.length - 1].createdAt instanceof Date
+          ? usersData[usersData.length - 1].createdAt.getTime()
+          : usersData[usersData.length - 1].createdAt)
         : null;
 
     return c.json({ users, nextCursor }, 200);
@@ -99,58 +81,54 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
     const { id } = c.req.valid("param");
     const db = getDb(c);
     
-    const row = await db.query.user.findFirst({
-      columns: {
-        id: true,
-        name: true,
-        email: true,
-        emailVerified: true,
-        image: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      with: {
-        userProfiles: {
-          columns: {
-            nickname: true,
-            memberType: true,
-          }
-        }
-      },
-      where: eq(schema.user.id, id)
-    });
+    // Manual left join to get user with profile
+    const row = await db
+      .select({
+        id: schema.user.id,
+        name: schema.user.name,
+        email: schema.user.email,
+        emailVerified: schema.user.emailVerified,
+        image: schema.user.image,
+        role: schema.user.role,
+        createdAt: schema.user.createdAt,
+        updatedAt: schema.user.updatedAt,
+        nickname: schema.userProfiles.nickname,
+        memberType: schema.userProfiles.memberType,
+      })
+      .from(schema.user)
+      .leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+      .where(eq(schema.user.id, id))
+      .limit(1);
 
-    if (!row) throw new ApiError("User not found", 404);
+    if (!row || row.length === 0) throw new ApiError("User not found", 404);
 
-    const profile = row.userProfiles?.[0];
+    const user = row[0];
 
     return c.json(
       {
         user: {
-          id: String(row.id),
-          name: row.name || null,
-          email: row.email,
-          emailVerified: !!row.emailVerified,
-          image: row.image || null,
-          role: String(row.role || "user"),
+          id: String(user.id),
+          name: user.name || null,
+          email: user.email,
+          emailVerified: !!user.emailVerified,
+          image: user.image || null,
+          role: String(user.role || "user"),
           createdAt:
-            row.createdAt instanceof Date
-              ? row.createdAt.getTime()
-              : typeof row.createdAt === "number"
-              ? row.createdAt
-              : new Date(row.createdAt as unknown as string).getTime(),
+            user.createdAt instanceof Date
+              ? user.createdAt.getTime()
+              : typeof user.createdAt === "number"
+              ? user.createdAt
+              : new Date(user.createdAt as unknown as string).getTime(),
           updatedAt:
-            row.updatedAt instanceof Date
-              ? row.updatedAt.getTime()
-              : typeof row.updatedAt === "number"
-              ? row.updatedAt
-              : new Date(row.updatedAt as unknown as string).getTime(),
-          nickname: (profile?.nickname as string | null) || null,
-          member_type: (profile?.memberType as string | null) || null,
+            user.updatedAt instanceof Date
+              ? user.updatedAt.getTime()
+              : typeof user.updatedAt === "number"
+              ? user.updatedAt
+              : new Date(user.updatedAt as unknown as string).getTime(),
+          nickname: user.nickname || null,
+          member_type: user.memberType as "student" | "parent" | "mentor" | "coach" | "sponsor" | "alumnus" | "alumni" | "other" | null,
         },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
+      },
       200
     );
 }));
@@ -200,12 +178,13 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
     // This is intentional as member_type is less security-critical than role.
     // If this changes, add session deletion here similar to role changes above.
     if (member_type) {
-      const existing = await db.query.userProfiles.findFirst({
-        columns: { userId: true },
-        where: eq(schema.userProfiles.userId, id)
-      });
+      const existing = await db
+        .select({ userId: schema.userProfiles.userId })
+        .from(schema.userProfiles)
+        .where(eq(schema.userProfiles.userId, id))
+        .limit(1);
 
-      if (existing) {
+      if (existing && existing.length > 0) {
         await db
           .update(schema.userProfiles)
           .set({ memberType: member_type })
@@ -240,50 +219,63 @@ usersRouter.openapi(updateUserProfileRoute, typedHandler<typeof updateUserProfil
 usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRoute>(async (c) => {
     const { id } = c.req.valid("param");
     const db = getDb(c);
-    
-    const user = await db.query.user.findFirst({
-      columns: { id: true, name: true, email: true, image: true, role: true },
-      where: eq(schema.user.id, id)
-    });
-    
+
+    // Get user
+    const userResult = await db
+      .select({
+        id: schema.user.id,
+        name: schema.user.name,
+        email: schema.user.email,
+        image: schema.user.image,
+        role: schema.user.role,
+      })
+      .from(schema.user)
+      .where(eq(schema.user.id, id))
+      .limit(1);
+
+    const user = userResult?.[0];
     if (!user) throw new ApiError("User not found", 404);
 
-    const profileRow = await db.query.userProfiles.findFirst({
-      columns: {
-        userId: true,
-        nickname: true,
-        firstName: true,
-        lastName: true,
-        bio: true,
-        pronouns: true,
-        subteams: true,
-        memberType: true,
-        gradeYear: true,
-        favoriteFood: true,
-        dietaryRestrictions: true,
-        favoriteFirstThing: true,
-        funFact: true,
-        showEmail: true,
-        contactEmail: true,
-        showPhone: true,
-        phone: true,
-        showOnAbout: true,
-        favoriteRobotMechanism: true,
-        preMatchSuperstition: true,
-        leadershipRole: true,
-        rookieYear: true,
-        colleges: true,
-        employers: true,
-        tshirtSize: true,
-        emergencyContactName: true,
-        emergencyContactPhone: true,
-        parentsName: true,
-        parentsEmail: true,
-        studentsName: true,
-        studentsEmail: true,
-      },
-      where: eq(schema.userProfiles.userId, id)
-    });
+    // Get profile
+    const profileResult = await db
+      .select({
+        userId: schema.userProfiles.userId,
+        nickname: schema.userProfiles.nickname,
+        firstName: schema.userProfiles.firstName,
+        lastName: schema.userProfiles.lastName,
+        bio: schema.userProfiles.bio,
+        pronouns: schema.userProfiles.pronouns,
+        subteams: schema.userProfiles.subteams,
+        memberType: schema.userProfiles.memberType,
+        gradeYear: schema.userProfiles.gradeYear,
+        favoriteFood: schema.userProfiles.favoriteFood,
+        dietaryRestrictions: schema.userProfiles.dietaryRestrictions,
+        favoriteFirstThing: schema.userProfiles.favoriteFirstThing,
+        funFact: schema.userProfiles.funFact,
+        showEmail: schema.userProfiles.showEmail,
+        contactEmail: schema.userProfiles.contactEmail,
+        showPhone: schema.userProfiles.showPhone,
+        phone: schema.userProfiles.phone,
+        showOnAbout: schema.userProfiles.showOnAbout,
+        favoriteRobotMechanism: schema.userProfiles.favoriteRobotMechanism,
+        preMatchSuperstition: schema.userProfiles.preMatchSuperstition,
+        leadershipRole: schema.userProfiles.leadershipRole,
+        rookieYear: schema.userProfiles.rookieYear,
+        colleges: schema.userProfiles.colleges,
+        employers: schema.userProfiles.employers,
+        tshirtSize: schema.userProfiles.tshirtSize,
+        emergencyContactName: schema.userProfiles.emergencyContactName,
+        emergencyContactPhone: schema.userProfiles.emergencyContactPhone,
+        parentsName: schema.userProfiles.parentsName,
+        parentsEmail: schema.userProfiles.parentsEmail,
+        studentsName: schema.userProfiles.studentsName,
+        studentsEmail: schema.userProfiles.studentsEmail,
+      })
+      .from(schema.userProfiles)
+      .where(eq(schema.userProfiles.userId, id))
+      .limit(1);
+
+    const profileRow = profileResult?.[0];
 
     const p = {
       ...(profileRow || {

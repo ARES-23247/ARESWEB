@@ -1,7 +1,6 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
 import type { AppType } from "../../functions/api/[[route]]";
-import type { Client } from "hono/client";
 import type { UseMutationOptions } from "@tanstack/react-query";
 
 /**
@@ -16,7 +15,8 @@ import type { UseMutationOptions } from "@tanstack/react-query";
  * wrapper functions handle their own type safety through Zod schemas and
  * explicit type annotations.
  */
-export const client = hc<AppType>("/api", {
+export const client: any = // eslint-disable-line @typescript-eslint/no-explicit-any
+  hc<AppType>("/api", {
   init: {
     credentials: "include",
   },

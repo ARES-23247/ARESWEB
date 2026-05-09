@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import * as relations from "../../../src/db/relations";
 
-type DrizzleDb = DrizzleD1Database<typeof schema & typeof relations>;
+type DrizzleDb = DrizzleD1Database<typeof schema, typeof relations>;
 
 // Node.js process environment type
 interface NodeProcessEnv {

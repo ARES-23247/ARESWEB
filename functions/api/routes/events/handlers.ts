@@ -7,11 +7,18 @@ import { sql } from "drizzle-orm";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
 
-import { eq, or, and, ne, isNull, inArray, desc } from "drizzle-orm";
+// Cloudflare Cache API type for edge cache invalidation
+// In Cloudflare Workers, caches.default is the primary cache instance
+type CloudflareCachesWithDefault = CacheStorage & {
+  default?: Cache;
+};
+
+import { eq, or, and, isNull, inArray, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
 
 import type { SocialConfig } from "../../middleware";
+import { queryHelpers, transactionHelpers } from "@/db/query-helpers";
 
 /**
  * Invalidate Cloudflare edge cache for public events endpoints.
@@ -19,8 +26,10 @@ import type { SocialConfig } from "../../middleware";
  */
 function invalidateEventsCache(c: AresContext): void {
   if (typeof caches === 'undefined' || !c.executionCtx) return;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
-  const cache = (caches as any).default;
+
+  // Cloudflare Workers exposes caches.default which is not in standard CacheStorage type
+  const cfCaches = caches as unknown as CloudflareCachesWithDefault;
+  const cache = cfCaches.default;
   if (!cache) return;
 
   const baseUrl = new URL(c.req.url).origin;
@@ -126,18 +135,6 @@ type FtsEventResult = {
   is_potluck: number;
   is_volunteer: number;
 };
-
-// Type for signup records from database
-type SignupRecord = {
-  userId: string;
-  nickname: string | null;
-  bringing: string | null;
-  notes: string | null;
-  prepHours: number | null;
-  attended: number | null;
-  dietaryRestrictions: string | null;
-};
-
 
 // Type for event list results with camelCase fields (from Drizzle selects)
 // This is a union type to handle both full and fallback query results
@@ -257,21 +254,9 @@ export const eventHandlers = {
           .all() as EventListResult[];
       }
 
-      // Resolve location addresses from the locations registry
+      // Resolve location addresses using query helper
       const locationNames = [...new Set(results.map((e) => e.location).filter(Boolean))] as string[];
-      const locationMap: Record<string, string> = {};
-      if (locationNames.length > 0) {
-        try {
-          const locs = await db.select({
-            name: schema.locations.name,
-            address: schema.locations.address,
-          })
-            .from(schema.locations)
-            .where(inArray(schema.locations.name, locationNames))
-            .all();
-          locs.forEach((l) => { if (l.address) locationMap[l.name] = l.address; });
-        } catch { /* locations table may not exist */ }
-      }
+      const locationMap = await queryHelpers.getLocationAddresses(db, locationNames);
 
       const events: FormattedEvent[] = results.map((e) => ({
         ...e,
@@ -1060,27 +1045,12 @@ export const eventHandlers = {
       const isVerified = user && user.role !== "unverified";
       const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.member_type || ""));
 
-      const results = await db.select({
-        userId: schema.eventSignups.userId,
-        nickname: schema.userProfiles.nickname,
-        avatar: schema.user.image,
-        dietaryRestrictions: schema.userProfiles.dietaryRestrictions,
-        bringing: schema.eventSignups.bringing,
-        notes: schema.eventSignups.notes,
-        prepHours: schema.eventSignups.prepHours,
-        attended: schema.eventSignups.attended,
-      }).from(schema.eventSignups)
-        .innerJoin(schema.userProfiles, eq(schema.eventSignups.userId, schema.userProfiles.userId))
-        .innerJoin(schema.user, eq(schema.eventSignups.userId, schema.user.id))
-        .where(and(
-          eq(schema.eventSignups.eventId, eventId),
-          ne(schema.user.role, "unverified")
-        ))
-        .all();
+      // Use query helper for event signups with user profiles
+      const { eventSignups: results } = await queryHelpers.getEventSignups(db, eventId);
 
-      const signups = isVerified ? results.map((rec: SignupRecord) => ({
+      const signups = isVerified ? results.map((rec: typeof results[number]) => ({
         user_id: rec.userId,
-        nickname: rec.nickname || null,
+        nickname: rec.profileNickname || null,
         bringing: rec.bringing || null,
         notes: (isManagement || (user && rec.userId === user.id)) ? rec.notes : null,
         prep_hours: Number(rec.prepHours || 0),
@@ -1089,7 +1059,7 @@ export const eventHandlers = {
       })) : [];
 
       const dietarySummary: Record<string, number> = {};
-      results.forEach((r: SignupRecord) => {
+      results.forEach((r: typeof results[number]) => {
         if (r.dietaryRestrictions) {
           const restrictions = r.dietaryRestrictions.split(',').map((st: string) => st.trim());
           restrictions.forEach((res: string) => {
@@ -1098,14 +1068,14 @@ export const eventHandlers = {
         }
       });
 
-      return { status: 200 as const, body: { 
-        signups, 
-        dietary_summary: dietarySummary, 
-        team_dietary_summary: {}, 
-        authenticated: !!user, 
-        role: user?.role || null, 
-        member_type: user?.member_type || null, 
-        can_manage: !!isManagement 
+      return { status: 200 as const, body: {
+        signups,
+        dietary_summary: dietarySummary,
+        team_dietary_summary: {},
+        authenticated: !!user,
+        role: user?.role || null,
+        member_type: user?.member_type || null,
+        can_manage: !!isManagement
       } };
     } catch (e) {
       console.error("[Events:Signups] Error", e);
@@ -1118,22 +1088,16 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
       if (!user || user.role === "unverified") return { status: 403 as const, body: { error: "Forbidden" } };
       const db = getDb(c);
-      
-      const existing = await db.select({ id: schema.eventSignups.id })
-        .from(schema.eventSignups)
-        .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id)))
-        .get();
 
-      if (existing) {
-        await db.update(schema.eventSignups)
-          .set({ bringing: body.bringing || "", notes: body.notes || "", prepHours: body.prep_hours || 0 })
-          .where(eq(schema.eventSignups.id, existing.id))
-          .run();
-      } else {
-        await db.insert(schema.eventSignups)
-          .values({ eventId: params.id, userId: user.id, bringing: body.bringing || "", notes: body.notes || "", prepHours: body.prep_hours || 0 })
-          .run();
-      }
+      // Use transaction helper for atomic signup with duplicate handling
+      await transactionHelpers.createEventSignup(db, {
+        eventId: params.id,
+        userId: user.id,
+        bringing: body.bringing || "",
+        notes: body.notes || "",
+        prepHours: body.prep_hours || 0,
+      });
+
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:SubmitSignup] Error", e);

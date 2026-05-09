@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -74,6 +74,14 @@ interface IssuesPayload {
   repository?: GitHubRepository;
 }
 
+// Union type for all GitHub webhook payloads
+type GitHubWebhookPayload =
+  | ProjectV2Payload
+  | PushPayload
+  | PullRequestPayload
+  | IssuesPayload
+  | Record<string, unknown>;
+
 
 
 const githubWebhookRouter = new OpenAPIHono<AppEnv>();
@@ -118,7 +126,7 @@ async function verifyGitHubSignature(
 }
 
 // ── POST /webhooks/github — Receive GitHub webhook events ────────────
-githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
+githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
   const secret = c.env.GITHUB_WEBHOOK_SECRET;
   const rawBody = await c.req.text();
 
@@ -135,9 +143,9 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
   }
 
   const event = c.req.header("X-GitHub-Event") || "unknown";
-  let payload: any;
+  let payload: GitHubWebhookPayload;
   try {
-    payload = JSON.parse(rawBody);
+    payload = JSON.parse(rawBody) as GitHubWebhookPayload;
   } catch {
     throw new ApiError("Invalid JSON", 400);
   }
@@ -147,9 +155,10 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
   try {
     switch (event) {
       case "projects_v2_item": {
-        const action = payload.action;
-        const item = payload.projects_v2_item;
-        const changes = payload.changes;
+        const p = payload as ProjectV2Payload;
+        const action = p.action;
+        const item = p.projects_v2_item;
+        const changes = p.changes;
 
         if (action === "created") {
           c.executionCtx.waitUntil(sendZulipMessage(
@@ -160,7 +169,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
           ).catch((err: unknown) => console.error(err)));
         } else if (action === "edited" && changes) {
           const fieldChanges = Object.entries(changes)
-            .map(([key, val]: any) => `**${key}**: \`${String(val.from)}\` → \`${String(val.to)}\``)
+            .map(([key, val]) => `**${key}**: \`${String((val as { from?: unknown }).from)}\` → \`${String((val as { to?: unknown }).to)}\``)
             .join("\n");
 
           if (fieldChanges) {
@@ -183,9 +192,10 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
       }
 
       case "push": {
-        const ref = payload.ref;
-        const commits = payload.commits;
-        const repo = payload.repository?.full_name || "unknown";
+        const p = payload as PushPayload;
+        const ref = p.ref;
+        const commits = p.commits;
+        const repo = p.repository?.full_name || "unknown";
         const branch = ref?.replace("refs/heads/", "") || "unknown";
         const commitCount = commits?.length || 0;
 
@@ -206,9 +216,10 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
       }
 
       case "pull_request": {
-        const action2 = payload.action;
-        const pr = payload.pull_request;
-        const repo2 = payload.repository?.full_name || "unknown";
+        const p = payload as PullRequestPayload;
+        const action2 = p.action;
+        const pr = p.pull_request;
+        const repo2 = p.repository?.full_name || "unknown";
 
         if (["opened", "closed", "reopened"].includes(action2)) {
           const emoji = action2 === "opened" ? "🟢" : pr?.merged ? "🟣" : action2 === "closed" ? "🔴" : "🟡";
@@ -224,9 +235,10 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c: any) => {
       }
 
       case "issues": {
-        const action3 = payload.action;
-        const issue = payload.issue;
-        const repo3 = payload.repository?.full_name || "unknown";
+        const p = payload as IssuesPayload;
+        const action3 = p.action;
+        const issue = p.issue;
+        const repo3 = p.repository?.full_name || "unknown";
 
         if (["opened", "closed", "reopened"].includes(action3)) {
           const emoji = action3 === "opened" ? "📝" : action3 === "closed" ? "✅" : "🔄";
