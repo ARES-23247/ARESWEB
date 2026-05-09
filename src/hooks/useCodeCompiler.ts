@@ -7,6 +7,15 @@ export function useCodeCompiler() {
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const compileTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+
+  // Track mount state to prevent state updates after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const compileCode = useCallback(async (sourceFiles: Record<string, string>): Promise<string | null> => {
     setIsCompiling(true);
@@ -21,14 +30,23 @@ export function useCodeCompiler() {
           compiled[filename] = content;
         }
       }
-      setCompiledFiles(compiled);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setCompiledFiles(compiled);
+      }
       return null;
     } catch (e) {
       const errMsg = (e as Error).message;
-      setCompileError(errMsg);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setCompileError(errMsg);
+      }
       return errMsg;
     } finally {
-      setIsCompiling(false);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setIsCompiling(false);
+      }
     }
   }, []);
 
