@@ -7,14 +7,14 @@ export const badgeSchema = z.object({
   name: z.string(),
   description: z.string(),
   icon: z.string(),
-  color_theme: z.string(),
-  created_at: z.string(),
+  colorTheme: z.string(),
+  createdAt: z.string(),
 });
 
 export const userBadgeSchema = z.object({
-  user_id: z.string(),
-  badge_id: z.string(),
-  granted_at: z.string(),
+  userId: z.string(),
+  badgeId: z.string(),
+  grantedAt: z.string(),
 });
 
 export const listBadgesRoute = createRoute({
@@ -43,7 +43,7 @@ export const createBadgeRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: badgeSchema.omit({ created_at: true }),
+          schema: badgeSchema.omit({ createdAt: true }),
         },
       },
     },
@@ -146,10 +146,10 @@ export const leaderboardBadgeRoute = createRoute({
         "application/json": {
           schema: z.object({
             leaderboard: z.array(z.object({
-              user_id: z.string(),
+              userId: z.string(),
               nickname: z.string().nullable(),
-              member_type: z.string().nullable(),
-              badge_count: z.number(),
+              memberType: z.string().nullable(),
+              badgeCount: z.number(),
             })),
           }),
         },

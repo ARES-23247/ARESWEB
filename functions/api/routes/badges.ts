@@ -45,15 +45,15 @@ badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async
       name: b.name,
       description: b.description || "",
       icon: b.icon || "Award",
-      color_theme: b.color_theme || "ares-gold",
-      created_at: String(b.created_at),
+      colorTheme: b.colorTheme || "ares-gold",
+      createdAt: String(b.createdAt),
     }));
 
     return c.json({ badges }, 200);
 }));
 
 badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(async (c) => {
-    const { id, name, description, icon, color_theme } = c.req.valid("json");
+    const { id, name, description, icon, colorTheme } = c.req.valid("json");
     const db = getDb(c);
     await db
       .insert(schema.badges)
@@ -62,7 +62,7 @@ badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(asy
         name,
         description,
         icon,
-        colorTheme: color_theme,
+        colorTheme: colorTheme,
       })
       .run();
     return c.json({ success: true }, 200);
@@ -156,10 +156,10 @@ badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadge
     const results = await queryHelpers.getBadgeLeaderboard(db, 20);
 
     const leaderboard = results.map((r) => ({
-      user_id: r.userId as string,
+      userId: r.userId as string,
       nickname: r.nickname as string | null,
-      member_type: r.memberType as string | null,
-      badge_count: Number(r.badgeCount),
+      memberType: r.memberType as string | null,
+      badgeCount: Number(r.badgeCount),
     }));
 
     return c.json({ leaderboard }, 200);
