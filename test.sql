@@ -1,58 +1,3 @@
-DROP TABLE IF EXISTS `d1_migrations`;
-DROP TABLE IF EXISTS `user`;
-DROP TABLE IF EXISTS `session`;
-DROP TABLE IF EXISTS `account`;
-DROP TABLE IF EXISTS `verification`;
-DROP TABLE IF EXISTS `posts`;
-DROP TABLE IF EXISTS `posts_history`;
-DROP TABLE IF EXISTS `events`;
-DROP TABLE IF EXISTS `seasons`;
-DROP TABLE IF EXISTS `event_signups`;
-DROP TABLE IF EXISTS `docs`;
-DROP TABLE IF EXISTS `docs_history`;
-DROP TABLE IF EXISTS `document_history`;
-DROP TABLE IF EXISTS `document_contributors`;
-DROP TABLE IF EXISTS `docs_feedback`;
-DROP TABLE IF EXISTS `user_profiles`;
-DROP TABLE IF EXISTS `badges`;
-DROP TABLE IF EXISTS `user_badges`;
-DROP TABLE IF EXISTS `sponsors`;
-DROP TABLE IF EXISTS `sponsor_metrics`;
-DROP TABLE IF EXISTS `sponsor_tokens`;
-DROP TABLE IF EXISTS `inquiries`;
-DROP TABLE IF EXISTS `locations`;
-DROP TABLE IF EXISTS `awards`;
-DROP TABLE IF EXISTS `outreach_logs`;
-DROP TABLE IF EXISTS `comments`;
-DROP TABLE IF EXISTS `notifications`;
-DROP TABLE IF EXISTS `page_analytics`;
-DROP TABLE IF EXISTS `media_tags`;
-DROP TABLE IF EXISTS `judge_access_codes`;
-DROP TABLE IF EXISTS `settings`;
-DROP TABLE IF EXISTS `tasks`;
-DROP TABLE IF EXISTS `task_assignments`;
-DROP TABLE IF EXISTS `audit_log`;
-DROP TABLE IF EXISTS `docs_fts`;
-DROP TABLE IF EXISTS `posts_fts`;
-DROP TABLE IF EXISTS `events_fts`;
-DROP TABLE IF EXISTS `user_profiles_fts`;
-DROP TABLE IF EXISTS `products`;
-DROP TABLE IF EXISTS `orders`;
-DROP TABLE IF EXISTS `rate_limits`;
-DROP TABLE IF EXISTS `chat_sessions`;
-DROP TABLE IF EXISTS `entity_links`;
-DROP TABLE IF EXISTS `finance_transactions`;
-DROP TABLE IF EXISTS `sponsorship_pipeline`;
-DROP TABLE IF EXISTS `sponsorship_assignments`;
-DROP TABLE IF EXISTS `document_snapshots`;
-DROP TABLE IF EXISTS `simulations`;
-DROP TABLE IF EXISTS `external_knowledge_sources`;
-DROP TABLE IF EXISTS `performance_metrics`;
-DROP TABLE IF EXISTS `points_ledger`;
-DROP TABLE IF EXISTS `scouting_analyses`;
-DROP TABLE IF EXISTS `social_queue`;
-DROP TABLE IF EXISTS `social_templates`;
-
 -- Current sql file was generated after introspecting the database
 -- If you want to run this migration please uncomment this code before executing migrations
 
@@ -545,15 +490,38 @@ CREATE TABLE IF NOT EXISTS `docs_fts` (
 	`rank` numeric
 );
 
+CREATE TABLE IF NOT EXISTS `docs_fts_data` (
+	`id` integer PRIMARY KEY,
+	`block` blob
+);
 
+CREATE TABLE IF NOT EXISTS `docs_fts_idx` (
+	`segid` numeric NOT NULL,
+	`term` numeric NOT NULL,
+	`pgno` numeric,
+	PRIMARY KEY(`segid`, `term`)
+);
 
+CREATE TABLE IF NOT EXISTS `docs_fts_content` (
+	`id` integer PRIMARY KEY,
+	`c0` numeric,
+	`c1` numeric,
+	`c2` numeric,
+	`c3` numeric,
+	`c4` numeric,
+	`c5` numeric,
+	`c6` numeric
+);
 
+CREATE TABLE IF NOT EXISTS `docs_fts_docsize` (
+	`id` integer PRIMARY KEY,
+	`sz` blob
+);
 
-
-
-
-
-
+CREATE TABLE IF NOT EXISTS `docs_fts_config` (
+	`k` numeric PRIMARY KEY NOT NULL,
+	`v` numeric
+);
 
 CREATE TABLE IF NOT EXISTS `posts_fts` (
 	`slug` numeric,
@@ -565,15 +533,36 @@ CREATE TABLE IF NOT EXISTS `posts_fts` (
 	`rank` numeric
 );
 
+CREATE TABLE IF NOT EXISTS `posts_fts_data` (
+	`id` integer PRIMARY KEY,
+	`block` blob
+);
 
+CREATE TABLE IF NOT EXISTS `posts_fts_idx` (
+	`segid` numeric NOT NULL,
+	`term` numeric NOT NULL,
+	`pgno` numeric,
+	PRIMARY KEY(`segid`, `term`)
+);
 
+CREATE TABLE IF NOT EXISTS `posts_fts_content` (
+	`id` integer PRIMARY KEY,
+	`c0` numeric,
+	`c1` numeric,
+	`c2` numeric,
+	`c3` numeric,
+	`c4` numeric
+);
 
+CREATE TABLE IF NOT EXISTS `posts_fts_docsize` (
+	`id` integer PRIMARY KEY,
+	`sz` blob
+);
 
-
-
-
-
-
+CREATE TABLE IF NOT EXISTS `posts_fts_config` (
+	`k` numeric PRIMARY KEY NOT NULL,
+	`v` numeric
+);
 
 CREATE TABLE IF NOT EXISTS `events_fts` (
 	`id` numeric,
@@ -586,15 +575,37 @@ CREATE TABLE IF NOT EXISTS `events_fts` (
 	`rank` numeric
 );
 
+CREATE TABLE IF NOT EXISTS `events_fts_data` (
+	`id` integer PRIMARY KEY,
+	`block` blob
+);
 
+CREATE TABLE IF NOT EXISTS `events_fts_idx` (
+	`segid` numeric NOT NULL,
+	`term` numeric NOT NULL,
+	`pgno` numeric,
+	PRIMARY KEY(`segid`, `term`)
+);
 
+CREATE TABLE IF NOT EXISTS `events_fts_content` (
+	`id` integer PRIMARY KEY,
+	`c0` numeric,
+	`c1` numeric,
+	`c2` numeric,
+	`c3` numeric,
+	`c4` numeric,
+	`c5` numeric
+);
 
+CREATE TABLE IF NOT EXISTS `events_fts_docsize` (
+	`id` integer PRIMARY KEY,
+	`sz` blob
+);
 
-
-
-
-
-
+CREATE TABLE IF NOT EXISTS `events_fts_config` (
+	`k` numeric PRIMARY KEY NOT NULL,
+	`v` numeric
+);
 
 CREATE TABLE IF NOT EXISTS `user_profiles_fts` (
 	`user_id` numeric,
@@ -607,15 +618,37 @@ CREATE TABLE IF NOT EXISTS `user_profiles_fts` (
 	`rank` numeric
 );
 
+CREATE TABLE IF NOT EXISTS `user_profiles_fts_data` (
+	`id` integer PRIMARY KEY,
+	`block` blob
+);
 
+CREATE TABLE IF NOT EXISTS `user_profiles_fts_idx` (
+	`segid` numeric NOT NULL,
+	`term` numeric NOT NULL,
+	`pgno` numeric,
+	PRIMARY KEY(`segid`, `term`)
+);
 
+CREATE TABLE IF NOT EXISTS `user_profiles_fts_content` (
+	`id` integer PRIMARY KEY,
+	`c0` numeric,
+	`c1` numeric,
+	`c2` numeric,
+	`c3` numeric,
+	`c4` numeric,
+	`c5` numeric
+);
 
+CREATE TABLE IF NOT EXISTS `user_profiles_fts_docsize` (
+	`id` integer PRIMARY KEY,
+	`sz` blob
+);
 
-
-
-
-
-
+CREATE TABLE IF NOT EXISTS `user_profiles_fts_config` (
+	`k` numeric PRIMARY KEY NOT NULL,
+	`v` numeric
+);
 
 CREATE TABLE IF NOT EXISTS `products` (
 	`id` text PRIMARY KEY,

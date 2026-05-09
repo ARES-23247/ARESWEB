@@ -14,6 +14,19 @@ export const awardSchema = z.object({
   updated_at: z.string(),
 });
 
+// Shared form schema for creating/editing awards
+export const awardFormSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1, "Title is required"),
+  year: z.coerce.number().min(2000, "Year must be 2000 or later").max(2100, "Year must be 2100 or earlier"),
+  event_name: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  image_url: z.string().optional().nullable(),
+  season_id: z.string().optional().nullable(),
+});
+
+export type AwardFormPayload = z.infer<typeof awardFormSchema>;
+
 export const getAwardsRoute = createRoute({
   method: "get",
   path: "/",
@@ -46,15 +59,7 @@ export const saveAwardRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.object({
-            id: z.string().optional(),
-            title: z.string(),
-            year: z.coerce.number(),
-            event_name: z.string().optional().nullable(),
-            description: z.string().optional().nullable(),
-            image_url: z.string().optional().nullable(),
-            season_id: z.coerce.number().optional().nullable(),
-          }),
+          schema: awardFormSchema,
         },
       },
     },

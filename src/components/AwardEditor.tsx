@@ -8,20 +8,9 @@ import { Plus, Trash2, Trophy, Star, Calendar, MapPin, XCircle, Save } from "luc
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { awardFormSchema, type AwardFormPayload } from "@shared/routes/awards";
 
 import SeasonPicker from "./SeasonPicker";
-
-const awardFormSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(1, "Title is required"),
-  year: z.coerce.number().min(2000).max(2100),
-  event_name: z.string().optional().nullable(),
-  image_url: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  season_id: z.string().optional().nullable(),
-});
-type AwardFormPayload = z.infer<typeof awardFormSchema>;
 interface Award {
   id: string;
   title: string;
@@ -37,7 +26,7 @@ export default function AwardEditor() {
   const [isAdding, setIsAdding] = useState(false);
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<AwardFormPayload>({
-    resolver: zodResolver(awardFormSchema) as unknown as import("react-hook-form").Resolver<AwardFormPayload>,
+    resolver: zodResolver(awardFormSchema),
     defaultValues: {
       year: new Date().getFullYear(),
       title: "",
@@ -57,9 +46,9 @@ export default function AwardEditor() {
   const deleteMutation = useDeleteAward();
 
   const onFormSubmit = (data: AwardFormPayload) => {
-    const payload: import("../api").AwardPayload = {
+    const payload: AwardFormPayload = {
       ...data,
-      season_id: data.season_id ? parseInt(data.season_id) : null
+      season_id: data.season_id || null
     };
     saveMutation.mutate(payload, {
       onSuccess: () => {

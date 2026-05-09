@@ -41,6 +41,9 @@ authRouter.openapi(emergencyClearRoute, typedHandler<typeof emergencyClearRoute>
 
 // ── POST /api/auth/test-login — generate test session (E2E testing only) ───
 // SECURITY: This endpoint only works in test environments. Never enable in production.
+// @ts-expect-error - Hono's OpenAPI type system doesn't handle union response types well
+// This test-only endpoint returns different types based on status code (200/403/404/500)
+// The runtime behavior is correct; this is a TypeScript limitation with discriminated unions
 authRouter.openapi(testLoginRoute, async (c) => {
   // SECURITY: Verify test mode via environment or special header
   // Note: CI is a GitHub Actions env var, not in Cloudflare Bindings type
