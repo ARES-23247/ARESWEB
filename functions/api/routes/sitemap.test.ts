@@ -8,6 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
+import { globalErrorHandler } from '../middleware/error';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
 import { AppEnv } from '../middleware';
 
@@ -63,7 +64,9 @@ describe('Sitemap Routes', () => {
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>();
+    const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api', sitemapRouter);
     return app;

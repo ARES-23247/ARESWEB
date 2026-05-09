@@ -8,6 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
+import { globalErrorHandler } from '../middleware/error';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
 import { AppEnv, SessionUser } from '../middleware';
 
@@ -47,16 +48,18 @@ vi.mock('../../utils/zulipSync', async () => {
   };
 });
 
-// Mock getSocialConfig to return test config
+// Mock getSocialConfig to return test config - must be hoisted before import
+const mockGetSocialConfig = vi.fn().mockResolvedValue({
+  ZULIP_BOT_EMAIL: 'test-bot@ares.org',
+  ZULIP_API_KEY: 'test-api-key',
+  ZULIP_URL: 'https://test.zulipchat.com',
+});
+
 vi.mock('../middleware', async () => {
   const actual = await vi.importActual<typeof import('../middleware.js')>('../middleware');
   return {
     ...actual,
-    getSocialConfig: vi.fn().mockResolvedValue({
-      ZULIP_BOT_EMAIL: 'test-bot@ares.org',
-      ZULIP_API_KEY: 'test-api-key',
-      ZULIP_URL: 'https://test.zulipchat.com',
-    }),
+    getSocialConfig: () => mockGetSocialConfig(),
   };
 });
 
@@ -107,7 +110,9 @@ describe('Zulip Routes', () => {
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>();
+    const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/zulip', zulipRouter);
     return app;

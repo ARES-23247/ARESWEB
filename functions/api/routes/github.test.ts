@@ -11,6 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
+import { globalErrorHandler } from '../middleware/error';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
 import { AppEnv, SessionUser } from '../middleware';
 
@@ -110,7 +111,9 @@ describe('GitHub Integration Routes', () => {
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>();
+    const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/github', githubRouter);
     return app;
