@@ -138,6 +138,22 @@ vi.mock("./honoClient", () => ({
     },
   },
   unwrapResponse: vi.fn(),
+  withMutationCallbacks: vi.fn((queryClient, options, callbacks) => {
+    // Run internal callbacks first
+    const originalOnSuccess = options?.onSuccess;
+    const originalOnError = options?.onError;
+    return {
+      ...options,
+      onSuccess: async (...args: unknown[]) => {
+        await callbacks.onSuccess?.(queryClient, ...(args as [unknown, unknown]));
+        await originalOnSuccess?.(...args as [unknown, unknown, unknown]);
+      },
+      onError: async (...args: unknown[]) => {
+        await callbacks.onError?.(queryClient, ...(args as [unknown, unknown]));
+        await originalOnError?.(...args as [unknown, unknown, unknown]);
+      },
+    };
+  }),
   wrapOnSuccess: vi.fn((<TData, _TError, TVariables>(
     _options: { onSuccess?: (data: TData, variables: TVariables) => void } | undefined,
     internal: (data: TData, variables: TVariables) => void

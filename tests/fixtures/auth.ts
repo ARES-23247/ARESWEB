@@ -161,16 +161,28 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
       testUserId = 'test-user-author'; // Should exist in seeded data
     }
 
-    // Call test-login endpoint to get session
-    const response = await page.context().request.post(testLoginUrl, {
-      headers: {
-        'x-test-bypass-auth': 'true', // Enable test mode
-      },
-      data: { userId: testUserId },
-    });
+    // Call test-login endpoint to get session, with retry for 502s during dev server boot
+    let response;
+    for (let attempts = 0; attempts < 5; attempts++) {
+      response = await page.context().request.post(testLoginUrl, {
+        headers: {
+          'x-test-bypass-auth': 'true', // Enable test mode
+        },
+        data: { userId: testUserId },
+      });
 
-    if (!response.ok()) {
-      throw new Error(`Test login failed: ${response.status()} ${await response.text()}`);
+      if (response.ok()) break;
+      
+      if (response.status() === 502) {
+        console.log(`[Auth] Got 502 from ${testLoginUrl}, waiting for backend to finish booting (attempt ${attempts + 1}/5)...`);
+        await new Promise(r => setTimeout(r, 2000));
+      } else {
+        throw new Error(`Test login failed: ${response.status()} ${await response.text()}`);
+      }
+    }
+
+    if (!response || !response.ok()) {
+      throw new Error(`Test login failed permanently: ${response?.status()}`);
     }
 
     const data = await response.json() as {

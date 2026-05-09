@@ -18,11 +18,11 @@ test.describe('Admin Dashboard', () => {
     });
     console.log('Browser Session response:', sessionData);
     
-    // Ensure dashboard title is visible
-    await expect(page.getByRole('heading', { name: /ARES/i }).first()).toBeVisible();
-
     // Verify user profile section rendered the mocked user
     await page.screenshot({ path: 'admin-dashboard.png', fullPage: true });
+
+    // Ensure dashboard title is visible
+    await expect(page.getByText(/Welcome back/i).first()).toBeVisible();
     await expect(page.getByText(/Admin User/i).first()).toBeVisible();
     // Verify admin hubs are accessible
     await expect(page.getByText(/User Roles/i)).toBeVisible();
