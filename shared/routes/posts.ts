@@ -46,14 +46,14 @@ export const postResponseSchema = z.object({
   thumbnail: z.string().nullable().optional().openapi({ example: "/images/match.jpg" }),
   status: z.string().nullable().optional().openapi({ example: "published" }),
   author: z.string().nullable().optional().openapi({ example: "John Doe" }),
-  author_nickname: z.string().nullable().optional(),
-  author_avatar: z.string().nullable().optional(),
-  published_at: z.string().nullable().optional(),
-  season_id: z.coerce.number().nullable().optional().openapi({ example: 1 }),
-  is_deleted: z.number().nullable().optional().openapi({ example: 0 }),
-  is_portfolio: z.number().optional().openapi({ example: 0 }),
-  zulip_stream: z.string().nullable().optional(),
-  zulip_topic: z.string().nullable().optional(),
+  authorNickname: z.string().nullable().optional(),
+  authorAvatar: z.string().nullable().optional(),
+  publishedAt: z.string().nullable().optional(),
+  seasonId: z.coerce.number().nullable().optional().openapi({ example: 1 }),
+  isDeleted: z.number().nullable().optional().openapi({ example: 0 }),
+  isPortfolio: z.number().optional().openapi({ example: 0 }),
+  zulipStream: z.string().nullable().optional(),
+  zulipTopic: z.string().nullable().optional(),
 });
 
 export const postDetailSchema = postResponseSchema.extend({
@@ -68,7 +68,7 @@ export const postHistorySchema = z.object({
   thumbnail: z.string().nullable().optional(),
   snippet: z.string().nullable().optional(),
   ast: z.string().openapi({ example: '{"type":"doc","content":[]}' }),
-  created_at: z.string().openapi({ example: "2025-01-15T10:00:00Z" }),
+  createdAt: z.string().openapi({ example: "2025-01-15T10:00:00Z" }),
 });
 
 export const authorSchema = z.object({
