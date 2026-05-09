@@ -32,11 +32,14 @@ export interface DashboardPermissions {
 
 export function useDashboardSession() {
   // Named constant for session cache duration
-  const SESSION_CACHE_DURATION_MS = 1000 * 60 * 5; // 5 minutes
+  // AUTH-CRITICAL-01: Reduced from 5 minutes to 30 seconds since session data
+  // is authentication-critical and must reflect changes quickly (e.g., role changes,
+  // account switches, sign-outs). Server-side validation is still used for sensitive ops.
+  const SESSION_CACHE_DURATION_MS = 1000 * 30; // 30 seconds
 
-  // NOTE: Session is cached for 5 minutes to reduce API calls. This means
-  // permission changes (role updates, member_type changes) may not reflect
-  // immediately for the user. For sensitive operations requiring immediate
+  // NOTE: Session is cached for 30 seconds to reduce API calls while ensuring
+  // timely updates to authentication state. Permission changes may take up to
+  // 30 seconds to reflect in the UI. For sensitive operations requiring immediate
   // permission validation, use server-side checks instead.
   const { data: res, isLoading: isPending } = useGetMe({
     staleTime: SESSION_CACHE_DURATION_MS,

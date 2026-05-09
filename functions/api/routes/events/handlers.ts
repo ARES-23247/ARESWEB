@@ -12,6 +12,29 @@ import * as schema from "../../../../src/db/schema";
 
 import type { SocialConfig } from "../../middleware";
 
+/**
+ * Invalidate Cloudflare edge cache for public events endpoints.
+ * Call this after any event mutation (create, update, delete, etc.)
+ */
+function invalidateEventsCache(c: AresContext): void {
+  if (typeof caches === 'undefined' || !c.executionCtx) return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
+  const cache = (caches as any).default;
+  if (!cache) return;
+
+  const baseUrl = new URL(c.req.url).origin;
+
+  // Invalidate all public events cache entries
+  const cacheKeys = [
+    new Request(new URL("/api/events", baseUrl).href, { method: "GET" }),
+    new Request(new URL("/api/events/calendar-settings", baseUrl).href, { method: "GET" }),
+  ];
+
+  c.executionCtx.waitUntil(
+    Promise.all(cacheKeys.map(key => cache.delete(key)))
+  );
+}
+
 // Drizzle ORM type inference for events table
 type EventRow = typeof schema.events.$inferSelect;
 
@@ -665,6 +688,7 @@ export const eventHandlers = {
 
       c.executionCtx.waitUntil(logAuditAction(c, "CREATE_EVENT", "events", genId, `Created event: ${title} (${status})`));
       triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
+      invalidateEventsCache(c);
 
       return { status: 200 as const, body: { success: true, id: genId } };
     } catch (e) {
@@ -754,6 +778,7 @@ export const eventHandlers = {
       })());
 
       triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true, id } };
     } catch (e) {
       console.error("[Events:Update] Error", e);
@@ -791,6 +816,7 @@ export const eventHandlers = {
       })());
 
       triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:Delete] Error", e);
@@ -859,6 +885,7 @@ export const eventHandlers = {
         await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch(() => {});
       })());
 
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:Approve] Error", e);
@@ -871,6 +898,7 @@ export const eventHandlers = {
     try {
       const db = getDb(c);
       await db.update(schema.events).set({ status: 'rejected' }).where(eq(schema.events.id, id)).run();
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:Reject] Error", e);
@@ -906,6 +934,7 @@ export const eventHandlers = {
         }
       })());
 
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:Undelete] Error", e);
@@ -938,6 +967,7 @@ export const eventHandlers = {
         }
       })());
 
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:Purge] Error", e);
@@ -1006,6 +1036,7 @@ export const eventHandlers = {
         }
       }
 
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true, count: total } };
     } catch (e) {
       console.error("[Events:Sync] Error", e);
@@ -1308,6 +1339,7 @@ export const eventHandlers = {
       }
 
       console.log(`[Events:RepairCalendar] Complete — pushed: ${pushed}, failed: ${failed}`);
+      invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true, pushed, failed, errors: errors.length > 0 ? errors : undefined } };
     } catch (e) {
       console.error("[Events:RepairCalendar] Error", e);

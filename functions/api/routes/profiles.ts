@@ -33,12 +33,18 @@ import {
 const profilesRouter = new OpenAPIHono<AppEnv>();
 
 
-// Apply edge caching to public GET routes (non-admin, non-signups)
+// Apply edge caching to public GET routes only
+// SECURITY: Never cache user-specific endpoints (/:userId, /me) as this causes session bleeding
 profilesRouter.use("*", async (c, next) => {
   const path = c.req.path;
-  if (c.req.method !== "GET" || path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+  if (c.req.method !== "GET") return next();
+
+  // Skip caching for user-specific and admin-only routes
+  if (path.includes("/admin/") || path.includes("/signups") || path.includes("/history") || path.includes("/me") || path.includes("/:userId")) {
     return next();
   }
+
+  // Only cache truly public, non-user-specific routes
   return edgeCacheMiddleware(180, 60, 300)(c, next);
 });
 
@@ -169,7 +175,7 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
       p.studentsEmail = studentsEmail;
     }
 
-    return c.json(
+    const response = c.json(
       {
         ...p,
         member_type: String(p.memberType || "student"),
@@ -180,6 +186,11 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
       } as z.infer<typeof profileMeSchema>,
       200
     );
+    // SECURITY: Never cache user-specific responses
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+    return response;
 }));
 
 profilesRouter.openapi(updateMeRoute, typedHandler<typeof updateMeRoute>(async (c) => {

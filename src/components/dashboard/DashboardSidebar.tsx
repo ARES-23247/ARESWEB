@@ -8,6 +8,7 @@ import {
 import { signOut, useSession } from "../../utils/auth-client";
 import { DashboardSession, DashboardPermissions } from "../../hooks/useDashboardSession";
 import { lazy } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AvatarEditor = lazy(() => import("../AvatarEditor"));
 
@@ -90,6 +91,7 @@ export default function DashboardSidebar({
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Use the auth session hook for refetching
   const { refetch } = useSession();
@@ -285,11 +287,15 @@ export default function DashboardSidebar({
             onClick={async () => {
               try {
                 await signOut();
+                // Clear React Query cache for profile data to prevent showing wrong user
+                queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
+                queryClient.clear();
                 window.location.href = '/';
               } catch (err) {
                 console.error("Authentication Fault: Sign out sequence failed.", err);
                 // Fallback: If CSRF or session mismatch occurs (e.g. from prior cache poisoning),
                 // forcefully clear the cookies via the emergency endpoint.
+                queryClient.clear();
                 window.location.href = '/api/auth/emergency-clear';
               }
             }}
