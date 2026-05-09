@@ -769,4 +769,5 @@ CREATE INDEX `idx_simulations_author` ON `simulations` (`author_id`);
 
 
 */
-SELECT 1;
+CREATE TABLE IF NOT EXISTS __drizzle_dummy (id INTEGER PRIMARY KEY); DROP TABLE IF EXISTS __drizzle_dummy;
+
