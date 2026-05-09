@@ -51,8 +51,18 @@ The following milestones were planned and had phase directories created, but wer
   - Phase directories exist but work was not completed
   - Goal: 60-70% bundle size reduction, 90+ Lighthouse score
 
-- **v7.1 — Drizzle ORM Migration** (planned 2026-05-07, not executed)
-  - Phase directories exist but work was not completed
-  - Goal: Complete Kysely to Drizzle migration
+These milestones are documented in `.planning/milestones/v7.0-*` files for reference.
 
-These milestones are documented in `.planning/milestones/v7.0-*` and `.planning/milestones/v7.1-*` files for reference.
+---
+
+## Completed Technical Debt Cleanup (2026-05-08)
+
+**Hono/Zod/Drizzle Migration Completion** — See `.planning/todos/completed/2026-05-08-hono-zod-drizzle-cleanup.md`
+
+- Migrated remaining legacy Cloudflare Pages Functions to Hono
+- Added missing OpenAPI schemas for AI admin routes
+- Converted all remaining raw D1 queries to Drizzle ORM
+- Replaced manual type assertions with proper Zod validation
+- Updated frontend components to use new API paths
+
+This work completes the v7.1 Drizzle ORM migration goals that were previously marked as "not executed".
