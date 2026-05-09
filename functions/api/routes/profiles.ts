@@ -163,8 +163,10 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
 
     if (profileRow) {
       const secret = c.env.ENCRYPTION_SECRET;
+      // W3A-SEC-03: Check for encryption marker before attempting decryption
+      // Encrypted values have format "salt_hex:iv_hex:ciphertext_hex"
       const safeDecrypt = async (val: string | null) => {
-        if (!val) return null;
+        if (!val || !val.includes(":")) return val || null;
         try {
           return await decrypt(val as string, secret);
         } catch (err) {
@@ -527,16 +529,27 @@ profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfi
 
       if (sensitive) {
         const secret = c.env.ENCRYPTION_SECRET;
-        sanitized.emergency_contact_name = await decrypt(sensitive.emergencyContactName as string, secret);
-        sanitized.emergency_contact_phone = await decrypt(sensitive.emergencyContactPhone as string, secret);
+        // W3A-SEC-03: Helper to safely decrypt only if data has encryption marker
+        const safeDecryptValue = async (val: string | null): Promise<string | null> => {
+          if (!val || !val.includes(":")) return val || null;
+          try {
+            return await decrypt(val, secret);
+          } catch (err) {
+            console.error("[Profile:Decrypt] Error", err);
+            return null;
+          }
+        };
+
+        sanitized.emergency_contact_name = await safeDecryptValue(sensitive.emergencyContactName as string | null);
+        sanitized.emergency_contact_phone = await safeDecryptValue(sensitive.emergencyContactPhone as string | null);
         sanitized.dietary_restrictions = sensitive.dietaryRestrictions;
         sanitized.tshirt_size = sensitive.tshirtSize;
-        sanitized.phone = await decrypt(sensitive.phone as string, secret);
-        sanitized.contact_email = await decrypt(sensitive.contactEmail as string, secret);
-        sanitized.parents_name = await decrypt(sensitive.parentsName as string, secret);
-        sanitized.parents_email = await decrypt(sensitive.parentsEmail as string, secret);
-        sanitized.students_name = await decrypt(sensitive.studentsName as string, secret);
-        sanitized.students_email = await decrypt(sensitive.studentsEmail as string, secret);
+        sanitized.phone = await safeDecryptValue(sensitive.phone as string | null);
+        sanitized.contact_email = await safeDecryptValue(sensitive.contactEmail as string | null);
+        sanitized.parents_name = await safeDecryptValue(sensitive.parentsName as string | null);
+        sanitized.parents_email = await safeDecryptValue(sensitive.parentsEmail as string | null);
+        sanitized.students_name = await safeDecryptValue(sensitive.studentsName as string | null);
+        sanitized.students_email = await safeDecryptValue(sensitive.studentsEmail as string | null);
       }
     }
 
