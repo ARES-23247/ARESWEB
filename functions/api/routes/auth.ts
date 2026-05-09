@@ -43,8 +43,10 @@ authRouter.get("/emergency-clear", (c) => {
 // SECURITY: This endpoint only works in test environments. Never enable in production.
 authRouter.post("/test-login", async (c) => {
   // SECURITY: Verify test mode via environment or special header
-  const isTestMode = c.env.ENVIRONMENT === 'test' ||
-                     c.env.CI === 'true' ||
+  // Note: CI is a GitHub Actions env var, not in Cloudflare Bindings type
+  const env = c.env as unknown as Record<string, string | undefined>;
+  const isTestMode = env.ENVIRONMENT === 'test' ||
+                     env.CI === 'true' ||
                      c.req.header('x-test-bypass-auth') === 'true';
 
   if (!isTestMode) {
