@@ -31,10 +31,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const host = context.request.headers.get("host") || "";
 
-  // SEC-DoW: Block direct *.pages.dev access except webhooks
+  // SEC-DoW: Block direct *.pages.dev access except webhooks and test endpoints
   if (host.endsWith(".pages.dev")) {
     if (url.pathname.startsWith("/api/")) {
+      // Allow webhooks
       if (url.pathname.startsWith("/api/webhooks/")) {
+        return context.next();
+      }
+      // Allow test-login endpoint for E2E testing
+      if (url.pathname === "/api/auth/test-login") {
         return context.next();
       }
       return new Response(JSON.stringify({ error: "Use aresfirst.org" }), {
