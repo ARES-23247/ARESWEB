@@ -143,7 +143,7 @@ authRouter.on(["POST", "GET"], "/*", async (c, next) => {
     const isDevBypass = c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1";
     const message = error instanceof Error ? error.message : "Unknown error";
     const stack = error instanceof Error ? error.stack : undefined;
-    const status = (error as any)?.status;
+    const status = (error as { status?: number })?.status;
 
     console.error("[Auth Handler] Internal Exception:", error);
     return c.json({

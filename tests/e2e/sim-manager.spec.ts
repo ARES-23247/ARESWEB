@@ -41,7 +41,7 @@ test.describe('Sim Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Verify at least some simulations are displayed from the registry
-    const simCards = page.locator('[class*="sim-card"]').or(page.locator('.bg-obsidian-850'));
+    const simCards = page.locator('[class*="sim-card"]').or(page.locator('.bg-obsidian-800'));
     const count = await simCards.count();
     expect(count).toBeGreaterThan(0);
   });
@@ -53,8 +53,8 @@ test.describe('Sim Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Verify badges exist (standalone or context)
-    const hasBadge = await page.getByText('Standalone').isVisible().catch(() => false) ||
-                      await page.getByText('Context').isVisible().catch(() => false);
+    const hasBadge = await page.getByText('Standalone').first().isVisible().catch(() => false) ||
+                      await page.getByText('Context').first().isVisible().catch(() => false);
     expect(hasBadge).toBe(true);
   });
 
@@ -64,14 +64,9 @@ test.describe('Sim Manager Dashboard', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Find and click a markdown tag copy button
-    const markdownTag = page.locator('code').filter({ hasText: /</ }).first();
-    await expect(markdownTag).toBeVisible();
-
-    // Copy button should exist
-    const copyButton = page.locator('button').filter({ has: markdownTag }).or(
-      page.locator('button').near(markdownTag)
-    ).first();
+    // Find and click a markdown tag copy button directly (it is now a button itself)
+    const copyButton = page.locator('button').filter({ hasText: /</ }).first();
+    await expect(copyButton).toBeVisible();
 
     const isVisible = await copyButton.isVisible().catch(() => false);
     if (isVisible) {
@@ -134,7 +129,7 @@ test.describe('Sim Manager Dashboard', () => {
 
     // Verify the instructions section is visible
     await expect(page.getByRole('heading', { name: /How to Add a New Simulation/i })).toBeVisible();
-    await expect(page.getByText('src/sims/')).toBeVisible();
+    await expect(page.getByText('src/sims/').first()).toBeVisible();
   });
 
   test('SIM-08: Generated Files section displays file paths', async ({ page }) => {
@@ -144,8 +139,8 @@ test.describe('Sim Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Verify generated files section
-    const hasGenFiles = await page.getByText('sim-registry.ts').isVisible().catch(() => false) ||
-                        await page.getByText('simRegistry.json').isVisible().catch(() => false);
+    const hasGenFiles = await page.getByText(/sim-registry\.ts/).isVisible().catch(() => false) ||
+                        await page.getByText(/simRegistry\.json/).isVisible().catch(() => false);
     expect(hasGenFiles).toBe(true);
   });
 

@@ -1,12 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { BrowserRouter, MemoryRouter, useLocation } from "react-router-dom";
+import { render, screen, waitFor, act } from "@testing-library/react";
+import { BrowserRouter, MemoryRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import ScrollToTop from "./ScrollToTop";
 
 // Test component to display current pathname
 const DisplayLocation = () => {
   const location = useLocation();
   return <div data-testid="location">{location.pathname}</div>;
+};
+
+// Test component with navigation button
+const TestApp = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <ScrollToTop />
+      <DisplayLocation />
+      <button onClick={() => navigate("/about")}>Go to About</button>
+    </>
+  );
 };
 
 describe("ScrollToTop Component", () => {
@@ -34,23 +46,22 @@ describe("ScrollToTop Component", () => {
   it("scrolls to top when pathname changes", async () => {
     render(
       <BrowserRouter>
-        <ScrollToTop />
-        <DisplayLocation />
+        <TestApp />
       </BrowserRouter>
     );
 
     // Reset the mock after initial render
     scrollToSpy.mockClear();
 
-    // Manually navigate using history API
-    window.history.pushState({}, "", "/about");
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    // Navigate using React Router
+    await act(async () => {
+      screen.getByText("Go to About").click();
+    });
 
     // Wait for useEffect to run and React to update
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    // Verify the pathname changed
-    expect(screen.getByTestId("location")).toHaveTextContent("/about");
+    await waitFor(() => {
+      expect(screen.getByTestId("location")).toHaveTextContent("/about");
+    });
 
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
   });

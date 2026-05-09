@@ -1,4 +1,4 @@
-import { sql, eq, ne, and, or, isNull, lte, gt, desc } from "drizzle-orm";
+import { eq, ne, and, or, isNull, lte, gt, desc } from "drizzle-orm";
 import { fetchGithubRepoFiles } from "./external/githubFetcher";
 import { chunkText } from "./external/chunker";
 import type { VectorizeIndex, Ai } from "@cloudflare/workers-types";

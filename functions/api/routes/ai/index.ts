@@ -15,8 +15,7 @@ import {
   aiSuggestRoute,
   ragChatbotRoute,
   reindexRoute,
-  reindexExternalRoute,
-  externalSourcesRoute
+  reindexExternalRoute
 } from "../../../../shared/routes/ai";
 
 // Cloudflare Workers AI returns a stream-like object that we cast to ReadableStream

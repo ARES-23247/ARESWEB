@@ -31,11 +31,7 @@ describe('security middleware', () => {
     return valuesMock;
   };
 
-  const createMockInsertWithExecute = () => {
-    const executeMock = vi.fn().mockResolvedValue(undefined);
-    const valuesMock = vi.fn().mockReturnValue({ execute: executeMock });
-    return valuesMock;
-  };
+
 
   // Combined mock that supports both rate limit chain (onConflictDoUpdate) and auditLog execute
   const createMockInsertWithBothPatterns = (rateLimitCount: number) => {

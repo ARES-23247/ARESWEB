@@ -117,7 +117,7 @@ apiRouter.use("*", async (c, next) => {
         (async () => {
           try {
             // SEC-SQL-01: Sanitize path to prevent SQL injection in analytics queries
-            const sanitizedPath = c.req.path.replace(/[^\w\/\-_.]/g, '').substring(0, 500);
+            const sanitizedPath = c.req.path.replace(/[^\w/\-_.]/g, '').substring(0, 500);
             await db.insert(schema.usageMetrics).values({
               id: crypto.randomUUID(),
               endpoint: sanitizedPath,
