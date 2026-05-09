@@ -66,6 +66,12 @@ DROP TABLE IF EXISTS `sponsorship_pipeline`;
 DROP TABLE IF EXISTS `sponsorship_assignments`;
 DROP TABLE IF EXISTS `document_snapshots`;
 DROP TABLE IF EXISTS `simulations`;
+DROP TABLE IF EXISTS `external_knowledge_sources`;
+DROP TABLE IF EXISTS `performance_metrics`;
+DROP TABLE IF EXISTS `points_ledger`;
+DROP TABLE IF EXISTS `scouting_analyses`;
+DROP TABLE IF EXISTS `social_queue`;
+DROP TABLE IF EXISTS `social_templates`;
 
 -- Current sql file was generated after introspecting the database
 -- If you want to run this migration please uncomment this code before executing migrations
@@ -835,3 +841,54 @@ CREATE TABLE IF NOT EXISTS `simulations` (
 CREATE INDEX IF NOT EXISTS `idx_simulations_public` ON `simulations` (`is_public`);
 CREATE INDEX IF NOT EXISTS `idx_simulations_author` ON `simulations` (`author_id`);
 
+
+
+CREATE TABLE IF NOT EXISTS `external_knowledge_sources` (
+	`id` text PRIMARY KEY NOT NULL,
+	`type` text NOT NULL,
+	`url` text NOT NULL,
+	`branch` text,
+	`status` text DEFAULT 'active',
+	`last_indexed_sha` text,
+	`last_indexed_at` text,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS `points_ledger` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`points_delta` integer NOT NULL,
+	`reason` text NOT NULL,
+	`created_by` text,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`created_by`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE set null
+);
+CREATE TABLE IF NOT EXISTS `scouting_analyses` (
+	`id` text PRIMARY KEY NOT NULL,
+	`season_key` text NOT NULL,
+	`event_key` text,
+	`team_number` integer,
+	`mode` text NOT NULL,
+	`model` text NOT NULL,
+	`markdown` text NOT NULL,
+	`tokens_used` integer,
+	`created_by` text NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (`created_by`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE set null
+);
+CREATE TABLE IF NOT EXISTS `social_queue` (
+	`id` text PRIMARY KEY NOT NULL,
+	`content` text NOT NULL,
+	`media_urls` text,
+	`scheduled_for` text NOT NULL,
+	`platforms` text NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`sent_at` text,
+	`error_message` text,
+	`created_by` text,
+	`linked_type` text,
+	`linked_id` text,
+	`analytics` text,
+	FOREIGN KEY (`created_by`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE set null
+);

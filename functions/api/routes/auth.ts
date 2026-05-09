@@ -2,7 +2,7 @@ import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, getSessionUser, persistentRateLimitMiddleware } from "../middleware";
 import { getAuth } from "../../utils/auth";
-import { authCheckRoute } from "../../../shared/routes/auth";
+import { authCheckRoute, emergencyClearRoute, testLoginRoute } from "../../../shared/routes/auth";
 
 const authRouter = new OpenAPIHono<AppEnv>();
 
@@ -30,18 +30,18 @@ authRouter.openapi(authCheckRoute, typedHandler<typeof authCheckRoute>(async (c)
 }));
 
 // ── GET /api/auth/emergency-clear — force clear poisoned cookies ───────
-authRouter.get("/emergency-clear", (c) => {
+authRouter.openapi(emergencyClearRoute, typedHandler<typeof emergencyClearRoute>((c) => {
   const res = c.redirect("/");
   res.headers.append("Set-Cookie", "better-auth.session_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
   res.headers.append("Set-Cookie", "__Secure-better-auth.session_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
   res.headers.append("Set-Cookie", "better-auth.csrf_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
   res.headers.append("Set-Cookie", "__Secure-better-auth.csrf_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
   return res;
-});
+}));
 
 // ── POST /api/auth/test-login — generate test session (E2E testing only) ───
 // SECURITY: This endpoint only works in test environments. Never enable in production.
-authRouter.post("/test-login", async (c) => {
+authRouter.openapi(testLoginRoute, async (c) => {
   // SECURITY: Verify test mode via environment or special header
   // Note: CI is a GitHub Actions env var, not in Cloudflare Bindings type
   const env = c.env as unknown as Record<string, string | undefined>;
@@ -54,14 +54,14 @@ authRouter.post("/test-login", async (c) => {
   }
 
   // Get test user ID from request body, default to admin-user
-  const body = await c.req.json().catch(() => ({}));
+  const body = c.req.valid("json") || {};
   const userId = body.userId || 'admin-user';
 
   try {
     // Check if user exists
     const user = await c.env.DB.prepare(
       'SELECT id, name, email, role FROM user WHERE id = ?'
-    ).bind(userId).first();
+    ).bind(userId).first() as { id: string; name: string | null; email: string; role: string | null } | undefined;
 
     if (!user) {
       return c.json({ error: 'Test user not found' }, 404);
