@@ -49,6 +49,11 @@ const mockClient = honoClient.client as unknown as {
     "team-roster": {
       $get: ReturnType<typeof vi.fn>;
     };
+    public: {
+      ":userId": {
+        $get: ReturnType<typeof vi.fn>;
+      };
+    };
     ":userId": {
       $get: ReturnType<typeof vi.fn>;
     };
