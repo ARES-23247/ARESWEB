@@ -87,11 +87,11 @@ export function wrapOnSuccess<TData, TError, TVariables>(
     ...options,
     onSuccess: (data, variables) => {
       internalOnSuccess(data, variables);
-      // Forward to user's callback. The type cast is safe because we're preserving
-      // the parameters the user expects (data, variables). TanStack Query types
-      // include a third 'context' parameter that our hooks don't use.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (options.onSuccess as any)?.(data, variables);
+      // Forward to user's callback. TanStack Query's onSuccess includes a third
+      // 'context' parameter, but our hooks don't use it. We pass undefined
+      // for context to maintain type safety without 'as any'.
+      const userOnSuccess = options.onSuccess as ((data: TData, variables: TVariables, context: unknown) => void) | undefined;
+      userOnSuccess?.(data, variables, undefined);
     },
   };
 }

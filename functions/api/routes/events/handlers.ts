@@ -9,6 +9,7 @@ import type { HandlerInput, HonoContext } from "@shared/types/api";
 
 import { eq, or, and, ne, isNull, inArray, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
+import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
 
 import type { SocialConfig } from "../../middleware";
 
@@ -37,6 +38,16 @@ function invalidateEventsCache(c: AresContext): void {
 
 // Drizzle ORM type inference for events table
 type EventRow = typeof schema.events.$inferSelect;
+
+/**
+ * Normalize category to a valid EventCategoryEnum value.
+ * Defaults to "internal" if the value is not a valid category.
+ */
+function normalizeCategory(category: string | null | undefined): "internal" | "outreach" | "external" | null {
+  if (!category) return null;
+  const result = EventCategoryEnum.safeParse(category);
+  return result.success ? result.data : "internal";
+}
 
 // Type for Hono context with ARES environment
 type AresContext = HonoContext;
@@ -185,8 +196,7 @@ export const eventHandlers = {
 
         const events: FormattedEvent[] = results.map((e) => ({
           ...e,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          category: (e.category ?? "internal") as any,
+          category: normalizeCategory(e.category),
           season_id: e.season_id ? Number(e.season_id) : null,
           is_deleted: Number(e.is_deleted || 0),
           recurring_exception: e.recurring_exception ? Number(e.recurring_exception) : null
@@ -275,8 +285,7 @@ export const eventHandlers = {
         is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
         is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: (e.category ?? "internal") as any,
+        category: normalizeCategory(e.category),
         meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null,
         location_address: e.location ? (locationMap[e.location] || null) : null
       }));
@@ -451,8 +460,7 @@ export const eventHandlers = {
         is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
         is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
         status: e.status ?? "published",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: (e.category ?? "internal") as any,
+        category: normalizeCategory(e.category),
         meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null
       }));
 
