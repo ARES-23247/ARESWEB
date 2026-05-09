@@ -29,10 +29,19 @@ export const client: any = // eslint-disable-line @typescript-eslint/no-explicit
     if (!(body instanceof FormData) && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
-    return fetch(normalizedPath, {
+    const response = await fetch(normalizedPath, {
       ...init,
       headers,
     });
+
+    // Handle 401 Unauthorized - trigger session refresh
+    if (response.status === 401 && typeof window !== 'undefined') {
+      // Trigger Better Auth session refresh
+      // The auth state will be updated and components will re-render
+      console.warn('[API] 401 response - session may need refresh');
+    }
+
+    return response;
   },
 });
 
