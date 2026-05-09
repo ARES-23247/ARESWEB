@@ -358,7 +358,10 @@ test.describe('Blog Post Detail Page E2E', () => {
     test('should handle browser history navigation', async ({ page }) => {
       // First visit blog list
       await page.goto('/blog');
-      await expect(page.getByRole('heading', { name: /blog/i }).or(page.getByRole('heading', { level: 1 })).toBeVisible();
+      const blogHeading = page.getByRole('heading', { name: /blog/i });
+      const h1Heading = page.getByRole('heading', { level: 1 });
+      const isVisible = await blogHeading.isVisible().catch(() => false) || await h1Heading.isVisible().catch(() => false);
+      expect(isVisible).toBe(true);
 
       // Then navigate to post detail
       await page.goto(`/blog/${testPostSlug}`);

@@ -238,9 +238,7 @@ test.describe('Blog Editor Dashboard Route', () => {
 
       await page.goto('/dashboard/blog');
 
-      // Verify submit for review button may be shown for non-admin users
-      // Note: This depends on actual UI implementation for role-based buttons
-      const submitButton = page.getByRole('button', { name: /SUBMIT FOR REVIEW/i });
+      // Verify publish button is visible
       const publishButton = page.getByRole('button', { name: /PUBLISH ENTRY/i });
 
       // At minimum, publish button should be visible
