@@ -13,7 +13,7 @@ import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
-import { AppEnv, SessionUser, ApiError } from '../middleware';
+import { AppEnv, SessionUser } from '../middleware';
 
 // Mock the auth module BEFORE importing communicationsRouter
 vi.mock('../middleware/auth', async () => {

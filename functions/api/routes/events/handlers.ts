@@ -6,7 +6,6 @@ import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql } from "drizzle-orm";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
-import { safeWaitUntil } from "../../utils/safeWaitUntil";
 
 // Cloudflare Cache API type for edge cache invalidation
 // In Cloudflare Workers, caches.default is the primary cache instance

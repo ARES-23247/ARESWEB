@@ -1,0 +1,32 @@
+# Build outputs
+dist
+coverage
+.wrangler
+.vite
+
+# Dependencies
+node_modules
+
+# Testing
+playwright-report
+pw-report
+test-results
+
+# Generated files
+src/components/generated
+drizzle
+
+# Vendored third-party bundles
+public/vendor
+
+# Tool outputs
+tools/ares-sim-preview/out
+
+# Temp directories
+**/tmp
+**/Temp
+**/AppData/Local/Temp
+**/*.tmp
+
+# Scratch
+scratch

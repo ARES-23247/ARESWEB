@@ -15,7 +15,7 @@ declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
 import { AppEnv, SessionUser } from '../middleware';
-import { ApiError } from '../middleware/errorHandler';
+
 
 // Mock the auth module BEFORE importing tbaRouter
 vi.mock('../middleware/auth', async () => {

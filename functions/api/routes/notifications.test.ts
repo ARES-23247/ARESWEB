@@ -14,7 +14,7 @@ import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
-import { AppEnv, SessionUser, ApiError } from '../middleware';
+import { AppEnv, SessionUser } from '../middleware';
 
 // Mock drizzle-orm to handle count function
 vi.mock('drizzle-orm', async () => {

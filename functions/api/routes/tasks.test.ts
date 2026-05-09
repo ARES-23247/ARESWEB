@@ -14,7 +14,7 @@ import { globalErrorHandler } from '../middleware/errorHandler';
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
-import { AppEnv, SessionUser, ApiError } from '../middleware';
+import { AppEnv, SessionUser } from '../middleware';
 
 // Mock drizzle-orm to handle aliasedTable
 vi.mock('drizzle-orm', async () => {

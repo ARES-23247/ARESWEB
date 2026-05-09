@@ -207,7 +207,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .all() as (DocWithAuthor | PartialDoc)[];
     }
 
-    const docs = (results as any[]).map((d) => ({
+    const docs = (results as (DocWithAuthor | PartialDoc)[]).map((d) => ({
       slug: String(d.slug),
       title: d.title ?? null,
       category: d.category ?? null,

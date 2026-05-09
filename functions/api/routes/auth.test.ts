@@ -71,7 +71,7 @@ describe('Auth Routes', () => {
       const res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       expect(res.status).toBe(401);
-      const json = (await res.json()) as any;
+      const json = (await res.json()) as unknown;
       expect(json).toEqual({ authenticated: false });
     });
 
@@ -92,7 +92,7 @@ describe('Auth Routes', () => {
       // NOTE: Better Auth uses Drizzle adapter which doesn't use our D1 mock directly.
       // We mock at a higher level by spying on getSessionUser from the auth middleware.
       const getSessionUserSpy = vi.spyOn(authUtils, 'getSessionUser')
-        .mockResolvedValue(mockUser as any);
+        .mockResolvedValue(mockUser as unknown);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -108,7 +108,7 @@ describe('Auth Routes', () => {
       const res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       expect(res.status).toBe(200);
-      const json = (await res.json()) as any;
+      const json = (await res.json()) as unknown;
       expect(getSessionUserSpy).toHaveBeenCalled();
       expect(json).toEqual({
         authenticated: true,
@@ -180,7 +180,7 @@ describe('Auth Routes', () => {
       const res = await app.request(req, undefined, testEnv);
 
       expect(res.status).toBe(403);
-      const json = (await res.json()) as any;
+      const json = (await res.json()) as unknown;
       expect(json).toHaveProperty('error');
     });
 

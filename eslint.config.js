@@ -33,6 +33,10 @@ export default ts.config(
       ".vite/**", // Ignore Vite cache directory
       "src/components/SimulationPlayground.refactored.tsx", // WIP refactor draft
       "drizzle/**", // Ignore Drizzle Kit generated files
+      "**/tmp/**", // Ignore temp directories anywhere
+      "**/Temp/**", // Ignore Windows temp directories anywhere
+      "**/AppData/Local/Temp/**", // Ignore Windows AppData temp
+      "**/*.tmp", // Ignore temp files
     ],
   },
   js.configs.recommended,

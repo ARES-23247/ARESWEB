@@ -35,11 +35,6 @@ import { edgeCacheMiddleware } from "../../middleware/cache";
 
 // ─── Type Inference from Schemas ───────────────────────────────────────────────
 
-// Type for event handler responses with optional error field
-type EventHandlerResponse<T = unknown> = {
-  status: number;
-  body: T | { error?: string };
-};
 
 // Helper to extract error message from handler response body
 function getErrorMessage(body: unknown): string {
