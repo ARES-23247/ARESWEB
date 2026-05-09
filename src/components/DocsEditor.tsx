@@ -66,6 +66,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   });
 
   const { Provider: FormProvider } = form;
+  const formTitle = form.useStore((s) => s.values.title);
 
   const { data: docRes, isLoading, isError } = useGetAdminDocDetail(editSlug || "");
 
@@ -103,7 +104,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   const saveMutation = useSaveDoc({
     onSuccess: (res) => {
       if (res.slug) {
-        if (formValues.isDraft || userRole === "author") {
+        if (form.state.values.isDraft || userRole === "author") {
           navigate({ to: "/dashboard" });
         } else {
           navigate({ to: `/docs/${res.slug}` });
@@ -379,7 +380,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         {editor && (
           <>
             <div className="flex items-center gap-2">
-              <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={form.UseFieldState("title").value || ""} /></div>
+              <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={formTitle || ""} /></div>
             </div>
             <CopilotMenu editor={editor} />
           </>
@@ -433,7 +434,6 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       )}
       </div>
     </FormProvider>
-    </div>
   );
 }
 

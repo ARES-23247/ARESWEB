@@ -18,7 +18,8 @@ import {
 export const pointsRouter = new OpenAPIHono<AppEnv>();
 
 pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalanceRoute>(async (c) => {
-  const { userId } = c.req.valid("param");
+  const { user_id } = c.req.valid("param");
+  const userId = user_id;
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       throw new ApiError("Unauthorized", 401);
@@ -41,7 +42,8 @@ pointsRouter.openapi(getPointsBalanceRoute, typedHandler<typeof getPointsBalance
 }));
 
 pointsRouter.openapi(getPointsHistoryRoute, typedHandler<typeof getPointsHistoryRoute>(async (c) => {
-  const { userId } = c.req.valid("param");
+  const { user_id } = c.req.valid("param");
+  const userId = user_id;
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       throw new ApiError("Unauthorized", 401);

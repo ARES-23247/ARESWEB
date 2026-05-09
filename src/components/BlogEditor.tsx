@@ -35,6 +35,9 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   // Custom Hooks
   const { availableSocials } = useAdminSettings();
   const { uploadFile, isUploading: isUploadingCover, setErrorMsg: setUploadError } = useImageUpload();
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const form = useForm<PostPayload>({
     defaultValues: {
@@ -58,6 +61,9 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   });
 
   const { Provider: FormProvider } = form;
+  const thumbnailValue = form.useStore((s) => s.values.thumbnail);
+  const titleValue = form.useStore((s) => s.values.title);
+  const socialsValue = form.useStore((s) => s.values.socials);
   const { ydoc, provider } = useCollaborativeEditor();
   const editor = useRichEditor({ 
     placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>",
@@ -215,7 +221,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         <div className="flex-1">
           <CoverAssetPicker
             label="Cover Image"
-            coverImage={form.UseFieldState("thumbnail").value || DEFAULT_COVER_IMAGE}
+            coverImage={thumbnailValue || DEFAULT_COVER_IMAGE}
             isUploading={isUploadingCover}
             onLibraryClick={() => setIsCoverPickerOpen(true)}
             onUrlChange={(url) => form.setFieldValue("thumbnail", url)}
@@ -263,7 +269,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
       {/* ===== Unified Rich Editor ===== */}
       <div className="flex items-center gap-2">
-        <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={form.UseFieldState("title").value} /></div>
+        <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={titleValue} /></div>
       </div>
       <CopilotMenu editor={editor} />
 
@@ -293,7 +299,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         extraControls={
           <SocialSyndicationGrid
             availableSocials={availableSocials}
-            socials={form.UseFieldState("socials").value}
+            socials={socialsValue}
             onChange={(platform, val) => form.setFieldValue(`socials.${platform}`, val)}
             isEdit={!!editSlug}
           />
@@ -319,7 +325,6 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         </div>
       )}
       </div>
-    </div>
     </FormProvider>
   );
 }

@@ -345,8 +345,8 @@ describe('Points Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 'some-user',
-          points_delta: 10,
+          userId: 'some-user',
+          pointsDelta: 10,
           reason: 'Test award',
         }),
       });
@@ -371,8 +371,8 @@ describe('Points Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 'some-user',
-          points_delta: 10,
+          userId: 'some-user',
+          pointsDelta: 10,
           reason: 'Test award',
         }),
       });
@@ -402,8 +402,8 @@ describe('Points Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 'recipient-user',
-          points_delta: 25,
+          userId: 'recipient-user',
+          pointsDelta: 25,
           reason: 'Excellent work on autonomous',
         }),
       });
@@ -432,8 +432,8 @@ describe('Points Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 'recipient-user',
-          points_delta: 25,
+          userId: 'recipient-user',
+          pointsDelta: 25,
           reason: 'Test award',
         }),
       });

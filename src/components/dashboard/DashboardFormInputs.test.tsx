@@ -215,7 +215,7 @@ describe("DashboardFormInputs Components", () => {
       expect(label).toHaveClass("font-bold");
       expect(label).toHaveClass("uppercase");
       expect(label).toHaveClass("tracking-widest");
-      expect(label).toHaveClass("text-marble/50");
+      expect(label).toHaveClass("text-marble/60");
     });
 
     it("error text has proper styling", () => {
