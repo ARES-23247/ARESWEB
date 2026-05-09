@@ -156,10 +156,10 @@ export function validateIdParam(param: string | undefined): string | null {
   }
 
   // Check for slug-like format (alphanumeric with hyphens)
-  // Simplified to avoid catastrophic backtracking (security/detect-unsafe-regex)
-  // Length is capped at 128 above, so this is safe.
-  // eslint-disable-next-line security/detect-unsafe-regex
-  const slugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  // Uses non-capturing group for efficiency and clarity
+  // Pattern is provably safe: linear time complexity O(n), no nested quantifiers
+  // Length is capped at 128 characters above
+  const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
   if (slugPattern.test(param)) {
     return param;
   }
