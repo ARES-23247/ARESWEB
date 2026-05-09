@@ -415,13 +415,18 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
   const db = getDb(c);
   const query = c.req.valid("query") as SearchQuery;
   const { q } = query;
-    // SCA-FTS-01: Sanitize FTS5 query
-    const qClean = (q || "").replace(/[^a-zA-Z0-9\s]/g, "").trim();
-    if (!qClean) {
+    // W3A-SEC-01: Use proper FTS5 query sanitization to prevent SQL injection
+    // Allows alphanumeric, spaces, hyphens, and periods. Uses proper FTS5 phrase search.
+    const sanitizeFtsQuery = (query: string): string => {
+      const cleanQ = (query || "").replace(/[^\w\s\-.]/g, "").trim();
+      if (!cleanQ) return "";
+      return `"${cleanQ.replace(/"/g, '""')}*`;
+    };
+    const ftsQ = sanitizeFtsQuery(String(q || ""));
+    if (!ftsQ) {
       const emptyResponse: SearchSuccess = { results: [] };
       return c.json(emptyResponse satisfies SearchSuccess, 200);
     }
-    const ftsQ = `"${qClean}"*`;
 
     const [postsReq, eventsReq, docsReq] = await Promise.all([
       db.all(sql<SearchResultRow>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
