@@ -103,9 +103,8 @@ export async function sendZulipMessage(
       // Import drizzle dynamically to convert D1Database to DrizzleDB
       const { drizzle } = await import("drizzle-orm/d1");
       const schema = await import("../../src/db/schema");
-      const relations = await import("../../src/db/relations");
-      // Drizzle v2: pass schema and relations separately
-      const drizzleDb = drizzle(db, { schema, relations }) as DrizzleDB;
+      // Drizzle v2: pass schema only
+      const drizzleDb = drizzle(db, { schema }) as DrizzleDB;
       await logSystemError(drizzleDb, "Zulip", "Critical failure after retries", String(err));
     }
     return null;

@@ -12,7 +12,6 @@ const mockSql = vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => (
 (mockSql as ReturnType<typeof vi.fn> & { raw: (str: string) => { raw: string } }).raw = vi.fn((str: string) => ({ raw: str }));
 
 vi.mock("drizzle-orm", () => {
-  const relations = (..._args: unknown[]) => ({});
   const eq = (..._args: unknown[]) => ({});
   const and = (..._args: unknown[]) => ({});
   const or = (..._args: unknown[]) => ({});
@@ -29,11 +28,10 @@ vi.mock("drizzle-orm", () => {
   const lt = (..._args: unknown[]) => ({});
   const lte = (..._args: unknown[]) => ({});
   const like = (..._args: unknown[]) => ({});
-  const sql_EMPTY_ARRAY = [];
+  const sql_EMPTY_ARRAY: any[] = [];
 
   return {
     sql,
-    relations,
     eq,
     and,
     or,

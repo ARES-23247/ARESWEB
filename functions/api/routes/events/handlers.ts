@@ -13,7 +13,7 @@ type CloudflareCachesWithDefault = CacheStorage & {
   default?: Cache;
 };
 
-import { eq, or, and, isNull, inArray, desc } from "drizzle-orm";
+import { eq, or, and, isNull, inArray, desc, lte } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
 
@@ -178,6 +178,7 @@ export const eventHandlers = {
       const { query } = input;
       const db = getDb(c);
       const { limit = 50, offset = 0, q } = query;
+      const nowIso = new Date().toISOString();
 
       if (q) {
         // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
@@ -227,7 +228,7 @@ export const eventHandlers = {
             eq(schema.events.status, "published"),
             or(
               isNull(schema.events.publishedAt),
-              sql`${schema.events.publishedAt} <= datetime('now')`
+              lte(schema.events.publishedAt, nowIso)
             )
           ))
           .orderBy(desc(schema.events.dateStart))

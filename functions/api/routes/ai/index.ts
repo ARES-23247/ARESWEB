@@ -5,7 +5,7 @@ import { AppEnv, ensureAdmin, verifyTurnstile, getDb } from "../../middleware";
 import type { DrizzleDB } from "../../middleware/utils";
 import { streamSSE } from "hono/streaming";
 import { MessageContent, ZaiChatResponse, ChatMessage } from "./types";
-import { eq, sql, desc, and, ne } from "drizzle-orm";
+import { eq, desc, and, ne, gte } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import {
   aiStatusRoute,
@@ -495,7 +495,6 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
   if (c.env.AI) {
     let embeddingVector: number[] = [];
     try {
-      // @ts-expect-error - Cloudflare Workers AI types don't match actual response shape
       const response = (await c.env.AI.run("@cf/baai/bge-base-en-v1.5", { text: [safeQuery] })) as { data: number[][] };
       embeddingVector = response.data[0];
     } catch (e) {
@@ -524,7 +523,7 @@ aiRouter.openapi(ragChatbotRoute, async (c) => {
       .where(and(
         ne(schema.events.isDeleted, 1),
         ne(schema.events.status, "draft"),
-        sql`${schema.events.dateStart} >= ${nowIso}`
+        gte(schema.events.dateStart, nowIso)
       ))
       .orderBy(schema.events.dateStart)
       .limit(5);
@@ -735,7 +734,6 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       }));
       const recentMessages = cleanMessages.slice(-5);
 
-      // @ts-expect-error - Cloudflare Workers AI streaming types don't match actual response shape
       const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [
           { role: "system", content: truncateForFallback(systemPrompt) },
@@ -894,8 +892,8 @@ aiRouter.get("/external-sources", ensureAdmin, async (c) => {
   return c.json(sources);
 });
 
-aiRouter.openapi(externalSourcesRoute, ensureAdmin, typedHandler<typeof externalSourcesRoute>(async (c) => {
-  const body = c.req.valid("json");
+aiRouter.post("/admin/external-sources", ensureAdmin, async (c) => {
+  const body = await c.req.json() as { type: string; url: string; branch?: string };
   const db = getDb(c);
 
   const id = crypto.randomUUID();
@@ -909,7 +907,7 @@ aiRouter.openapi(externalSourcesRoute, ensureAdmin, typedHandler<typeof external
   }).execute();
 
   return c.json({ id, success: true, message: "External source added" });
-}));
+});
 
 aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
   const id = c.req.param("id");

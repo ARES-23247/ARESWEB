@@ -32,7 +32,7 @@ export async function upsertProfile(
   const isAdmin = sessionUser?.role === "admin" || sessionUser?.member_type === "coach" || sessionUser?.member_type === "mentor";
 
   // Robust Merge Helper: Only overwrite if key is present in data, otherwise keep existing or use default
-  const getMergedValue = async (key: string, isEncrypted: boolean = false, defaultValue: unknown = "") => {
+  const getMergedValue = async (key: string, isEncrypted: boolean = false, defaultValue: string | number = ""): Promise<string | number> => {
     if (key in data) {
       const val = data[key];
       if (isEncrypted) return await encrypt(String(val || ""), secret);
@@ -42,13 +42,13 @@ export async function upsertProfile(
       if (key === 'show_on_about' || key === 'show_email' || key === 'show_phone') {
         return (val === true || val === 1) ? 1 : 0;
       }
-      return val ?? defaultValue;
+      return (val ?? defaultValue) as string | number;
     }
-    
+
     // Map snake_case to camelCase for checking existing Drizzle record
     const camelCaseKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
     const existingVal = (existing as Record<string, unknown>)?.[camelCaseKey];
-    
+
     if (key === 'subteams' || key === 'dietary_restrictions' || key === 'colleges' || key === 'employers') {
       // We want to return the string from the DB, but only if it's valid JSON
       if (typeof existingVal === 'string') {
@@ -60,7 +60,7 @@ export async function upsertProfile(
         }
       }
     }
-    return existingVal ?? defaultValue;
+    return (existingVal ?? defaultValue) as string | number;
   };
 
   // SEC-F09: Prevent self-escalation of member_type

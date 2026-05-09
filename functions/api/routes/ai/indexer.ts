@@ -63,7 +63,7 @@ export async function indexSiteContent(
       ne(schema.events.status, "draft"),
       or(
         isNull(schema.events.publishedAt),
-        lte(schema.events.publishedAt, sql`datetime('now')`)
+        lte(schema.events.publishedAt, nowIso)
       )
     );
 

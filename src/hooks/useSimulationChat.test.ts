@@ -683,9 +683,10 @@ describe("useSimulationChat hook", () => {
       Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
       await act(async () => {
-        result.current.handleChatKeyDown(event as unknown as React.KeyboardEvent);
-        await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+        await result.current.handleChatKeyDown(event as unknown as React.KeyboardEvent);
       });
+
+      await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 
       expect(event.preventDefault).toHaveBeenCalled();
     });
@@ -752,7 +753,7 @@ describe("useSimulationChat hook", () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it("should trigger fix with compile error", () => {
+    it("should trigger fix with compile error", async () => {
       const { result } = renderHook(() =>
         useSimulationChat({
           ...defaultOptions,
@@ -777,8 +778,8 @@ describe("useSimulationChat hook", () => {
         },
       });
 
-      act(() => {
-        result.current.handleFixWithAI();
+      await act(async () => {
+        await result.current.handleFixWithAI();
       });
 
       expect(mockFetch).toHaveBeenCalled();
@@ -788,7 +789,7 @@ describe("useSimulationChat hook", () => {
       );
     });
 
-    it("should trigger fix with runtime errors", () => {
+    it("should trigger fix with runtime errors", async () => {
       const { result } = renderHook(() =>
         useSimulationChat({
           ...defaultOptions,
@@ -816,8 +817,8 @@ describe("useSimulationChat hook", () => {
         },
       });
 
-      act(() => {
-        result.current.handleFixWithAI();
+      await act(async () => {
+        await result.current.handleFixWithAI();
       });
 
       expect(mockFetch).toHaveBeenCalled();
@@ -827,7 +828,7 @@ describe("useSimulationChat hook", () => {
       );
     });
 
-    it("should include both compile and runtime errors when both exist", () => {
+    it("should include both compile and runtime errors when both exist", async () => {
       const { result } = renderHook(() =>
         useSimulationChat({
           ...defaultOptions,
@@ -854,8 +855,8 @@ describe("useSimulationChat hook", () => {
         },
       });
 
-      act(() => {
-        result.current.handleFixWithAI();
+      await act(async () => {
+        await result.current.handleFixWithAI();
       });
 
       const fetchBody = JSON.parse(mockFetch.mock.calls[0][1].body);

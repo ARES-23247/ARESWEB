@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import React from "react";
 import TaskBoardPage from "./TaskBoardPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -74,13 +74,15 @@ describe("TaskBoardPage Component", () => {
     );
   };
 
-  it("renders the Task Board header and Kanban component", () => {
-    renderWithProvider(<TaskBoardPage />);
-    
+  it("renders the Task Board header and Kanban component", async () => {
+    await act(async () => {
+      renderWithProvider(<TaskBoardPage />);
+    });
+
     // Check if the header is present
     expect(screen.getAllByText("Task Board").length).toBeGreaterThan(0);
     expect(screen.getByText(/Native D1-powered project management kanban/i)).toBeInTheDocument();
-    
+
     // Check if empty columns from the Kanban board are rendered
     expect(screen.getAllByText("Todo").length).toBeGreaterThan(0);
     expect(screen.getAllByText("In Progress").length).toBeGreaterThan(0);

@@ -1,4 +1,4 @@
-import { eq, desc, inArray, and, sql } from "drizzle-orm";
+import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getSocialConfig, logAuditAction, SocialConfig, getDb } from "../../middleware";
@@ -144,6 +144,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
     }
 
     // Prevents double submissions
+    const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const recent = await db.select({
         id: schema.inquiries.id,
         email: schema.inquiries.email,
@@ -152,7 +153,7 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
       .from(schema.inquiries)
       .where(and(
         eq(schema.inquiries.type, type),
-        sql`${schema.inquiries.createdAt} > datetime('now', '-60 seconds')`
+        gt(schema.inquiries.createdAt, sixtySecondsAgo)
       ))
       .all();
 

@@ -11,9 +11,7 @@ import {
   saveSimulationRoute,
   deleteSimulationRoute,
   createGistRoute,
-  getGistRoute,
-  generateSimRegistryRoute,
-  listSimFoldersRoute
+  getGistRoute
 } from "../../../shared/routes/simulations";
 
 /** Row shape returned by settings table queries */
@@ -43,6 +41,7 @@ simulationsRouter.use("/", (c, next) => {
   }
   return next();
 });
+simulationsRouter.use("/admin/*", ensureAdmin);
 
 // Helper: Check if user owns a simulation or is admin
 async function canModifySimulation(
@@ -533,7 +532,7 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
 // ── Admin Routes ─────────────────────────────────────────────────────────────
 
 // Generate simulation registry by running npm script
-simulationsRouter.openapi(generateSimRegistryRoute, ensureAdmin, typedHandler<typeof generateSimRegistryRoute>(async (c) => {
+simulationsRouter.post("/admin/generate-registry", ensureAdmin, async (c) => {
   try {
     // In Cloudflare Workers, we can't directly run shell commands.
     // This endpoint would need to be implemented differently or called via a different mechanism.
@@ -546,10 +545,10 @@ simulationsRouter.openapi(generateSimRegistryRoute, ensureAdmin, typedHandler<ty
       error: error instanceof Error ? error.message : "Unknown error"
     }, 500);
   }
-}));
+});
 
 // List unregistered simulation folders
-simulationsRouter.openapi(listSimFoldersRoute, ensureAdmin, typedHandler<typeof listSimFoldersRoute>(async (c) => {
+simulationsRouter.get("/admin/list-folders", ensureAdmin, async (c) => {
   // In Cloudflare Workers, we don't have filesystem access.
   // This endpoint would need to be implemented differently, such as:
   // 1. Using the GitHub API to scan the repository for sims
@@ -557,9 +556,8 @@ simulationsRouter.openapi(listSimFoldersRoute, ensureAdmin, typedHandler<typeof 
   // For now, we return empty arrays with a note.
   return c.json({
     folders: [],
-    registeredPaths: [],
-    note: "Filesystem scanning not available in Cloudflare Workers. Use GitHub API to scan src/sims directory."
+    registeredPaths: []
   }, 200);
-}));
+});
 
 export default simulationsRouter;

@@ -1,6 +1,6 @@
 import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { AppEnv, getSessionUser, persistentRateLimitMiddleware, getDb } from "../middleware";
+import { AppEnv, getSessionUser, persistentRateLimitMiddleware, getDb, ApiError } from "../middleware";
 import { getAuth } from "../../utils/auth";
 import { authCheckRoute, emergencyClearRoute, testLoginRoute } from "../../../shared/routes/auth";
 import { eq } from "drizzle-orm";
@@ -74,7 +74,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
     })
     .from(schema.user)
     .where(eq(schema.user.id, userId))
-    .first();
+    .get();
 
     if (!user) {
       throw new ApiError('Test user not found', 404);

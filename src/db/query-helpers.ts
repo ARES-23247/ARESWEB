@@ -693,7 +693,6 @@ export const transactionHelpers = {
 					description: schema.docs.description,
 					content: schema.docs.content,
 					cfEmail: schema.docs.cfEmail,
-					seasonId: schema.docs.seasonId,
 				})
 				.from(schema.docs)
 				.where(eq(schema.docs.slug, docSlug))
@@ -708,7 +707,6 @@ export const transactionHelpers = {
 					description: existing.description || "",
 					content: existing.content,
 					authorEmail: existing.cfEmail || "unknown",
-					seasonId: existing.seasonId,
 				});
 			}
 

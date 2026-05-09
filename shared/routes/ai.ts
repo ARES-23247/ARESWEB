@@ -1,16 +1,29 @@
 import { createRoute, z } from "@hono/zod-openapi";
 
+// Discriminated union for better type safety - text and image have distinct required fields
+const MessageContentTextSchema = z.object({
+  type: z.literal("text"),
+  text: z.string(),
+});
+
+const MessageContentImageSchema = z.object({
+  type: z.literal("image"),
+  source: z.object({
+    type: z.literal("base64"),
+    media_type: z.string(),
+    data: z.string(),
+  }),
+});
+
+const MessageContentItemSchema = z.discriminatedUnion("type", [
+  MessageContentTextSchema,
+  MessageContentImageSchema,
+]);
+
+// Content can be a simple string or an array of discriminated content items
 export const MessageContentSchema = z.union([
   z.string(),
-  z.array(z.object({
-    type: z.enum(["text", "image"]),
-    text: z.string().optional(),
-    source: z.object({
-      type: z.literal("base64"),
-      media_type: z.string(),
-      data: z.string(),
-    }).optional(),
-  })),
+  z.array(MessageContentItemSchema),
 ]);
 
 export const ChatMessageSchema = z.object({
@@ -186,12 +199,13 @@ export const reindexRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            success: z.boolean(),
-            message: z.string(),
+            indexed: z.number(),
+            skipped: z.number(),
+            errors: z.array(z.string()),
           }),
         },
       },
-      description: "Reindex started",
+      description: "Reindex results",
     },
   },
 });
@@ -217,12 +231,13 @@ export const reindexExternalRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            success: z.boolean(),
-            message: z.string(),
+            indexed: z.number(),
+            skipped: z.number(),
+            errors: z.array(z.string()),
           }),
         },
       },
-      description: "External reindex started",
+      description: "External reindex results",
     },
   },
 });
@@ -250,9 +265,9 @@ export const externalSourcesRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
+            id: z.string(),
             success: z.boolean(),
             message: z.string(),
-            sourceId: z.string(),
           }),
         },
       },

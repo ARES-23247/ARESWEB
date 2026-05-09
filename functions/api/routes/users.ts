@@ -30,7 +30,7 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
     const { limit, cursor } = parsePagination(c, 50, 100);
 
     // Use query helper for users with profiles
-    const results = await queryHelpers.getUsersWithProfiles(db, limit + 1, cursor);
+    const results = await queryHelpers.getUsersWithProfiles(db, limit + 1, cursor || undefined);
 
     // Determine if there's a next page
     const hasNextPage = results.length > limit;

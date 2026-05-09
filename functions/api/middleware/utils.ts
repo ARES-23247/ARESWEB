@@ -3,7 +3,6 @@ import { siteConfig } from "../../utils/site.config";
 import { parseAstToText } from "../../utils/content";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../../../src/db/schema";
-import * as relations from "../../../src/db/relations";
 import type { DrizzleDB } from "../../../src/db/types";
 import { safeJSONParse } from "../../utils/json";
 import { inArray } from "drizzle-orm";
@@ -193,7 +192,7 @@ export async function logAuditAction(
   resource_id: string | null,
   details?: string
 ): Promise<void> {
-  const db: DrizzleD1Database<typeof schema, typeof relations> = c.get("db");
+  const db: DrizzleD1Database<typeof schema> = c.get("db");
   try {
     const sessionUser = c.get("sessionUser") as SessionUser | undefined;
     const actor = sessionUser?.email || "unknown";
@@ -215,7 +214,7 @@ export async function logAuditAction(
 }
 
 export async function logSystemError(
-  db: DrizzleD1Database<typeof schema, typeof relations>,
+  db: DrizzleD1Database<typeof schema>,
   service: string,
   error: string,
   details?: string
@@ -319,7 +318,7 @@ export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, 
     'RESEND_API_KEY', 'RESEND_FROM_EMAIL'
   ];
 
-  const db: DrizzleD1Database<typeof schema, typeof relations> = c.get("db");
+  const db: DrizzleD1Database<typeof schema> = c.get("db");
   const results = await db
     .select({ key: schema.settings.key, value: schema.settings.value })
     .from(schema.settings)

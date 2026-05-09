@@ -37,6 +37,18 @@ describe('security middleware', () => {
     return valuesMock;
   };
 
+  // Combined mock that supports both rate limit chain (onConflictDoUpdate) and auditLog execute
+  const createMockInsertWithBothPatterns = (rateLimitCount: number) => {
+    const returningMock = vi.fn().mockResolvedValue([{ count: rateLimitCount, expiresAt: Math.floor(Date.now() / 1000) + 60 }]);
+    const onConflictMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const executeMock = vi.fn().mockResolvedValue(undefined);
+    const valuesMock = vi.fn().mockReturnValue({
+      onConflictDoUpdate: onConflictMock,
+      execute: executeMock,
+    });
+    return valuesMock;
+  };
+
   beforeEach(() => {
     _resetCircuitBreakerStateForTest();
     vi.clearAllMocks();
@@ -89,10 +101,15 @@ describe('security middleware', () => {
       json: vi.fn().mockReturnThis(),
       get: vi.fn((key: string) => {
         if (key === 'db') {
-          // Return db with auditLog insert support
+          // Return db with both rate limit chain and auditLog execute support
           return {
             insert: vi.fn().mockReturnValue({
-              values: createMockInsertWithExecute(),
+              values: createMockInsertWithBothPatterns(1),
+            }),
+            delete: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                execute: vi.fn().mockResolvedValue(undefined),
+              }),
             }),
           };
         }
@@ -151,12 +168,17 @@ describe('security middleware', () => {
 
   describe('persistentRateLimitMiddleware', () => {
     beforeEach(() => {
-      // Reset the mock context with fresh mocks
+      // Reset the mock context with fresh mocks - use both patterns
       mockContext.get = vi.fn((key: string) => {
         if (key === 'db') {
           return {
             insert: vi.fn().mockReturnValue({
-              values: createMockInsertWithExecute(),
+              values: createMockInsertWithBothPatterns(1),
+            }),
+            delete: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                execute: vi.fn().mockResolvedValue(undefined),
+              }),
             }),
           };
         }
@@ -177,12 +199,17 @@ describe('security middleware', () => {
     });
 
     it('allows requests under the rate limit', async () => {
-      // Reset db mock to ensure clean state
+      // Reset db mock to ensure clean state - use both patterns
       mockContext.get = vi.fn((key: string) => {
         if (key === 'db') {
           return {
             insert: vi.fn().mockReturnValue({
-              values: createMockInsertWithExecute(),
+              values: createMockInsertWithBothPatterns(1),
+            }),
+            delete: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                execute: vi.fn().mockResolvedValue(undefined),
+              }),
             }),
           };
         }
@@ -226,6 +253,11 @@ describe('security middleware', () => {
               execute: vi.fn().mockResolvedValue(undefined),
             }),
           };
+        }),
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            execute: vi.fn().mockResolvedValue(undefined),
+          }),
         }),
       };
 

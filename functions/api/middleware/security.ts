@@ -1,11 +1,10 @@
 import { Context, Next } from "hono";
 import { AppEnv } from "./utils";
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { sql } from "drizzle-orm";
+import { sql, lt, and, eq } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import * as relations from "../../../src/db/relations";
 
-type DrizzleDb = DrizzleD1Database<typeof schema, typeof relations>;
+type DrizzleDb = DrizzleD1Database<typeof schema>;
 
 // Node.js process environment type
 interface NodeProcessEnv {
@@ -76,16 +75,28 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
   try {
     // Cleanup old records occasionally to avoid table bloat
     if (Math.random() < 0.05) {
-      db.delete(schema.rateLimits).where(sql`expires_at < ${now}`).execute().catch(console.error);
+      db.delete(schema.rateLimits).where(lt(schema.rateLimits.expiresAt, now)).execute().catch(console.error);
     }
 
+    // Delete any expired record for this specific IP first
+    // This ensures that if the window has expired, we start fresh
+    await db.delete(schema.rateLimits)
+      .where(and(
+        eq(schema.rateLimits.ip, compositeKey),
+        lt(schema.rateLimits.expiresAt, now)
+      ))
+      .execute()
+      .catch(() => {}); // Ignore errors (record might not exist)
+
+    // Now insert or increment
+    // If we just deleted an expired record, this will insert fresh
+    // If a non-expired record exists, this will conflict and increment
     const result = await db.insert(schema.rateLimits)
       .values({ ip: compositeKey, count: 1, expiresAt: now + windowSeconds })
       .onConflictDoUpdate({
         target: schema.rateLimits.ip,
         set: {
-          count: sql`CASE WHEN expires_at < ${now} THEN 1 ELSE count + 1 END`,
-          expiresAt: sql`CASE WHEN expires_at < ${now} THEN ${now + windowSeconds} ELSE expires_at END`
+          count: sql`${schema.rateLimits.count} + 1`
         }
       })
       .returning({ count: schema.rateLimits.count, expiresAt: schema.rateLimits.expiresAt });

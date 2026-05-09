@@ -104,7 +104,6 @@ apiRouter.get('/reference', apiReference(scalarConfig as unknown as Parameters<t
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";
-import * as schema from "../src/db/schema";
 apiRouter.use("*", async (c, next) => {
   const start = Date.now();
   await next();

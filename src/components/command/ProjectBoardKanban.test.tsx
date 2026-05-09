@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import React from "react";
 import ProjectBoardKanban, { TaskItem } from "./ProjectBoardKanban";
 
@@ -63,7 +63,9 @@ describe("ProjectBoardKanban Component", () => {
         updated_at: new Date().toISOString()
       },
     ];
-    render(<ProjectBoardKanban {...defaultProps} tasks={tasks as TaskItem[]} />);
+    await act(async () => {
+      render(<ProjectBoardKanban {...defaultProps} tasks={tasks as TaskItem[]} />);
+    });
 
     // Use findBy* instead of getBy* to wait for async state updates in GenericKanbanBoard
     expect(await screen.findByText("urgent")).toBeInTheDocument();
