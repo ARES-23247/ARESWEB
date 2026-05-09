@@ -206,8 +206,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
         .all() as (DocWithAuthor | PartialDoc)[];
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const docs = results.map((d: any) => ({
+    const docs = results.map((d: DocWithAuthor | PartialDoc) => ({
       slug: String(d.slug),
       title: d.title ?? null,
       category: d.category ?? null,
