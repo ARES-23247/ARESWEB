@@ -190,7 +190,7 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
 
     await page.context().addCookies([
       {
-        name: 'better-auth.session_token',
+        name: isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token',
         value: data.sessionToken,
         domain: cookieDomain || (baseUrl.match(/:\/\/([^/]+)/)?.[1] || 'localhost'),
         path: '/',

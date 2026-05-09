@@ -112,9 +112,10 @@ authRouter.openapi(testLoginRoute, async (c) => {
     // Set the session cookie for immediate use
     const isSecure = c.req.url.startsWith('https://');
     const cookieDomain = isSecure ? undefined : 'localhost';
+    const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
     res.headers.append(
       'Set-Cookie',
-      `better-auth.session_token=${token}; Path=/; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}${cookieDomain ? `; Domain=${cookieDomain}` : ''}`
+      `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}${cookieDomain ? `; Domain=${cookieDomain}` : ''}`
     );
 
     return res;
