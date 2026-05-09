@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { setupMockAuth, MOCK_ADMIN_USER } from '../fixtures/auth';
+import { setupMockAuth } from '../fixtures/auth';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Profile Editor Dashboard', () => {

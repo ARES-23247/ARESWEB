@@ -39,7 +39,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         return context.next();
       }
       // Allow test-login endpoint for E2E testing
-      if (url.pathname === "/api/auth/test-login") {
+      if (url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') === "/api/auth/test-login") {
         return context.next();
       }
       return new Response(JSON.stringify({ error: "Use aresfirst.org" }), {

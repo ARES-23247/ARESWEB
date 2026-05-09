@@ -77,11 +77,7 @@ test.describe('Finance Manager Dashboard', () => {
     // Wait for transactions to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify transaction amounts are displayed with correct colors (if data exists)
-    const incomeAmount = page.getByText(/\+\$/);
-    const expenseAmount = page.getByText(/-\$/);
-
-    // These may not be visible if no transactions exist, but the UI should render
+    // Income and expense amounts may not be visible if no transactions exist, but the UI should render
     await expect(page.getByRole('heading', { name: /Financial Ledger/i })).toBeVisible();
   });
 

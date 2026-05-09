@@ -100,17 +100,19 @@ export function useGetTeamRoster(
 }
 
 /**
- * GET /api/profiles/:userId - Get public user profile
+ * GET /api/profiles/public/:userId - Get public user profile (cacheable)
  */
 export function useGetPublicProfile(
   userId: string,
   options?: Omit<UseQueryOptions<PublicProfileResponse>, "queryKey" | "queryFn" | "enabled">
 ) {
   return useQuery<PublicProfileResponse>({
-    queryKey: ["profile", userId],
+    queryKey: ["profile", "public", userId],
     queryFn: async () => {
-      const response = await client.profile[":userId"].$get({ param: { userId } });
-      return unwrapResponse<PublicProfileResponse>(response);
+      const response = await client.profile.public[":userId"].$get({ param: { userId } });
+      const data = await unwrapResponse<RosterMember>(response);
+      // Wrap in the expected PublicProfileResponse format
+      return { profile: data as unknown as Record<string, unknown>, badges: [] };
     },
     enabled: !!userId,
     ...options,

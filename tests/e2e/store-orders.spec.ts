@@ -3,121 +3,9 @@ import AxeBuilder from '@axe-core/playwright';
 import { setupMockAuth } from '../fixtures/auth';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
-/**
- * Mock store order data matching the Order schema from shared/routes/store.ts
- */
-interface MockOrder {
-  id: string;
-  stripe_session_id: string | null;
-  customer_email: string | null;
-  shipping_name: string | null;
-  shipping_address_line1: string | null;
-  shipping_address_line2: string | null;
-  shipping_city: string | null;
-  shipping_state: string | null;
-  shipping_postal_code: string | null;
-  shipping_country: string | null;
-  total_cents: number;
-  status: string | null;
-  fulfillment_status: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
 
-/**
- * Creates a mock order with default values.
- */
-function createMockOrder(overrides: Partial<MockOrder> = {}): MockOrder {
-  const now = new Date().toISOString();
-  return {
-    id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    stripe_session_id: `cs_test_${Math.random().toString(36).substr(2, 20)}`,
-    customer_email: 'customer@example.com',
-    shipping_name: 'John Doe',
-    shipping_address_line1: '123 Main Street',
-    shipping_address_line2: 'Apt 4B',
-    shipping_city: 'Springfield',
-    shipping_state: 'IL',
-    shipping_postal_code: '62701',
-    shipping_country: 'United States',
-    total_cents: 5000,
-    status: 'complete',
-    fulfillment_status: 'unfulfilled',
-    created_at: now,
-    updated_at: now,
-    ...overrides,
-  };
-}
 
-/**
- * Creates a set of mock orders for testing.
- */
-function createMockOrders(): MockOrder[] {
-  const now = new Date().toISOString();
-  const yesterday = new Date(Date.now() - 86400000).toISOString();
-  const lastWeek = new Date(Date.now() - 604800000).toISOString();
 
-  return [
-    createMockOrder({
-      id: 'order-1-unfulfilled-recent',
-      customer_email: 'jane.student@example.com',
-      shipping_name: 'Jane Student',
-      shipping_city: 'Chicago',
-      shipping_state: 'IL',
-      total_cents: 2500,
-      status: 'complete',
-      fulfillment_status: 'unfulfilled',
-      created_at: now,
-    }),
-    createMockOrder({
-      id: 'order-2-fulfilled',
-      customer_email: 'mentor@techcorp.com',
-      shipping_name: 'John Mentor',
-      shipping_address_line1: '456 Oak Avenue',
-      shipping_city: 'Detroit',
-      shipping_state: 'MI',
-      total_cents: 7500,
-      status: 'complete',
-      fulfillment_status: 'fulfilled',
-      created_at: yesterday,
-    }),
-    createMockOrder({
-      id: 'order-3-unfulfilled-older',
-      customer_email: 'parent@family.com',
-      shipping_name: 'Mary Parent',
-      shipping_address_line1: '789 Pine Road',
-      shipping_city: 'Grand Rapids',
-      shipping_state: 'MI',
-      total_cents: 10000,
-      status: 'complete',
-      fulfillment_status: 'unfulfilled',
-      created_at: lastWeek,
-    }),
-    createMockOrder({
-      id: 'order-4-fulfilled-large',
-      customer_email: 'sponsor@acme.com',
-      shipping_name: 'Acme Industries',
-      shipping_address_line1: '100 Industrial Blvd',
-      shipping_city: 'Flint',
-      shipping_state: 'MI',
-      total_cents: 15000,
-      status: 'complete',
-      fulfillment_status: 'fulfilled',
-      created_at: lastWeek,
-    }),
-    createMockOrder({
-      id: 'order-5-unfulfilled-rush',
-      customer_email: 'alum@university.edu',
-      shipping_name: 'Alex Alum',
-      shipping_city: 'Ann Arbor',
-      shipping_state: 'MI',
-      total_cents: 3500,
-      status: 'complete',
-      fulfillment_status: 'unfulfilled',
-      created_at: now,
-    }),
-  ];
-}
 
 test.describe('Store Orders Dashboard', () => {
   test.beforeEach(async ({ page }) => {
@@ -265,7 +153,7 @@ test.describe('Store Orders Dashboard', () => {
 
     // Check if empty state message is displayed (depends on seeded data)
     const emptyState = page.getByText('No orders found matching the current filters');
-    const isEmptyVisible = await emptyState.isVisible().catch(() => false);
+    await emptyState.isVisible().catch(() => false);
 
     // Test passes regardless - page loads successfully
     const currentUrl = page.url();
@@ -287,7 +175,7 @@ test.describe('Store Orders Dashboard', () => {
 
     // Check if filtered empty state appears
     const emptyState = page.getByText('No orders found matching the current filters');
-    const isEmptyVisible = await emptyState.isVisible().catch(() => false);
+    await emptyState.isVisible().catch(() => false);
 
     // Test passes regardless
     expect(true).toBe(true);

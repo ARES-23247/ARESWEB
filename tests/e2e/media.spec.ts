@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import { setupMockAuth } from '../fixtures/auth';
 import {
   createMinimalPngBuffer,
-  TEST_TIMEOUTS,
 } from '../fixtures/mock-data';
 import { AssetVaultPage } from '../pages/AssetVaultPage';
 

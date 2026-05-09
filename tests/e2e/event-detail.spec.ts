@@ -15,9 +15,8 @@ test.describe('Event Detail Page', () => {
   // Use seeded test event from database
   const TEST_EVENT_ID = 'test-event-1';
 
-  test.beforeEach(async ({ page }) => {
-    // No mocking - use real API calls
-  });
+
+
 
   test('should load event detail page successfully and display core elements', async ({ page }) => {
     await page.goto(`/events/${TEST_EVENT_ID}`);

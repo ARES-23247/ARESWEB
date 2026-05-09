@@ -110,7 +110,7 @@ test.describe('Store Page', () => {
 
     // Check for "No Image" text if products without images exist
     const noImageText = page.getByText('No Image').first();
-    const hasNoImageText = await noImageText.isVisible().catch(() => false);
+    await noImageText.isVisible().catch(() => false);
 
     // Test passes regardless - we're just checking the page handles it
     expect(true).toBe(true);
@@ -192,7 +192,7 @@ test.describe('Store Page', () => {
 
     // Verify loading indicator may be shown
     const loadingText = page.getByText(/Loading inventory/i);
-    const isLoadingVisible = await loadingText.isVisible().catch(() => false);
+    await loadingText.isVisible().catch(() => false);
 
     // Wait for loading to complete
     await page.waitForLoadState('domcontentloaded');

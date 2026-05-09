@@ -96,10 +96,6 @@ test.describe('Blog Post Detail Page E2E', () => {
       await page.goto(`/blog/${testPostSlug}`);
 
       // Verify edit button may be visible for admins
-      const editButton = page.getByRole('link', { name: /edit post/i }).or(
-        page.getByRole('link', { name: /edit/i })
-      );
-
       // Edit button visibility depends on actual permissions in database
       // Just verify the page loads successfully
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

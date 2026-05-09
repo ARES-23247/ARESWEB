@@ -163,6 +163,46 @@ export const getTeamRosterRoute = createRoute({
   tags: ["profiles"],
 });
 
+// Truly public profile endpoint - cacheable, no auth, always returns same data for given userId
+// Used for public pages, about page, member cards
+export const getPublicProfileByIdRoute = createRoute({
+  method: "get",
+  path: "/public/{userId}",
+  request: {
+    params: z.object({
+      userId: z.string().openapi({ example: "123", description: "User ID" }),
+    }),
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: rosterMemberSchema,
+        },
+      },
+      description: "Public profile data (cacheable, same for all viewers)",
+    },
+    403: {
+      content: {
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
+      description: "Profile is private (user opted out of public listing)",
+    },
+    404: {
+      content: {
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
+      description: "Profile not found",
+    },
+  },
+  tags: ["profiles"],
+});
+
 export const getPublicProfileRoute = createRoute({
   method: "get",
   path: "/{userId}",

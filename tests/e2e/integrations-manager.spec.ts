@@ -76,7 +76,7 @@ test.describe('Integrations Manager', () => {
     await page.waitForTimeout(1000);
 
     // Save button state depends on current form state
-    const isInitiallyDisabled = await integrationsPage.saveButton.isDisabled();
+    await integrationsPage.saveButton.isDisabled();
 
     // Fill in Zulip URL field
     await integrationsPage.zulipUrlInput.fill('https://updated.zulipchat.com');

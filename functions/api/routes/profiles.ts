@@ -23,10 +23,12 @@ import {
   getMeRoute,
   updateMeRoute,
   getTeamRosterRoute,
+  getPublicProfileByIdRoute,
   getPublicProfileRoute,
   updateAvatarRoute,
   profileMeSchema,
   rosterMemberSchema,
+  MemberTypeEnum,
 } from "../../../shared/routes/profiles";
 
 
@@ -34,13 +36,31 @@ const profilesRouter = new OpenAPIHono<AppEnv>();
 
 
 // Apply edge caching to public GET routes only
-// SECURITY: Never cache user-specific endpoints (/:userId, /me) as this causes session bleeding
+// SECURITY: Never cache user-specific endpoints as this causes session bleeding
+// CACHEABLE: /public/:userId (truly public, same data for all viewers)
+// NOT CACHEABLE: /me (varies by authenticated user), /:userId (varies by requester's role)
 profilesRouter.use("*", async (c, next) => {
   const path = c.req.path;
   if (c.req.method !== "GET") return next();
 
-  // Skip caching for user-specific and admin-only routes
-  if (path.includes("/admin/") || path.includes("/signups") || path.includes("/history") || path.includes("/me") || path.includes("/:userId")) {
+  // Skip caching for admin-only routes
+  if (path.includes("/admin/") || path.includes("/signups") || path.includes("/history")) {
+    return next();
+  }
+
+  // /me is user-specific (varies by authenticated user) - never cache
+  if (path.includes("/me")) {
+    return next();
+  }
+
+  // /public/:userId is truly public (same data for all viewers) - cache it
+  if (path.startsWith("/public/")) {
+    return edgeCacheMiddleware(180, 60, 300)(c, next);
+  }
+
+  // Legacy /:userId route varies by requester (admin/self see more data) - don't cache
+  // We detect this by checking if path doesn't start with /public/ and doesn't match other routes
+  if (path.match(/^\/[^/]+$/) && !path.startsWith("/team-roster") && !path.startsWith("/public/")) {
     return next();
   }
 
@@ -311,6 +331,113 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
     }
 
     return c.json({ members: members as z.infer<typeof rosterMemberSchema>[] }, 200);
+}));
+
+// ─── Truly Public Profile (cacheable, no auth) ─────────────────────────────
+// This endpoint is CDN-cacheable because it NEVER varies by the requester.
+// Used for public pages, about page, member cards.
+profilesRouter.openapi(getPublicProfileByIdRoute, typedHandler<typeof getPublicProfileByIdRoute>(async (c) => {
+  const { userId } = c.req.valid("param");
+  const db = getDb(c);
+
+  const profileRow = await db
+    .select({
+      userId: schema.userProfiles.userId,
+      nickname: schema.userProfiles.nickname,
+      bio: schema.userProfiles.bio,
+      pronouns: schema.userProfiles.pronouns,
+      subteams: schema.userProfiles.subteams,
+      memberType: schema.userProfiles.memberType,
+      favoriteFirstThing: schema.userProfiles.favoriteFirstThing,
+      funFact: schema.userProfiles.funFact,
+      showEmail: schema.userProfiles.showEmail,
+      contactEmail: schema.userProfiles.contactEmail,
+      showPhone: schema.userProfiles.showPhone,
+      phone: schema.userProfiles.phone,
+      showOnAbout: schema.userProfiles.showOnAbout,
+      favoriteRobotMechanism: schema.userProfiles.favoriteRobotMechanism,
+      preMatchSuperstition: schema.userProfiles.preMatchSuperstition,
+      leadershipRole: schema.userProfiles.leadershipRole,
+      rookieYear: schema.userProfiles.rookieYear,
+      colleges: schema.userProfiles.colleges,
+      employers: schema.userProfiles.employers,
+      gradeYear: schema.userProfiles.gradeYear,
+      avatar: schema.user.image,
+      name: schema.user.name,
+      role: schema.user.role,
+    })
+    .from(schema.userProfiles)
+    .leftJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
+    .where(eq(schema.userProfiles.userId, userId))
+    .get();
+
+  if (!profileRow) {
+    throw new ApiError("Profile not found", 404);
+  }
+
+  // Respect user's privacy preference
+  if (Number(profileRow.showOnAbout || 0) !== 1) {
+    throw new ApiError("This profile is private.", 403);
+  }
+
+  const memberType = String(profileRow.memberType || "student");
+
+  // Parse JSON arrays for subteams, colleges, employers
+  const safeJSONParse = (val: unknown): unknown[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") {
+      try { return JSON.parse(val); }
+      catch { return []; }
+    }
+    return [];
+  };
+
+  const subteams = safeJSONParse(profileRow.subteams);
+  const colleges = safeJSONParse(profileRow.colleges);
+  const employers = safeJSONParse(profileRow.employers);
+
+  // Build public-safe response using the same sanitization logic
+  const publicProfile: z.infer<typeof rosterMemberSchema> = {
+    user_id: profileRow.userId,
+    nickname: profileRow.nickname || undefined,
+    avatar: profileRow.avatar || undefined,
+    pronouns: profileRow.pronouns || undefined,
+    subteams: subteams as string[],
+    member_type: memberType as z.infer<typeof MemberTypeEnum>,
+    bio: profileRow.bio || undefined,
+    fun_fact: profileRow.funFact || undefined,
+    favorite_first_thing: profileRow.favoriteFirstThing || undefined,
+    colleges: colleges as unknown[],
+    employers: employers as unknown[],
+    name: profileRow.name || undefined,
+    role: profileRow.role || undefined,
+    show_on_about: Number(profileRow.showOnAbout || 0) === 1,
+    favorite_robot_mechanism: profileRow.favoriteRobotMechanism || undefined,
+    pre_match_superstition: profileRow.preMatchSuperstition || undefined,
+    leadership_role: profileRow.leadershipRole || undefined,
+    rookie_year: profileRow.rookieYear ? String(profileRow.rookieYear) : undefined,
+    favorite_food: undefined,
+    grade_year: profileRow.gradeYear || undefined,
+    // Mentors/coaches: show email/phone ONLY if they opted in
+    email: (memberType === "mentor" || memberType === "coach") && Number(profileRow.showEmail || 0) === 1
+      ? (profileRow.contactEmail || undefined)
+      : undefined,
+    phone: (memberType === "mentor" || memberType === "coach") && Number(profileRow.showPhone || 0) === 1
+      ? (profileRow.phone || undefined)
+      : undefined,
+    show_email: Number(profileRow.showEmail || 0) === 1,
+    show_phone: Number(profileRow.showPhone || 0) === 1,
+    contact_email: undefined,
+  };
+
+  const response = c.json(publicProfile, 200);
+  // CACHEABLE: This endpoint is safe to cache because it:
+  // 1. Never varies by requester (no auth check)
+  // 2. Always returns the same data for a given userId
+  // 3. Only contains public-safe information
+  response.headers.set("Cache-Control", "public, max-age=300, s-maxage=600, stale-while-revalidate=300");
+  return response;
 }));
 
 profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfileRoute>(async (c) => {
