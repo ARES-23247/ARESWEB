@@ -15,6 +15,7 @@ export default function Dashboard() {
   const notifications = useDashboardNotifications(session, permissions);
   const { data: statsRes } = useGetStats({ staleTime: 1000 * 60 * 5 }); // 5 minutes
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const stats = {
     posts: statsRes?.posts || 0,
     events: statsRes?.events || 0,

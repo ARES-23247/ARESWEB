@@ -7,6 +7,7 @@ export const Route = createFileRoute('/dashboard/manage_seasons')({
 })
 
 function RouteComponent() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { session, permissions } = useDashboardSession()
   const navigate = useNavigate()
 

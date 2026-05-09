@@ -554,7 +554,11 @@ describe("useAcademy hook", () => {
 
       renderHook(() => useAcademy(undefined), { wrapper });
 
-      expect(mockNavigate).toHaveBeenCalledWith("/academy/first-doc", { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: '/academy/$slug',
+        params: { slug: "first-doc" },
+        replace: true,
+      });
     });
 
     it("should not navigate when slug is provided", () => {
@@ -776,8 +780,16 @@ describe("useAcademy hook", () => {
 
       renderHook(() => useAcademy(undefined), { wrapper });
 
-      expect(mockNavigate).toHaveBeenCalledWith("/academy/ai-101-intro", { replace: true });
-      expect(mockNavigate).not.toHaveBeenCalledWith("/docs/ai-101-intro", { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: '/academy/$slug',
+        params: { slug: "ai-101-intro" },
+        replace: true,
+      });
+      expect(mockNavigate).not.toHaveBeenCalledWith({
+        to: '/docs/$slug',
+        params: { slug: "ai-101-intro" },
+        replace: true,
+      });
     });
   });
 });

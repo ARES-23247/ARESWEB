@@ -488,7 +488,11 @@ describe("useDocs hook", () => {
 
       renderHook(() => useDocs(undefined), { wrapper });
 
-      expect(mockNavigate).toHaveBeenCalledWith("/docs/first-doc", { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: '/docs/$slug',
+        params: { slug: "first-doc" },
+        replace: true,
+      });
     });
 
     it("should not navigate when slug is provided", () => {

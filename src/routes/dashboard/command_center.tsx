@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import CommandCenter from '../../components/CommandCenter'
 import { useDashboardSession } from '../../hooks/useDashboardSession'
@@ -8,6 +9,7 @@ export const Route = createFileRoute('/dashboard/command_center')({
 })
 
 function RouteComponent() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { session, permissions } = useDashboardSession()
   const { data: statsRes } = useGetStats({ staleTime: 1000 * 60 * 5 })
   const stats = {
