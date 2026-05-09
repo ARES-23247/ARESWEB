@@ -123,10 +123,10 @@ describe('Points Routes', () => {
 
     app.use('*', createTestDbMiddleware());
 
-    // Add error handler at the app level to catch ApiError properly
     app.onError((err, c) => {
       if (err instanceof ApiError) {
-        return c.json({ error: err.message }, err.status);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return c.json({ error: err.message }, err.status as any);
       }
       return c.json({ error: 'Internal server error' }, 500);
     });

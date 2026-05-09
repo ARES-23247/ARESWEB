@@ -14,7 +14,7 @@ import { globalErrorHandler } from '../middleware/errorHandler';
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
-import { AppEnv, SessionUser, _ApiError } from '../middleware';
+import { AppEnv, SessionUser, ApiError } from '../middleware';
 
 // Mock the auth module BEFORE importing simulationsRouter
 vi.mock('../middleware/auth', async () => {

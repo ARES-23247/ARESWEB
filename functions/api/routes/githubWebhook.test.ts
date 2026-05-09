@@ -17,8 +17,8 @@ import { globalErrorHandler } from '../middleware/errorHandler';
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
-import { AppEnv, _ApiError } from '../middleware';
-import { __HTTPException } from 'hono/http-exception';
+import { AppEnv, ApiError } from '../middleware';
+import { HTTPException } from 'hono/http-exception';
 
 // Mock the zulipSync module BEFORE importing githubWebhookRouter
 vi.mock('../../utils/zulipSync', () => ({

@@ -16,8 +16,8 @@ type OutreachQueryResult = {
   students_count: number | null;
   description: string | null;
   season_id: number | null;
-  is_mentoring: number | boolean;
-  mentored_team_number: number | null;
+  is_mentoring: number | boolean | null;
+  mentored_team_number: number | string | null;
   event_id: string | null;
   mentor_count: number | null;
   mentor_hours: number | null;
@@ -79,7 +79,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
     reach_count: Number(r.reach_count || 0),
     description: r.description ? (r.description.length > SNIPPET_LENGTH ? r.description.substring(0, SNIPPET_LENGTH) + "..." : r.description) : null,
     is_mentoring: !!r.is_mentoring,
-    mentored_team_number: r.mentored_team_number || null,
+    mentored_team_number: r.mentored_team_number ? Number(r.mentored_team_number) : null,
     season_id: r.season_id ? Number(r.season_id) : null,
     is_dynamic: !!r.event_id,
     event_id: r.event_id || null,
@@ -130,7 +130,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
     reach_count: Number(r.reach_count || 0),
     description: r.description ? (r.description.length > SNIPPET_LENGTH ? r.description.substring(0, SNIPPET_LENGTH) + "..." : r.description) : null,
     is_mentoring: !!r.is_mentoring,
-    mentored_team_number: r.mentored_team_number || null,
+    mentored_team_number: r.mentored_team_number ? Number(r.mentored_team_number) : null,
     season_id: r.season_id ? Number(r.season_id) : null,
     is_dynamic: !!r.event_id,
     event_id: r.event_id || null,

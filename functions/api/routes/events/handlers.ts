@@ -6,7 +6,7 @@ import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql } from "drizzle-orm";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
-import { safeWaitUntil } from "../../../utils/safeWaitUntil";
+import { safeWaitUntil } from "../../utils/safeWaitUntil";
 
 // Cloudflare Cache API type for edge cache invalidation
 // In Cloudflare Workers, caches.default is the primary cache instance
@@ -359,7 +359,8 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            date_start: row.dateStart ?? null,
+            date_start: row.dateStart as string,
+            category: normalizeCategory(row.category) ?? "internal",
             date_end: row.dateEnd ?? null,
             cover_image: row.coverImage ?? null,
             tba_event_key: row.tbaEventKey ?? null,
@@ -512,7 +513,7 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            date_start: (rowData.dateStart ?? rowData.date_start ?? null) as string | null,
+            date_start: (rowData.dateStart ?? rowData.date_start ?? "") as string,
             date_end: (rowData.dateEnd ?? rowData.date_end ?? null) as string | null,
             cover_image: (rowData.coverImage ?? rowData.cover_image ?? null) as string | null,
             tba_event_key: (rowData.tbaEventKey ?? rowData.tba_event_key ?? null) as string | null,
@@ -521,7 +522,7 @@ export const eventHandlers = {
             is_potluck: (rowData.isPotluck ?? rowData.is_potluck ?? 0) as number,
             is_volunteer: (rowData.isVolunteer ?? rowData.is_volunteer ?? 0) as number,
             status: (rowData.status ?? "published") as string,
-            category: (rowData.category ?? "internal") as string,
+            category: normalizeCategory(rowData.category as string) ?? "internal",
             meeting_notes: (rowData.meetingNotes ?? rowData.meeting_notes ?? null) as string | null
           }
         }
