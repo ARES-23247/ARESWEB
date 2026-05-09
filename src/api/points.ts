@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import { PointsTransactionSchema, PointsBalanceSchema, PointsLeaderboardEntrySchema } from "@shared/routes/points";
 
 // Infer TypeScript types from Zod schemas
@@ -72,12 +72,13 @@ export function useAwardPoints(
       const response = await client.points.transaction.$post({ json: data });
       return unwrapResponse<{ success: boolean; transaction_id: string }>(response);
     },
-    ...options,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["points", "balance", variables.user_id] });
-      queryClient.invalidateQueries({ queryKey: ["points", "history", variables.user_id] });
-      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc, _data, variables) => {
+        qc.invalidateQueries({ queryKey: ["points", "balance", variables.user_id] });
+        qc.invalidateQueries({ queryKey: ["points", "history", variables.user_id] });
+        qc.invalidateQueries({ queryKey: ["leaderboard"] });
+      }
+    })
   });
 }
 

@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import { outreachSchema } from "@shared/routes/outreach";
 
 // Infer TypeScript types from Zod schemas
@@ -69,11 +69,12 @@ export function useSaveOutreach(
       const response = await client.outreach.admin.save.$post({ json: payload });
       return unwrapResponse<{ success: boolean; id?: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
-      queryClient.invalidateQueries({ queryKey: ["public-outreach"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["admin-outreach"] });
+        qc.invalidateQueries({ queryKey: ["public-outreach"] });
+      }
+    })
   });
 }
 
@@ -89,10 +90,11 @@ export function useDeleteOutreach(
       const response = await client.outreach.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-outreach"] });
-      queryClient.invalidateQueries({ queryKey: ["public-outreach"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["admin-outreach"] });
+        qc.invalidateQueries({ queryKey: ["public-outreach"] });
+      }
+    })
   });
 }

@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import {
   FinanceSummarySchema,
   SponsorshipPipelineSchema,
@@ -89,11 +89,12 @@ export function useSaveSponsorshipPipeline(
       const response = await client.finance.sponsorship.$post({ json: payload });
       return unwrapResponse<{ success: boolean; id: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
-      queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
+        qc.invalidateQueries({ queryKey: ["finance", "summary"] });
+      }
+    })
   });
 }
 
@@ -109,11 +110,12 @@ export function useDeleteSponsorshipPipeline(
       const response = await client.finance.sponsorship[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
-      queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["finance", "sponsorship"] });
+        qc.invalidateQueries({ queryKey: ["finance", "summary"] });
+      }
+    })
   });
 }
 
@@ -152,11 +154,12 @@ export function useSaveFinanceTransaction(
       const response = await client.finance.transactions.$post({ json: payload });
       return unwrapResponse<{ success: boolean; id: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["finance", "transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["finance", "transactions"] });
+        qc.invalidateQueries({ queryKey: ["finance", "summary"] });
+      }
+    })
   });
 }
 
@@ -172,10 +175,11 @@ export function useDeleteFinanceTransaction(
       const response = await client.finance.transactions[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["finance", "transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["finance", "transactions"] });
+        qc.invalidateQueries({ queryKey: ["finance", "summary"] });
+      }
+    })
   });
 }

@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import { socialQueueSchema } from "@shared/routes/socialQueue";
 
 // Infer TypeScript types from Zod schemas
@@ -113,14 +113,15 @@ export function useCreateSocialPost(
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean; post: SocialQueuePost }, Error, CreateSocialPostRequest>({
     mutationFn: async (data) => {
-      const response = await client["social-queue"].$post({ json: data as never });  
+      const response = await client["social-queue"].$post({ json: data as never });
       return unwrapResponse<{ success: boolean; post: SocialQueuePost }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
-      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["social-queue"] });
+        qc.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
+      }
+    })
   });
 }
 
@@ -136,11 +137,12 @@ export function useUpdateSocialPost(
       const response = await client["social-queue"][":id"].$patch({ param: { id }, json: updates as never });
       return unwrapResponse<{ success: boolean; post: SocialQueuePost }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
-      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["social-queue"] });
+        qc.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
+      }
+    })
   });
 }
 
@@ -156,11 +158,12 @@ export function useDeleteSocialPost(
       const response = await client["social-queue"][":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
-      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["social-queue"] });
+        qc.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
+      }
+    })
   });
 }
 
@@ -176,11 +179,12 @@ export function useSendSocialPostNow(
       const response = await client["social-queue"][":id"]["send-now"].$post({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-queue"] });
-      queryClient.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["social-queue"] });
+        qc.invalidateQueries({ queryKey: ["social-queue", "calendar"] });
+      }
+    })
   });
 }
 

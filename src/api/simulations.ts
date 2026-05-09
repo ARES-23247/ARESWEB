@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 
 // Re-export schemas for type inference
 import {
@@ -98,10 +98,11 @@ export function useSaveSimulation(
       const response = await client.simulations.$post({ json: data });
       return unwrapResponse<SaveSimulationResponse>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["simulations"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["simulations"] });
+      }
+    })
   });
 }
 
@@ -117,10 +118,11 @@ export function useDeleteSimulation(
       const response = await client.simulations[":id"].$delete({ param: { id } });
       return unwrapResponse<SuccessResponse>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["simulations"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["simulations"] });
+      }
+    })
   });
 }
 

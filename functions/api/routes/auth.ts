@@ -81,6 +81,12 @@ authRouter.openapi(testLoginRoute, async (c) => {
     }
 
     // Create a new session using Better Auth's API
+    const auth = getAuth(c.env.DB, c.env, c.req.url);
+    const authCtx = await auth.$context;
+    console.log('[Test Auth] authCtx keys:', Object.keys(authCtx));
+    if (authCtx.session) console.log('[Test Auth] authCtx.session keys:', Object.keys(authCtx.session));
+    if (authCtx.internalAdapter) console.log('[Test Auth] authCtx.internalAdapter keys:', Object.keys(authCtx.internalAdapter));
+    
     // Note: Better Auth sessions are created via the signIn API
     // For testing, we'll create a session token directly
     const sessionId = crypto.randomUUID();
@@ -97,6 +103,32 @@ authRouter.openapi(testLoginRoute, async (c) => {
       updatedAt: new Date()
     }).run();
 
+    // Sign the cookie using Web Crypto API to match Better Auth's HMAC-SHA256 signature
+    let secret = c.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+      const isLocal = c.req.url && (c.req.url.includes("localhost") || c.req.url.includes("127.0.0.1"));
+      if (isLocal) {
+        secret = "ares-local-dev-secret-do-not-use-in-production";
+      } else {
+        throw new Error("BETTER_AUTH_SECRET is required to sign test session token.");
+      }
+    }
+    
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(token));
+    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    const signedToken = `${token}.${signatureBase64}`;
+
     // Set session cookie
     const res = c.json({
       success: true,
@@ -106,7 +138,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
         email: user.email,
         role: user.role,
       },
-      sessionToken: token,
+      sessionToken: signedToken,
     });
 
     // Set the session cookie for immediate use
@@ -115,13 +147,13 @@ authRouter.openapi(testLoginRoute, async (c) => {
     const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
     res.headers.append(
       'Set-Cookie',
-      `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}${cookieDomain ? `; Domain=${cookieDomain}` : ''}`
+      `${cookieName}=${signedToken}; Path=/; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}${cookieDomain ? `; Domain=${cookieDomain}` : ''}`
     );
 
     return res;
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Test Auth] Error creating test session:', error);
-    return c.json({ error: 'Failed to create test session' }, 500);
+    return c.json({ error: 'Failed to create test session', details: error.message, stack: error.stack }, 500);
   }
 });
 

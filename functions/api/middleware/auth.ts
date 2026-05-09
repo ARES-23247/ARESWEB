@@ -154,7 +154,9 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
   }
   try {
     const auth = getAuth(c.env.DB, c.env, c.req.url);
+    console.log('[Auth] Incoming cookie for getSession:', c.req.raw.headers.get('cookie'));
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    console.log('[Auth] getSession result:', session ? 'FOUND' : 'NULL');
     if (session && session.user) {
       // Fetch member_type and nickname from profile
       const db: DrizzleDB = c.get("db");

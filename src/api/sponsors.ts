@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import { sponsorResponseSchema, sponsorRoiMetricSchema, sponsorTokenSchema } from "@shared/routes/sponsors";
 import { sponsorSchema } from "@shared/schemas/sponsorSchema";
 
@@ -100,11 +100,12 @@ export function useSaveSponsor(
       const response = await client.sponsors.admin.save.$post({ json: data });
       return unwrapResponse<{ success: boolean; id: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sponsors"] });
-      queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["sponsors"] });
+        qc.invalidateQueries({ queryKey: ["admin_sponsors"] });
+      }
+    })
   });
 }
 
@@ -120,11 +121,12 @@ export function useDeleteSponsor(
       const response = await client.sponsors.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sponsors"] });
-      queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["sponsors"] });
+        qc.invalidateQueries({ queryKey: ["admin_sponsors"] });
+      }
+    })
   });
 }
 
@@ -156,9 +158,10 @@ export function useGenerateSponsorToken(
       const response = await client.sponsors.admin.tokens.generate.$post({ json: data });
       return unwrapResponse<{ success: boolean; token?: string }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sponsor_tokens"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["sponsor_tokens"] });
+      }
+    })
   });
 }

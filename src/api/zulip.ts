@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import { zulipPresenceSchema } from "@shared/routes/zulip";
 
 // Infer TypeScript types from Zod schemas
@@ -45,10 +45,11 @@ export function useSendMessage(
       const response = await client.zulip.message.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["zulip"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["zulip"] });
+      }
+    })
   });
 }
 
@@ -103,9 +104,10 @@ export function useInviteUsers(
       const response = await client.zulip.invites.send.$post({ json: data });
       return unwrapResponse<{ success: boolean; invitedCount: number }>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["zulip"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["zulip"] });
+      }
+    })
   });
 }

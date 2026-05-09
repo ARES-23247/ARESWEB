@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 
 // Re-export schemas for type inference
 import {
@@ -172,13 +172,12 @@ export function useAddExternalSource(
       }
       return response.json() as Promise<{ id: string; success: boolean }>;
     },
-    ...options,
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
-      queryClient.invalidateQueries({ queryKey: ["ai", "status"] });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (options?.onSuccess as any)?.(data, variables, context);
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["ai", "external-sources"] });
+        qc.invalidateQueries({ queryKey: ["ai", "status"] });
+      }
+    })
   });
 }
 
@@ -198,10 +197,11 @@ export function useDeleteExternalSource(
       }
       return { success: true };
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ai", "external-sources"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["ai", "external-sources"] });
+      }
+    })
   });
 }
 

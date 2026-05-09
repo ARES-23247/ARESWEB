@@ -2,6 +2,7 @@ import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
 import type { AppType } from "../../functions/api/[[route]]";
 import type { UseMutationOptions } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 
 /**
  * Type-safe Hono client for API calls.
@@ -60,11 +61,6 @@ export async function unwrapResponse<T>(response: ClientResponse<unknown>): Prom
 /**
  * Wraps user-provided mutation options to run internal logic before user callbacks.
  *
- * This solves a type system limitation where TanStack Query's UseMutationOptions
- * doesn't support "wrapping" callbacks cleanly. The internal onSuccess needs to
- * run (for cache invalidation), then forward to the user's onSuccess, but the
- * type signatures don't align perfectly.
- *
  * @example
  * ```ts
  * return useMutation({
@@ -74,6 +70,7 @@ export async function unwrapResponse<T>(response: ClientResponse<unknown>): Prom
  *   }),
  * });
  * ```
+ * @deprecated Use withMutationCallbacks instead for consistency
  */
 export function wrapOnSuccess<TData, TError, TVariables>(
   options: UseMutationOptions<TData, TError, TVariables> | undefined,
@@ -87,11 +84,61 @@ export function wrapOnSuccess<TData, TError, TVariables>(
     ...options,
     onSuccess: (data, variables) => {
       internalOnSuccess(data, variables);
-      // Forward to user's callback. TanStack Query's onSuccess includes a third
-      // 'context' parameter, but our hooks don't use it. We pass undefined
-      // for context to maintain type safety without 'as any'.
       const userOnSuccess = options.onSuccess as ((data: TData, variables: TVariables, context: unknown) => void) | undefined;
       userOnSuccess?.(data, variables, undefined);
+    },
+  };
+}
+
+/**
+ * Standard mutation callbacks that properly chain user callbacks with internal logic.
+ * Use this to ensure user onSuccess/onError handlers are called after cache invalidation.
+ *
+ * @example
+ * ```ts
+ * return useMutation({
+ *   mutationFn: async (data) => { ... },
+ *   ...withMutationCallbacks(queryClient, options, {
+ *     onSuccess: (queryClient, data, variables) => {
+ *       queryClient.invalidateQueries({ queryKey: ["items"] });
+ *     },
+ *     onError: (queryClient, error, variables) => {
+ *       // Optional error handling
+ *     }
+ *   })
+ * });
+ * ```
+ */
+export function withMutationCallbacks<TData, TError, TVariables>(
+  queryClient: QueryClient,
+  options: UseMutationOptions<TData, TError, TVariables> | undefined,
+  callbacks: {
+    onSuccess?: (queryClient: QueryClient, data: TData, variables: TVariables) => void | Promise<void>;
+    onError?: (queryClient: QueryClient, error: TError, variables: TVariables) => void | Promise<void>;
+  }
+): UseMutationOptions<TData, TError, TVariables> {
+  return {
+    onSuccess: async (...args) => {
+      const [data, variables, context] = args as unknown as [TData, TVariables, unknown];
+      await callbacks.onSuccess?.(queryClient, data, variables);
+      // Call user's onSuccess with all arguments from TanStack Query
+      await options?.onSuccess?.(
+        data as never,
+        variables as never,
+        context,
+        args[3] as never
+      );
+    },
+    onError: async (...args) => {
+      const [error, variables, context] = args as unknown as [TError, TVariables, unknown];
+      await callbacks.onError?.(queryClient, error, variables);
+      // Call user's onError with all arguments from TanStack Query
+      await options?.onError?.(
+        error as never,
+        variables as never,
+        context,
+        args[3] as never
+      );
     },
   };
 }

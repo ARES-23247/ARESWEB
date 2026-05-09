@@ -5,7 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 
 export interface SettingsResponse {
   success: boolean;
@@ -81,11 +81,12 @@ export function useUpdateSettings(
       const response = await client.settings.admin.settings.$post({ json: settings });
       return unwrapResponse<UpdateSettingsResponse>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["settings"] });
-      queryClient.invalidateQueries({ queryKey: ["public-settings"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["settings"] });
+        qc.invalidateQueries({ queryKey: ["public-settings"] });
+      }
+    })
   });
 }
 

@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import { locationSchema } from "@shared/routes/locations";
 
 // Infer TypeScript types from Zod schemas
@@ -77,11 +77,12 @@ export function useSaveLocation(
       const response = await client.locations.admin.save.$post({ json: payload });
       return unwrapResponse<SaveLocationResponse>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["locations"] });
-      queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["locations"] });
+        qc.invalidateQueries({ queryKey: ["admin_locations"] });
+      }
+    })
   });
 }
 
@@ -97,10 +98,11 @@ export function useDeleteLocation(
       const response = await client.locations.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<SuccessResponse>(response);
     },
-    ...options,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["locations"] });
-      queryClient.invalidateQueries({ queryKey: ["admin_locations"] });
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["locations"] });
+        qc.invalidateQueries({ queryKey: ["admin_locations"] });
+      }
+    })
   });
 }

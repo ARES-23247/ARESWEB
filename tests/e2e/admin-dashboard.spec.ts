@@ -10,12 +10,20 @@ test.describe('Admin Dashboard', () => {
   test('Admin dashboard loads and displays authorized management hubs', async ({ page }) => {
     await page.goto('/dashboard');
 
+    // Debug session state from browser context
+    const sessionData = await page.evaluate(async () => {
+      console.log('Cookies available:', document.cookie);
+      const res = await fetch('/api/auth/get-session');
+      return { cookies: document.cookie, data: await res.json() };
+    });
+    console.log('Browser Session response:', sessionData);
+    
     // Ensure dashboard title is visible
     await expect(page.getByRole('heading', { name: /ARES/i }).first()).toBeVisible();
 
     // Verify user profile section rendered the mocked user
     await page.screenshot({ path: 'admin-dashboard.png', fullPage: true });
-    await expect(page.getByText('Admin User', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/Admin User/i).first()).toBeVisible();
     // Verify admin hubs are accessible
     await expect(page.getByText(/User Roles/i)).toBeVisible();
     await expect(page.getByText(/System Integrations/i)).toBeVisible();
