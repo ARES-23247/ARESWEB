@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { Save, RefreshCw, Shield } from "lucide-react";
@@ -9,7 +9,6 @@ import { ContactForm } from "./profile/ContactForm";
 import { LogisticsForm } from "./profile/LogisticsForm";
 import { SecuritySettings } from "./profile/SecuritySettings";
 import { ProfileData } from "./profile/types";
-import { useForm, useWatch } from "react-hook-form";
 import { useGetMe, useUpdateMe, useGetUserProfile, useUpdateUserProfile, type ProfileMe } from "../api";
 
 
@@ -41,12 +40,8 @@ const safeJSONParse = <T,>(val: unknown, fallback: T): T => {
 export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: string }) {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const { handleSubmit, reset, control } = useForm<ProfileData>({
-    defaultValues: DEFAULT_PROFILE
-  });
-
-  const profileValues = useWatch({ control });
+  const [profileData, setProfileData] = useState<ProfileData>(DEFAULT_PROFILE);
+  const isSavingRef = useRef(false);
 
   const { data: rawMeRes, isLoading: meLoading, isError: meError } = useGetMe({
     enabled: !adminEditUserId
@@ -62,7 +57,8 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
     if (profileRes) {
       const data = (adminEditUserId ? rawAdminRes?.profile : rawMeRes) as ProfileMe;
       const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== null));
-      reset({
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing server data to local state on load; dependencies are specific and won't cause cascading renders
+      setProfileData({
         ...DEFAULT_PROFILE,
         ...cleanData,
         email: data.auth?.email || "",
@@ -75,33 +71,41 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
         show_on_about: data.show_on_about !== undefined ? Boolean(data.show_on_about) : true,
       });
     }
-  }, [adminEditUserId, reset, profileRes, rawAdminRes, rawMeRes]);
+  }, [adminEditUserId, profileRes, rawAdminRes, rawMeRes]);
 
   const meMutation = useUpdateMe({
     onSuccess: () => {
       setMessage({ type: "success", text: "Profile saved!" });
+      isSavingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
     },
     onError: (err: Error) => {
       setMessage({ type: "error", text: err.message || "Failed to save profile." });
+      isSavingRef.current = false;
     }
   });
 
   const adminMutation = useUpdateUserProfile({
     onSuccess: () => {
       setMessage({ type: "success", text: "Profile saved!" });
+      isSavingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
     },
     onError: (err: Error) => {
       setMessage({ type: "error", text: err.message || "Failed to save profile." });
+      isSavingRef.current = false;
     }
   });
 
   const isPending = meMutation.isPending || adminMutation.isPending;
 
-  const onFormSubmit = (data: ProfileData) => {
+  const onFormSubmit = () => {
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+
+    const data = profileData;
     const formatted = {
       ...data,
       subteams: JSON.stringify(data.subteams),
@@ -112,7 +116,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
       show_phone: data.show_phone ? 1 : 0,
       show_on_about: data.show_on_about ? 1 : 0,
     };
-    
+
     if (adminEditUserId) {
       adminMutation.mutate({ id: adminEditUserId, profile: formatted });
     } else {
@@ -120,7 +124,13 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
     }
   };
 
-  const isMinor = profileValues.member_type === "student";
+  const isMinor = profileData.member_type === "student";
+
+  // Manual setter helper for sub-forms
+  const setProfile = (updater: Partial<ProfileData> | ((prev: ProfileData) => Partial<ProfileData>)) => {
+    const next = typeof updater === "function" ? updater(profileData) : updater;
+    setProfileData(prev => ({ ...prev, ...next }));
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
@@ -129,12 +139,6 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
   const inputClass = "w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-red transition-colors";
   const labelClass = "text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block";
   const sectionClass = "bg-obsidian/50 border border-white/10 ares-cut p-6 space-y-4";
-
-  // Manual setter helper for legacy sub-forms
-  const setProfile = (updater: Partial<ProfileData> | ((prev: ProfileData) => Partial<ProfileData>)) => {
-    const next = typeof updater === "function" ? updater(profileValues as ProfileData) : updater;
-    reset({ ...profileValues, ...next } as ProfileData);
-  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-6 pb-8">
@@ -155,12 +159,12 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-        <IdentityForm profile={profileValues as ProfileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
-        <RoleForm profile={profileValues as ProfileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
-        <ContactForm profile={profileValues as ProfileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
-        <SecuritySettings profile={profileValues as ProfileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
-        <LogisticsForm profile={profileValues as ProfileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
+      <form onSubmit={e => { e.preventDefault(); onFormSubmit(); }} className="space-y-6">
+        <IdentityForm profile={profileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
+        <RoleForm profile={profileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
+        <ContactForm profile={profileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
+        <SecuritySettings profile={profileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
+        <LogisticsForm profile={profileData} setProfile={setProfile} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
 
         {/* Save */}
         {message && (

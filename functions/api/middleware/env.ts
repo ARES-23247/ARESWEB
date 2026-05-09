@@ -4,18 +4,20 @@ import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 export function getValidatedEnv(runtimeEnv: Record<string, unknown>) {
+  const isProd = runtimeEnv.ENVIRONMENT === "production";
+  
   return createEnv({
     server: {
       ENVIRONMENT: z.enum(["development", "production", "test"]).default("development").optional(),
-      BETTER_AUTH_SECRET: z.string().min(1, "Better Auth Secret is required"),
-      BETTER_AUTH_URL: z.string().url("Valid Better Auth URL is required"),
-      GOOGLE_CLIENT_ID: z.string().min(1),
-      GOOGLE_CLIENT_SECRET: z.string().min(1),
-      GITHUB_CLIENT_ID: z.string().min(1),
-      GITHUB_CLIENT_SECRET: z.string().min(1),
-      ENCRYPTION_SECRET: z.string().min(1),
-      ZULIP_CLIENT_ID: z.string().min(1),
-      ZULIP_CLIENT_SECRET: z.string().min(1),
+      BETTER_AUTH_SECRET: isProd ? z.string().min(1, "Better Auth Secret is required") : z.string().optional().default("test-secret"),
+      BETTER_AUTH_URL: isProd ? z.string().url("Valid Better Auth URL is required") : z.string().optional().default("http://localhost:5173"),
+      GOOGLE_CLIENT_ID: isProd ? z.string().min(1) : z.string().optional().default(""),
+      GOOGLE_CLIENT_SECRET: isProd ? z.string().min(1) : z.string().optional().default(""),
+      GITHUB_CLIENT_ID: isProd ? z.string().min(1) : z.string().optional().default(""),
+      GITHUB_CLIENT_SECRET: isProd ? z.string().min(1) : z.string().optional().default(""),
+      ENCRYPTION_SECRET: isProd ? z.string().min(1) : z.string().optional().default("test-encryption-secret-with-32-chars-long"),
+      ZULIP_CLIENT_ID: isProd ? z.string().min(1) : z.string().optional().default(""),
+      ZULIP_CLIENT_SECRET: isProd ? z.string().min(1) : z.string().optional().default(""),
       TURNSTILE_SECRET_KEY: z.string().optional(),
       DEV_BYPASS: z.string().optional(),
       CRON_SECRET: z.string().optional(),

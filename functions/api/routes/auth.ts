@@ -85,7 +85,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
     // For testing, we'll create a session token directly
     const sessionId = crypto.randomUUID();
     const expiresAt = Date.now() + (60 * 60 * 24 * 7 * 1000); // 7 days
-    const token = Buffer.from(`${userId}:${sessionId}:${expiresAt}`).toString('base64');
+    const token = btoa(`${userId}:${sessionId}:${expiresAt}`);
 
     // Insert session directly into database
     await db.insert(schema.session).values({
