@@ -188,9 +188,9 @@ export const queryHelpers = {
 			.offset(offset)
 			.orderBy(schema.tasks.sortOrder, desc(schema.tasks.createdAt));
 
-		// Get assignees for all tasks
+		// Get assignees for all tasks using IN clause to avoid N+1 query
 		const taskIds = tasks.map(t => t.id);
-		const assignees = await db
+		const assignees = taskIds.length > 0 ? await db
 			.select({
 				taskId: schema.taskAssignments.taskId,
 				userId: schema.taskAssignments.userId,
@@ -200,7 +200,7 @@ export const queryHelpers = {
 			.from(schema.taskAssignments)
 			.innerJoin(schema.user, eq(schema.taskAssignments.userId, schema.user.id))
 			.leftJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
-			.where(taskIds.length > 0 ? eq(schema.taskAssignments.taskId, taskIds[0]) : undefined); // Simplified - would need IN clause
+			.where(inArray(schema.taskAssignments.taskId, taskIds)) : [];
 
 		// Group assignees by task
 		const assigneesByTask: Record<string, typeof assignees> = {};
