@@ -66,3 +66,24 @@ These milestones are documented in `.planning/milestones/v7.0-*` files for refer
 - Updated frontend components to use new API paths
 
 This work completes the v7.1 Drizzle ORM migration goals that were previously marked as "not executed".
+
+---
+
+## Backlog
+
+### Phase 999.64: Follow-up — Phase 64 incomplete plans (BACKLOG)
+
+**Goal:** Resolve plans that ran without producing summaries during Phase 64 execution
+**Source phase:** 64
+**Deferred at:** 2026-05-09 during /gsd-next advancement to Phase 66
+**Plans:**
+- [ ] 64-1: analysis-and-automated-fixes (ran, no SUMMARY.md)
+
+### Phase 999.65: Follow-up — Phase 65 incomplete plans (BACKLOG)
+
+**Goal:** Create execution plans for Phase 65 context
+**Source phase:** 65
+**Deferred at:** 2026-05-09 during /gsd-next advancement to Phase 66
+**Plans:**
+- [ ] Needs planning (CONTEXT.md exists but no PLAN.md)
+
