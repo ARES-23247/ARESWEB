@@ -40,6 +40,8 @@ jobs:
         run: npm ci
 
       - name: Build with Vite
+        env:
+          VITE_DISABLE_PAGES_REDIRECT: "true"
         run: npm run build
 
       - name: Apply D1 Migrations

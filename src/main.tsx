@@ -15,9 +15,11 @@ import "./i18n";
 // SEC-REDIRECT: Cloudflare Pages CDN serves static assets before Functions middleware runs.
 // This client-side redirect catches the SPA case where HTML loads on *.pages.dev
 // but API calls would fail (since _middleware.ts blocks /api/* on .pages.dev).
+// CI builds set VITE_DISABLE_PAGES_REDIRECT=true so E2E tests can run against the preview.
 if (
   typeof window !== "undefined" &&
-  window.location.hostname.endsWith(".pages.dev")
+  window.location.hostname.endsWith(".pages.dev") &&
+  !import.meta.env.VITE_DISABLE_PAGES_REDIRECT
 ) {
   const target = new URL(window.location.href);
   target.hostname = "aresfirst.org";
