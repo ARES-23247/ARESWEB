@@ -1,6 +1,6 @@
 
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Trophy, Award, Medal, Crown, Star, ArrowLeft } from "lucide-react";
 import SEO from "../components/SEO";
@@ -89,7 +89,7 @@ export default function Leaderboard() {
                   transition={{ delay: 0.3 + (idx * 0.1), type: "spring", stiffness: 100 }}
                   className="flex flex-col items-center w-full md:w-64"
                 >
-                  <Link to={`/profile/${user.user_id}`} className="group relative z-10 flex flex-col items-center mb-4 transition-transform hover:-translate-y-2">
+                  <Link to="/profile/$userId" params={{ userId: user.user_id }} className="group relative z-10 flex flex-col items-center mb-4 transition-transform hover:-translate-y-2">
                     <div className={`w-20 h-20 rounded-full border-4 ${border} bg-obsidian overflow-hidden mb-3 relative`}>
                       <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.user_id}`} alt="Avatar" className="w-full h-full object-cover" />
                       <div className={`absolute -bottom-2 -right-2 bg-obsidian rounded-full p-1 border-2 ${border}`}>
@@ -138,7 +138,7 @@ export default function Leaderboard() {
                     <tr key={user.user_id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                       <td className="py-4 text-center font-bold text-ares-gray">{(idx + 4).toString().padStart(2, '0')}</td>
                       <td className="py-4">
-                        <Link to={`/profile/${user.user_id}`} className="flex items-center gap-3">
+                        <Link to="/profile/$userId" params={{ userId: user.user_id }} className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-ares-gray-dark shrink-0 overflow-hidden border border-white/10 group-hover:border-white/60 transition-colors">
                             <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.user_id}`} alt="Avatar" className="w-full h-full object-cover" />
                           </div>
@@ -167,3 +167,4 @@ export default function Leaderboard() {
     </div>
   );
 }
+

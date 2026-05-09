@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import SEO from "../components/SEO";
 import { GreekMeander } from "../components/GreekMeander";
@@ -145,3 +145,4 @@ export default function Home() {
     </div>
   );
 }
+

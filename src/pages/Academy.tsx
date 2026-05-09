@@ -12,13 +12,13 @@ import AutonomousLogicDiagram from "../components/docs/AutonomousLogicDiagram";
 import { useSubmitDocFeedback } from "../api/docs";
 import { useModal } from "../contexts/ModalContext";
 import ZulipThread from "../components/ZulipThread";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "@tanstack/react-router";
 import { useAcademy } from "../hooks/useAcademy";
 import { ContributorStack } from "../components/ui/ContributorStack";
 import TiptapRenderer from "../components/TiptapRenderer";
 
 export default function Academy() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug } = useParams({ strict: false }) as Record<string, string>;
   const navigate = useNavigate();
   const { data: session } = useSession();
   const modal = useModal();
@@ -85,7 +85,7 @@ export default function Academy() {
                       key={r.slug}
                       className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 transition-colors"
                       onClick={() => {
-                        navigate(`/academy/${r.slug}`);
+                        navigate({ to: "/academy/$slug", params: { slug: r.slug } });
                         setSearchOpen(false);
                         setSearchQuery("");
                       }}
@@ -155,7 +155,7 @@ export default function Academy() {
 
                 {isEditor && (
                 <Link
-                  to={`/dashboard/docs/${currentDoc.slug}`}
+                  to="/dashboard/docs/$editSlug" params={{ editSlug: currentDoc.slug }}
                   className="flex items-center gap-2 text-xs font-bold text-ares-cyan/70 hover:text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1.5 ares-cut-sm transition-colors"
                 >
                   <Edit2 size={12} />
@@ -211,13 +211,13 @@ export default function Academy() {
                     return (
                       <>
                         {prevDoc ? (
-                          <Link to={`/academy/${prevDoc.slug}`} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group">
+                          <Link to="/academy/$slug" params={{ slug: prevDoc.slug }} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group">
                             <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" /> Previous</span>
                             <span className="text-white font-bold group-hover:text-ares-red transition-colors">{prevDoc.title}</span>
                           </Link>
                         ) : <div />}
                         {nextDoc ? (
-                          <Link to={`/academy/${nextDoc.slug}`} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end">
+                          <Link to="/academy/$slug" params={{ slug: nextDoc.slug }} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end">
                             <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" /></span>
                             <span className="text-white font-bold group-hover:text-ares-cyan transition-colors">{nextDoc.title}</span>
                           </Link>
@@ -323,3 +323,5 @@ export default function Academy() {
     </div>
   );
 }
+
+

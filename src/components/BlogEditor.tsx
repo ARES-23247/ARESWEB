@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -114,7 +114,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         toast.info("Post saved successfully, but social syndication had issues:\n\n" + data.warning);
       }
 
-      navigate("/dashboard");
+      navigate({ to: "/dashboard" });
     },
     onError: (err: Error) => {
       setErrorMsg(err.message || "Publication failed");
@@ -131,7 +131,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         toast.info("Post updated successfully, but social syndication had issues:\n\n" + data.warning);
       }
 
-      navigate(`/blog/${data.slug || editSlug}`);
+      navigate({ to: `/blog/${data.slug || editSlug}` });
     },
     onError: (err: Error) => {
       setErrorMsg(err.message || "Update failed");
@@ -142,7 +142,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
-      navigate("/dashboard/manage_blog");
+      navigate({ to: "/dashboard/manage_blog" });
     },
     onError: () => {
       setErrorMsg("Failed to delete the post. Please try again.");
@@ -308,7 +308,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 }
 
 export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
-  const { editSlug } = useParams<{ editSlug?: string }>();
+  const { editSlug } = useParams({ strict: false }) as Record<string, string>;
 
   const [draftId] = useState(() => `draft_blog_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`);
   const roomId = editSlug ? `blog_${editSlug}` : draftId;
@@ -319,3 +319,5 @@ export default function BlogEditor({ userRole }: { userRole?: string | unknown }
     </CollaborativeEditorRoom>
   );
 }
+
+

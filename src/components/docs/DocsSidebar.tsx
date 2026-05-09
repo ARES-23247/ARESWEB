@@ -1,6 +1,6 @@
 import { memo, useCallback, useState } from "react";
 import { siteConfig } from "../../site.config";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
 import { useGetPublicSettings } from "../../api/settings";
@@ -124,7 +124,8 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
                     {docs.map((doc) => (
                       <Link
                         key={doc.slug}
-                        to={`${basePath}/${doc.slug}`}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        to={`${basePath}/${doc.slug}` as any}
                         className={`block pl-6 pr-2 py-1.5 text-sm ares-cut-sm transition-colors ${
                           currentSlug === doc.slug
                             ? "bg-ares-red/15 text-ares-red font-bold border-l-2 border-ares-red"
@@ -169,3 +170,4 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
 }
 
 export default memo(DocsSidebar);
+

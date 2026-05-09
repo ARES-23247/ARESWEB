@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { ChevronDown, Users, Trophy, BookOpen } from "lucide-react";
 
 interface NavDropdownProps {
@@ -73,3 +73,4 @@ export function TeamDropdown({ activeDropdown, onToggle }: { activeDropdown: str
     </NavDropdown>
   );
 }
+

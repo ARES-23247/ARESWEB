@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { siteConfig } from "../site.config";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import SEO from "../components/SEO";
 
@@ -164,3 +164,4 @@ export default function BugReport() {
     </div>
   );
 }
+

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { trackPageView } from "../utils/analytics";
@@ -15,7 +15,7 @@ import { extractTextFromAst } from "../utils/content";
 import { validateUrlParam } from "../utils/security";
 
 export default function BlogPost() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug } = useParams({ strict: false }) as Record<string, string>;
   const validatedSlug = validateUrlParam(slug);
   const { data: session } = useSession();
 
@@ -95,7 +95,8 @@ export default function BlogPost() {
              )}
             {isEditor && (
               <Link 
-                to={`/dashboard/blog/${post.slug}`}
+                to="/dashboard/blog/$editSlug"
+                params={{ editSlug: post.slug }}
                 className="w-fit flex items-center gap-2 md:ml-auto px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-gold/10 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/30 transition-all shadow-lg backdrop-blur-sm"
               >
                 <Edit2 size={14} /> Edit Post
@@ -126,3 +127,5 @@ export default function BlogPost() {
     </motion.div>
   );
 }
+
+

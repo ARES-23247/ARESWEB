@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import SEO from "../components/SEO";
@@ -52,7 +52,7 @@ export default function Blog() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {posts.map((post: PostRecord) => (
-            <Link to={`/blog/${post.slug}`} key={post.slug} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <Link to="/blog/$slug" params={{ slug: post.slug }} key={post.slug} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
               <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
                 <div className="relative h-56 w-full overflow-hidden">
                   <img src={post.thumbnail || DEFAULT_COVER_IMAGE} alt={post.title} className={`w-full h-full group-hover:scale-110 transition-transform duration-700 ${post.thumbnail ? 'object-cover' : 'object-contain p-8 bg-black/80'}`} />
@@ -94,3 +94,4 @@ export default function Blog() {
     </motion.div>
   );
 }
+

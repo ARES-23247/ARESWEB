@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { Bell, Check, X } from "lucide-react";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useDeleteNotification } from "../../api/notifications";
 import { useMergedNotifications, MergedNotification } from "../../hooks/useMergedNotifications";
@@ -34,7 +34,8 @@ export function NavbarNotifications({ session, permissions }: NavbarNotification
 
   const handleNotificationClick = (n: MergedNotification) => {
     if (!n.is_read && !n.is_inquiry) markRead.mutate(n.id);
-    if (n.link) navigate(n.link);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (n.link) navigate({ to: n.link as any });
     setShowNotifs(false);
   };
 
@@ -116,3 +117,4 @@ export function NavbarNotifications({ session, permissions }: NavbarNotification
     </div>
   );
 }
+

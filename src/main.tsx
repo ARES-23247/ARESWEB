@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
@@ -8,7 +8,6 @@ import { get, set, del } from "idb-keyval";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { HelmetProvider } from "react-helmet-async";
 import { ModalProvider } from "./contexts/ModalContext";
-import App from "./App";
 import "./index.css";
 import "./i18n";
 
@@ -51,8 +50,22 @@ const persister = createAsyncStoragePersister({
   },
 });
 
-import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
+import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import * as Sentry from "@sentry/react";
+import { RouterProvider, createRouter } from '@tanstack/react-router';
+
+// Import the generated route tree
+import { routeTree } from './routeTree.gen';
+
+// Create a new router instance
+const router = createRouter({ routeTree });
+
+// Register the router instance for type safety
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
+  }
+}
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -72,13 +85,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <HelmetProvider>
       <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
-        <BrowserRouter>
-          <NuqsAdapter>
-            <ModalProvider>
-              <App />
-            </ModalProvider>
-          </NuqsAdapter>
-        </BrowserRouter>
+        <NuqsAdapter>
+          <ModalProvider>
+            <RouterProvider router={router} />
+          </ModalProvider>
+        </NuqsAdapter>
         <ReactQueryDevtools initialIsOpen={false} />
       </PersistQueryClientProvider>
     </HelmetProvider>

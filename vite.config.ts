@@ -6,6 +6,7 @@ import { imagetools } from "vite-imagetools";
 import type { Plugin } from "vite";
 import path from "path";
 import history from "connect-history-api-fallback";
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 
 // SPA fallback plugin for vite preview
 function spaFallbackPlugin(): Plugin {
@@ -56,6 +57,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    TanStackRouterVite(),
     spaFallbackPlugin(),
     react(),
     imagetools({

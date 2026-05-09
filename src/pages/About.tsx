@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import SEO from "../components/SEO";
 import { GreekMeander } from "../components/GreekMeander";
 import { MemberSection } from "../components/MemberSection";
@@ -189,3 +189,4 @@ export default function About() {
     </div>
   );
 }
+

@@ -1,7 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MonthViewGrid } from "./MonthViewGrid";
-import { MemoryRouter } from "react-router-dom";
+
+// Mock @tanstack/react-router Link
+vi.mock("@tanstack/react-router", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Link: ({ children, to, params, className }: any) => {
+    let href = to;
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        href = href?.replace(`$${key}`, value as string);
+      });
+    }
+    return <a href={href} className={className}>{children}</a>;
+  }
+}));
 
 // Mock QuickAddEventModal
 vi.mock("./QuickAddEventModal", () => ({
@@ -24,7 +37,7 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 function renderWithRouter(component: React.ReactElement) {
-  return render(<MemoryRouter>{component}</MemoryRouter>);
+  return render(component);
 }
 
 describe("MonthViewGrid Component", () => {
@@ -138,3 +151,4 @@ describe("MonthViewGrid Component", () => {
     expect(headerGrid).toHaveClass("bg-white/5");
   });
 });
+

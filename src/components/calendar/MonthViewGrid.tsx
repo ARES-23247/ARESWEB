@@ -11,7 +11,7 @@ import {
   isToday,
 } from "date-fns";
 import { CalendarEvent } from "./EventMockData";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { X, Plus } from "lucide-react";
 import { QuickAddEventModal } from "./QuickAddEventModal";
 import { useQueryClient } from "@tanstack/react-query";
@@ -122,7 +122,7 @@ export const MonthViewGrid = ({ currentDate, events }: MonthViewGridProps) => {
               <div className="flex flex-col gap-1 relative z-10">
                 {dayEvents.slice(0, 3).map((event) => (
                   <Link
-                    to={`/events/${event.id}`}
+                    to="/events/$id" params={{ id: event.id }}
                     key={event.id}
                     onClick={(e) => e.stopPropagation()}
                     className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-sm truncate block transition-all hover:scale-105 hover:z-50 hover:shadow-lg origin-left ${getEventColor(
@@ -170,7 +170,7 @@ export const MonthViewGrid = ({ currentDate, events }: MonthViewGridProps) => {
             <div className="flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
               {overflowData.events.map((event) => (
                 <Link
-                  to={`/events/${event.id}`}
+                  to="/events/$id" params={{ id: event.id }}
                   key={event.id}
                   className={`text-xs font-bold px-3 py-2 rounded-sm block transition-all hover:brightness-110 ${getEventColor(event.type)}`}
                   title={event.title}
@@ -199,3 +199,4 @@ export const MonthViewGrid = ({ currentDate, events }: MonthViewGridProps) => {
     </div>
   );
 };
+

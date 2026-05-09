@@ -115,7 +115,6 @@ export default ts.config(
   {
     // Configuration files and scripts at root + tests
     files: ["*.ts", "tests/**/*.ts"],
-    extends: [ts.configs.disableTypeChecked],
     rules: {
       "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
       "no-undef": "off",

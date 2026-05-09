@@ -1,5 +1,5 @@
 import { Suspense, lazy, useMemo } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 import { SIM_METADATA } from '../components/generated/sim-registry';
 
@@ -40,9 +40,9 @@ const SimComponentWrapper = ({ simId }: { simId: string }) => {
 };
 
 const SimRunner = () => {
-  const { simId: urlSimId } = useParams();
-  const [searchParams] = useSearchParams();
-  const simId = urlSimId || searchParams.get('sim');
+  const { simId: urlSimId } = useParams({ strict: false }) as Record<string, string>;
+  const searchParams = useSearch({ strict: false }) as Record<string, string>;
+  const simId = urlSimId || searchParams.sim;
 
   if (!simId) {
     return <div className="text-marble p-8">No simulation ID provided.</div>;
@@ -67,3 +67,7 @@ const SimRunner = () => {
 };
 
 export default SimRunner;
+
+
+
+

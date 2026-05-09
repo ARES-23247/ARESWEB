@@ -1,5 +1,5 @@
 import { Suspense, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, History,
   User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap,
@@ -53,7 +53,8 @@ const NavButton = ({
   }
 
   return (
-    <Link to={`/dashboard/${tab}`} prefetch="intent" className={sharedClass}>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <Link to={`/dashboard/${tab}` as any} className={sharedClass}>
       <div className="flex items-center gap-3 truncate">
         {Icon && <Icon size={18} className={isActive ? "text-white" : hasPending ? "text-ares-danger" : "text-marble/50"} />}
         <span className="truncate">{label}</span>
@@ -63,7 +64,8 @@ const NavButton = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            navigate(`/dashboard/${tab}?view=pending`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            navigate({ to: `/dashboard/${tab}?view=pending` as any });
           }}
           className="shrink-0 bg-ares-danger text-white text-xs font-black uppercase tracking-widest px-2 py-0.5 ares-cut-sm shadow-[0_0_10px_rgba(192,0,0,0.5)] hover:brightness-110 hover:scale-110 transition-all z-10 relative cursor-pointer"
         >
@@ -308,3 +310,4 @@ export default function DashboardSidebar({
     </>
   );
 }
+

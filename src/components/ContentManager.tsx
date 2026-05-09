@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "@tanstack/react-router";
 import BroadcastModal from "./BroadcastModal";
 import { ViewType } from "./ContentManager/shared";
 import EventManagerTab from "./ContentManager/EventManagerTab";
@@ -172,3 +172,4 @@ export default function ContentManager({
     </div>
   );
 }
+

@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { docSchema } from "@shared/schemas/docSchema";
@@ -108,9 +108,9 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     onSuccess: (res) => {
       if (res.slug) {
         if (formValues.isDraft || userRole === "author") {
-          navigate("/dashboard");
+          navigate({ to: "/dashboard" });
         } else {
-          navigate(`/docs/${res.slug}`);
+          navigate({ to: `/docs/${res.slug}` });
         }
       } else {
         setErrorMsg("Failed to publish");
@@ -123,7 +123,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
   const deleteMutation = useDeleteDoc({
     onSuccess: () => {
-      navigate("/dashboard/manage_docs");
+      navigate({ to: "/dashboard/manage_docs" });
     },
     onError: () => {
       setErrorMsg("Failed to delete the document.");
@@ -304,7 +304,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         {editSlug && (
           <div className="flex justify-end mb-4">
             <button
-              onClick={() => navigate('/dashboard/manage_docs')}
+              onClick={() => navigate({ to: '/dashboard/manage_docs' })}
               className="px-6 py-2 ares-cut-sm text-white/50 hover:text-white font-bold tracking-wider text-sm transition-colors"
             >
               Cancel Edit
@@ -350,7 +350,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 }
 
 export default function DocsEditor({ userRole }: { userRole?: string | unknown }) {
-  const { editSlug } = useParams<{ editSlug?: string }>();
+  const { editSlug } = useParams({ strict: false }) as Record<string, string>;
 
   const [draftId] = useState(() => `draft_doc_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`);
   const roomId = editSlug ? `doc_${editSlug}` : draftId;
@@ -361,3 +361,5 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
     </CollaborativeEditorRoom>
   );
 }
+
+

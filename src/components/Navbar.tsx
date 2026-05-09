@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { Search, LogIn, ShoppingBag, Calendar as CalendarIcon, GraduationCap } from "lucide-react";
 
@@ -61,7 +61,7 @@ export default function Navbar() {
       </div>
       <div className="flex items-center justify-between relative z-10">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate({ to: "/" })}
           className="text-2xl font-bold tracking-tighter text-white flex items-center gap-2 font-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
           aria-label="ARES 23247 Home"
         >
@@ -148,3 +148,4 @@ export default function Navbar() {
     </nav>
   );
 }
+

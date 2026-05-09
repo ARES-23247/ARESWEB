@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, RenderHookOptions } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { RouterProvider, createRouter, createMemoryHistory, createRootRoute } from "@tanstack/react-router";
 import { ModalProvider } from "../contexts/ModalContext";
 import { vi } from "vitest";
 import type { MockExecutionContext, MockDrizzle } from "./types";
@@ -370,15 +370,25 @@ export function renderWithProviders<Result, Props>(
 ) {
   const testQueryClient = createTestQueryClient();
 
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={testQueryClient}>
-      <MemoryRouter>
+  const Wrapper = ({ children }: { children: ReactNode }) => {
+    const rootRoute = createRootRoute({
+      component: () => <>{children}</>
+    });
+    const router = createRouter({
+      routeTree: rootRoute,
+      history: createMemoryHistory(),
+    });
+
+    return (
+      <QueryClientProvider client={testQueryClient}>
+        <RouterProvider router={router} />
         <ModalProvider>
           {children}
         </ModalProvider>
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
+      </QueryClientProvider>
+    );
+  };
 
   return renderHook(render, { wrapper: Wrapper, ...options });
 }
+

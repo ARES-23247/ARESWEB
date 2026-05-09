@@ -1,5 +1,5 @@
 import { Drawer } from "vaul";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { User, Target, BookOpen, MessageSquare, Terminal, Settings, LayoutDashboard } from "lucide-react";
 import { useUIStore } from "../store/uiStore";
 
@@ -52,3 +52,4 @@ export default function MobileQuickActions() {
     </Drawer.Root>
   );
 }
+

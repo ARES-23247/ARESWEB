@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useSession } from "../utils/auth-client";
 import { Activity, Target, MessageSquare, BookOpen, User, HelpCircle } from "lucide-react";
 import TeamAvailability from "./TeamAvailability";
@@ -132,3 +132,4 @@ export default function DashboardHome({ stats: prefetchedStats }: { stats?: unkn
     </div>
   );
 }
+

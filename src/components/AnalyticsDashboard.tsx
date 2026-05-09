@@ -1,5 +1,5 @@
 import { BarChart3, TrendingUp, Clock, ExternalLink, Activity, Users, Database, Server } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useGetPlatformAnalytics } from "../api";
 import { BarList, Card, Title, Text, DonutChart, Flex, LineChart } from "@tremor/react";
 
@@ -205,3 +205,4 @@ export default function AnalyticsDashboard() {
     </div>
   );
 }
+

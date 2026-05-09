@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import type { Event } from "../api/events";
@@ -37,7 +37,7 @@ export const EventCard = React.memo(function EventCard({
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1">
           <Link
-            to={`/events/${event.id}`}
+            to="/events/$id" params={{ id: event.id }}
             id={`event-title-${event.id}`}
             className="text-xl font-bold text-white hover:text-ares-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
           >
@@ -94,3 +94,4 @@ export const EventCard = React.memo(function EventCard({
 import React from "react";
 
 export default EventCard;
+

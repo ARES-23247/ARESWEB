@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { GraduationCap, Briefcase, ArrowLeft, Shield, ShieldAlert } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -45,7 +45,7 @@ interface BadgeDef {
 }
 
 export default function ProfilePage() {
-  const { userId } = useParams();
+  const { userId } = useParams({ strict: false }) as Record<string, string>;
   const validatedUserId = validateIdParam(userId);
 
   // All React hooks must be declared before any early returns
@@ -416,3 +416,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+

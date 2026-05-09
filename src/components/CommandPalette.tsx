@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef, useMemo, useTransition } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, FileText, Calendar, ShieldCheck, HelpCircle, Terminal, Home, ArrowRight, Bot } from "lucide-react";
 import { authClient } from "../utils/auth-client";
@@ -178,9 +178,10 @@ export default function CommandPalette() {
     setInputValue("");
     setQuery("");
     if (item.url) {
-      navigate(item.url);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigate({ to: item.url as any });
     } else if (item.slug) {
-      navigate(`/docs/${item.slug}`);
+      navigate({ to: '/docs/$slug', params: { slug: item.slug } });
     }
   };
 
@@ -310,3 +311,4 @@ export default function CommandPalette() {
     </AnimatePresence>
   );
 }
+

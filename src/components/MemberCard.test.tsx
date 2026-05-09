@@ -1,7 +1,20 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
 import { MemberCard, TeamMember } from "./MemberCard";
+
+// Mock @tanstack/react-router Link
+vi.mock("@tanstack/react-router", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Link: ({ children, to, params, className }: any) => {
+    let href = to;
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        href = href.replace(`$${key}`, value as string);
+      });
+    }
+    return <a href={href} className={className}>{children}</a>;
+  }
+}));
 
 // Mock BrandLogo component
 vi.mock("./BrandLogo", () => ({
@@ -61,7 +74,7 @@ const mockMemberWithNoSubteams: TeamMember = {
 
 describe("MemberCard Component", () => {
   const renderWithRouter = (component: React.ReactElement) => {
-    return render(<BrowserRouter>{component}</BrowserRouter>);
+    return render(component);
   };
 
   it("renders member information correctly", () => {
@@ -249,3 +262,4 @@ describe("MemberCard Component", () => {
     expect(avatarContainer).toBeInTheDocument();
   });
 });
+

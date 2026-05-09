@@ -1,5 +1,5 @@
 
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { CopilotMenu } from "./editor/CopilotMenu";
@@ -198,7 +198,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       if (data.success) {
         toast.success("Event published!");
         if (data.warning) toast.info(data.warning as string);
-        navigate("/dashboard");
+        navigate({ to: "/dashboard" });
       } else {
         setErrorMsg("Event save failed.");
       }
@@ -213,7 +213,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       if (data.success) {
         toast.success("Event updated!");
         if (data.warning) toast.info(data.warning as string);
-        navigate("/dashboard");
+        navigate({ to: "/dashboard" });
       } else {
         setErrorMsg((data.error as string) || "Event update failed.");
       }
@@ -225,7 +225,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
 
   const deleteMutation = useDeleteEvent({
     onSuccess: () => {
-      navigate("/dashboard/manage_event");
+      navigate({ to: "/dashboard/manage_event" });
     },
     onError: () => {
       setErrorMsg("Failed to delete the event.");
@@ -609,7 +609,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
 }
 
 export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
-  const { editId } = useParams<{ editId?: string }>();
+  const { editId } = useParams({ strict: false }) as Record<string, string>;
 
   const [draftId] = useState(() => `draft_event_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`);
   const roomId = editId ? `event_${editId}` : draftId;
@@ -620,3 +620,5 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
     </CollaborativeEditorRoom>
   );
 }
+
+

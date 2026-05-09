@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { trackPageView } from "../utils/analytics";
 import { useGetAllDocs, useGetDocWithContributors, useSearchDocs, type DocRecord } from "../api/docs";
 
@@ -81,7 +81,7 @@ export function useAcademy(slug: string | undefined) {
 
   useEffect(() => {
     if (!slug && allDocs.length > 0) {
-      navigate(`/academy/${allDocs[0].slug}`, { replace: true });
+      navigate({ to: "/academy/$slug", params: { slug: allDocs[0].slug }, replace: true });
     }
   }, [slug, allDocs, navigate]);
 
@@ -100,3 +100,4 @@ export function useAcademy(slug: string | undefined) {
     setFeedbackToken,
   };
 }
+

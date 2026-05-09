@@ -1,8 +1,21 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { EventCard, EventItem } from "./EventCard";
-import { BrowserRouter } from "react-router-dom";
 import * as calendarUtils from "../../utils/calendar";
+
+// Mock @tanstack/react-router Link
+vi.mock("@tanstack/react-router", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Link: ({ children, to, params, className }: any) => {
+    let href = to;
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        href = href.replace(`$${key}`, value as string);
+      });
+    }
+    return <a href={href} className={className}>{children}</a>;
+  }
+}));
 
 // Mock the downloadICS utility
 vi.mock("../../utils/calendar", () => ({
@@ -24,9 +37,7 @@ const mockEvent: EventItem = {
 describe("EventCard Component", () => {
   const renderCard = (event: EventItem, isPast = false) => {
     return render(
-      <BrowserRouter>
-        <EventCard event={event} isPast={isPast} />
-      </BrowserRouter>
+      <EventCard event={event} isPast={isPast} />
     );
   };
 
@@ -78,3 +89,4 @@ describe("EventCard Component", () => {
     expect(indicator).toBeInTheDocument();
   });
 });
+

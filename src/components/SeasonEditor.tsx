@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -13,7 +13,7 @@ import EditorFooter from "./editor/EditorFooter";
 import { useGetAdminSeasonDetail, useSaveSeason } from "../api";
 
 export default function SeasonEditor() {
-  const { editId } = useParams<{ editId?: string }>();
+  const { editId } = useParams({ strict: false }) as Record<string, string>;
   const navigate = useNavigate();
   
   const { uploadFile, isUploading: isUploadingCover } = useImageUpload();
@@ -69,7 +69,7 @@ export default function SeasonEditor() {
     onSuccess: (res) => {
       if (res.success) {
         toast.success(`Season ${startYear} saved successfully.`);
-        navigate("/dashboard/manage_seasons");
+        navigate({ to: "/dashboard/manage_seasons" });
       } else {
         setErrorMsg("Save failed");
       }
@@ -267,3 +267,5 @@ export default function SeasonEditor() {
     </div>
   );
 }
+
+

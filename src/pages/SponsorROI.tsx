@@ -1,11 +1,11 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ShieldAlert, TrendingUp, Users, MousePointerClick, Calendar, ArrowLeft, Trophy } from "lucide-react";
 import SEO from "../components/SEO";
 import { useGetSponsorRoi } from "../api";
 
 export default function SponsorROI() {
-  const { tokenId } = useParams();
+  const { tokenId } = useParams({ strict: false }) as Record<string, string>;
   const { data: roiRes, isLoading, error } = useGetSponsorRoi(tokenId || "");
 
   const data = roiRes || null;
@@ -169,3 +169,5 @@ export default function SponsorROI() {
     </div>
   );
 }
+
+

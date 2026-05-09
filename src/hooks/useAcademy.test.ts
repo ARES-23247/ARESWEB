@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useAcademy } from "./useAcademy";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { trackPageView } from "../utils/analytics";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
@@ -21,7 +21,7 @@ import * as docsApi from "../api/docs";
 import type { DocRecord, DocDetail, Contributor } from "../api/docs";
 
 // Mock dependencies
-vi.mock("react-router-dom", () => ({
+vi.mock("@tanstack/react-router", () => ({
   useNavigate: vi.fn(),
 }));
 
@@ -781,3 +781,4 @@ describe("useAcademy hook", () => {
     });
   });
 });
+

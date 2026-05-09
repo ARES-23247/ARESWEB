@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Save, Trash2, Calendar, User, Flag,
@@ -27,7 +27,7 @@ const PRIORITY_OPTIONS = [
 ] as const;
 
 export default function TaskDetailPage() {
-  const { taskId } = useParams<{ taskId: string }>();
+  const { taskId } = useParams({ strict: false }) as Record<string, string>;
   const navigate = useNavigate();
   const _queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
@@ -110,7 +110,7 @@ export default function TaskDetailPage() {
         <Layers size={48} className="mx-auto text-ares-gray mb-4" />
         <p className="text-ares-gray font-bold text-lg">Task not found</p>
         <button
-          onClick={() => navigate("/dashboard/command_center")}
+          onClick={() => navigate({ to: "/dashboard/command_center" })}
           className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 text-marble text-sm font-bold ares-cut-sm border border-white/10 inline-flex items-center gap-2"
         >
           <ArrowLeft size={14} /> Back to Command Center
@@ -130,7 +130,7 @@ export default function TaskDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate("/dashboard/command_center")}
+          onClick={() => navigate({ to: "/dashboard/command_center" })}
           className="flex items-center gap-2 text-ares-gray hover:text-white transition-colors text-sm font-bold"
         >
           <ArrowLeft size={16} /> Command Center
@@ -334,3 +334,5 @@ export default function TaskDetailPage() {
     </div>
   );
 }
+
+

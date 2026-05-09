@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "@tanstack/react-router";
 import { format, isBefore } from "date-fns";
 import { motion } from "framer-motion";
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
@@ -17,7 +17,7 @@ import { useSession } from "../utils/auth-client";
 import { downloadICS } from "../utils/calendar";
 
 export default function EventDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams({ strict: false }) as { id: string };
   const validatedId = validateIdParam(id);
 
   const { data: session } = useSession();
@@ -121,7 +121,8 @@ export default function EventDetail() {
             )}
             {isEditor && (
               <Link 
-                to={`/dashboard/event/${event.id}`}
+                to="/dashboard/event/$editId"
+                params={{ editId: event.id }}
                 className="w-fit flex items-center gap-2 px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/10 hover:bg-ares-cyan text-ares-cyan hover:text-black border border-ares-cyan/30 transition-all shadow-lg backdrop-blur-sm"
               >
                 <Edit2 size={14} /> Edit Event
@@ -206,3 +207,4 @@ export default function EventDetail() {
     </motion.div>
   );
 }
+

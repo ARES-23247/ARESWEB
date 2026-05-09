@@ -1,25 +1,28 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { createRootRoute, Outlet, useLocation } from '@tanstack/react-router';
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "sonner";
 import React, { Suspense } from "react";
 
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import ErrorBoundary from "./components/ErrorBoundary";
-import CommandPalette from "./components/CommandPalette";
-import MobileQuickActions from "./components/MobileQuickActions";
-import ScrollToTop from "./components/ScrollToTop";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import SkipLink from "./components/SkipLink";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import ErrorBoundary from "../components/ErrorBoundary";
+import CommandPalette from "../components/CommandPalette";
+import MobileQuickActions from "../components/MobileQuickActions";
+import ScrollToTop from "../components/ScrollToTop";
+import PWAInstallPrompt from "../components/PWAInstallPrompt";
+import SkipLink from "../components/SkipLink";
 
-import { useModal } from "./contexts/ModalContext";
+import { useModal } from "../contexts/ModalContext";
 import { useRegisterSW } from "virtual:pwa-register/react";
-import { initWebVitals } from "./utils/webVitals";
-import routes from "./routes";
+import { initWebVitals } from "../utils/webVitals";
 
-const GlobalRAGChatbot = React.lazy(() => import("./components/ai/GlobalRAGChatbot").then(m => ({ default: m.GlobalRAGChatbot })));
+const GlobalRAGChatbot = React.lazy(() => import("../components/ai/GlobalRAGChatbot").then(m => ({ default: m.GlobalRAGChatbot })));
 
-export default function App() {
+export const Route = createRootRoute({
+  component: RootComponent,
+});
+
+function RootComponent() {
   const location = useLocation();
   const modal = useModal();
 
@@ -55,11 +58,7 @@ export default function App() {
         <AnimatePresence mode="wait">
           <ErrorBoundary>
             <Suspense fallback={<div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-ares-gold border-t-transparent" /></div>}>
-              <Routes location={location} key={location.pathname}>
-                {routes.map(({ path, component: Component }) => (
-                  <Route key={path} path={path} element={<Component />} />
-                ))}
-              </Routes>
+              <Outlet key={location.pathname} />
             </Suspense>
           </ErrorBoundary>
         </AnimatePresence>

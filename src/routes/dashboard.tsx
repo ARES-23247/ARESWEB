@@ -1,10 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { useDashboardSession } from "../hooks/useDashboardSession";
 import { useDashboardNotifications } from "../hooks/useDashboardNotifications";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
-import DashboardRoutes from "../components/dashboard/DashboardRoutes";
 import { useGetStats } from "../api/analytics";
 import SEO from "../components/SEO";
 
@@ -68,12 +67,7 @@ export default function Dashboard() {
 
         <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 z-10">
           <div className="mb-4" /> {/* Spacer replaced header */}
-          <DashboardRoutes 
-            session={session} 
-            permissions={permissions} 
-            notifications={notifications} 
-            stats={stats}
-          />
+          <Outlet />
 
           <div className="mt-auto pt-12 flex items-center justify-between text-marble/90 text-xs font-bold uppercase tracking-widest px-4 pb-4">
              <span>ARES Robotics 23247</span>
@@ -84,3 +78,7 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export const Route = createFileRoute('/dashboard')({
+  component: Dashboard,
+})

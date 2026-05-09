@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { GreekMeander } from "./GreekMeander";
 import { siteConfig } from "../site.config";
 import { Mail, Users, Calendar, BookOpen, ShoppingBag, Globe, ShieldCheck, Heart } from "lucide-react";
@@ -183,3 +183,4 @@ export default function Footer() {
     </footer>
   );
 }
+

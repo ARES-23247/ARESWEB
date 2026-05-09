@@ -3,16 +3,16 @@ import { ShoppingCart, Loader2, Search, CheckCircle2 } from "lucide-react";
 import { ProductCard } from "../components/store/ProductCard";
 import { CartDrawer } from "../components/store/CartDrawer";
 import { useCartStore } from "../store/useCartStore";
-import { useSearchParams } from "react-router-dom";
+import { useSearch } from "@tanstack/react-router";
 import { useGetProducts, type Product } from "../api";
 
 export const Store: React.FC = () => {
   const { data: products = [], isLoading, error } = useGetProducts();
   const { setIsOpen, getCartCount, clearCart } = useCartStore();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearch({ strict: false }) as Record<string, string>;
 
-  const success = searchParams.get("success");
-  const cancel = searchParams.get("cancel");
+  const success = searchParams.success;
+  const cancel = searchParams.cancel;
 
   useEffect(() => {
     if (success) {
@@ -108,3 +108,5 @@ export const Store: React.FC = () => {
 };
 
 export default Store;
+
+

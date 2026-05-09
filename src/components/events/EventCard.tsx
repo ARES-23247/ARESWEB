@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
 import { DEFAULT_COVER_IMAGE } from "../../utils/constants";
 import { downloadICS } from "../../utils/calendar";
@@ -75,7 +75,7 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
         
         {/* ACC-F01: Use pseudo-element link to make card clickable without nesting interactive elements */}
         <h3 className={`text-2xl md:text-3xl font-bold mb-4 flex flex-wrap items-center gap-3 ${isPast ? 'text-white' : 'text-white'} group-hover:text-ares-gold transition-colors`}>
-          <Link to={`/events/${event.id}`} className="after:absolute after:inset-0 focus:outline-none">
+          <Link to="/events/$id" params={{ id: event.id }} className="after:absolute after:inset-0 focus:outline-none">
             {event.title}
           </Link>
           {event.recurring_exception === 1 && (
@@ -112,3 +112,4 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
     </div>
   );
 };
+

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { ArrowLeft, BookOpen, Key, ShieldAlert } from "lucide-react";
 import SEO from "../components/SEO";
 
@@ -119,3 +119,4 @@ export default function DeveloperApi() {
     </div>
   );
 }
+

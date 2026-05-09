@@ -1,7 +1,7 @@
 import { format, isPast } from "date-fns";
 import { CalendarEvent } from "./EventMockData";
 import { MapPin, Clock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 
 interface AgendaViewListProps {
   events: CalendarEvent[];
@@ -27,7 +27,7 @@ export const AgendaViewList = ({ events }: AgendaViewListProps) => {
         
         return (
           <Link
-            to={`/events/${event.id}`}
+            to="/events/$id" params={{ id: event.id }}
             key={event.id}
             className={`flex flex-col md:flex-row gap-6 p-6 border transition-all hero-card ${
               past 
@@ -87,3 +87,4 @@ export const AgendaViewList = ({ events }: AgendaViewListProps) => {
     </div>
   );
 };
+
