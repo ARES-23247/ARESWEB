@@ -200,9 +200,9 @@ profilesRouter.openapi(getMeRoute, typedHandler<typeof getMeRoute>(async (c) => 
     const response = c.json(
       {
         ...p,
-        member_type: String(p.memberType || "student"),
-        first_name: String(p.firstName || ""),
-        last_name: String(p.lastName || ""),
+        memberType: String(p.memberType || "student"),
+        firstName: String(p.firstName || ""),
+        lastName: String(p.lastName || ""),
         nickname: String(p.nickname || ""),
         auth: { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role },
       } as z.infer<typeof profileMeSchema>,
@@ -293,22 +293,22 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
             row.contactEmail = await safeDecrypt(row.contactEmail as string | null);
           }
 
-          // Convert back to snake_case for the sanitizer function
+          // Pass camelCase to the sanitizer function
           const sanitized = sanitizeProfileForPublic({
-            user_id: row.userId,
+            userId: row.userId,
             nickname: row.nickname,
             bio: row.bio,
             pronouns: row.pronouns,
             subteams: row.subteams,
-            member_type: row.memberType,
-            favorite_first_thing: row.favoriteFirstThing,
-            fun_fact: row.funFact,
-            show_email: row.showEmail,
-            contact_email: row.contactEmail,
-            favorite_robot_mechanism: row.favoriteRobotMechanism,
-            pre_match_superstition: row.preMatchSuperstition,
-            leadership_role: row.leadershipRole,
-            rookie_year: row.rookieYear,
+            memberType: row.memberType,
+            favoriteFirstThing: row.favoriteFirstThing,
+            funFact: row.funFact,
+            showEmail: row.showEmail,
+            contactEmail: row.contactEmail,
+            favoriteRobotMechanism: row.favoriteRobotMechanism,
+            preMatchSuperstition: row.preMatchSuperstition,
+            leadershipRole: row.leadershipRole,
+            rookieYear: row.rookieYear,
             colleges: row.colleges,
             employers: row.employers,
             avatar: row.avatar,
@@ -319,10 +319,10 @@ profilesRouter.openapi(getTeamRosterRoute, typedHandler<typeof getTeamRosterRout
 
           return {
             ...sanitized,
-            user_id: String(sanitized.user_id),
+            userId: String(sanitized.userId),
             nickname: sanitized.nickname || sanitized.name || "ARES Member",
             avatar: sanitized.avatar || null,
-            member_type: memberType,
+            memberType: memberType,
             subteams: Array.isArray(sanitized.subteams) ? sanitized.subteams : [],
             colleges: Array.isArray(sanitized.colleges) ? sanitized.colleges : [],
             employers: Array.isArray(sanitized.employers) ? sanitized.employers : [],
@@ -404,26 +404,26 @@ profilesRouter.openapi(getPublicProfileByIdRoute, typedHandler<typeof getPublicP
 
   // Build public-safe response using the same sanitization logic
   const publicProfile: z.infer<typeof rosterMemberSchema> = {
-    user_id: profileRow.userId,
+    userId: profileRow.userId,
     nickname: profileRow.nickname || undefined,
     avatar: profileRow.avatar || undefined,
     pronouns: profileRow.pronouns || undefined,
     subteams: subteams as string[],
-    member_type: memberType as z.infer<typeof MemberTypeEnum>,
+    memberType: memberType as z.infer<typeof MemberTypeEnum>,
     bio: profileRow.bio || undefined,
-    fun_fact: profileRow.funFact || undefined,
-    favorite_first_thing: profileRow.favoriteFirstThing || undefined,
+    funFact: profileRow.funFact || undefined,
+    favoriteFirstThing: profileRow.favoriteFirstThing || undefined,
     colleges: colleges as unknown[],
     employers: employers as unknown[],
     name: profileRow.name || undefined,
     role: profileRow.role || undefined,
-    show_on_about: Number(profileRow.showOnAbout || 0) === 1,
-    favorite_robot_mechanism: profileRow.favoriteRobotMechanism || undefined,
-    pre_match_superstition: profileRow.preMatchSuperstition || undefined,
-    leadership_role: profileRow.leadershipRole || undefined,
-    rookie_year: profileRow.rookieYear ? String(profileRow.rookieYear) : undefined,
-    favorite_food: undefined,
-    grade_year: profileRow.gradeYear || undefined,
+    showOnAbout: Number(profileRow.showOnAbout || 0) === 1,
+    favoriteRobotMechanism: profileRow.favoriteRobotMechanism || undefined,
+    preMatchSuperstition: profileRow.preMatchSuperstition || undefined,
+    leadershipRole: profileRow.leadershipRole || undefined,
+    rookieYear: profileRow.rookieYear ? String(profileRow.rookieYear) : undefined,
+    favoriteFood: undefined,
+    gradeYear: profileRow.gradeYear || undefined,
     // Mentors/coaches: show email/phone ONLY if they opted in
     email: (memberType === "mentor" || memberType === "coach") && Number(profileRow.showEmail || 0) === 1
       ? (profileRow.contactEmail || undefined)
@@ -431,9 +431,9 @@ profilesRouter.openapi(getPublicProfileByIdRoute, typedHandler<typeof getPublicP
     phone: (memberType === "mentor" || memberType === "coach") && Number(profileRow.showPhone || 0) === 1
       ? (profileRow.phone || undefined)
       : undefined,
-    show_email: Number(profileRow.showEmail || 0) === 1,
-    show_phone: Number(profileRow.showPhone || 0) === 1,
-    contact_email: undefined,
+    showEmail: Number(profileRow.showEmail || 0) === 1,
+    showPhone: Number(profileRow.showPhone || 0) === 1,
+    contactEmail: undefined,
   };
 
   const response = c.json(publicProfile, 200);
@@ -482,34 +482,34 @@ profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfi
     if (Number(profileRow.showOnAbout || 0) !== 1) throw new ApiError("This profile is private.", 403);
 
     const memberType = String(profileRow.memberType || "student");
-    // Convert camelCase to snake_case for the sanitizer function
+    // Pass camelCase to the sanitizer function
     const sanitized: Record<string, unknown> = sanitizeProfileForPublic({
-      user_id: profileRow.userId,
+      userId: profileRow.userId,
       nickname: profileRow.nickname,
       bio: profileRow.bio,
       pronouns: profileRow.pronouns,
       subteams: profileRow.subteams,
-      member_type: profileRow.memberType,
-      favorite_first_thing: profileRow.favoriteFirstThing,
-      fun_fact: profileRow.funFact,
-      show_email: profileRow.showEmail,
-      contact_email: profileRow.contactEmail,
-      show_phone: profileRow.showPhone,
+      memberType: profileRow.memberType,
+      favoriteFirstThing: profileRow.favoriteFirstThing,
+      funFact: profileRow.funFact,
+      showEmail: profileRow.showEmail,
+      contactEmail: profileRow.contactEmail,
+      showPhone: profileRow.showPhone,
       phone: profileRow.phone,
-      show_on_about: profileRow.showOnAbout,
-      favorite_robot_mechanism: profileRow.favoriteRobotMechanism,
-      pre_match_superstition: profileRow.preMatchSuperstition,
-      leadership_role: profileRow.leadershipRole,
-      rookie_year: profileRow.rookieYear,
+      showOnAbout: profileRow.showOnAbout,
+      favoriteRobotMechanism: profileRow.favoriteRobotMechanism,
+      preMatchSuperstition: profileRow.preMatchSuperstition,
+      leadershipRole: profileRow.leadershipRole,
+      rookieYear: profileRow.rookieYear,
       colleges: profileRow.colleges,
       employers: profileRow.employers,
-      grade_year: profileRow.gradeYear,
+      gradeYear: profileRow.gradeYear,
       avatar: profileRow.avatar,
       name: profileRow.name
     }, memberType);
 
     const requester = await getSessionUser(c);
-    const isAdmin = requester?.role === "admin" || requester?.member_type === "coach" || requester?.member_type === "mentor";
+    const isAdmin = requester?.role === "admin" || requester?.memberType === "coach" || requester?.memberType === "mentor";
     const isSelf = requester?.id === userId;
 
     if (isAdmin || isSelf) {
@@ -543,16 +543,16 @@ profilesRouter.openapi(getPublicProfileRoute, typedHandler<typeof getPublicProfi
           }
         };
 
-        sanitized.emergency_contact_name = await safeDecryptValue(sensitive.emergencyContactName as string | null);
-        sanitized.emergency_contact_phone = await safeDecryptValue(sensitive.emergencyContactPhone as string | null);
-        sanitized.dietary_restrictions = sensitive.dietaryRestrictions;
-        sanitized.tshirt_size = sensitive.tshirtSize;
+        sanitized.emergencyContactName = await safeDecryptValue(sensitive.emergencyContactName as string | null);
+        sanitized.emergencyContactPhone = await safeDecryptValue(sensitive.emergencyContactPhone as string | null);
+        sanitized.dietaryRestrictions = sensitive.dietaryRestrictions;
+        sanitized.tshirtSize = sensitive.tshirtSize;
         sanitized.phone = await safeDecryptValue(sensitive.phone as string | null);
-        sanitized.contact_email = await safeDecryptValue(sensitive.contactEmail as string | null);
-        sanitized.parents_name = await safeDecryptValue(sensitive.parentsName as string | null);
-        sanitized.parents_email = await safeDecryptValue(sensitive.parentsEmail as string | null);
-        sanitized.students_name = await safeDecryptValue(sensitive.studentsName as string | null);
-        sanitized.students_email = await safeDecryptValue(sensitive.studentsEmail as string | null);
+        sanitized.contactEmail = await safeDecryptValue(sensitive.contactEmail as string | null);
+        sanitized.parentsName = await safeDecryptValue(sensitive.parentsName as string | null);
+        sanitized.parentsEmail = await safeDecryptValue(sensitive.parentsEmail as string | null);
+        sanitized.studentsName = await safeDecryptValue(sensitive.studentsName as string | null);
+        sanitized.studentsEmail = await safeDecryptValue(sensitive.studentsEmail as string | null);
       }
     }
 

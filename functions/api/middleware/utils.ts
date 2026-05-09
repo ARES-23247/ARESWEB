@@ -113,7 +113,7 @@ export interface SessionUser {
   github_login?: string | null;
   image: string | undefined | null;
   role: string | "admin" | "author" | "unverified";
-  member_type: string;
+  memberType: string;
 }
 
 export type SocialConfig = {
@@ -390,8 +390,8 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
   if (bypassSecurity) {
     return {
       ...profile,
-      email: profile.contact_email || profile.email,
-      nickname: profile.nickname || profile.first_name || "ARES Member",
+      email: profile.contactEmail || profile.email,
+      nickname: profile.nickname || profile.firstName || "ARES Member",
     };
   }
 
@@ -400,37 +400,37 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
   };
 
   const safe: Record<string, unknown> = {
-    user_id: profile.user_id,
+    userId: profile.userId,
     nickname: profile.nickname || "ARES Member",
     avatar: profile.avatar,
     pronouns: profile.pronouns,
     subteams: safeParseArray(profile.subteams),
-    member_type: profile.member_type,
+    memberType: profile.memberType,
     bio: profile.bio,
-    favorite_first_thing: profile.favorite_first_thing,
-    fun_fact: profile.fun_fact,
-    show_on_about: profile.show_on_about,
-    favorite_robot_mechanism: profile.favorite_robot_mechanism,
-    pre_match_superstition: profile.pre_match_superstition,
-    leadership_role: profile.leadership_role,
-    rookie_year: profile.rookie_year,
-    favorite_food: profile.favorite_food,
+    favoriteFirstThing: profile.favoriteFirstThing,
+    funFact: profile.funFact,
+    showOnAbout: profile.showOnAbout,
+    favoriteRobotMechanism: profile.favoriteRobotMechanism,
+    preMatchSuperstition: profile.preMatchSuperstition,
+    leadershipRole: profile.leadershipRole,
+    rookieYear: profile.rookieYear,
+    favoriteFood: profile.favoriteFood,
   };
   if (memberType === "student" || memberType === "parent") {
     return safe;
   }
 
-  // PII-P04: Mentors/Coaches can show public contact info, 
+  // PII-P04: Mentors/Coaches can show public contact info,
   // but we MUST ensure the router has already decrypted them before calling this.
   // We check if the value looks like a hex-IV (contains ':'). If so, we strip it.
   const isEncrypted = (val: unknown) => typeof val === 'string' && val.includes(':');
 
   return {
     ...safe,
-    email: (Number(profile.show_email) && !isEncrypted(profile.contact_email)) ? (profile.contact_email || profile.email) : null,
-    phone: (Number(profile.show_phone) && !isEncrypted(profile.phone)) ? profile.phone : null,
+    email: (Number(profile.showEmail) && !isEncrypted(profile.contactEmail)) ? (profile.contactEmail || profile.email) : null,
+    phone: (Number(profile.showPhone) && !isEncrypted(profile.phone)) ? profile.phone : null,
     colleges: safeParseArray(profile.colleges),
     employers: safeParseArray(profile.employers),
-    grade_year: profile.grade_year,
+    gradeYear: profile.gradeYear,
   };
 }

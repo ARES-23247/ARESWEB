@@ -29,7 +29,7 @@ export async function upsertProfile(
     .limit(1);
 
   const isTargetingSelf = sessionUser?.id === userId;
-  const isAdmin = sessionUser?.role === "admin" || sessionUser?.member_type === "coach" || sessionUser?.member_type === "mentor";
+  const isAdmin = sessionUser?.role === "admin" || sessionUser?.memberType === "coach" || sessionUser?.memberType === "mentor";
 
   // Robust Merge Helper: Only overwrite if key is present in data, otherwise keep existing or use default
   const getMergedValue = async (key: string, isEncrypted: boolean = false, defaultValue: string | number = ""): Promise<string | number> => {
@@ -63,8 +63,8 @@ export async function upsertProfile(
     return (existingVal ?? defaultValue) as string | number;
   };
 
-  // SEC-F09: Prevent self-escalation of member_type
-  let memberType = await getMergedValue("member_type", false, "student");
+  // SEC-F09: Prevent self-escalation of memberType
+  let memberType = await getMergedValue("memberType", false, "student");
   
   if (isTargetingSelf && !isAdmin && existing) {
     memberType = existing.memberType || "student";
