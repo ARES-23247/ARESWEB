@@ -6,7 +6,10 @@
 
 import type { D1Database } from '@cloudflare/workers-types';
 import type { Context } from 'hono';
-import type { AppEnv } from '../api/middleware';
+import type { AppEnv, DrizzleDB } from '../api/middleware';
+import { drizzle } from 'drizzle-orm/d1';
+import * as schema from '../../src/db/schema';
+import { Next } from 'hono';
 
 /**
  * Mock D1 result for single row queries
@@ -39,6 +42,22 @@ export function mockMultiResult<T>(data: T[]): D1Result {
       served_by: 'test',
     },
   } as unknown as D1Result;
+}
+
+/**
+ * Mock Drizzle query result - returns the data array directly
+ * Use this for Drizzle .all() queries
+ */
+export function mockDrizzleResult<T>(data: T[]): { results: T[]; meta: any } {
+  return {
+    results: data,
+    meta: {
+      duration: 1,
+      last_row_id: null,
+      changes: 0,
+      served_by: 'test',
+    },
+  };
 }
 
 /**
@@ -82,31 +101,25 @@ export function createMockDb() {
     return (mockData[table as keyof typeof mockData] as Map<string, unknown>).get(id);
   };
 
-  const mockDb = {
-    prepare: vi.fn((query: string) => {
-      // Determine if this is a first, all, or run query based on the query string
-      const isSelect = query.toLowerCase().includes('select');
-      const isSingle = query.toLowerCase().includes('where') || query.toLowerCase().includes('limit 1');
+  // Track prepare calls for debugging
+  const prepareMock = vi.fn((query: string) => {
+    return {
+      bind: vi.fn(() => {
+        return {
+          raw: vi.fn(() => ({ raw: true })),
+          first: firstMock,
+          all: allMock,
+          run: runMock,
+        };
+      }),
+      first: firstMock,
+      all: allMock,
+      run: runMock,
+    };
+  });
 
-      return {
-        bind: vi.fn((...args: unknown[]) => {
-          // For testing, return the first matching mock data
-          if (isSelect && isSingle) {
-            return {
-              first: firstMock,
-            };
-          } else if (isSelect) {
-            return {
-              all: allMock,
-            };
-          } else {
-            return {
-              run: runMock,
-            };
-          }
-        }),
-      };
-    }),
+  const mockDb = {
+    prepare: prepareMock,
     batch: vi.fn(async (statements: unknown[]) =>
       statements.map(() => mockMutationResult(1))
     ),
@@ -124,7 +137,7 @@ export function createMockDb() {
 /**
  * Create test environment with minimal setup
  */
-export function createTestEnv(overrides: Partial<AppEnv> = {}): AppEnv['Bindings'] {
+export function createTestEnv(overrides: Partial<AppEnv['Bindings']> = {}): AppEnv['Bindings'] {
   return {
     DB: createMockDb().mockDb as D1Database,
     ENVIRONMENT: 'test',
@@ -139,6 +152,90 @@ export function createTestEnv(overrides: Partial<AppEnv> = {}): AppEnv['Bindings
     CF_PAGES: 'false',
     ...overrides,
   } as AppEnv['Bindings'];
+}
+
+/**
+ * Test-specific dbMiddleware that creates a Drizzle instance from the mock D1 database.
+ * Use this in tests to set up the db context variable that routes depend on.
+ *
+ * @example
+ * ```ts
+ * const app = new Hono<AppEnv>();
+ * app.use('*', createTestDbMiddleware());
+ * app.route('/api/auth', authRouter);
+ * ```
+ */
+export function createTestDbMiddleware(mockDbOverride?: DrizzleDB, mockD1Db?: D1Database) {
+  return async (c: Context<AppEnv>, next: Next) => {
+    // Don't cache the db in tests - create a new instance each time
+    let db: DrizzleDB;
+    if (mockDbOverride) {
+      db = mockDbOverride;
+    } else {
+      // Create a Drizzle instance from the mock D1 database
+      // Note: This only works if the mock DB fully implements D1 API
+      const dbToUse = mockD1Db || c.env.DB;
+      db = drizzle(dbToUse, { schema }) as unknown as DrizzleDB;
+    }
+    c.set('db', db);
+    await next();
+  };
+}
+
+/**
+ * Create a mock DrizzleDB for testing.
+ * This provides a minimal implementation of the Drizzle query interface.
+ *
+ * @example
+ * ```ts
+ * const mockDb = createMockDrizzleDb();
+ * vi.mocked(mockDb.select).mockReturnValue({...});
+ * ```
+ */
+export function createMockDrizzleDb(): DrizzleDB {
+  return {
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          get: vi.fn(),
+          all: vi.fn(),
+          limit: vi.fn(() => ({ offset: vi.fn(() => ({ execute: vi.fn() })) })),
+        })),
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        onConflictDoUpdate: vi.fn(() => ({ run: vi.fn() })),
+        onConflictDoNothing: vi.fn(() => ({ run: vi.fn() })),
+        run: vi.fn(),
+      })),
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({
+          run: vi.fn(),
+          returning: vi.fn(),
+        })),
+      })),
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => ({
+        run: vi.fn(),
+      })),
+    })),
+    query: {
+      user: vi.fn(),
+      session: vi.fn(),
+    },
+  } as unknown as DrizzleDB;
+}
+
+/**
+ * Clear the cached test database. Call this in beforeEach if needed.
+ */
+export function clearTestDbCache() {
+  // The cachedDb is local to each middleware instance, so this is a no-op
+  // but kept for API compatibility if needed in the future
 }
 
 /**

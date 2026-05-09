@@ -15,7 +15,9 @@ export default ts.config(
       "coverage",
       ".wrangler",
       "playwright-report",
+      "pw-report*/**",
       "test-results",
+      "Roo-Code/**",
       "eslint.config.js",
       "**/*.bundle",
       "*.cjs", // Ignore legacy CommonJS utility scripts at root
