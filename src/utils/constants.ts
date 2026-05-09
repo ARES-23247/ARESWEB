@@ -2,8 +2,12 @@
  * Shared constants for ARESWEB frontend.
  */
 
-/** Default fallback image used when a blog post, event, or doc has no cover image. */
-export const DEFAULT_COVER_IMAGE = "/api/media/1776551060548-favicon.webp";
+/**
+ * Default fallback image used when a blog post, event, or doc has no cover image.
+ * Configured via VITE_DEFAULT_COVER_IMAGE environment variable, or falls back to
+ * the ARES favicon via the media API.
+ */
+export const DEFAULT_COVER_IMAGE = (import.meta.env.VITE_DEFAULT_COVER_IMAGE as string) || "/api/media/1776551060548-favicon.webp";
 
 /**
  * GitHub repository configuration for ARES simulations.

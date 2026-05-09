@@ -83,7 +83,6 @@ function ConnectedEditorRoom({
 
       newProvider.on("synced", (synced: boolean) => {
         if (synced) {
-          console.log(`[CollaborativeEditor] Reconnected successfully on attempt ${reconnectAttempt + 1}`);
           setIsSynced(true);
           setTimedOut(false);
           setIsReconnecting(false);
@@ -125,14 +124,12 @@ function ConnectedEditorRoom({
       providerRef.current.destroy();
     }
 
-    console.log(`[CollaborativeEditor] Creating provider for room "${roomId}" with host "${host}"`);
     const newProvider = new YPartyKitProvider(host, roomId, ydoc);
     providerRef.current = newProvider;
     // Track this provider for cleanup (WR-06)
     allProviders.add(newProvider);
 
     newProvider.on("synced", (synced: boolean) => {
-      console.log(`[CollaborativeEditor] Synced event: ${synced} for room "${roomId}"`);
       if (synced) {
         // Capture timeout reference to avoid race condition (CR-07)
         const timeout = timeoutRef.current;
@@ -214,7 +211,6 @@ function ConnectedEditorRoom({
 
       newProvider.on("synced", (synced: boolean) => {
         if (synced) {
-          console.log(`[CollaborativeEditor] Manual reconnect successful`);
           setIsSynced(true);
           setTimedOut(false);
           setIsReconnecting(false);
@@ -343,9 +339,7 @@ export function CollaborativeEditorRoom({
     if (typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__) {
       return "";
     }
-    const hostValue = import.meta.env.VITE_PARTYKIT_HOST || "";
-    console.log("[CollaborativeEditor] PartyKit host:", hostValue || "(NOT SET - using standalone mode)");
-    return hostValue;
+    return import.meta.env.VITE_PARTYKIT_HOST || "";
   }, []);
 
   const stableOnDocLoaded = useCallback((doc: Y.Doc) => {
