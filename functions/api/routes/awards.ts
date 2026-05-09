@@ -68,36 +68,6 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
     const db = getDb(c);
     const { id, title, year, event_name, description, image_url, season_id } = validatedData;
 
-    let finalId: string | undefined = id;
-    let exists = false;
-    if (id) {
-      const numericId = Number(id);
-      if (isNaN(numericId) || numericId <= 0) {
-        throw new ApiError("Invalid award ID", 400, "BAD_REQUEST");
-      }
-      const row = await db.select({ id: schema.awards.id }).from(schema.awards).where(eq(schema.awards.id, numericId)).get();
-      if (row) {
-        exists = true;
-        finalId = String(row.id);
-      }
-    }
-
-    if (!exists) {
-      const duplicate = await db.select({ id: schema.awards.id })
-        .from(schema.awards)
-        .where(and(
-          eq(schema.awards.title, title),
-          eq(schema.awards.date, String(year)),
-          eq(schema.awards.eventName, event_name || ""),
-          eq(schema.awards.isDeleted, 0)
-        ))
-        .get();
-      if (duplicate) {
-        exists = true;
-        finalId = String(duplicate.id);
-      }
-    }
-
     const values = {
       title,
       date: String(year),
@@ -108,44 +78,71 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
       isDeleted: 0
     } as const;
 
-    if (exists && finalId) {
-      const updateId = Number(finalId);
-      if (isNaN(updateId) || updateId <= 0) {
-        throw new ApiError("Invalid award ID for update", 400, "BAD_REQUEST");
+    // If updating by ID, use the ID directly (no race condition)
+    if (id) {
+      const numericId = Number(id);
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new ApiError("Invalid award ID", 400, "BAD_REQUEST");
       }
-      await db.update(schema.awards).set(values).where(eq(schema.awards.id, updateId)).run();
-      c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", finalId, `Award "${title}" (${year}) updated`));
-    } else {
-      try {
-        const res = await db.insert(schema.awards).values(values).returning({ insertId: schema.awards.id }).get();
-        const newId = res && "insertId" in res ? String(res.insertId) : "new";
-        c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", newId, `Award "${title}" (${year}) created`));
-        finalId = newId;
-      } catch (insertError: unknown) {
-        const err = insertError as Error;
-        if (err?.message?.includes('UNIQUE') || err?.message?.includes('constraint')) {
-          const duplicate = await db.select({ id: schema.awards.id })
-            .from(schema.awards)
-            .where(and(
-              eq(schema.awards.title, title),
-              eq(schema.awards.date, String(year)),
-              eq(schema.awards.eventName, event_name || ""),
-              eq(schema.awards.isDeleted, 0)
-            ))
-            .get();
-          if (duplicate) {
-            finalId = String(duplicate.id);
-            c.executionCtx.waitUntil(logAuditAction(c, "award_race_condition_handled", "awards", finalId, `Award "${title}" (${year}) race condition - returned existing record`));
-          } else {
-            throw insertError;
-          }
-        } else {
-          throw insertError;
-        }
+      // Verify the record exists before updating
+      const row = await db.select({ id: schema.awards.id }).from(schema.awards).where(eq(schema.awards.id, numericId)).get();
+      if (!row) {
+        throw new ApiError("Award not found", 404, "NOT_FOUND");
       }
+      await db.update(schema.awards).set(values).where(eq(schema.awards.id, numericId)).run();
+      c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", id, `Award "${title}" (${year}) updated`));
+      return c.json({ success: true, id }, 200);
     }
 
-    return c.json({ success: true, id: finalId! }, 200);
+    // For new awards, use insert-or-find pattern to handle race conditions atomically
+    // First, try to find an existing non-deleted award with the same key
+    const existingAward = await db.select({ id: schema.awards.id })
+      .from(schema.awards)
+      .where(and(
+        eq(schema.awards.title, title),
+        eq(schema.awards.date, String(year)),
+        eq(schema.awards.eventName, event_name || ""),
+        eq(schema.awards.isDeleted, 0)
+      ))
+      .get();
+
+    if (existingAward) {
+      // Award already exists, return its ID
+      c.executionCtx.waitUntil(logAuditAction(c, "award_duplicate_found", "awards", String(existingAward.id), `Award "${title}" (${year}) already exists`));
+      return c.json({ success: true, id: String(existingAward.id) }, 200);
+    }
+
+    // No existing award found, attempt to insert
+    // Use a try-catch to handle the race condition where another request
+    // might have inserted the same award between our check and insert
+    try {
+      const res = await db.insert(schema.awards).values(values).returning({ insertId: schema.awards.id }).get();
+      const newId = res && "insertId" in res ? String(res.insertId) : "new";
+      c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", newId, `Award "${title}" (${year}) created`));
+      return c.json({ success: true, id: newId }, 200);
+    } catch (insertError: unknown) {
+      const err = insertError as Error;
+      // If we get a constraint error (race condition), check again for the duplicate
+      // This handles the case where another request inserted the same award
+      const duplicate = await db.select({ id: schema.awards.id })
+        .from(schema.awards)
+        .where(and(
+          eq(schema.awards.title, title),
+          eq(schema.awards.date, String(year)),
+          eq(schema.awards.eventName, event_name || ""),
+          eq(schema.awards.isDeleted, 0)
+        ))
+        .get();
+
+      if (duplicate) {
+        // Another request won the race, return the existing award
+        c.executionCtx.waitUntil(logAuditAction(c, "award_race_condition_handled", "awards", String(duplicate.id), `Award "${title}" (${year}) race condition - returned existing record`));
+        return c.json({ success: true, id: String(duplicate.id) }, 200);
+      }
+
+      // Not a duplicate error, rethrow
+      throw insertError;
+    }
 }));
 
 awardsRouter.openapi(deleteAwardRoute, typedHandler<typeof deleteAwardRoute>(async (c) => {
