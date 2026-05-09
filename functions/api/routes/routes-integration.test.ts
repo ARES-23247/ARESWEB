@@ -192,7 +192,7 @@ describe('API route integration', () => {
     });
 
     it('all routers have routes defined', () => {
-      routers.forEach(({ name, router }) => {
+      routers.forEach(({ router }) => {
         const routes = getRoutes(router);
         expect(routes.length).toBeGreaterThan(0);
       });

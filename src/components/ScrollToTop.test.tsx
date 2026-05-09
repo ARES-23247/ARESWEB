@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
-import { BrowserRouter, MemoryRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import ScrollToTop from "./ScrollToTop";
 
 // Test component to display current pathname

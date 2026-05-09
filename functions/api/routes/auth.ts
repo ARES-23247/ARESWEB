@@ -149,7 +149,7 @@ authRouter.on(["POST", "GET"], "/*", async (c, next) => {
     return c.json({
       message: message || "Internal Server Error during Authentication",
       stack: isDevBypass ? stack : undefined
-    }, status || 500);
+    }, (status || 500) as import("hono/utils/http-status").ContentfulStatusCode);
   }
 });
 
