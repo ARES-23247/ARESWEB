@@ -1,30 +1,29 @@
 /**
- * Basic HTML sanitization utilities
- * For production, consider using DOMPurify or similar library
+ * HTML sanitization utilities using DOMPurify
+ * Provides consistent XSS protection across the application
  */
+import DOMPurify from 'dompurify';
 
 /**
- * Strip HTML tags and potentially dangerous content from strings
- * This is a basic implementation - for production use DOMPurify
+ * Sanitize HTML to prevent XSS attacks
+ * Uses DOMPurify with a strict allowlist for safe HTML rendering
+ *
+ * @param input - Potentially unsafe HTML string
+ * @returns Sanitized HTML string safe for rendering
  */
 export function sanitizeHtml(input: string): string {
   if (!input) return input;
 
-  // Remove script tags and their content
-  // eslint-disable-next-line security/detect-unsafe-regex
-  let sanitized = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-
-  // Remove other potentially dangerous tags (iframe, object, embed, etc.)
-  sanitized = sanitized.replace(/<(iframe|object|embed|form|input|button|link|style)[^>]*>/gi, '');
-
-  // Remove event handlers (onclick, onerror, etc.)
-  sanitized = sanitized.replace(/\s(on\w+)="[^"]*"/gi, '');
-  sanitized = sanitized.replace(/\s(on\w+)='[^']*'/gi, '');
-
-  // Remove javascript: protocol in href/src attributes
-  sanitized = sanitized.replace(/(href|src|srcset|background)=\s*["']javascript:[^"']*["']/gi, '$1=""');
-
-  return sanitized;
+  return DOMPurify.sanitize(input, {
+    // Allow only basic formatting tags
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'code', 'pre', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr'],
+    // Allow only safe attributes
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'id'],
+    // Force https for links
+    FORCE_BODY: false,
+    // Sanitize the HTML itself, not the source
+    RETURN_TRUSTED_TYPE: false,
+  });
 }
 
 /**
