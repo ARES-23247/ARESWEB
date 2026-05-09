@@ -1,4 +1,5 @@
 import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
+import { QUERY_LIMITS } from "../../utils/queryLimits";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getSocialConfig, logAuditAction, SocialConfig, getDb } from "../../middleware";
@@ -39,7 +40,7 @@ export async function purgeOldInquiries(db: DrizzleDB, days: number) {
       SELECT id FROM inquiries
       WHERE status IN ('resolved', 'rejected')
       AND created_at < datetime('now', '-' || ${days} || ' days')
-      LIMIT 100
+      LIMIT ${QUERY_LIMITS.MAX_PAGE}
     )
   `);
   

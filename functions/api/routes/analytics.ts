@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { QUERY_LIMITS } from "../utils/queryLimits";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
@@ -360,7 +361,7 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
       WHERE p.show_on_about = 1
       GROUP BY u.id, u.name, p.last_name, p.nickname, p.member_type, u.image
       ORDER BY badge_count DESC
-      LIMIT 50
+      LIMIT ${QUERY_LIMITS.AUDIT_LOG_LIMIT}
     `);
 
     const rows = (results || []) as LeaderboardRow[];
@@ -429,9 +430,9 @@ analyticsRouter.openapi(searchRoute, typedHandler<typeof searchRoute>(async (c) 
     }
 
     const [postsReq, eventsReq, docsReq] = await Promise.all([
-      db.all(sql<SearchResultRow>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT 5`),
-      db.all(sql<SearchResultRow>`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT 5`),
-      db.all(sql<SearchResultRow>`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT 5`)
+      db.all(sql<SearchResultRow>`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`),
+      db.all(sql<SearchResultRow>`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`),
+      db.all(sql<SearchResultRow>`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`)
     ]);
 
     const postsRows = postsReq || [];

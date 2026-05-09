@@ -1,4 +1,5 @@
 import { typedHandler } from "../utils/handler";
+import { QUERY_LIMITS } from "../utils/queryLimits";
 import { ApiError } from "../middleware/errorHandler";
 import { sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -263,7 +264,7 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, typedHandler<typeof docsRoutes.se
       FROM docs_fts f
       JOIN docs d ON f.slug = d.slug
       WHERE d.is_deleted = 0 AND d.status = 'published' AND f.docs_fts MATCH ${cleanQ}
-      ORDER BY f.rank LIMIT 20
+      ORDER BY f.rank LIMIT ${QUERY_LIMITS.DEFAULT_PAGE}
     `);
 
     type SearchRow = { slug: unknown; title: unknown; category: unknown; description: string | null };
