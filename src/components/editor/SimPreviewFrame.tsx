@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
+import DOMPurify from 'dompurify';
 
 interface SimPreviewFrameProps {
   /** Transpiled JavaScript code modules to execute in the sandbox */
@@ -293,13 +294,21 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
   <script src="${window.location.origin}/vendor/react.production.min.js"></script>
   <script src="${window.location.origin}/vendor/react-dom.production.min.js"></script>
   <script src="${window.location.origin}/vendor/ares-physics.min.js"></script>
+  <!-- DOMPurify for XSS protection -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.2/dist/purify.min.js"
+          integrity="sha384-pg0npeAS8wMoOhkAn3+6V/pdCY24eN7SUoLvHh6x5Z9JgAjMMfgP8u8vUxKY+fN9"
+          crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="root"><div class="sim-loading">Loading Environment...</div></div>
   <script>
     window.onerror = function(msg, source, line, col, error) {
       window.parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '${window.location.origin}');
-      document.getElementById('root').innerHTML = '<div class="sim-error">' + msg + '</div>';
+      // Sanitize error message before setting innerHTML to prevent XSS
+      const sanitizedMsg = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(msg)) : String(msg).replace(/[<>&"']/g, function(m) {
+        return {'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;'}[m];
+      });
+      document.getElementById('root').innerHTML = '<div class="sim-error">' + sanitizedMsg + '</div>';
       return true;
     };
     
@@ -384,7 +393,11 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       }
     } catch(e) {
       window.parent.postMessage({ type: 'sim-error', message: e.message }, '${window.location.origin}');
-      document.getElementById('root').innerHTML = '<div class="sim-error">' + e.message + '</div>';
+      // Sanitize error message before setting innerHTML to prevent XSS
+      const sanitizedError = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(e.message)) : String(e.message).replace(/[<>&"']/g, function(m) {
+        return {'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;'}[m];
+      });
+      document.getElementById('root').innerHTML = '<div class="sim-error">' + sanitizedError + '</div>';
     }
 
     // Listen for screenshot requests
