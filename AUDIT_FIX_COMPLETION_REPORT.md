@@ -201,12 +201,12 @@ All 141 audit findings have been addressed across 6 dimensions with **30+ atomic
 ## Remaining Work (Deferred)
 
 ### Low Priority Items
-These items were deferred due to lower priority or requiring architectural consideration:
+All deferred items have been completed! ✅
 
-1. **FTS Sync Triggers Migration** - Need to verify production schema and apply triggers
-2. **API Client 401 Handling** - Requires integration with Better Auth session refresh
-3. **Migration Naming** - Documentation task
-4. **Query Limit Constants** - Optimization task
+1. **FTS Sync Triggers Migration** ✅ - Added in commit `e40788da`
+2. **API Client 401 Handling** ✅ - Added in commit `937366c5`
+3. **Migration Naming** ✅ - Documented in commit `ed55df3b`
+4. **Query Limit Constants** ✅ - Extracted in commit `8212277e`
 
 ### Recommendations
 1. **Run FTS triggers migration** on production database
@@ -260,10 +260,12 @@ b8c5277d fix(W3A): W3A-SEC-03 add encryption marker check before decryption
 The comprehensive audit fix execution was **successfully completed**. All critical and high-priority issues have been resolved. The codebase is now significantly more secure, type-safe, and maintainable.
 
 **Next Steps:**
-1. Deploy to staging environment
-2. Run full E2E test suite
-3. Monitor for any issues
-4. Schedule production deployment
+1. ✅ All audit findings resolved
+2. Run FTS triggers migration on production database
+3. Deploy to staging environment
+4. Run full E2E test suite
+5. Monitor for any issues
+6. Schedule production deployment
 
 ---
 
