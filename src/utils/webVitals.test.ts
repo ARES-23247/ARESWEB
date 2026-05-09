@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { reportWebVitals, initWebVitals, type VitalMetric } from "./webVitals";
+import { reportWebVitals, initWebVitals, cleanupWebVitals, type VitalMetric } from "./webVitals";
 import { onCLS, onLCP, onINP, onTTFB, type Metric } from "web-vitals";
 
 // Mock web-vitals module
@@ -27,6 +27,7 @@ describe("webVitals", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockClear();
+    cleanupWebVitals();
   });
 
   describe("reportWebVitals", () => {

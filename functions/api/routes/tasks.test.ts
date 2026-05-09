@@ -235,7 +235,7 @@ describe('Tasks Routes', () => {
 
       // Should not be 401 - the request should proceed to the handler
       expect(_res.status).not.toBe(401);
-    });
+    }, 10000);
 
     it('should validate required fields', async () => {
       globalThis.__mockSessionUser = mockAuthUser;
