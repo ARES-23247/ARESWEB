@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import { createTestEnv } from '../../test/test-env';
+import { globalErrorHandler } from '../middleware/errorHandler';
 // Extend globalThis for test mocks
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
@@ -93,6 +94,7 @@ describe('Zulip Webhook Routes', () => {
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
     app.route('/webhooks/zulip', zulipWebhookRouter);
     return app;
   };
@@ -151,8 +153,8 @@ describe('Zulip Webhook Routes', () => {
       const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
       expect(_res.status).toBe(401);
-      const json = (await _res.json()) as { error?: string; message?: string };
-      expect(json.error ?? json.message).toContain('Webhook token not configured');
+      const json = (await _res.json()) as { content?: string; error?: string; message?: string };
+      expect(json.content ?? json.error ?? json.message).toContain('Webhook token not configured');
     });
 
     it('should return 401 when token is missing from payload', async () => {
@@ -170,8 +172,8 @@ describe('Zulip Webhook Routes', () => {
       const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
       expect(_res.status).toBe(401);
-      const json = (await _res.json()) as { error?: string; message?: string };
-      expect(json.error ?? json.message).toContain('Unauthorized');
+      const json = (await _res.json()) as { content?: string; error?: string; message?: string };
+      expect(json.content ?? json.error ?? json.message).toContain('Unauthorized');
     });
 
     it('should return 401 when token is invalid', async () => {
@@ -189,8 +191,8 @@ describe('Zulip Webhook Routes', () => {
       const _res = await app.request(req, undefined, createTestEnv(), mockExecutionContext);
 
       expect(_res.status).toBe(401);
-      const json = (await _res.json()) as { error?: string; message?: string };
-      expect(json.error ?? json.message).toContain('Unauthorized');
+      const json = (await _res.json()) as { content?: string; error?: string; message?: string };
+      expect(json.content ?? json.error ?? json.message).toContain('Unauthorized');
     });
 
     it('should accept valid webhook with correct token', async () => {

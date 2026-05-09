@@ -7,6 +7,7 @@ import { AppEnv, getSocialConfig, getDb } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { calculateIRV } from "../../utils/irvCalculator";
 import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
+import { safeWaitUntil } from "../utils/safeWaitUntil";
 
 export const zulipWebhookRouter = new OpenAPIHono<AppEnv>();
 
@@ -265,10 +266,12 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         
         const broadcastContent = `${msgCore}\n\n*— Broadcasted by ${body.message.sender_full_name} via ARES Bot*`;
 
-        c.executionCtx.waitUntil((async () => {
+        safeWaitUntil(c.executionCtx, (async () => {
           const socialConfig = await getSocialConfig(c);
-          await sendZulipMessage(socialConfig, streamTarget, "Broadcast", broadcastContent).catch(() => {});
-        })());
+          await sendZulipMessage(socialConfig, streamTarget, "Broadcast", broadcastContent).catch((err) => {
+            console.error("Failed to send broadcast message:", err);
+          });
+        })(), "Failed to send Zulip broadcast");
 
         return c.json({ content: `✅ Broadcast dispatched to \`${streamTarget}\`.` }, 200);
       }

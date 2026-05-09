@@ -15,6 +15,7 @@ import {
 } from "../../../shared/routes/tasks";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
+import { safeWaitUntil } from "../utils/safeWaitUntil";
 
 export const tasksRouter = new OpenAPIHono<AppEnv>();
 
@@ -326,17 +327,13 @@ tasksRouter.openapi(updateTaskRoute, typedHandler<typeof updateTaskRoute>(async 
         await db.insert(schema.taskAssignments).values(assignments).run();
 
         // Notify new assignees
-        try {
-          const users = await db.select({ email: schema.user.email }).from(schema.user).where(inArray(schema.user.id, body.assignees)).all();
-          const emails = users.map((u) => u.email).filter(Boolean);
-          if (emails.length > 0) {
-            const env = await getSocialConfig(c);
-            for (const email of emails) {
-              await sendZulipMessage(env, email, null, `Task updated: **${updates.title || existing.title}**\nYou are assigned to this task.\n\n[Open Task Dashboard](${siteConfig.urls.base}/dashboard?tab=tasks)`, "private").catch(() => {});
-            }
+        const users = await db.select({ email: schema.user.email }).from(schema.user).where(inArray(schema.user.id, body.assignees)).all();
+        const emails = users.map((u) => u.email).filter(Boolean);
+        if (emails.length > 0) {
+          const env = await getSocialConfig(c);
+          for (const email of emails) {
+            safeWaitUntil(c.executionCtx, sendZulipMessage(env, email, null, `Task updated: **${updates.title || existing.title}**\nYou are assigned to this task.\n\n[Open Task Dashboard](${siteConfig.urls.base}/dashboard?tab=tasks)`, "private"), `Failed to send task update notification to ${email}`);
           }
-        } catch (e) {
-          console.error("Zulip update notification fail", e);
         }
       }
     }

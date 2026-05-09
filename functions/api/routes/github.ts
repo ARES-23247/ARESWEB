@@ -5,6 +5,7 @@ import { AppEnv, ensureAdmin, getSocialConfig, checkPersistentRateLimit, getDb }
 import { buildGitHubConfig, fetchProjectBoard, createProjectItem } from "../../utils/githubProjects";
 import { getBoardRoute, createItemRoute, getActivityRoute } from "../../../shared/routes/github";
 import { siteConfig } from "../../utils/site.config";
+import { safeWaitUntil } from "../utils/safeWaitUntil";
 
 export const githubRouter = new OpenAPIHono<AppEnv>();
 
@@ -122,7 +123,7 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
           "Cache-Control": "public, s-maxage=3600, max-age=3600"
         }
       });
-      c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
+      safeWaitUntil(c.executionCtx, cache.put(cacheKey, response.clone()), "Failed to cache GitHub activity data");
     }
 
     return c.json(payload, 200);
@@ -135,8 +136,7 @@ githubRouter.openapi(getBoardRoute, typedHandler<typeof getBoardRoute>(async (c)
     const ghConfig = buildGitHubConfig(config);
     if (!ghConfig) {
       console.error("[GitHub:Board] Configuration missing — GITHUB_PAT or GITHUB_PROJECT_ID not set");
-      // Return empty board instead of 500 so the frontend can distinguish "not configured"
-      return c.json({ success: false, board: [] }, 200);
+      throw new ApiError("GitHub integration not configured", 503, "SERVICE_UNAVAILABLE");
     }
 
     const boardResults = await fetchProjectBoard(ghConfig);

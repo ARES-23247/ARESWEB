@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono, Context, Next } from 'hono';
 import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+import { globalErrorHandler } from '../middleware/errorHandler';
 // Extend globalThis for test mocks
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
@@ -106,10 +107,8 @@ describe('Docs Routes', () => {
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
-
-    // Use Hono's built-in onError for error handling (same pattern as production)
-    
 
     app.route('/api/docs', docsRouter);
     return app;

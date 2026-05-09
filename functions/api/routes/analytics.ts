@@ -197,12 +197,23 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
       totalsDataRow,
       activityData,
     ] = await Promise.all([
-      db.select({ total: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).get().catch(() => ({ total: 0 })),
-      db.all(sql<SqlUniqueCountResult>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`).then((results) => results?.[0] || { unique_count: 0 }).catch(() => ({ unique_count: 0 })),
-      db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all().catch(() => []),
-      db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` }).from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all().catch(() => []),
-      db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, user_agent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp }).from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all().catch(() => []),
-      db.select({ category: schema.pageAnalytics.category, total: sql<number>`count(${schema.pageAnalytics.category})` }).from(schema.pageAnalytics).groupBy(schema.pageAnalytics.category).all().catch(() => []),
+      db.select({ total: sql<number>`count(${schema.pageAnalytics.path})` }).from(schema.pageAnalytics).get()
+        .catch((err) => { console.error("Analytics: Failed to fetch total views:", err); return { total: 0 }; }),
+      db.all(sql<SqlUniqueCountResult>`SELECT COUNT(DISTINCT user_agent) as unique_count FROM page_analytics`)
+        .then((results) => results?.[0] || { unique_count: 0 })
+        .catch((err) => { console.error("Analytics: Failed to count unique visitors:", err); return { unique_count: 0 }; }),
+      db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` })
+        .from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all()
+        .catch((err) => { console.error("Analytics: Failed to fetch top pages:", err); return []; }),
+      db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` })
+        .from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all()
+        .catch((err) => { console.error("Analytics: Failed to fetch top referrers:", err); return []; }),
+      db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, user_agent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp })
+        .from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all()
+        .catch((err) => { console.error("Analytics: Failed to fetch recent views:", err); return []; }),
+      db.select({ category: schema.pageAnalytics.category, total: sql<number>`count(${schema.pageAnalytics.category})` })
+        .from(schema.pageAnalytics).groupBy(schema.pageAnalytics.category).all()
+        .catch((err) => { console.error("Analytics: Failed to fetch category totals:", err); return []; }),
       db.all(sql<UserActivityRow>`
         SELECT
           date(timestamp, 'localtime') as date,
@@ -211,10 +222,11 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
         WHERE timestamp >= datetime('now', '-30 days')
         GROUP BY date(timestamp, 'localtime')
         ORDER BY date ASC
-      `).catch(() => [])
+      `).catch((err) => { console.error("Analytics: Failed to fetch user activity:", err); return []; })
     ]);
 
-    const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get().catch(() => ({ total: 0 }));
+    const assetsCount = await db.select({ total: sql<number>`count(${schema.mediaTags.key})` }).from(schema.mediaTags).get()
+      .catch((err) => { console.error("Analytics: Failed to fetch asset count:", err); return { total: 0 }; });
 
     // usage_metrics table may not exist in all environments (needs migration)
     let apiCount: SqlTotalResult;

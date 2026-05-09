@@ -6,7 +6,9 @@
 
 import type { D1Database } from '@cloudflare/workers-types';
 import type { Context } from 'hono';
+import { Hono } from 'hono';
 import type { AppEnv, DrizzleDB } from '../api/middleware';
+import { errorHandlerMiddleware } from '../api/middleware/errorHandler';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from '../../src/db/schema';
 import { Next } from 'hono';
@@ -292,3 +294,24 @@ export function createMockContext(
     status: vi.fn(),
   } as unknown as Context<AppEnv>;
 }
+
+/**
+ * Create a base test Hono app with errorHandlerMiddleware and DB middleware pre-wired.
+ *
+ * This is the canonical way to create test apps. It ensures:
+ * 1. errorHandlerMiddleware converts thrown ApiErrors to proper HTTP status codes
+ * 2. The DB context variable is set so routes can call getDb(c)
+ *
+ * @example
+ * ```ts
+ * const app = createTestAppBase();
+ * app.route('/api/social-queue', socialQueueRouter);
+ * ```
+ */
+export function createTestAppBase(mockDrizzleDb?: DrizzleDB, mockD1Db?: D1Database): Hono<AppEnv> {
+  const app = new Hono<AppEnv>();
+  app.use('*', errorHandlerMiddleware);
+  app.use('*', createTestDbMiddleware(mockDrizzleDb, mockD1Db));
+  return app;
+}
+

@@ -11,6 +11,7 @@ import { edgeCacheMiddleware } from "../middleware/cache";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
+import { safeWaitUntil } from "../utils/safeWaitUntil";
 
 import type { HonoContext } from "@shared/types/api";
 import * as docsRoutes from "../../../shared/routes/docs";
@@ -576,7 +577,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
           authorEmail: existing.cf_email ?? "unknown"
         })
         .run();
-      c.executionCtx.waitUntil(pruneDocHistory(c, slug, 10));
+      safeWaitUntil(c.executionCtx, pruneDocHistory(c, slug, 10), "Failed to prune doc history");
     }
 
     if (user?.role !== "admin" && existing) {
@@ -603,13 +604,13 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
         })
         .run();
 
-      c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
+      safeWaitUntil(c.executionCtx, notifyByRole(c, ["admin", "coach", "mentor"], {
         title: "📝 Doc Revision Pending",
         message: `"${title}" revised by ${email} needs admin approval.`,
         link: "/dashboard/manage_docs",
         external: true,
         priority: "medium"
-      }));
+      }), "Failed to send revision notification");
 
       return c.json({ success: true, slug: revSlug }, 200);
     }
@@ -661,7 +662,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
 
     // Push snapshot to collaborative editor history
     if (content) {
-      c.executionCtx.waitUntil(
+      safeWaitUntil(c.executionCtx,
         db.insert(schema.documentHistory)
           .values({
             roomId: `doc_${slug}`,
@@ -669,26 +670,27 @@ docsRouter.openapi(docsRoutes.saveDocRoute, typedHandler<typeof docsRoutes.saveD
             createdBy: email,
             /* removed createdAt string */
           })
-          .run()
+          .run(),
+        "Failed to save document history snapshot"
       );
     }
 
     if (status === "published") {
       const action = existing ? "updated" : "created";
-      c.executionCtx.waitUntil((async () => {
+      safeWaitUntil(c.executionCtx, (async () => {
         const socialConfig = await getSocialConfig(c);
         await sendZulipMessage(socialConfig, "engineering", `Doc: ${title}`, `📝 **Doc ${action}:** [${title}](${siteConfig.urls.base}/docs/${slug}) (${category})`);
-      })());
+      })(), "Failed to send Zulip message for published doc");
     }
 
     if (status === "pending") {
-      c.executionCtx.waitUntil(notifyByRole(c, ["admin", "coach", "mentor"], {
+      safeWaitUntil(c.executionCtx, notifyByRole(c, ["admin", "coach", "mentor"], {
         title: "📝 Pending Document",
         message: `"${title}" submitted by ${email} needs review.`,
         link: "/dashboard/manage_docs",
         external: true,
         priority: "medium"
-      }));
+      }), "Failed to send pending document notification");
     }
 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
@@ -896,7 +898,9 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, typedHandler<typeof docsRoutes.purg
       let match;
       while ((match = assetRegex.exec(doc.content)) !== null) {
         const key = match[1];
-        c.executionCtx?.waitUntil?.(c.env.ARES_STORAGE.delete(key).catch(() => {}));
+        c.executionCtx?.waitUntil?.(c.env.ARES_STORAGE.delete(key).catch((err) => {
+          console.error(`Failed to delete R2 asset ${key}:`, err);
+        }));
       }
     }
 

@@ -14,6 +14,7 @@ import { notifyByRole, NotifyAudience } from "../../../utils/notifications";
 import { buildGitHubConfig, createProjectItem } from "../../../utils/githubProjects";
 import { sendEmail } from "../../../utils/email";
 import { InquiryReceipt } from "../../templates/InquiryTemplates";
+import { safeWaitUntil } from "../../utils/safeWaitUntil";
 
 import {
   listInquiriesRoute,
@@ -208,61 +209,58 @@ export const handleSubmitInquiry: RouteHandler<typeof submitInquiryRoute, AppEnv
 
     const baseUrl = new URL(c.req.url).origin;
 
-    c.executionCtx.waitUntil((async () => {
+    safeWaitUntil(c.executionCtx, (async () => {
       const social = await getSocialConfig(c);
       const msg = `\ud83d\udd14 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${baseUrl}/dashboard/inquiries`;
-      
+
       if (social.DISCORD_WEBHOOK_URL) {
-        await fetch(social.DISCORD_WEBHOOK_URL, { 
-          method: "POST", 
-          headers: { "Content-Type": "application/json" }, 
-          body: JSON.stringify({ content: msg }) 
-        }).catch(() => {});
+        await fetch(social.DISCORD_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: msg })
+        }).catch((err) => console.error("Failed to send Discord webhook:", err));
       }
-      
+
       const topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
       const zulipContent = `**New ${type} inquiry received**\n\n**Name:** ${name}\n**Email:** ${email}\n**ID:** ${id.slice(0, 8)}\n\n[Review Inquiry](${baseUrl}/dashboard/inquiries)`;
-      const messageId = await sendZulipMessage(social, "contacts", topic, zulipContent).catch(() => null);
+      const messageId = await sendZulipMessage(social, "contacts", topic, zulipContent).catch((err) => {
+        console.error("Failed to send Zulip message:", err);
+        return null;
+      });
 
       if (messageId) {
         await db.update(schema.inquiries).set({ zulipMessageId: messageId }).where(eq(schema.inquiries.id, id)).run();
       }
 
       const audiences: NotifyAudience[] = (type === "outreach" || type === "support") ? ["admin", "coach", "mentor", "student"] : ["admin", "coach", "mentor"];
-      await notifyByRole(c, audiences, { 
-        title: `New ${type.toUpperCase()} Inquiry`, 
-        message: `${name} submitted a new inquiry.`, 
-        link: "/dashboard/inquiries", 
-        priority: type === "sponsor" ? "high" : "medium" 
-      }).catch(() => {});
+      await notifyByRole(c, audiences, {
+        title: `New ${type.toUpperCase()} Inquiry`,
+        message: `${name} submitted a new inquiry.`,
+        link: "/dashboard/inquiries",
+        priority: type === "sponsor" ? "high" : "medium"
+      }).catch((err) => console.error("Failed to notify by role:", err));
 
       if (type === "sponsor" || type === "student") {
         const ghConfig = buildGitHubConfig(social as SocialConfig);
         if (ghConfig) {
-          await createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry (ID: ${id.slice(0, 8)})`, `Review: ${baseUrl}/dashboard/inquiries`).catch(() => {});
+          await createProjectItem(ghConfig, `[${type.toUpperCase()}] New Inquiry (ID: ${id.slice(0, 8)})`, `Review: ${baseUrl}/dashboard/inquiries`).catch((err) => {
+            console.error("Failed to create GitHub project item:", err);
+          });
         }
       }
 
       // Send automated email receipt for join (student/mentor) and support inquiries
       if (type === "student" || type === "mentor" || type === "support") {
-        try {
-          const subject = `Inquiry Received: ${type.charAt(0).toUpperCase() + type.slice(1)} - ARES 23247`;
-          // We render the component to HTML using Hono's html utility
-          // Note: InquiryReceipt is a JSX component, so we wrap it in c.html or just use renderToString if available.
-          // Since we are in a handler, we can use c.html(Component) or component.toString()
-          // Actually, Hono components return a string-like object.
-          const html = (await InquiryReceipt({ name, type, id })).toString();
-          
-          await sendEmail(c, {
-            to: email,
-            subject,
-            html,
-          });
-        } catch (emailErr) {
-          console.error("[Inquiry:Email] Failed to send receipt:", emailErr);
-        }
+        const subject = `Inquiry Received: ${type.charAt(0).toUpperCase() + type.slice(1)} - ARES 23247`;
+        const html = (await InquiryReceipt({ name, type, id })).toString();
+
+        await sendEmail(c, {
+          to: email,
+          subject,
+          html,
+        }).catch((err) => console.error("[Inquiry:Email] Failed to send receipt:", err));
       }
-    })());
+    })(), "Inquiry submission background tasks failed");
 
     return c.json({ success: true, id }, 200);
 };

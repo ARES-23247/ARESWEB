@@ -17,6 +17,7 @@ declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
 import { AppEnv, SessionUser } from '../middleware';
+import { globalErrorHandler } from '../middleware/errorHandler';
 
 // Mock the auth module BEFORE importing githubRouter
 vi.mock('../middleware/auth', async () => {
@@ -115,6 +116,7 @@ describe('GitHub Integration Routes', () => {
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/github', githubRouter);
     return app;
@@ -275,7 +277,7 @@ describe('GitHub Integration Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should return 200 with empty board when GitHub config is missing', async () => {
+    it('should return 503 when GitHub config is missing', async () => {
       globalThis.__mockSessionUser = mockAdminUser;
       const app = createTestApp();
 
@@ -291,12 +293,8 @@ describe('GitHub Integration Routes', () => {
 
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      // Should return 200 with success: false when config is missing
-      expect(_res.status).toBe(200);
-
-      const json = await _res.json() as { success: boolean; board: unknown[] };
-      expect(json.success).toBe(false);
-      expect(json.board).toEqual([]);
+      // Route throws ApiError(503) when GitHub config is missing
+      expect(_res.status).toBe(503);
     });
   });
 

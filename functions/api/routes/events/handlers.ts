@@ -6,6 +6,7 @@ import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql } from "drizzle-orm";
 import { rrulestr } from 'rrule';
 import type { HandlerInput, HonoContext } from "@shared/types/api";
+import { safeWaitUntil } from "../../../utils/safeWaitUntil";
 
 // Cloudflare Cache API type for edge cache invalidation
 // In Cloudflare Workers, caches.default is the primary cache instance
@@ -672,11 +673,15 @@ export const eventHandlers = {
         if (status === "published") {
           const baseUrl = new URL(c.req.url).origin;
           if (socials) {
-          await dispatchSocials(db, { title: title || "", url: `${baseUrl}/events`, snippet: "New event scheduled!", thumbnail: coverImage || "/gallery_1.png", baseUrl }, socialConfig, socials).catch(() => {});
+            await dispatchSocials(db, { title: title || "", url: `${baseUrl}/events`, snippet: "New event scheduled!", thumbnail: coverImage || "/gallery_1.png", baseUrl }, socialConfig, socials).catch((err) => {
+              console.error("Failed to dispatch social posts for new event:", err);
+            });
           }
           const eventTopic = `Event: ${title}`;
           const eventContent = `📅 **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
-          await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch(() => {});
+          await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
+            console.error("Failed to send Zulip message for new event:", err);
+          });
         }
       })());
 
@@ -876,7 +881,9 @@ export const eventHandlers = {
         const baseUrl = new URL(c.req.url).origin;
         const eventTopic = `Event: ${targetRow.title}`;
         const eventContent = `📅 **Event Approved & Scheduled**\n\n**Title:** ${targetRow.title}\n**Location:** ${targetRow.location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
-        await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch(() => {});
+        await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
+          console.error("Failed to send Zulip message for approved event:", err);
+        });
       })());
 
       invalidateEventsCache(c);

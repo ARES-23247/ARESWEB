@@ -5,6 +5,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { githubWebhookRoute } from "../../../shared/routes/webhooks";
+import { safeWaitUntil } from "../utils/safeWaitUntil";
 
 // ── GitHub Webhook Payload Types ────────────────────────────────────────
 
@@ -138,8 +139,8 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
   const rawBody = await c.req.text();
 
   if (!secret) {
-    console.warn("[GitHubWebhook] GITHUB_WEBHOOK_SECRET not configured. Rejecting request.");
-    return c.json({ error: "Webhook not configured" }, 503);
+    console.error("[GitHubWebhook] GITHUB_WEBHOOK_SECRET not configured");
+    throw new ApiError("GitHub webhook not configured", 503, "SERVICE_UNAVAILABLE");
   }
 
   const sig = c.req.header("X-Hub-Signature-256") || "";

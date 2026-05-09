@@ -148,9 +148,10 @@ authRouter.openapi(testLoginRoute, async (c) => {
     );
 
     return res;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Test Auth] Error creating test session:', error);
-    return c.json({ error: 'Failed to create test session', details: error.message, stack: error.stack }, 500);
+    throw new ApiError('Failed to create test session', 500, 'INTERNAL_ERROR', { originalMessage: message });
   }
 });
 
@@ -170,16 +171,22 @@ authRouter.on(["POST", "GET"], "/*", async (c, next) => {
     const response = await auth.handler(c.req.raw);
     return response;
   } catch (error: unknown) {
-    const isDevBypass = c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1";
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const stack = error instanceof Error ? error.stack : undefined;
-    const status = (error as { status?: number })?.status;
+    // Log the full error for debugging
+    console.error("[Auth Handler] Better Auth internal exception:", error);
 
-    console.error("[Auth Handler] Internal Exception:", error);
-    return c.json({
-      message: message || "Internal Server Error during Authentication",
-      stack: isDevBypass ? stack : undefined
-    }, (status || 500) as import("hono/utils/http-status").ContentfulStatusCode);
+    // Re-throw ApiError instances as-is
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    // Convert generic errors to ApiError for consistent handling
+    const message = error instanceof Error ? error.message : "Unknown authentication error";
+    const status = (error as { status?: number })?.status;
+    throw new ApiError(
+      message || "Internal Server Error during Authentication",
+      status || 500,
+      status === 401 ? "UNAUTHORIZED" : "INTERNAL_ERROR"
+    );
   }
 });
 

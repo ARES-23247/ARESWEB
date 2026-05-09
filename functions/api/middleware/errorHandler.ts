@@ -176,6 +176,43 @@ export function asyncHandler<T extends Context<AppEnv>>(
  * Convenience functions for throwing common errors
  * ─────────────────────────────────────────────────────────────────────────────
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GLOBAL ERROR HANDLER (for app.onError())
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Use with Hono's app.onError() to catch thrown errors globally.
+ * This matches the production pattern from [[route]].ts.
+ *
+ * @example
+ * const app = new Hono<AppEnv>();
+ * app.onError(globalErrorHandler);
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+export const globalErrorHandler = (err: Error, c: Context<AppEnv>): Response => {
+  if (err instanceof ApiError) {
+    const status = err.status as HttpStatus;
+    const response = createErrorResponse(
+      err.message,
+      err.code,
+      err.details
+    );
+    return c.json(response, status);
+  }
+
+  if (err instanceof ZodError) {
+    const details: Record<string, string> = {};
+    for (const issue of err.issues) {
+      const key = issue.path.join(".") || "value";
+      details[key] = issue.message;
+    }
+    return c.json(createErrorResponse(err.message, ErrorCode.VALIDATION_ERROR, details), 400);
+  }
+
+  // Generic errors — return 500
+  console.error("[GlobalErrorHandler]", err);
+  return c.json(createErrorResponse("Internal Server Error"), 500);
+};
+
 export const throwErrors = {
   badRequest: (message: string, details?: unknown) => {
     throw new ApiError(message, 400, ErrorCode.VALIDATION_ERROR, details);
