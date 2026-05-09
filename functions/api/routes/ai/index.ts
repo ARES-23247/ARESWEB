@@ -1,7 +1,7 @@
 import { typedHandler } from "../../utils/handler";
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { AppEnv, ensureAdmin, verifyTurnstile, getDb } from "../../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, verifyTurnstile, getDb } from "../../middleware";
 import type { DrizzleDB } from "../../middleware/utils";
 import { streamSSE } from "hono/streaming";
 import { MessageContent, ZaiChatResponse, ChatMessage } from "./types";
@@ -25,6 +25,17 @@ type CloudflareAIStreamResponse = {
 };
 
 export const aiRouter = new OpenAPIHono<AppEnv>();
+
+// W3A-SEC-02: Apply authentication middleware to protect AI endpoints
+// AI endpoints can incur costs and expose system configuration
+aiRouter.use("/status", ensureAuth);
+aiRouter.use("/copilot", ensureAuth);
+aiRouter.use("/sim-playground", ensureAuth);
+aiRouter.use("/editor-chat", ensureAuth);
+aiRouter.use("/suggest", ensureAuth);
+aiRouter.use("/reindex", ensureAdmin);
+aiRouter.use("/reindex-external", ensureAdmin);
+aiRouter.use("/chat-session/:id", ensureAuth);
 
 // PII Scrubber Utility
 const scrubPII = (text: string): string => {
