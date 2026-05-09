@@ -212,7 +212,7 @@ docsRouter.openapi(docsRoutes.getDocsRoute, typedHandler<typeof docsRoutes.getDo
       title: d.title ?? null,
       category: d.category ?? null,
       description: d.description ?? null,
-      sort_order: Number(d.sort_order ?? 0),
+      sort_order: Number('sort_order' in d ? d.sort_order : 0),
       is_portfolio: Number(d.is_portfolio ?? 0),
       is_executive_summary: Number(d.is_executive_summary ?? 0),
       is_deleted: Number(d.is_deleted ?? 0),

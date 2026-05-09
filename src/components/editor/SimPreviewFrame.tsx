@@ -1,6 +1,5 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
-import DOMPurify from 'dompurify';
 
 interface SimPreviewFrameProps {
   /** Transpiled JavaScript code modules to execute in the sandbox */

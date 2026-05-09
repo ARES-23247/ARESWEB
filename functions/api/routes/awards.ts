@@ -121,7 +121,7 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
       c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", newId, `Award "${title}" (${year}) created`));
       return c.json({ success: true, id: newId }, 200);
     } catch (insertError: unknown) {
-      const err = insertError as Error;
+      const _err = insertError as Error;
       // If we get a constraint error (race condition), check again for the duplicate
       // This handles the case where another request inserted the same award
       const duplicate = await db.select({ id: schema.awards.id })

@@ -12,6 +12,7 @@ import { createMockDb, createTestEnv, mockSingleResult, createTestDbMiddleware }
 import { AppEnv } from '../middleware';
 import * as authUtils from '../middleware/auth';
 import { globalErrorHandler } from '../middleware/errorHandler';
+import type { SessionUser } from '../middleware/utils';
 
 // Create a mock execution context for tests
 const mockExecutionContext = {
@@ -92,7 +93,7 @@ describe('Auth Routes', () => {
       // NOTE: Better Auth uses Drizzle adapter which doesn't use our D1 mock directly.
       // We mock at a higher level by spying on getSessionUser from the auth middleware.
       const getSessionUserSpy = vi.spyOn(authUtils, 'getSessionUser')
-        .mockResolvedValue(mockUser as unknown);
+        .mockResolvedValue(mockUser as SessionUser);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],

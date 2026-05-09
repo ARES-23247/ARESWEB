@@ -18,7 +18,7 @@ export function useMonacoEditor() {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const vimRef = useRef<IVimMode | null>(null);
-  const completionProviderRef = useRef<ReturnType<typeof monaco.languages.registerInlineCompletionsProvider> | null>(null);
+  const completionProviderRef = useRef<ReturnType<Monaco['languages']['registerInlineCompletionsProvider']> | null>(null);
 
   const handleEditorDidMount = useCallback(async (
     editor: editor.IStandaloneCodeEditor,

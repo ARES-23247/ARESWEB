@@ -159,6 +159,7 @@ export function validateIdParam(param: string | undefined): string | null {
   // Uses non-capturing group for efficiency and clarity
   // Pattern is provably safe: linear time complexity O(n), no nested quantifiers
   // Length is capped at 128 characters above
+  // eslint-disable-next-line security/detect-unsafe-regex
   const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
   if (slugPattern.test(param)) {
     return param;

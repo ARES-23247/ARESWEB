@@ -7,10 +7,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { safeWaitUntil } from './safeWaitUntil';
 
+type MockExecutionContext = {
+  waitUntil: ReturnType<typeof vi.fn>;
+};
+
 describe('safeWaitUntil utility', () => {
-  let mockExecutionContext: {
-    waitUntil: ReturnType<typeof vi.fn>;
-  };
+  let mockExecutionContext: MockExecutionContext;
 
   beforeEach(() => {
     // Reset all mocks before each test
@@ -31,7 +33,7 @@ describe('safeWaitUntil utility', () => {
       const testPromise = Promise.resolve('success');
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         testPromise,
         'Test operation'
       );
@@ -45,7 +47,7 @@ describe('safeWaitUntil utility', () => {
       const testPromise = Promise.resolve(testValue);
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         testPromise,
         'Test operation'
       );
@@ -63,7 +65,7 @@ describe('safeWaitUntil utility', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         testPromise,
         'Failed to send notification'
       );
@@ -85,7 +87,7 @@ describe('safeWaitUntil utility', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         testPromise,
         'Background task failed'
       );
@@ -107,7 +109,7 @@ describe('safeWaitUntil utility', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         testPromise,
         'Cache update failed'
       );
@@ -139,7 +141,7 @@ describe('safeWaitUntil utility', () => {
 
     it('handles execution context without waitUntil', () => {
       const testPromise = Promise.resolve('success');
-      const incompleteContext = {} as unknown;
+      const incompleteContext = {} as unknown as Parameters<typeof safeWaitUntil>[0];
 
       // Should not throw
       expect(() => {
@@ -154,7 +156,7 @@ describe('safeWaitUntil utility', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         sendNotification('user123', 'Hello'),
         'Failed to send notification'
       );
@@ -170,7 +172,7 @@ describe('safeWaitUntil utility', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         updateCache('key', 'value'),
         'Failed to update cache'
       );
@@ -186,7 +188,7 @@ describe('safeWaitUntil utility', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       safeWaitUntil(
-        mockExecutionContext as unknown,
+        mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
         logAnalytics({ event: 'page_view' }),
         'Failed to log analytics'
       );
@@ -214,7 +216,7 @@ describe('safeWaitUntil utility', () => {
 
       tasks.forEach((task, i) => {
         safeWaitUntil(
-          mockExecutionContext as unknown,
+          mockExecutionContext as unknown as Parameters<typeof safeWaitUntil>[0],
           task,
           `Task ${i + 1} failed`
         );
