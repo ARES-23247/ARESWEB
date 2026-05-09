@@ -18,6 +18,11 @@ vi.mock("./honoClient", () => ({
       "team-roster": {
         $get: vi.fn(),
       },
+      public: {
+        ":userId": {
+          $get: vi.fn(),
+        },
+      },
       ":userId": {
         $get: vi.fn(),
       },
