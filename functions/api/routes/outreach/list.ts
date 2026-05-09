@@ -5,7 +5,23 @@ import { getDb, type AppEnv } from "../../middleware";
 import { SNIPPET_LENGTH, fetchVolunteerEvents } from "./utils";
 import type { listOutreachRoute, adminListOutreachRoute } from "../../../../shared/routes/outreach";
 
-// Database query result type
+// Database query result type - inferred from the Drizzle select query
+type OutreachQueryResult = {
+  id: number;
+  title: string;
+  date: string;
+  location: string | null;
+  hours_logged: number | null;
+  reach_count: number | null;
+  students_count: number | null;
+  description: string | null;
+  season_id: number | null;
+  is_mentoring: number | boolean;
+  mentored_team_number: number | null;
+  event_id: string | null;
+  mentor_count: number | null;
+  mentor_hours: number | null;
+};
 
 // Combined log entry type (database + volunteer events)
 interface OutreachLog {
@@ -47,13 +63,13 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
     .where(eq(schema.outreachLogs.isDeleted, 0))
     .orderBy(desc(schema.outreachLogs.date))
     .all();
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
+
+  const existingEventIds = results
+    .filter((r: OutreachQueryResult) => r.event_id !== null)
+    .map((r: OutreachQueryResult) => String(r.event_id));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logs = results.map((r: any): OutreachLog => ({
+
+  const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
     id: String(r.id),
     title: r.title,
     date: r.date,
@@ -98,13 +114,13 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
     .where(eq(schema.outreachLogs.isDeleted, 0))
     .orderBy(desc(schema.outreachLogs.date))
     .all();
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const existingEventIds = results.filter((r: any) => r.event_id).map((r: any) => String(r.event_id));
+
+  const existingEventIds = results
+    .filter((r: OutreachQueryResult) => r.event_id !== null)
+    .map((r: OutreachQueryResult) => String(r.event_id));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logs = results.map((r: any): OutreachLog => ({
+
+  const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
     id: String(r.id),
     title: r.title,
     date: r.date,
