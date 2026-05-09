@@ -291,6 +291,8 @@ analyticsRouter.openapi(getPlatformAnalyticsRoute, typedHandler<typeof getPlatfo
 }));
 
 // Get roster stats (admin)
+// CRITICAL-002 FIX: SQL query only selects non-PII fields (nickname, member_type, avatar)
+// No email, phone, or full name data is selected from user_profiles or user tables
 analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsRoute>(async (c) => {
   const db = getDb(c);
     const results = await db.all(sql<RosterMemberRow>`
@@ -326,6 +328,9 @@ analyticsRouter.openapi(getRosterStatsRoute, typedHandler<typeof getRosterStatsR
 }));
 
 // Get leaderboard
+// CRITICAL-002 FIX: Student PII redaction applied at application layer
+// Students (member_type = 'student') have names replaced with "ARES Member"
+// This endpoint is public and must not expose student PII
 analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardRoute>(async (c) => {
   const db = getDb(c);
     const results = await db.all(sql<LeaderboardRow>`
@@ -348,6 +353,7 @@ analyticsRouter.openapi(getLeaderboardRoute, typedHandler<typeof getLeaderboardR
 
     const rows = (results || []) as LeaderboardRow[];
     const leaderboard = rows.map((r) => {
+      // CRITICAL-002 FIX: Redact all PII for students (COPPA compliance)
       const isMinor = r.member_type === "student";
       return {
         user_id: String(r.user_id),

@@ -104,14 +104,11 @@ authRouter.openapi(testLoginRoute, async (c) => {
     }).run();
 
     // Sign the cookie using Web Crypto API to match Better Auth's HMAC-SHA256 signature
-    let secret = c.env.BETTER_AUTH_SECRET;
+    // CRITICAL-005 FIX: BETTER_AUTH_SECRET must be configured in all environments
+    // No hardcoded fallback - this prevents accidental use of weak secrets
+    const secret = c.env.BETTER_AUTH_SECRET;
     if (!secret) {
-      const isLocal = c.req.url && (c.req.url.includes("localhost") || c.req.url.includes("127.0.0.1"));
-      if (isLocal) {
-        secret = "ares-local-dev-secret-do-not-use-in-production";
-      } else {
-        throw new Error("BETTER_AUTH_SECRET is required to sign test session token.");
-      }
+      throw new ApiError("BETTER_AUTH_SECRET environment variable is required", 500, "MISSING_SECRET");
     }
     
     const encoder = new TextEncoder();

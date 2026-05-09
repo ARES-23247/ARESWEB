@@ -87,6 +87,7 @@ type GitHubWebhookPayload =
 const githubWebhookRouter = new OpenAPIHono<AppEnv>();
 
 // ── HMAC-SHA256 Signature Verification ───────────────────────────────
+// CRITICAL-007 FIX: Constant-time signature verification to prevent timing attacks
 async function verifyGitHubSignature(
   secret: string,
   payload: string,
@@ -103,23 +104,29 @@ async function verifyGitHubSignature(
     );
 
     const PREFIX = "sha256=";
-    const sigHex = signature.length >= PREFIX.length ? signature.slice(PREFIX.length) : signature;
+    const hasPrefix = signature.startsWith(PREFIX);
+    const sigHex = hasPrefix ? signature.slice(PREFIX.length) : signature;
+
+    // CRITICAL-007 FIX: Always verify HMAC to maintain constant-time behavior
+    // crypto.subtle.verify() is constant-time for HMAC by design
+    // We create a dummy signature for invalid inputs to avoid timing differences
     const sigBytes = new Uint8Array((sigHex.match(/.{1,2}/g) || []).map((byte: string) => parseInt(byte, 16)));
 
-    const prefixMatches = signature.length >= PREFIX.length &&
-      signature.substring(0, PREFIX.length) === PREFIX;
+    // For invalid signatures (wrong prefix or invalid hex), use a dummy signature
+    // This ensures the verification operation always takes the same amount of time
+    const signatureToVerify = (!hasPrefix || sigBytes.length === 0)
+      ? new Uint8Array(64) // Dummy signature (all zeros) for constant-time
+      : sigBytes;
 
-    if (!prefixMatches || sigBytes.length === 0) {
-      await crypto.subtle.verify("HMAC", key, new Uint8Array(64), enc.encode(payload));
-      return false;
-    }
-
-    return await crypto.subtle.verify(
+    const result = await crypto.subtle.verify(
       "HMAC",
       key,
-      sigBytes,
+      signatureToVerify,
       enc.encode(payload)
     );
+
+    // Return false for format errors even if dummy verify passed
+    return result && hasPrefix && sigBytes.length > 0;
   } catch {
     return false;
   }

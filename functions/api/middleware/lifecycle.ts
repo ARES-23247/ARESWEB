@@ -43,7 +43,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
 
     if (!handled) {
       const db = getDb(c);
-      await db.run(sql.raw(`UPDATE ${tableName} SET status = 'published' WHERE ${idColumn} = '${id}'`));
+      // CRITICAL-001 FIX: Use parameterized query to prevent SQL injection
+      await db.run(sql`UPDATE ${sql.raw(tableName)} SET status = 'published' WHERE ${sql.raw(idColumn)} = ${id}`);
     }
 
     c.executionCtx.waitUntil(logAuditAction(c, `APPROVE_${tableName.toUpperCase()}`, tableName, id));
@@ -63,7 +64,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
 
     if (!handled) {
       const db = getDb(c);
-      await db.run(sql.raw(`UPDATE ${tableName} SET status = 'rejected' WHERE ${idColumn} = '${id}'`));
+      // CRITICAL-001 FIX: Use parameterized query to prevent SQL injection
+      await db.run(sql`UPDATE ${sql.raw(tableName)} SET status = 'rejected' WHERE ${sql.raw(idColumn)} = ${id}`);
     }
 
     c.executionCtx.waitUntil(logAuditAction(c, `REJECT_${tableName.toUpperCase()}`, tableName, id));
@@ -79,7 +81,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
 
     if (!handled) {
       const db = getDb(c);
-      await db.run(sql.raw(`UPDATE ${tableName} SET is_deleted = 0, status = 'draft' WHERE ${idColumn} = '${id}'`));
+      // CRITICAL-001 FIX: Use parameterized query to prevent SQL injection
+      await db.run(sql`UPDATE ${sql.raw(tableName)} SET is_deleted = 0, status = 'draft' WHERE ${sql.raw(idColumn)} = ${id}`);
     }
 
     c.executionCtx.waitUntil(logAuditAction(c, `RESTORE_${tableName.toUpperCase()}`, tableName, id));
@@ -96,7 +99,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
 
       if (!handled) {
         const db = getDb(c);
-        await db.run(sql.raw(`UPDATE ${tableName} SET is_deleted = 1 WHERE ${idColumn} = '${id}'`));
+        // CRITICAL-001 FIX: Use parameterized query to prevent SQL injection
+        await db.run(sql`UPDATE ${sql.raw(tableName)} SET is_deleted = 1 WHERE ${sql.raw(idColumn)} = ${id}`);
       }
       
       c.executionCtx.waitUntil(logAuditAction(c, `DELETE_${tableName.toUpperCase()}`, tableName, id));
@@ -117,7 +121,8 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
 
       if (!handled) {
         const db = getDb(c);
-        await db.run(sql.raw(`DELETE FROM ${tableName} WHERE ${idColumn} = '${id}'`));
+        // CRITICAL-001 FIX: Use parameterized query to prevent SQL injection
+        await db.run(sql`DELETE FROM ${sql.raw(tableName)} WHERE ${sql.raw(idColumn)} = ${id}`);
       }
       
       c.executionCtx.waitUntil(logAuditAction(c, `PURGE_${tableName.toUpperCase()}`, tableName, id));

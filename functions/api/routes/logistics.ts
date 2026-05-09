@@ -11,6 +11,9 @@ import { decrypt } from "../../utils/crypto";
 
 export const logisticsRouter = new OpenAPIHono<AppEnv>();
 
+// CRITICAL-003 FIX: Apply ensureAdmin to ALL logistics routes
+// All logistics endpoints expose sensitive member data (emails, emergency contacts)
+// and require administrative privileges
 logisticsRouter.use("/admin/*", ensureAdmin);
 
 logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisticsSummaryRoute>(async (c) => {

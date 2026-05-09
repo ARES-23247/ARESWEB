@@ -15,35 +15,47 @@ interface LuciaUserWithRole {
 
 // ── Localhost Dev Bypass Check ────────────────────────────────────────
 /**
- * SEC-DEV-01: Development bypass with audit logging.
- * ONLY bypasses auth on localhost in development environment.
+ * CRITICAL-004 FIX: Secure development bypass with multi-layer protection.
+ *
+ * This function ONLY bypasses authentication when ALL of the following are true:
+ * 1. ENVIRONMENT === "development" OR NODE_ENV === "test"
+ * 2. Request hostname is "localhost" or "127.0.0.1"
+ * 3. DEV_BYPASS environment variable is explicitly set to "true" or "1"
+ *
+ * SECURITY: Hostname-based checks alone are NOT sufficient. The ENVIRONMENT
+ * check MUST happen first and reject non-development environments before any
+ * hostname validation occurs. This prevents bypass in preview deployments.
+ *
  * All bypass attempts are logged for security monitoring.
  */
 export function isDevBypassEnabled(c: Context<AppEnv>): boolean {
-  // CR-03 FIX: Only bypass auth in local development, NOT in preview environments
-  // Preview deployments on Cloudflare Pages are publicly accessible and should not bypass auth
+  // CRITICAL-004 FIX: PRIMARY SECURITY CHECK - Environment must be development
+  // This MUST be checked before any hostname-based logic to prevent bypass
+  // in preview deployments where hostname might be spoofable
   const isDev = c.env.ENVIRONMENT === "development" || ((globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === "test");
   if (!isDev) return false;
 
+  // SECONDARY CHECK: Only allow bypass on localhost (not on preview domains)
   const url = new URL(c.req.url);
   const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (!isLocalhost) return false;
 
-  const enabled = isLocalhost && (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1");
+  // TERTIARY CHECK: Explicit DEV_BYPASS flag must be enabled
+  const enabled = c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1";
+  if (!enabled) return false;
 
   // SEC-DEV-02: Log all bypass attempts for security monitoring
-  if (enabled) {
-    const db = c.get("db") as DrizzleDB;
-    if (db) {
-      c.executionCtx?.waitUntil(
-        db.insert(schema.auditLog).values({
-          id: crypto.randomUUID(),
-          action: "DEV_BYPASS_USED",
-          actor: "local-dev",
-          resourceType: "auth",
-          details: JSON.stringify({ path: c.req.path, method: c.req.method, timestamp: new Date().toISOString() })
-        }).execute().catch(err => console.error("[Audit] Failed to log DEV_BYPASS:", err))
+  const db = c.get("db") as DrizzleDB;
+  if (db) {
+    c.executionCtx?.waitUntil(
+      db.insert(schema.auditLog).values({
+        id: crypto.randomUUID(),
+        action: "DEV_BYPASS_USED",
+        actor: "local-dev",
+        resourceType: "auth",
+        details: JSON.stringify({ path: c.req.path, method: c.req.method, timestamp: new Date().toISOString() })
+      }).execute().catch(err => console.error("[Audit] Failed to log DEV_BYPASS:", err))
       );
-    }
   }
 
   return enabled;
