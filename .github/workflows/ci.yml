@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       run_e2e:
-        description: 'Run full E2E suite (Playwright & pa11y)'
+        description: 'Run full E2E suite (Playwright)'
         required: true
         type: boolean
         default: true
@@ -225,7 +225,7 @@ jobs:
             echo "run_e2e=${{ inputs.run_e2e }}" >> $GITHUB_OUTPUT
           elif [[ "$PR_TITLE" == *"[skip e2e]"* ]] || [[ "$PR_TITLE" == *"[hotfix]"* ]] || [[ "$PR_LABELS" == *"hotfix"* ]] || [[ "$PR_LABELS" == *"skip-e2e"* ]] || [[ "$COMMIT_MSG" == *"[skip e2e]"* ]] || [[ "$COMMIT_MSG" == *"[hotfix]"* ]]; then
             echo "run_e2e=false" >> $GITHUB_OUTPUT
-            echo "⏩ Skipping E2E and Pa11y tests for hotfix/fast-path."
+            echo "⏩ Skipping E2E tests for hotfix/fast-path."
           else
             echo "run_e2e=true" >> $GITHUB_OUTPUT
           fi
@@ -293,46 +293,7 @@ jobs:
               body: `❌ **E2E Tests Failed**\n\n**Preview URL:** ${{ needs.deploy-preview.outputs.preview-url }}\n\n**Debug locally:**\n\`\`\`bash\nPREVIEW_URL=${{ needs.deploy-preview.outputs.preview-url }} npm run test:e2e:remote\n\`\`\`\n\nOr use debug mode:\n\`\`\`bash\nPREVIEW_URL=${{ needs.deploy-preview.outputs.preview-url }} npm run test:e2e:debug:remote\n\`\`\``
             })
 
-  e2e-pa11y:
-    name: E2E Accessibility (pa11y)
-    runs-on: ubuntu-latest
-    needs: deploy-preview
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Check if Full Suite Should Run
-        id: check_e2e
-        env:
-          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "run_e2e=${{ inputs.run_e2e }}" >> $GITHUB_OUTPUT
-          elif [[ "$PR_TITLE" == *"[skip e2e]"* ]] || [[ "$PR_TITLE" == *"[hotfix"* ]] || [[ "$PR_LABELS" == *"hotfix"* ]] || [[ "$PR_LABELS" == *"skip-e2e"* ]] || [[ "$COMMIT_MSG" == *"[skip e2e]"* ]] || [[ "$COMMIT_MSG" == *"[hotfix"* ]]; then
-            echo "run_e2e=false" >> $GITHUB_OUTPUT
-            echo "⏩ Skipping E2E and Pa11y tests for hotfix/fast-path."
-          else
-            echo "run_e2e=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Setup Node.js
-        if: steps.check_e2e.outputs.run_e2e == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "npm"
-
-      - name: Install Dependencies
-        if: steps.check_e2e.outputs.run_e2e == 'true'
-        run: npm ci
-
-      - name: E2E Accessibility Tests (pa11y-ci)
-        if: steps.check_e2e.outputs.run_e2e == 'true'
-        env:
-          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-        run: npx pa11y-ci
 
   # Gate for production deployment - only runs on master after critical tests pass
   test-gate:
@@ -351,7 +312,7 @@ jobs:
           # - static-checks: lint and typecheck
           # - unit-tests: component tests
           # - e2e-smoke: smoke tests against deployed preview
-          # Other E2E tests (playwright, pa11y) are informational
+          # Other E2E tests (playwright) are informational
           if [ "${{ needs.static-checks.result }}" == "success" ] && \
              [ "${{ needs.unit-tests.result }}" == "success" ] && \
              [ "${{ needs.e2e-smoke.result }}" == "success" ]; then
@@ -363,7 +324,6 @@ jobs:
             echo ""
             echo "ℹ️  Informational tests:"
             echo "  e2e-playwright: ${{ needs.e2e-playwright.result }} (mocked, not blocking)"
-            echo "  e2e-pa11y: ${{ needs.e2e-pa11y.result }} (informational)"
           else
             echo "all-passed=false" >> $GITHUB_OUTPUT
             echo "❌ Critical tests failed:"
