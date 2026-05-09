@@ -50,7 +50,7 @@ export function useGetTasks(
 ) {
   return useQuery<TasksResponse>({
     queryKey: ["tasks", query],
-    queryFn: async () => {
+    queryFn: async function getTasks() {
       const response = await client.tasks.$get({ query });
       return unwrapResponse<TasksResponse>(response);
     },
@@ -66,7 +66,7 @@ export function useCreateTask(
 ) {
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean; task: Task }, Error, CreateTaskRequest>({
-    mutationFn: async (data) => {
+    mutationFn: async function createTask(data) {
       const response = await client.tasks.$post({ json: data });
       return unwrapResponse<{ success: boolean; task: Task }>(response);
     },

@@ -7,13 +7,13 @@ interface SharedProps {
   error?: string;
 }
 
-export const DashboardInput = forwardRef<HTMLInputElement, SharedProps & InputHTMLAttributes<HTMLInputElement>>(({ 
-  label, 
-  focusColor = "ares-red", 
-  fullWidth = false, 
+export const DashboardInput = forwardRef<HTMLInputElement, SharedProps & InputHTMLAttributes<HTMLInputElement>>(({
+  label,
+  focusColor = "ares-red",
+  fullWidth = false,
   className = "",
   error,
-  ...props 
+  ...props
 }, ref) => {
   const colorMap = {
     "ares-red": "focus:border-ares-red",
@@ -21,31 +21,35 @@ export const DashboardInput = forwardRef<HTMLInputElement, SharedProps & InputHT
     "ares-cyan": "focus:border-ares-cyan",
     "ares-bronze": "focus:border-ares-bronze"
   };
+  const errorId = `${props.id}-error`;
+  const hasError = Boolean(error);
 
   return (
     <div className={`space-y-1 ${fullWidth ? "md:col-span-2" : ""}`}>
-      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-marble/50">
+      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-marble/60">
         {label}
       </label>
       <input
         ref={ref}
+        aria-invalid={hasError}
+        aria-describedby={hasError ? errorId : undefined}
         className={`w-full bg-white/5 border ${error ? 'border-ares-red' : 'border-white/10'} ares-cut-sm px-4 py-3 text-white outline-none transition-colors ${colorMap[focusColor]} ${className}`}
         {...props}
       />
-      {error && <p className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{error}</p>}
+      {error && <p id={errorId} role="alert" className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{error}</p>}
     </div>
   );
 });
 
 DashboardInput.displayName = "DashboardInput";
 
-export const DashboardTextarea = forwardRef<HTMLTextAreaElement, SharedProps & TextareaHTMLAttributes<HTMLTextAreaElement>>(({ 
-  label, 
-  focusColor = "ares-red", 
+export const DashboardTextarea = forwardRef<HTMLTextAreaElement, SharedProps & TextareaHTMLAttributes<HTMLTextAreaElement>>(({
+  label,
+  focusColor = "ares-red",
   fullWidth = false,
   className = "",
   error,
-  ...props 
+  ...props
 }, ref) => {
   const colorMap = {
     "ares-red": "focus:border-ares-red",
@@ -53,18 +57,22 @@ export const DashboardTextarea = forwardRef<HTMLTextAreaElement, SharedProps & T
     "ares-cyan": "focus:border-ares-cyan",
     "ares-bronze": "focus:border-ares-bronze"
   };
+  const errorId = `${props.id}-error`;
+  const hasError = Boolean(error);
 
   return (
     <div className={`space-y-1 ${fullWidth ? "lg:col-span-3" : ""}`}>
-      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-marble/50">
+      <label htmlFor={props.id} className="text-xs font-bold uppercase tracking-widest text-marble/60">
         {label}
       </label>
       <textarea
         ref={ref}
+        aria-invalid={hasError}
+        aria-describedby={hasError ? errorId : undefined}
         className={`w-full bg-white/5 border ${error ? 'border-ares-red' : 'border-white/10'} ares-cut-sm px-4 py-3 text-white outline-none transition-colors min-h-[100px] ${colorMap[focusColor]} ${className}`}
         {...props}
       />
-      {error && <p className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{error}</p>}
+      {error && <p id={errorId} role="alert" className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{error}</p>}
     </div>
   );
 });

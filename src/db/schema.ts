@@ -168,6 +168,7 @@ export const eventSignups = sqliteTable("event_signups", {
 (table) => [
 	index("idx_signups_user").on(table.userId),
 	index("idx_signups_event").on(table.eventId),
+	uniqueIndex("unique_event_user_signup").on(table.eventId, table.userId),
 ]);
 
 export const docs = sqliteTable("docs", {

@@ -16,8 +16,8 @@ import { useModal } from "../contexts/ModalContext";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import EditorFooter from "./editor/EditorFooter";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
+import type { Form } from "@tanstack/react-form";
 import { RefreshCw } from "lucide-react";
 
 import SeasonPicker from "./SeasonPicker";
@@ -36,8 +36,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   const { availableSocials } = useAdminSettings();
   const { uploadFile, isUploading: isUploadingCover, setErrorMsg: setUploadError } = useImageUpload();
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<z.input<typeof postSchema>>({
-    resolver: zodResolver(postSchema),
+  const form = useForm<PostPayload>({
     defaultValues: {
       title: "",
       thumbnail: DEFAULT_COVER_IMAGE,
@@ -58,16 +57,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   });
 
-  const title = useWatch({ control, name: "title" });
-  const thumbnail = useWatch({ control, name: "thumbnail" });
-  const socials = useWatch({ control, name: "socials" }) || {};
-  const seasonId = useWatch({ control, name: "seasonId" });
-
-  // Local State for visual UI toggles
-  const [errorMsg, setErrorMsg] = useState("");
-  const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-
+  const { Provider: FormProvider } = form;
   const { ydoc, provider } = useCollaborativeEditor();
   const editor = useRichEditor({ 
     placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>",
@@ -81,18 +71,16 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   useEffect(() => {
     if (postRes && postRes.post) {
       const post = postRes.post;
-      reset({
-        title: post.title || "",
-        publishedAt: post.published_at || "",
-        seasonId: post.season_id ? Number(post.season_id) : undefined,
-        thumbnail: post.thumbnail || DEFAULT_COVER_IMAGE,
-        ast: post.ast ? JSON.parse(post.ast) : {},
-        socials: (postRes as unknown as { socials?: Record<string, boolean> }).socials || {}
-      });
+      form.setFieldValue("title", post.title || "");
+      form.setFieldValue("publishedAt", post.published_at || "");
+      form.setFieldValue("seasonId", post.season_id ? Number(post.season_id) : undefined);
+      form.setFieldValue("thumbnail", post.thumbnail || DEFAULT_COVER_IMAGE);
+      form.setFieldValue("ast", post.ast ? JSON.parse(post.ast) : {});
+      form.setFieldValue("socials", (postRes as unknown as { socials?: Record<string, boolean> }).socials || {});
       if (editor && post.ast) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
         const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
-        
+
         if (shouldSetContent) {
           try {
             editor.commands.setContent(JSON.parse(post.ast));
@@ -103,7 +91,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       }
     }
 
-  }, [postRes, reset, editor, ydoc]);
+  }, [postRes, form, editor, ydoc]);
 
   const saveMutation = useSavePost({
     onSuccess: (data: SavePostResponse) => {
@@ -149,10 +137,11 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   });
 
-  const onFormSubmit = (data: PostPayload, isDraft = false) => {
+  const onFormSubmit = (isDraft = false) => {
     if (!editor) return;
     const ast = editor.getJSON();
-    const payload = { ...data, ast, isDraft, thumbnail: data.thumbnail === DEFAULT_COVER_IMAGE ? "" : data.thumbnail };
+    const formValue = form.state.values;
+    const payload = { ...formValue, ast, isDraft, thumbnail: formValue.thumbnail === DEFAULT_COVER_IMAGE ? "" : formValue.thumbnail };
     if (editSlug) {
       updateMutation.mutate({ slug: editSlug, body: payload });
     } else {
@@ -179,16 +168,17 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   if (!editor) return <div className="text-marble animate-pulse font-mono tracking-widest text-sm">Booting Editor System...</div>;
 
   return (
-    <div className="flex flex-col gap-6 w-full relative h-full">
-      <div className="flex flex-col gap-6 flex-1 min-w-0">
-      <div>
-        <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
-          {editSlug ? "Edit Entry" : "Publish Entry"}
-        </h2>
-        <p className="text-marble/60 text-sm">
-          {editSlug ? "Modify an existing engineering or outreach update." : "Draft rich-text engineering and outreach updates."}
-        </p>
-      </div>
+    <FormProvider>
+      <div className="flex flex-col gap-6 w-full relative h-full">
+        <div className="flex flex-col gap-6 flex-1 min-w-0">
+        <div>
+          <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
+            {editSlug ? "Edit Entry" : "Publish Entry"}
+          </h2>
+          <p className="text-marble/60 text-sm">
+            {editSlug ? "Modify an existing engineering or outreach update." : "Draft rich-text engineering and outreach updates."}
+          </p>
+        </div>
 
       {isError && (
         <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
@@ -201,27 +191,39 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       <div className="flex flex-col md:flex-row gap-4 mt-2">
         <div className="flex-1">
           <label htmlFor="post-title" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Post Title</label>
-          <input
-            id="post-title"
-            type="text"
-            {...register("title")}
-            className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all shadow-inner lg:text-lg"
-            placeholder='e.g. Our Road to State'
+          <form.Field
+            name="title"
+            children={(field) => (
+              <>
+                <input
+                  id="post-title"
+                  type="text"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all shadow-inner lg:text-lg"
+                  placeholder='e.g. Our Road to State'
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                )}
+              </>
+            )}
           />
-          {errors.title && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.title.message}</p>}
         </div>
         <div className="flex-1">
           <CoverAssetPicker
             label="Cover Image"
-            coverImage={thumbnail || DEFAULT_COVER_IMAGE}
+            coverImage={form.UseFieldState("thumbnail").value || DEFAULT_COVER_IMAGE}
             isUploading={isUploadingCover}
             onLibraryClick={() => setIsCoverPickerOpen(true)}
-            onUrlChange={(url) => setValue("thumbnail", url)}
+            onUrlChange={(url) => form.setFieldValue("thumbnail", url)}
             onFileChange={async (file) => {
               try {
                 setUploadError("");
                 const { url } = await uploadFile(file);
-                setValue("thumbnail", url);
+                form.setFieldValue("thumbnail", url);
               } catch {
                 // handled by hook
               }
@@ -233,14 +235,27 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 md:max-w-xs">
           <label htmlFor="post-published-at" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Schedule Publish Time</label>
-          <input
-            id="post-published-at" type="datetime-local"
-            {...register("publishedAt")}
-            className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+          <form.Field
+            name="publishedAt"
+            children={(field) => (
+              <input
+                id="post-published-at" type="datetime-local"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+              />
+            )}
           />
         </div>
         <div className="flex-1 md:max-w-xs">
-          <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("seasonId", val ? Number(val) : undefined)} />
+          <form.Field
+            name="seasonId"
+            children={(field) => (
+              <SeasonPicker value={field.state.value || ""} onChange={(val) => field.handleChange(val ? Number(val) : undefined)} />
+            )}
+          />
         </div>
       </div>
 
@@ -248,27 +263,27 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
       {/* ===== Unified Rich Editor ===== */}
       <div className="flex items-center gap-2">
-        <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={title} /></div>
+        <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={form.UseFieldState("title").value} /></div>
       </div>
       <CopilotMenu editor={editor} />
 
       {/* Cover Image Picker Modal */}
-      <AssetPickerModal 
+      <AssetPickerModal
         isOpen={isCoverPickerOpen}
         onClose={() => setIsCoverPickerOpen(false)}
         onSelect={(url) => {
-          setValue("thumbnail", url);
+          form.setFieldValue("thumbnail", url);
           setIsCoverPickerOpen(false);
         }}
       />
 
-      <EditorFooter 
-        errorMsg={errorMsg || (errors.ast?.message as unknown as string) || ""}
+      <EditorFooter
+        errorMsg={errorMsg || ""}
         isPending={saveMutation.isPending}
         isEditing={!!editSlug}
         onDelete={handleDelete}
-        onSaveDraft={() => handleSubmit((d: unknown) => onFormSubmit(d as PostPayload, true))()}
-        onPublish={() => handleSubmit((d: unknown) => onFormSubmit(d as PostPayload, false))()}
+        onSaveDraft={() => onFormSubmit(true)}
+        onPublish={() => onFormSubmit(false)}
         deleteText="DELETE"
         updateText="UPDATE ENTRY"
         publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH ENTRY"}
@@ -276,10 +291,10 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         roundedClass="ares-cut"
         onShowHistory={roomId && editor ? () => setIsHistoryOpen(true) : undefined}
         extraControls={
-          <SocialSyndicationGrid 
+          <SocialSyndicationGrid
             availableSocials={availableSocials}
-            socials={socials}
-            onChange={(platform, val) => setValue(`socials.${platform}`, val)}
+            socials={form.UseFieldState("socials").value}
+            onChange={(platform, val) => form.setFieldValue(`socials.${platform}`, val)}
             isEdit={!!editSlug}
           />
         }
@@ -297,13 +312,15 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
       {editSlug && postRes?.post && (
         <div className="w-full flex flex-col gap-6 mt-6">
-          <ZulipThread 
-            stream={postRes.post.zulip_stream || "blog"} 
-            topic={postRes.post.zulip_topic || `Blog: ${postRes.post.title}`} 
+          <ZulipThread
+            stream={postRes.post.zulip_stream || "blog"}
+            topic={postRes.post.zulip_topic || `Blog: ${postRes.post.title}`}
           />
         </div>
       )}
+      </div>
     </div>
+    </FormProvider>
   );
 }
 

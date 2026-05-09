@@ -1109,7 +1109,8 @@ export const eventHandlers = {
       return { status: 200 as const, body: { success: true } };
     } catch (e) {
       console.error("[Events:SubmitSignup] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Signup failed" } };
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      return { status: 500 as const, body: { success: false, error: `Signup failed: ${errorMessage}` } };
     }
   },
   deleteMySignup: async (input: HandlerInput, c: HonoContext) => {

@@ -1,30 +1,32 @@
 import { GraduationCap, Plus, Trash2 } from "lucide-react";
-import { ProfileSubComponentProps, CollegeEntry } from "./types";
+import { ProfileFormSubComponentProps, CollegeEntry } from "./types";
 import { BrandLogo } from "../BrandLogo";
 import { extractDomain } from "../../utils/logoResolvers";
 
-export function EducationSection({ profile, setProfile, inputClass, sectionClass }: ProfileSubComponentProps) {
-  const addCollege = () => setProfile(prev => ({ 
-    ...prev, 
-    colleges: [...prev.colleges, { name: "", domain: "", years: "", degree: "" }] 
-  }));
+export function EducationSection({ form, inputClass, sectionClass }: ProfileFormSubComponentProps) {
+  const colleges = form.getFieldValue("colleges");
 
-  const removeCollege = (i: number) => setProfile(prev => ({ 
-    ...prev, 
-    colleges: prev.colleges.filter((_, idx) => idx !== i) 
-  }));
+  const addCollege = () => {
+    const current = form.getFieldValue("colleges");
+    form.setFieldValue("colleges", [...current, { name: "", domain: "", years: "", degree: "" }]);
+  };
+
+  const removeCollege = (i: number) => {
+    const current = form.getFieldValue("colleges");
+    form.setFieldValue("colleges", current.filter((_, idx) => idx !== i));
+  };
 
   const updateCollege = (i: number, field: keyof CollegeEntry, val: string) => {
-    const updated = [...profile.colleges];
+    const updated = [...colleges];
     const sanitizedVal = field === "domain" ? extractDomain(val as string) : val;
     updated[i] = { ...updated[i], [field]: sanitizedVal };
-    
+
     // Auto-complete domain for common university names
-    if (field === "name" && (val as string).length > 2 && !updated[i].domain) {
-      const domain = (val as string).toLowerCase().replace(/\s+/g, "").replace(/university|college|of|the/gi, "");
+    if (field === "name" && val.length > 2 && !updated[i].domain) {
+      const domain = val.toLowerCase().replace(/\s+/g, "").replace(/university|college|of|the/gi, "");
       updated[i].domain = `${domain}.edu`;
     }
-    setProfile(prev => ({ ...prev, colleges: updated }));
+    form.setFieldValue("colleges", updated);
   };
 
   return (
@@ -33,14 +35,15 @@ export function EducationSection({ profile, setProfile, inputClass, sectionClass
         <h3 className="text-sm font-black uppercase tracking-wider text-ares-red flex items-center gap-2">
           <GraduationCap size={16} /> Education
         </h3>
-        <button 
-          onClick={addCollege} 
+        <button
+          type="button"
+          onClick={addCollege}
           className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-xs font-bold text-ares-gold"
         >
           <Plus size={14} /> Add College
         </button>
       </div>
-      {profile.colleges.map((col, i) => (
+      {colleges.map((col, i) => (
         <div key={i} className="flex gap-4 items-start bg-black/30 p-4 ares-cut border border-white/5 group hover:border-ares-gold/30 transition-all mt-4">
           <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-12 h-12" />
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -62,7 +65,7 @@ export function EducationSection({ profile, setProfile, inputClass, sectionClass
             </div>
           </div>
 
-          <button onClick={() => removeCollege(i)} className="text-ares-red hover:text-white transition-colors p-1 self-center">
+          <button type="button" onClick={() => removeCollege(i)} className="text-ares-red hover:text-white transition-colors p-1 self-center">
             <Trash2 size={16} />
           </button>
         </div>

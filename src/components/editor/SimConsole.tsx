@@ -40,20 +40,20 @@ export function SimConsole({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0d0f14] border-t border-white/10 overflow-hidden">
-      <div className="px-3 py-1.5 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#0d0f14]">
+    <div className="flex flex-col h-full bg-obsidian-dark border-t border-white/10 overflow-hidden">
+      <div className="px-3 py-1.5 border-b border-white/10 flex items-center justify-between shrink-0 bg-obsidian-dark">
         <div className="flex items-center gap-4">
-          <div className="flex bg-[#161b22] p-0.5 rounded-md border border-white/10">
+          <div className="flex bg-black/40 p-0.5 rounded-md border border-white/10">
             <button
               onClick={() => setActiveTab("console")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === "console" ? "bg-[#0d0f14] text-ares-gold shadow-sm" : "text-white/40 hover:text-white/80"}`}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === "console" ? "bg-obsidian-dark text-ares-gold shadow-sm" : "text-white/40 hover:text-white/80"}`}
             >
               <Terminal className="w-3.5 h-3.5" />
               Console {logs.length > 0 && `(${logs.length})`}
             </button>
             <button
               onClick={() => setActiveTab("tests")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === "tests" ? "bg-[#0d0f14] text-ares-gold shadow-sm" : "text-white/40 hover:text-white/80"}`}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === "tests" ? "bg-obsidian-dark text-ares-gold shadow-sm" : "text-white/40 hover:text-white/80"}`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
               Tests {testResults.length > 0 && `(${testResults.length})`}

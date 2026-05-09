@@ -37,7 +37,7 @@ export function useGetUsers(
 ) {
   return useQuery<UsersListResponse>({
     queryKey: ["users", "admin", "list", query],
-    queryFn: async () => {
+    queryFn: async function getUsersList() {
       const response = await client.users.admin.list.$get({ query });
       return unwrapResponse<UsersListResponse>(response);
     },
@@ -71,7 +71,7 @@ export function usePatchUser(
 ) {
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean }, Error, { id: string; role?: UserRole; member_type?: UserMemberType }>({
-    mutationFn: async ({ id, ...data }) => {
+    mutationFn: async function patchUser({ id, ...data }) {
       const response = await client.users.admin[":id"].$patch({ param: { id }, json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },

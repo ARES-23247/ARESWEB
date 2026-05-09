@@ -34,6 +34,22 @@ const config: Config = {
         "brand-discord": "#5865F2",
         "brand-bluesky": "#0085ff",
         "brand-facebook": "#1877F2",
+        // Social platform brand colors (authorized per brand enforcement)
+        "social-facebook": "#1877F2",
+        "social-bluesky": "#0085ff",
+        "social-linkedin": "#0077b5",
+        "social-tiktok": "#00f2ea",
+        "social-github": "#24292e",
+        "social-discord": "#5865F2",
+        "social-slack": "#4A154B",
+        "social-teams": "#6264A7",
+        "social-googlechat": "#00897B",
+        "social-band": "#2D6CD4",
+        "social-zulip": "#5e82a6",
+        // Obsidian editor theme variants
+        "obsidian-dark": "#0d0f14",
+        "obsidian-darker": "#0a0c10",
+        "obsidian-surface": "#1e1e1e",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

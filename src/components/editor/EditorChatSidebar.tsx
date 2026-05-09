@@ -111,8 +111,8 @@ If you provide text that the user should insert into their document, format it i
   };
 
   return (
-    <div className="w-80 border-l border-white/10 bg-[#0d0f14] flex flex-col h-full shrink-0 relative z-10 rounded-br-xl shadow-xl">
-      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-black/40">
+    <div className="w-80 border-l border-white/10 bg-obsidian-dark flex flex-col h-full shrink-0 relative z-10 rounded-br-xl shadow-xl">
+      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-obsidian-darker">
         <span className="text-indigo-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
           Editor z.AI
@@ -135,7 +135,7 @@ If you provide text that the user should insert into their document, format it i
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0a0c10] scrollbar-thin scrollbar-thumb-white/10">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-obsidian-darker scrollbar-thin scrollbar-thumb-white/10">
         {chatMessages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div

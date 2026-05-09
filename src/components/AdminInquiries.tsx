@@ -306,7 +306,7 @@ export default function AdminInquiries() {
                       href={`https://aresfirst.zulipchat.com/#narrow/id/${inquiry.zulip_message_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] font-black text-white hover:text-white bg-[#5e82a6]/80 hover:bg-[#5e82a6] px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 shadow-[0_0_10px_rgba(94,130,166,0.2)]"
+                      className="text-[10px] font-black text-white hover:text-white bg-social-zulip/80 hover:bg-social-zulip px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 shadow-[0_0_10px_rgba(94,130,166,0.2)]"
                     >
                       <MessageSquare size={12} />
                       DISCUSS ON ZULIP

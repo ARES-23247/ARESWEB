@@ -106,6 +106,14 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ARES React Error Boundary Intercepted Fault:", error, errorInfo);
+
+    // Report to Sentry if available
+    if (typeof window !== "undefined" && (window as any).Sentry) {
+      (window as any).Sentry.captureException(error, {
+        tags: { component: "ErrorBoundary", correlationId: this.state.correlationId },
+        extra: { errorInfo, statusCode: this.state.statusCode },
+      });
+    }
   }
 
   public render() {

@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { locationSchema } from "@shared/routes/locations";
 import { z } from "zod";
@@ -22,8 +21,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
   const [suggestions, setSuggestions] = useState<{ display_name: string }[]>([]);
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<z.infer<typeof locationSchema>>({
-    resolver: zodResolver(locationSchema) as unknown as import("react-hook-form").Resolver<z.infer<typeof locationSchema>>,
+  const form = useForm<z.infer<typeof locationSchema>>({
     defaultValues: {
       name: "",
       address: "",
@@ -32,23 +30,26 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
     }
   });
 
-  const addressQuery = useWatch({ control, name: "address" });
+  const { Provider: FormProvider } = form;
 
   const resetForm = useCallback(() => {
-    reset({ name: "", address: "", maps_url: "", is_deleted: 0 });
+    form.setFieldValue("name", "");
+    form.setFieldValue("address", "");
+    form.setFieldValue("maps_url", "");
+    form.setFieldValue("is_deleted", 0);
     setSuggestions([]);
     setErrorMsg("");
-  }, [reset]);
+  }, [form]);
 
   const saveMutation = useSaveLocation({
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Venue record synchronized.");
-        
+
         // Pass the new name back
-        const formValues = control._formValues;
+        const formValues = form.state.values;
         onSuccess(formValues.name);
-        
+
         resetForm();
       } else {
         setErrorMsg("Failed to save venue");
@@ -62,6 +63,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
   // Debounced OSM Geocoding
   useEffect(() => {
     const timer = setTimeout(async () => {
+      const addressQuery = form.state.values.address || "";
       if (!addressQuery || addressQuery.length < 4) {
         setSuggestions([]);
         return;
@@ -78,16 +80,17 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
       }
     }, 600);
     return () => clearTimeout(timer);
-  }, [addressQuery]);
+  }, [form.state.values.address]);
 
   const handleClose = useCallback(() => {
     resetForm();
     onClose();
   }, [resetForm, onClose]);
 
-  const onFormSubmit = (data: z.infer<typeof locationSchema>) => {
+  const onFormSubmit = () => {
     setErrorMsg("");
-    saveMutation.mutate({ ...data, id: undefined });
+    const formValue = form.state.values;
+    saveMutation.mutate({ ...formValue, id: undefined });
   };
 
   // Keyboard handling
@@ -158,62 +161,87 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-5">
-              {errorMsg && (
-                <div className="p-3 bg-ares-danger/10 border border-ares-danger/30 rounded text-ares-danger text-sm">
-                  {errorMsg}
-                </div>
-              )}
-
-              <div className="flex flex-col gap-4">
-                <div>
-                  <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Alias (e.g. &apos;Mars Workspace&apos;) *</label>
-                  <input 
-                    id="venue_name"
-                    type="text" 
-                    {...register("name")}
-                    className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
-                    placeholder="Enter short venue name"
-                  />
-                  {errors.name && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.name.message}</p>}
-                </div>
-
-                <div className="relative">
-                  <label htmlFor="venue_address" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Street Address (Auto-suggest) *</label>
-                  <div className="relative">
-                    <input 
-                      id="venue_address"
-                      type="text" 
-                      {...register("address")}
-                      className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
-                      placeholder="Start typing an address..."
-                      autoComplete="off"
-                    />
-                    {isSearchingOSM && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-marble/50 text-xs">...</div>}
+            <FormProvider>
+              <form onSubmit={(e) => { e.preventDefault(); onFormSubmit(); }} className="p-6 space-y-5">
+                {errorMsg && (
+                  <div className="p-3 bg-ares-danger/10 border border-ares-danger/30 rounded text-ares-danger text-sm">
+                    {errorMsg}
                   </div>
-                  {errors.address && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.address.message}</p>}
+                )}
 
-                  {suggestions.length > 0 && (
-                    <div className="absolute z-20 w-full mt-1 bg-black border border-white/10 ares-cut-sm shadow-xl overflow-hidden">
-                      {suggestions.map((s, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          className="w-full text-left p-3 hover:bg-ares-cyan hover:text-black border-b border-white/10 text-sm text-marble transition-colors last:border-0"
-                          onClick={() => {
-                            setValue("address", s.display_name);
-                            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.display_name)}`;
-                            setValue("maps_url", mapsLink);
-                            setSuggestions([]);
-                          }}
-                        >
-                          {s.display_name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Alias (e.g. &apos;Mars Workspace&apos;) *</label>
+                    <form.Field
+                      name="name"
+                      children={(field) => (
+                        <>
+                          <input
+                            id="venue_name"
+                            type="text"
+                            name={field.name}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
+                            placeholder="Enter short venue name"
+                          />
+                          {field.state.meta.errors.length > 0 && (
+                            <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <label htmlFor="venue_address" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Street Address (Auto-suggest) *</label>
+                    <form.Field
+                      name="address"
+                      children={(field) => (
+                        <>
+                          <div className="relative">
+                            <input
+                              id="venue_address"
+                              type="text"
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
+                              placeholder="Start typing an address..."
+                              autoComplete="off"
+                            />
+                            {isSearchingOSM && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-marble/50 text-xs">...</div>}
+                          </div>
+                          {field.state.meta.errors.length > 0 && (
+                            <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                          )}
+                        </>
+                      )}
+                    />
+
+                    {suggestions.length > 0 && (
+                      <div className="absolute z-20 w-full mt-1 bg-black border border-white/10 ares-cut-sm shadow-xl overflow-hidden">
+                        {suggestions.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className="w-full text-left p-3 hover:bg-ares-cyan hover:text-black border-b border-white/10 text-sm text-marble transition-colors last:border-0"
+                            onClick={() => {
+                              form.setFieldValue("address", s.display_name);
+                              const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.display_name)}`;
+                              form.setFieldValue("maps_url", mapsLink);
+                              setSuggestions([]);
+                            }}
+                          >
+                            {s.display_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
@@ -243,7 +271,8 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
                   )}
                 </button>
               </div>
-            </form>
+              </form>
+            </FormProvider>
           </motion.div>
         </div>
       )}

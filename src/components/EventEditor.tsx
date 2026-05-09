@@ -10,8 +10,7 @@ import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import EditorFooter from "./editor/EditorFooter";
 import SeasonPicker from "./SeasonPicker";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, type Form } from "@tanstack/react-form";
 import { z } from "zod";
 import { eventSchema, EventPayload } from "@shared/schemas/eventSchema";
 import { useQuery } from "@tanstack/react-query";
@@ -55,8 +54,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<z.input<typeof eventSchema>>({
-    resolver: zodResolver(eventSchema),
+  const form = useForm<EventPayload>({
     defaultValues: {
       title: "",
       dateStart: "",
@@ -85,8 +83,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     }
   });
 
-  const formValues = useWatch({ control });
-  const socials = formValues.socials || {};
+  const { Provider: FormProvider } = form;
 
   const [recurringGroupId, setRecurringGroupId] = useState<string | null>(null);
   const [updateMode, setUpdateMode] = useState<"single" | "following">("single");
@@ -133,21 +130,19 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
 
         setIsDeleted(event.is_deleted === 1);
         setIsException(event.recurring_exception === 1);
-        reset({
-          title: event.title || "",
-          dateStart: formatForInput(event.date_start),
-          dateEnd: formatForInput(event.date_end),
-          location: event.location || "",
-          description: event.description || "",
-          coverImage: event.cover_image || DEFAULT_COVER_IMAGE,
-          category: (event.category || "internal") as "internal" | "outreach" | "external",
-          tbaEventKey: event.tba_event_key || "",
-          isPotluck: event.is_potluck === 1,
-          isVolunteer: event.is_volunteer === 1,
-          publishedAt: ((event as unknown) as Record<string, unknown>).published_at as string || "",
-          seasonId: event.season_id ? Number(event.season_id) : undefined,
-          socials: ((eventRes as unknown) as Record<string, unknown>).socials as Record<string, boolean> || {},
-        });
+        form.setFieldValue("title", event.title || "");
+        form.setFieldValue("dateStart", formatForInput(event.date_start));
+        form.setFieldValue("dateEnd", formatForInput(event.date_end));
+        form.setFieldValue("location", event.location || "");
+        form.setFieldValue("description", event.description || "");
+        form.setFieldValue("coverImage", event.cover_image || DEFAULT_COVER_IMAGE);
+        form.setFieldValue("category", (event.category || "internal") as "internal" | "outreach" | "external");
+        form.setFieldValue("tbaEventKey", event.tba_event_key || "");
+        form.setFieldValue("isPotluck", event.is_potluck === 1);
+        form.setFieldValue("isVolunteer", event.is_volunteer === 1);
+        form.setFieldValue("publishedAt", ((event as unknown) as Record<string, unknown>).published_at as string || "");
+        form.setFieldValue("seasonId", event.season_id ? Number(event.season_id) : undefined);
+        form.setFieldValue("socials", ((eventRes as unknown) as Record<string, unknown>).socials as Record<string, boolean> || {});
 
         // Parse rrule
         let parsedFreq = "";
@@ -190,7 +185,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     void processEventData();
     return () => { active = false; };
 
-  }, [eventRes, reset, editor, ydoc]);
+  }, [eventRes, form, editor, ydoc]);
 
 
   const saveMutation = useSaveEvent({
@@ -232,7 +227,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     }
   });
 
-  const onFormSubmit = (data: EventPayload, isDraft = false) => {
+  const onFormSubmit = (isDraft = false) => {
     let finalRrule = rruleFreq;
     if (finalRrule && limitType === 'count' && limitCount) {
       finalRrule += `;COUNT=${limitCount}`;
@@ -240,8 +235,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       finalRrule += `;UNTIL=${limitDate.replace(/-/g, '')}T000000Z`;
     }
 
-    const finalDescription = editor ? JSON.stringify(editor.getJSON()) : data.description;
-    const payload = { ...data, description: finalDescription, meetingNotes: "", isDraft, updateMode, rrule: finalRrule };
+    const formValue = form.state.values;
+    const finalDescription = editor ? JSON.stringify(editor.getJSON()) : formValue.description;
+    const payload = { ...formValue, description: finalDescription, meetingNotes: "", isDraft, updateMode, rrule: finalRrule };
     if (editId) {
       updateMutation.mutate({ id: editId, body: payload });
     } else {
@@ -278,7 +274,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     try {
       setUploadError("");
       const { url } = await uploadFile(file);
-      setValue("coverImage", url);
+      form.setFieldValue("coverImage", url);
     } catch(err) {
       setErrorMsg(String(err));
     }
@@ -287,16 +283,17 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
 
   return (
-    <div className="flex flex-col gap-6 w-full relative h-full">
-      <div>
-      <div>
-        <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
-          {editId ? "Edit Event" : "Publish Event"}
-        </h2>
-        <p className="text-white/60 text-sm">
-          {editId ? "Update existing competition or outreach details." : "Add upcoming competitions or outreach events to the portal."}
-        </p>
-      </div>
+    <FormProvider>
+      <div className="flex flex-col gap-6 w-full relative h-full">
+        <div>
+        <div>
+          <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
+            {editId ? "Edit Event" : "Publish Event"}
+          </h2>
+          <p className="text-white/60 text-sm">
+            {editId ? "Update existing competition or outreach details." : "Add upcoming competitions or outreach events to the portal."}
+          </p>
+        </div>
 
       {isError && (
         <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
@@ -328,19 +325,31 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       <div className="flex flex-col md:flex-row gap-4 mt-2">
         <div className="flex-1">
           <label htmlFor="event-title" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Event Title *</label>
-          <input
-            id="event-title" type="text"
-            {...register("title")}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
-            placeholder="State Championship"
+          <form.Field
+            name="title"
+            children={(field) => (
+              <>
+                <input
+                  id="event-title" type="text"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
+                  placeholder="State Championship"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                )}
+              </>
+            )}
           />
-          {errors.title && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.title.message}</p>}
         </div>
         <div className="flex-1">
-          <CoverAssetPicker 
-            coverImage={formValues.coverImage || DEFAULT_COVER_IMAGE}
+          <CoverAssetPicker
+            coverImage={form.UseFieldState("coverImage").value || DEFAULT_COVER_IMAGE}
             isUploading={isUploading}
-            onUrlChange={(url) => setValue("coverImage", url)}
+            onUrlChange={(url) => form.setFieldValue("coverImage", url)}
             onLibraryClick={() => setIsCoverPickerOpen(true)}
             onFileChange={handleFileUpload}
           />
@@ -350,30 +359,51 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <label htmlFor="event-category" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Category *</label>
-          <select
-            id="event-category"
-            {...register("category")}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
-          >
-            <option value="internal">ARES Practices</option>
-            <option value="outreach">ARES Outreach &amp; Volunteer</option>
-            <option value="external">ARES Community Spotlight</option>
-          </select>
+          <form.Field
+            name="category"
+            children={(field) => (
+              <select
+                id="event-category"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value as "internal" | "outreach" | "external")}
+                className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner appearance-none"
+              >
+                <option value="internal">ARES Practices</option>
+                <option value="outreach">ARES Outreach &amp; Volunteer</option>
+                <option value="external">ARES Community Spotlight</option>
+              </select>
+            )}
+          />
         </div>
         <div className="flex-1">
           <label htmlFor="event-tba-key" className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
             <span>TBA Event Key</span>
             <span className="text-xs text-white/60 font-normal normal-case">Optional</span>
           </label>
-          <input
-            id="event-tba-key" type="text"
-            {...register("tbaEventKey")}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
-            placeholder="e.g. 2024wvcmp"
+          <form.Field
+            name="tbaEventKey"
+            children={(field) => (
+              <input
+                id="event-tba-key" type="text"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
+                placeholder="e.g. 2024wvcmp"
+              />
+            )}
           />
         </div>
         <div className="flex-1">
-          <SeasonPicker value={formValues.seasonId || ""} onChange={(val) => setValue("seasonId", val ? Number(val) : undefined)} />
+          <form.Field
+            name="seasonId"
+            children={(field) => (
+              <SeasonPicker value={field.state.value || ""} onChange={(val) => field.handleChange(val ? Number(val) : undefined)} />
+            )}
+          />
         </div>
         <div className="flex-1">
           <label htmlFor="event-location" className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
@@ -381,12 +411,17 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
             <span className="text-xs text-white/60 font-normal normal-case">Pick from registry</span>
           </label>
           <div className="relative group">
-            <LocationCombobox
-              id="event-location"
-              locations={locations}
-              value={formValues.location || ''}
-              onChange={(val) => setValue("location", val, { shouldValidate: true })}
-              onCustomClick={() => setIsLocationModalOpen(true)}
+            <form.Field
+              name="location"
+              children={(field) => (
+                <LocationCombobox
+                  id="event-location"
+                  locations={locations}
+                  value={field.state.value || ''}
+                  onChange={(val) => field.handleChange(val)}
+                  onCustomClick={() => setIsLocationModalOpen(true)}
+                />
+              )}
             />
           </div>
         </div>
@@ -395,27 +430,55 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <label htmlFor="event-start" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Start Date & Time *</label>
-          <input
-            id="event-start" type="datetime-local"
-            {...register("dateStart")}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+          <form.Field
+            name="dateStart"
+            children={(field) => (
+              <>
+                <input
+                  id="event-start" type="datetime-local"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                )}
+              </>
+            )}
           />
-          {errors.dateStart && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.dateStart.message}</p>}
         </div>
         <div className="flex-1">
           <label htmlFor="event-end" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">End Date & Time</label>
-          <input
-            id="event-end" type="datetime-local"
-            {...register("dateEnd")}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+          <form.Field
+            name="dateEnd"
+            children={(field) => (
+              <input
+                id="event-end" type="datetime-local"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+              />
+            )}
           />
         </div>
         <div className="flex-1">
           <label htmlFor="event-published-at" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Schedule Publish Time</label>
-          <input
-            id="event-published-at" type="datetime-local"
-            {...register("publishedAt")}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+          <form.Field
+            name="publishedAt"
+            children={(field) => (
+              <input
+                id="event-published-at" type="datetime-local"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
+              />
+            )}
           />
         </div>
       </div>
@@ -493,24 +556,24 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         </div>
       )}
 
-      <EventPotluckVolunteerFlags 
-        isPotluck={formValues.isPotluck || false} 
-        isVolunteer={formValues.isVolunteer || false} 
-        onChange={(field, val) => setValue(field as "isPotluck" | "isVolunteer", val as boolean)}
+      <EventPotluckVolunteerFlags
+        isPotluck={form.UseFieldState("isPotluck").value || false}
+        isVolunteer={form.UseFieldState("isVolunteer").value || false}
+        onChange={(field, val) => form.setFieldValue(field as "isPotluck" | "isVolunteer", val as boolean)}
       />
 
       <div>
         <label htmlFor="event-desc-editor" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Event Description / Recap</label>
         {editor && (
           <div className="flex items-center gap-2">
-            <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={formValues.title || ""} /></div>
+            <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={form.UseFieldState("title").value || ""} /></div>
           </div>
         )}
         {editor && <CopilotMenu editor={editor} />}
       </div>
 
-      {editId && formValues.title && (
-        <ZulipThread stream="events" topic={`Event: ${formValues.title}`} />
+      {editId && form.UseFieldState("title").value && (
+        <ZulipThread stream="events" topic={`Event: ${form.UseFieldState("title").value}`} />
       )}
 
       <div className="mt-6 flex flex-col gap-4">
@@ -541,13 +604,13 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           </div>
         )}
 
-        <EditorFooter 
+        <EditorFooter
           errorMsg={errorMsg}
           isPending={saveMutation.isPending}
           isEditing={!!editId}
           onDelete={handleDelete}
-          onSaveDraft={() => handleSubmit((d: unknown) => onFormSubmit(d as EventPayload, true))()}
-          onPublish={() => handleSubmit((d: unknown) => onFormSubmit(d as EventPayload, false))()}
+          onSaveDraft={() => onFormSubmit(true)}
+          onPublish={() => onFormSubmit(false)}
           deleteText="DELETE"
           updateText="UPDATE EVENT"
           publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH EVENT"}
@@ -555,21 +618,21 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           roundedClass="ares-cut"
           onShowHistory={() => setIsHistoryOpen(true)}
           extraControls={
-            <SocialSyndicationGrid 
+            <SocialSyndicationGrid
               availableSocials={availableSocials}
-              socials={socials as Record<string, boolean>}
-              onChange={(platform, val) => setValue(`socials.${platform}`, val)}
+              socials={form.UseFieldState("socials").value as Record<string, boolean>}
+              onChange={(platform, val) => form.setFieldValue(`socials.${platform}`, val)}
               isEdit={!!editId}
             />
           }
         />
       </div>
 
-      <AssetPickerModal 
+      <AssetPickerModal
         isOpen={isCoverPickerOpen}
         onClose={() => setIsCoverPickerOpen(false)}
         onSelect={(url) => {
-          setValue("coverImage", url);
+          form.setFieldValue("coverImage", url);
           setIsCoverPickerOpen(false);
         }}
       />
@@ -579,8 +642,8 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         onClose={() => {
           setIsLocationModalOpen(false);
           // If they close without saving, reset dropdown to empty
-          if (formValues.location === "CUSTOM") {
-            setValue("location", "");
+          if (form.UseFieldState("location").value === "CUSTOM") {
+            form.setFieldValue("location", "");
           }
         }}
         onSuccess={(newName) => {
@@ -591,12 +654,12 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
             const tempOpt = new Option(newName, newName);
             selectEl.add(tempOpt, selectEl.options[selectEl.options.length - 1]);
           }
-          setValue("location", newName);
+          form.setFieldValue("location", newName);
         }}
       />
 
       {isHistoryOpen && editId && editor && (
-        <VersionHistorySidebar 
+        <VersionHistorySidebar
           roomId={`event_${editId}`}
           editor={editor}
           onClose={() => setIsHistoryOpen(false)}
@@ -605,6 +668,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       )}
       </div>
     </div>
+    </FormProvider>
   );
 }
 

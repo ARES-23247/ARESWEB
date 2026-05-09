@@ -19,16 +19,16 @@ import { toast } from "sonner";
 // Social platform config with colors and icons
 const PLATFORMS = {
   twitter: { name: "X (Twitter)", color: "bg-black", icon: "𝕏" },
-  bluesky: { name: "Bluesky", color: "bg-[#0085ff]", icon: "🦋" },
-  facebook: { name: "Facebook", color: "bg-[#1877F2]", icon: "f" },
+  bluesky: { name: "Bluesky", color: "bg-social-bluesky", icon: "🦋" },
+  facebook: { name: "Facebook", color: "bg-social-facebook", icon: "f" },
   instagram: { name: "Instagram", color: "bg-gradient-to-br from-purple-500 to-pink-500", icon: "📷" },
-  discord: { name: "Discord", color: "bg-[#5865F2]", icon: "💬" },
-  slack: { name: "Slack", color: "bg-[#4A154B]", icon: "💼" },
-  teams: { name: "Teams", color: "bg-[#6264A7]", icon: "👥" },
-  gchat: { name: "Google Chat", color: "bg-[#00897B]", icon: "💬" },
-  linkedin: { name: "LinkedIn", color: "bg-[#0077b5]", icon: "in" },
-  tiktok: { name: "TikTok", color: "bg-[#00f2ea]", icon: "🎵" },
-  band: { name: "BAND", color: "bg-[#2D6CD4]", icon: "📢" },
+  discord: { name: "Discord", color: "bg-social-discord", icon: "💬" },
+  slack: { name: "Slack", color: "bg-social-slack", icon: "💼" },
+  teams: { name: "Teams", color: "bg-social-teams", icon: "👥" },
+  gchat: { name: "Google Chat", color: "bg-social-googlechat", icon: "💬" },
+  linkedin: { name: "LinkedIn", color: "bg-social-linkedin", icon: "in" },
+  tiktok: { name: "TikTok", color: "bg-social-tiktok", icon: "🎵" },
+  band: { name: "BAND", color: "bg-social-band", icon: "📢" },
 } as const;
 
 const socialComposerSchema = z.object({

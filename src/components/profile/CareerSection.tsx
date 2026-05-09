@@ -1,24 +1,26 @@
 import { Briefcase, Plus, Trash2 } from "lucide-react";
-import { ProfileSubComponentProps, EmployerEntry } from "./types";
+import { ProfileFormSubComponentProps, EmployerEntry } from "./types";
 import { BrandLogo } from "../BrandLogo";
 import { extractDomain } from "../../utils/logoResolvers";
 
-export function CareerSection({ profile, setProfile, inputClass, sectionClass }: ProfileSubComponentProps) {
-  const addEmployer = () => setProfile(prev => ({ 
-    ...prev, 
-    employers: [...prev.employers, { name: "", domain: "", title: "", current: false, years: "" }] 
-  }));
+export function CareerSection({ form, inputClass, sectionClass }: ProfileFormSubComponentProps) {
+  const employers = form.getFieldValue("employers");
 
-  const removeEmployer = (i: number) => setProfile(prev => ({ 
-    ...prev, 
-    employers: prev.employers.filter((_, idx) => idx !== i) 
-  }));
+  const addEmployer = () => {
+    const current = form.getFieldValue("employers");
+    form.setFieldValue("employers", [...current, { name: "", domain: "", title: "", current: false, years: "" }]);
+  };
+
+  const removeEmployer = (i: number) => {
+    const current = form.getFieldValue("employers");
+    form.setFieldValue("employers", current.filter((_, idx) => idx !== i));
+  };
 
   const updateEmployer = (i: number, field: keyof EmployerEntry, val: string | boolean) => {
-    const updated = [...profile.employers];
+    const updated = [...employers];
     const sanitizedVal = field === "domain" ? extractDomain(val as string) : val;
     updated[i] = { ...updated[i], [field]: sanitizedVal } as EmployerEntry;
-    setProfile(prev => ({ ...prev, employers: updated }));
+    form.setFieldValue("employers", updated);
   };
 
   return (
@@ -27,14 +29,15 @@ export function CareerSection({ profile, setProfile, inputClass, sectionClass }:
         <h3 className="text-sm font-black uppercase tracking-wider text-ares-red flex items-center gap-2">
           <Briefcase size={16} /> Career
         </h3>
-        <button 
-          onClick={addEmployer} 
+        <button
+          type="button"
+          onClick={addEmployer}
           className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-xs font-bold text-ares-gold"
         >
           <Plus size={14} /> Add Employer
         </button>
       </div>
-      {profile.employers.map((emp, i) => (
+      {employers.map((emp, i) => (
         <div key={i} className="flex gap-4 items-start bg-black/30 p-4 ares-cut border border-white/5 group hover:border-ares-gold/30 transition-all mt-4">
           <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-12 h-12" />
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -58,15 +61,15 @@ export function CareerSection({ profile, setProfile, inputClass, sectionClass }:
 
           <div className="flex flex-col items-center gap-1 self-center">
             <label htmlFor={`pe-emp-current-${i}`} className="text-[9px] text-marble/50 font-black uppercase">Current</label>
-            <input 
-              id={`pe-emp-current-${i}`} 
-              type="checkbox" 
-              checked={emp.current} 
-              onChange={e => updateEmployer(i, "current", e.target.checked)} 
-              className="accent-ares-red w-4 h-4 rounded" 
+            <input
+              id={`pe-emp-current-${i}`}
+              type="checkbox"
+              checked={emp.current}
+              onChange={e => updateEmployer(i, "current", e.target.checked)}
+              className="accent-ares-red w-4 h-4 rounded"
             />
           </div>
-          <button onClick={() => removeEmployer(i)} className="text-ares-red hover:text-white transition-colors p-1 self-center">
+          <button type="button" onClick={() => removeEmployer(i)} className="text-ares-red hover:text-white transition-colors p-1 self-center">
             <Trash2 size={16} />
           </button>
         </div>

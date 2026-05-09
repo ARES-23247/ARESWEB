@@ -8,8 +8,7 @@ import { docSchema } from "@shared/schemas/docSchema";
 import { useGetAdminDocDetail, useSaveDoc, useDeleteDoc } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import EditorFooter from "./editor/EditorFooter";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, type Form } from "@tanstack/react-form";
 import { RefreshCw } from "lucide-react";
 import { z } from "zod";
 
@@ -49,8 +48,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     provider
   });
 
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<DocFormValues>({
-    resolver: zodResolver(docSchema) as unknown as import("react-hook-form").Resolver<DocFormValues>,
+  const form = useForm<DocFormValues>({
     defaultValues: {
       slug: "",
       title: "",
@@ -67,26 +65,24 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   });
 
-  const formValues = useWatch({ control });
+  const { Provider: FormProvider } = form;
 
   const { data: docRes, isLoading, isError } = useGetAdminDocDetail(editSlug || "");
 
   useEffect(() => {
     if (docRes?.doc) {
       const doc = docRes.doc as unknown as DocData;
-      reset({
-        slug: doc.slug || "",
-        title: doc.title || "",
-        category: doc.category || "Getting Started",
-        sortOrder: doc.sort_order || 10,
-        description: doc.description || "",
-        isPortfolio: !!doc.is_portfolio,
-        isExecutiveSummary: !!doc.is_executive_summary,
-        displayInAreslib: doc.display_in_areslib === undefined ? true : !!doc.display_in_areslib,
-        displayInMathCorner: !!doc.display_in_math_corner,
-        displayInScienceCorner: !!doc.display_in_science_corner,
-        content: doc.content || "{}"
-      });
+      form.setFieldValue("slug", doc.slug || "");
+      form.setFieldValue("title", doc.title || "");
+      form.setFieldValue("category", doc.category || "Getting Started");
+      form.setFieldValue("sortOrder", doc.sort_order || 10);
+      form.setFieldValue("description", doc.description || "");
+      form.setFieldValue("isPortfolio", !!doc.is_portfolio);
+      form.setFieldValue("isExecutiveSummary", !!doc.is_executive_summary);
+      form.setFieldValue("displayInAreslib", doc.display_in_areslib === undefined ? true : !!doc.display_in_areslib);
+      form.setFieldValue("displayInMathCorner", !!doc.display_in_math_corner);
+      form.setFieldValue("displayInScienceCorner", !!doc.display_in_science_corner);
+      form.setFieldValue("content", doc.content || "{}");
 
       if (editor && doc.content) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
@@ -102,7 +98,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         }
       }
     }
-  }, [docRes, reset, editor, ydoc]);
+  }, [docRes, form, editor, ydoc]);
 
   const saveMutation = useSaveDoc({
     onSuccess: (res) => {
@@ -130,10 +126,11 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   });
 
-  const onFormSubmit = (data: DocFormValues, isDraft = false) => {
+  const onFormSubmit = (isDraft = false) => {
     if (!editor) return;
     const content = JSON.stringify(editor.getJSON());
-    saveMutation.mutate({ ...data, content, isDraft });
+    const formValue = form.state.values;
+    saveMutation.mutate({ ...formValue, content, isDraft });
   };
 
   const handleDelete = async () => {
@@ -152,16 +149,17 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
 
   return (
+    <FormProvider>
     <div className="flex flex-col gap-6 w-full relative h-full">
-      <div className="flex flex-col gap-6 flex-1 min-w-0">
-      <div>
-        <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
-          {editSlug ? "Edit Document" : "Publish Document"}
-        </h2>
-        <p className="text-white/50 text-sm">
-          {editSlug ? "Modify an existing ARESLib documentation page." : "Draft a new Markdown/Tiptap documentation page for the hub."}
-        </p>
-      </div>
+        <div className="flex flex-col gap-6 flex-1 min-w-0">
+        <div>
+          <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
+            {editSlug ? "Edit Document" : "Publish Document"}
+          </h2>
+          <p className="text-white/50 text-sm">
+            {editSlug ? "Modify an existing ARESLib documentation page." : "Draft a new Markdown/Tiptap documentation page for the hub."}
+          </p>
+        </div>
 
       {isError && (
         <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
@@ -173,118 +171,206 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-2">
         <div className="col-span-1 lg:col-span-2">
           <label htmlFor="doc-title" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Title</label>
-          <input
-            id="doc-title" type="text"
-            {...register("title")}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
-            placeholder="e.g. Swerve Kinematics"
+          <form.Field
+            name="title"
+            children={(field) => (
+              <>
+                <input
+                  id="doc-title" type="text"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+                  placeholder="e.g. Swerve Kinematics"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                )}
+              </>
+            )}
           />
-          {errors.title && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.title.message as string}</p>}
         </div>
 
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-slug" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Slug</label>
-          <input
-            id="doc-slug" type="text"
-            {...register("slug")}
-            disabled={!!editSlug}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            placeholder="e.g. swerve-kinematics"
+          <form.Field
+            name="slug"
+            children={(field) => (
+              <>
+                <input
+                  id="doc-slug" type="text"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  disabled={!!editSlug}
+                  className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="e.g. swerve-kinematics"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                )}
+              </>
+            )}
           />
-          {errors.slug && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.slug.message as string}</p>}
         </div>
 
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-category" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Category</label>
-          <input
-            id="doc-category" type="text"
-            {...register("category")}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
-            placeholder="e.g. Tutorials"
+          <form.Field
+            name="category"
+            children={(field) => (
+              <input
+                id="doc-category" type="text"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+                placeholder="e.g. Tutorials"
+              />
+            )}
           />
         </div>
 
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-sort" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Sort Order</label>
-          <input
-            id="doc-sort" type="number"
-            {...register("sortOrder", { valueAsNumber: true })}
-            className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+          <form.Field
+            name="sortOrder"
+            children={(field) => (
+              <input
+                id="doc-sort" type="number"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(Number(e.target.value))}
+                className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+              />
+            )}
           />
         </div>
       </div>
 
       <div>
         <label htmlFor="doc-description" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Description / Summary</label>
-        <input
-          id="doc-description" type="text"
-          {...register("description")}
-          className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
-          placeholder="Brief summary of what this document covers..."
+        <form.Field
+          name="description"
+          children={(field) => (
+            <input
+              id="doc-description" type="text"
+              name={field.name}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
+              placeholder="Brief summary of what this document covers..."
+            />
+          )}
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 ares-cut-sm bg-obsidian/50 border border-white/5">
-        <div className="flex items-center gap-3 cursor-pointer group">
-          <input
-            id="isPortfolioToggle" type="checkbox"
-            {...register("isPortfolio")}
-            className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
-          />
-          <div>
-            <label htmlFor="isPortfolioToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Judge&apos;s Portfolio Selection</label>
-            <span className="block text-xs text-white/60">Feature this in the Rapid Review dashboard for judges.</span>
-          </div>
-        </div>
+        <form.Field
+          name="isPortfolio"
+          children={(field) => (
+            <div className="flex items-center gap-3 cursor-pointer group">
+              <input
+                id="isPortfolioToggle" type="checkbox"
+                name={field.name}
+                checked={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.checked)}
+                className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
+              />
+              <div>
+                <label htmlFor="isPortfolioToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Judge&apos;s Portfolio Selection</label>
+                <span className="block text-xs text-white/60">Feature this in the Rapid Review dashboard for judges.</span>
+              </div>
+            </div>
+          )}
+        />
 
-        <div className="flex items-center gap-3 cursor-pointer group">
-          <input
-            id="isExecSummaryToggle" type="checkbox"
-            {...register("isExecutiveSummary")}
-            className="w-5 h-5 rounded border-white/10 bg-black text-ares-gold focus:ring-ares-gold"
-          />
-          <div>
-            <label htmlFor="isExecSummaryToggle" className="block text-sm font-bold text-white group-hover:text-ares-gold transition-colors cursor-pointer">Executive Summary Flag</label>
-            <span className="block text-xs text-white/60">Mark as the primary seasonal overview for rapid judging.</span>
-          </div>
-        </div>
+        <form.Field
+          name="isExecutiveSummary"
+          children={(field) => (
+            <div className="flex items-center gap-3 cursor-pointer group">
+              <input
+                id="isExecSummaryToggle" type="checkbox"
+                name={field.name}
+                checked={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.checked)}
+                className="w-5 h-5 rounded border-white/10 bg-black text-ares-gold focus:ring-ares-gold"
+              />
+              <div>
+                <label htmlFor="isExecSummaryToggle" className="block text-sm font-bold text-white group-hover:text-ares-gold transition-colors cursor-pointer">Executive Summary Flag</label>
+                <span className="block text-xs text-white/60">Mark as the primary seasonal overview for rapid judging.</span>
+              </div>
+            </div>
+          )}
+        />
       </div>
 
       <div className="mt-2 mb-2">
         <h3 className="text-sm font-bold text-ares-gold uppercase tracking-wider border-b border-white/10 pb-2 mb-4">Hub Visibility Controls</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 ares-cut-sm bg-obsidian/50 border border-white/5">
-          <div className="flex items-center gap-3 cursor-pointer group">
-            <input
-              id="displayAreslibToggle" type="checkbox"
-              {...register("displayInAreslib")}
-              className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
-            />
-            <div>
-              <label htmlFor="displayAreslibToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Main Library (ARESLib)</label>
-            </div>
-          </div>
+          <form.Field
+            name="displayInAreslib"
+            children={(field) => (
+              <div className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  id="displayAreslibToggle" type="checkbox"
+                  name={field.name}
+                  checked={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.checked)}
+                  className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
+                />
+                <div>
+                  <label htmlFor="displayAreslibToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Main Library (ARESLib)</label>
+                </div>
+              </div>
+            )}
+          />
 
-          <div className="flex items-center gap-3 cursor-pointer group">
-            <input
-              id="displayMathToggle" type="checkbox"
-              {...register("displayInMathCorner")}
-              className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
-            />
-            <div>
-              <label htmlFor="displayMathToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Math Corner</label>
-            </div>
-          </div>
+          <form.Field
+            name="displayInMathCorner"
+            children={(field) => (
+              <div className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  id="displayMathToggle" type="checkbox"
+                  name={field.name}
+                  checked={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.checked)}
+                  className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
+                />
+                <div>
+                  <label htmlFor="displayMathToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Math Corner</label>
+                </div>
+              </div>
+            )}
+          />
 
-          <div className="flex items-center gap-3 cursor-pointer group">
-            <input
-              id="displayScienceToggle" type="checkbox"
-              {...register("displayInScienceCorner")}
-              className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
-            />
-            <div>
-              <label htmlFor="displayScienceToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Science Corner</label>
-            </div>
-          </div>
+          <form.Field
+            name="displayInScienceCorner"
+            children={(field) => (
+              <div className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  id="displayScienceToggle" type="checkbox"
+                  name={field.name}
+                  checked={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.checked)}
+                  className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
+                />
+                <div>
+                  <label htmlFor="displayScienceToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Science Corner</label>
+                </div>
+              </div>
+            )}
+          />
         </div>
       </div>
 
@@ -293,7 +379,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         {editor && (
           <>
             <div className="flex items-center gap-2">
-              <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={formValues.title || ""} /></div>
+              <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={form.UseFieldState("title").value || ""} /></div>
             </div>
             <CopilotMenu editor={editor} />
           </>
@@ -316,8 +402,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           isPending={saveMutation.isPending}
           isEditing={!!editSlug}
           onDelete={handleDelete}
-          onSaveDraft={handleSubmit((d: DocFormValues) => onFormSubmit(d, true))}
-          onPublish={handleSubmit((d: DocFormValues) => onFormSubmit(d, false))}
+          onSaveDraft={() => onFormSubmit(true)}
+          onPublish={() => onFormSubmit(false)}
           deleteText="DELETE DOC"
           updateText="UPDATE DOC"
           publishText={userRole === "author" ? "SUBMIT FOR REVIEW" : "PUBLISH DOC"}
@@ -345,6 +431,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           />
         </div>
       )}
+      </div>
+    </FormProvider>
     </div>
   );
 }

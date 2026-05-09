@@ -423,43 +423,26 @@ export const transactionHelpers = {
 	},
 
 	/**
-	 * Create an event signup atomically.
-	 * Prevents duplicate signups within the same transaction.
+	 * Create or update an event signup using upsert.
+	 * Uses onConflictDoUpdate for atomic insert-or-update.
 	 */
 	createEventSignup: async (
 		db: DrizzleDB,
 		signupData: typeof schema.eventSignups.$inferInsert,
 	) => {
-		return db.transaction(async (tx) => {
-			// Check for existing signup
-			const existing = await tx
-				.select({ id: schema.eventSignups.id })
-				.from(schema.eventSignups)
-				.where(
-					and(
-						eq(schema.eventSignups.eventId, signupData.eventId),
-						eq(schema.eventSignups.userId, signupData.userId),
-					),
-				)
-				.get();
+		await db
+			.insert(schema.eventSignups)
+			.values(signupData)
+			.onConflictDoUpdate({
+				target: [schema.eventSignups.eventId, schema.eventSignups.userId],
+				set: {
+					bringing: signupData.bringing,
+					notes: signupData.notes,
+					prepHours: signupData.prepHours,
+				},
+			});
 
-			if (existing) {
-				// Update existing
-				await tx
-					.update(schema.eventSignups)
-					.set({
-						bringing: signupData.bringing,
-						notes: signupData.notes,
-						prepHours: signupData.prepHours,
-					})
-					.where(eq(schema.eventSignups.id, existing.id));
-			} else {
-				// Insert new
-				await tx.insert(schema.eventSignups).values(signupData);
-			}
-
-			return { success: true };
-		});
+		return { success: true };
 	},
 
 	/**

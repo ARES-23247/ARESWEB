@@ -22,7 +22,7 @@ export function TelemetryPanel({ data }: TelemetryPanelProps) {
 
   return (
     <div className="flex flex-col border-t border-white/10 bg-obsidian min-h-[150px] max-h-[250px] overflow-y-auto">
-      <div className="px-3 py-1.5 border-b border-white/10 bg-[#1e1e1e] flex items-center gap-2 sticky top-0 z-10">
+      <div className="px-3 py-1.5 border-b border-white/10 bg-obsidian-surface flex items-center gap-2 sticky top-0 z-10">
         <span className="text-white/40 text-xs font-mono uppercase tracking-widest">Telemetry</span>
       </div>
       <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -81,7 +81,7 @@ function TelemetryGraph({ title, points }: { title: string, points: TelemetryPoi
     }
 
     // Draw path
-    ctx.strokeStyle = '#d4a030'; // ares-gold
+    ctx.strokeStyle = '#FFB81C'; // ares-gold
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.beginPath();

@@ -498,8 +498,8 @@ export default function SimulationPlayground() {
 
               <Panel defaultSize={60} minSize={25}>
                 {/* Monaco Editor */}
-                <div className="flex-1 min-h-0 bg-[#1e1e1e] flex flex-col">
-                  <Suspense fallback={<textarea className="w-full h-full bg-[#1e1e1e] text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly />}>
+                <div className="flex-1 min-h-0 bg-obsidian-surface flex flex-col">
+                  <Suspense fallback={<textarea className="w-full h-full bg-obsidian-surface text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly />}>
                     <MonacoEditor
                       height="100%"
                       language={activeFile.endsWith('.ts') || activeFile.endsWith('.tsx') ? 'typescript' : 'javascript'}
@@ -530,7 +530,7 @@ export default function SimulationPlayground() {
           <Panel defaultSize={40} minSize={20}>
             <PanelGroup orientation="horizontal" id="playground-bottom-v2">
               <Panel defaultSize={60} minSize={20}>
-                <div className="px-3 py-1.5 border-b border-white/10 bg-[#0d1117] flex items-center gap-2 shrink-0">
+                <div className="px-3 py-1.5 border-b border-white/10 bg-obsidian-dark flex items-center gap-2 shrink-0">
                   <span className="text-white/40 text-xs font-mono">Live Preview</span>
                   <div className={`w-2 h-2 rounded-full ${compileError ? 'bg-red-500' : 'bg-emerald-500'}`} />
                   {fps !== null && (
@@ -541,7 +541,7 @@ export default function SimulationPlayground() {
                 </div>
                 <div className="flex-1 min-h-0 relative flex flex-col">
                   <div className="flex-1 min-h-0">
-                    <Suspense fallback={<div className="flex items-center justify-center h-full bg-[#0d1117] text-white/40 text-sm">Loading preview...</div>}>
+                    <Suspense fallback={<div className="flex items-center justify-center h-full bg-obsidian-dark text-white/40 text-sm">Loading preview...</div>}>
                       <SimPreviewFrame
                         compiledFiles={compiledFiles}
                         compileError={compileError}

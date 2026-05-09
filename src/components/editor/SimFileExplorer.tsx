@@ -230,7 +230,7 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#1e1e1e] border-r border-white/5">
+    <div className="flex flex-col h-full bg-obsidian-surface border-r border-white/5">
       <div className="px-3 py-2 flex items-center justify-between border-b border-white/5">
         <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Explorer</span>
         <div className="flex items-center gap-0.5">

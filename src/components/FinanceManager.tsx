@@ -12,8 +12,8 @@ import SponsorshipEditModal from "./kanban/SponsorshipEditModal";
 import { motion, AnimatePresence } from "framer-motion";
 import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
+import { zodValidator } from "@tanstack/zod-form-adapter";
 import { financeTransactionSchema, sponsorshipPipelineSchema, type SponsorshipPipelinePayload } from "@shared/schemas/financeSchema";
 import type { PipelineItem, TransactionItem } from "../types/finance";
 import { 
@@ -63,7 +63,13 @@ export default function FinanceManager() {
   const deletePipeline = useDeleteSponsorshipPipeline();
 
   const handleSavePipeline = (data: z.infer<typeof sponsorshipPipelineSchema>) => {
-    savePipeline.mutate(data, {
+    const result = sponsorshipPipelineSchema.safeParse(data);
+    if (!result.success) {
+      const firstError = result.error.issues[0];
+      toast.error(`Validation error: ${firstError.message}`);
+      return;
+    }
+    savePipeline.mutate(result.data, {
       onSuccess: () => {
         toast.success("Sponsorship updated.");
         setIsAdding(false);
@@ -76,7 +82,13 @@ export default function FinanceManager() {
   };
 
   const handleSaveTransaction = (data: z.infer<typeof financeTransactionSchema>) => {
-    saveTransaction.mutate(data, {
+    const result = financeTransactionSchema.safeParse(data);
+    if (!result.success) {
+      const firstError = result.error.issues[0];
+      toast.error(`Validation error: ${firstError.message}`);
+      return;
+    }
+    saveTransaction.mutate(result.data, {
       onSuccess: () => {
         toast.success("Transaction recorded.");
         setIsAdding(false);
@@ -104,13 +116,11 @@ export default function FinanceManager() {
 
   // ── Forms ──
   const pipelineForm = useForm({
-    resolver: zodResolver(sponsorshipPipelineSchema),
-    defaultValues: { company_name: "", status: "potential", estimated_value: 0, season_id: selectedSeason }
+    defaultValues: { company_name: "", status: "potential" as const, estimated_value: 0, season_id: selectedSeason }
   });
 
   const transactionForm = useForm({
-    resolver: zodResolver(financeTransactionSchema),
-    defaultValues: { type: "expense", amount: 0, category: "parts", date: new Date().toISOString().split('T')[0], description: "", season_id: selectedSeason }
+    defaultValues: { type: "expense" as const, amount: 0, category: "parts", date: new Date().toISOString().split('T')[0], description: "", season_id: selectedSeason }
   });
 
   const isInitialLoading = !summaryRes && !isError;

@@ -21,16 +21,16 @@ interface SocialAnalyticsProps {
 // Platform colors
 const PLATFORM_COLORS: Record<string, string> = {
   twitter: "bg-black",
-  bluesky: "bg-[#0085ff]",
-  facebook: "bg-[#1877F2]",
+  bluesky: "bg-social-bluesky",
+  facebook: "bg-social-facebook",
   instagram: "bg-gradient-to-br from-purple-500 to-pink-500",
-  discord: "bg-[#5865F2]",
-  slack: "bg-[#4A154B]",
-  teams: "bg-[#6264A7]",
-  gchat: "bg-[#00897B]",
-  linkedin: "bg-[#0077b5]",
-  tiktok: "bg-[#00f2ea]",
-  band: "bg-[#2D6CD4]",
+  discord: "bg-social-discord",
+  slack: "bg-social-slack",
+  teams: "bg-social-teams",
+  gchat: "bg-social-googlechat",
+  linkedin: "bg-social-linkedin",
+  tiktok: "bg-social-tiktok",
+  band: "bg-social-band",
 };
 
 export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {

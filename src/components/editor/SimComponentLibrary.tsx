@@ -158,8 +158,8 @@ export function SimComponentLibrary({ onInsertCode }: SimComponentLibraryProps) 
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#161b22] overflow-y-auto">
-      <div className="p-3 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#161b22] z-10">
+    <div className="flex flex-col h-full bg-black/40 overflow-y-auto">
+      <div className="p-3 border-b border-white/10 flex items-center justify-between sticky top-0 bg-black/40 z-10">
         <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Component Library</span>
       </div>
 

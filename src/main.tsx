@@ -1,11 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { get, set, del } from "idb-keyval";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { HelmetProvider } from "react-helmet-async";
 import { ModalProvider } from "./contexts/ModalContext";
 import "./index.css";
@@ -28,6 +29,9 @@ if (
   throw new Error("Redirecting to aresfirst.org");
 }
 
+// Track query start times for performance monitoring
+const queryStartTimes = new Map<unknown, number>();
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -35,8 +39,50 @@ const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 60 * 24 * 7, // Keep offline data for 7 days
       retry: 1,
       refetchOnWindowFocus: false,
+      onSuccess: (_data, query) => {
+        // Performance monitoring: log slow queries (>2s)
+        const startTime = queryStartTimes.get(query.queryKey);
+        if (startTime) {
+          const duration = performance.now() - startTime;
+          if (duration > 2000) {
+            console.warn(`[Query Performance] Slow query detected: ${duration.toFixed(0)}ms`, {
+              queryKey: query.queryKey,
+            });
+          }
+          queryStartTimes.delete(query.queryKey);
+        }
+      },
     },
   },
+  // Log query lifecycle in development for debugging
+  logger: import.meta.env.DEV ? console : undefined,
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      // Track query errors in Sentry
+      if (import.meta.env.VITE_SENTRY_DSN) {
+        Sentry.captureException(error, {
+          tags: { type: 'query' },
+          extra: { queryKey: query.queryKey },
+        });
+      }
+      console.error('[Query Error]', error.message, { queryKey: query.queryKey });
+    },
+    onFetch: (query) => {
+      // Track start time for performance monitoring
+      queryStartTimes.set(query.queryKey, performance.now());
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) => {
+      // Track mutation errors in Sentry
+      if (import.meta.env.VITE_SENTRY_DSN) {
+        Sentry.captureException(error, {
+          tags: { type: 'mutation', mutationId: mutation.mutationId },
+        });
+      }
+      console.error('[Mutation Error]', error.message, { mutationId: mutation.mutationId });
+    },
+  }),
 });
 
 const persister = createAsyncStoragePersister({
@@ -90,7 +136,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <RouterProvider router={router} />
           </ModalProvider>
         </NuqsAdapter>
-        <ReactQueryDevtools initialIsOpen={false} />
+        <ReactQueryDevtools initialIsOpen={false} position="bottom-left" />
+        <TanStackRouterDevtools initialIsOpen={false} position="bottom-right" />
       </PersistQueryClientProvider>
     </HelmetProvider>
   </React.StrictMode>

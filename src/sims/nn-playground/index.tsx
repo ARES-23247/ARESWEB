@@ -401,11 +401,11 @@ export default function NeuralPlayground() {
             </div>
             <div className="flex flex-col gap-2 text-[10px] text-marble/60">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-[#3b82f6] rounded-sm" />
+                <div className="w-3 h-3 bg-ares-cyan rounded-sm" />
                 <span>Positive Weight / Class A</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-[#f59e0b] rounded-sm" />
+                <div className="w-3 h-3 bg-ares-gold rounded-sm" />
                 <span>Negative Weight / Class B</span>
               </div>
             </div>

@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Shield, Key, CheckCircle, AlertTriangle, Copy, RefreshCw } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { authClient } from "../../utils/auth-client";
-import { ProfileSubComponentProps } from "./types";
+import { ProfileStylingProps } from "./types";
 
-export function SecuritySettings({ inputClass, labelClass, sectionClass }: ProfileSubComponentProps) {
+export function SecuritySettings({ inputClass, labelClass, sectionClass }: ProfileStylingProps) {
   const { data: session, refetch: refetchSession } = authClient.useSession();
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isSettingUp2FA, setIsSettingUp2FA] = useState(false);
