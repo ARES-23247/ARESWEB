@@ -1,6 +1,6 @@
 -- Current sql file was generated after introspecting the database
 -- If you want to run this migration please uncomment this code before executing migrations
-/*
+
 CREATE TABLE `user` (
 	`id` text PRIMARY KEY,
 	`name` text NOT NULL,
@@ -765,4 +765,4 @@ CREATE TABLE `simulations` (
 --> statement-breakpoint
 CREATE INDEX `idx_simulations_public` ON `simulations` (`is_public`);--> statement-breakpoint
 CREATE INDEX `idx_simulations_author` ON `simulations` (`author_id`);
-*/
+
