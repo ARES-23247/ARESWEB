@@ -31,10 +31,26 @@ database_name = "ares-db-preview"
 database_id = "09c4aafb-89fd-4735-930e-3ff8e2289c34"
 migrations_dir = "drizzle"
 
+[[env.preview.d1_databases]]
+binding = "PK_DB"
+database_name = "ares-db-preview"
+database_id = "09c4aafb-89fd-4735-930e-3ff8e2289c34"
+migrations_dir = "drizzle"
+
+[[env.preview.r2_buckets]]
+binding = "ARES_STORAGE"
+bucket_name = "ares-media"
+
+[env.preview.ai]
+binding = "AI"
+
+[[env.preview.vectorize]]
+binding = "VECTORIZE_DB"
+index_name = "ares_knowledge_base"
+
 [ai]
 binding = "AI"
 
 [[vectorize]]
 binding = "VECTORIZE_DB"
 index_name = "ares_knowledge_base"
-

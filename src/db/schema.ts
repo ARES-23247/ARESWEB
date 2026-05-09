@@ -521,185 +521,29 @@ export const auditLog = sqliteTable("audit_log", {
 	index("idx_audit_log_actor").on(table.actor),
 ]);
 
-export const docsFts = sqliteTable("docs_fts", {
-	slug: real(),
-	title: real(),
-	category: real(),
-	description: real(),
-	content: real(),
-	status: real(),
-	isDeleted: real("is_deleted"),
-	docsFts: real("docs_fts"),
-	rank: real(),
-});
 
-export const docsFtsData = sqliteTable("docs_fts_data", {
-	id: integer().primaryKey(),
-	block: blob(),
-});
 
-export const docsFtsIdx = sqliteTable("docs_fts_idx", {
-	segid: real().notNull(),
-	term: real().notNull(),
-	pgno: real(),
-},
-(table) => [
-	primaryKey({ columns: [table.segid, table.term], name: "docs_fts_idx_segid_term_pk"})
-]);
 
-export const docsFtsContent = sqliteTable("docs_fts_content", {
-	id: integer().primaryKey(),
-	c0: real(),
-	c1: real(),
-	c2: real(),
-	c3: real(),
-	c4: real(),
-	c5: real(),
-	c6: real(),
-});
 
-export const docsFtsDocsize = sqliteTable("docs_fts_docsize", {
-	id: integer().primaryKey(),
-	sz: blob(),
-});
 
-export const docsFtsConfig = sqliteTable("docs_fts_config", {
-	k: real().primaryKey().notNull(),
-	v: real(),
-});
 
-export const postsFts = sqliteTable("posts_fts", {
-	slug: real(),
-	title: real(),
-	snippet: real(),
-	author: real(),
-	ast: real(),
-	postsFts: real("posts_fts"),
-	rank: real(),
-});
 
-export const postsFtsData = sqliteTable("posts_fts_data", {
-	id: integer().primaryKey(),
-	block: blob(),
-});
 
-export const postsFtsIdx = sqliteTable("posts_fts_idx", {
-	segid: real().notNull(),
-	term: real().notNull(),
-	pgno: real(),
-},
-(table) => [
-	primaryKey({ columns: [table.segid, table.term], name: "posts_fts_idx_segid_term_pk"})
-]);
 
-export const postsFtsContent = sqliteTable("posts_fts_content", {
-	id: integer().primaryKey(),
-	c0: real(),
-	c1: real(),
-	c2: real(),
-	c3: real(),
-	c4: real(),
-});
 
-export const postsFtsDocsize = sqliteTable("posts_fts_docsize", {
-	id: integer().primaryKey(),
-	sz: blob(),
-});
 
-export const postsFtsConfig = sqliteTable("posts_fts_config", {
-	k: real().primaryKey().notNull(),
-	v: real(),
-});
 
-export const eventsFts = sqliteTable("events_fts", {
-	id: real(),
-	title: real(),
-	description: real(),
-	location: real(),
-	status: real(),
-	isDeleted: real("is_deleted"),
-	eventsFts: real("events_fts"),
-	rank: real(),
-});
 
-export const eventsFtsData = sqliteTable("events_fts_data", {
-	id: integer().primaryKey(),
-	block: blob(),
-});
 
-export const eventsFtsIdx = sqliteTable("events_fts_idx", {
-	segid: real().notNull(),
-	term: real().notNull(),
-	pgno: real(),
-},
-(table) => [
-	primaryKey({ columns: [table.segid, table.term], name: "events_fts_idx_segid_term_pk"})
-]);
 
-export const eventsFtsContent = sqliteTable("events_fts_content", {
-	id: integer().primaryKey(),
-	c0: real(),
-	c1: real(),
-	c2: real(),
-	c3: real(),
-	c4: real(),
-	c5: real(),
-});
 
-export const eventsFtsDocsize = sqliteTable("events_fts_docsize", {
-	id: integer().primaryKey(),
-	sz: blob(),
-});
 
-export const eventsFtsConfig = sqliteTable("events_fts_config", {
-	k: real().primaryKey().notNull(),
-	v: real(),
-});
 
-export const userProfilesFts = sqliteTable("user_profiles_fts", {
-	userId: real("user_id"),
-	nickname: real(),
-	firstName: real("first_name"),
-	lastName: real("last_name"),
-	bio: real(),
-	showOnAbout: real("show_on_about"),
-	userProfilesFts: real("user_profiles_fts"),
-	rank: real(),
-});
 
-export const userProfilesFtsData = sqliteTable("user_profiles_fts_data", {
-	id: integer().primaryKey(),
-	block: blob(),
-});
 
-export const userProfilesFtsIdx = sqliteTable("user_profiles_fts_idx", {
-	segid: real().notNull(),
-	term: real().notNull(),
-	pgno: real(),
-},
-(table) => [
-	primaryKey({ columns: [table.segid, table.term], name: "user_profiles_fts_idx_segid_term_pk"})
-]);
 
-export const userProfilesFtsContent = sqliteTable("user_profiles_fts_content", {
-	id: integer().primaryKey(),
-	c0: real(),
-	c1: real(),
-	c2: real(),
-	c3: real(),
-	c4: real(),
-	c5: real(),
-});
 
-export const userProfilesFtsDocsize = sqliteTable("user_profiles_fts_docsize", {
-	id: integer().primaryKey(),
-	sz: blob(),
-});
 
-export const userProfilesFtsConfig = sqliteTable("user_profiles_fts_config", {
-	k: real().primaryKey().notNull(),
-	v: real(),
-});
 
 export const products = sqliteTable("products", {
 	id: text().primaryKey(),
