@@ -112,9 +112,12 @@ export function useUpdateUserProfile(
       const response = await client.users.admin[":id"].profile.$put({ param: { id }, json: profile });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      options?.onSuccess?.(...args);
+    },
+    onError: (...args) => {
+      options?.onError?.(...args);
     }
   });
 }
@@ -131,9 +134,12 @@ export function useDeleteUser(
       const response = await client.users.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      options?.onSuccess?.(...args);
+    },
+    onError: (...args) => {
+      options?.onError?.(...args);
     }
   });
 }

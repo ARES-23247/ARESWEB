@@ -57,9 +57,12 @@ export function useUpdateMe(
       const response = await client.profile.me.$put({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
+      options?.onSuccess?.(...args);
+    },
+    onError: (...args) => {
+      options?.onError?.(...args);
     }
   });
 }
@@ -76,9 +79,12 @@ export function useUpdateAvatar(
       const response = await client.profile.avatar.$put({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...options,
-    onSuccess: () => {
+    onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
+      options?.onSuccess?.(...args);
+    },
+    onError: (...args) => {
+      options?.onError?.(...args);
     }
   });
 }
