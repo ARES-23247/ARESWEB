@@ -3,7 +3,7 @@ import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMiddleware, envMiddleware, originIntegrityMiddleware, DrizzleDB } from "./middleware";
-import { sql, desc, eq, and, inArray, lt, lte } from "drizzle-orm";
+import { desc, eq, and, inArray, lt, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../../src/db/schema";
 import { purgeOldInquiries } from "./routes/inquiries/index";
