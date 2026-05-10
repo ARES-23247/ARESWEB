@@ -460,7 +460,7 @@ tasksRouter.openapi(createTaskAttachmentRoute, async (c) => {
           title = match[1].trim().replace(/\n/g, "").substring(0, 100);
         }
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore fetch errors, fallback to hostname
     }
 
