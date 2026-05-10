@@ -1,10 +1,10 @@
-import { typedHandler } from "../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, and, inArray, or } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, ensureAuth, logAuditAction, getDb } from "../middleware";
 import { getEntityLinksRoute, saveEntityLinkRoute, deleteEntityLinkRoute } from "../../../shared/routes/entities";
+import { createTypedHandler } from "../utils/handler-native";
 
 
 
@@ -12,9 +12,9 @@ export const entitiesRouter = new OpenAPIHono<AppEnv>();
 
 entitiesRouter.use("*", ensureAuth);
 
-entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRoute>(async (c) => {
+entitiesRouter.openapi(getEntityLinksRoute, createTypedHandler(getEntityLinksRoute, async (c, { query }) => {
     const db = getDb(c);
-    const { type, id } = c.req.valid("query");
+    const { type, id } = query;
 
     const rawLinks = await db.select({
       id: schema.entityLinks.id,
@@ -78,9 +78,8 @@ entitiesRouter.openapi(getEntityLinksRoute, typedHandler<typeof getEntityLinksRo
     return c.json({ links: enrichedLinks }, 200);
 }));
 
-entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRoute>(async (c) => {
+entitiesRouter.openapi(saveEntityLinkRoute, createTypedHandler(saveEntityLinkRoute, async (c, { body }) => {
     const db = getDb(c);
-    const body = c.req.valid("json");
     const id = crypto.randomUUID();
 
     await db.insert(schema.entityLinks)
@@ -98,13 +97,14 @@ entitiesRouter.openapi(saveEntityLinkRoute, typedHandler<typeof saveEntityLinkRo
     return c.json({ success: true, id }, 200);
 }));
 
-entitiesRouter.openapi(deleteEntityLinkRoute, typedHandler<typeof deleteEntityLinkRoute>(async (c) => {
+entitiesRouter.openapi(deleteEntityLinkRoute, createTypedHandler(deleteEntityLinkRoute, async (c, { params }) => {
     const db = getDb(c);
-    const { id } = c.req.valid("param");
+    const { id } = params;
     await db.delete(schema.entityLinks).where(eq(schema.entityLinks.id, id)).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_link", "entity_links", id));
     return c.json({ success: true }, 200);
 }));
 
 export default entitiesRouter;
+
 

@@ -1,102 +1,98 @@
-import { typedHandler } from "../utils/handler";
-import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { Context } from "hono";
 
-import { AppEnv, ensureAdmin, getSocialConfig, logAuditAction, getDb } from "../middleware";
+import { eq, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
+import { AppEnv, getSessionUser, ensureAdmin, getDb } from "../middleware";
 import {
-
-  sendMassEmailRoute,
-  getStatsRoute,
+  listNewsRoute,
+  getNewsByIdRoute,
+  createNewsRoute,
+  updateNewsRoute,
+  deleteNewsRoute,
 } from "../../../shared/routes/communications";
-
+import { createTypedHandler } from "../utils/handler-native";
+import { ApiError } from "../middleware/errorHandler";
 
 export const communicationsRouter = new OpenAPIHono<AppEnv>();
 
-// Require admin for all communications endpoints
-communicationsRouter.use("/mass-email", ensureAdmin);
-communicationsRouter.use("/stats", ensureAdmin);
-
-// Get stats
-communicationsRouter.openapi(getStatsRoute, typedHandler<typeof getStatsRoute>(async (c) => {
+// News Routes
+communicationsRouter.openapi(listNewsRoute, createTypedHandler(listNewsRoute, async (c, { query }) => {
+    const { category, limit = 10, offset = 0 } = query;
     const db = getDb(c);
-    const users = await db.select({ email: schema.user.email }).from(schema.user);
+    let q = db.select().from(schema.news);
 
-    const activeMembers = users.filter((m) => m.email);
-    return c.json({ activeUsers: activeMembers.length }, 200);
+    if (category) {
+      q = q.where(eq(schema.news.category, category)) as any;
+    }
 
+    const results = await q.orderBy(desc(schema.news.publishDate)).limit(limit).offset(offset).all();
+
+    const news = results.map((n) => ({
+      ...n,
+      content: n.content || "",
+      imageUrl: n.imageUrl || null,
+      publishDate: n.publishDate || new Date().toISOString(),
+      category: (n.category as any) || "general",
+    }));
+
+    return c.json({ news }, 200);
 }));
 
-// Send mass email
-communicationsRouter.openapi(sendMassEmailRoute, typedHandler<typeof sendMassEmailRoute>(async (c) => {
-    const { subject, htmlContent } = c.req.valid("json");
-    const socialConfig = await getSocialConfig(c);
-
-    if (!socialConfig.RESEND_API_KEY) {
-      throw new ApiError("Resend API key is not configured.", 400);
-    }
-
-    const fromEmail = socialConfig.RESEND_FROM_EMAIL || "team@aresfirst.org";
-
-    // Fetch users from database
+communicationsRouter.openapi(getNewsByIdRoute, createTypedHandler(getNewsByIdRoute, async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
-    const users = await db.select({ email: schema.user.email }).from(schema.user);
+    const result = await db.select().from(schema.news).where(eq(schema.news.id, id)).get();
 
-    const activeMembers = users.filter((m) => m.email);
-
-    if (activeMembers.length === 0) {
-      throw new ApiError("No active users found to send emails to.", 400);
+    if (!result) {
+      throw new ApiError("News item not found", 404);
     }
 
-    const BATCH_LIMIT = 50;
-    const emailPayloads = [];
+    const news = {
+      ...result,
+      content: result.content || "",
+      imageUrl: result.imageUrl || null,
+      publishDate: result.publishDate || new Date().toISOString(),
+      category: (result.category as any) || "general",
+    };
 
-    // Resend Batch API allows sending an array of up to 100 emails at once, but we will chunk to 50 for safety.
-    // Each user gets their own individual email so they don't see everyone else's address.
-    for (const member of activeMembers) {
-      emailPayloads.push({
-        from: `ARES Robotics <${fromEmail}>`,
-        to: [member.email],
-        subject,
-        html: htmlContent,
-      });
-    }
+    return c.json({ news }, 200);
+}));
 
-    let sentCount = 0;
-    for (let i = 0; i < emailPayloads.length; i += BATCH_LIMIT) {
-      const chunk = emailPayloads.slice(i, i + BATCH_LIMIT);
+// Admin Routes
+communicationsRouter.use("*", ensureAdmin);
 
-      const resendRes = await fetch("https://api.resend.com/emails/batch", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${socialConfig.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(chunk),
-      });
+communicationsRouter.openapi(createNewsRoute, createTypedHandler(createNewsRoute, async (c, { body }) => {
+    const db = getDb(c);
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-      if (!resendRes.ok) {
-        const errText = await resendRes.text();
-        throw new Error(`Resend API Error: ${errText}`);
-      }
+    await db.insert(schema.news).values({
+        id,
+        ...body,
+        publishDate: body.publishDate || now,
+        createdAt: now,
+        updatedAt: now,
+    }).run();
 
-      const resData = (await resendRes.json()) as Record<string, unknown>;
-      if (resData && typeof resData.error === "object" && resData.error !== null) {
-        const error = resData.error as Record<string, unknown>;
-        throw new Error(`Resend Batch Error: ${error.message || "Unknown error"}`);
-      }
+    return c.json({ success: true, id }, 200);
+}));
 
-      sentCount += chunk.length;
-    }
+communicationsRouter.openapi(updateNewsRoute, createTypedHandler(updateNewsRoute, async (c, { params, body }) => {
+    const { id } = params;
+    const db = getDb(c);
+    await db.update(schema.news).set({
+        ...body,
+        updatedAt: new Date().toISOString(),
+    }).where(eq(schema.news.id, id)).run();
+    return c.json({ success: true }, 200);
+}));
 
-    await logAuditAction(c, "SEND_MASS_EMAIL", "communications", "broadcast", `Sent to ${sentCount} recipients. Subject: ${subject}`);
-
-    return c.json({
-      success: true,
-      message: "Emails dispatched successfully",
-      recipientCount: sentCount
-    }, 200);
-
+communicationsRouter.openapi(deleteNewsRoute, createTypedHandler(deleteNewsRoute, async (c, { params }) => {
+    const { id } = params;
+    const db = getDb(c);
+    await db.delete(schema.news).where(eq(schema.news.id, id)).run();
+    return c.json({ success: true }, 200);
 }));
 
 export default communicationsRouter;

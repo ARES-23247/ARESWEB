@@ -1,4 +1,3 @@
-import { autoResponseHandler, success, error } from "../utils/handler-v2";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq } from "drizzle-orm";
 
@@ -8,6 +7,8 @@ import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../
 import { emitNotification } from "../../utils/notifications";
 import { listCommentsRoute, submitCommentRoute, updateCommentRoute, deleteCommentRoute } from "../../../shared/routes/comments";
 import { queryHelpers } from "@/db/query-helpers";
+import { createTypedHandler } from "../utils/handler-native";
+import { ApiError } from "../middleware/errorHandler";
 
 
 
@@ -39,7 +40,7 @@ commentsRouter.use("/{id}", (c, next) => {
   return next();
 });
 
-commentsRouter.openapi(listCommentsRoute, autoResponseHandler<typeof listCommentsRoute>(async (c, { params }) => {
+commentsRouter.openapi(listCommentsRoute, createTypedHandler(listCommentsRoute, async (c, { params }) => {
   const { targetType, targetId } = params;
   const user = await getSessionUser(c);
   const db = getDb(c);
@@ -56,37 +57,37 @@ commentsRouter.openapi(listCommentsRoute, autoResponseHandler<typeof listComment
     updatedAt: String(r.createdAt)
   }));
 
-  return success({
+  return c.json({
     comments,
     authenticated: !!user,
     role: user?.role || null
-  });
+  }, 200);
 }));
 
-commentsRouter.openapi(submitCommentRoute, autoResponseHandler<typeof submitCommentRoute>(async (c, { params }) => {
+commentsRouter.openapi(submitCommentRoute, createTypedHandler(submitCommentRoute, async (c, { params, body }) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return error({ error: "Unauthorized" }, 401);
+    throw new ApiError("Unauthorized", 401);
   }
   if (user.role === "unverified") {
-    return error({ error: "Verify your email to comment" }, 403);
+    throw new ApiError("Verify your email to comment", 403);
   }
 
   const { targetType, targetId } = params;
   const db = getDb(c);
-  const { content: rawContent } = c.req.valid("json") as { content: string };
+  const { content: rawContent } = body;
   if (!rawContent) {
-    return error({ error: "Comment content is required" }, 400);
+    throw new ApiError("Comment content is required", 400);
   }
   const content = String(rawContent).trim();
 
   if (!content) {
-    return error({ error: "Comment content is required" }, 400);
+    throw new ApiError("Comment content is required", 400);
   }
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
   if (rawContent.length > MAX_INPUT_LENGTHS.comment) {
-    return error({ error: `Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit` }, 400);
+    throw new ApiError(`Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`, 400);
   }
 
   const id = crypto.randomUUID();
@@ -132,36 +133,36 @@ commentsRouter.openapi(submitCommentRoute, autoResponseHandler<typeof submitComm
     }
   }
 
-  return success({ success: true });
+  return c.json({ success: true }, 200);
 }));
 
-commentsRouter.openapi(updateCommentRoute, autoResponseHandler<typeof updateCommentRoute>(async (c, { params }) => {
+commentsRouter.openapi(updateCommentRoute, createTypedHandler(updateCommentRoute, async (c, { params, body }) => {
   const user = await getSessionUser(c);
-  if (!user) return error({ error: "Unauthorized" }, 401);
-  if (user.role === "unverified") return error({ error: "Unverified" }, 403);
+  if (!user) throw new ApiError("Unauthorized", 401);
+  if (user.role === "unverified") throw new ApiError("Unverified", 403);
 
   const { id } = params;
   const db = getDb(c);
-  const { content: rawContent } = c.req.valid("json") as { content: string };
+  const { content: rawContent } = body;
   const content = rawContent ? String(rawContent).trim() : undefined;
 
-  if (!content) return error({ error: "Content is required" }, 400);
+  if (!content) throw new ApiError("Content is required", 400);
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
   if (rawContent && String(rawContent).length > MAX_INPUT_LENGTHS.comment) {
-    return error({ error: `Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit` }, 400);
+    throw new ApiError(`Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`, 400);
   }
 
   const row = await db.select({
     user_id: schema.comments.userId,
     zulip_message_id: schema.comments.zulipMessageId
   }).from(schema.comments).where(eq(schema.comments.id, id)).get();
-  if (!row) return error({ error: "Comment not found" }, 404);
+  if (!row) throw new ApiError("Comment not found", 404);
 
   const isOwner = row.user_id === user.id;
   const isModerator = user.role === "admin" || user.memberType === "mentor" || user.memberType === "coach";
 
-  if (!isOwner && !isModerator) return error({ error: "Unauthorized to update this comment" }, 403);
+  if (!isOwner && !isModerator) throw new ApiError("Unauthorized to update this comment", 403);
 
   await db.update(schema.comments)
     .set({ content })
@@ -179,13 +180,13 @@ commentsRouter.openapi(updateCommentRoute, autoResponseHandler<typeof updateComm
     })());
   }
 
-  return success({ success: true });
+  return c.json({ success: true }, 200);
 }));
 
-commentsRouter.openapi(deleteCommentRoute, autoResponseHandler<typeof deleteCommentRoute>(async (c, { params }) => {
+commentsRouter.openapi(deleteCommentRoute, createTypedHandler(deleteCommentRoute, async (c, { params }) => {
   const user = await getSessionUser(c);
-  if (!user) return error({ error: "Unauthorized" }, 401);
-  if (user.role === "unverified") return error({ error: "Unverified" }, 403);
+  if (!user) throw new ApiError("Unauthorized", 401);
+  if (user.role === "unverified") throw new ApiError("Unverified", 403);
 
   const { id } = params;
   const db = getDb(c);
@@ -194,12 +195,12 @@ commentsRouter.openapi(deleteCommentRoute, autoResponseHandler<typeof deleteComm
     user_id: schema.comments.userId,
     zulip_message_id: schema.comments.zulipMessageId
   }).from(schema.comments).where(eq(schema.comments.id, id)).get();
-  if (!row) return error({ error: "Comment not found" }, 404);
+  if (!row) throw new ApiError("Comment not found", 404);
 
   const isOwner = row.user_id === user.id;
   const isModerator = user.role === "admin" || user.memberType === "mentor" || user.memberType === "coach";
 
-  if (!isOwner && !isModerator) return error({ error: "Unauthorized to delete this comment" }, 403);
+  if (!isOwner && !isModerator) throw new ApiError("Unauthorized to delete this comment", 403);
 
   await db.update(schema.comments)
     .set({ isDeleted: 1 })
@@ -217,7 +218,7 @@ commentsRouter.openapi(deleteCommentRoute, autoResponseHandler<typeof deleteComm
     })());
   }
 
-  return success({ success: true });
+  return c.json({ success: true }, 200);
 }));
 
 export default commentsRouter;

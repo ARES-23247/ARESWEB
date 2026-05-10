@@ -1,5 +1,5 @@
-﻿import { createTypedHandler } from "../utils/handler-v2";
-import { autoResponseHandler, success, error } from "../utils/handler-v2";
+﻿import { ApiError } from "../middleware/errorHandler";
+import { createTypedHandler } from "../utils/handler-native";
 import { QUERY_LIMITS } from "../utils/queryLimits";
 import { sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -145,7 +145,7 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 }
 
 // GET /docs - List all public docs
-docsRouter.openapi(docsRoutes.getDocsRoute, autoResponseHandler<typeof docsRoutes.getDocsRoute>(async (c) => {
+docsRouter.openapi(docsRoutes.getDocsRoute, createTypedHandler(docsRoutes.getDocsRoute, async (c) => {
     const db = getDb(c);
     let results;
     try {
@@ -217,31 +217,31 @@ docsRouter.openapi(docsRoutes.getDocsRoute, autoResponseHandler<typeof docsRoute
       originalAuthorAvatar: ('originalAuthorAvatar' in d ? d.originalAuthorAvatar : undefined)
     }));
 
-    return success({ docs });
+    return c.json({ docs }, 200);
 }));
 
 // GET /docs/search - Search docs
-docsRouter.openapi(docsRoutes.searchDocsRoute, autoResponseHandler<typeof docsRoutes.searchDocsRoute>(async (c, { query }) => {
+docsRouter.openapi(docsRoutes.searchDocsRoute, createTypedHandler(docsRoutes.searchDocsRoute, async (c, { query }) => {
   const { q } = query;
   if (!q || q.length < 3) {
-    return success({ results: [] });
+    return c.json({ results: [] }, 200);
   }
 
   // WR-18: Limit query length to prevent ReDoS via complex regex patterns
   if (q.length > 50) {
-    return error({ error: "Query too long (max 50 characters)" }, 400);
+    throw new ApiError("Query too long (max 50 characters)", 400);
   }
 
     const now = Date.now();
     const cached = docSearchCache.get(q);
     if (cached && cached.expiresAt > now) {
-      return success(cached.data);
+      return c.json(cached.data, 200);
     }
 
     // Sanitize FTS query to prevent SQL injection
     const cleanQ = sanitizeFtsQuery(String(q));
     if (!cleanQ) {
-      return success({ results: [] });
+      return c.json({ results: [] }, 200);
     }
 
     const db = getDb(c);
@@ -267,11 +267,11 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, autoResponseHandler<typeof docsRo
 
     const payload = { results: mapped };
     setCache(q, { data: payload, expiresAt: now + 60000 });
-    return success(payload);
+    return c.json(payload, 200);
 }));
 
 // GET /docs/admin/list - List all docs (admin view)
-docsRouter.openapi(docsRoutes.adminListRoute, autoResponseHandler<typeof docsRoutes.adminListRoute>(async (c) => {
+docsRouter.openapi(docsRoutes.adminListRoute, createTypedHandler(docsRoutes.adminListRoute, async (c) => {
     const db = getDb(c);
     let results;
     try {
@@ -329,11 +329,11 @@ docsRouter.openapi(docsRoutes.adminListRoute, autoResponseHandler<typeof docsRou
       displayInScienceCorner: Number(d.displayInScienceCorner ?? 0)
     }));
 
-    return success({ docs });
+    return c.json({ docs }, 200);
 }));
 
 // GET /docs/admin/{slug}/detail - Get doc detail (admin view)
-docsRouter.openapi(docsRoutes.adminDetailRoute, autoResponseHandler<typeof docsRoutes.adminDetailRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.adminDetailRoute, createTypedHandler(docsRoutes.adminDetailRoute, async (c, { params }) => {
   const { slug } = params;
     const db = getDb(c);
     let row;
@@ -379,7 +379,7 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, autoResponseHandler<typeof docsR
     }
 
     if (!row) {
-      return error({ error: "Doc not found" }, 404);
+      throw new ApiError("Doc not found", 404);
     }
 
     const doc = {
@@ -401,11 +401,11 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, autoResponseHandler<typeof docsR
       displayInScienceCorner: Number(row.displayInScienceCorner ?? 0)
     };
 
-    return success({ doc });
+    return c.json({ doc }, 200);
 }));
 
 // GET /docs/{slug} - Get single doc with contributors
-docsRouter.openapi(docsRoutes.getDocRoute, autoResponseHandler<typeof docsRoutes.getDocRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.getDocRoute, createTypedHandler(docsRoutes.getDocRoute, async (c, { params }) => {
   const { slug } = params;
     const db = getDb(c);
     let row;
@@ -463,7 +463,7 @@ docsRouter.openapi(docsRoutes.getDocRoute, autoResponseHandler<typeof docsRoutes
     }
 
     if (!row) {
-      return error({ error: "Doc not found" }, 404);
+      throw new ApiError("Doc not found", 404);
     }
 
     const contributorRows = await db.select({
@@ -506,33 +506,33 @@ docsRouter.openapi(docsRoutes.getDocRoute, autoResponseHandler<typeof docsRoutes
       originalAuthorAvatar: row.originalAuthorAvatar ?? undefined
     };
 
-    return success({ doc, contributors });
+    return c.json({ doc, contributors }, 200);
 }));
 
 // DELETE /docs/admin/{slug} - Delete doc (soft delete)
-docsRouter.openapi(docsRoutes.deleteDocRoute, autoResponseHandler<typeof docsRoutes.deleteDocRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.deleteDocRoute, createTypedHandler(docsRoutes.deleteDocRoute, async (c, { params }) => {
   const { slug } = params;
     const db = getDb(c);
     const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
     if (!existing) {
-      return error({ error: "Doc not found" }, 404);
+      throw new ApiError("Doc not found", 404);
     }
 
     await db.update(schema.docs).set({ isDeleted: 1 }).where(eq(schema.docs.slug, slug)).run();
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
 // POST /docs/admin/save - Save or update doc
-docsRouter.openapi(docsRoutes.saveDocRoute, autoResponseHandler<typeof docsRoutes.saveDocRoute>(async (c, { body }) => {
+docsRouter.openapi(docsRoutes.saveDocRoute, createTypedHandler(docsRoutes.saveDocRoute, async (c, { body }) => {
     const db = getDb(c);
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = body;
     const user = await getSessionUser(c);
     const email = user?.email || "anonymous_admin";
 
     if (!slug) {
-      return error({ error: "slug is required" }, 400);
+      throw new ApiError("slug is required", 400);
     }
 
     const existing = await db.select({
@@ -595,7 +595,7 @@ docsRouter.openapi(docsRoutes.saveDocRoute, autoResponseHandler<typeof docsRoute
         priority: "medium"
       }), "Failed to send revision notification");
 
-      return success({ success: true, slug: revSlug });
+      return c.json({ success: true, slug: revSlug }, 200);
     }
 
     const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
@@ -677,44 +677,44 @@ docsRouter.openapi(docsRoutes.saveDocRoute, autoResponseHandler<typeof docsRoute
     }
 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
-    return success({ success: true, slug });
+    return c.json({ success: true, slug }, 200);
 }));
 
 // PATCH /docs/admin/{slug}/sort - Update doc sort order
-docsRouter.openapi(docsRoutes.updateSortRoute, autoResponseHandler<typeof docsRoutes.updateSortRoute>(async (c, { params, body }) => {
+docsRouter.openapi(docsRoutes.updateSortRoute, createTypedHandler(docsRoutes.updateSortRoute, async (c, { params, body }) => {
   const { slug } = params;
   const { sortOrder } = body;
     const db = getDb(c);
     await db.update(schema.docs).set({ sortOrder: sortOrder }).where(eq(schema.docs.slug, slug)).run();
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
 // POST /docs/{slug}/feedback - Submit doc feedback
-docsRouter.openapi(docsRoutes.submitFeedbackRoute, autoResponseHandler<typeof docsRoutes.submitFeedbackRoute>(async (c, { params, body }) => {
+docsRouter.openapi(docsRoutes.submitFeedbackRoute, createTypedHandler(docsRoutes.submitFeedbackRoute, async (c, { params, body }) => {
   const { slug } = params;
   const { isHelpful, comment, turnstileToken } = body;
   const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
   const ua = c.req.header("User-Agent") ?? "unknown";
   const db = getDb(c);
   if (!(await checkPersistentRateLimit(db, `feedback:${ip}`, ua, 10, 60))) {
-    return error({ error: "Too many requests" }, 429);
+    throw new ApiError("Too many requests", 429);
   }
 
   const valid = await verifyTurnstile(turnstileToken ?? "", c.env.TURNSTILE_SECRET_KEY, ip);
   if (!valid) {
-    return error({ error: "Security verification failed" }, 403);
+    throw new ApiError("Security verification failed", 403);
   }
 
   if (comment && comment.length > 2000) {
-    return error({ error: "Comment too long" }, 400);
+    throw new ApiError("Comment too long", 400);
   }
 
     await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment ?? null }).run();
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
 // GET /docs/admin/{slug}/history - Get doc history
-docsRouter.openapi(docsRoutes.getHistoryRoute, autoResponseHandler<typeof docsRoutes.getHistoryRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.getHistoryRoute, createTypedHandler(docsRoutes.getHistoryRoute, async (c, { params }) => {
   const { slug } = params;
     const db = getDb(c);
     const results = await db.select({
@@ -738,11 +738,11 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, autoResponseHandler<typeof docsRo
       createdAt: h.createdAt ?? "" // Ensure createdAt is never null
     }));
 
-    return success({ history });
+    return c.json({ history }, 200);
 }));
 
 // PATCH /docs/admin/{slug}/history/{id}/restore - Restore doc from history
-docsRouter.openapi(docsRoutes.restoreHistoryRoute, autoResponseHandler<typeof docsRoutes.restoreHistoryRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.restoreHistoryRoute, createTypedHandler(docsRoutes.restoreHistoryRoute, async (c, { params }) => {
   const { slug, id } = params;
     const db = getDb(c);
     const row = await db.select().from(schema.docsHistory).where(
@@ -750,7 +750,7 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, autoResponseHandler<typeof do
     ).get();
 
     if (!row) {
-      return error({ error: "Version not found" }, 404);
+      throw new ApiError("Version not found", 404);
     }
 
     // Get current doc for reference
@@ -773,11 +773,11 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, autoResponseHandler<typeof do
       content: row.content ?? "",
     }).where(eq(schema.docs.slug, slug)).run();
 
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
 // POST /docs/admin/{slug}/approve - Approve doc
-docsRouter.openapi(docsRoutes.approveDocRoute, autoResponseHandler<typeof docsRoutes.approveDocRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.approveDocRoute, createTypedHandler(docsRoutes.approveDocRoute, async (c, { params }) => {
   const { slug } = params;
     const db = getDb(c);
 
@@ -785,11 +785,11 @@ docsRouter.openapi(docsRoutes.approveDocRoute, autoResponseHandler<typeof docsRo
     const doc = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
     if (!doc) {
-      return error({ error: "Document not found" }, 404);
+      throw new ApiError("Document not found", 404);
     }
 
     if (doc.status !== "pending") {
-      return error({ error: "Document is not pending approval" }, 400);
+      throw new ApiError("Document is not pending approval", 400);
     }
 
     // If this is a revision of an existing doc, we need to merge the changes
@@ -820,14 +820,14 @@ docsRouter.openapi(docsRoutes.approveDocRoute, autoResponseHandler<typeof docsRo
         // 4. Delete the revision draft
         await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
 
-        return success({ success: true });
+        return c.json({ success: true }, 200);
       }
     }
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
 // POST /docs/admin/{slug}/reject - Reject doc
-docsRouter.openapi(docsRoutes.rejectDocRoute, autoResponseHandler<typeof docsRoutes.rejectDocRoute>(async (c, { params, body }) => {
+docsRouter.openapi(docsRoutes.rejectDocRoute, createTypedHandler(docsRoutes.rejectDocRoute, async (c, { params, body }) => {
   const { slug } = params;
   const { reason } = body;
     const db = getDb(c);
@@ -854,19 +854,19 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, autoResponseHandler<typeof docsRou
         });
       }
     }
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
 // POST /docs/admin/{slug}/undelete - Undelete doc
-docsRouter.openapi(docsRoutes.undeleteDocRoute, autoResponseHandler<typeof docsRoutes.undeleteDocRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.undeleteDocRoute, createTypedHandler(docsRoutes.undeleteDocRoute, async (c, { params }) => {
   const { slug } = params;
     const db = getDb(c);
     await db.update(schema.docs).set({ isDeleted: 0, status: "draft" }).where(eq(schema.docs.slug, slug)).run();
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
 // POST /docs/admin/{slug}/purge - Permanently delete doc
-docsRouter.openapi(docsRoutes.purgeDocRoute, autoResponseHandler<typeof docsRoutes.purgeDocRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.purgeDocRoute, createTypedHandler(docsRoutes.purgeDocRoute, async (c, { params }) => {
   const { slug } = params;
   try {
     const db = getDb(c);
@@ -896,14 +896,14 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, autoResponseHandler<typeof docsRout
     c.executionCtx?.waitUntil?.(db.delete(schema.docsHistory).where(eq(schema.docsHistory.slug, slug)).run());
     c.executionCtx?.waitUntil?.(logAuditAction(c, "PURGE_DOC", "docs", slug, JSON.stringify(doc)));
 
-    return success({ success: true });
+    return c.json({ success: true }, 200);
   } catch (_e) {
-    return error({ error: "Purge failed" }, 500);
+    throw new ApiError("Purge failed", 500);
   }
 }));
 
 // Export all docs as JSON
-docsRouter.openapi(docsRoutes.exportAllDocsRoute, autoResponseHandler<typeof docsRoutes.exportAllDocsRoute>(async (c) => {
+docsRouter.openapi(docsRoutes.exportAllDocsRoute, createTypedHandler(docsRoutes.exportAllDocsRoute, async (c) => {
     const db = getDb(c);
     const results = await db.select().from(schema.docs).orderBy(desc(schema.docs.updatedAt)).all();
     const docs = results.map(row => ({
@@ -927,11 +927,11 @@ docsRouter.openapi(docsRoutes.exportAllDocsRoute, autoResponseHandler<typeof doc
         originalAuthorNickname: undefined,
         originalAuthorAvatar: undefined
     }));
-    return success({ docs });
+    return c.json({ docs }, 200);
 }));
 
 // Export single doc as Markdown
-docsRouter.openapi(docsRoutes.exportSingleDocRoute, autoResponseHandler<typeof docsRoutes.exportSingleDocRoute>(async (c, { params }) => {
+docsRouter.openapi(docsRoutes.exportSingleDocRoute, createTypedHandler(docsRoutes.exportSingleDocRoute, async (c, { params }) => {
   const { slug } = params;
     const db = getDb(c);
     const doc = await db.select({
@@ -941,7 +941,7 @@ docsRouter.openapi(docsRoutes.exportSingleDocRoute, autoResponseHandler<typeof d
     }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
 
     if (!doc) {
-      return error({ error: "Doc not found" }, 404);
+      throw new ApiError("Doc not found", 404);
     }
 
     // Convert Tiptap JSON to Markdown if needed
@@ -1027,6 +1027,8 @@ function tiptapToMarkdown(node: TipTapNode | TipTapTextNode): string {
 }
 
 export default docsRouter;
+
+
 
 
 

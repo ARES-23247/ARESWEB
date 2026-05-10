@@ -1,18 +1,15 @@
-import { typedHandler } from "../utils/handler";
-import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { Context } from "hono";
 
 import { eq, desc, asc, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../shared/routes/awards";
-
-
-
+import { createTypedHandler } from "../utils/handler-native";
+import { ApiError } from "../middleware/errorHandler";
 
 export const awardsRouter = new OpenAPIHono<AppEnv>();
-
 
 // Apply edge caching to public GET routes (non-admin, non-signups)
 awardsRouter.use("*", async (c, next) => {
@@ -23,21 +20,19 @@ awardsRouter.use("*", async (c, next) => {
   return edgeCacheMiddleware(180, 60, 300)(c, next);
 });
 
-// Apply caching to public awards list
-
-
-awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (c) => {
+// Get awards list
+awardsRouter.openapi(getAwardsRoute, createTypedHandler(getAwardsRoute, async (c, { query }) => {
     const db = getDb(c);
-    const { limit = 50, offset = 0 } = c.req.valid('query');
+    const { limit = 50, offset = 0 } = query;
     const results = await db.select({
         id: schema.awards.id,
         title: schema.awards.title,
         date: schema.awards.date,
-        event_name: schema.awards.eventName,
+        eventName: schema.awards.eventName,
         description: schema.awards.description,
-        image_url: schema.awards.iconType,
-        season_id: schema.awards.seasonId,
-        created_at: schema.awards.createdAt
+        iconType: schema.awards.iconType,
+        seasonId: schema.awards.seasonId,
+        createdAt: schema.awards.createdAt
       })
       .from(schema.awards)
       .where(eq(schema.awards.isDeleted, 0))
@@ -45,7 +40,7 @@ awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (
       .limit(limit || 50)
       .offset(offset || 0)
       .all();
-    
+
     const awards = results.map((a) => ({
       id: String(a.id),
       title: a.title,
@@ -63,10 +58,9 @@ awardsRouter.openapi(getAwardsRoute, typedHandler<typeof getAwardsRoute>(async (
 
 awardsRouter.use("/admin/*", ensureAdmin);
 
-awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (c) => {
-    const validatedData = c.req.valid('json');
+awardsRouter.openapi(saveAwardRoute, createTypedHandler(saveAwardRoute, async (c, { body }) => {
     const db = getDb(c);
-    const { id, title, year, eventName, description, imageUrl, seasonId } = validatedData;
+    const { id, title, year, eventName, description, imageUrl, seasonId } = body;
 
     const values = {
       title,
@@ -95,59 +89,47 @@ awardsRouter.openapi(saveAwardRoute, typedHandler<typeof saveAwardRoute>(async (
     }
 
     // For new awards, use insert-or-find pattern to handle race conditions atomically
-    // First, try to find an existing non-deleted award with the same key
     const existingAward = await db.select({ id: schema.awards.id })
       .from(schema.awards)
       .where(and(
         eq(schema.awards.title, title),
         eq(schema.awards.date, String(year)),
-        eq(schema.awards.eventName, event_name || ""),
+        eq(schema.awards.eventName, eventName || ""),
         eq(schema.awards.isDeleted, 0)
       ))
       .get();
 
     if (existingAward) {
-      // Award already exists, return its ID
       c.executionCtx.waitUntil(logAuditAction(c, "award_duplicate_found", "awards", String(existingAward.id), `Award "${title}" (${year}) already exists`));
       return c.json({ success: true, id: String(existingAward.id) }, 200);
     }
 
-    // No existing award found, attempt to insert
-    // Use a try-catch to handle the race condition where another request
-    // might have inserted the same award between our check and insert
     try {
       const res = await db.insert(schema.awards).values(values).returning({ insertId: schema.awards.id }).get();
       const newId = res && "insertId" in res ? String(res.insertId) : "new";
       c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", newId, `Award "${title}" (${year}) created`));
       return c.json({ success: true, id: newId }, 200);
     } catch (insertError: unknown) {
-      const _err = insertError as Error;
-      // If we get a constraint error (race condition), check again for the duplicate
-      // This handles the case where another request inserted the same award
       const duplicate = await db.select({ id: schema.awards.id })
         .from(schema.awards)
         .where(and(
           eq(schema.awards.title, title),
           eq(schema.awards.date, String(year)),
-          eq(schema.awards.eventName, event_name || ""),
+          eq(schema.awards.eventName, eventName || ""),
           eq(schema.awards.isDeleted, 0)
         ))
         .get();
 
       if (duplicate) {
-        // Another request won the race, return the existing award
         c.executionCtx.waitUntil(logAuditAction(c, "award_race_condition_handled", "awards", String(duplicate.id), `Award "${title}" (${year}) race condition - returned existing record`));
         return c.json({ success: true, id: String(duplicate.id) }, 200);
       }
-
-      // Not a duplicate error, rethrow
       throw insertError;
     }
 }));
 
-awardsRouter.openapi(deleteAwardRoute, typedHandler<typeof deleteAwardRoute>(async (c) => {
+awardsRouter.openapi(deleteAwardRoute, createTypedHandler(deleteAwardRoute, async (c, { params }) => {
     const db = getDb(c);
-    const params = c.req.valid('param');
     const numericId = Number(params.id);
     if (isNaN(numericId) || numericId <= 0) {
       throw new ApiError("Invalid award ID", 400, "BAD_REQUEST");
