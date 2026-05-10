@@ -36,12 +36,12 @@ export default function Privacy() {
               <h2 className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              We do not use invasive tracking pipelines like Google Analytics or Meta Pixels. Instead, we use <strong>Cloudflare Web Analytics</strong>.
+              We do not use tracking tools like Google Analytics. Instead, we use <strong>Cloudflare Web Analytics</strong>.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>No unique user IP addresses are stored or fingerprinted.</li>
-              <li>No cookies or client-side persistent storage mechanisms are used to track you.</li>
-              <li>We only measure aggregate traffic metrics (e.g., total hits, country of origin, and loading performance) to ensure our Edge network remains functional.</li>
+              <li>No unique user IP addresses are stored or tracked to identify you.</li>
+              <li>No cookies or tracking files are saved on your device.</li>
+              <li>We measure basic website traffic (like total visits and page speed) to keep our site working.</li>
             </ul>
           </section>
 
@@ -57,7 +57,7 @@ export default function Privacy() {
               As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>We <strong>never</strong> collect Personally Identifiable Information (PII) from general web portal visitors.</li>
+              <li>We <strong>never</strong> collect personal information from general web portal visitors.</li>
               <li>Robotics team member names, photographs, and media are only published with explicit written consent and release forms signed by legal guardians.</li>
             </ul>
           </section>
@@ -71,7 +71,7 @@ export default function Privacy() {
               <h2 className="text-2xl font-bold font-heading">3. Edge AI Processing</h2>
             </div>
             <p className="text-marble leading-relaxed">
-              When ARES leadership uploads media via our Publisher Dashboard, we utilize Cloudflare Workers AI (LLaMa 3.1, LLava 1.5) to automatically generate Accessibility (ARIA) tags. This processing happens ephemerally entirely on Cloudflare&apos;s Edge network. The raw data is never sold, shared, or utilized to train external foundation models.
+              When ARES leadership uploads media via our Publisher Dashboard, we use Cloudflare Workers AI to add Accessibility tags. This processing happens on Cloudflare&apos;s servers near you. The raw data is never sold, shared, or used to train other AI.
             </p>
           </section>
 
@@ -84,7 +84,7 @@ export default function Privacy() {
               <h2 className="text-2xl font-bold font-heading">4. Secure Administration</h2>
             </div>
             <p className="text-marble leading-relaxed">
-              Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized FIRST Robotics team identity providers.
+              Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized <em>FIRST</em>® Robotics team identity providers.
             </p>
           </section>
         </div>

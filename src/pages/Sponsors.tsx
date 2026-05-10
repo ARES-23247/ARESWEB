@@ -51,10 +51,11 @@ export default function Sponsors() {
   const sponsors = sponsorsRes?.sponsors || [];
 
   const grouped = sponsors.reduce((acc, s: Sponsor) => {
-    if (!acc[s.tier]) acc[s.tier] = [];
-    acc[s.tier].push(s);
+    const tier = s.tier as keyof typeof TIER_STYLING;
+    if (!acc[tier]) acc[tier] = [];
+    acc[tier].push(s);
     return acc;
-  }, {} as Record<string, typeof sponsors>);
+  }, {} as Record<string, Sponsor[]>);
 
   const tiersOrdered = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"];
   const existingTiers = Array.from(new Set<string>(sponsors.map((s: Sponsor) => s.tier))).filter(Boolean);
@@ -109,7 +110,7 @@ export default function Sponsors() {
 
   return (
     <div className="min-h-screen bg-obsidian text-white py-24 relative overflow-hidden">
-      <SEO title="Sponsors" description={`The corporate partners and community sponsors who empower ${siteConfig.team.fullName} to innovate in FIRST Robotics.`} />
+      <SEO title="Sponsors" description={`The corporate partners and community sponsors who empower ${siteConfig.team.fullName} to innovate in <em>FIRST</em>® Robotics.`} />
       <SponsorSchema sponsors={sponsors} />
       
       {/* Background Ambience */}
@@ -159,7 +160,7 @@ export default function Sponsors() {
                 </div>
 
                 <div className={`grid grid-cols-1 md:grid-cols-2 ${tier === 'Titanium' ? 'lg:grid-cols-2' : tier === 'Gold' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
-                  {grouped[tier].map((s: any) => (
+                  {grouped[tier].map((s: Sponsor) => (
                     <motion.a
                       key={s.id}
                       href={s.websiteUrl || "#"}
