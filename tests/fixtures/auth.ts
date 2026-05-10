@@ -199,10 +199,11 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
     const urlObj = new URL(baseUrl);
     const cookieDomain = urlObj.hostname;
     const isSecure = baseUrl.startsWith('https://');
+    const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
 
     await page.context().addCookies([
       {
-        name: isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token',
+        name: cookieName,
         value: data.sessionToken,
         domain: cookieDomain || (baseUrl.match(/:\/\/([^/]+)/)?.[1] || 'localhost'),
         path: '/',
@@ -217,7 +218,19 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
       Object.assign(window, { __REAL_AUTH__: true });
     });
 
-    console.log(`[Auth] Real auth setup for user: ${data.user.email} (${data.user.role})`);
+    // Verify the cookie was accepted by calling get-session
+    const verifyResponse = await page.context().request.get(`${baseUrl}/api/auth/get-session`);
+    const verifyData = await verifyResponse.json().catch(() => null) as Record<string, unknown> | null;
+    const hasSession = verifyData && 'session' in verifyData && verifyData.session !== null;
+
+    if (!hasSession) {
+      console.error(`[Auth] Cookie verification FAILED! get-session returned:`, JSON.stringify(verifyData).slice(0, 200));
+      console.error(`[Auth] Cookie details: name=${cookieName}, domain=${cookieDomain}, secure=${isSecure}`);
+      console.error(`[Auth] Token preview: ${data.sessionToken.slice(0, 40)}...`);
+      throw new Error(`Auth cookie not accepted by server. Cookie: ${cookieName}, Domain: ${cookieDomain}`);
+    }
+
+    console.log(`[Auth] Real auth setup for user: ${data.user.email} (${data.user.role}) [verified]`);
   } catch (error) {
     console.error('[Auth] Failed to set up real auth:', error);
     throw error;
