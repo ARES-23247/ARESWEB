@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -42,7 +42,7 @@ zulipRouter.use("*", ensureAuth);
 zulipRouter.use("/presence", ensureAdmin);
 zulipRouter.use("/invites/*", ensureAdmin);
 
-zulipRouter.openapi(getPresenceRoute, typedHandler<typeof getPresenceRoute>(async (c) => {
+zulipRouter.openapi(getPresenceRoute, createTypedHandler(getPresenceRoute, async (c) => {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
       throw new ApiError("Zulip not configured.", 500);
@@ -89,8 +89,7 @@ zulipRouter.openapi(getPresenceRoute, typedHandler<typeof getPresenceRoute>(asyn
     return c.json({ success: true, presence: data.presences, userNames }, 200);
 }));
 
-zulipRouter.openapi(sendMessageRoute, typedHandler<typeof sendMessageRoute>(async (c) => {
-    const body = c.req.valid("json");
+zulipRouter.openapi(sendMessageRoute, createTypedHandler(sendMessageRoute, async (c, { body }) => {
     const { sendZulipMessage } = await import("../../utils/zulipSync");
     const config = await getSocialConfig(c);
 
@@ -123,8 +122,7 @@ zulipRouter.openapi(sendMessageRoute, typedHandler<typeof sendMessageRoute>(asyn
     return c.json({ success: true }, 200);
 }));
 
-zulipRouter.openapi(getTopicMessagesRoute, typedHandler<typeof getTopicMessagesRoute>(async (c) => {
-    const query = c.req.valid("query");
+zulipRouter.openapi(getTopicMessagesRoute, createTypedHandler(getTopicMessagesRoute, async (c, { query }) => {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
       throw new ApiError("Zulip not configured.", 500);
@@ -165,7 +163,7 @@ zulipRouter.openapi(getTopicMessagesRoute, typedHandler<typeof getTopicMessagesR
     return c.json({ success: true, messages: data.messages }, 200);
 }));
 
-zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUsersRoute>(async (c) => {
+zulipRouter.openapi(auditMissingUsersRoute, createTypedHandler(auditMissingUsersRoute, async (c) => {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
       throw new ApiError("Zulip not configured. Set ZULIP_BOT_EMAIL and ZULIP_API_KEY in settings.", 500);
@@ -205,7 +203,7 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
       };
 
       if (!zulipData.members || !Array.isArray(zulipData.members)) {
-        throw new ApiError("Zulip returned invalid data — no members array", 500);
+        throw new ApiError("Zulip returned invalid data â€” no members array", 500);
       }
 
       for (const m of zulipData.members) {
@@ -254,8 +252,7 @@ zulipRouter.openapi(auditMissingUsersRoute, typedHandler<typeof auditMissingUser
     );
 }));
 
-zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(async (c) => {
-    const body = c.req.valid("json");
+zulipRouter.openapi(inviteUsersRoute, createTypedHandler(inviteUsersRoute, async (c, { body }) => {
     const config = await getSocialConfig(c);
     if (!config.ZULIP_BOT_EMAIL || !config.ZULIP_API_KEY) {
       throw new ApiError("Zulip not configured.", 500);
@@ -340,3 +337,4 @@ zulipRouter.openapi(inviteUsersRoute, typedHandler<typeof inviteUsersRoute>(asyn
 }));
 
 export default zulipRouter;
+

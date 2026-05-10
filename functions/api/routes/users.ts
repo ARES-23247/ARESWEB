@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 /* User management route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -25,7 +25,7 @@ export const usersRouter = new OpenAPIHono<AppEnv>();
 // CR-07 FIX: Apply authentication to all admin routes
 usersRouter.use("/admin/*", ensureAdmin);
 
-usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) => {
+usersRouter.openapi(getUsersRoute, createTypedHandler(getUsersRoute, async (c, { query }) => {
     const db = getDb(c);
     const { limit, cursor } = parsePagination(c, 50, 100);
 
@@ -77,8 +77,8 @@ usersRouter.openapi(getUsersRoute, typedHandler<typeof getUsersRoute>(async (c) 
     return c.json({ users, nextCursor }, 200);
 }));
 
-usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+usersRouter.openapi(adminDetailRoute, createTypedHandler(adminDetailRoute, async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
     
     // Manual left join to get user with profile
@@ -133,7 +133,7 @@ usersRouter.openapi(adminDetailRoute, typedHandler<typeof adminDetailRoute>(asyn
     );
 }));
 
-usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c) => {
+usersRouter.openapi(patchUserRoute, createTypedHandler(patchUserRoute, async (c, { params, body }) => {
     // Defense-in-depth: Re-validate admin authorization for sensitive role changes
     const sessionUser = c.get("sessionUser") as
       | { id: string; role: string }
@@ -142,14 +142,10 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
       throw new ApiError("Forbidden: Admin required", 403);
     }
 
-    const { id } = c.req.valid("param");
-    const body = c.req.valid("json");
+    const { id } = params;
 
     // Validate role and memberType against enums
-    const { role, memberType } = body as {
-      role?: string;
-      memberType?: string;
-    };
+    const { role, memberType } = body;
 
     if (role && !UserRoleEnum.safeParse(role).success) {
       throw new ApiError("Invalid role value", 400);
@@ -209,15 +205,14 @@ usersRouter.openapi(patchUserRoute, typedHandler<typeof patchUserRoute>(async (c
     return c.json({ success: true }, 200);
 }));
 
-usersRouter.openapi(updateUserProfileRoute, typedHandler<typeof updateUserProfileRoute>(async (c) => {
-    const { id } = c.req.valid("param");
-    const body = c.req.valid("json");
-    await upsertProfile(c, id, body as Record<string, unknown>);
+usersRouter.openapi(updateUserProfileRoute, createTypedHandler(updateUserProfileRoute, async (c, { params, body }) => {
+    const { id } = params;
+    await upsertProfile(c, id, body);
     return c.json({ success: true }, 200);
 }));
 
-usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+usersRouter.openapi(adminGetProfileRoute, createTypedHandler(adminGetProfileRoute, async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
 
     // Get user
@@ -350,8 +345,8 @@ usersRouter.openapi(adminGetProfileRoute, typedHandler<typeof adminGetProfileRou
     );
 }));
 
-usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+usersRouter.openapi(deleteUserRoute, createTypedHandler(deleteUserRoute, async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
 
     // Atomicity Fix: Delete all related records in parallel, then the user
@@ -374,3 +369,4 @@ usersRouter.openapi(deleteUserRoute, typedHandler<typeof deleteUserRoute>(async 
 }));
 
 export default usersRouter;
+

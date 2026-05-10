@@ -1,4 +1,4 @@
-import { autoResponseHandler } from "../utils/handler-v2";
+import { wrapHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 /* TBA API route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -32,7 +32,7 @@ async function getTBA(path: string, c: HonoContext) {
   if (!apiKey) throw new Error("TBA_API_KEY missing");
 
   const r = await fetch(`https://www.thebluealliance.com/api/v3${path}`, { headers: { "X-TBA-Auth-Key": apiKey } }).catch(() => null);
-  
+
   if (!r || !r.ok) {
     throw new Error(`TBA API Error: ${r?.status || 'Network failure'}`);
   }
@@ -40,26 +40,26 @@ async function getTBA(path: string, c: HonoContext) {
   return await r.json();
 }
 
-tbaRouter.openapi(getRankingsRoute, autoResponseHandler<typeof getRankingsRoute>(async (c, { params }) => {
+tbaRouter.openapi(getRankingsRoute, wrapHandler(getRankingsRoute, async (c, { params }) => {
     const { eventKey } = params;
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
       throw new ApiError("Invalid eventKey", 400);
     }
     const data = await getTBA(`/event/${eventKey}/rankings`, c);
-    return { rankings: (data as { rankings?: unknown[] })?.rankings || [] };
+    return { status: 200, body: { rankings: (data as { rankings?: unknown[] })?.rankings || [] } };
 }));
 
-tbaRouter.openapi(getMatchesRoute, autoResponseHandler<typeof getMatchesRoute>(async (c, { params }) => {
+tbaRouter.openapi(getMatchesRoute, wrapHandler(getMatchesRoute, async (c, { params }) => {
     const { eventKey } = params;
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
       throw new ApiError("Invalid eventKey", 400);
     }
     const data = await getTBA(`/event/${eventKey}/matches/simple`, c) as Array<{ time?: number }>;
     const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
-    return { matches: sorted as unknown[] };
+    return { status: 200, body: { matches: sorted as unknown[] } };
 }));
 
-tbaRouter.openapi(getFtcEventsRoute, autoResponseHandler<typeof getFtcEventsRoute>(async (c, { params }) => {
+tbaRouter.openapi(getFtcEventsRoute, wrapHandler(getFtcEventsRoute, async (c, { params }) => {
     const { season, eventCode, type } = params;
     const path = `/${season}/events/${eventCode}/${type}`;
 
@@ -82,7 +82,7 @@ tbaRouter.openapi(getFtcEventsRoute, autoResponseHandler<typeof getFtcEventsRout
     if (!r.ok) throw new Error(`FTC API Error: ${r.status}`);
 
     const data = await r.json();
-    return data;
+    return { status: 200, body: data };
 }));
 
 export default tbaRouter;

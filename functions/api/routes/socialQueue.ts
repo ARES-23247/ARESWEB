@@ -1,8 +1,9 @@
-import { typedHandler } from "../utils/handler";
+import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, asc, and, gte, lte, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { Context } from "hono";
 
 import { AppEnv, getSessionUser, originIntegrityMiddleware, getDb } from "../middleware";
 import {
@@ -26,27 +27,27 @@ socialQueueRouter.use("*", originIntegrityMiddleware());
 const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
   id: String(r.id),
   content: String(r.content),
-  media_urls: r.mediaUrls ? JSON.parse(String(r.mediaUrls)) : undefined,
-  scheduled_for: String(r.scheduledFor),
+  mediaUrls: r.mediaUrls ? JSON.parse(String(r.mediaUrls)) : undefined,
+  scheduledFor: String(r.scheduledFor),
   platforms: JSON.parse(String(r.platforms)),
   analytics: r.analytics ? JSON.parse(String(r.analytics)) : null,
   status: r.status as SocialQueuePost["status"],
-  linked_type: (r.linkedType as SocialQueuePost["linked_type"]) || null,
-  linked_id: (r.linkedId as string) || null,
-  created_at: r.createdAt ? String(r.createdAt) : new Date().toISOString(),
-  sent_at: (r.sentAt as string) || null,
-  error_message: (r.errorMessage as string) || null,
-  created_by: (r.createdBy as string) || null,
+  linkedType: (r.linkedType as SocialQueuePost["linkedType"]) || null,
+  linkedId: (r.linkedId as string) || null,
+  createdAt: r.createdAt ? String(r.createdAt) : new Date().toISOString(),
+  sentAt: (r.sentAt as string) || null,
+  errorMessage: (r.errorMessage as string) || null,
+  createdBy: (r.createdBy as string) || null,
 });
 
 // List posts
-socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQueueRoute>(async (c) => {
+socialQueueRouter.openapi(listSocialQueueRoute, createTypedHandler(listSocialQueueRoute, async (c, { query }) => {
     const user = await getSessionUser(c);
     if (!user) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
+    const { status = "all", limit = 20, offset = 0 } = query;
     const db = getDb(c);
 
     let condition = undefined;
@@ -87,13 +88,13 @@ socialQueueRouter.openapi(listSocialQueueRoute, typedHandler<typeof listSocialQu
 }));
 
 // Calendar view
-socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendarSocialQueueRoute>(async (c) => {
+socialQueueRouter.openapi(calendarSocialQueueRoute, createTypedHandler(calendarSocialQueueRoute, async (c, { query }) => {
     const user = await getSessionUser(c);
     if (!user) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { start, end } = c.req.valid("query");
+    const { start, end } = query;
     const db = getDb(c);
 
     const conditions = [
@@ -118,13 +119,11 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, typedHandler<typeof calendar
 }));
 
 // Create post
-socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSocialQueueRoute>(async (c) => {
+socialQueueRouter.openapi(createSocialQueueRoute, createTypedHandler(createSocialQueueRoute, async (c, { body }) => {
     const user = await getSessionUser(c);
     if (!user) {
       throw new ApiError("Unauthorized", 401);
     }
-
-    const body = c.req.valid("json");
     const db = getDb(c);
     const id = nanoid();
     const createdAt = new Date().toISOString();
@@ -133,13 +132,13 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
       id,
       content: body.content,
       platforms: JSON.stringify(body.platforms),
-      mediaUrls: body.media_urls ? JSON.stringify(body.media_urls) : null,
-      scheduledFor: body.scheduled_for,
+      mediaUrls: body.mediaUrls ? JSON.stringify(body.mediaUrls) : null,
+      scheduledFor: body.scheduledFor,
       status: "pending",
       createdAt,
       createdBy: user.id,
-      linkedType: body.linked_type || null,
-      linkedId: body.linked_id || null,
+      linkedType: body.linkedType || null,
+      linkedId: body.linkedId || null,
     };
 
     await db.insert(schema.socialQueue).values(newPost).run();
@@ -148,28 +147,27 @@ socialQueueRouter.openapi(createSocialQueueRoute, typedHandler<typeof createSoci
       ...body,
       id,
       status: "pending",
-      created_at: createdAt,
-      created_by: user.id,
-      sent_at: null,
-      error_message: null,
+      createdAt,
+      createdBy: user.id,
+      sentAt: null,
+      errorMessage: null,
       analytics: null,
-      media_urls: body.media_urls || [],
-      linked_type: body.linked_type || null,
-      linked_id: body.linked_id || null,
+      mediaUrls: body.mediaUrls || [],
+      linkedType: body.linkedType || null,
+      linkedId: body.linkedId || null,
     };
 
     return c.json({ success: true, post }, 200);
 }));
 
 // Update post
-socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSocialQueueRoute>(async (c) => {
+socialQueueRouter.openapi(updateSocialQueueRoute, createTypedHandler(updateSocialQueueRoute, async (c, { params, body }) => {
     const user = await getSessionUser(c);
     if (!user) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { id } = c.req.valid("param");
-    const body = c.req.valid("json");
+    const { id } = params;
     const db = getDb(c);
 
     const existing = await db
@@ -187,13 +185,13 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
 
     const updates: Record<string, unknown> = {};
     if (body.content !== undefined) updates.content = body.content;
-    if (body.scheduled_for !== undefined) updates.scheduledFor = body.scheduled_for;
+    if (body.scheduledFor !== undefined) updates.scheduledFor = body.scheduledFor;
     if (body.status !== undefined) updates.status = body.status;
-    if (body.linked_type !== undefined) updates.linkedType = body.linked_type;
-    if (body.linked_id !== undefined) updates.linkedId = body.linked_id;
+    if (body.linkedType !== undefined) updates.linkedType = body.linkedType;
+    if (body.linkedId !== undefined) updates.linkedId = body.linkedId;
 
     if (body.platforms) updates.platforms = JSON.stringify(body.platforms);
-    if (body.media_urls) updates.mediaUrls = JSON.stringify(body.media_urls);
+    if (body.mediaUrls) updates.mediaUrls = JSON.stringify(body.mediaUrls);
 
     await db.update(schema.socialQueue).set(updates).where(eq(schema.socialQueue.id, id)).run();
 
@@ -211,13 +209,13 @@ socialQueueRouter.openapi(updateSocialQueueRoute, typedHandler<typeof updateSoci
 }));
 
 // Delete post
-socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSocialQueueRoute>(async (c) => {
+socialQueueRouter.openapi(deleteSocialQueueRoute, createTypedHandler(deleteSocialQueueRoute, async (c, { params }) => {
     const user = await getSessionUser(c);
     if (!user) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { id } = c.req.valid("param");
+    const { id } = params;
     const db = getDb(c);
 
     const existing = await db
@@ -239,13 +237,13 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, typedHandler<typeof deleteSoci
 }));
 
 // Send post now
-socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSocialQueueRoute>(async (c) => {
+socialQueueRouter.openapi(sendNowSocialQueueRoute, createTypedHandler(sendNowSocialQueueRoute, async (c, { params }) => {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { id } = c.req.valid("param");
+    const { id } = params;
     const db = getDb(c);
 
     const record = await db
@@ -276,13 +274,13 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, typedHandler<typeof sendNowSo
 }));
 
 // Analytics
-socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyticsSocialQueueRoute>(async (c) => {
+socialQueueRouter.openapi(analyticsSocialQueueRoute, createTypedHandler(analyticsSocialQueueRoute, async (c, { query }) => {
     const user = await getSessionUser(c);
     if (!user || user.role !== "admin") {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { start, end } = c.req.valid("query");
+    const { start, end } = query;
     const db = getDb(c);
 
     const conditions = [];
@@ -296,12 +294,12 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
       results = await db.select().from(schema.socialQueue).all();
     }
 
-    const total_posts = results.length;
-    const total_sent = results.filter((r) => r.status === "sent").length;
-    const total_pending = results.filter((r) => r.status === "pending").length;
-    const total_failed = results.filter((r) => r.status === "failed").length;
+    const totalPosts = results.length;
+    const totalSent = results.filter((r) => r.status === "sent").length;
+    const totalPending = results.filter((r) => r.status === "pending").length;
+    const totalFailed = results.filter((r) => r.status === "failed").length;
 
-    const by_platform = {
+    const byPlatform = {
       twitter: 0,
       bluesky: 0,
       facebook: 0,
@@ -318,24 +316,24 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
     results.forEach((r) => {
       const platforms = JSON.parse(String(r.platforms));
       Object.entries(platforms).forEach(([key, value]) => {
-        if (value && key in by_platform) {
-          (by_platform as Record<string, number>)[key]++;
+        if (value && key in byPlatform) {
+          (byPlatform as Record<string, number>)[key]++;
         }
       });
     });
 
     return c.json(
       {
-        total_posts,
-        total_sent,
-        total_pending,
-        total_failed,
-        by_platform,
+        totalPosts,
+        totalSent,
+        totalPending,
+        totalFailed,
+        byPlatform,
         engagement: {
-          total_impressions: 0,
-          total_likes: 0,
-          total_shares: 0,
-          total_comments: 0,
+          totalImpressions: 0,
+          totalLikes: 0,
+          totalShares: 0,
+          totalComments: 0,
         },
       },
       200
@@ -343,3 +341,5 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, typedHandler<typeof analyti
 }));
 
 export default socialQueueRouter;
+
+

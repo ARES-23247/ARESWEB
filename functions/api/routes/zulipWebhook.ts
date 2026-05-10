@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { createTypedHandler } from "../utils/handler-native";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, ne, desc, asc, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -28,24 +28,23 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0 && aBuf.length === bBuf.length;
 }
 
-// ── POST /webhooks/zulip — Handle outgoing webhook from Zulip ────────
-zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRoute>(async (c) => {
-  const body = c.req.valid("json");
+// â”€â”€ POST /webhooks/zulip â€” Handle outgoing webhook from Zulip â”€â”€â”€â”€â”€â”€â”€â”€
+zulipWebhookRouter.openapi(zulipWebhookRoute, createTypedHandler(zulipWebhookRoute, async (c, { body }) => {
 
   const config = await getSocialConfig(c);
   const expectedToken = config.ZULIP_WEBHOOK_TOKEN;
   if (!expectedToken) {
-    return c.json({ content: "❌ Webhook token not configured on server." }, 401);
+    return c.json({ content: "âŒ Webhook token not configured on server." }, 401);
   }
   if (!timingSafeEqual(body.token, expectedToken)) {
-    return c.json({ content: "❌ Unauthorized: Invalid webhook token." }, 401);
+    return c.json({ content: "âŒ Unauthorized: Invalid webhook token." }, 401);
   }
 
   const rawContent = body.message?.content || "";
   const cleaned = rawContent.replace(/@\*\*[^*]+\*\*/g, "").trim();
   
   if (!cleaned) {
-    return c.json({ content: "🤖 Hello! I am the ARES Bot. Type `!help` to see what I can do." }, 200);
+    return c.json({ content: "ðŸ¤– Hello! I am the ARES Bot. Type `!help` to see what I can do." }, 200);
   }
 
   const args = cleaned.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)?.map((arg: string) => 
@@ -69,7 +68,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         .get();
 
       if (!userResult || !["admin", "author"].includes(userResult.role || "")) {
-        return c.json({ content: `🔒 Permission denied. \`${command}\` requires admin or author privileges. Your Zulip email (${senderEmail}) is not linked to an authorized ARESWEB account.` }, 200);
+        return c.json({ content: `ðŸ”’ Permission denied. \`${command}\` requires admin or author privileges. Your Zulip email (${senderEmail}) is not linked to an authorized ARESWEB account.` }, 200);
       }
     }
   }
@@ -79,7 +78,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
       case "!help":
         return c.json({
           content: [
-            "🤖 **ARES Bot Commands**",
+            "ðŸ¤– **ARES Bot Commands**",
             "",
             "| Command | Description |",
             "|---|---|",
@@ -226,8 +225,8 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         const results = await db
           .select({
             title: schema.events.title,
-            date_start: schema.events.dateStart,
-            date_end: schema.events.dateEnd,
+            dateStart: schema.events.dateStart,
+            dateEnd: schema.events.dateEnd,
             location: schema.events.location,
           })
           .from(schema.events)
@@ -247,8 +246,8 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
         }
 
         const lines = results.map((e) => {
-          const dtStart = new Date(String(e.date_start)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-          const dtEnd = e.date_end ? ` - ${new Date(String(e.date_end)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "";
+          const dtStart = new Date(String(e.dateStart)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+          const dtEnd = e.dateEnd ? ` - ${new Date(String(e.dateEnd)).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "";
           return `• **${e.title}** — ${dtStart}${dtEnd}${e.location ? ` @ ${e.location}` : ""}`;
         });
 
@@ -475,7 +474,7 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
 
         if (rawContent.includes("@**")) {
            return c.json({
-             content: `❓ Unknown command: \`${command || "(empty)"}\`. Type \`!help\` for available commands.`,
+             content: `â“ Unknown command: \`${command || "(empty)"}\`. Type \`!help\` for available commands.`,
            }, 200);
         }
         
@@ -483,9 +482,11 @@ zulipWebhookRouter.openapi(zulipWebhookRoute, typedHandler<typeof zulipWebhookRo
     }
   } catch (err) {
     return c.json({
-      content: `❌ Command failed: ${(err as Error)?.message || "Unknown error"}`,
+      content: `âŒ Command failed: ${(err as Error)?.message || "Unknown error"}`,
     }, 200);
   }
 }));
 
 export default zulipWebhookRouter;
+
+

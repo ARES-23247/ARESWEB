@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { autoResponseHandler, success, error } from "../utils/handler-v2";
 import { ApiError } from "../middleware/errorHandler";
 
 import { eq, desc, and, inArray, isNotNull, sql } from "drizzle-orm";
@@ -85,7 +85,7 @@ storeRouter.post("/webhook", async (c) => {
         // Alert team
         const totalAmount = session.amount_total ? (session.amount_total / 100).toFixed(2) : "0.00";
         const customerEmail = session.customer_details?.email || "Unknown Email";
-        const message = `🛍️ **New Order Received!**\n\n**Order ID**: ${session.id}\n**Customer**: ${customerEmail}\n**Total**: $${totalAmount}\n\n[View Dashboard](https://aresweb.org/admin)`;
+        const message = `Ã°Å¸â€ºÂÃ¯Â¸Â **New Order Received!**\n\n**Order ID**: ${session.id}\n**Customer**: ${customerEmail}\n**Total**: $${totalAmount}\n\n[View Dashboard](https://aresweb.org/admin)`;
         await sendZulipMessage(c.env, "general", "Store Orders", message);
       }
 
@@ -101,7 +101,7 @@ storeRouter.post("/webhook", async (c) => {
 storeRouter.use("/orders/*", ensureAdmin);
 storeRouter.use("/orders", ensureAdmin);
 
-storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(async (c) => {
+storeRouter.openapi(getProductsRoute, autoResponseHandler(async (c) => {
     const db = getDb(c);
     const products = await db
       .select()
@@ -110,23 +110,17 @@ storeRouter.openapi(getProductsRoute, typedHandler<typeof getProductsRoute>(asyn
       .all();
 
     type Product = typeof schema.products.$inferSelect;
-    return c.json(
+    return success(
       products.map((p: Product) => ({
-        id: p.id || "",
-        name: p.name || "Unknown Product",
+        ...p,
         description: p.description || null,
-        price_cents: p.priceCents || 0,
-        image_url: p.imageUrl || null,
-        active: p.active || 1,
-        stock_count: p.stockCount ?? null,
-        created_at: p.createdAt || null,
-      })),
-      200
+        imageUrl: p.imageUrl || null,
+        stockCount: p.stockCount ?? null,
+      }))
     );
 }));
 
-storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createCheckoutSessionRoute>(async (c) => {
-    const body = c.req.valid("json");
+storeRouter.openapi(createCheckoutSessionRoute, autoResponseHandler(async (c, { body }) => {
     const { items, successUrl, cancelUrl } = body;
     const stripeKey = c.env.STRIPE_SECRET_KEY;
     if (!stripeKey) {
@@ -137,7 +131,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
     const db = getDb(c);
 
     // Fetch product details
-    const productIds = items.map((i: { productId: string }) => i.productId);
+    const productIds = items.map((i) => i.productId);
     const products = await db
       .select()
       .from(schema.products)
@@ -152,7 +146,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
     type Product = typeof schema.products.$inferSelect;
     const productMap = new Map<string, Product>(products.map((p: Product) => [p.id, p]));
 
-    const lineItems = items.map((item: { productId: string; quantity: number }) => {
+    const lineItems = items.map((item) => {
       const product = productMap.get(item.productId);
       if (!product) {
         throw new Error(`Product ${item.productId} not found or inactive.`);
@@ -174,7 +168,7 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       payment_method_types: ["card"],
       line_items: lineItems,
       metadata: {
-        cartItems: JSON.stringify(items.map((i: { productId: string; quantity: number }) => ({ id: i.productId, q: i.quantity })))
+        cartItems: JSON.stringify(items.map((i) => ({ id: i.productId, q: i.quantity })))
       },
       mode: "payment",
       success_url: successUrl,
@@ -188,50 +182,39 @@ storeRouter.openapi(createCheckoutSessionRoute, typedHandler<typeof createChecko
       throw new Error("Stripe session URL is null");
     }
 
-    return c.json(
-      {
-        sessionId: session.id,
-        url: session.url,
-      },
-      200
-    );
+    return success({
+      sessionId: session.id,
+      url: session.url,
+    });
 }));
 
-storeRouter.openapi(getOrdersRoute, typedHandler<typeof getOrdersRoute>(async (c) => {
+storeRouter.openapi(getOrdersRoute, autoResponseHandler(async (c) => {
     const db = getDb(c);
-    const orders = await db
+    const results = await db
       .select()
       .from(schema.orders)
       .orderBy(desc(schema.orders.createdAt))
       .all();
 
-    type Order = typeof schema.orders.$inferSelect;
-    const formattedOrders = orders.map((o: Order) => ({
-      ...o,
-      stripe_session_id: o.stripeSessionId,
-      customer_email: o.customerEmail,
-      shipping_name: o.shippingName,
-      shipping_address_line1: o.shippingAddressLine1,
-      shipping_address_line2: o.shippingAddressLine2,
-      shipping_city: o.shippingCity,
-      shipping_state: o.shippingState,
-      shipping_postal_code: o.shippingPostalCode,
-      shipping_country: o.shippingCountry,
-      total_cents: o.totalCents,
-      fulfillment_status: o.fulfillmentStatus,
-      created_at: o.createdAt,
-      updated_at: o.updatedAt,
+    const orders = results.map(o => ({
+        ...o,
+        stripeSessionId: o.stripeSessionId || null,
+        customerEmail: o.customerEmail || null,
+        shippingName: o.shippingName || null,
+        status: o.status || "processing",
+        fulfillmentStatus: o.fulfillmentStatus || "unfulfilled",
     }));
 
-    return c.json({ orders: formattedOrders }, 200);
+    return success({ orders });
 }));
 
-storeRouter.openapi(updateOrderStatusRoute, typedHandler<typeof updateOrderStatusRoute>(async (c) => {
-    const { id } = c.req.valid("param");
-    const body = c.req.valid("json");
+storeRouter.openapi(updateOrderStatusRoute, autoResponseHandler(async (c, { params, body }) => {
+    const { id } = params;
     const db = getDb(c);
-    await db.update(schema.orders).set({ status: body.fulfillment_status }).where(eq(schema.orders.id, id)).run();
-    return c.json({ success: true }, 200);
+    await db.update(schema.orders).set({ fulfillmentStatus: body.fulfillmentStatus }).where(eq(schema.orders.id, id)).run();
+    return success({ success: true });
 }));
 
 export default storeRouter;
+
+
