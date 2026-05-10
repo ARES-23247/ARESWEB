@@ -20,7 +20,7 @@ function spaFallbackPlugin(): Plugin {
             rewrites: [
               {
                 from: /^\/api\/.*$/,
-                to: (context) => context.parsedUrl.pathname
+                to: (context: any) => context.parsedUrl.pathname
               }
             ]
           })
@@ -188,7 +188,7 @@ export default defineConfig({
         ]
       }
     })
-  ],
+  ] as any,
   server: {
     proxy: {
       '/api': {
