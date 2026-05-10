@@ -85,6 +85,9 @@ authRouter.openapi(testLoginRoute, async (c) => {
       throw new ApiError("BETTER_AUTH_SECRET environment variable is required", 500, "MISSING_SECRET");
     }
 
+    // Sign the token using the same HMAC-SHA256 format that better-call uses internally.
+    // better-call's verifySignature checks: signature.length === 44 && signature.endsWith("=")
+    // This means we MUST use standard base64 (with +, /, =) NOT base64url.
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       'raw',
@@ -94,11 +97,10 @@ authRouter.openapi(testLoginRoute, async (c) => {
       ['sign']
     );
     const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(token));
-    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-    const signedToken = `${token}.${signatureBase64}`;
+    // Standard base64 — NOT base64url. Must keep +, /, and = padding intact.
+    const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+    // better-call's signCookieValue format: `${value}.${signature}` then encodeURIComponent
+    const signedToken = `${token}.${signature}`;
 
     const res = c.json({
       success: true,
@@ -115,9 +117,11 @@ authRouter.openapi(testLoginRoute, async (c) => {
     const isSecure = c.req.url.startsWith('https://');
     const cookieDomain = isSecure ? undefined : 'localhost';
     const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
+    // URL-encode the signed token value, matching better-call's serializeSignedCookie behavior
+    const encodedToken = encodeURIComponent(signedToken);
     res.headers.append(
       'Set-Cookie',
-      `${cookieName}=${signedToken}; Path=/; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}${cookieDomain ? `; Domain=${cookieDomain}` : ''}`
+      `${cookieName}=${encodedToken}; Path=/; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}${cookieDomain ? `; Domain=${cookieDomain}` : ''}`
     );
 
     return res;

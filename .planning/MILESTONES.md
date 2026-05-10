@@ -37,6 +37,7 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| [v8.0](milestones/v8.0-ROADMAP.md) | 📋 PLANNED | — | End-to-End Hono RPC Type Safety |
 | [v7.2](milestones/v7.2-ROADMAP.md) | ✅ SHIPPED | 2026-05-08 | TypeScript Safety & ESLint Compliance |
 | v7.1 | ✅ SHIPPED | 2026-05-07 | Drizzle ORM Migration & Type Safety |
 | v6.10 | ✅ SHIPPED | 2026-05-07 | Infrastructure & Polish |

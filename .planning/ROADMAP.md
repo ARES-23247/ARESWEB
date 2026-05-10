@@ -33,6 +33,21 @@
 
 ---
 
+## v8.0 End-to-End Hono RPC Type Safety 📋 PLANNED
+
+**Goal**: Eliminate the `any` type on the Hono RPC client and achieve full end-to-end type inference from server handlers through `hc<AppType>()` to frontend calls.
+
+**Depends on**: v7.3 ESLint Sanitization
+
+- [ ] **Phase 69: Restructure `[[route]].ts`** — Chain all `.route()` calls for type propagation
+- [ ] **Phase 70: Handler Return Type Alignment** — Remove `as any` casts from all `c.json()` returns (~30 route files)
+- [ ] **Phase 71: Client Type Safety** — Remove `: any` from `honoClient.ts`, verify inference
+- [ ] **Phase 72: Performance Validation** — Measure TS compiler impact, split AppType if needed
+
+See [v8.0-ROADMAP.md](milestones/v8.0-ROADMAP.md) for full analysis and rationale.
+
+---
+
 ## Maintenance Mode
 
 **Current Status**: Paused for v7.3 sanitization.
