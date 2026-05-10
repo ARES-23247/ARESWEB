@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { docSchema } from "@shared/schemas/docSchema";
-import { slugSchema } from "@shared/schemas/validators";
+
 import { useGetAdminDocDetail, useSaveDoc, useDeleteDoc } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import EditorFooter from "./editor/EditorFooter";
@@ -65,9 +65,13 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       displayInScienceCorner: false,
       content: "{}"
     },
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error - zodValidator generic type mismatch with form schema
     validatorAdapter: zodValidator(),
+    onSubmit: async ({ value }) => {
+      if (!editor) return;
+      const content = JSON.stringify(editor.getJSON());
+      saveMutation.mutate({ ...value, content, isDraft: value.isDraft });
+    }
   });
 
 
@@ -137,22 +141,11 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     // Update the isDraft field in the form before validating
     form.setFieldValue("isDraft", isDraft);
 
-    // Trigger validation on all fields before checking isInvalid
-    await form.validate();
-
-    // Check if form has validation errors (from field validators)
-    if (form.state.isInvalid) {
-      setErrorMsg("Please fix the form errors before submitting.");
-      return;
-    }
-
     // Clear any previous errors
     setErrorMsg("");
 
-    // Validation passed, submit the form
-    const content = JSON.stringify(editor.getJSON());
-    const formValue = form.state.values;
-    saveMutation.mutate({ ...formValue, content, isDraft });
+    // Trigger validation and submit
+    await form.handleSubmit();
   };
 
   const handleDelete = async () => {
