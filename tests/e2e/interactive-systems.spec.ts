@@ -79,7 +79,8 @@ test.describe('Interactive Systems & Workflows', () => {
     await page.waitForTimeout(1000);
 
     // The component is now an embedded thread, test the reply functionality
-    const replyInput = page.getByPlaceholder('Reply to #events > Event:').or(
+    // Placeholder format: "Reply to #${stream} > ${topic}..."
+    const replyInput = page.getByPlaceholder(/Reply to #events > Event:/).or(
       page.getByPlaceholder('Reply')
     );
     await expect(replyInput).toBeVisible();

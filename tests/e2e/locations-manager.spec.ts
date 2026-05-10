@@ -61,13 +61,16 @@ test.describe('Locations Manager', () => {
 
     // Verify creation form is visible
     await expect(page.getByText(/Register New Venue/i)).toBeVisible();
-    await expect(page.getByLabel(/Alias/i)).toBeVisible();
-    await expect(page.getByLabel(/Street Address/i)).toBeVisible();
-    await expect(page.getByLabel(/Google Maps/i)).toBeVisible();
+    // The label text includes the example, so use a partial match
+    await expect(page.getByText(/Alias.*e\.g\./i)).toBeVisible();
+    await expect(page.getByText(/Street Address.*Auto-suggest/i)).toBeVisible();
+    await expect(page.getByText(/Google Maps URL/i)).toBeVisible();
 
-    // Fill in the location creation form
-    await page.getByLabel(/Alias/i).fill(`Test Location ${Date.now()}`);
-    await page.getByLabel(/Street Address/i).fill('789 Test Drive, Austin, TX');
+    // Fill in the location creation form using the input's id/name
+    const nameInput = page.locator('#name');
+    const addressInput = page.locator('#address');
+    await nameInput.fill(`Test Location ${Date.now()}`);
+    await addressInput.fill('789 Test Drive, Austin, TX');
 
     // Wait for OSM auto-suggest to populate (debounced)
     await page.waitForTimeout(700);
@@ -76,7 +79,7 @@ test.describe('Locations Manager', () => {
     await page.getByText('123 Robotics Lane, Plano, Collin County, Texas, 75074, United States').click();
 
     // Verify Google Maps URL was auto-generated
-    const mapsUrlInput = page.getByLabel(/Google Maps/i);
+    const mapsUrlInput = page.locator('#mapsUrl');
     await expect(mapsUrlInput).toHaveValue(/https:\/\/www\.google\.com\/maps/);
 
     // Submit the form
@@ -95,17 +98,19 @@ test.describe('Locations Manager', () => {
     // Wait for locations to load
     await expect(page.getByRole('heading', { name: /Locations/i })).toBeVisible();
 
-    // Find the first location card and click its edit button
+    // Find the first location card and click its edit button (Edit3 icon button)
     const locationCard = page.locator('.border').first();
-    const editButton = locationCard.getByRole('button').filter({ hasText: '' }).first();
+    const editButton = locationCard.getByTitle(/Edit venue/i);
     await editButton.click();
 
     // Verify form is visible with pre-filled data
     await expect(page.getByText(/Edit Venue/i)).toBeVisible();
-    await expect(page.getByLabel(/Alias/i)).toBeVisible();
+    // Use the input id instead of label
+    const nameInput = page.locator('#name');
+    await expect(nameInput).toBeVisible();
 
     // Modify the location data
-    await page.getByLabel(/Alias/i).fill(`Updated Location ${Date.now()}`);
+    await nameInput.fill(`Updated Location ${Date.now()}`);
 
     // Submit the form
     await page.getByRole('button', { name: /Save Venue/i }).click();
@@ -123,9 +128,9 @@ test.describe('Locations Manager', () => {
     // Wait for locations to load
     await expect(page.getByRole('heading', { name: /Locations/i })).toBeVisible();
 
-    // Find a location card and click its delete button
+    // Find a location card and click its delete button (Trash2 icon button)
     const locationCard = page.locator('.border').first();
-    const deleteButton = locationCard.getByRole('button').filter({ hasText: '' }).nth(1);
+    const deleteButton = locationCard.getByTitle(/Delete venue/i);
     await deleteButton.click();
 
     // Wait for mutation to complete
@@ -162,11 +167,13 @@ test.describe('Locations Manager', () => {
     await expect(submitButton).toBeDisabled();
 
     // Fill in only the name (address is still required)
-    await page.getByLabel(/Alias/i).fill('Test Location');
+    const nameInput = page.locator('#name');
+    await nameInput.fill('Test Location');
     await expect(submitButton).toBeDisabled();
 
     // Fill in the address (now required fields are satisfied)
-    await page.getByLabel(/Street Address/i).fill('123 Test Street, Test City, TX 75001');
+    const addressInput = page.locator('#address');
+    await addressInput.fill('123 Test Street, Test City, TX 75001');
     await page.waitForTimeout(700); // Wait for validation to process
     await expect(submitButton).toBeEnabled();
   });
@@ -196,7 +203,8 @@ test.describe('Locations Manager', () => {
     await page.getByRole('button', { name: /Add Venue/i }).click();
 
     // Type an address to trigger auto-suggest
-    await page.getByLabel(/Street Address/i).fill('123 Test');
+    const addressInput = page.locator('#address');
+    await addressInput.fill('123 Test');
 
     // Wait for debounced OSM API call (600ms debounce + response time)
     await page.waitForTimeout(700);
@@ -208,10 +216,10 @@ test.describe('Locations Manager', () => {
     await page.getByText('123 Robotics Lane, Plano, Collin County, Texas, 75074, United States').click();
 
     // Verify address field was updated
-    await expect(page.getByLabel(/Street Address/i)).toHaveValue('123 Robotics Lane, Plano, Collin County, Texas, 75074, United States');
+    await expect(addressInput).toHaveValue('123 Robotics Lane, Plano, Collin County, Texas, 75074, United States');
 
     // Verify Google Maps URL was auto-generated
-    const mapsUrlInput = page.getByLabel(/Google Maps/i);
+    const mapsUrlInput = page.locator('#mapsUrl');
     await expect(mapsUrlInput).toHaveValue(/https:\/\/www\.google\.com\/maps/);
   });
 
@@ -222,18 +230,19 @@ test.describe('Locations Manager', () => {
     await page.getByRole('button', { name: /Add Venue/i }).click();
 
     // Verify form fields are visible
-    await expect(page.getByLabel(/Alias/i)).toBeVisible();
+    const nameInput = page.locator('#name');
+    await expect(nameInput).toBeVisible();
 
     // Fill in some data
-    await page.getByLabel(/Alias/i).fill('Test Location');
-    await page.getByLabel(/Street Address/i).fill('123 Test Street');
+    await nameInput.fill('Test Location');
+    await page.locator('#address').fill('123 Test Street');
 
     // Click Cancel button
     await page.getByRole('button', { name: /Cancel/i }).click();
 
     // Verify form is hidden (Add Venue button is visible again)
     await expect(page.getByRole('button', { name: /Add Venue/i })).toBeVisible();
-    await expect(page.getByLabel(/Alias/i)).not.toBeVisible();
+    await expect(nameInput).not.toBeVisible();
   });
 
   test('LOCATIONS-12: Google Maps link opens in new tab', async ({ page }) => {
@@ -243,7 +252,8 @@ test.describe('Locations Manager', () => {
     await page.getByRole('button', { name: /Add Venue/i }).click();
 
     // Fill in the address to generate maps URL
-    await page.getByLabel(/Street Address/i).fill('123 Test');
+    const addressInput = page.locator('#address');
+    await addressInput.fill('123 Test');
     await page.waitForTimeout(700);
 
     // Select the first suggestion to generate maps URL

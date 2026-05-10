@@ -29,7 +29,7 @@ test.describe('Store Orders Dashboard', () => {
     // Verify filter buttons are present
     await expect(page.getByRole('button', { name: 'All' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Unfulfilled' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Fulfilled' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Fulfilled' }).first()).toBeVisible();
 
     // Verify table headers are visible
     await expect(page.getByText('Order Details')).toBeVisible();
@@ -249,7 +249,7 @@ test.describe('Store Orders Dashboard', () => {
     // Verify filter buttons have accessible names
     await expect(page.getByRole('button', { name: 'All' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Unfulfilled' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Fulfilled' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Fulfilled' }).first()).toBeVisible();
   });
 
   test('order status badges have sufficient color contrast', async ({ page }) => {

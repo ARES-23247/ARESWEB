@@ -107,8 +107,8 @@ export const postHandlers = {
            JOIN posts p ON f.slug = p.slug
            LEFT JOIN user u ON p.cf_email = u.email
            LEFT JOIN user_profiles uP ON u.id = uP.user_id
-           WHERE p.isDeleted = 0 AND p.status = 'published' AND (p.publishedAt IS NULL OR datetime(p.publishedAt) <= datetime('now'))
-           AND f.posts_fts MATCH ${cleanQ}
+           WHERE p.is_deleted = 0 AND p.status = 'published' AND (p.publishedAt IS NULL OR datetime(p.publishedAt) <= datetime('now'))
+           AND f.posts_fts MATCH '${cleanQ.replace(/'/g, "''")}'
            ORDER BY f.rank LIMIT ${Number(limit) || 10} OFFSET ${Number(offset) || 0}
         `);
 
