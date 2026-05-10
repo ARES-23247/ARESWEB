@@ -90,7 +90,7 @@ export default function PhysicsSim() {
             let distance = Math.sqrt((distX * distX) + (distY * distY));
             if (distance < b.radius) {
                 collisionTriggered = true;
-                localLogMsg = "ðŸ’¥ CONTINUOUS COLLISION DETECTED";
+                localLogMsg = "💥 CONTINUOUS COLLISION DETECTED";
                 const overlap = b.radius - distance;
                 if (distance === 0) { distX = 1; distY = 0; distance = 1; }
                 const nx = distX / distance;

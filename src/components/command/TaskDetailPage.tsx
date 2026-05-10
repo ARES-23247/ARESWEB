@@ -39,7 +39,7 @@ export default function TaskDetailPage() {
   const tasks = tasksData?.tasks ?? [];
   const task = tasks.find((t: TaskItem) => t.id === taskId);
 
-  // Local edit state â€” synced from task on first load
+  // Local edit state — synced from task on first load
   const [edits, setEdits] = useState<UpdateTaskRequest>({});
 
   // Fetch team members for assignee picker

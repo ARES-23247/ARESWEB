@@ -182,7 +182,7 @@ export default function EventDetail() {
           {event.meetingNotes && (
             <div className="mt-12 bg-ares-red/10 border border-ares-red/30 ares-cut-sm p-8">
               <h2 className="text-2xl font-bold text-ares-red flex items-center gap-2 mb-6 border-b border-ares-red/20 pb-4 !mt-0">
-                <span>ðŸ”’ Private Meeting Notes</span>
+                <span>🔒 Private Meeting Notes</span>
               </h2>
               <div className="prose prose-invert lg:prose-lg max-w-none prose-headings:text-ares-gold prose-a:text-ares-gold">
                 {parsedNotesAst ? (

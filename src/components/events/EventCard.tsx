@@ -62,7 +62,7 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
           </span>
           {event.location && (
             <a
-              href={`https://maps.google.com/maps?q=${encodeURIComponent(event.locationAddress || (event.location.includes('â€”') ? event.location.split('â€”').pop()!.trim() : event.location))}`}
+              href={`https://maps.google.com/maps?q=${encodeURIComponent(event.locationAddress || (event.location.includes('—') ? event.location.split('—').pop()!.trim() : event.location))}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 relative z-20 pointer-events-auto hover:text-ares-gold transition-colors"

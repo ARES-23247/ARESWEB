@@ -60,7 +60,7 @@ export default function Docs() {
 
   return (
     <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col">
-      <SEO title={currentDoc?.title ? `${currentDoc.title} â€” ARESLib` : "ARESLib Documentation"} description={currentDoc?.description || "ARESLib documentation for the ARES 23247 FTC framework."} />
+      <SEO title={currentDoc?.title ? `${currentDoc.title} — ARESLib` : "ARESLib Documentation"} description={currentDoc?.description || "ARESLib documentation for the ARES 23247 FTC framework."} />
 
       {/* Search Overlay */}
       <AnimatePresence>
@@ -301,7 +301,7 @@ export default function Docs() {
                       disabled={feedbackMutation.isPending}
                       className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all disabled:opacity-50"
                     >
-                      <span className="text-lg">ðŸ‘Ž</span> No, it wasn&apos;t
+                      <span className="text-lg">👎</span> No, it wasn&apos;t
                     </button>
                   </div>
                 </div>

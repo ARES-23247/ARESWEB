@@ -520,7 +520,7 @@ export default function FinanceManager() {
                       {t.category}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-white font-medium">{t.description || "â€”"}</td>
+                  <td className="p-4 text-sm text-white font-medium">{t.description || "—"}</td>
                   <td className={`p-4 text-sm font-black text-right ${t.type === 'income' ? 'text-ares-green' : 'text-ares-red'}`}>
                     {t.type === 'income' ? '+' : '-'}${Number(t.amount).toLocaleString()}
                   </td>

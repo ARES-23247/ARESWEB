@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, RefreshCw, Award, TrendingUp, TrendingDown, Target } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { scoutingApi, type TOATeam, type TOARanking, type AnalysisResponse } from "../../lib/scouting-api";
@@ -83,7 +83,7 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
   const statItems = ranking
     ? [
         { label: "Rank", value: `#${ranking.rank}`, icon: Award, color: "text-ares-gold" },
-        { label: "OPR", value: ranking.opr?.toFixed(1) ?? "â€”", icon: TrendingUp, color: "text-ares-cyan" },
+        { label: "OPR", value: ranking.opr?.toFixed(1) ?? "—", icon: TrendingUp, color: "text-ares-cyan" },
         { label: "NP-OPR", value: ranking.np_opr?.toFixed(1) ?? "—", icon: Target, color: "text-ares-cyan" },
         { label: "Record", value: `${ranking.wins}W-${ranking.losses}L-${ranking.ties}T`, icon: TrendingDown, color: "text-marble" },
         { label: "High Score", value: ranking.highest_qual_score?.toString() ?? "—", icon: Sparkles, color: "text-ares-gold" },
@@ -113,7 +113,7 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
               )}
               {team.robot_name && (
                 <span className="text-xs text-ares-cyan/60 font-semibold">
-                  ðŸ¤– {team.robot_name}
+                  🤖 {team.robot_name}
                 </span>
               )}
               {team.rookie_year && (

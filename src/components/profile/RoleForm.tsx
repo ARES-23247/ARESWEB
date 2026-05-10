@@ -2,11 +2,11 @@ import { ProfileFormSubComponentProps } from "./types";
 
 const SUBTEAM_OPTIONS = ["Build", "Programming", "Design/CAD", "Outreach", "Marketing", "Documentation", "Drive Team", "Scouting", "Strategy"];
 const memberTypeS = [
-  { value: "student", label: "Student", icon: "ðŸ“š" },
-  { value: "alumni", label: "Alumni", icon: "ðŸŽ“" },
-  { value: "mentor", label: "Mentor", icon: "ðŸ”§" },
+  { value: "student", label: "Student", icon: "📚" },
+  { value: "alumni", label: "Alumni", icon: "🎓" },
+  { value: "mentor", label: "Mentor", icon: "🔧" },
   { value: "coach", label: "Coach", icon: "ðŸ†" },
-  { value: "parent", label: "Parent", icon: "ðŸ‘ª" },
+  { value: "parent", label: "Parent", icon: "👪" },
 ];
 
 export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<ProfileFormSubComponentProps, "isMinor">) {

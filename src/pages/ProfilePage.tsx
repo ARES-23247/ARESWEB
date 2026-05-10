@@ -153,7 +153,7 @@ export default function ProfilePage() {
   }
 
   const memberLabel = { student: "Student", alumni: "Alumni", mentor: "Mentor", coach: "Coach" }[profile.memberType] || "Member";
-  const memberIcon = { student: "ðŸ“š", alumni: "ðŸŽ“", mentor: "ðŸ”§", coach: "ðŸ†" }[profile.memberType] || "ðŸ‘¤";
+  const memberIcon = { student: "📚", alumni: "🎓", mentor: "🔧", coach: "ðŸ†" }[profile.memberType] || "👤";
 
   const subteams = typeof profile.subteams === "string" ? JSON.parse(profile.subteams || "[]") : (profile.subteams || []);
   const colleges = typeof profile.colleges === "string" ? JSON.parse(profile.colleges || "[]") : (profile.colleges || []);

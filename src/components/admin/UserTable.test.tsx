@@ -292,7 +292,7 @@ describe("UserTable Component", () => {
 
     render(<UserTable {...defaultProps} users={usersWithoutEmail} />);
 
-    expect(screen.getByText("â€”")).toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 
   it("renders dash for missing join date", () => {
@@ -311,7 +311,7 @@ describe("UserTable Component", () => {
 
     render(<UserTable {...defaultProps} users={usersWithoutDate} />);
 
-    const dashes = screen.getAllByText("â€”");
+    const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThan(0);
   });
 

@@ -178,7 +178,7 @@ export default function AdminUsers() {
     }),
     columnHelper.accessor("email", {
       header: "Email",
-      cell: info => <span className="text-sm text-white/60">{info.getValue() || "â€”"}</span>,
+      cell: info => <span className="text-sm text-white/60">{info.getValue() || "—"}</span>,
     }),
     columnHelper.accessor("role", {
       header: "Role",
@@ -223,7 +223,7 @@ export default function AdminUsers() {
     columnHelper.accessor("createdAt", {
       header: "Joined",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : "â€”"}</span>,
+      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : "—"}</span>,
     }),
     columnHelper.display({
       id: "actions",

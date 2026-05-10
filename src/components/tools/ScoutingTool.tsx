@@ -86,7 +86,7 @@ export default function ScoutingTool() {
       // Try to fetch ranking data from current season
       try {
         const results = await scoutingApi.getTeamResults(num, SEASON_KEY);
-        // Results may contain ranking data â€” extract if available
+        // Results may contain ranking data — extract if available
         if (Array.isArray(results) && results.length > 0) {
           const firstResult = results[0] as Record<string, unknown>;
           if (firstResult.opr !== undefined) {
@@ -94,7 +94,7 @@ export default function ScoutingTool() {
           }
         }
       } catch {
-        // Ranking data not available for this season â€” that's fine
+        // Ranking data not available for this season — that's fine
       }
     } catch (err) {
       setTeamError(err instanceof Error ? err.message : "Team not found");
@@ -317,16 +317,16 @@ export default function ScoutingTool() {
                           <span className="text-ares-gold font-black">#{ranking.rank}</span>
                           <span className="text-white font-bold">{teamNumber}</span>
                           <span className="text-marble/70 font-semibold truncate text-left">
-                            {team?.team_name_short || "â€”"}
+                            {team?.team_name_short || "—"}
                           </span>
                           <span className="text-ares-cyan font-bold text-right">
-                            {ranking.opr?.toFixed(1) ?? "â€”"}
+                            {ranking.opr?.toFixed(1) ?? "—"}
                           </span>
                           <span className="text-marble/60 font-semibold text-right">
                             {ranking.wins}W-{ranking.losses}L-{ranking.ties}T
                           </span>
                           <span className="text-marble/60 font-semibold text-right flex items-center justify-end gap-1">
-                            {ranking.ranking_points?.toFixed(1) ?? "â€”"}
+                            {ranking.ranking_points?.toFixed(1) ?? "—"}
                             {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                           </span>
                         </button>

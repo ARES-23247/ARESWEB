@@ -9,9 +9,9 @@ import { useGetTeamRoster } from "../api";
 import { type TeamMember } from "../components/MemberCard";
 
 const SECTION_ORDER = [
-  { type: "student", title: "Our Students", icon: "ðŸ“š", desc: "The innovators, builders, and dreamers who bring ARES to life." },
-  { type: "alumni", title: "Our Alumni", icon: "ðŸŽ“", desc: "Where the ARES legacy carries forward â€” in classrooms, labs, and careers." },
-  { type: "mentor", title: "Our Mentors", icon: "ðŸ”§", desc: "Technical experts shaping the next generation of West Virginia engineers." },
+  { type: "student", title: "Our Students", icon: "📚", desc: "The innovators, builders, and dreamers who bring ARES to life." },
+  { type: "alumni", title: "Our Alumni", icon: "🎓", desc: "Where the ARES legacy carries forward — in classrooms, labs, and careers." },
+  { type: "mentor", title: "Our Mentors", icon: "🔧", desc: "Technical experts shaping the next generation of West Virginia engineers." },
   { type: "coach", title: "Our Coaches", icon: "ðŸ†", desc: "The strategic leaders guiding ARES to championship-grade performance." },
 ];
 
@@ -115,7 +115,7 @@ export default function About() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-heading uppercase">Ready to Join ARES?</h2>
           <p className="text-white text-lg mb-8 max-w-2xl mx-auto">
-            We welcome students from 6thâ€“12th grade across Monongalia, Harrison, and Preston counties, SW PA, and anyone within driving distance of Morgantown. No experience needed â€” just bring your curiosity.
+            We welcome students from 6thâ€“12th grade across Monongalia, Harrison, and Preston counties, SW PA, and anyone within driving distance of Morgantown. No experience needed — just bring your curiosity.
           </p>
           <Link
             to="/join"

@@ -30,7 +30,7 @@ export default function Leaderboard() {
 
   return (
     <div className="min-h-screen bg-obsidian text-marble py-24 relative overflow-hidden">
-      <SEO title="Team Leaderboard â€” ARES 23247" description="The most engaged students and mentors on Team ARES 23247." />
+      <SEO title="Team Leaderboard — ARES 23247" description="The most engaged students and mentors on Team ARES 23247." />
 
       <div className="max-w-5xl mx-auto px-6 relative z-10">
         <Link to="/" className="inline-flex items-center gap-2 text-white hover:text-white text-xs font-bold uppercase tracking-widest mb-12 transition-colors bg-obsidian px-3 py-1.5 ares-cut-sm border border-white/10 shadow-lg">
