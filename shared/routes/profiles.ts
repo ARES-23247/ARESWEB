@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
+import { selectUserSchema, selectUserProfileSchema, selectBadgeSchema } from "@shared/db/schema-zod";
+import { createResponseSchema } from "@shared/db/schema-openapi";
 
 // Enums
 export const MemberTypeEnum = z.enum([
@@ -14,50 +16,75 @@ export const MemberTypeEnum = z.enum([
   "other"
 ]);
 
-// Schemas
-export const authSchema = z.object({
-  id: z.string().openapi({ example: "123" }),
-  email: z.string().openapi({ example: "user@example.com" }),
-  name: z.string().nullable().optional().openapi({ example: "John Doe" }),
-  image: z.string().nullable().optional(),
-  role: z.string().openapi({ example: "member" }),
-});
+// Schemas - auto-generated from Drizzle
+export const authSchema = createResponseSchema(
+  selectUserSchema.pick({
+    id: true,
+    email: true,
+    name: true,
+    image: true,
+    role: true,
+  }),
+  {
+    title: "Auth User",
+    example: {
+      id: "123",
+      email: "user@example.com",
+      name: "John Doe",
+      image: null,
+      role: "user",
+    },
+  }
+);
 
-export const profileMeSchema = z.object({
-  auth: authSchema.nullable().optional(),
-  memberType: MemberTypeEnum.openapi({ example: "student" }),
-  firstName: z.string().optional().nullable().openapi({ example: "John" }),
-  lastName: z.string().optional().nullable().openapi({ example: "Doe" }),
-  nickname: z.string().optional().nullable().openapi({ example: "Johnny" }),
-  bio: z.string().optional().nullable().openapi({ example: "I love robotics!" }),
-  pronouns: z.string().optional().nullable().openapi({ example: "he/him" }),
-  subteams: z.string().optional().nullable(),
-  gradeYear: z.string().optional().nullable().openapi({ example: "2025" }),
-  favoriteFood: z.string().optional().nullable().openapi({ example: "Pizza" }),
-  dietaryRestrictions: z.string().optional().nullable(),
-  favoriteFirstThing: z.string().optional().nullable(),
-  funFact: z.string().optional().nullable().openapi({ example: "I built my first robot at age 8" }),
-  showEmail: z.union([z.number(), z.boolean()]).optional(),
-  contactEmail: z.string().optional().nullable(),
-  showPhone: z.union([z.number(), z.boolean()]).optional(),
-  phone: z.string().optional().nullable(),
-  showOnAbout: z.union([z.number(), z.boolean()]).optional(),
-  favoriteRobotMechanism: z.string().optional().nullable(),
-  preMatchSuperstition: z.string().optional().nullable(),
-  leadershipRole: z.string().optional().nullable(),
-  rookieYear: z.coerce.string().optional().nullable().openapi({ example: "2023" }),
-  colleges: z.string().optional().nullable(),
-  employers: z.string().optional().nullable(),
-  tshirtSize: z.string().optional().nullable(),
-  emergencyContactName: z.string().optional().nullable(),
-  emergencyContactPhone: z.string().optional().nullable(),
-  parentsName: z.string().optional().nullable(),
-  parentsEmail: z.string().optional().nullable(),
-  studentsName: z.string().optional().nullable(),
-  studentsEmail: z.string().optional().nullable(),
-  avatar: z.string().optional().nullable(),
-  userId: z.string().optional().openapi({ example: "123" }),
-});
+// Profile schema combining auth + user profile data
+// Auto-generated from Drizzle userProfiles schema
+export const profileMeSchema = createResponseSchema(
+  selectUserProfileSchema,
+  {
+    title: "Profile Me",
+    description: "Full user profile with auth metadata",
+    example: {
+      userId: "123",
+      memberType: "student",
+      firstName: "John",
+      lastName: "Doe",
+      nickname: "Johnny",
+      bio: "I love robotics!",
+      pronouns: "he/him",
+      subteams: "[]",
+      gradeYear: "2025",
+      favoriteFood: "Pizza",
+      dietaryRestrictions: null,
+      favoriteFirstThing: null,
+      funFact: "I built my first robot at age 8",
+      showEmail: 0,
+      contactEmail: null,
+      showPhone: 0,
+      phone: null,
+      showOnAbout: 1,
+      favoriteRobotMechanism: null,
+      preMatchSuperstition: null,
+      leadershipRole: null,
+      rookieYear: "2023",
+      colleges: "[]",
+      employers: "[]",
+      tshirtSize: null,
+      emergencyContactName: null,
+      emergencyContactPhone: null,
+      parentsName: null,
+      parentsEmail: null,
+      studentsName: null,
+      studentsEmail: null,
+      updatedAt: "2025-01-15T10:00:00Z",
+      hours: 0,
+    },
+  }
+).and(
+  z.object({
+    auth: authSchema.nullable().optional(),
+  })
+);
 
 export const rosterMemberSchema = z.object({
   userId: z.string().openapi({ example: "123" }),

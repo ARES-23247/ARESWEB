@@ -11,9 +11,9 @@ export const entitiesRouter = new OpenAPIHono<AppEnv>();
 
 entitiesRouter.use("*", ensureAuth);
 
-entitiesRouter.openapi(getEntityLinksRoute, createTypedHandler(getEntityLinksRoute, async (c, { query }) => {
+entitiesRouter.openapi(getEntityLinksRoute, async (c) => {
     const db = getDb(c);
-    const { type, id } = query;
+    const { type, id } = c.req.valid("query");
 
     const rawLinks = await db.select({
       id: schema.entityLinks.id,
@@ -68,41 +68,42 @@ entitiesRouter.openapi(getEntityLinksRoute, createTypedHandler(getEntityLinksRou
 
     const enrichedLinks = links.map((link) => ({
       id: link.id!,
-      target_type: link.resolvedTargetType,
-      target_id: link.resolvedTargetId,
-      target_title: titleCache.get(`${link.resolvedTargetType}:${link.resolvedTargetId}`) || null,
-      link_type: link.link_type || 'reference'
+      targetType: link.resolvedTargetType,
+      targetId: link.resolvedTargetId,
+      targetTitle: titleCache.get(`${link.resolvedTargetType}:${link.resolvedTargetId}`) || null,
+      linkType: link.link_type || 'reference'
     }));
 
     return c.json({ links: enrichedLinks }, 200);
-}));
+});
 
-entitiesRouter.openapi(saveEntityLinkRoute, createTypedHandler(saveEntityLinkRoute, async (c, { body }) => {
+entitiesRouter.openapi(saveEntityLinkRoute, async (c) => {
     const db = getDb(c);
+    const body = c.req.valid("json");
     const id = crypto.randomUUID();
 
     await db.insert(schema.entityLinks)
       .values({
         id,
-        sourceType: body.source_type,
-        sourceId: body.source_id,
-        targetType: body.target_type,
-        targetId: body.target_id,
-        linkType: body.link_type
+        sourceType: body.sourceType,
+        sourceId: body.sourceId,
+        targetType: body.targetType,
+        targetId: body.targetId,
+        linkType: body.linkType
       })
       .execute();
 
-    c.executionCtx.waitUntil(logAuditAction(c, "create_link", "entity_links", id, `Linked ${body.source_type}:${body.source_id} to ${body.target_type}:${body.target_id}`));
+    c.executionCtx.waitUntil(logAuditAction(c, "create_link", "entity_links", id, `Linked ${body.sourceType}:${body.sourceId} to ${body.targetType}:${body.targetId}`));
     return c.json({ success: true, id }, 200);
-}));
+});
 
-entitiesRouter.openapi(deleteEntityLinkRoute, createTypedHandler(deleteEntityLinkRoute, async (c, { params }) => {
+entitiesRouter.openapi(deleteEntityLinkRoute, async (c) => {
     const db = getDb(c);
-    const { id } = params;
+    const { id } = c.req.valid("param");
     await db.delete(schema.entityLinks).where(eq(schema.entityLinks.id, id)).execute();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_link", "entity_links", id));
     return c.json({ success: true }, 200);
-}));
+});
 
 export default entitiesRouter;
 

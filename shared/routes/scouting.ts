@@ -1,14 +1,24 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
+import { selectScoutingAnalysisSchema } from "../db/schema-zod";
+import { createResponseSchema } from "../db/schema-openapi";
 
-export const ScoutingAnalysisSchema = z.object({
-  id: z.string(),
-  team_number: z.number(),
-  event_key: z.string(),
-  analysis_json: z.string(),
-  created_at: z.string(),
-  updated_at: z.string(),
+// Auto-generated response schema from Drizzle
+export const ScoutingAnalysisSchema = createResponseSchema(selectScoutingAnalysisSchema, {
+  title: "Scouting Analysis",
+  example: {
+    id: "analysis_123",
+    seasonKey: "2025-relaunch",
+    eventKey: "2025wvama",
+    teamNumber: 23247,
+    mode: "team_analysis",
+    model: "claude-3-5-sonnet",
+    markdown: "# Team 23247 Analysis\n\nStrong autonomous...",
+    tokensUsed: 1500,
+    createdBy: "user_456",
+    createdAt: "2025-01-15T10:00:00Z",
+  },
 });
 
 export const analyzeScoutingRoute = createRoute({

@@ -1,24 +1,41 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
+import { selectSeasonSchema } from "@shared/db/schema-zod";
+import { responseWrappers } from "@shared/db/schema-openapi";
 import { standardErrors } from "./common";
 
-export const seasonSchema = z.object({
-  originalYear: z.number().optional().openapi({ example: 2024 }),
-  startYear: z.number().openapi({ example: 2024 }),
-  endYear: z.number().openapi({ example: 2025 }),
-  challengeName: z.string().openapi({ example: "Rapid React" }),
-  robotName: z.string().nullable().optional().openapi({ example: "Atlas" }),
-  robotImage: z.string().nullable().optional().openapi({ example: "https://example.com/robot.jpg" }),
-  robotDescription: z.string().nullable().optional().openapi({ example: "A tall robot with a shooter" }),
-  robotCadUrl: z.string().nullable().optional().openapi({ example: "https://example.com/cad" }),
-  summary: z.string().nullable().optional().openapi({ example: "Season summary" }),
-  albumUrl: z.string().nullable().optional().openapi({ example: "https://photos.app.goo.gl/xyz" }),
-  albumCover: z.string().nullable().optional().openapi({ example: "https://example.com/cover.jpg" }),
-  status: z.string().nullable().optional().openapi({ example: "published" }),
-  isDeleted: z.number().nullable().optional().openapi({ example: 0 }),
-  createdAt: z.string().nullable().optional(),
-  updatedAt: z.string().nullable().optional(),
-});
+// ============================================================================
+// DERIVED RESPONSE SCHEMAS (from Drizzle)
+// ============================================================================
+
+/**
+ * Season schema - derived from Drizzle select schema
+ * Exported as `seasonSchema` for backward compatibility with consumers
+ */
+export const seasonSchema = selectSeasonSchema;
+
+/**
+ * Season response schema - derived from Drizzle select schema
+ */
+export const seasonResponseSchema = selectSeasonSchema;
+
+/**
+ * Save season request schema (create/update)
+ * Derived from Drizzle insert schema with all fields optional for partial updates
+ */
+export const saveSeasonSchema = selectSeasonSchema
+  .omit({ createdAt: true, updatedAt: true })
+  .partial()
+  .extend({
+    originalYear: z.number().optional(),
+    startYear: z.number(),
+    endYear: z.number(),
+    challengeName: z.string(),
+  });
+
+// ============================================================================
+// ROUTES
+// ============================================================================
 
 export const listSeasonsRoute = createRoute({
   method: "get",
@@ -29,7 +46,7 @@ export const listSeasonsRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            seasons: z.array(seasonSchema),
+            seasons: z.array(seasonResponseSchema),
           }),
         },
       },
@@ -48,7 +65,7 @@ export const adminListSeasonsRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            seasons: z.array(seasonSchema),
+            seasons: z.array(seasonResponseSchema),
           }),
         },
       },
@@ -63,7 +80,7 @@ export const adminDetailSeasonRoute = createRoute({
   path: "/admin/{id}",
   request: {
     params: z.object({
-      id: z.string().openapi({ example: "2024" }),
+      id: z.string(),
     }),
   },
   responses: {
@@ -72,7 +89,7 @@ export const adminDetailSeasonRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            season: seasonSchema,
+            season: seasonResponseSchema,
           }),
         },
       },
@@ -87,7 +104,7 @@ export const getSeasonDetailRoute = createRoute({
   path: "/{year}",
   request: {
     params: z.object({
-      year: z.string().openapi({ example: "2024" }),
+      year: z.string(),
     }),
   },
   responses: {
@@ -96,7 +113,8 @@ export const getSeasonDetailRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            season: seasonSchema,
+            season: seasonResponseSchema,
+            // Related data - schemas may be defined elsewhere or kept as unknown for now
             awards: z.array(z.unknown()),
             events: z.array(z.unknown()),
             posts: z.array(z.unknown()),
@@ -117,7 +135,7 @@ export const saveSeasonRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: seasonSchema,
+          schema: saveSeasonSchema,
         },
       },
     },
@@ -127,7 +145,7 @@ export const saveSeasonRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean() }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Save/Update a season",
@@ -141,7 +159,7 @@ export const deleteSeasonRoute = createRoute({
   path: "/admin/{id}",
   request: {
     params: z.object({
-      id: z.string().openapi({ example: "2024" }),
+      id: z.string(),
     }),
   },
   responses: {
@@ -149,7 +167,7 @@ export const deleteSeasonRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean() }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Soft delete a season",
@@ -163,7 +181,7 @@ export const undeleteSeasonRoute = createRoute({
   path: "/admin/{id}/undelete",
   request: {
     params: z.object({
-      id: z.string().openapi({ example: "2024" }),
+      id: z.string(),
     }),
   },
   responses: {
@@ -171,7 +189,7 @@ export const undeleteSeasonRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean() }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Restore a deleted season",
@@ -185,7 +203,7 @@ export const purgeSeasonRoute = createRoute({
   path: "/admin/{id}/purge",
   request: {
     params: z.object({
-      id: z.string().openapi({ example: "2024" }),
+      id: z.string(),
     }),
   },
   responses: {
@@ -193,7 +211,7 @@ export const purgeSeasonRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean() }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Permanently delete a season",

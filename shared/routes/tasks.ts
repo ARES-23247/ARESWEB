@@ -1,34 +1,80 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
+import {
+  selectTaskSchema,
+  selectTaskAssignmentSchema,
+} from "@shared/db/schema-zod";
+import { responseWrappers } from "@shared/db/schema-openapi";
 import { standardErrors } from "./common";
 
-export const TaskSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-  status: z.string(),
-  priority: z.string(),
-  sortOrder: z.number(),
+// ============================================================================
+// DERIVED RESPONSE SCHEMAS (from Drizzle)
+// ============================================================================
+
+/**
+ * Task assignee schema (from task_assignments table)
+ * Note: task_assignments has composite PK (taskId, userId), no separate id field
+ */
+export const taskAssigneeSchema = selectTaskAssignmentSchema.pick({
+  taskId: true,
+  userId: true,
+});
+
+/**
+ * Task response schema with assignees relation
+ * Combines task data with assignment information
+ */
+/**
+ * Task response schema with assignees relation
+ * Combines task data with assignment information
+ */
+export const TaskSchema = selectTaskSchema.extend({
   assignees: z.array(
     z.object({
       id: z.string(),
       nickname: z.string().nullable(),
     })
-  ).optional().default([]),
-  createdBy: z.string(),
-  creatorName: z.string().nullable(),
-  dueDate: z.string().nullable(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  subteam: z.string().nullable(),
-  zulipStream: z.string().nullable(),
-  zulipTopic: z.string().nullable(),
-  // Legacy fields for backward compatibility (transitioning to camelCase)
-  assignedTo: z.string().nullable(),
-  assigneeName: z.string().nullable(),
-  parentId: z.string().nullable(),
-  timeSpentSeconds: z.number().nullable(),
+  ).nullish(),
 });
+
+/**
+ * Create task request schema
+ */
+export const createTaskSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().max(10000).optional(),
+  status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
+  priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
+  subteam: z.string().nullable().optional(),
+  assignees: z.array(z.string()).optional(),
+  dueDate: z.string().optional(),
+  parentId: z.string().nullable().optional(),
+  timeSpentSeconds: z.number().optional(),
+  sortOrder: z.number().optional(),
+  assignedTo: z.string().nullable().optional(),
+});
+
+/**
+ * Update task request schema (all fields optional)
+ */
+export const updateTaskSchema = createTaskSchema.partial();
+
+/**
+ * Reorder tasks request schema
+ */
+export const reorderTasksSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      status: z.string(),
+      sortOrder: z.number(),
+    })
+  ),
+});
+
+// ============================================================================
+// ROUTES
+// ============================================================================
 
 export const listTasksRoute = createRoute({
   method: "get",
@@ -71,19 +117,7 @@ export const createTaskRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.object({
-            title: z.string().min(1).max(500),
-            description: z.string().max(10000).optional(),
-            status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
-            priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
-            subteam: z.string().nullable().optional(),
-            assignees: z.array(z.string()).optional(),
-            dueDate: z.string().optional(),
-            parentId: z.string().nullable().optional(),
-            timeSpentSeconds: z.number().optional(),
-            sortOrder: z.number().optional(),
-            assignedTo: z.string().nullable().optional(),
-          }),
+          schema: createTaskSchema,
         },
       },
     },
@@ -114,15 +148,7 @@ export const reorderTasksRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.object({
-            items: z.array(
-              z.object({
-                id: z.string(),
-                status: z.string(),
-                sortOrder: z.number(),
-              })
-            ),
-          }),
+          schema: reorderTasksSchema,
         },
       },
     },
@@ -132,9 +158,7 @@ export const reorderTasksRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            success: z.boolean(),
-          }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Tasks reordered successfully",
@@ -155,19 +179,7 @@ export const updateTaskRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.object({
-            title: z.string().min(1).max(500).optional(),
-            description: z.string().max(10000).nullable().optional(),
-            status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
-            priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
-            subteam: z.string().nullable().optional(),
-            assignees: z.array(z.string()).optional(),
-            dueDate: z.string().nullable().optional(),
-            sortOrder: z.number().optional(),
-            parentId: z.string().nullable().optional(),
-            timeSpentSeconds: z.number().optional(),
-            assignedTo: z.string().nullable().optional(),
-          }),
+          schema: updateTaskSchema,
         },
       },
     },
@@ -177,9 +189,7 @@ export const updateTaskRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            success: z.boolean(),
-          }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Task updated successfully",
@@ -203,9 +213,7 @@ export const deleteTaskRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            success: z.boolean(),
-          }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Task deleted successfully",

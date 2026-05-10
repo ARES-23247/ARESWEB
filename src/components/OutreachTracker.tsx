@@ -8,12 +8,10 @@ import { Plus, Trash2, MapPin, Users, Clock, Target, Calendar, CheckCircle, XCir
 import { motion, AnimatePresence } from "framer-motion";
 import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
-import { useForm, useWatch, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
-// We define the schema locally or use a standard one from shared if available
-// Since the user is moving away from shared/schemas/contracts, we should probably check where outreachSchema is now.
+// Schema for validation
 const outreachSchema = z.object({
   id: z.string(),
   title: z.string().min(1, "Title is required"),
@@ -30,13 +28,6 @@ const outreachSchema = z.object({
   mentorCount: z.number().optional(),
   mentorHours: z.number().optional(),
 });
-
-const outreachFormSchema = outreachSchema.omit({ id: true }).extend({
-  id: z.string().optional(),
-  eventId: z.string().nullable().optional(),
-});
-
-type OutreachFormValues = z.infer<typeof outreachFormSchema>;
 
 interface OutreachLog {
   id: string;
@@ -60,10 +51,12 @@ import { useGetAdminOutreach, useSaveOutreach, useDeleteOutreach, useGetSeasons 
 
 export default function OutreachTracker() {
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeSeasonTab, setActiveSeasonTab] = useState<string>("all");
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<OutreachFormValues>({
-    resolver: zodResolver(outreachFormSchema) as Resolver<OutreachFormValues>,
+  const form = useForm({
     defaultValues: {
+      id: null as string | null,
       title: "",
       date: new Date().toISOString().split('T')[0],
       location: "",
@@ -73,16 +66,38 @@ export default function OutreachTracker() {
       description: "",
       isMentoring: false,
       mentoredTeamNumber: "",
-      seasonId: null,
-      eventId: null,
+      seasonId: null as number | null,
+      eventId: null as string | null,
       mentorCount: 0,
       mentorHours: 0
+    },
+    onSubmit: async ({ value }) => {
+      const submitData: Record<string, unknown> = {
+        ...value,
+        studentsCount: value.studentsCount || 0,
+        hoursLogged: value.hoursLogged || 0,
+        reachCount: value.reachCount || 0,
+        description: value.description === "" ? null : value.description,
+        location: value.location === "" ? null : value.location,
+        mentoredTeamNumber: value.mentoredTeamNumber === "" ? null : value.mentoredTeamNumber,
+      };
+
+      // Only include id if it exists (editing existing record)
+      if (value.id) {
+        submitData.id = value.id;
+      }
+
+      saveMutation.mutate(submitData, {
+        onSuccess: () => {
+          toast.success("Impact record synchronized.");
+          setIsAdding(false);
+          setEditingId(null);
+          form.reset();
+        },
+        onError: () => toast.error("Failed to save impact record.")
+      });
     }
   });
-
-  const seasonId = useWatch({ control, name: "seasonId" });
-  const isMentoring = useWatch({ control, name: "isMentoring" });
-  const [activeSeasonTab, setActiveSeasonTab] = useState<string>("all");
   const { data: rawOutreachData, isLoading } = useGetAdminOutreach();
 
   const { data: rawSeasonsData } = useGetSeasons();
@@ -109,41 +124,6 @@ export default function OutreachTracker() {
   const saveMutation = useSaveOutreach();
 
   const deleteMutation = useDeleteOutreach();
-
-  const onFormSubmit = (data: z.infer<typeof outreachFormSchema>) => {
-    const cleanData = {
-      ...data,
-      studentsCount: data.studentsCount || 0,
-      hoursLogged: data.hoursLogged || 0,
-      reachCount: data.reachCount || 0,
-      description: data.description === "" ? null : data.description,
-      location: data.location === "" ? null : data.location,
-      mentoredTeamNumber: data.mentoredTeamNumber === "" ? null : data.mentoredTeamNumber,
-    };
-    saveMutation.mutate(cleanData, {
-      onSuccess: () => {
-        toast.success("Impact record synchronized.");
-        setIsAdding(false);
-        reset({
-          title: "",
-          date: new Date().toISOString().split('T')[0],
-          location: "",
-          studentsCount: 0,
-          hoursLogged: 0,
-          reachCount: 0,
-          description: "",
-          isMentoring: false,
-          mentoredTeamNumber: "",
-          seasonId: null,
-          id: undefined,
-          eventId: null,
-          mentorCount: 0,
-          mentorHours: 0
-        });
-      },
-      onError: () => toast.error("Failed to save impact record.")
-    });
-  };
 
   const handleDelete = (id: string) => {
     if(confirm("Purge this impact record?")) {
@@ -185,7 +165,8 @@ export default function OutreachTracker() {
             onClick={() => {
               if (isAdding) {
                 setIsAdding(false);
-                reset();
+                form.reset();
+                setEditingId(null);
               } else {
                 setIsAdding(true);
               }
@@ -200,113 +181,228 @@ export default function OutreachTracker() {
 
       <AnimatePresence>
         {isAdding && (
-          <motion.form
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            onSubmit={handleSubmit(onFormSubmit)}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
             className="bg-obsidian border border-ares-red/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <DashboardInput
-                id="outreach-title"
-                label="Event Title"
-                {...register("title")}
-                error={errors.title?.message}
-                placeholder="e.g. Robot Demo at City Library"
-                focusColor="ares-red"
-                fullWidth
-              />
-              <DashboardInput
-                id="outreach-date"
-                type="date"
-                label="Date"
-                {...register("date")}
-                error={errors.date?.message}
-                focusColor="ares-red"
-              />
-              <DashboardInput
-                id="outreach-reach"
-                type="number"
-                label="Reach Count (Estimated)"
-                {...register("reachCount", { valueAsNumber: true })}
-                error={errors.reachCount?.message}
-                focusColor="ares-red"
-              />
-              <DashboardInput
-                id="outreach-hours"
-                type="number"
-                step="0.5"
-                label="Hours Logged"
-                {...register("hoursLogged", { valueAsNumber: true })}
-                error={errors.hoursLogged?.message}
-                focusColor="ares-red"
-              />
-              <DashboardInput
-                id="outreach-students"
-                type="number"
-                label="Students Participating"
-                {...register("studentsCount", { valueAsNumber: true })}
-                error={errors.studentsCount?.message}
-                focusColor="ares-red"
-              />
-              <DashboardInput
-                id="outreach-mentors"
-                type="number"
-                label="Mentors Participating"
-                {...register("mentorCount", { valueAsNumber: true })}
-                error={errors.mentorCount?.message}
-                focusColor="ares-bronze"
-              />
-              <DashboardInput
-                id="outreach-mentor-hours"
-                type="number"
-                step="0.5"
-                label="Mentor Hours"
-                {...register("mentorHours", { valueAsNumber: true })}
-                error={errors.mentorHours?.message}
-                focusColor="ares-bronze"
-              />
-              <DashboardTextarea
-                id="outreach-desc"
-                label="Description / Impact Summary"
-                {...register("description")}
-                placeholder="Summarize the community impact..."
-                focusColor="ares-red"
-                fullWidth
-              />
-              <div className="flex flex-col gap-4">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className={`w-10 h-6 ares-cut-sm transition-colors flex items-center px-1 ${isMentoring ? 'bg-ares-cyan' : 'bg-white/10'}`}>
-                    <motion.div 
-                      animate={{ x: isMentoring ? 16 : 0 }}
-                      className="w-4 h-4 bg-white ares-cut-sm shadow-sm"
-                    />
-                  </div>
-                  <input type="checkbox" className="hidden" {...register("isMentoring")} />
-                  <span className="text-xs font-bold text-marble/60 group-hover:text-white transition-colors">Mentoring Session</span>
-                </label>
-
-                {isMentoring && (
+              <form.Field
+                name="title"
+                validators={{
+                  onChange: outreachSchema.shape.title,
+                }}
+              >
+                {(field) => (
                   <DashboardInput
-                    id="outreach-mentored-team"
-                    label="Mentored Team #"
-                    {...register("mentoredTeamNumber")}
-                    error={errors.mentoredTeamNumber?.message}
-                    placeholder="e.g. 23247"
-                    focusColor="ares-cyan"
+                    id="outreach-title"
+                    label="Event Title"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    placeholder="e.g. Robot Demo at City Library"
+                    focusColor="ares-red"
+                    fullWidth
                   />
                 )}
-              </div>
-              <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("seasonId", val ? parseInt(val) : null)} />
+              </form.Field>
+
+              <form.Field
+                name="date"
+                validators={{
+                  onChange: outreachSchema.shape.date,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="outreach-date"
+                    type="date"
+                    label="Date"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    focusColor="ares-red"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field
+                name="reachCount"
+                validators={{
+                  onChange: outreachSchema.shape.reachCount,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="outreach-reach"
+                    type="number"
+                    label="Reach Count (Estimated)"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    focusColor="ares-red"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field
+                name="hoursLogged"
+                validators={{
+                  onChange: outreachSchema.shape.hoursLogged,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="outreach-hours"
+                    type="number"
+                    step="0.5"
+                    label="Hours Logged"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    focusColor="ares-red"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field
+                name="studentsCount"
+                validators={{
+                  onChange: outreachSchema.shape.studentsCount,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="outreach-students"
+                    type="number"
+                    label="Students Participating"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    focusColor="ares-red"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="mentorCount">
+                {(field) => (
+                  <DashboardInput
+                    id="outreach-mentors"
+                    type="number"
+                    label="Mentors Participating"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    focusColor="ares-bronze"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="mentorHours">
+                {(field) => (
+                  <DashboardInput
+                    id="outreach-mentor-hours"
+                    type="number"
+                    step="0.5"
+                    label="Mentor Hours"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    focusColor="ares-bronze"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="description">
+                {(field) => (
+                  <DashboardTextarea
+                    id="outreach-desc"
+                    label="Description / Impact Summary"
+                    name={field.name}
+                    value={field.state.value || ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={field.state.meta.errors?.[0] as string | undefined}
+                    placeholder="Summarize the community impact..."
+                    focusColor="ares-red"
+                    fullWidth
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="isMentoring">
+                {(field) => (
+                  <div className="flex flex-col gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`w-10 h-6 ares-cut-sm transition-colors flex items-center px-1 ${field.state.value ? 'bg-ares-cyan' : 'bg-white/10'}`}>
+                        <motion.div
+                          animate={{ x: field.state.value ? 16 : 0 }}
+                          className="w-4 h-4 bg-white ares-cut-sm shadow-sm"
+                        />
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="hidden"
+                        name={field.name}
+                        checked={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.checked)}
+                      />
+                      <span className="text-xs font-bold text-marble/60 group-hover:text-white transition-colors">Mentoring Session</span>
+                    </label>
+
+                    {field.state.value && (
+                      <form.Field name="mentoredTeamNumber">
+                        {(teamField) => (
+                          <DashboardInput
+                            id="outreach-mentored-team"
+                            label="Mentored Team #"
+                            name={teamField.name}
+                            value={teamField.state.value || ""}
+                            onBlur={teamField.handleBlur}
+                            onChange={(e) => teamField.handleChange(e.target.value)}
+                            error={teamField.state.meta.errors?.[0] as string | undefined}
+                            placeholder="e.g. 23247"
+                            focusColor="ares-cyan"
+                          />
+                        )}
+                      </form.Field>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name="seasonId">
+                {(field) => (
+                  <SeasonPicker
+                    value={field.state.value ? String(field.state.value) : ""}
+                    onChange={(val) => field.handleChange(val ? parseInt(val) : null)}
+                  />
+                )}
+              </form.Field>
             </div>
-            <DashboardSubmitButton 
-              isPending={saveMutation.isPending} 
-              defaultText="Finalize Impact Entry" 
-              icon={<Save size={20} />} 
-              theme="red" 
+            <DashboardSubmitButton
+              isPending={saveMutation.isPending}
+              defaultText="Finalize Impact Entry"
+              icon={<Save size={20} />}
+              theme="red"
             />
-          </motion.form>
+          </form>
         )}
       </AnimatePresence>
 
@@ -426,23 +522,22 @@ export default function OutreachTracker() {
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => {
+                    setEditingId(log.id);
                     setIsAdding(true);
-                    reset({
-                      id: (log.isDynamic && !log.eventId) ? undefined : log.id,
-                      eventId: log.isDynamic ? (log.eventId || log.id) : null,
-                      title: log.title,
-                      date: log.date.split('T')[0],
-                      location: log.location || "",
-                      studentsCount: log.studentsCount || 0,
-                      hoursLogged: log.hoursLogged || 0,
-                      reachCount: log.reachCount || 0,
-                      description: log.description || "",
-                      isMentoring: !!log.isMentoring,
-                      mentoredTeamNumber: log.mentoredTeamNumber || "",
-                      seasonId: log.seasonId || null,
-                      mentorCount: log.mentorCount || 0,
-                      mentorHours: log.mentorHours || 0
-                    } as any);
+                    form.setFieldValue("id", (log.isDynamic && !log.eventId) ? null : log.id);
+                    form.setFieldValue("title", log.title);
+                    form.setFieldValue("date", log.date.split('T')[0]);
+                    form.setFieldValue("location", log.location || "");
+                    form.setFieldValue("studentsCount", log.studentsCount || 0);
+                    form.setFieldValue("hoursLogged", log.hoursLogged || 0);
+                    form.setFieldValue("reachCount", log.reachCount || 0);
+                    form.setFieldValue("description", log.description || "");
+                    form.setFieldValue("isMentoring", !!log.isMentoring);
+                    form.setFieldValue("mentoredTeamNumber", log.mentoredTeamNumber || "");
+                    form.setFieldValue("seasonId", log.seasonId || null);
+                    form.setFieldValue("mentorCount", log.mentorCount || 0);
+                    form.setFieldValue("mentorHours", log.mentorHours || 0);
+                    form.setFieldValue("eventId", log.isDynamic ? (log.eventId || log.id) : null);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   title="Edit this impact record"

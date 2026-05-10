@@ -150,7 +150,55 @@ console.log(route.method);  // "post"
 
 ---
 
-## 3. ZOD-SPECIFIC PATTERNS
+## 3. ZOD-SPECIFIC PATTERNS — DRIZZLE-FIRST
+
+### 3.0 ALWAYS Use Auto-Generated Drizzle Schemas
+
+**GOLDEN RULE:** ALL Zod schemas for database entities MUST derive from `shared/db/schema-zod.ts` (auto-generated from `drizzle/schema.ts`). NEVER hand-write duplicate schemas.
+
+```typescript
+// ✅ CORRECT: Import auto-generated schema from Drizzle
+import { selectPostSchema, insertPostSchema } from "@shared/db/schema-zod";
+import { toCamelCaseResponse, createResponseSchema } from "@shared/db/schema-openapi";
+
+// Derive response schema from Drizzle (single source of truth!)
+export const postResponseSchema = toCamelCaseResponse(
+  selectPostSchema.pick({
+    slug: true,
+    title: true,
+    createdAt: true,
+  })
+);
+
+// Use for validation
+type Post = z.infer<typeof selectPostSchema>;
+type CreatePost = z.infer<typeof insertPostSchema>;
+```
+
+```typescript
+// ❌ WRONG: Hand-written schema duplicates Drizzle definition
+export const postResponseSchema = z.object({
+  slug: z.string(),
+  title: z.string(),
+  createdAt: z.string(),  // Duplicates Drizzle — maintenance burden!
+});
+```
+
+**WHY:** When you add a column to `drizzle/schema.ts` and run `npm run db:generate`, the schemas in `shared/db/schema-zod.ts` automatically update. Routes using these schemas automatically get the new fields. Hand-written schemas create drift.
+
+**The Auto-Generation Chain:**
+```
+drizzle/schema.ts (YOU EDIT)
+  → drizzle-kit generate
+  → shared/db/schema-zod.ts (AUTO-GENERATED: insertXSchema, selectXSchema)
+  → shared/routes/*.ts (IMPORT & USE)
+```
+
+**When adding a database column:**
+1. Edit `drizzle/schema.ts` — add the column
+2. Run `npm run db:generate`
+3. Run `npm run db:push` (apply to local DB)
+4. The route schemas automatically include the new field!
 
 ### 3.1 Infer Types from Zod Schemas
 

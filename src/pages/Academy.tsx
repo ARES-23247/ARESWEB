@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "../components/SEO";
+import EducationalCredentialSchema, { ARES_CREDENTIALS } from "../components/EducationalCredentialSchema";
 import { useSession } from "../utils/auth-client";
 import Turnstile from "../components/Turnstile";
 import DocsMarkdownRenderer from "../components/docs/DocsMarkdownRenderer";
@@ -50,6 +51,7 @@ export default function Academy() {
   return (
     <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col">
       <SEO title={currentDoc?.title ? `${currentDoc.title} â€” ARES Academy` : "ARES Academy"} description={currentDoc?.description || "ARES Academy lessons and interactive simulations."} />
+      <EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
       {/* â”€â”€ Search Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <AnimatePresence>

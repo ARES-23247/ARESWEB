@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "../routes/common";
+import { selectUserSchema, selectUserProfileSchema } from "@shared/db/schema-zod";
+import { createResponseSchema } from "@shared/db/schema-openapi";
 
 export const UserRoleEnum = z.enum([
   "unverified",
@@ -21,18 +23,43 @@ export const MemberTypeEnum = z.enum([
   "other"
 ]);
 
-export const userResponseSchema = z.object({
-  id: z.string().openapi({ example: "123" }),
-  name: z.string().nullable().openapi({ example: "John Doe" }),
-  email: z.string().openapi({ example: "john@example.com" }),
-  emailVerified: z.boolean().openapi({ example: true }),
-  image: z.string().nullable().optional(),
-  role: z.string().openapi({ example: "member" }),
-  createdAt: z.number().openapi({ example: 1234567890000 }),
-  updatedAt: z.number().openapi({ example: 1234567890000 }),
-  nickname: z.string().nullable().optional(),
-  memberType: MemberTypeEnum.nullable().optional(),
-});
+// Auto-generate user response schema from Drizzle
+// Combines user table with selected profile fields
+export const userResponseSchema = createResponseSchema(
+  selectUserSchema
+    .pick({
+      id: true,
+      name: true,
+      email: true,
+      emailVerified: true,
+      image: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
+    })
+    .merge(
+      z.object({
+        nickname: selectUserProfileSchema.shape.nickname.nullable().optional(),
+        memberType: selectUserProfileSchema.shape.memberType.nullable().optional(),
+      })
+    ),
+  {
+    title: "User Response",
+    description: "User account with selected profile fields",
+    example: {
+      id: "123",
+      name: "John Doe",
+      email: "john@example.com",
+      emailVerified: true,
+      image: null,
+      role: "user",
+      createdAt: 1234567890000,
+      updatedAt: 1234567890000,
+      nickname: "Johnny",
+      memberType: "student",
+    },
+  }
+);
 
 export const getUsersRoute = createRoute({
   method: "get",

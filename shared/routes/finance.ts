@@ -1,29 +1,54 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
-import { standardErrors } from "../routes/common";
+import {
+  selectFinanceTransactionSchema,
+  selectSponsorshipPipelineSchema,
+} from "@shared/db/schema-zod";
+import { responseWrappers } from "@shared/db/schema-openapi";
+import { openApiStandardErrors } from "./common";
 
-// Convert standardErrors to OpenAPI responses format
-const openApiErrorResponses = {
-  400: { content: { "application/json": { schema: standardErrors[400] } }, description: "Bad Request" },
-  401: { content: { "application/json": { schema: standardErrors[401] } }, description: "Unauthorized" },
-  403: { content: { "application/json": { schema: standardErrors[403] } }, description: "Forbidden" },
-  404: { content: { "application/json": { schema: standardErrors[404] } }, description: "Not Found" },
-  500: { content: { "application/json": { schema: standardErrors[500] } }, description: "Internal Server Error" },
-};
+// ============================================================================
+// DERIVED RESPONSE SCHEMAS (from Drizzle)
+// ============================================================================
 
-// Schemas
+/**
+ * Finance summary response schema
+ * This is a computed value, not directly from Drizzle
+ */
 export const FinanceSummarySchema = z.object({
   totalIncome: z.number(),
   totalExpenses: z.number(),
   balance: z.number(),
-  seasonId: z.number().nullable(),
+  seasonId: z.number().nullable().optional(),
 });
 
+/**
+ * Sponsorship status enum
+ */
 export const SponsorshipStatusSchema = z.enum(["potential", "contacted", "pledged", "secured", "lost"]);
 
-export const SponsorshipPipelineSchema = z.object({
-  id: z.string(),
-  companyName: z.string(),
+/**
+ * Transaction type enum
+ */
+export const TransactionTypeSchema = z.enum(["income", "expense"]);
+
+/**
+ * Sponsorship pipeline response schema - derived from Drizzle
+ */
+export const SponsorshipPipelineSchema = selectSponsorshipPipelineSchema;
+
+/**
+ * Finance transaction response schema - derived from Drizzle
+ */
+export const FinanceTransactionSchema = selectFinanceTransactionSchema;
+
+/**
+ * Save pipeline request schema (create/update)
+ * Derived from Drizzle schema with id optional for updates
+ */
+export const SavePipelineSchema = z.object({
+  id: z.string().optional(),
+  companyName: z.string().min(1),
   sponsorId: z.string().nullable().optional(),
   status: SponsorshipStatusSchema,
   estimatedValue: z.number(),
@@ -31,36 +56,13 @@ export const SponsorshipPipelineSchema = z.object({
   contactPerson: z.string().nullable().optional(),
   seasonId: z.number().nullable().optional(),
   zulipMessageId: z.string().nullable().optional(),
-  assignees: z.array(z.string()).default([]),
+  assignees: z.array(z.string()).optional().default([]),
 });
 
-export const TransactionTypeSchema = z.enum(["income", "expense"]);
-
-export const FinanceTransactionSchema = z.object({
-  id: z.string(),
-  type: TransactionTypeSchema,
-  amount: z.number(),
-  category: z.string(),
-  date: z.string(),
-  description: z.string().nullable().optional(),
-  receiptUrl: z.string().nullable().optional(),
-  seasonId: z.number().nullable().optional(),
-  loggedBy: z.string().nullable().optional(),
-});
-
-export const SavePipelineSchema = z.object({
-  id: z.string().optional(),
-  companyName: z.string().min(1),
-  sponsorId: z.string().nullable().optional(),
-  status: SponsorshipStatusSchema.default("potential"),
-  estimatedValue: z.number(),
-  notes: z.string().nullable().optional(),
-  contactPerson: z.string().nullable().optional(),
-  seasonId: z.number().nullable().optional(),
-  zulipMessageId: z.string().nullable().optional(),
-  assignees: z.array(z.string()).default([]),
-});
-
+/**
+ * Save transaction request schema (create/update)
+ * Derived from Drizzle schema with id optional for updates
+ */
 export const SaveTransactionSchema = z.object({
   id: z.string().optional(),
   type: TransactionTypeSchema,
@@ -72,7 +74,10 @@ export const SaveTransactionSchema = z.object({
   seasonId: z.number().nullable().optional(),
 });
 
-// Routes
+// ============================================================================
+// ROUTES
+// ============================================================================
+
 export const getSummaryRoute = createRoute({
   method: "get",
   path: "/summary",
@@ -82,7 +87,7 @@ export const getSummaryRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
+    ...openApiStandardErrors,
     200: {
       content: {
         "application/json": {
@@ -103,7 +108,7 @@ export const listPipelineRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
+    ...openApiStandardErrors,
     200: {
       content: {
         "application/json": {
@@ -130,11 +135,11 @@ export const savePipelineRoute = createRoute({
     },
   },
   responses: {
-    ...openApiErrorResponses,
+    ...openApiStandardErrors,
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean(), id: z.string() }),
+          schema: responseWrappers.created(),
         },
       },
       description: "Create or update a sponsorship pipeline item",
@@ -151,11 +156,11 @@ export const deletePipelineRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
+    ...openApiStandardErrors,
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean() }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Delete a sponsorship pipeline item",
@@ -173,7 +178,7 @@ export const listTransactionsRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
+    ...openApiStandardErrors,
     200: {
       content: {
         "application/json": {
@@ -200,11 +205,11 @@ export const saveTransactionRoute = createRoute({
     },
   },
   responses: {
-    ...openApiErrorResponses,
+    ...openApiStandardErrors,
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean(), id: z.string() }),
+          schema: responseWrappers.created(),
         },
       },
       description: "Create or update a financial transaction",
@@ -221,11 +226,11 @@ export const deleteTransactionRoute = createRoute({
     }),
   },
   responses: {
-    ...openApiErrorResponses,
+    ...openApiStandardErrors,
     200: {
       content: {
         "application/json": {
-          schema: z.object({ success: z.boolean() }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Delete a financial transaction",

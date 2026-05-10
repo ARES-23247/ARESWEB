@@ -2,15 +2,35 @@ import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 import { commentSchema as commentInputSchema } from "../schemas/commentSchema";
+import { selectCommentSchema } from "../db/schema-zod";
+import { toCamelCaseResponse } from "../db/schema-openapi";
 
-export const commentSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  nickname: z.string().nullable(),
-  avatar: z.string().nullable(),
-  content: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+// Response schema derived from Drizzle selectCommentSchema
+export const commentSchema = toCamelCaseResponse(
+  selectCommentSchema.pick({
+    id: true,
+    targetType: true,
+    targetId: true,
+    userId: true,
+    content: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+).extend({
+  nickname: z.string().nullable().optional(),
+  avatar: z.string().nullable().optional(),
+}).openapi({
+  example: {
+    id: "abc123",
+    targetType: "post",
+    targetId: "post-123",
+    userId: "user-456",
+    nickname: "John Doe",
+    avatar: "/avatars/john.jpg",
+    content: "Great post!",
+    createdAt: "2025-01-15T10:00:00Z",
+    updatedAt: "2025-01-15T10:00:00Z",
+  },
 });
 
 export const listCommentsRoute = createRoute({

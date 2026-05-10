@@ -1,36 +1,37 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
+import {
+  selectSponsorSchema,
+  selectSponsorMetricSchema,
+  selectSponsorTokenSchema,
+} from "@shared/db/schema-zod";
+import { responseWrappers } from "@shared/db/schema-openapi";
 import { openApiStandardErrors } from "./common";
-import { sponsorSchema } from "../schemas/sponsorSchema";
+import { sponsorSchema as sponsorRequestSchema } from "../schemas/sponsorSchema";
 
-// Response schema - id is always present in responses
-export const sponsorResponseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  tier: z.enum(["Titanium", "Gold", "Silver", "Bronze", "In-Kind"]),
-  logoUrl: z.string().nullable(),
-  websiteUrl: z.string().nullable(),
-  isActive: z.number(),
-  createdAt: z.string().nullable().optional(),
-});
+// ============================================================================
+// DERIVED RESPONSE SCHEMAS (from Drizzle)
+// ============================================================================
 
-export const sponsorRoiMetricSchema = z.object({
-  id: z.string().nullable(),
-  sponsorId: z.string(),
-  clicks: z.number().nullable(),
-  impressions: z.number().nullable(),
-  yearMonth: z.string(),
-});
+/**
+ * Sponsor response schema - derived from Drizzle select schema
+ */
+export const sponsorResponseSchema = selectSponsorSchema;
 
-export const sponsorTokenSchema = z.object({
-  sponsorId: z.string(),
-  token: z.string(),
-  sponsorName: z.string().optional(),
-  createdAt: z.string().nullable(),
-  lastUsed: z.string().nullable(),
-});
+/**
+ * Sponsor ROI metric schema - derived from Drizzle
+ */
+export const sponsorRoiMetricSchema = selectSponsorMetricSchema;
 
-// Route: Get all public sponsors
+/**
+ * Sponsor token schema - derived from Drizzle
+ */
+export const sponsorTokenSchema = selectSponsorTokenSchema;
+
+// ============================================================================
+// ROUTES
+// ============================================================================
+
 export const getSponsorsRoute = createRoute({
   method: "get",
   path: "/",
@@ -49,7 +50,6 @@ export const getSponsorsRoute = createRoute({
   },
 });
 
-// Route: Get public ROI dashboard by token
 export const getRoiRoute = createRoute({
   method: "get",
   path: "/roi/{token}",
@@ -74,7 +74,6 @@ export const getRoiRoute = createRoute({
   },
 });
 
-// Route: Admin list all sponsors
 export const adminListSponsorsRoute = createRoute({
   method: "get",
   path: "/admin/list",
@@ -93,7 +92,6 @@ export const adminListSponsorsRoute = createRoute({
   },
 });
 
-// Route: Admin save/create sponsor
 export const saveSponsorRoute = createRoute({
   method: "post",
   path: "/admin/save",
@@ -101,7 +99,7 @@ export const saveSponsorRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: sponsorSchema,
+          schema: sponsorRequestSchema,
         },
       },
     },
@@ -111,10 +109,7 @@ export const saveSponsorRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            success: z.boolean(),
-            id: z.string(),
-          }),
+          schema: responseWrappers.created(),
         },
       },
       description: "Create or update a sponsor",
@@ -122,7 +117,6 @@ export const saveSponsorRoute = createRoute({
   },
 });
 
-// Route: Admin delete sponsor
 export const deleteSponsorRoute = createRoute({
   method: "delete",
   path: "/admin/{id}",
@@ -136,9 +130,7 @@ export const deleteSponsorRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            success: z.boolean(),
-          }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Delete a sponsor",
@@ -146,7 +138,6 @@ export const deleteSponsorRoute = createRoute({
   },
 });
 
-// Route: Admin get tokens
 export const getAdminTokensRoute = createRoute({
   method: "get",
   path: "/admin/tokens",
@@ -165,7 +156,6 @@ export const getAdminTokensRoute = createRoute({
   },
 });
 
-// Route: Admin generate token
 export const generateTokenRoute = createRoute({
   method: "post",
   path: "/admin/tokens/generate",

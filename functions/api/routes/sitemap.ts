@@ -64,7 +64,8 @@ sitemapRouter.openapi(getSitemapRoute, async (c) => {
       "/sim-runner",
       "/join",
       "/store",
-      "/leaderboard"
+      "/leaderboard",
+      "/locations/morgantown"
     ];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;

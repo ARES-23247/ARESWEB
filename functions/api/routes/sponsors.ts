@@ -127,10 +127,10 @@ sponsorsRouter.openapi(getRoiRoute, async (c) => {
     };
 
     const metrics = metricsRow.map((m) => ({
-      id: m.id ?? "",
+      id: m.id ?? null,
       sponsorId: m.sponsorId,
-      clicks: m.clicks ?? 0,
-      impressions: m.impressions ?? 0,
+      clicks: m.clicks ?? null,
+      impressions: m.impressions ?? null,
       yearMonth: m.yearMonth,
     }));
 
@@ -232,7 +232,7 @@ sponsorsRouter.openapi(getAdminTokensRoute, async (c) => {
       token: t.token ?? "",
       sponsorId: t.sponsorId,
       sponsorName: t.sponsorName ?? undefined,
-      createdAt: t.createdAt ?? "",
+      createdAt: t.createdAt ?? null,
       lastUsed: null,
     }));
 

@@ -69,7 +69,7 @@ locationsRouter.openapi(listLocationsRoute, async (c) => {
     }));
 
     return c.json({ locations: locations as LocationInput[] } satisfies ListLocationsSuccess, 200);
-}));
+});
 
 locationsRouter.openapi(adminListLocationsRoute, async (c) => {
     const db = getDb(c);
@@ -91,7 +91,7 @@ locationsRouter.openapi(adminListLocationsRoute, async (c) => {
     }));
 
     return c.json({ locations: locations as LocationInput[] } satisfies AdminListLocationsSuccess, 200);
-}));
+});
 
 locationsRouter.openapi(saveLocationRoute, async (c) => {
     const validatedData = c.req.valid("json");
@@ -119,7 +119,7 @@ locationsRouter.openapi(saveLocationRoute, async (c) => {
 
     c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
     return c.json({ success: true, id } satisfies SaveLocationSuccess, 200);
-}));
+});
 
 locationsRouter.openapi(deleteLocationRoute, async (c) => {
     const { id } = c.req.valid("param");
@@ -130,6 +130,6 @@ locationsRouter.openapi(deleteLocationRoute, async (c) => {
       .run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location soft-deleted"));
     return c.json({ success: true } satisfies DeleteLocationSuccess, 200);
-}));
+});
 
 export default locationsRouter;

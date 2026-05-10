@@ -1,26 +1,53 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
+import { selectOutreachLogSchema } from "@shared/db/schema-zod";
+import { responseWrappers } from "@shared/db/schema-openapi";
 import { openApiStandardErrors } from "./common";
 
-export const outreachSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  date: z.string(),
-  location: z.string().nullable(),
-  studentsCount: z.number().int().min(0).max(1000),
-  hoursLogged: z.number().min(0).max(24),
-  reachCount: z.number().int().min(0).max(1000000),
-  description: z.string().nullable(),
-  isMentoring: z.coerce.boolean().optional(),
+// ============================================================================
+// DERIVED RESPONSE SCHEMAS (from Drizzle)
+// ============================================================================
+
+/**
+ * Outreach log schema - derived from Drizzle select schema
+ * Exported as `outreachSchema` for backward compatibility with consumers
+ */
+export const outreachSchema = selectOutreachLogSchema;
+
+/**
+ * Outreach log response schema - derived from Drizzle select schema
+ */
+export const outreachResponseSchema = selectOutreachLogSchema;
+
+/**
+ * Save outreach request schema (create/update)
+ * Derived from Drizzle schema with id optional for updates
+ * Note: id is integer in DB but string in API for consistency
+ */
+export const saveOutreachSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1),
+  date: z.string().min(1),
+  location: z.string().nullable().optional(),
+  hours: z.number().int().min(0).optional(),
+  peopleReached: z.number().int().min(0).optional(),
+  studentsCount: z.number().int().min(0).max(1000).optional(),
+  impactSummary: z.string().nullable().optional(),
+  cfEmail: z.string().nullable().optional(),
+  isMentoring: z.boolean().optional(),
   mentoredTeamNumber: z.string().nullable().optional(),
-  seasonId: z.coerce.number().nullable().optional(),
-  isDynamic: z.boolean().optional(),
+  metadata: z.string().nullable().optional(),
+  seasonId: z.number().nullable().optional(),
   eventId: z.string().nullable().optional(),
   mentorCount: z.number().int().min(0).max(100).optional(),
   mentorHours: z.number().min(0).max(1000).optional(),
+  isDeleted: z.number().min(0).max(1).optional(),
 });
 
-// Route: List all outreach logs (Public)
+// ============================================================================
+// ROUTES
+// ============================================================================
+
 export const listOutreachRoute = createRoute({
   method: "get",
   path: "/",
@@ -30,7 +57,7 @@ export const listOutreachRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            logs: z.array(outreachSchema),
+            logs: z.array(outreachResponseSchema),
           }),
         },
       },
@@ -39,7 +66,6 @@ export const listOutreachRoute = createRoute({
   },
 });
 
-// Route: List all outreach logs (Admin)
 export const adminListOutreachRoute = createRoute({
   method: "get",
   path: "/admin/list",
@@ -49,7 +75,7 @@ export const adminListOutreachRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            logs: z.array(outreachSchema),
+            logs: z.array(outreachResponseSchema),
           }),
         },
       },
@@ -58,7 +84,6 @@ export const adminListOutreachRoute = createRoute({
   },
 });
 
-// Route: Save/Update outreach log
 export const saveOutreachRoute = createRoute({
   method: "post",
   path: "/admin/save",
@@ -66,9 +91,7 @@ export const saveOutreachRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: outreachSchema.omit({ id: true }).extend({
-            id: z.string().optional(),
-          }),
+          schema: saveOutreachSchema,
         },
       },
     },
@@ -89,7 +112,6 @@ export const saveOutreachRoute = createRoute({
   },
 });
 
-// Route: Delete outreach log
 export const deleteOutreachRoute = createRoute({
   method: "delete",
   path: "/admin/{id}",
@@ -103,9 +125,7 @@ export const deleteOutreachRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            success: z.boolean(),
-          }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Delete an outreach log",

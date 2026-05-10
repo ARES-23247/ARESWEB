@@ -1,20 +1,36 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { openApiStandardErrors } from "./common";
+import { selectPageAnalyticsSchema } from "../db/schema-zod";
+import { createResponseSchema } from "../db/schema-openapi";
 
-// Schemas
+// Schemas - Auto-generated from Drizzle where applicable
+export const pageViewSchema = createResponseSchema(selectPageAnalyticsSchema, {
+  title: "Page View",
+  example: {
+    id: 1,
+    path: "/about",
+    category: "system",
+    referrer: "https://google.com",
+    userAgent: "Mozilla/5.0...",
+    timestamp: "2025-01-15T10:00:00Z",
+  },
+});
+
 export const topPageSchema = z.object({
   path: z.string(),
   category: z.string(),
   views: z.number(),
 });
 
-export const recentViewSchema = z.object({
-  path: z.string(),
-  category: z.string(),
-  userAgent: z.string(),
-  referrer: z.string(),
-  timestamp: z.string(),
+// Derived from Drizzle schema but with only the fields needed for recent views
+// The selectPageAnalyticsSchema uses snake_case from the database
+export const recentViewSchema = selectPageAnalyticsSchema.pick({
+  path: true,
+  category: true,
+  timestamp: true,
+  userAgent: true,
+  referrer: true,
 });
 
 export const totalSchema = z.object({

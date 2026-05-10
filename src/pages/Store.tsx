@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { ShoppingCart, Loader2, Search, CheckCircle2 } from "lucide-react";
 import { ProductCard } from "../components/store/ProductCard";
 import { CartDrawer } from "../components/store/CartDrawer";
+import ProductSchema from "../components/ProductSchema";
 import { useCartStore } from "../store/useCartStore";
 import { useSearch } from "@tanstack/react-router";
 import { useGetProducts, type Product } from "../api";
@@ -22,6 +23,7 @@ export const Store: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-ares-gray-deep text-slate-300 pt-24 pb-12">
+      <ProductSchema products={products} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}

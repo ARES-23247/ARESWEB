@@ -124,6 +124,15 @@ export default function Footer() {
                 {siteConfig.contact.email}
               </a>
             </div>
+            <div>
+              <p className="text-white font-bold text-[10px] uppercase tracking-widest mb-1">Location</p>
+              <p className="text-marble/60 text-xs tracking-wider">
+                Morgantown, West Virginia 26501
+              </p>
+              <p className="text-marble/40 text-[9px] mt-1">
+                Serving North Central West Virginia
+              </p>
+            </div>
             <div className="pt-4 flex items-center gap-3">
               <ShieldCheck size={24} className="text-ares-cyan opacity-40" />
               <p className="text-[9px] text-marble/50 leading-tight uppercase font-medium">

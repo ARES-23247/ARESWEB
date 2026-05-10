@@ -137,20 +137,106 @@ CREATE INDEX IF NOT EXISTS idx_events_status ON events(status, is_deleted);
 
 ---
 
-## 5. Schema Guard & Type Safety
+## 5. Schema Guard & Type Safety — DRIZZLE-FIRST WORKFLOW
 
-### Rule: Use Drizzle ORM for Type-Safe Queries
-The ARES backend uses **Drizzle ORM** for type-safe database queries. The schema is defined in `src/db/schema.ts` and synchronized with the database via migrations.
+### 🎯 Golden Rule: Drizzle is the Single Source of Truth
+
+**ALL database schema changes MUST start in `drizzle/schema.ts`.** This file:
+1. Defines all tables with TypeScript types
+2. Auto-generates Zod validation schemas (`shared/db/schema-zod.ts`)
+3. Auto-generates OpenAPI response schemas (used in `shared/routes/*.ts`)
+
+### The Drizzle-First Change Process
+
+When you need to modify the database schema, follow this order:
 
 ```bash
-# Generate a migration after modifying schema.ts
-npx drizzle-kit generate
+# 1. EDIT drizzle/schema.ts — Add/modify table definition
+# 2. Generate migration SQL from Drizzle schema
+npm run db:generate
+# → Creates drizzle/0001_XXX.sql migration file
 
-# Apply migration to local D1
-npx wrangler d1 execute ares-db --file=drizzle/XXXX_migration.sql --local
+# 3. Apply migration to local D1 (test!)
+npm run db:push
+# OR: npx wrangler d1 execute ares-db --file=drizzle/0001_XXX.sql --local
 
-# Apply migration to production
-npx wrangler d1 execute ares-db --file=drizzle/XXXX_migration.sql --remote
+# 4. Test your changes locally
+npm run dev
+
+# 5. Apply to production
+npx wrangler d1 execute ares-db --file=drizzle/0001_XXX.sql --remote
+
+# 6. Update schema.sql (authoritative reference)
+#    Copy the DDL from the migration into schema.sql
+```
+
+### Auto-Generated Schema Chain
+
+```
+drizzle/schema.ts (YOU EDIT HERE)
+         ↓
+    drizzle-kit generate
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│  shared/db/schema-zod.ts (AUTO-GENERATED)               │
+│  - insertXSchema  (for POST/PUT validation)            │
+│  - selectXSchema  (for GET responses)                  │
+└─────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│  shared/routes/*.ts (YOU USE THESE)                     │
+│  - Import selectXSchema from @shared/db/schema-zod      │
+│  - Use createResponseSchema() / toCamelCaseResponse()   │
+│  - Drizzle fields auto-propagate to OpenAPI docs        │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Example: Adding a New Column
+
+```typescript
+// ✅ CORRECT: Edit drizzle/schema.ts
+export const posts = sqliteTable("posts", {
+  slug: text().primaryKey(),
+  title: text().notNull(),
+  // NEW COLUMN:
+  viewCount: integer("view_count").default(0).notNull(),
+});
+```
+
+After running `npm run db:generate`:
+- `insertPostSchema` and `selectPostSchema` in `shared/db/schema-zod.ts` automatically include `viewCount`
+- Route files that use `selectPostSchema` automatically get the new field
+- No manual schema updates needed anywhere!
+
+### Example: Using Auto-Generated Schemas in Routes
+
+```typescript
+// shared/routes/posts.ts
+import { selectPostSchema } from "@shared/db/schema-zod";
+import { toCamelCaseResponse, createResponseSchema } from "@shared/db/schema-openapi";
+
+// ✅ Derive from Drizzle — Single source of truth!
+export const postResponseSchema = toCamelCaseResponse(
+  selectPostSchema.pick({
+    slug: true,
+    title: true,
+    viewCount: true,  // Auto-included from Drizzle!
+  })
+);
+
+export const getPostRoute = createRoute({
+  method: "get",
+  path: "/{slug}",
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({ post: postResponseSchema }),
+        },
+      },
+    },
+  },
+});
 ```
 
 ### Rule: Preferred Query Builder

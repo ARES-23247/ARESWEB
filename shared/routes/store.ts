@@ -1,34 +1,43 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
+import { selectProductSchema, selectOrderSchema } from "../db/schema-zod";
+import { createResponseSchema } from "../db/schema-openapi";
 
-export const ProductSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  priceCents: z.number(),
-  imageUrl: z.string().nullable(),
-  active: z.number(),
-  stockCount: z.number().nullable(),
-  createdAt: z.string().nullable(),
+// Auto-generated response schemas from Drizzle
+export const ProductSchema = createResponseSchema(selectProductSchema, {
+  title: "Product",
+  example: {
+    id: "prod_123",
+    name: "ARES Team Shirt",
+    description: "Official team shirt with logo",
+    priceCents: 2500,
+    imageUrl: "https://cdn.aresweb.org/shirt.jpg",
+    active: 1,
+    stockCount: 50,
+    createdAt: "2025-01-15T10:00:00Z",
+  },
 });
 
-export const OrderSchema = z.object({
-  id: z.string(),
-  stripeSessionId: z.string().nullable(),
-  customerEmail: z.string().nullable(),
-  shippingName: z.string().nullable(),
-  shippingAddressLine1: z.string().nullable(),
-  shippingAddressLine2: z.string().nullable(),
-  shippingCity: z.string().nullable(),
-  shippingState: z.string().nullable(),
-  shippingPostalCode: z.string().nullable(),
-  shippingCountry: z.string().nullable(),
-  totalCents: z.number(),
-  status: z.string().nullable(),
-  fulfillmentStatus: z.string().nullable(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+export const OrderSchema = createResponseSchema(selectOrderSchema, {
+  title: "Order",
+  example: {
+    id: "order_456",
+    stripeSessionId: "cs_test_123",
+    customerEmail: "customer@example.com",
+    shippingName: "John Doe",
+    shippingAddressLine1: "123 Main St",
+    shippingAddressLine2: "Apt 4B",
+    shippingCity: "Morgantown",
+    shippingState: "WV",
+    shippingPostalCode: "26505",
+    shippingCountry: "USA",
+    totalCents: 5000,
+    status: "processing",
+    fulfillmentStatus: "unfulfilled",
+    createdAt: "2025-01-15T10:00:00Z",
+    updatedAt: "2025-01-15T10:00:00Z",
+  },
 });
 
 export type Product = z.infer<typeof ProductSchema>;

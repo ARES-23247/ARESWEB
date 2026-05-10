@@ -97,11 +97,82 @@ Several endpoints support full-text search via the `?q=` query parameter:
 - **Error Handling**: Use `c.json({ error: "Message" }, status)` for all failures. Never return raw text or unhandled exceptions.
 - **Audit Logging**: Use `logAuditAction` for all sensitive administrative changes (deletions, role changes, settings updates).
 
-## 6. Hono OpenAPI & Zod Pattern Standards (MANDATORY)
+## 6. DRIZZLE-FIRST SCHEMA MANAGEMENT (CRITICAL)
+
+### 6.0 Golden Rule: Drizzle is the Single Source of Truth
+
+**ALL database schema changes MUST start in `drizzle/schema.ts`.** This creates an auto-generation chain:
+
+```
+drizzle/schema.ts (YOU EDIT HERE)
+  → npm run db:generate
+  → shared/db/schema-zod.ts (AUTO-GENERATED)
+  → shared/routes/*.ts (IMPORT & USE)
+```
+
+### When Adding Database Columns
+
+1. **Edit `drizzle/schema.ts`** — Add/modify the table definition
+2. **Run `npm run db:generate`** — Generates migration SQL + updates Zod schemas
+3. **Run `npm run db:push`** — Apply to local D1 (test!)
+4. **Run `npm run dev`** — Verify locally
+5. **Apply to production** — `npx wrangler d1 execute ares-db --file=drizzle/XXXX.sql --remote`
+6. **Update `schema.sql`** — Copy DDL to authoritative reference
+
+### Using Auto-Generated Schemas in Routes
+
+```typescript
+// ✅ CORRECT: Import from shared/db/schema-zod.ts
+import { selectPostSchema, insertPostSchema } from "@shared/db/schema-zod";
+import { toCamelCaseResponse, createResponseSchema } from "@shared/db/schema-openapi";
+
+// Derive response schema from Drizzle (single source of truth!)
+export const postResponseSchema = toCamelCaseResponse(
+  selectPostSchema.pick({
+    slug: true,
+    title: true,
+    createdAt: true,
+  })
+);
+
+// Use in route definition
+export const getPostRoute = createRoute({
+  method: "get",
+  path: "/{slug}",
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({ post: postResponseSchema }),
+        },
+      },
+    },
+  },
+});
+```
+
+```typescript
+// ❌ WRONG: Hand-written schema duplicates Drizzle
+export const postResponseSchema = z.object({
+  slug: z.string(),
+  title: z.string(),
+  createdAt: z.string(),  // Duplicates Drizzle — breaks when schema changes!
+});
+```
+
+**Available Helper Functions:**
+- `createResponseSchema(baseSchema, { title, example })` — Add OpenAPI metadata
+- `toCamelCaseResponse(baseSchema)` — Convert snake_case DB fields to camelCase API
+- `createRelationSchema(baseSchema, relations)` — Add JOINed relation fields
+- `responseWrappers.created()`, `responseWrappers.success()` — Standard response shapes
+
+---
+
+## 7. Hono OpenAPI & Zod Pattern Standards (MANDATORY)
 
 All API routes MUST follow these patterns when working with `@hono/zod-openapi` and `zod`. Violations WILL cause type safety issues and runtime errors.
 
-### 6.1 Absolute Type Safety (NO `as any`)
+### 7.1 Absolute Type Safety (NO `as any`)
 
 **FORBIDDEN:**
 ```typescript
@@ -119,7 +190,7 @@ route.openapi(myRoute, typedHandler<typeof myRoute>(async (c) => {
 }));
 ```
 
-### 6.2 Zod Schema Validation (NO Manual Validation)
+### 7.2 Zod Schema Validation (NO Manual Validation)
 
 **FORBIDDEN:**
 ```typescript
@@ -165,7 +236,7 @@ export const createPostRoute = createRoute({
 });
 ```
 
-### 6.3 Consistent Error Response Format
+### 7.3 Consistent Error Response Format
 
 **STANDARD ERROR FORMAT:**
 ```typescript
@@ -190,7 +261,7 @@ return c.json({ error: "Unauthorized: Please log in", code: "UNAUTHORIZED" }, 40
 { success: false, error: "..." }        // Don't mix success/error in error responses
 ```
 
-### 6.4 Proper Route Handler Typing
+### 7.4 Proper Route Handler Typing
 
 **REQUIRED PATTERN:**
 ```typescript
@@ -246,7 +317,7 @@ myRouter.openapi(myRoute, typedHandler<typeof myRoute>(async (c) => {
 }));
 ```
 
-### 6.5 Advanced Zod Patterns (For Complex Validation)
+### 7.5 Advanced Zod Patterns (For Complex Validation)
 
 **Use `.refine()` for custom validation:**
 ```typescript
@@ -274,7 +345,7 @@ const CreatePostSchema = z.object({
 }));
 ```
 
-### 6.6 Route Definition Checklist
+### 7.6 Route Definition Checklist
 
 Before creating or modifying any route, ensure:
 
@@ -287,7 +358,7 @@ Before creating or modifying any route, ensure:
 - [ ] NO manual validation in handlers
 - [ ] `standardErrors` is spread into responses
 
-### 6.7 Migration Pattern (For Legacy Routes)
+### 7.7 Migration Pattern (For Legacy Routes)
 
 When updating legacy routes to proper zod patterns:
 
@@ -341,13 +412,13 @@ postsRouter.openapi(savePostRoute, typedHandler<typeof savePostRoute>(async (c) 
 }));
 ```
 
-## 7. Global State Management (Zustand)
+## 8. Global State Management (Zustand)
 
 - **UI State**: Use **Zustand** (`src/store/uiStore.ts`) for global UI toggles, active season tracking, and theme preferences. This replaces prop-drilling and high-re-render Context providers.
 - **Store Access**: Prefer specific selectors `const isOpen = useUIStore(s => s.isOpen)` over destructuring the entire store to optimize React render cycles.
 - **Persistence**: Any state that should survive a refresh (e.g., Active Season) must be synchronized with `localStorage` or `c.env.DB` settings via the store's action logic.
 
-## 8. Integration Hooks
+## 9. Integration Hooks
 
 - **Zulip**: All content updates (posts, inquiries, signups) should trigger `sendZulipAlert` to the appropriate stream. The `sendZulipMessage` utility accepts either full `Bindings` or minimal `ZulipCredentials`.
 - **GitHub**: High-priority inquiries (Status: Sponsor/Join) should be escalated via `createProjectItem`.

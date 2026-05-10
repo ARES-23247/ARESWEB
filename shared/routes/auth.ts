@@ -1,15 +1,60 @@
 import { createRoute, z } from "@hono/zod-openapi";
+import { selectUserSchema, selectSessionSchema } from "@shared/db/schema-zod";
+import { createResponseSchema, responseWrappers } from "@shared/db/schema-openapi";
 
-export const AuthCheckResponseSchema = z.object({
-  authenticated: z.boolean(),
-  user: z.object({
-    id: z.string(),
-    email: z.string(),
-    name: z.string().nullable(),
-    role: z.string(),
-    image: z.string().optional().nullable(),
-  }).optional(),
+// ============================================================================
+// AUTH RESPONSE SCHEMAS (derived from Drizzle)
+// ============================================================================
+
+/**
+ * User info for auth responses. Derived from selectUserSchema with
+ * only the fields needed for authentication.
+ */
+export const authUserSchema = createResponseSchema(
+  selectUserSchema.pick({
+    id: true,
+    email: true,
+    name: true,
+    image: true,
+  }),
+  {
+    title: "Auth User",
+    description: "User information returned in authentication responses",
+  }
+);
+
+/**
+ * Add role field to auth user (role is computed from session/user)
+ */
+const authUserWithRoleSchema = authUserSchema.extend({
+  role: z.string().nullable().openapi({
+    description: "User role (admin, member, etc.)",
+    example: "admin",
+  }),
 });
+
+/**
+ * Authentication check response
+ */
+export const AuthCheckResponseSchema = createResponseSchema(
+  z.object({
+    authenticated: z.boolean().openapi({
+      description: "Whether the user is authenticated",
+      example: true,
+    }),
+    user: authUserWithRoleSchema.optional().openapi({
+      description: "User information if authenticated",
+    }),
+  }),
+  {
+    title: "Auth Check Response",
+    description: "Response from authentication status check",
+  }
+);
+
+// ============================================================================
+// AUTH ROUTES
+// ============================================================================
 
 export const authCheckRoute = createRoute({
   method: "get",
@@ -59,16 +104,16 @@ export const testLoginRequestSchema = z.object({
   }),
 });
 
-export const testLoginResponseSchema = z.object({
-  success: z.boolean(),
-  user: z.object({
-    id: z.string(),
-    name: z.string().nullable(),
-    email: z.string(),
-    role: z.string().nullable(),
+/**
+ * Test login response. Uses auth user schema derived from Drizzle.
+ */
+export const testLoginResponseSchema = responseWrappers.created().extend({
+  user: authUserWithRoleSchema.openapi({
+    description: "User information for the test session",
   }),
   sessionToken: z.string().openapi({
     description: "Session token for testing. Automatically set as cookie.",
+    example: "abc123xyz789",
   }),
 });
 

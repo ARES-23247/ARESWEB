@@ -126,7 +126,7 @@ githubRouter.openapi(getActivityRoute, async (c) => {
     }
 
     return c.json(payload, 200);
-}));
+});
 
 githubRouter.use("/projects/*", ensureAdmin);
 
@@ -153,7 +153,7 @@ githubRouter.openapi(getBoardRoute, async (c) => {
     });
 
     return c.json({ success: true, board }, 200);
-}));
+});
 
 githubRouter.openapi(createItemRoute, async (c) => {
     const { title } = c.req.valid("json");
@@ -166,7 +166,7 @@ githubRouter.openapi(createItemRoute, async (c) => {
 
     await createProjectItem(ghConfig, title);
     return c.json({ success: true }, 200);
-}));
+});
 
 export default githubRouter;
 

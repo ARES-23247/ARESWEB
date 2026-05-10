@@ -221,6 +221,34 @@ export const insertSimulationSchema = createInsertSchema(schema.simulations);
 export const selectSimulationSchema = createSelectSchema(schema.simulations);
 
 // ============================================================================
+// SCOUTING TABLES
+// ============================================================================
+
+export const insertScoutingAnalysisSchema = createInsertSchema(schema.scoutingAnalyses);
+export const selectScoutingAnalysisSchema = createSelectSchema(schema.scoutingAnalyses);
+
+// ============================================================================
+// EXTERNAL KNOWLEDGE TABLES
+// ============================================================================
+
+export const insertExternalKnowledgeSourceSchema = createInsertSchema(schema.externalKnowledgeSources);
+export const selectExternalKnowledgeSourceSchema = createSelectSchema(schema.externalKnowledgeSources);
+
+// ============================================================================
+// PERFORMANCE METRICS TABLES
+// ============================================================================
+
+export const insertPerformanceMetricSchema = createInsertSchema(schema.performanceMetrics);
+export const selectPerformanceMetricSchema = createSelectSchema(schema.performanceMetrics);
+
+// ============================================================================
+// SOCIAL QUEUE
+// ============================================================================
+
+export const insertSocialQueueSchema = createInsertSchema(schema.socialQueue);
+export const selectSocialQueueSchema = createSelectSchema(schema.socialQueue);
+
+// ============================================================================
 // HELPER TYPES
 // ============================================================================
 

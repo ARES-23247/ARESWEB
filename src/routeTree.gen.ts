@@ -26,6 +26,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SponsorsIndexRouteImport } from './routes/sponsors/index'
+import { Route as LocationsIndexRouteImport } from './routes/locations/index'
 import { Route as JudgesIndexRouteImport } from './routes/judges/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
@@ -33,6 +34,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AcademyIndexRouteImport } from './routes/academy/index'
 import { Route as ProfileUserIdRouteImport } from './routes/profile/$userId'
+import { Route as LocationsMorgantownRouteImport } from './routes/locations/morgantown'
 import { Route as JudgesPrintRouteImport } from './routes/judges/print'
 import { Route as EventsIdRouteImport } from './routes/events/$id'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
@@ -163,6 +165,11 @@ const SponsorsIndexRoute = SponsorsIndexRouteImport.update({
   path: '/sponsors/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocationsIndexRoute = LocationsIndexRouteImport.update({
+  id: '/locations/',
+  path: '/locations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JudgesIndexRoute = JudgesIndexRouteImport.update({
   id: '/judges/',
   path: '/judges/',
@@ -196,6 +203,11 @@ const AcademyIndexRoute = AcademyIndexRouteImport.update({
 const ProfileUserIdRoute = ProfileUserIdRouteImport.update({
   id: '/profile/$userId',
   path: '/profile/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocationsMorgantownRoute = LocationsMorgantownRouteImport.update({
+  id: '/locations/morgantown',
+  path: '/locations/morgantown',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JudgesPrintRoute = JudgesPrintRouteImport.update({
@@ -469,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
   '/judges/print': typeof JudgesPrintRoute
+  '/locations/morgantown': typeof LocationsMorgantownRoute
   '/profile/$userId': typeof ProfileUserIdRoute
   '/academy/': typeof AcademyIndexRoute
   '/blog/': typeof BlogIndexRoute
@@ -476,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/docs/': typeof DocsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/judges/': typeof JudgesIndexRoute
+  '/locations/': typeof LocationsIndexRoute
   '/sponsors/': typeof SponsorsIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
@@ -538,6 +552,7 @@ export interface FileRoutesByTo {
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
   '/judges/print': typeof JudgesPrintRoute
+  '/locations/morgantown': typeof LocationsMorgantownRoute
   '/profile/$userId': typeof ProfileUserIdRoute
   '/academy': typeof AcademyIndexRoute
   '/blog': typeof BlogIndexRoute
@@ -545,6 +560,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/events': typeof EventsIndexRoute
   '/judges': typeof JudgesIndexRoute
+  '/locations': typeof LocationsIndexRoute
   '/sponsors': typeof SponsorsIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
@@ -609,6 +625,7 @@ export interface FileRoutesById {
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
   '/judges/print': typeof JudgesPrintRoute
+  '/locations/morgantown': typeof LocationsMorgantownRoute
   '/profile/$userId': typeof ProfileUserIdRoute
   '/academy/': typeof AcademyIndexRoute
   '/blog/': typeof BlogIndexRoute
@@ -616,6 +633,7 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/judges/': typeof JudgesIndexRoute
+  '/locations/': typeof LocationsIndexRoute
   '/sponsors/': typeof SponsorsIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
@@ -681,6 +699,7 @@ export interface FileRouteTypes {
     | '/docs/$slug'
     | '/events/$id'
     | '/judges/print'
+    | '/locations/morgantown'
     | '/profile/$userId'
     | '/academy/'
     | '/blog/'
@@ -688,6 +707,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/events/'
     | '/judges/'
+    | '/locations/'
     | '/sponsors/'
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
@@ -750,6 +770,7 @@ export interface FileRouteTypes {
     | '/docs/$slug'
     | '/events/$id'
     | '/judges/print'
+    | '/locations/morgantown'
     | '/profile/$userId'
     | '/academy'
     | '/blog'
@@ -757,6 +778,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/events'
     | '/judges'
+    | '/locations'
     | '/sponsors'
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
@@ -820,6 +842,7 @@ export interface FileRouteTypes {
     | '/docs/$slug'
     | '/events/$id'
     | '/judges/print'
+    | '/locations/morgantown'
     | '/profile/$userId'
     | '/academy/'
     | '/blog/'
@@ -827,6 +850,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/events/'
     | '/judges/'
+    | '/locations/'
     | '/sponsors/'
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
@@ -864,12 +888,14 @@ export interface RootRouteChildren {
   DocsSlugRoute: typeof DocsSlugRoute
   EventsIdRoute: typeof EventsIdRoute
   JudgesPrintRoute: typeof JudgesPrintRoute
+  LocationsMorgantownRoute: typeof LocationsMorgantownRoute
   ProfileUserIdRoute: typeof ProfileUserIdRoute
   AcademyIndexRoute: typeof AcademyIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   JudgesIndexRoute: typeof JudgesIndexRoute
+  LocationsIndexRoute: typeof LocationsIndexRoute
   SponsorsIndexRoute: typeof SponsorsIndexRoute
   SponsorsRoiTokenIdRoute: typeof SponsorsRoiTokenIdRoute
 }
@@ -995,6 +1021,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SponsorsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/locations/': {
+      id: '/locations/'
+      path: '/locations'
+      fullPath: '/locations/'
+      preLoaderRoute: typeof LocationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/judges/': {
       id: '/judges/'
       path: '/judges'
@@ -1042,6 +1075,13 @@ declare module '@tanstack/react-router' {
       path: '/profile/$userId'
       fullPath: '/profile/$userId'
       preLoaderRoute: typeof ProfileUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/locations/morgantown': {
+      id: '/locations/morgantown'
+      path: '/locations/morgantown'
+      fullPath: '/locations/morgantown'
+      preLoaderRoute: typeof LocationsMorgantownRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/judges/print': {
@@ -1464,12 +1504,14 @@ const rootRouteChildren: RootRouteChildren = {
   DocsSlugRoute: DocsSlugRoute,
   EventsIdRoute: EventsIdRoute,
   JudgesPrintRoute: JudgesPrintRoute,
+  LocationsMorgantownRoute: LocationsMorgantownRoute,
   ProfileUserIdRoute: ProfileUserIdRoute,
   AcademyIndexRoute: AcademyIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   JudgesIndexRoute: JudgesIndexRoute,
+  LocationsIndexRoute: LocationsIndexRoute,
   SponsorsIndexRoute: SponsorsIndexRoute,
   SponsorsRoiTokenIdRoute: SponsorsRoiTokenIdRoute,
 }

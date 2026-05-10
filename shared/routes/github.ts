@@ -1,6 +1,24 @@
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GITHUB API ROUTES
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Routes for GitHub API integration.
+ *
+ * NOTE: These schemas define request/response contracts for GitHub's external API,
+ * not database entities. They do not use auto-generated Drizzle schemas because
+ * they interact with GitHub's API directly, not our database.
+ *
+ * GitHub API Docs: https://docs.github.com/en/rest
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { createRoute, z } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 
+/**
+ * GitHub Project Item Schema
+ * Represents an item in a GitHub Project board (issue, PR, draft issue, etc.)
+ */
 export const githubProjectItemSchema = z.object({
   id: z.string().openapi({
     example: "PVTI_123",
@@ -28,6 +46,10 @@ export const githubProjectItemSchema = z.object({
   }),
 });
 
+/**
+ * GitHub Heatmap Day Schema
+ * Represents commit activity for a single day in the contribution heatmap
+ */
 export const githubHeatmapDaySchema = z.object({
   date: z.string().openapi({
     example: "2026-05-06",
@@ -44,6 +66,9 @@ export const githubHeatmapDaySchema = z.object({
   }),
 });
 
+/**
+ * GET /projects - Get GitHub Projects board
+ */
 export const getBoardRoute = createRoute({
   method: "get",
   path: "/projects",
@@ -68,9 +93,13 @@ export const getBoardRoute = createRoute({
   },
   tags: ["github"],
   summary: "Get GitHub Projects board",
-  description: "Retrieves the team's GitHub Project board with all items, their status, and assignees.",
+  description:
+    "Retrieves the team's GitHub Project board with all items, their status, and assignees.",
 });
 
+/**
+ * POST /projects/items - Create a GitHub Project item
+ */
 export const createItemRoute = createRoute({
   method: "post",
   path: "/projects/items",
@@ -109,6 +138,9 @@ export const createItemRoute = createRoute({
   description: "Creates a new draft issue in the team's GitHub Project board.",
 });
 
+/**
+ * GET /activity - Get team GitHub contribution heatmap data
+ */
 export const getActivityRoute = createRoute({
   method: "get",
   path: "/activity",
@@ -118,12 +150,15 @@ export const getActivityRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            grid: z.array(z.array(githubHeatmapDaySchema)).openapi({
-              description: "2D array representing weeks of daily activity",
-            }),
+            grid: z
+              .array(z.array(githubHeatmapDaySchema))
+              .openapi({
+                description: "2D array representing weeks of daily activity",
+              }),
             totalCommits: z.number().openapi({
               example: 1250,
-              description: "Total commits across all repositories in the past year",
+              description:
+                "Total commits across all repositories in the past year",
             }),
             repoCount: z.number().openapi({
               example: 15,
@@ -137,5 +172,6 @@ export const getActivityRoute = createRoute({
   },
   tags: ["github"],
   summary: "Get team GitHub contribution heatmap data",
-  description: "Retrieves commit activity across all team repositories for the past year, formatted for heatmap visualization.",
+  description:
+    "Retrieves commit activity across all team repositories for the past year, formatted for heatmap visualization.",
 });

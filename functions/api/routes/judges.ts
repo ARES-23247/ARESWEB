@@ -131,7 +131,7 @@ judgesRouter.openapi(judgeLoginRoute, async (c) => {
       ).limit(1);
 
     return c.json({ success: true, label: row.label || "" } satisfies JudgeLoginSuccess, 200);
-}));
+});
 
 judgesRouter.openapi(judgePortfolioRoute, async (c) => {
   const db = getDb(c);
@@ -251,7 +251,7 @@ judgesRouter.openapi(judgePortfolioRoute, async (c) => {
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 
     return c.json(payload, 200);
-}));
+});
 
 // Admin routes require ensureAdmin middleware
 judgesRouter.use("/admin/*", ensureAdmin);
@@ -276,7 +276,7 @@ judgesRouter.openapi(listJudgeCodesRoute, async (c) => {
     }));
 
     return c.json({ codes } satisfies ListJudgeCodesSuccess, 200);
-}));
+});
 
 judgesRouter.openapi(createJudgeCodeRoute, async (c) => {
   const db = getDb(c);
@@ -299,7 +299,7 @@ judgesRouter.openapi(createJudgeCodeRoute, async (c) => {
 
     c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
     return c.json({ success: true, code, id } satisfies CreateJudgeCodeSuccess, 200);
-}));
+});
 
 judgesRouter.openapi(deleteJudgeCodeRoute, async (c) => {
   const db = getDb(c);
@@ -311,6 +311,6 @@ judgesRouter.openapi(deleteJudgeCodeRoute, async (c) => {
     portfolioCache.clear();
 
     return c.json({ success: true } satisfies DeleteJudgeCodeSuccess, 200);
-}));
+});
 
 export default judgesRouter;

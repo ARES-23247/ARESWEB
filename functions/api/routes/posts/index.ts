@@ -132,7 +132,7 @@ postsRouter.openapi(
     const result = await postHandlers.purgePost({ query: {}, params, body: {} }, c);
     if (result.status === 200) return c.json(result.body, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
-  })
+  }
 );
 
 postsRouter.openapi(
@@ -173,7 +173,7 @@ postsRouter.openapi(
     const result = await postHandlers.restorePostHistory({ query: {}, params, body: {} }, c);
     if (result.status === 200) return c.json(result.body, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
-  })
+  }
 );
 
 postsRouter.openapi(

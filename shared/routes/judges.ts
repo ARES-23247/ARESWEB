@@ -1,28 +1,42 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
+import { selectJudgeAccessCodeSchema } from "@shared/db/schema-zod";
+import { createResponseSchema, responseWrappers, toCamelCaseResponse } from "@shared/db/schema-openapi";
 
-export const judgeAccessCodeSchema = z.object({
-  id: z.string().openapi({
-    example: "550e8400-e29b-41d4-a716-446655440000",
-    description: "Unique identifier for the access code",
-  }),
-  code: z.string().openapi({
-    example: "AB12CD34EF56",
-    description: "The access code for judges",
-  }),
-  label: z.string().nullable().openapi({
-    example: "Championship Judges",
-    description: "Human-readable label for this code",
-  }),
-  createdAt: z.string().openapi({
-    example: "2026-05-06T12:00:00Z",
-    description: "ISO timestamp when the code was created",
-  }),
-  expiresAt: z.string().nullable().openapi({
-    example: null,
-    description: "ISO timestamp when the code expires, or null if no expiration",
-  }),
-});
+// ============================================================================
+// JUDGE ACCESS CODE RESPONSE SCHEMAS (derived from Drizzle)
+// ============================================================================
+
+/**
+ * Judge access code schema derived from Drizzle judge_access_codes table.
+ * Uses camelCase naming (created_at -> createdAt, expires_at -> expiresAt).
+ */
+export const judgeAccessCodeSchema = createResponseSchema(
+  toCamelCaseResponse(
+    selectJudgeAccessCodeSchema.pick({
+      id: true,
+      code: true,
+      label: true,
+      createdAt: true,
+      expiresAt: true,
+    })
+  ),
+  {
+    title: "Judge Access Code",
+    description: "An access code for judge authentication to view portfolio content",
+    example: {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      code: "AB12CD34EF56",
+      label: "Championship Judges",
+      createdAt: "2026-05-06T12:00:00Z",
+      expiresAt: null,
+    },
+  }
+);
+
+// ============================================================================
+// JUDGE ROUTES
+// ============================================================================
 
 export const judgeLoginRoute = createRoute({
   method: "post",
@@ -70,6 +84,133 @@ export const judgeLoginRoute = createRoute({
   description: "Authenticates a judge by verifying their access code. Rate limited to prevent brute force attacks.",
 });
 
+/**
+ * Portfolio document item for judge review
+ */
+const portfolioDocItem = z.object({
+  slug: z.string().openapi({
+    example: "executive-summary",
+    description: "URL slug for the document",
+  }),
+  title: z.string().openapi({
+    example: "Executive Summary",
+    description: "Document title",
+  }),
+  category: z.string().openapi({
+    example: "overview",
+    description: "Document category",
+  }),
+  description: z.string().openapi({
+    example: "Overview of team accomplishments",
+    description: "Document description",
+  }),
+  content: z.string().openapi({
+    description: "Full document content (Markdown/HTML)",
+  }),
+  isExecutiveSummary: z.number().optional().openapi({
+    example: 1,
+    description: "Whether this is the executive summary document",
+  }),
+});
+
+/**
+ * Outreach event log item for judge review
+ */
+const outreachEventItem = z.object({
+  id: z.number().openapi({
+    example: 123,
+    description: "Event ID",
+  }),
+  title: z.string().openapi({
+    example: "STEM Workshop at Local Elementary",
+    description: "Event title",
+  }),
+  date: z.string().openapi({
+    example: "2026-04-15",
+    description: "Event date",
+  }),
+  location: z.string().openapi({
+    example: "Mountainview Elementary School",
+    description: "Event location",
+  }),
+  studentsCount: z.number().openapi({
+    example: 45,
+    description: "Number of students reached",
+  }),
+  hoursLogged: z.number().openapi({
+    example: 3,
+    description: "Hours spent on this outreach",
+  }),
+  reachCount: z.number().openapi({
+    example: 200,
+    description: "Estimated community reach",
+  }),
+  description: z.string().openapi({
+    example: "Taught students about robotics and programming",
+    description: "Event description",
+  }),
+});
+
+/**
+ * Award item for judge review
+ */
+const awardItem = z.object({
+  id: z.number().openapi({
+    example: 42,
+    description: "Award ID",
+  }),
+  title: z.string().openapi({
+    example: "Inspire Award",
+    description: "Award title",
+  }),
+  date: z.string().openapi({
+    example: "2026-03-10",
+    description: "Award date",
+  }),
+  eventName: z.string().openapi({
+    example: "WV FTC Championship",
+    description: "Event where award was received",
+  }),
+  imageUrl: z.string().nullable().optional().openapi({
+    example: "https://example.com/awards/inspire.jpg",
+    description: "URL to award image",
+  }),
+  description: z.string().openapi({
+    example: "Highest honor awarded at the championship",
+    description: "Award description",
+  }),
+  year: z.number().openapi({
+    example: 2026,
+    description: "Award year",
+  }),
+});
+
+/**
+ * Sponsor item for judge review
+ */
+const sponsorItem = z.object({
+  id: z.string().openapi({
+    example: "sponsor_acme",
+    description: "Sponsor ID",
+  }),
+  name: z.string().openapi({
+    example: "Acme Corporation",
+    description: "Sponsor name",
+  }),
+  tier: z.string().openapi({
+    example: "Gold",
+    description: "Sponsorship tier",
+  }),
+  logoUrl: z.string().nullable().optional().openapi({
+    example: "https://example.com/sponsors/acme.png",
+    description: "URL to sponsor logo",
+  }),
+  websiteUrl: z.string().nullable().optional().openapi({
+    example: "https://acme.com",
+    description: "Sponsor website URL",
+  }),
+});
+
 export const judgePortfolioRoute = createRoute({
   method: "get",
   path: "/portfolio",
@@ -87,46 +228,16 @@ export const judgePortfolioRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            portfolioDocs: z.array(z.object({
-              slug: z.string(),
-              title: z.string(),
-              category: z.string(),
-              description: z.string(),
-              content: z.string(),
-              isExecutiveSummary: z.number().optional(),
-            })).openapi({
+            portfolioDocs: z.array(portfolioDocItem).openapi({
               description: "Portfolio documents including executive summary and category docs",
             }),
-            outreach: z.array(z.object({
-              id: z.number(),
-              title: z.string(),
-              date: z.string(),
-              location: z.string(),
-              studentsCount: z.number(),
-              hoursLogged: z.number(),
-              reachCount: z.number(),
-              description: z.string(),
-            })).openapi({
+            outreach: z.array(outreachEventItem).openapi({
               description: "Outreach event logs",
             }),
-            awards: z.array(z.object({
-              id: z.number(),
-              title: z.string(),
-              date: z.string(),
-              eventName: z.string(),
-              imageUrl: z.string().nullable(),
-              description: z.string(),
-              year: z.number(),
-            })).openapi({
+            awards: z.array(awardItem).openapi({
               description: "Team awards and recognition",
             }),
-            sponsors: z.array(z.object({
-              id: z.string(),
-              name: z.string(),
-              tier: z.string(),
-              logoUrl: z.string().nullable(),
-              websiteUrl: z.string().nullable(),
-            })).openapi({
+            sponsors: z.array(sponsorItem).openapi({
               description: "Team sponsors and partners",
             }),
           }),
@@ -229,12 +340,7 @@ export const deleteJudgeCodeRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            success: z.boolean().openapi({
-              example: true,
-              description: "Whether the deletion was successful",
-            }),
-          }),
+          schema: responseWrappers.success(),
         },
       },
       description: "Access code deleted successfully",

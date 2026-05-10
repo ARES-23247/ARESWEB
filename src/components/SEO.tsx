@@ -1,9 +1,34 @@
 import { Helmet } from 'react-helmet-async';
 import { siteConfig } from "../site.config";
 
+const DEFAULT_KEYWORDS = [
+  "ARES 23247",
+  "robotics",
+  "Morgantown robotics",
+  "West Virginia robotics",
+  "FIRST Robotics",
+  "FTC robotics",
+  "STEM education",
+  "youth robotics",
+  "robotics team",
+  "robotics club",
+  "competition robotics",
+  "Appalachian Robotics",
+  "engineering",
+  "robotics for kids",
+  "robotics for teens",
+  "robotics near me",
+  "robotics programs",
+  "robotics classes",
+  "FIRST Tech Challenge",
+  "Morgantown STEM",
+  "West Virginia STEM"
+].join(", ");
+
 interface SEOProps {
   title: string;
   description?: string;
+  keywords?: string;
   image?: string;
   url?: string;
   type?: string;
@@ -18,10 +43,11 @@ interface SEOProps {
   };
 }
 
-export default function SEO({ 
-  title, 
-  description = "ARES 23247 - Appalachian Robotics & Engineering Society. A FIRST® Tech Challenge Team offering youth robotics in Morgantown, WV.", 
-  image = `${siteConfig.urls.base}/ares_hero.png`, 
+export default function SEO({
+  title,
+  description = "ARES 23247 - Appalachian Robotics & Engineering Society. A FIRST® Tech Challenge Team offering youth robotics in Morgantown, WV.",
+  keywords = DEFAULT_KEYWORDS,
+  image = `${siteConfig.urls.base}/ares_hero.png`,
   url,
   type = "website",
   schemaData
@@ -32,20 +58,139 @@ export default function SEO({
 
   const organizationSchema = {
     "@context": "https://schema.org",
-    "@type": "EducationalOrganization",
+    "@type": "SportsActivityLocation",
     "name": "ARES 23247 (Appalachian Robotics & Engineering Society)",
     "url": siteConfig.urls.base,
     "logo": `${siteConfig.urls.base}/ares_hero.png`,
-    "description": "FIRST® Tech Challenge (FTC) Robotics Team based in Morgantown, West Virginia.",
+    "description": "FIRST® Tech Challenge (FTC) Robotics Team based in Morgantown, West Virginia. Offering youth robotics programs, STEM education, and competition robotics for students in Morgantown and throughout West Virginia.",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Morgantown",
+      "addressLocality": "Morgantown",
+      "addressRegion": "WV",
+      "postalCode": "26501",
+      "addressCountry": "US"
+    },
+    "areaServed": [
+      {
+        "@type": "City",
+        "name": "Morgantown",
+        "addressRegion": "WV"
+      },
+      {
+        "@type": "State",
+        "name": "West Virginia"
+      }
+    ],
+    "location": {
+      "@type": "Place",
+      "name": "Morgantown, West Virginia",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Morgantown",
+        "addressRegion": "WV",
+        "addressCountry": "US"
+      }
+    },
+    "keywords": "robotics, FIRST, FTC, STEM, Morgantown, West Virginia, engineering, competition robotics, ARES 23247, youth robotics, robotics team, robotics club, robotics competition, robotics classes, robotics education, robotics for kids, robotics for teens, robotics near me, robotics West Virginia, robotics Morgantown, robotics programs, robotics training, FIRST Tech Challenge, FTC robotics, STEM education, engineering programs, Morgantown robotics team, West Virginia robotics",
+    "sameAs": [
+      "https://github.com/ARES23247",
+      "https://theorangealliance.org/teams/23247"
+    ]
+  };
+
+  // Organization schema for Google Knowledge Panel
+  const knowledgePanelSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "ARES 23247",
+    "alternateName": "Appalachian Robotics & Engineering Society",
+    "url": siteConfig.urls.base,
+    "logo": {
+      "@type": "ImageObject",
+      "url": `${siteConfig.urls.base}/ares_hero.png`,
+      "width": 500,
+      "height": 500,
+      "caption": "ARES 23247 Logo"
+    },
+    "image": `${siteConfig.urls.base}/ares_hero.png`,
+    "description": "ARES 23247 is a FIRST® Tech Challenge robotics team based in Morgantown, West Virginia. We provide youth robotics programs, STEM education, and competition opportunities for students throughout West Virginia.",
     "address": {
       "@type": "PostalAddress",
       "addressLocality": "Morgantown",
       "addressRegion": "WV",
+      "postalCode": "26501",
       "addressCountry": "US"
     },
+    "areaServed": {
+      "@type": "GeoCircle",
+      "geoMidpoint": {
+        "@type": "GeoCoordinates",
+        "latitude": 39.6295,
+        "longitude": -79.9554,
+        "name": "Morgantown, WV"
+      },
+      "geoRadius": "100000"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "Join the Team",
+      "email": siteConfig.contact.email,
+      "url": `${siteConfig.urls.base}/join`
+    },
     "sameAs": [
-      "https://github.com/ARES23247"
+      `https://github.com/${siteConfig.urls.githubOrg}`,
+      `https://instagram.com/ares23247`,
+      `https://www.youtube.com/@ARESFTC`,
+      `https://www.facebook.com/ARES23247`,
+      `https://www.linkedin.com/${siteConfig.urls.linkedin}`,
+      `https://theorangealliance.org/teams/23247`
+    ],
+    "foundingDate": "2021",
+    "founder": "FIRST Robotics West Virginia",
+    "memberOf": [
+      {
+        "@type": "Organization",
+        "name": "FIRST Inspires",
+        "url": "https://www.firstinspires.org"
+      }
+    ],
+    "knowsAbout": [
+      "Robotics",
+      "FIRST Tech Challenge",
+      "STEM Education",
+      "Computer Programming",
+      "Mechanical Engineering",
+      "CAD Design",
+      "3D Printing"
     ]
+  };
+
+  // WebSite schema for Google Sitelinks Search Box
+  const webSiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ARES 23247",
+    "alternateName": "Appalachian Robotics & Engineering Society",
+    "url": siteConfig.urls.base,
+    "description": "FIRST Tech Challenge Robotics Team in Morgantown, West Virginia. Youth robotics programs, STEM education, and competition opportunities.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${siteConfig.urls.base}/academy?q={search_term_string}`
+      },
+      "query-input": {
+        "@type": "PropertyValueSpecification",
+        "valueRequired": true,
+        "valueName": "search_term_string"
+      }
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ARES 23247",
+      "url": siteConfig.urls.base
+    }
   };
 
   let additionalSchema = null;
@@ -57,7 +202,8 @@ export default function SEO({
       "image": image,
       "author": {
         "@type": "Person",
-        "name": schemaData.authorName || "ARES Team"
+        "name": schemaData.authorName || "ARES Team",
+        "url": schemaData.authorName ? `${siteConfig.urls.base}/blog?author=${encodeURIComponent(schemaData.authorName as string)}` : undefined
       },
       "publisher": {
         "@type": "Organization",
@@ -68,7 +214,27 @@ export default function SEO({
         }
       },
       "datePublished": schemaData.datePublished || new Date().toISOString(),
-      "description": description
+      "dateModified": schemaData.dateModified || schemaData.datePublished || new Date().toISOString(),
+      "description": description,
+      "keywords": keywords,
+      "inLanguage": "en-US",
+      "articleSection": "Robotics Education",
+      "wordCount": schemaData.wordCount || undefined,
+      "timeRequired": schemaData.readingTime || undefined,
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": currentUrl
+      },
+      "locationCreated": {
+        "@type": "Place",
+        "name": "Morgantown, West Virginia",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Morgantown",
+          "addressRegion": "WV",
+          "addressCountry": "US"
+        }
+      }
     };
   } else if (type === "event" && schemaData) {
     additionalSchema = {
@@ -102,6 +268,7 @@ export default function SEO({
       {/* Standard Metadata */}
       <title>{siteTitle}</title>
       <meta name="description" content={description} />
+      <meta name="keywords" content={keywords} />
       <meta name="theme-color" content="#C00000" />
       <meta name="robots" content="index, follow" />
       <link rel="canonical" href={currentUrl} />
@@ -113,6 +280,10 @@ export default function SEO({
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
       <meta property="og:site_name" content="ARES 23247" />
+      <meta property="og:locale" content="en_US" />
+      <meta property="og:locality" content="Morgantown" />
+      <meta property="og:region" content="WV" />
+      <meta property="og:country-name" content="United States" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -124,6 +295,12 @@ export default function SEO({
       {/* Structured Data (JSON-LD) */}
       <script type="application/ld+json">
         {JSON.stringify(organizationSchema)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(knowledgePanelSchema)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(webSiteSchema)}
       </script>
       {additionalSchema && (
         <script type="application/ld+json">

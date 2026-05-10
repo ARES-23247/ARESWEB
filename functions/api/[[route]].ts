@@ -202,7 +202,7 @@ apiRouter.route("/logistics", logisticsRouter);
 apiRouter.route("/users", usersRouter);
 apiRouter.route("/badges", badgesRouter);
 apiRouter.route("/settings", settingsRouter);
-apiRouter.route("/sitemap", sitemapRouter);
+apiRouter.route("/sitemap.xml", sitemapRouter);
 apiRouter.route("/notifications", notificationsRouter);
 apiRouter.route("/analytics", analyticsRouter);
 apiRouter.route("/github", githubRouter);

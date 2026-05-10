@@ -39,7 +39,7 @@ gcRouter.openapi(gcRoute, async (c) => {
     };
 
     return c.json({ success: true, deleted: deletedCounts }, 200);
-}));
+});
 
 export default gcRouter;
 

@@ -3,6 +3,7 @@ import { siteConfig } from "../site.config";
 import { motion } from "framer-motion";
 import { Gem, Award, ShieldCheck, Zap, ExternalLink, Heart, Package } from "lucide-react";
 import SEO from "../components/SEO";
+import SponsorSchema from "../components/SponsorSchema";
 import Turnstile from "../components/Turnstile";
 import { useGetSponsors, useTrackSponsorClick, useSubmitInquiry, type Sponsor } from "../api";
 import { inquiryInputSchema as inquirySchema } from "@shared/routes/inquiries";
@@ -109,6 +110,7 @@ export default function Sponsors() {
   return (
     <div className="min-h-screen bg-obsidian text-white py-24 relative overflow-hidden">
       <SEO title="Sponsors" description={`The corporate partners and community sponsors who empower ${siteConfig.team.fullName} to innovate in FIRST Robotics.`} />
+      <SponsorSchema sponsors={sponsors} />
       
       {/* Background Ambience */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[600px] bg-ares-red/5 blur-[120px] rounded-full pointer-events-none" />

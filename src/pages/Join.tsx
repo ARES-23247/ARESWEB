@@ -3,6 +3,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Rocket, Wrench, Code, PenTool, CheckCircle, GraduationCap } from "lucide-react";
 import SEO from "../components/SEO";
+import FAQSchema, { LOCAL_ROBOTICS_FAQS } from "../components/FAQSchema";
+import EducationalCredentialSchema, { ARES_CREDENTIALS } from "../components/EducationalCredentialSchema";
 import { GreekMeander } from "../components/GreekMeander";
 import Turnstile from "../components/Turnstile";
 import { useSubmitInquiry } from "../api";
@@ -81,6 +83,8 @@ export default function Join() {
 	return (
 		<div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
 			<SEO title="Join the Team — ARES 23247" description="Become a student or mentor for the ARES 23247 robotics team." />
+			<FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
+			<EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
 			<section className="relative py-24 overflow-hidden border-b border-white/5">
 				<div className="absolute inset-0 bg-ares-red/5 bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.15)_0,rgba(0,0,0,0)_70%)] opacity-50 blur-[80px]" />

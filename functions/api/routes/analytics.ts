@@ -1,7 +1,6 @@
 import { QUERY_LIMITS } from "../utils/queryLimits";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { z } from "zod";
 
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit, getDb } from "../middleware";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -286,8 +285,8 @@ analyticsRouter.openapi(
         totalStorage: 0,
         apiCalls: Number(apiCount?.total || 0),
       }
-    }, 200);
-  })
+    }, 200)
+  }
 );
 
 // Get roster stats (admin)
@@ -326,7 +325,7 @@ analyticsRouter.openapi(
     }));
 
     return c.json({ roster }, 200);
-  })
+  }
 );
 
 // Get leaderboard
@@ -335,7 +334,7 @@ analyticsRouter.openapi(
 // This endpoint is public and must not expose student PII
 analyticsRouter.openapi(
   getLeaderboardRoute,
-  createTypedHandler(getLeaderboardRoute, async (c) => {
+  async (c) => {
     const db = getDb(c);
     const results = await db.all(sql<LeaderboardRow>`
       SELECT
@@ -370,14 +369,14 @@ analyticsRouter.openapi(
       };
     });
 
-    return c.json({ leaderboard }, 200);
-  })
+    return c.json({ leaderboard }, 200)
+  }
 );
 
 // Get stats (admin)
 analyticsRouter.openapi(
   getStatsRoute,
-  createTypedHandler(getStatsRoute, async (c) => {
+  async (c) => {
     const db = getDb(c);
     const [postsCount, eventsCount, docsCount, securityBlocksRow, dbSettings] = await Promise.all([
       db.select({ total: sql<number>`count(${schema.posts.slug})` }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
@@ -400,16 +399,16 @@ analyticsRouter.openapi(
         gcal: !!dbSettings["GCAL_PRIVATE_KEY"]
       },
       securityBlocks: Number(securityBlocksRow?.total || 0)
-    }, 200);
-  })
+    }, 200)
+  }
 );
 
 // Search
 analyticsRouter.openapi(
   searchRoute,
-  createTypedHandler(searchRoute, async (c, { query }) => {
+  async (c) => {
     const db = getDb(c);
-    const { q } = query;
+    const { q } = c.req.valid("query");
     // W3A-SEC-01: Use proper FTS5 query sanitization to prevent SQL injection
     // Allows alphanumeric, spaces, hyphens, and periods. Uses proper FTS5 phrase search.
     const sanitizeFtsQuery = (query: string): string => {
@@ -438,8 +437,8 @@ analyticsRouter.openapi(
       ...(docsRows as SearchResultRow[]).map((r) => ({ type: "doc" as const, id: r.id, title: r.title }))
     ];
 
-    return c.json({ results }, 200);
-  })
+    return c.json({ results }, 200)
+  }
 );
 
 export default analyticsRouter;

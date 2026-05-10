@@ -1,6 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import SEO from "../components/SEO";
+import MetaTags from "../components/MetaTags";
+import FAQSchema, { LOCAL_ROBOTICS_FAQS } from "../components/FAQSchema";
+import ReviewSchema, { ARES_REVIEWS } from "../components/ReviewSchema";
+import SpeakableSchema from "../components/SpeakableSchema";
 import { GreekMeander } from "../components/GreekMeander";
 import { sanitizeHtml } from "../utils/security";
 
@@ -8,6 +12,10 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full">
       <SEO title="Home" description="Building the future of robotics in Morgantown, West Virginia with the Mountaineer Mindset. ARES 23247." />
+      <MetaTags />
+      <FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
+      <ReviewSchema reviews={ARES_REVIEWS} />
+      <SpeakableSchema />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[95vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}

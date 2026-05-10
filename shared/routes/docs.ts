@@ -12,35 +12,58 @@ const openApiErrorResponses = {
   429: { content: { "application/json": { schema: standardErrors[429] } }, description: "Too Many Requests" },
 };
 
-// Schemas
+// Schemas derived from Drizzle with additional fields from JOINs
+// Note: These match the actual response shape from API handlers
 const DocResponseSchema = z.object({
+  slug: z.string(),
+  title: z.string().nullable(), // Handler maps to d.title ?? null which is string | null
+  category: z.string().nullable(), // Handler maps to d.category ?? null
+  description: z.string().nullable(),
+  sortOrder: z.number(),
+  isPortfolio: z.number(),
+  isExecutiveSummary: z.number(),
+  isDeleted: z.number(),
+  status: z.string().nullable(),
+  revisionOf: z.string().nullable(),
+  zulipStream: z.string().optional().nullable(), // Handler sets to undefined
+  zulipTopic: z.string().optional().nullable(), // Handler sets to undefined
+  displayInAreslib: z.number(),
+  displayInMathCorner: z.number(),
+  displayInScienceCorner: z.number(),
+  originalAuthorNickname: z.string().optional().nullable(),
+  originalAuthorAvatar: z.string().optional().nullable(),
+});
+
+// Admin detail schema (without joined fields)
+const DocDetailResponseSchema = z.object({
   slug: z.string(),
   title: z.string().nullable(),
   category: z.string().nullable(),
-  sortOrder: z.number().nullable(),
   description: z.string().nullable(),
-  isPortfolio: z.number().nullable(),
-  isExecutiveSummary: z.number().nullable(),
-  zulipStream: z.string().nullable().optional(),
-  zulipTopic: z.string().nullable().optional(),
-  isDeleted: z.number().nullable(),
+  content: z.string().nullable(), // Handler maps to null if not present
+  sortOrder: z.number(),
+  isPortfolio: z.number(),
+  isExecutiveSummary: z.number(),
+  isDeleted: z.number(),
   status: z.string().nullable(),
   revisionOf: z.string().nullable(),
-  displayInAreslib: z.number().nullable(),
-  displayInMathCorner: z.number().nullable(),
-  displayInScienceCorner: z.number().nullable(),
-  originalAuthorNickname: z.string().optional(),
-  originalAuthorAvatar: z.string().optional(),
+  zulipStream: z.string().optional().nullable(),
+  zulipTopic: z.string().optional().nullable(),
+  displayInAreslib: z.number(),
+  displayInMathCorner: z.number(),
+  displayInScienceCorner: z.number(),
 });
 
-const DocDetailResponseSchema = DocResponseSchema.extend({
-  content: z.string().nullable(),
+// Public doc schema (with joined fields from user/user_profiles)
+const DocPublicSchema = DocDetailResponseSchema.extend({
   updatedAt: z.string().optional(),
+  originalAuthorNickname: z.string().optional().nullable(),
+  originalAuthorAvatar: z.string().optional().nullable(),
 });
 
 const ContributorSchema = z.object({
-  nickname: z.string().nullable(),
-  avatar: z.string().nullable(),
+  nickname: z.string().nullable().optional(),
+  avatar: z.string().nullable().optional(),
 });
 
 const SearchResultSchema = z.object({
@@ -166,7 +189,7 @@ export const getDocRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            doc: DocDetailResponseSchema,
+            doc: DocPublicSchema,
             contributors: z.array(ContributorSchema),
           }),
         },

@@ -252,7 +252,7 @@ aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
-}));
+});
 
 // ──── Simulator Playground AI Route ──────────────────────────────────────
 aiRouter.openapi(simPlaygroundRoute, async (c) => {
@@ -361,7 +361,7 @@ Provide helpful, technical advice. Be concise.`;
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI Error]" }) });
     }
   });
-}));
+});
 
 // ──── Documentation Editor Chat Route ───────────────────────────────────
 aiRouter.openapi(editorChatRoute, async (c) => {
@@ -468,7 +468,7 @@ Be technical, helpful, and follow FIRST Core Values.`;
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI Error]" }) });
     }
   });
-}));
+});
 
 // ──── RAG Chatbot Endpoint ───────────────────────────────────────────────
 aiRouter.openapi(ragChatbotRoute, async (c) => {
@@ -790,7 +790,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
-}));
+});
 
 // Helper to persist chat session history
 async function saveHistory(db: DrizzleDB, sessionId: string | undefined, historyMessages: ChatMessage[], query: string, response: string) {

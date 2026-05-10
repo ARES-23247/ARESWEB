@@ -11,8 +11,10 @@ import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import ZulipThread from "../components/ZulipThread";
 import { useGetPost } from "../api/posts";
 import SEO from "../components/SEO";
+import MetaTags from "../components/MetaTags";
 import { extractTextFromAst } from "../utils/content";
 import { validateUrlParam } from "../utils/security";
+import { calculateReadingTime, formatReadingTime } from "../utils/readingTime";
 
 export default function BlogPost() {
   const { slug } = useParams({ strict: false }) as Record<string, string>;
@@ -45,6 +47,11 @@ export default function BlogPost() {
   let parsedAst: ASTNode = { type: "doc", content: [] };
   try { parsedAst = JSON.parse(post.ast); } catch { /* Ignore parse error */ }
 
+  const articleText = extractTextFromAst(parsedAst);
+  const readingTime = calculateReadingTime(articleText);
+  const readingTimeFormatted = formatReadingTime(readingTime);
+  const wordCount = articleText.trim().split(/\s+/).length;
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -52,15 +59,24 @@ export default function BlogPost() {
       exit={{ opacity: 0 }}
       className="w-full min-h-screen bg-obsidian text-marble"
     >
-      <SEO 
-        title={post.title} 
-        description={extractTextFromAst(parsedAst).slice(0, 160) + "..."} 
+      <SEO
+        title={post.title}
+        description={extractTextFromAst(parsedAst).slice(0, 160) + "..."}
         image={post.thumbnail ?? undefined}
         type="article"
         schemaData={{
           authorName: post.authorNickname ?? undefined,
           datePublished: post.date ?? undefined,
+          readingTime: readingTimeFormatted,
+          wordCount: wordCount,
         }}
+      />
+      <MetaTags
+        article={true}
+        author={post.authorNickname ?? undefined}
+        publishedTime={post.date ?? undefined}
+        section="Robotics Education"
+        tags={["FIRST Robotics", "FTC", "STEM", "Morgantown", "West Virginia"]}
       />
       {/* â”€â”€â”€ STANDALONE BLOG HERO â”€â”€â”€ */}
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-cyan">

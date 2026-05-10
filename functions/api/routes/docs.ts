@@ -144,7 +144,7 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
 }
 
 // GET /docs - List all public docs
-docsRouter.openapi(docsRoutes.getDocsRoute, createTypedHandler(docsRoutes.getDocsRoute, async (c) => {
+docsRouter.openapi(docsRoutes.getDocsRoute, async (c) => {
     const db = getDb(c);
     let results;
     try {
@@ -217,10 +217,11 @@ docsRouter.openapi(docsRoutes.getDocsRoute, createTypedHandler(docsRoutes.getDoc
     }));
 
     return c.json({ docs }, 200);
-}));
+});
 
 // GET /docs/search - Search docs
-docsRouter.openapi(docsRoutes.searchDocsRoute, createTypedHandler(docsRoutes.searchDocsRoute, async (c, { query }) => {
+docsRouter.openapi(docsRoutes.searchDocsRoute, async (c) => {
+  const query = c.req.valid("query");
   const { q } = query;
   if (!q || q.length < 3) {
     return c.json({ results: [] }, 200);
@@ -267,10 +268,10 @@ docsRouter.openapi(docsRoutes.searchDocsRoute, createTypedHandler(docsRoutes.sea
     const payload = { results: mapped };
     setCache(q, { data: payload, expiresAt: now + 60000 });
     return c.json(payload, 200);
-}));
+});
 
 // GET /docs/admin/list - List all docs (admin view)
-docsRouter.openapi(docsRoutes.adminListRoute, createTypedHandler(docsRoutes.adminListRoute, async (c) => {
+docsRouter.openapi(docsRoutes.adminListRoute, async (c) => {
     const db = getDb(c);
     let results;
     try {
@@ -329,10 +330,11 @@ docsRouter.openapi(docsRoutes.adminListRoute, createTypedHandler(docsRoutes.admi
     }));
 
     return c.json({ docs }, 200);
-}));
+});
 
 // GET /docs/admin/{slug}/detail - Get doc detail (admin view)
-docsRouter.openapi(docsRoutes.adminDetailRoute, createTypedHandler(docsRoutes.adminDetailRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.adminDetailRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
     const db = getDb(c);
     let row;
@@ -401,10 +403,11 @@ docsRouter.openapi(docsRoutes.adminDetailRoute, createTypedHandler(docsRoutes.ad
     };
 
     return c.json({ doc }, 200);
-}));
+});
 
 // GET /docs/{slug} - Get single doc with contributors
-docsRouter.openapi(docsRoutes.getDocRoute, createTypedHandler(docsRoutes.getDocRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.getDocRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
     const db = getDb(c);
     let row;
@@ -506,10 +509,11 @@ docsRouter.openapi(docsRoutes.getDocRoute, createTypedHandler(docsRoutes.getDocR
     };
 
     return c.json({ doc, contributors }, 200);
-}));
+});
 
 // DELETE /docs/admin/{slug} - Delete doc (soft delete)
-docsRouter.openapi(docsRoutes.deleteDocRoute, createTypedHandler(docsRoutes.deleteDocRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.deleteDocRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
     const db = getDb(c);
     const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
@@ -521,10 +525,11 @@ docsRouter.openapi(docsRoutes.deleteDocRoute, createTypedHandler(docsRoutes.dele
     c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true }, 200);
-}));
+});
 
 // POST /docs/admin/save - Save or update doc
-docsRouter.openapi(docsRoutes.saveDocRoute, createTypedHandler(docsRoutes.saveDocRoute, async (c, { body }) => {
+docsRouter.openapi(docsRoutes.saveDocRoute, async (c) => {
+    const body = c.req.valid("json");
     const db = getDb(c);
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = body;
     const user = await getSessionUser(c);
@@ -677,19 +682,23 @@ docsRouter.openapi(docsRoutes.saveDocRoute, createTypedHandler(docsRoutes.saveDo
 
     triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
     return c.json({ success: true, slug }, 200);
-}));
+});
 
 // PATCH /docs/admin/{slug}/sort - Update doc sort order
-docsRouter.openapi(docsRoutes.updateSortRoute, createTypedHandler(docsRoutes.updateSortRoute, async (c, { params, body }) => {
+docsRouter.openapi(docsRoutes.updateSortRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
   const { slug } = params;
   const { sortOrder } = body;
     const db = getDb(c);
     await db.update(schema.docs).set({ sortOrder: sortOrder }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true }, 200);
-}));
+});
 
 // POST /docs/{slug}/feedback - Submit doc feedback
-docsRouter.openapi(docsRoutes.submitFeedbackRoute, createTypedHandler(docsRoutes.submitFeedbackRoute, async (c, { params, body }) => {
+docsRouter.openapi(docsRoutes.submitFeedbackRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
   const { slug } = params;
   const { isHelpful, comment, turnstileToken } = body;
   const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
@@ -710,10 +719,11 @@ docsRouter.openapi(docsRoutes.submitFeedbackRoute, createTypedHandler(docsRoutes
 
     await db.insert(schema.docsFeedback).values({ slug, isHelpful: isHelpful ? 1 : 0, comment: comment ?? null }).run();
     return c.json({ success: true }, 200);
-}));
+});
 
 // GET /docs/admin/{slug}/history - Get doc history
-docsRouter.openapi(docsRoutes.getHistoryRoute, createTypedHandler(docsRoutes.getHistoryRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.getHistoryRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
     const db = getDb(c);
     const results = await db.select({
@@ -738,10 +748,11 @@ docsRouter.openapi(docsRoutes.getHistoryRoute, createTypedHandler(docsRoutes.get
     }));
 
     return c.json({ history }, 200);
-}));
+});
 
 // PATCH /docs/admin/{slug}/history/{id}/restore - Restore doc from history
-docsRouter.openapi(docsRoutes.restoreHistoryRoute, createTypedHandler(docsRoutes.restoreHistoryRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.restoreHistoryRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug, id } = params;
     const db = getDb(c);
     const row = await db.select().from(schema.docsHistory).where(
@@ -773,10 +784,11 @@ docsRouter.openapi(docsRoutes.restoreHistoryRoute, createTypedHandler(docsRoutes
     }).where(eq(schema.docs.slug, slug)).run();
 
     return c.json({ success: true }, 200);
-}));
+});
 
 // POST /docs/admin/{slug}/approve - Approve doc
-docsRouter.openapi(docsRoutes.approveDocRoute, createTypedHandler(docsRoutes.approveDocRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.approveDocRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
     const db = getDb(c);
 
@@ -823,10 +835,12 @@ docsRouter.openapi(docsRoutes.approveDocRoute, createTypedHandler(docsRoutes.app
       }
     }
     return c.json({ success: true }, 200);
-}));
+});
 
 // POST /docs/admin/{slug}/reject - Reject doc
-docsRouter.openapi(docsRoutes.rejectDocRoute, createTypedHandler(docsRoutes.rejectDocRoute, async (c, { params, body }) => {
+docsRouter.openapi(docsRoutes.rejectDocRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
   const { slug } = params;
   const { reason } = body;
     const db = getDb(c);
@@ -854,18 +868,20 @@ docsRouter.openapi(docsRoutes.rejectDocRoute, createTypedHandler(docsRoutes.reje
       }
     }
     return c.json({ success: true }, 200);
-}));
+});
 
 // POST /docs/admin/{slug}/undelete - Undelete doc
-docsRouter.openapi(docsRoutes.undeleteDocRoute, createTypedHandler(docsRoutes.undeleteDocRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.undeleteDocRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
     const db = getDb(c);
     await db.update(schema.docs).set({ isDeleted: 0, status: "draft" }).where(eq(schema.docs.slug, slug)).run();
     return c.json({ success: true }, 200);
-}));
+});
 
 // POST /docs/admin/{slug}/purge - Permanently delete doc
-docsRouter.openapi(docsRoutes.purgeDocRoute, createTypedHandler(docsRoutes.purgeDocRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.purgeDocRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
   try {
     const db = getDb(c);
@@ -899,10 +915,10 @@ docsRouter.openapi(docsRoutes.purgeDocRoute, createTypedHandler(docsRoutes.purge
   } catch (_e) {
     throw new ApiError("Purge failed", 500);
   }
-}));
+});
 
 // Export all docs as JSON
-docsRouter.openapi(docsRoutes.exportAllDocsRoute, createTypedHandler(docsRoutes.exportAllDocsRoute, async (c) => {
+docsRouter.openapi(docsRoutes.exportAllDocsRoute, async (c) => {
     const db = getDb(c);
     const results = await db.select().from(schema.docs).orderBy(desc(schema.docs.updatedAt)).all();
     const docs = results.map(row => ({
@@ -927,10 +943,11 @@ docsRouter.openapi(docsRoutes.exportAllDocsRoute, createTypedHandler(docsRoutes.
         originalAuthorAvatar: undefined
     }));
     return c.json({ docs }, 200);
-}));
+});
 
 // Export single doc as Markdown
-docsRouter.openapi(docsRoutes.exportSingleDocRoute, createTypedHandler(docsRoutes.exportSingleDocRoute, async (c, { params }) => {
+docsRouter.openapi(docsRoutes.exportSingleDocRoute, async (c) => {
+  const params = c.req.valid("param");
   const { slug } = params;
     const db = getDb(c);
     const doc = await db.select({
@@ -957,7 +974,7 @@ docsRouter.openapi(docsRoutes.exportSingleDocRoute, createTypedHandler(docsRoute
 
     const markdown = `# ${doc.title ?? slug}\n\n**Category:** ${doc.category ?? "General"}\n\n${markdownContent}`;
     return c.text(markdown, 200, { "Content-Type": "text/plain; charset=utf-8" });
-}));
+});
 
 // TipTap node types
 interface TipTapTextNode {

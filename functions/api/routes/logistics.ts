@@ -56,7 +56,7 @@ logisticsRouter.openapi(getLogisticsSummaryRoute, async (c) => {
     dietary: summary,
     tshirts: tshirtSummary,
   }, 200);
-}));
+});
 
 logisticsRouter.openapi(exportLogisticsEmailsRoute, async (c) => {
   const db = getDb(c);
@@ -99,7 +99,7 @@ logisticsRouter.openapi(exportLogisticsEmailsRoute, async (c) => {
     }
 
     return c.json({ users }, 200);
-}));
+});
 
 export default logisticsRouter;
 

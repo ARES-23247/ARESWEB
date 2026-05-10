@@ -1,4 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
+import { selectExternalKnowledgeSourceSchema } from "../db/schema-zod";
+import { createResponseSchema, responseWrappers } from "../db/schema-openapi";
 
 // Discriminated union for better type safety - text and image have distinct required fields
 const MessageContentTextSchema = z.object({
@@ -264,10 +266,20 @@ export const externalSourcesRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({
-            id: z.string(),
-            success: z.boolean(),
-            message: z.string(),
+          schema: responseWrappers.created().extend({
+            source: createResponseSchema(selectExternalKnowledgeSourceSchema, {
+              title: "External Knowledge Source",
+              example: {
+                id: "source_123",
+                type: "github",
+                url: "https://github.com/FTC-ARES/robot-code",
+                branch: "main",
+                status: "active",
+                lastIndexedSha: null,
+                lastIndexedAt: null,
+                createdAt: "2025-01-15T10:00:00Z",
+              },
+            }).optional(),
           }),
         },
       },

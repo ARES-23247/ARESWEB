@@ -2,6 +2,8 @@ import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 import { titleField, slugField, descriptionField, MAX_INPUT_LENGTHS } from "../validation/constants";
+import { selectPostSchema, selectPostHistorySchema } from "../db/schema-zod";
+import { createResponseSchema, toCamelCaseResponse } from "../db/schema-openapi";
 
 // Define a more specific schema for Tiptap AST nodes
 const tiptapNodeSchema: z.ZodType<{
@@ -38,37 +40,65 @@ export const postSchema = z.object({
   }
 );
 
-export const postResponseSchema = z.object({
-  slug: z.string().openapi({ example: "match-preview" }),
-  title: z.string().openapi({ example: "Match Preview" }),
-  date: z.string().nullable().optional().openapi({ example: "2025-01-15" }),
-  snippet: z.string().nullable().optional().openapi({ example: "A preview of our upcoming match..." }),
-  thumbnail: z.string().nullable().optional().openapi({ example: "/images/match.jpg" }),
-  status: z.string().nullable().optional().openapi({ example: "published" }),
-  author: z.string().nullable().optional().openapi({ example: "John Doe" }),
-  authorNickname: z.string().nullable().optional(),
-  authorAvatar: z.string().nullable().optional(),
-  publishedAt: z.string().nullable().optional(),
-  seasonId: z.coerce.number().nullable().optional().openapi({ example: 1 }),
-  isDeleted: z.number().nullable().optional().openapi({ example: 0 }),
-  isPortfolio: z.number().optional().openapi({ example: 0 }),
-  zulipStream: z.string().nullable().optional(),
-  zulipTopic: z.string().nullable().optional(),
+// Response schema derived from Drizzle selectPostSchema with OpenAPI metadata
+export const postResponseSchema = toCamelCaseResponse(
+  selectPostSchema.pick({
+    slug: true,
+    title: true,
+    date: true,
+    snippet: true,
+    thumbnail: true,
+    status: true,
+    author: true,
+    cfEmail: true,
+    authorAvatar: true,
+    publishedAt: true,
+    seasonId: true,
+    isDeleted: true,
+    isPortfolio: true,
+    zulipStream: true,
+    zulipTopic: true,
+  })
+).openapi({
+  example: {
+    slug: "match-preview",
+    title: "Match Preview",
+    date: "2025-01-15",
+    snippet: "A preview of our upcoming match...",
+    thumbnail: "/images/match.jpg",
+    status: "published",
+    author: "John Doe",
+    cfEmail: null,
+    authorAvatar: "/avatars/john.jpg",
+    publishedAt: "2025-01-15T10:00:00Z",
+    seasonId: 1,
+    isDeleted: 0,
+    isPortfolio: 0,
+    zulipStream: "blog",
+    zulipTopic: "Blog: Match Preview",
+  },
 });
 
 export const postDetailSchema = postResponseSchema.extend({
-  ast: z.string().openapi({ example: '{"type":"doc","content":[]}' }),
+  ast: z.string().openapi({ example: '{"type":"doc","content":[]}', description: "JSON AST from Tiptap editor" }),
 });
 
-export const postHistorySchema = z.object({
-  id: z.coerce.number().openapi({ example: 1 }),
-  slug: z.string().openapi({ example: "match-preview" }),
-  title: z.string().openapi({ example: "Match Preview" }),
-  author: z.string().nullable().optional(),
-  thumbnail: z.string().nullable().optional(),
-  snippet: z.string().nullable().optional(),
-  ast: z.string().openapi({ example: '{"type":"doc","content":[]}' }),
-  createdAt: z.string().openapi({ example: "2025-01-15T10:00:00Z" }),
+// History schema derived from Drizzle selectPostHistorySchema
+export const postHistorySchema = toCamelCaseResponse(
+  selectPostHistorySchema
+).openapi({
+  example: {
+    id: 1,
+    slug: "match-preview",
+    title: "Match Preview",
+    author: "John Doe",
+    authorEmail: "john@example.com",
+    thumbnail: "/images/match.jpg",
+    snippet: "A preview of our upcoming match...",
+    ast: '{"type":"doc","content":[]}',
+    createdAt: "2025-01-15T10:00:00Z",
+    seasonId: 1,
+  },
 });
 
 export const authorSchema = z.object({
@@ -107,7 +137,7 @@ export const getPostsRoute = createRoute({
                 thumbnail: "/images/match-preview.jpg",
                 status: "published",
                 author: "Jane Doe",
-                authorNickname: "Jane",
+                cfEmail: "jane@example.com",
                 authorAvatar: "/avatars/jane.jpg",
                 publishedAt: "2025-01-15T10:00:00Z",
                 seasonId: 1,
@@ -153,7 +183,7 @@ export const getPostRoute = createRoute({
               thumbnail: "/images/match-preview.jpg",
               status: "published",
               author: "Jane Doe",
-              authorNickname: "Jane",
+              cfEmail: "jane@example.com",
               authorAvatar: "/avatars/jane.jpg",
               publishedAt: "2025-01-15T10:00:00Z",
               seasonId: 1,

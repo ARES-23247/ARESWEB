@@ -2,6 +2,20 @@ import SEO from "../components/SEO";
 import ResponsiveImage from "../components/ResponsiveImage";
 import { useGetMedia, useGetPublicSettings, type R2MediaItem } from "../api";
 
+// Generate descriptive alt text for images with location context
+function generateImageAlt(key: string, index: number): string {
+  const cleanName = key.split("-").slice(1).join("-").replace(/\.[^/.]+$/, "") || `Robotics photo ${index + 1}`;
+
+  // Add location context for SEO
+  const locationContext = [
+    "ARES 23247 robotics team",
+    "Morgantown West Virginia",
+    "FIRST Tech Challenge"
+  ].join(", ");
+
+  return `${cleanName} - ${locationContext}`;
+}
+
 export default function Gallery() {
   const { data: mediaRes, isLoading, isError } = useGetMedia();
 
@@ -68,9 +82,9 @@ export default function Gallery() {
                 key={photo.key}
                 className={`relative w-full overflow-hidden ares-cut glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect}`}
               >
-                <ResponsiveImage 
-                   src={`/api/media/${photo.key}`} 
-                   alt={photo.key} 
+                <ResponsiveImage
+                   src={`/api/media/${photo.key}`}
+                   alt={generateImageAlt(photo.key, index)}
                    className="absolute inset-0 w-full h-full"
                    imgClassName="transition-transform duration-700 group-hover:scale-105"
                 />

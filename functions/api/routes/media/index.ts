@@ -189,7 +189,7 @@ mediaRouter.openapi(getMediaRoute, async (c) => {
     }
 
     return response;
-  })
+  }
 );
 
 mediaRouter.openapi(getAdminMediaRoute, async (c) => {
@@ -221,7 +221,7 @@ mediaRouter.openapi(getAdminMediaRoute, async (c) => {
     }));
 
     return c.json({ media }, 200);
-  })
+  }
 );
 
 mediaRouter.openapi(uploadMediaRoute, async (c) => {
@@ -306,7 +306,7 @@ mediaRouter.openapi(uploadMediaRoute, async (c) => {
     }
 
     return c.json({ success: true, key, url: `/api/media/${key}`, altText }, 200);
-  })
+  }
 );
 
 mediaRouter.openapi(moveMediaRoute, async (c) => {
@@ -344,7 +344,7 @@ mediaRouter.openapi(moveMediaRoute, async (c) => {
     }
 
     return c.json({ success: true, newKey }, 200);
-  })
+  }
 );
 
 mediaRouter.openapi(deleteMediaRoute, async (c) => {
@@ -359,7 +359,7 @@ mediaRouter.openapi(deleteMediaRoute, async (c) => {
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
     }
     return c.json({ success: true }, 200);
-  })
+  }
 );
 
 mediaRouter.openapi(syndicateMediaRoute, async (c) => {
@@ -375,7 +375,7 @@ mediaRouter.openapi(syndicateMediaRoute, async (c) => {
     }
 
     return c.json({ success: true, message: "Dispatched" }, 200);
-  })
+  }
 );
 
 // GET /media/:key - Serve raw object from R2 (This is NOT an OpenAPI route because it returns binary/raw data)

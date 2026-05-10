@@ -1,16 +1,22 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
+import { selectSimulationSchema } from "../db/schema-zod";
+import { createResponseSchema, responseWrappers } from "../db/schema-openapi";
 
-export const SimulationSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  author_id: z.string(),
-  is_public: z.number(),
-  created_at: z.string(),
-  updated_at: z.string(),
-  type: z.string(),
-  files: z.record(z.string(), z.string()).optional(),
+// Auto-generated response schema from Drizzle
+export const SimulationSchema = createResponseSchema(selectSimulationSchema, {
+  title: "Simulation",
+  example: {
+    id: "sim_123",
+    name: "Advanced Pathfinder Test",
+    description: "Testing pure pursuit trajectory following",
+    files: JSON.stringify({ main: "robot code here" }),
+    authorId: "user_456",
+    isPublic: 1,
+    createdAt: "2025-01-15T10:00:00Z",
+    updatedAt: "2025-01-15T11:00:00Z",
+  },
 });
 
 export const listSimulationsRoute = createRoute({

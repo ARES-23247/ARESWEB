@@ -2,39 +2,55 @@ import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 import { eventSchema, EventCategoryEnum } from "../schemas/eventSchema";
+import { selectEventSchema, selectEventSignupSchema } from "../db/schema-zod";
+import { toCamelCaseResponse } from "../db/schema-openapi";
 
-export const eventResponseSchema = z.object({
-  id: z.string().openapi({ example: "123" }),
-  title: z.string().openapi({ example: "Kickoff" }),
-  dateStart: z.string().openapi({ example: "2025-01-15T10:00:00Z" }),
-  dateEnd: z.string().nullish(),
-  location: z.string().nullish(),
-  description: z.string().nullish(),
-  coverImage: z.string().nullish(),
-  status: z.string().nullish(),
-  category: EventCategoryEnum.nullish(),
-  isDeleted: z.number().nullish(),
-  seasonId: z.coerce.number().nullish(),
-  meetingNotes: z.string().nullish(),
-  recurringGroupId: z.string().nullish(),
-  rrule: z.string().nullish(),
-  zulipStream: z.string().nullable().optional(),
-  zulipTopic: z.string().nullable().optional(),
-  locationAddress: z.string().nullish(),
-  tbaEventKey: z.string().nullish(),
-  recurringException: z.number().nullish(),
-  isPotluck: z.number().nullish(),
-  isVolunteer: z.number().nullish(),
+// Response schema derived from Drizzle selectEventSchema
+export const eventResponseSchema = toCamelCaseResponse(
+  selectEventSchema
+).openapi({
+  example: {
+    id: "abc123",
+    title: "Team Meeting",
+    dateStart: "2025-01-15T18:00:00Z",
+    dateEnd: "2025-01-15T20:00:00Z",
+    location: "ARES Lab",
+    description: "Weekly team meeting to discuss upcoming competitions...",
+    coverImage: "/images/team-meeting.jpg",
+    status: "published",
+    category: "internal",
+    isDeleted: 0,
+    seasonId: 1,
+    meetingNotes: "Bring your laptops for CAD training",
+    recurringGroupId: null,
+    rrule: null,
+    zulipStream: "events",
+    zulipTopic: "Event: Team Meeting",
+    tbaEventKey: null,
+    recurringException: null,
+    isPotluck: 0,
+    isVolunteer: 0,
+  },
 });
 
-export const eventSignupSchema = z.object({
-  userId: z.string(),
+// Signup schema derived from Drizzle selectEventSignupSchema
+export const eventSignupSchema = toCamelCaseResponse(
+  selectEventSignupSchema
+).extend({
   nickname: z.string().nullable().optional(),
-  bringing: z.string().nullable(),
-  notes: z.string().nullable(),
-  prepHours: z.coerce.number().nullable(),
-  attended: z.number().optional(),
   isOwn: z.boolean().optional(),
+}).openapi({
+  example: {
+    id: 1,
+    eventId: "abc123",
+    userId: "user123",
+    nickname: "John",
+    bringing: "Chips",
+    notes: "Will arrive 10 minutes late",
+    prepHours: 1.5,
+    attended: 0,
+    isOwn: false,
+  },
 });
 
 export const getEventsRoute = createRoute({
@@ -74,7 +90,6 @@ export const getEventsRoute = createRoute({
                 rrule: null,
                 zulipStream: "events",
                 zulipTopic: "Event: Team Meeting",
-                locationAddress: "123 Main St, City, State 12345",
                 tbaEventKey: null,
                 recurringException: null,
                 isPotluck: 0,
@@ -229,7 +244,6 @@ export const getEventRoute = createRoute({
               rrule: null,
               zulipStream: "events",
               zulipTopic: "Event: Team Meeting",
-              locationAddress: "123 Main St, City, State 12345",
               tbaEventKey: null,
               recurringException: null,
               isPotluck: 0,
@@ -238,6 +252,8 @@ export const getEventRoute = createRoute({
             isEditor: false,
             signups: [
               {
+                id: 1,
+                eventId: "abc123",
                 userId: "user123",
                 nickname: "John",
                 bringing: "Chips",
