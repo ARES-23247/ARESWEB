@@ -169,6 +169,9 @@ export default function Footer() {
           <Link to="/privacy" className="hover:text-ares-red transition-colors flex items-center gap-2">
             <ShieldCheck size={12} className="text-ares-cyan" /> Privacy
           </Link>
+          <Link to="/terms" className="hover:text-ares-red transition-colors flex items-center gap-2">
+            <BookOpen size={12} className="text-ares-cyan" /> Terms
+          </Link>
           
           <div className="h-4 w-px bg-white/10 hidden md:block"></div>
 
