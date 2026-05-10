@@ -11,7 +11,7 @@ vi.mock("./honoClient", () => ({
       admin: {
         settings: {
           $get: vi.fn(),
-          $post: vi.fn(),
+          $patch: vi.fn(),
         },
         stats: {
           $get: vi.fn(),
@@ -142,7 +142,7 @@ describe("Settings API", () => {
   describe("useUpdateSettings", () => {
     it("should update settings successfully", async () => {
       const mockResponse = { success: true, updated: 2 };
-      mockClient.settings.admin.settings.$post.mockResolvedValue({ ok: true });
+      mockClient.settings.admin.settings.$patch.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => settingsApi.useUpdateSettings(), { wrapper });
@@ -156,14 +156,14 @@ describe("Settings API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
-      expect(mockClient.settings.admin.settings.$post).toHaveBeenCalledWith({
+      expect(mockClient.settings.admin.settings.$patch).toHaveBeenCalledWith({
         json: newSettings,
       });
     });
 
     it("should handle update errors", async () => {
       const mockError = new Error("Failed to update settings");
-      mockClient.settings.admin.settings.$post.mockResolvedValue({ ok: false });
+      mockClient.settings.admin.settings.$patch.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(mockError);
 
       const { result } = renderHook(() => settingsApi.useUpdateSettings(), { wrapper });
@@ -179,7 +179,7 @@ describe("Settings API", () => {
       const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
       const mockResponse = { success: true, updated: 1 };
-      mockClient.settings.admin.settings.$post.mockResolvedValue({ ok: true });
+      mockClient.settings.admin.settings.$patch.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const customWrapper = ({ children }: { children: React.ReactNode }) => (

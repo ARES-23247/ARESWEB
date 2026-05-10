@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -20,7 +20,7 @@ vi.mock("./honoClient", () => ({
         },
         ":slug": {
           $get: vi.fn(),
-          $post: vi.fn(),
+          $patch: vi.fn(),
           $delete: vi.fn(),
           undelete: {
             $post: vi.fn(),
@@ -258,7 +258,7 @@ describe("Posts API", () => {
     it("should update existing post successfully", async () => {
       const mockResponse: UpdatePostResponse = { success: true, slug: "updated-post-slug" };
       const postData: postsApi.PostPayload = { title: "Updated Title", content: "Updated content", ast: '{"type":"doc"}' };
-      mockClient.posts.admin[":slug"].$post.mockResolvedValue({ ok: true });
+      mockClient.posts.admin[":slug"].$patch.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => postsApi.useUpdatePost(), { wrapper });
@@ -266,7 +266,7 @@ describe("Posts API", () => {
       result.current.mutate({ slug: "test-post", body: postData });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(mockClient.posts.admin[":slug"].$post).toHaveBeenCalledWith({
+      expect(mockClient.posts.admin[":slug"].$patch).toHaveBeenCalledWith({
         param: { slug: "test-post" },
         json: postData,
       });
@@ -375,8 +375,8 @@ describe("Posts API", () => {
   describe("useGetPostHistory", () => {
     it("should fetch post history successfully", async () => {
       const mockHistory: postsApi.PostHistory[] = [
-        { id: 1, slug: "test-post", title: "Test Post", created_at: "2024-01-01T00:00:00Z", ast: '{"type":"doc"}' },
-        { id: 2, slug: "test-post", title: "Updated Title", created_at: "2024-01-02T00:00:00Z", ast: '{"type":"doc"}' },
+        { id: 1, slug: "test-post", title: "Test Post", createdAt: "2024-01-01T00:00:00Z", ast: '{"type":"doc"}' },
+        { id: 2, slug: "test-post", title: "Updated Title", createdAt: "2024-01-02T00:00:00Z", ast: '{"type":"doc"}' },
       ];
       const mockResponse: PostHistoryResponse = { history: mockHistory };
       mockClient.posts.admin[":slug"].history.$get.mockResolvedValue({ ok: true });
@@ -407,3 +407,4 @@ describe("Posts API", () => {
     });
   });
 });
+
