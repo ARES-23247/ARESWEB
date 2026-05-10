@@ -159,10 +159,10 @@ test.describe('Social Hub', () => {
     // Verify calendar navigation is present
     await expect(page.getByRole('button', { name: /Previous Month/i }).or(page.locator('button').filter({ hasText: /‹/ })).or(page.locator('button').filter({ has: page.locator('svg') }).first())).toBeVisible();
 
-    // Verify status legend is present
-    await expect(page.getByText(/pending/i)).toBeVisible();
-    await expect(page.getByText(/sent/i)).toBeVisible();
-    await expect(page.getByText(/failed/i)).toBeVisible();
+    // Verify status legend is present - use first() to avoid strict mode violations with config docs
+    await expect(page.getByText(/pending/i).first()).toBeVisible();
+    await expect(page.getByText(/sent/i).first()).toBeVisible();
+    await expect(page.getByText(/failed/i).first()).toBeVisible();
 
     // Take screenshot of calendar view
     await page.screenshot({ path: 'social-hub-calendar.png', fullPage: true });
@@ -180,11 +180,11 @@ test.describe('Social Hub', () => {
     // Wait for analytics to load
     await expect(page.getByText(/Total Posts/i)).toBeVisible();
 
-    // Verify overview stats are displayed
+    // Verify overview stats are displayed - use first() to avoid strict mode violations
     await expect(page.getByText(/Total Posts/i)).toBeVisible();
-    await expect(page.getByText(/Sent/i)).toBeVisible();
-    await expect(page.getByText(/Pending/i)).toBeVisible();
-    await expect(page.getByText(/Failed/i)).toBeVisible();
+    await expect(page.getByText(/Sent/i).first()).toBeVisible();
+    await expect(page.getByText(/Pending/i).first()).toBeVisible();
+    await expect(page.getByText(/Failed/i).first()).toBeVisible();
 
     // Verify engagement metrics section
     await expect(page.getByText(/Engagement Metrics/i)).toBeVisible();

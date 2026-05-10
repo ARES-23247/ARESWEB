@@ -155,6 +155,7 @@ export default function SocialComposer({
           <button
             onClick={onClose}
             className="p-2 text-marble/60 hover:text-white hover:bg-white/10 ares-cut-sm transition-all"
+            aria-label="Close composer"
           >
             <X size={20} />
           </button>
@@ -291,6 +292,7 @@ export default function SocialComposer({
                   type="button"
                   onClick={() => handleRemoveMedia(index)}
                   className="text-marble/60 hover:text-ares-red transition-colors"
+                  aria-label="Remove media URL"
                 >
                   <Trash2 size={14} />
                 </button>

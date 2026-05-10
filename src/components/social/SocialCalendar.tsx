@@ -74,6 +74,7 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
           <button
             onClick={handlePreviousMonth}
             className="p-2 bg-white/5 hover:bg-white/10 text-white ares-cut-sm transition-colors"
+            aria-label="Previous month"
           >
             <ChevronLeft size={20} />
           </button>
@@ -83,6 +84,7 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
           <button
             onClick={handleNextMonth}
             className="p-2 bg-white/5 hover:bg-white/10 text-white ares-cut-sm transition-colors"
+            aria-label="Next month"
           >
             <ChevronRight size={20} />
           </button>
@@ -178,6 +180,7 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
               <button
                 onClick={() => setSelectedDay(null)}
                 className="text-marble/60 hover:text-white transition-colors"
+                aria-label="Close day detail"
               >
                 ×
               </button>
@@ -212,6 +215,7 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
                             <button
                               onClick={() => onEditPost(post)}
                               className="p-2 text-marble/60 hover:text-ares-cyan transition-colors"
+                              aria-label="Edit post"
                               title="Edit"
                             >
                               <Edit size={16} />
@@ -220,6 +224,7 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
                           <button
                             onClick={() => handleDelete(post.id)}
                             className="p-2 text-marble/60 hover:text-ares-red transition-colors"
+                            aria-label="Cancel scheduled post"
                             title="Cancel"
                           >
                             <Trash2 size={16} />

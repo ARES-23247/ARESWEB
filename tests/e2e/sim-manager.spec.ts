@@ -138,9 +138,13 @@ test.describe('Sim Manager Dashboard', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify generated files section
-    const hasGenFiles = await page.getByText(/sim-registry\.ts/).isVisible().catch(() => false) ||
-                        await page.getByText(/simRegistry\.json/).isVisible().catch(() => false);
+    // Verify the Generated Files section heading is visible first
+    await expect(page.getByText(/Generated Files/i)).toBeVisible();
+
+    // Verify generated files section - check for the section content
+    const hasGenFiles = await page.getByText(/sim-registry\.ts/, { exact: false }).isVisible().catch(() => false) ||
+                        await page.getByText(/simRegistry\.json/, { exact: false }).isVisible().catch(() => false) ||
+                        await page.getByText(/src\/components\/generated\/sim-registry/).isVisible().catch(() => false);
     expect(hasGenFiles).toBe(true);
   });
 
