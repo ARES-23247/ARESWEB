@@ -122,8 +122,10 @@ export default ts.config(
       "security/detect-object-injection": "off",
 
       // Drizzle safety — prevent accidental table-wide operations
-      "drizzle/enforce-delete-with-where": "error",
-      "drizzle/enforce-update-with-where": "error",
+      // Scoped to known Drizzle identifiers to avoid false positives on
+      // Map.delete(), URLSearchParams.delete(), http.delete(), cache.delete(), R2.delete(), etc.
+      "drizzle/enforce-delete-with-where": ["error", { "drizzleObjectName": ["db", "mockDb"] }],
+      "drizzle/enforce-update-with-where": ["error", { "drizzleObjectName": ["db", "mockDb"] }],
 
       // Project logic - ignore unused variables prefixed with _
       "no-unused-vars": "off", // use @typescript-eslint/no-unused-vars instead

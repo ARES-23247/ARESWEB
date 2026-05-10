@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Clock, RotateCcw, Eye, X } from "lucide-react";
@@ -50,7 +50,7 @@ export default function VersionHistorySidebar({ roomId, editor, onClose, history
   const resolvedUrl = historyUrl || `/api/docs/admin/${roomId}/history`;
 
   const { data: history = [], isLoading, isError } = useQuery<HistorySnapshot[]>({
-    queryKey: ["document_history", roomId],
+    queryKey: ["document_history", roomId, resolvedUrl],
     queryFn: async () => {
       const res = await fetch(resolvedUrl);
       if (!res.ok) throw new Error("Failed to fetch history");

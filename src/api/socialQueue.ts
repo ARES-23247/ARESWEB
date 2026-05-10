@@ -94,7 +94,7 @@ export function useGetSocialCalendar(
   options?: Omit<UseQueryOptions<SocialQueueCalendarResponse>, "queryKey" | "queryFn" | "enabled">
 ) {
   return useQuery<SocialQueueCalendarResponse>({
-    queryKey: ["social-queue", "calendar", query.start, query.end],
+    queryKey: ["social-queue", "calendar", query] as const,
     queryFn: async () => {
       const response = await client["social-queue"].calendar.$get({ query });
       return unwrapResponse<SocialQueueCalendarResponse>(response);
@@ -196,7 +196,7 @@ export function useGetSocialAnalytics(
   options?: Omit<UseQueryOptions<SocialAnalyticsResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery<SocialAnalyticsResponse>({
-    queryKey: ["social-queue", "analytics", query.start, query.end],
+    queryKey: ["social-queue", "analytics", query] as const,
     queryFn: async () => {
       const response = await client["social-queue"].analytics.$get({ query: query as never });  
       return unwrapResponse<SocialAnalyticsResponse>(response);

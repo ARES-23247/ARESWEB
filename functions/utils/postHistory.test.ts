@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { Context } from "hono";
 import type { AppEnv, SessionUser } from "../api/middleware/utils";
@@ -272,6 +272,7 @@ describe("postHistory utilities", () => {
       );
 
       expect(mockDb.update).toHaveBeenCalled();
+      // eslint-disable-next-line drizzle/enforce-delete-with-where -- test assertion on mock, not a real delete
       expect(mockDb.delete).toHaveBeenCalled();
       expect(mockExecute).toHaveBeenCalled();
       expect(mockRun).toHaveBeenCalled();
